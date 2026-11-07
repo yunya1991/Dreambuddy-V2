@@ -15,13 +15,14 @@ Layer 3: 落地 —— 从线/网到可执行图
 5. 工程配置：超时、重试、降级等工程参数
 """
 
-from typing import Dict, List, Optional, Set
+from typing import Dict, List  # noqa: I001
 from collections import deque
 
 from ..types import OKRSet, ExecutionBlueprint
 
 try:
-    from ...modules import get_module_registry, ModuleInfo
+    from ...modules import get_module_registry, ModuleInfo  # noqa: I001
+
     _HAS_REGISTRY = True
 except (ImportError, ValueError):
     _HAS_REGISTRY = False
@@ -82,28 +83,24 @@ class BlueprintBuilder:
         )
         blueprint.parallel_groups = parallel_groups
 
-        blueprint.execution_mode = self._determine_execution_mode(
-            parallel_groups, okr_set.mode
-        )
+        blueprint.execution_mode = self._determine_execution_mode(parallel_groups, okr_set.mode)
 
-        engineering_config = self._configure_engineering(
-            okr_set, sorted_nodes, kr_node_map
-        )
+        engineering_config = self._configure_engineering(okr_set, sorted_nodes, kr_node_map)
 
-        blueprint.total_timeout_ms = engineering_config['total_timeout_ms']
-        blueprint.node_timeout_ms = engineering_config['node_timeout_ms']
-        blueprint.retry_policy = engineering_config['retry_policy']
-        blueprint.fallback_policy = engineering_config['fallback_policy']
-        blueprint.required_nodes = engineering_config['required_nodes']
-        blueprint.optional_nodes = engineering_config['optional_nodes']
+        blueprint.total_timeout_ms = engineering_config["total_timeout_ms"]
+        blueprint.node_timeout_ms = engineering_config["node_timeout_ms"]
+        blueprint.retry_policy = engineering_config["retry_policy"]
+        blueprint.fallback_policy = engineering_config["fallback_policy"]
+        blueprint.required_nodes = engineering_config["required_nodes"]
+        blueprint.optional_nodes = engineering_config["optional_nodes"]
 
-        if okr_set.complexity == 'deep':
+        if okr_set.complexity == "deep":
             blueprint.replan_enabled = True
             blueprint.max_replans = 3
             blueprint.replan_triggers = [
-                'low_confidence',
-                'module_failure',
-                'market_shock',
+                "low_confidence",
+                "module_failure",
+                "market_shock",
             ]
         else:
             blueprint.replan_enabled = False
@@ -111,8 +108,8 @@ class BlueprintBuilder:
 
         blueprint.confidence = okr_set.confidence * 0.85
         blueprint.rationale = (
-            f'OKR({okr_set.mode}, {okr_set.complexity}) → '
-            f'蓝图({blueprint.execution_mode}, {len(sorted_nodes)}节点)'
+            f"OKR({okr_set.mode}, {okr_set.complexity}) → "
+            f"蓝图({blueprint.execution_mode}, {len(sorted_nodes)}节点)"
         )
 
         return blueprint
@@ -140,7 +137,7 @@ class BlueprintBuilder:
 
         优先使用注册表搜索，否则使用降级映射
         """
-        if self.registry is not None and hasattr(self.registry, 'query'):
+        if self.registry is not None and hasattr(self.registry, "query"):
             try:
                 return self._match_via_registry(kr)
             except Exception:
@@ -153,13 +150,13 @@ class BlueprintBuilder:
         matched_modules = []
         best_score = 0
 
-        all_modules = self.registry.get_all() if hasattr(self.registry, 'get_all') else []
+        all_modules = self.registry.get_all() if hasattr(self.registry, "get_all") else []
 
         for mod in all_modules:
-            if mod.lifecycle and mod.lifecycle.get('status') != 'active':
+            if mod.lifecycle and mod.lifecycle.get("status") != "active":
                 continue
 
-            tags = set(mod.tags) if hasattr(mod, 'tags') else set()
+            tags = set(mod.tags) if hasattr(mod, "tags") else set()
             kr_tags = set(kr.capability_tags)
 
             if not kr_tags or not tags:
@@ -178,7 +175,7 @@ class BlueprintBuilder:
         matched_modules.sort(key=lambda x: x[1], reverse=True)
 
         result = []
-        for mod_id, score in matched_modules[:3]:
+        for mod_id, score in matched_modules[:3]:  # noqa: B007
             if mod_id not in result:
                 result.append(mod_id)
 
@@ -194,42 +191,42 @@ class BlueprintBuilder:
         这是一个简化的映射，确保在没有注册表时也能工作
         """
         tag_to_module = {
-            'technical_analysis': ['dream-first-principles'],
-            'trend_analysis': ['dream-first-principles'],
-            'indicators': ['classic-indicator-scan'],
-            'pattern': ['classic-indicator-scan'],
-            'fundamental_analysis': ['dream-fundamental-analyzer'],
-            'fund_flow': ['dream-fundamental-analyzer'],
-            'sentiment_analysis': ['dream-sentiment-analyzer'],
-            'news': ['dream-sentiment-analyzer'],
-            'contradiction_analysis': ['dream-contradiction-theory'],
-            'strategy_design': ['dream-strategy-designer'],
-            'strategy_research': ['dream-strategy-research'],
-            'risk_management': ['dream-gate-keeper'],
-            'gate_keeping': ['dream-gate-keeper'],
-            'synthesis': ['dream-strategy-research'],
-            'decision_making': ['dream-strategy-research'],
-            'research': ['dream-strategy-research'],
-            'market_data': ['classic-indicator-scan'],
-            'price_query': ['classic-indicator-scan'],
-            'screen1': ['dream-screen1-first'],
-            'screen2': ['dream-screen2-second'],
-            'screen3': ['dream-screen3-third'],
-            'weekly_timeframe': ['dream-screen1-first'],
-            'daily_timeframe': ['dream-screen2-second'],
-            'intraday_execution': ['dream-screen3-third'],
-            'entry_setup': ['dream-screen2-second'],
-            'timing': ['dream-screen3-third'],
-            'execution': ['dream-screen3-third'],
-            'position_management': ['dream-exit-skill-v2'],
-            'exit_strategy': ['dream-exit-skill-v2'],
-            'regime_detection': ['dream-regime-detector'],
-            'support_resistance': ['classic-indicator-scan'],
-            'key_levels': ['classic-indicator-scan'],
-            'backtesting': ['dream-strategy-designer'],
-            'performance_analysis': ['dream-strategy-research'],
-            'summary': ['dream-strategy-research'],
-            'recommendation': ['dream-strategy-research'],
+            "technical_analysis": ["dream-first-principles"],
+            "trend_analysis": ["dream-first-principles"],
+            "indicators": ["classic-indicator-scan"],
+            "pattern": ["classic-indicator-scan"],
+            "fundamental_analysis": ["dream-fundamental-analyzer"],
+            "fund_flow": ["dream-fundamental-analyzer"],
+            "sentiment_analysis": ["dream-sentiment-analyzer"],
+            "news": ["dream-sentiment-analyzer"],
+            "contradiction_analysis": ["dream-contradiction-theory"],
+            "strategy_design": ["dream-strategy-designer"],
+            "strategy_research": ["dream-strategy-research"],
+            "risk_management": ["dream-gate-keeper"],
+            "gate_keeping": ["dream-gate-keeper"],
+            "synthesis": ["dream-strategy-research"],
+            "decision_making": ["dream-strategy-research"],
+            "research": ["dream-strategy-research"],
+            "market_data": ["classic-indicator-scan"],
+            "price_query": ["classic-indicator-scan"],
+            "screen1": ["dream-screen1-first"],
+            "screen2": ["dream-screen2-second"],
+            "screen3": ["dream-screen3-third"],
+            "weekly_timeframe": ["dream-screen1-first"],
+            "daily_timeframe": ["dream-screen2-second"],
+            "intraday_execution": ["dream-screen3-third"],
+            "entry_setup": ["dream-screen2-second"],
+            "timing": ["dream-screen3-third"],
+            "execution": ["dream-screen3-third"],
+            "position_management": ["dream-exit-skill-v2"],
+            "exit_strategy": ["dream-exit-skill-v2"],
+            "regime_detection": ["dream-regime-detector"],
+            "support_resistance": ["classic-indicator-scan"],
+            "key_levels": ["classic-indicator-scan"],
+            "backtesting": ["dream-strategy-designer"],
+            "performance_analysis": ["dream-strategy-research"],
+            "summary": ["dream-strategy-research"],
+            "recommendation": ["dream-strategy-research"],
         }
 
         result = []
@@ -241,15 +238,15 @@ class BlueprintBuilder:
 
         if not result:
             default_map = {
-                'simple': ['classic-indicator-scan'],
-                'standard': ['dream-first-principles', 'classic-indicator-scan'],
-                'deep': [
-                    'dream-contradiction-theory',
-                    'dream-first-principles',
-                    'dream-strategy-research',
+                "simple": ["classic-indicator-scan"],
+                "standard": ["dream-first-principles", "classic-indicator-scan"],
+                "deep": [
+                    "dream-contradiction-theory",
+                    "dream-first-principles",
+                    "dream-strategy-research",
                 ],
             }
-            result = default_map.get(kr.complexity_hint, ['classic-indicator-scan'])
+            result = default_map.get(kr.complexity_hint, ["classic-indicator-scan"])
 
         return result[:3]
 
@@ -275,10 +272,10 @@ class BlueprintBuilder:
             if node not in dep_graph:
                 dep_graph[node] = []
 
-        for kr_id, nodes in kr_node_map.items():
+        for kr_id, nodes in kr_node_map.items():  # noqa: B007
             for i in range(1, len(nodes)):
-                if nodes[i] in dep_graph and nodes[i-1] not in dep_graph[nodes[i]]:
-                    dep_graph[nodes[i]].append(nodes[i-1])
+                if nodes[i] in dep_graph and nodes[i - 1] not in dep_graph[nodes[i]]:
+                    dep_graph[nodes[i]].append(nodes[i - 1])
 
         for kr in okr_set.key_results:
             if not kr.depends_on:
@@ -314,7 +311,7 @@ class BlueprintBuilder:
         for deps in dep_graph.values():
             all_nodes.update(deps)
 
-        in_degree = {node: 0 for node in all_nodes}
+        in_degree = dict.fromkeys(all_nodes, 0)
 
         reverse_graph = {node: [] for node in all_nodes}
         for node, deps in dep_graph.items():
@@ -361,7 +358,7 @@ class BlueprintBuilder:
         """
         parallel_groups = []
 
-        if okr_set.mode == 'multi':
+        if okr_set.mode == "multi":
             parallel_krs = [kr for kr in okr_set.key_results if kr.is_parallel]
 
             if parallel_krs:
@@ -409,29 +406,30 @@ class BlueprintBuilder:
         - hybrid: 混合模式（多阶段，有并行也有顺序）
         """
         if not parallel_groups:
-            return 'sequential'
+            return "sequential"
 
-        if okr_mode == 'single':
-            return 'sequential'
+        if okr_mode == "single":
+            return "sequential"
 
-        has_nested = any(isinstance(g, list) and any(isinstance(x, list) for x in g)
-                        for g in parallel_groups)
+        has_nested = any(
+            isinstance(g, list) and any(isinstance(x, list) for x in g) for g in parallel_groups
+        )
 
         if has_nested:
-            return 'hybrid'
+            return "hybrid"
 
         if len(parallel_groups) == 1:
             group = parallel_groups[0]
             if isinstance(group, list) and len(group) > 1:
                 if all(isinstance(x, list) for x in group):
-                    return 'parallel'
-                return 'parallel'
-            return 'sequential'
+                    return "parallel"
+                return "parallel"
+            return "sequential"
 
         if len(parallel_groups) > 1:
-            return 'hybrid'
+            return "hybrid"
 
-        return 'sequential'
+        return "sequential"
 
     def _configure_engineering(
         self,
@@ -455,9 +453,9 @@ class BlueprintBuilder:
         optional_nodes = []
 
         default_latency = {
-            'simple': 5000,
-            'standard': 30000,
-            'deep': 60000,
+            "simple": 5000,
+            "standard": 30000,
+            "deep": 60000,
         }
         default_timeout = default_latency.get(okr_set.complexity, 30000)
 
@@ -465,27 +463,27 @@ class BlueprintBuilder:
 
         for node in sorted_nodes:
             node_timeout_ms[node] = default_timeout
-            retry_policy[node] = {'count': 1, 'delay_ms': 1000}
+            retry_policy[node] = {"count": 1, "delay_ms": 1000}
 
-            if self.registry is not None and hasattr(self.registry, 'get'):
+            if self.registry is not None and hasattr(self.registry, "get"):
                 try:
                     mod_info = self.registry.get(node)
                     if mod_info:
-                        if hasattr(mod_info, 'estimated_latency_ms'):
+                        if hasattr(mod_info, "estimated_latency_ms"):
                             node_timeout_ms[node] = mod_info.estimated_latency_ms * 2
 
-                        if hasattr(mod_info, 'security_level'):
+                        if hasattr(mod_info, "security_level"):
                             sec_level = mod_info.security_level
-                            retry_count = {'R1': 2, 'R2': 1, 'R3': 0}.get(sec_level, 1)
+                            retry_count = {"R1": 2, "R2": 1, "R3": 0}.get(sec_level, 1)
                             retry_policy[node] = {
-                                'count': retry_count,
-                                'delay_ms': 1000,
+                                "count": retry_count,
+                                "delay_ms": 1000,
                             }
 
-                        if hasattr(mod_info, 'fallback'):
+                        if hasattr(mod_info, "fallback"):
                             fb = mod_info.fallback
-                            if fb and fb.get('enabled'):
-                                fallback_policy[node] = fb.get('fallback_module', '')
+                            if fb and fb.get("enabled"):
+                                fallback_policy[node] = fb.get("fallback_module", "")
                 except Exception:
                     pass
 
@@ -503,12 +501,12 @@ class BlueprintBuilder:
         total_timeout = sum(node_timeout_ms.values())
 
         return {
-            'total_timeout_ms': total_timeout,
-            'node_timeout_ms': node_timeout_ms,
-            'retry_policy': retry_policy,
-            'fallback_policy': fallback_policy,
-            'required_nodes': list(set(required_nodes)),
-            'optional_nodes': list(set(optional_nodes)),
+            "total_timeout_ms": total_timeout,
+            "node_timeout_ms": node_timeout_ms,
+            "retry_policy": retry_policy,
+            "fallback_policy": fallback_policy,
+            "required_nodes": list(set(required_nodes)),
+            "optional_nodes": list(set(optional_nodes)),
         }
 
     def _build_reverse_map(

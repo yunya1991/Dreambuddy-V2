@@ -8,6 +8,7 @@ P1：不依赖 Telegram，直接在终端运行一场辩论并查看输出。
     python cli.py "BTC 是数字黄金" --rounds 3 --no-judge
     python cli.py "BTC 是数字黄金" --background "BTC 2024年减半" --output result.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -16,9 +17,8 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any
 
-from core.config import AppConfig, load_config
+from core.config import load_config
 from core.models import DebateResult
 from core.orchestrator import DebateOrchestrator
 
@@ -30,6 +30,7 @@ logger = logging.getLogger("debate.cli")
 
 
 # ─── 静默 Telegram Bot（CLI 模式不发真实消息） ───────────────────
+
 
 class QuietTelegramBot:
     """CLI 模式用：实现 TelegramBotClient Protocol，不发真实消息，仅打印。"""
@@ -48,32 +49,35 @@ class QuietTelegramBot:
 
 # ─── argparse ────────────────────────────────────────────────────
 
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """解析 CLI 参数。"""
     parser = argparse.ArgumentParser(
         description="对抗性辩论 Bot — 手动触发辩论（调试用）",
     )
     parser.add_argument("topic", help="辩论话题")
-    parser.add_argument("--rounds", type=int, default=2,
-                        help="辩论轮次（默认 2）")
-    parser.add_argument("--background", default="",
-                        help="背景材料（可选）")
-    parser.add_argument("--judge", dest="judge", action="store_true",
-                        default=True, help="启用裁判（默认）")
-    parser.add_argument("--no-judge", dest="judge", action="store_false",
-                        help="禁用裁判")
-    parser.add_argument("--config", default=None,
-                        help="配置文件路径（默认 config.yaml）")
-    parser.add_argument("--output", default=None,
-                        help="将完整结果保存为 JSON 文件")
+    parser.add_argument("--rounds", type=int, default=2, help="辩论轮次（默认 2）")
+    parser.add_argument("--background", default="", help="背景材料（可选）")
+    parser.add_argument(
+        "--judge", dest="judge", action="store_true", default=True, help="启用裁判（默认）"
+    )
+    parser.add_argument("--no-judge", dest="judge", action="store_false", help="禁用裁判")
+    parser.add_argument("--config", default=None, help="配置文件路径（默认 config.yaml）")
+    parser.add_argument("--output", default=None, help="将完整结果保存为 JSON 文件")
     return parser.parse_args(argv)
 
 
 # ─── 运行辩论 ────────────────────────────────────────────────────
 
-def run_cli(topic: str, rounds: int = 2, background: str = "",
-            judge: bool = True, output: str | None = None,
-            config_path: str | None = None) -> DebateResult:
+
+def run_cli(
+    topic: str,
+    rounds: int = 2,
+    background: str = "",
+    judge: bool = True,
+    output: str | None = None,
+    config_path: str | None = None,
+) -> DebateResult:
     """运行一场辩论并返回结果。
 
     Args:
@@ -106,7 +110,7 @@ def run_cli(topic: str, rounds: int = 2, background: str = "",
     # 临时替换 create_llm_adapter 的导入在 main 中已存在
     models = config.debate.models
 
-    from core.agents import BullAgent, BearAgent, JudgeAgent
+    from core.agents import BullAgent, BearAgent, JudgeAgent  # noqa: I001
     from core.marketing import MarketingExtractor
     from core.quality import QualityEvaluator
     from core.telegram_bot import TelegramDualBot
@@ -146,9 +150,14 @@ def run_cli(topic: str, rounds: int = 2, background: str = "",
     if background:
         print(f"📄 背景：{background[:100]}")
 
-    result = asyncio.run(orchestrator.run(
-        topic=topic, chat_id=0, max_rounds=rounds, background=background,
-    ))
+    result = asyncio.run(
+        orchestrator.run(
+            topic=topic,
+            chat_id=0,
+            max_rounds=rounds,
+            background=background,
+        )
+    )
 
     # 打印营销素材
     _print_marketing(result)
@@ -202,6 +211,7 @@ def _print_quality(result: DebateResult):
 
 
 # ─── 主入口 ──────────────────────────────────────────────────────
+
 
 def main():
     args = parse_args()

@@ -11,6 +11,7 @@
   T3-7  低波动期 IQR clip 正常（点落 [Q1-1.5IQR, Q3+1.5IQR] 之外的被裁剪到边界）
   T3-8  冷启动全列 NaN → 不崩，CleanAction 标记
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -20,12 +21,14 @@ import pandas as pd
 class TestOutlier3L:
     def _mk(self, values: list[float], asset: str = "BTC") -> pd.DataFrame:
         n = len(values)
-        return pd.DataFrame({
-            "timestamp": pd.date_range("2026-08-01 10:00", periods=n, freq="1h"),
-            "close": values,
-            "asset": [asset] * n,
-            "key": ["close"] * n,
-        })
+        return pd.DataFrame(
+            {
+                "timestamp": pd.date_range("2026-08-01 10:00", periods=n, freq="1h"),
+                "close": values,
+                "asset": [asset] * n,
+                "key": ["close"] * n,
+            }
+        )
 
     # T3-1 正态分布常规样本（粗筛|Z|<3不"标记计数"，中筛/精筛 clip<2%=正常）
     def test_t3_1_normal_distribution_inside_3sigma(self) -> None:
@@ -40,8 +43,9 @@ class TestOutlier3L:
         # ①3σ粗筛标记极少（<0.3% ×500 = ≤2）：正态 N(0,1) 理论 |Z|>3 概率≈0.27%
         assert "3σ_marked_only_no_clip" in action.note
         # ②中筛IQR clip 是正常行为（正态尾部 1% 左右），<2% ×500 = ≤10 个可接受
-        assert action.clipped_count <= len(df) * 0.05, \
-            f"IQR/ATR裁剪超5%不合理: clip={action.clipped_count}/{len(df)}"
+        assert (
+            action.clipped_count <= len(df) * 0.05
+        ), f"IQR/ATR裁剪超5%不合理: clip={action.clipped_count}/{len(df)}"
 
     # T3-2 |Z|>3 仅被粗筛"标记到trace"（原值不因为粗筛而被 clip；中筛IQR 会正常 clip 尾部点=Spec§B2 预期行为）
     def test_t3_2_z_gt_3_only_marked_not_clipped(self) -> None:
@@ -53,8 +57,9 @@ class TestOutlier3L:
         cleaner = Outlier3LFilter(z_threshold=3.0, iqr_coef=1.5, default_atr_k=3.0)
         out, action = cleaner.clean(df, CleaningTrace(), asset="BTC")
         # ① 标记计数 > 0（trace 写入 3σ 标记）
-        assert action.note and "3σ_marked_only_no_clip" in action.note, \
-            f"未标记3σ: note={action.note}"
+        assert (
+            action.note and "3σ_marked_only_no_clip" in action.note
+        ), f"未标记3σ: note={action.note}"
         # ② 不要求原值不变（中筛IQR×1.5 正常处理尾部点），但粗筛本身"不额外 clip"（语义通过）
 
     # T3-3 IQR=0 不抛
@@ -82,8 +87,9 @@ class TestOutlier3L:
         _, act_xau = cleaner.clean(df_xau.copy(), CleaningTrace(), asset="XAU")
         # 黄金 k 小 = 更容易触发裁剪 → clipped_count 应 ≥ BTC
         # (或至少 note 中 ATR 标记更多)
-        assert (act_xau.clipped_count >= act_btc.clipped_count) or \
-               ("ATR" in (act_xau.note or "")), "黄金k更严但裁剪更少"
+        assert (act_xau.clipped_count >= act_btc.clipped_count) or (
+            "ATR" in (act_xau.note or "")
+        ), "黄金k更严但裁剪更少"
 
     # T3-5 股票 k=2.8 更严
     def test_t3_5_stock_k_2_8_stricter(self) -> None:
@@ -107,10 +113,10 @@ class TestOutlier3L:
         df = self._mk(values, "BTC")
         # mock 巨鲸事件窗口（通过参数传，模拟事件命中）
         cleaner = Outlier3LFilter(default_atr_k=3.0)
-        out_no_event, _ = cleaner.clean(df.copy(), CleaningTrace(), asset="BTC",
-                                        event_hits=set())
-        out_with_event, _ = cleaner.clean(df.copy(), CleaningTrace(), asset="BTC",
-                                          event_hits={14})  # 第14行=大跳变
+        out_no_event, _ = cleaner.clean(df.copy(), CleaningTrace(), asset="BTC", event_hits=set())
+        out_with_event, _ = cleaner.clean(
+            df.copy(), CleaningTrace(), asset="BTC", event_hits={14}
+        )  # 第14行=大跳变
         # 事件命中的值被保留（更大），无事件时可能被 clip
         assert out_with_event["close"].iloc[-1] >= out_no_event["close"].iloc[-1]
 
@@ -124,8 +130,9 @@ class TestOutlier3L:
         core = list(range(95, 105)) + list(range(97, 103)) + [99, 100, 100, 101]
         values = core + [80.0, 120.0]  # 两个极端点
         df = self._mk(values)
-        cleaner = Outlier3LFilter(z_threshold=99.0,  # 关闭粗筛只测 IQR
-                                  iqr_coef=1.5, default_atr_k=99.0)
+        cleaner = Outlier3LFilter(
+            z_threshold=99.0, iqr_coef=1.5, default_atr_k=99.0  # 关闭粗筛只测 IQR
+        )
         out, _ = cleaner.clean(df, CleaningTrace(), asset="BTC")
         closes = out["close"].tolist()
         lower = np.percentile(core, 25) - 1.5 * (np.percentile(core, 75) - np.percentile(core, 25))

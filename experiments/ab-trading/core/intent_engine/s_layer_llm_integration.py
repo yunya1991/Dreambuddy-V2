@@ -22,21 +22,19 @@ S层三层递进大模型集成 (S-Layer LLM Integration)
 - 经典指标系统: 10-经典指标系统/ml_trade_service.py (:8092)
 """
 
-import os
-import json
-import time
+import time  # noqa: I001
 import uuid
-import hashlib
 from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from collections import defaultdict
 
 try:
-    from .types import Objective, OKRSet, ExecutionBlueprint, IntentRecognitionResult
+    from .types import Objective, OKRSet, ExecutionBlueprint, IntentRecognitionResult  # noqa: I001
     from .layer1_intent.objective_extractor import ObjectiveExtractor
     from .layer2_okr.okr_builder import OKRBuilder
     from .layer3_blueprint.blueprint_builder import BlueprintBuilder
+
     _HAS_ENGINE = True
 except ImportError:
     _HAS_ENGINE = False
@@ -50,13 +48,15 @@ except ImportError:
 # Token 预算状态枚举
 # ============================================================
 
+
 class TokenBudgetStatus(Enum):
     """Token预算状态"""
-    HEALTHY = "healthy"           # 健康：Token充足
-    WARNING = "warning"           # 警告：低于70%
-    LOW = "low"                   # 低：低于30%
-    CRITICAL = "critical"         # 严重：低于10%
-    EXHAUSTED = "exhausted"       # 耗尽：0
+
+    HEALTHY = "healthy"  # 健康：Token充足
+    WARNING = "warning"  # 警告：低于70%
+    LOW = "low"  # 低：低于30%
+    CRITICAL = "critical"  # 严重：低于10%
+    EXHAUSTED = "exhausted"  # 耗尽：0
     HANDOVER_TRIGGERED = "handover"  # 已触发经典指标接管
 
 
@@ -64,27 +64,31 @@ class TokenBudgetStatus(Enum):
 # 接管级别枚举
 # ============================================================
 
+
 class HandoverLevel(Enum):
     """经典指标系统接管级别"""
-    NONE = "none"                 # 不接管，正常运行
-    TOKEN_SAVE = "token_save"     # 仅节省Token：减少LLM调用
-    RECOMMEND = "recommend"       # 建议接管：提示用户
-    PARTIAL = "partial"           # 部分接管：部分节点由经典指标系统处理
-    FULL = "full"                 # 全链路接管：完全由经典指标系统驱动
-    FRONTEND = "frontend"         # 前端接管：建议启动前端
+
+    NONE = "none"  # 不接管，正常运行
+    TOKEN_SAVE = "token_save"  # 仅节省Token：减少LLM调用
+    RECOMMEND = "recommend"  # 建议接管：提示用户
+    PARTIAL = "partial"  # 部分接管：部分节点由经典指标系统处理
+    FULL = "full"  # 全链路接管：完全由经典指标系统驱动
+    FRONTEND = "frontend"  # 前端接管：建议启动前端
 
 
 # ============================================================
 # Token 预算管理器
 # ============================================================
 
+
 @dataclass
 class TokenUsageRecord:
     """Token使用记录"""
+
     timestamp: float
-    module: str           # 哪个模块使用
-    layer: str            # S层/哪一层
-    operation: str        # 操作类型
+    module: str  # 哪个模块使用
+    layer: str  # S层/哪一层
+    operation: str  # 操作类型
     prompt_tokens: int
     completion_tokens: int
     total_tokens: int
@@ -94,14 +98,15 @@ class TokenUsageRecord:
 @dataclass
 class TokenBudgetAlert:
     """Token预算告警"""
+
     alert_id: str
-    level: str            # info/warning/low/critical
+    level: str  # info/warning/low/critical
     message: str
     current_tokens: int
     budget_total: int
     percentage: float
     suggested_action: str
-    handover_level: str   # 建议的接管级别
+    handover_level: str  # 建议的接管级别
     timestamp: float
 
 
@@ -307,34 +312,43 @@ class TokenBudgetManager:
 
         # 根据状态给出建议
         if current_status in [TokenBudgetStatus.LOW, TokenBudgetStatus.CRITICAL]:
-            suggestions["suggestions"].append({
-                "type": "classic_takeover",
-                "title": "启用经典指标系统接管",
-                "description": "Token不足，建议由经典指标系统全链路接管交易决策",
-                "action": "authorize_full_handover",
-                "urgency": "high",
-            })
+            suggestions["suggestions"].append(
+                {
+                    "type": "classic_takeover",
+                    "title": "启用经典指标系统接管",
+                    "description": "Token不足，建议由经典指标系统全链路接管交易决策",
+                    "action": "authorize_full_handover",
+                    "urgency": "high",
+                }
+            )
 
         if current_status == TokenBudgetStatus.CRITICAL:
-            suggestions["suggestions"].append({
-                "type": "frontend_start",
-                "title": "启动前端全面接管",
-                "description": "建议启动前端界面，由用户直接操控经典指标系统",
-                "action": "start_frontend",
-                "urgency": "critical",
-            })
+            suggestions["suggestions"].append(
+                {
+                    "type": "frontend_start",
+                    "title": "启动前端全面接管",
+                    "description": "建议启动前端界面，由用户直接操控经典指标系统",
+                    "action": "start_frontend",
+                    "urgency": "critical",
+                }
+            )
 
         if current_status == TokenBudgetStatus.WARNING:
-            suggestions["suggestions"].append({
-                "type": "token_save",
-                "title": "节省Token模式",
-                "description": "减少LLM调用，仅在关键决策时调用",
-                "action": "enable_token_save_mode",
-                "urgency": "low",
-            })
+            suggestions["suggestions"].append(
+                {
+                    "type": "token_save",
+                    "title": "节省Token模式",
+                    "description": "减少LLM调用，仅在关键决策时调用",
+                    "action": "enable_token_save_mode",
+                    "urgency": "low",
+                }
+            )
 
         # 剩余Token用途建议
-        if self.handover_authorized or current_status in [TokenBudgetStatus.LOW, TokenBudgetStatus.CRITICAL]:
+        if self.handover_authorized or current_status in [
+            TokenBudgetStatus.LOW,
+            TokenBudgetStatus.CRITICAL,
+        ]:
             suggestions["remaining_token_usage"] = [
                 "调整经典指标系统策略参数",
                 "修改策略配置和阈值",
@@ -375,6 +389,7 @@ class TokenBudgetManager:
 # S层三层递进大模型识别器
 # ============================================================
 
+
 class SLayerLLMRecognizer:
     """
     S层三层递进大模型识别器
@@ -398,7 +413,7 @@ class SLayerLLMRecognizer:
     ):
         self.config = config or {}
         self.token_budget = token_budget or TokenBudgetManager(
-            total_budget=self.config.get('token_budget', 100000)
+            total_budget=self.config.get("token_budget", 100000)
         )
 
         # 节省Token模式
@@ -462,8 +477,7 @@ class SLayerLLMRecognizer:
 
         # 获取当前告警
         result["alerts"] = [
-            {"level": a.level, "message": a.message}
-            for a in self.token_budget.alerts[-3:]
+            {"level": a.level, "message": a.message} for a in self.token_budget.alerts[-3:]
         ]
 
         # Step 1: 判断是否使用LLM
@@ -505,8 +519,10 @@ class SLayerLLMRecognizer:
             return False
 
         # 如果已授权全链路接管，不使用LLM
-        if self.token_budget.handover_authorized and \
-           self.token_budget.handover_level == HandoverLevel.FULL:
+        if (
+            self.token_budget.handover_authorized
+            and self.token_budget.handover_level == HandoverLevel.FULL
+        ):
             return False
 
         # 如果Token严重不足，不使用LLM
@@ -614,30 +630,30 @@ class SLayerLLMRecognizer:
         模拟LLM调用，实际实现应接入DeepSeek/OpenAI
         """
         # 模拟LLM输出
-        text_lower = user_message.lower()
+        text_lower = user_message.lower()  # noqa: F841
 
         # 简单规则判断意图类型（模拟LLM理解）
         obj_type = "trading_decision"
         obj_title = "交易决策"
         complexity = "standard"
 
-        if any(kw in user_message for kw in ['分析', '研究', '调研', '深度']):
+        if any(kw in user_message for kw in ["分析", "研究", "调研", "深度"]):
             obj_type = "deep_analysis"
             obj_title = "深度分析"
             complexity = "deep"
-        elif any(kw in user_message for kw in ['趋势', '行情', '走势']):
+        elif any(kw in user_message for kw in ["趋势", "行情", "走势"]):
             obj_type = "trend_analysis"
             obj_title = "趋势分析"
             complexity = "standard"
-        elif any(kw in user_message for kw in ['风险', '评估', '检查']):
+        elif any(kw in user_message for kw in ["风险", "评估", "检查"]):
             obj_type = "risk_assessment"
             obj_title = "风险评估"
             complexity = "standard"
-        elif any(kw in user_message for kw in ['买入', '卖出', '做多', '做空', '下单']):
+        elif any(kw in user_message for kw in ["买入", "卖出", "做多", "做空", "下单"]):
             obj_type = "trading_decision"
             obj_title = "交易决策"
             complexity = "standard"
-        elif any(kw in user_message for kw in ['什么是', '解释', '概念', '怎么']):
+        elif any(kw in user_message for kw in ["什么是", "解释", "概念", "怎么"]):
             obj_type = "concept_explanation"
             obj_title = "概念解释"
             complexity = "simple"
@@ -677,31 +693,81 @@ class SLayerLLMRecognizer:
             mode = "single"
         elif complexity == "deep":
             krs = [
-                {"id": "kr_tech", "title": "技术面分析", "metric": "tech_score", "weight": 0.3,
-                 "order_index": 0, "depends_on": [], "capability_tags": ["technical_analysis", "indicators"],
-                 "is_parallel": True, "line_id": "line_tech"},
-                {"id": "kr_fund", "title": "基本面分析", "metric": "fund_score", "weight": 0.25,
-                 "order_index": 0, "depends_on": [], "capability_tags": ["fundamental_analysis", "news"],
-                 "is_parallel": True, "line_id": "line_fund"},
-                {"id": "kr_sent", "title": "情绪面分析", "metric": "sent_score", "weight": 0.2,
-                 "order_index": 0, "depends_on": [], "capability_tags": ["sentiment_analysis"],
-                 "is_parallel": True, "line_id": "line_sent"},
-                {"id": "kr_synth", "title": "综合决策", "metric": "synth_score", "weight": 0.25,
-                 "order_index": 1, "depends_on": ["kr_tech", "kr_fund", "kr_sent"],
-                 "capability_tags": ["synthesis", "decision_making"],
-                 "is_parallel": False, "line_id": "line_synth"},
+                {
+                    "id": "kr_tech",
+                    "title": "技术面分析",
+                    "metric": "tech_score",
+                    "weight": 0.3,
+                    "order_index": 0,
+                    "depends_on": [],
+                    "capability_tags": ["technical_analysis", "indicators"],
+                    "is_parallel": True,
+                    "line_id": "line_tech",
+                },
+                {
+                    "id": "kr_fund",
+                    "title": "基本面分析",
+                    "metric": "fund_score",
+                    "weight": 0.25,
+                    "order_index": 0,
+                    "depends_on": [],
+                    "capability_tags": ["fundamental_analysis", "news"],
+                    "is_parallel": True,
+                    "line_id": "line_fund",
+                },
+                {
+                    "id": "kr_sent",
+                    "title": "情绪面分析",
+                    "metric": "sent_score",
+                    "weight": 0.2,
+                    "order_index": 0,
+                    "depends_on": [],
+                    "capability_tags": ["sentiment_analysis"],
+                    "is_parallel": True,
+                    "line_id": "line_sent",
+                },
+                {
+                    "id": "kr_synth",
+                    "title": "综合决策",
+                    "metric": "synth_score",
+                    "weight": 0.25,
+                    "order_index": 1,
+                    "depends_on": ["kr_tech", "kr_fund", "kr_sent"],
+                    "capability_tags": ["synthesis", "decision_making"],
+                    "is_parallel": False,
+                    "line_id": "line_synth",
+                },
             ]
             mode = "multi"
         else:  # standard
             krs = [
-                {"id": "kr_research", "title": "调研", "metric": "research_depth", "weight": 0.3,
-                 "order_index": 0, "depends_on": [], "capability_tags": ["research"]},
-                {"id": "kr_analysis", "title": "分析", "metric": "analysis_depth", "weight": 0.4,
-                 "order_index": 1, "depends_on": ["kr_research"],
-                 "capability_tags": ["analysis", "evaluation"]},
-                {"id": "kr_conclusion", "title": "结论", "metric": "conclusion_quality", "weight": 0.3,
-                 "order_index": 2, "depends_on": ["kr_analysis"],
-                 "capability_tags": ["conclusion", "recommendation"]},
+                {
+                    "id": "kr_research",
+                    "title": "调研",
+                    "metric": "research_depth",
+                    "weight": 0.3,
+                    "order_index": 0,
+                    "depends_on": [],
+                    "capability_tags": ["research"],
+                },
+                {
+                    "id": "kr_analysis",
+                    "title": "分析",
+                    "metric": "analysis_depth",
+                    "weight": 0.4,
+                    "order_index": 1,
+                    "depends_on": ["kr_research"],
+                    "capability_tags": ["analysis", "evaluation"],
+                },
+                {
+                    "id": "kr_conclusion",
+                    "title": "结论",
+                    "metric": "conclusion_quality",
+                    "weight": 0.3,
+                    "order_index": 2,
+                    "depends_on": ["kr_analysis"],
+                    "capability_tags": ["conclusion", "recommendation"],
+                },
             ]
             mode = "single"
 
@@ -761,7 +827,9 @@ class SLayerLLMRecognizer:
             "execution_mode": "sequential" if mode == "single" else "hybrid",
             "dependencies": dependencies,
             "complexity": complexity,
-            "total_timeout_ms": {"simple": 15000, "standard": 60000, "deep": 120000}.get(complexity, 60000),
+            "total_timeout_ms": {"simple": 15000, "standard": 60000, "deep": 120000}.get(
+                complexity, 60000
+            ),
             "required_nodes": nodes[:2] if len(nodes) >= 2 else nodes,
             "optional_nodes": nodes[2:] if len(nodes) > 2 else [],
             "confidence": 0.75,
@@ -837,8 +905,22 @@ class SLayerLLMRecognizer:
         """从文本中提取关键词"""
         keywords = []
         # 简单关键词提取
-        common_words = ['BTC', 'ETH', 'SOL', '做多', '做空', '分析', '趋势',
-                       '风险', '技术面', '基本面', 'MACD', 'RSI', '合约', '现货']
+        common_words = [
+            "BTC",
+            "ETH",
+            "SOL",
+            "做多",
+            "做空",
+            "分析",
+            "趋势",
+            "风险",
+            "技术面",
+            "基本面",
+            "MACD",
+            "RSI",
+            "合约",
+            "现货",
+        ]
         for kw in common_words:
             if kw.lower() in text.lower():
                 keywords.append(kw)
@@ -883,19 +965,19 @@ class SLayerLLMRecognizer:
         suggestion_params = dict(current_params)
 
         # 简单规则调整（模拟LLM理解）
-        if '降低风险' in user_request or '保守' in user_request:
-            if 'position_size' in suggestion_params:
-                suggestion_params['position_size'] = suggestion_params['position_size'] * 0.5
-            if 'stop_loss_pct' in suggestion_params:
-                suggestion_params['stop_loss_pct'] = suggestion_params['stop_loss_pct'] * 0.5
-        elif '增加收益' in user_request or '激进' in user_request:
-            if 'position_size' in suggestion_params:
-                suggestion_params['position_size'] = suggestion_params['position_size'] * 1.5
-            if 'take_profit_pct' in suggestion_params:
-                suggestion_params['take_profit_pct'] = suggestion_params['take_profit_pct'] * 1.2
-        elif '调整周期' in user_request:
-            if 'timeframe' in suggestion_params:
-                suggestion_params['timeframe'] = '1h'
+        if "降低风险" in user_request or "保守" in user_request:
+            if "position_size" in suggestion_params:
+                suggestion_params["position_size"] = suggestion_params["position_size"] * 0.5
+            if "stop_loss_pct" in suggestion_params:
+                suggestion_params["stop_loss_pct"] = suggestion_params["stop_loss_pct"] * 0.5
+        elif "增加收益" in user_request or "激进" in user_request:
+            if "position_size" in suggestion_params:
+                suggestion_params["position_size"] = suggestion_params["position_size"] * 1.5
+            if "take_profit_pct" in suggestion_params:
+                suggestion_params["take_profit_pct"] = suggestion_params["take_profit_pct"] * 1.2
+        elif "调整周期" in user_request:
+            if "timeframe" in suggestion_params:
+                suggestion_params["timeframe"] = "1h"
 
         # 消耗Token（模拟）
         self.token_budget.consume_tokens(
@@ -945,16 +1027,16 @@ class SLayerLLMRecognizer:
             }
 
         # 模拟解释
-        signal = result_data.get('signal', 'HOLD')
-        confidence = result_data.get('confidence', 0.5)
+        signal = result_data.get("signal", "HOLD")
+        confidence = result_data.get("confidence", 0.5)
 
         explanations = {
-            'LONG': '当前技术指标显示多头趋势，建议做多入场',
-            'SHORT': '当前技术指标显示空头趋势，建议做空入场',
-            'HOLD': '当前指标信号不明确，建议观望等待更明确的信号',
+            "LONG": "当前技术指标显示多头趋势，建议做多入场",
+            "SHORT": "当前技术指标显示空头趋势，建议做空入场",
+            "HOLD": "当前指标信号不明确，建议观望等待更明确的信号",
         }
 
-        explanation = explanations.get(signal, '当前信号需要进一步分析确认')
+        explanation = explanations.get(signal, "当前信号需要进一步分析确认")
 
         # 消耗Token（模拟）
         self.token_budget.consume_tokens(
@@ -1021,6 +1103,7 @@ class SLayerLLMRecognizer:
 # ============================================================
 # 经典指标系统接管管理器
 # ============================================================
+
 
 class ClassicHandoverManager:
     """
@@ -1235,11 +1318,11 @@ class ClassicHandoverManager:
 # ============================================================
 
 __all__ = [
-    'TokenBudgetManager',
-    'TokenBudgetStatus',
-    'TokenUsageRecord',
-    'TokenBudgetAlert',
-    'HandoverLevel',
-    'SLayerLLMRecognizer',
-    'ClassicHandoverManager',
+    "TokenBudgetManager",
+    "TokenBudgetStatus",
+    "TokenUsageRecord",
+    "TokenBudgetAlert",
+    "HandoverLevel",
+    "SLayerLLMRecognizer",
+    "ClassicHandoverManager",
 ]

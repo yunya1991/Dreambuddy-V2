@@ -2,6 +2,7 @@
 
 mock sync_playwright 全链路，验证 URL 加载 + 渲染 HTML 提取 + 异常降级。
 """
+
 from data_center.crawler.playwright_fallback import PlaywrightFallback
 
 PW_MOD = "data_center.crawler.playwright_fallback.sync_playwright"
@@ -52,7 +53,9 @@ def test_missing_url_returns_empty():
 
 def test_render_error_returns_empty(mocker):
     mock_ctx = mocker.patch(PW_MOD)
-    mock_ctx.return_value.__enter__.return_value.chromium.launch.side_effect = RuntimeError("no browser")
+    mock_ctx.return_value.__enter__.return_value.chromium.launch.side_effect = RuntimeError(
+        "no browser"
+    )
     pf = PlaywrightFallback()
     assert pf.render("http://example.com") == ""
     assert pf.fetch_and_parse({"url": "http://x", "selectors": {"item": "a"}}) == []

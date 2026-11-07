@@ -5,9 +5,8 @@
 
 硬约束: HC-DS4-08（纯只读验证，不修改实盘行为）.
 """
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations  # noqa: I001
 
 
 class TestEntryAccuracy:
@@ -22,6 +21,7 @@ class TestEntryAccuracy:
     def test_top_combinations_by_ess(self, real_gene_library):
         """top_combinations_by_ess 返回按 ESS 降序排列的组合"""
         from dreambuddy_evolution.core.strategy_gene import top_combinations_by_ess
+
         all_top = top_combinations_by_ess(real_gene_library)
         top = all_top[:3]  # 取前 3
         # ESS 降序
@@ -64,6 +64,7 @@ class TestEntryAccuracy:
     def test_min_samples_filter(self, real_gene_library):
         """n_samples 过滤生效：min_sample=500 时结果应少于 min_sample=0"""
         from dreambuddy_evolution.core.strategy_gene import top_combinations_by_ess
+
         all_combos = top_combinations_by_ess(real_gene_library, min_sample=0)
         filtered = top_combinations_by_ess(real_gene_library, min_sample=500)
         assert len(filtered) <= len(all_combos)

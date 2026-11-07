@@ -1,4 +1,5 @@
 """B-04: event contradiction shadow tests."""
+
 from __future__ import annotations
 
 import copy

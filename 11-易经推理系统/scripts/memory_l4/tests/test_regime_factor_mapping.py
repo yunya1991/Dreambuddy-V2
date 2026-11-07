@@ -9,9 +9,9 @@
 修复：REGIME_FACTORS 补齐三套命名体系的键（旧版4y大周期 + 弹簧力场5类 + 八卦8类），
       确保无论上游传入哪套命名，都能命中正确的 regime_factor。
 """
+
 import pytest
-import numpy as np
-from scripts.memory_l4.strategy_algo_layer import StrategyAlgorithmLayer, DEFAULT_NEUTRAL_SCORES
+from scripts.memory_l4.strategy_algo_layer import StrategyAlgorithmLayer
 
 
 class TestRegimeFactorMapping:
@@ -98,29 +98,40 @@ class TestRegimeFactorInSelect:
 
     def setup_method(self):
         from scripts.memory_l4.strategy_algo_layer import StrategyAlgoConfig
+
         self.layer = StrategyAlgorithmLayer(StrategyAlgoConfig(enable_strategy_layer=True))
         self.scores = {"dao": 75, "tian": 70, "di": 70, "jiang": 70, "fa": 70}
 
     def test_trend_bull_vs_bear_diff(self):
         """TREND_BULL 的 calibration_bias 应 > RANGING（进攻型放大）。"""
-        sel_bull = self.layer.select("crypto_usdt", self.scores,
-                                     regime_summary={"phase": "TREND_BULL"}, liquidity_tier="G2")
-        sel_range = self.layer.select("crypto_usdt", self.scores,
-                                     regime_summary={"phase": "RANGING"}, liquidity_tier="G2")
+        sel_bull = self.layer.select(
+            "crypto_usdt", self.scores, regime_summary={"phase": "TREND_BULL"}, liquidity_tier="G2"
+        )
+        sel_range = self.layer.select(
+            "crypto_usdt", self.scores, regime_summary={"phase": "RANGING"}, liquidity_tier="G2"
+        )
         # TREND_BULL 的 sl_tighten_factor 应与 RANGING 不同（regime_factor 生效）
         cb_bull = sel_bull.calibration_biases
         cb_range = sel_range.calibration_biases
         # 至少有一个参数不同（regime_factor 1.08 vs 1.00）
         diffs = [k for k in cb_bull if abs(cb_bull[k] - cb_range[k]) > 1e-9]
-        assert len(diffs) > 0, "TREND_BULL vs RANGING 应有不同 calibration_bias（regime_factor 生效）"
+        assert (
+            len(diffs) > 0
+        ), "TREND_BULL vs RANGING 应有不同 calibration_bias（regime_factor 生效）"
 
     def test_strong_bear_vs_bull_diff(self):
         """STRONG_TREND_BEAR 的 calibration_bias 应 < TREND_BULL（防御型收缩）。"""
-        sel_bull = self.layer.select("crypto_usdt", self.scores,
-                                     regime_summary={"phase": "TREND_BULL"}, liquidity_tier="G2")
-        sel_bear = self.layer.select("crypto_usdt", self.scores,
-                                     regime_summary={"phase": "STRONG_TREND_BEAR"}, liquidity_tier="G2")
+        sel_bull = self.layer.select(
+            "crypto_usdt", self.scores, regime_summary={"phase": "TREND_BULL"}, liquidity_tier="G2"
+        )
+        sel_bear = self.layer.select(
+            "crypto_usdt",
+            self.scores,
+            regime_summary={"phase": "STRONG_TREND_BEAR"},
+            liquidity_tier="G2",
+        )
         # 防御型 sl_tighten_factor 更小（更紧止损）
-        assert sel_bear.calibration_biases["sl_tighten_factor"] <= \
-               sel_bull.calibration_biases["sl_tighten_factor"] + 1e-9, \
-               "STRONG_TREND_BEAR 的 sl_tighten_factor 应 ≤ TREND_BULL（防御收缩）"
+        assert (
+            sel_bear.calibration_biases["sl_tighten_factor"]
+            <= sel_bull.calibration_biases["sl_tighten_factor"] + 1e-9
+        ), "STRONG_TREND_BEAR 的 sl_tighten_factor 应 ≤ TREND_BULL（防御收缩）"

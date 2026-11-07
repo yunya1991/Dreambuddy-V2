@@ -16,10 +16,9 @@ A层职责：
 4. 提供节点执行状态回调
 """
 
-import time
 import uuid
-from typing import Dict, List, Optional, Any, Callable, Set
 from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
 
 from ..shared.interfaces import NodeExecutionStatus
 
@@ -32,12 +31,14 @@ def _gen_id(prefix: str) -> str:
 # A层：图编排引擎 - 图执行结果
 # ============================================================
 
+
 @dataclass
 class GraphExecutionResult:
     """图执行结果
 
     A层输出的完整执行结果，包含所有节点的状态和聚合结果
     """
+
     result_id: str = field(default_factory=lambda: _gen_id("graph"))
     blueprint_id: str = ""
     objective_id: str = ""
@@ -94,19 +95,14 @@ class GraphExecutionResult:
         self.completed_nodes = sum(
             1 for s in self.node_statuses.values() if s.status == "completed"
         )
-        self.failed_nodes = sum(
-            1 for s in self.node_statuses.values() if s.status == "failed"
-        )
-        self.skipped_nodes = sum(
-            1 for s in self.node_statuses.values() if s.status == "skipped"
-        )
+        self.failed_nodes = sum(1 for s in self.node_statuses.values() if s.status == "failed")
+        self.skipped_nodes = sum(1 for s in self.node_statuses.values() if s.status == "skipped")
 
         if self.start_time and self.end_time:
             self.total_duration_ms = (self.end_time - self.start_time) * 1000
 
         self.failed_node_ids = [
-            node_id for node_id, s in self.node_statuses.items()
-            if s.status == "failed"
+            node_id for node_id, s in self.node_statuses.items() if s.status == "failed"
         ]
 
     def to_dict(self) -> Dict:
@@ -129,12 +125,10 @@ class GraphExecutionResult:
             "error": self.error,
             "failed_node_ids": self.failed_node_ids,
             "node_statuses": {
-                node_id: status.to_dict()
-                for node_id, status in self.node_statuses.items()
+                node_id: status.to_dict() for node_id, status in self.node_statuses.items()
             },
             "metadata": self.metadata,
         }
 
 
 # 从shared模块导入共享类型
-from ..shared.interfaces import ExecutionStrategy

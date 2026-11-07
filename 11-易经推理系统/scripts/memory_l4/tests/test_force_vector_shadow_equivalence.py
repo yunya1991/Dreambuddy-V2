@@ -7,16 +7,18 @@
 
 对应实施计划 §1.2 T-G4 硬门槛。
 """
-import pytest
+
 import sys
 from pathlib import Path
+
+import pytest
 
 _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.models import ContradictionTransform
-from force_vector.strategic_mapper import StrategicMapper
+from force_vector.models import ContradictionTransform  # noqa: E402
+from force_vector.strategic_mapper import StrategicMapper  # noqa: E402
 
 
 class TestShadowByteEquivalence:
@@ -40,13 +42,15 @@ class TestShadowByteEquivalence:
     def test_resonance_bullish_equivalence(self, mapper, neutral_contradiction):
         """共振+方向>0：开/关输出一致。"""
         out_on = mapper.map(
-            final_direction=0.5, final_magnitude=0.6,
+            final_direction=0.5,
+            final_magnitude=0.6,
             resonance_state="resonance",
             contradiction=neutral_contradiction,
             enable_force_vector=True,
         )
         out_off = mapper.map(
-            final_direction=0.5, final_magnitude=0.6,
+            final_direction=0.5,
+            final_magnitude=0.6,
             resonance_state="resonance",
             contradiction=neutral_contradiction,
             enable_force_vector=False,
@@ -60,13 +64,15 @@ class TestShadowByteEquivalence:
     def test_freeze_equivalence(self, mapper, neutral_contradiction):
         """FREEZE 场景：开/关输出一致。"""
         out_on = mapper.map(
-            final_direction=-0.5, final_magnitude=0.4,
+            final_direction=-0.5,
+            final_magnitude=0.4,
             resonance_state="divergence",
             contradiction=neutral_contradiction,
             enable_force_vector=True,
         )
         out_off = mapper.map(
-            final_direction=-0.5, final_magnitude=0.4,
+            final_direction=-0.5,
+            final_magnitude=0.4,
             resonance_state="divergence",
             contradiction=neutral_contradiction,
             enable_force_vector=False,
@@ -87,13 +93,15 @@ class TestShadowByteEquivalence:
             data_quality_factor=1.0,
         )
         out_on = mapper.map(
-            final_direction=0.5, final_magnitude=0.6,
+            final_direction=0.5,
+            final_magnitude=0.6,
             resonance_state="resonance",
             contradiction=ct,
             enable_force_vector=True,
         )
         out_off = mapper.map(
-            final_direction=0.5, final_magnitude=0.6,
+            final_direction=0.5,
+            final_magnitude=0.6,
             resonance_state="resonance",
             contradiction=ct,
             enable_force_vector=False,
@@ -108,14 +116,16 @@ class TestShadowByteEquivalence:
         """five_scores 不受 enable_force_vector 影响。"""
         scores = {"dao": 75, "tian": 60, "di": 50, "jiang": 65, "fa": 70}
         out_on = mapper.map(
-            final_direction=0.3, final_magnitude=0.4,
+            final_direction=0.3,
+            final_magnitude=0.4,
             resonance_state="persistent",
             contradiction=neutral_contradiction,
             five_scores=scores,
             enable_force_vector=True,
         )
         out_off = mapper.map(
-            final_direction=0.3, final_magnitude=0.4,
+            final_direction=0.3,
+            final_magnitude=0.4,
             resonance_state="persistent",
             contradiction=neutral_contradiction,
             five_scores=scores,

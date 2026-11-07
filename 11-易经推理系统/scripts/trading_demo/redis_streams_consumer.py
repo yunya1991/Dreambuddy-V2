@@ -94,7 +94,9 @@ def _execute(redis_url: str, timeout_ms: int, parts: list[str]) -> Any:
         sock.close()
 
 
-def consume_once(*, redis_url: str, stream: str, last_id: str = "0-0", block_ms: int = 5000) -> list[dict]:
+def consume_once(
+    *, redis_url: str, stream: str, last_id: str = "0-0", block_ms: int = 5000
+) -> list[dict]:
     resp = _execute(
         redis_url,
         30000,
@@ -127,7 +129,9 @@ def main() -> int:
     args = parser.parse_args()
 
     out_dir: Optional[Path] = Path(args.out_dir) if args.out_dir else None
-    envelopes = consume_once(redis_url=args.redis_url, stream=args.stream, last_id=args.last_id, block_ms=args.block_ms)
+    envelopes = consume_once(
+        redis_url=args.redis_url, stream=args.stream, last_id=args.last_id, block_ms=args.block_ms
+    )
     for env in envelopes:
         print(json.dumps(env, ensure_ascii=False))
         if out_dir:
@@ -140,4 +144,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

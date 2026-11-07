@@ -10,11 +10,11 @@
   - 信号强度分析
 """
 
-import json
 import html
-from pathlib import Path
+import json
 from datetime import datetime
-from typing import Dict, List, Optional
+from pathlib import Path
+from typing import Dict
 
 # ==================== HTML模板 ====================
 
@@ -319,6 +319,7 @@ new Chart(ddCtx, {{
 
 # ==================== 报告生成器 ====================
 
+
 class ReportGenerator:
     def __init__(self):
         pass
@@ -327,8 +328,9 @@ class ReportGenerator:
         """生成HTML报告"""
         if output_path is None:
             output_path = str(
-                Path(__file__).parent.parent / "reports" /
-                f"backtest_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+                Path(__file__).parent.parent
+                / "reports"
+                / f"backtest_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
             )
 
         # CSS类
@@ -457,18 +459,18 @@ class ReportGenerator:
                 pnl_str = f'<span class="tag {pnl_class}">{pnl_str}</span>'
             exit_r = exit_names.get(t.exit_reason.value, t.exit_reason.value)
             rows.append(
-                f'<tr>'
-                f'<td>{t.trade_id}</td>'
-                f'<td>{t.date}</td>'
-                f'<td>{action}</td>'
-                f'<td>{direction}</td>'
-                f'<td>{signal}</td>'
-                f'<td>${t.price:,.2f}</td>'
-                f'<td>{t.size_usd:,.2f}</td>'
-                f'<td>{t.fee:.2f}</td>'
-                f'<td>{pnl_str}</td>'
-                f'<td>{exit_r}</td>'
-                f'</tr>'
+                f"<tr>"
+                f"<td>{t.trade_id}</td>"
+                f"<td>{t.date}</td>"
+                f"<td>{action}</td>"
+                f"<td>{direction}</td>"
+                f"<td>{signal}</td>"
+                f"<td>${t.price:,.2f}</td>"
+                f"<td>{t.size_usd:,.2f}</td>"
+                f"<td>{t.fee:.2f}</td>"
+                f"<td>{pnl_str}</td>"
+                f"<td>{exit_r}</td>"
+                f"</tr>"
             )
         return "\n".join(rows)
 
@@ -487,19 +489,32 @@ class ReportGenerator:
 
         # HTML
         cells_html = ""
-        months = ["01","02","03","04","05","06","07","08","09","10","11","12"]
-        month_names = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"]
+        months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
+        month_names = [
+            "1月",
+            "2月",
+            "3月",
+            "4月",
+            "5月",
+            "6月",
+            "7月",
+            "8月",
+            "9月",
+            "10月",
+            "11月",
+            "12月",
+        ]
 
         # 表头
         header = '<div style="display:flex;gap:3px;margin-bottom:8px;">'
         header += '<div style="width:60px;"></div>'  # 年份列
         for mn in month_names:
             header += f'<div style="flex:1;text-align:center;font-size:11px;color:var(--text-muted);padding:4px 0;">{mn}</div>'
-        header += '</div>'
+        header += "</div>"
 
         # 数据行
         for year in sorted(years.keys()):
-            row = f'<div style="display:flex;gap:3px;margin-bottom:3px;">'
+            row = '<div style="display:flex;gap:3px;margin-bottom:3px;">'
             row += f'<div style="width:60px;display:flex;align-items:center;font-size:13px;font-weight:600;">{year}</div>'
             for m in months:
                 val = years[year].get(m, None)
@@ -515,8 +530,8 @@ class ReportGenerator:
                         color = "#8b949e"
                     row += f'<div class="heatmap-cell" style="flex:1;background:{bg};color:{color};">{val:+.1f}%</div>'
                 else:
-                    row += f'<div class="heatmap-cell" style="flex:1;background:transparent;color:transparent;">-</div>'
-            row += '</div>'
+                    row += '<div class="heatmap-cell" style="flex:1;background:transparent;color:transparent;">-</div>'
+            row += "</div>"
             cells_html += row
 
         return f"""

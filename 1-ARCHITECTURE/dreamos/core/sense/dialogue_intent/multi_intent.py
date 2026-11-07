@@ -21,14 +21,19 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List, Optional
 
-
 # ============================================================
 # 常量
 # ============================================================
 
 # Layer 1 连接词（与原 classifier.py:130 完全一致，确保迁移等价）
 CONJUNCTIONS: List[str] = [
-    "还有", "顺便", "另外", "以及", "并且", "同时", "再帮我",
+    "还有",
+    "顺便",
+    "另外",
+    "以及",
+    "并且",
+    "同时",
+    "再帮我",
 ]
 
 # Layer 2 软分隔符（仅在多标的上下文中作为切分点）
@@ -40,8 +45,8 @@ TARGET_SEPARATORS: List[str] = ["和", "与", "以及", ","]
 COMPOUND_PATTERNS: List[tuple] = [
     # (regex, [intents]) — intent 列表顺序即为首次出现顺序
     (r"深度分析.*?(?:并|而且).*(?:买入|买进|建仓|开多|做多)", ["deep_analysis", "buy"]),
-    (r"推荐.*?(?:并|而且).*(?:买入|买进|建仓)",            ["stock_recommendation", "buy"]),
-    (r"筛选.*?(?:并|而且).*(?:买入|买进|建仓)",            ["factor_screen", "buy"]),
+    (r"推荐.*?(?:并|而且).*(?:买入|买进|建仓)", ["stock_recommendation", "buy"]),
+    (r"筛选.*?(?:并|而且).*(?:买入|买进|建仓)", ["factor_screen", "buy"]),
     (r"分析.*?(?:并|而且).*(?:买入|买进|建仓|开多|做多)", ["technical_analysis", "buy"]),
 ]
 
@@ -53,6 +58,7 @@ _STOCK_ALIASES: Optional[Dict[str, str]] = None
 # MultiIntentDetector
 # ============================================================
 
+
 class MultiIntentDetector:
     """多意图检测器 — 三层检测策略"""
 
@@ -60,6 +66,7 @@ class MultiIntentDetector:
         # late import 规避循环依赖（classifier.py 反向引用本模块）
         # 在 __init__ 中一次性加载，避免每次 detect 都触发 import
         from .slots import STOCK_ALIASES  # type: ignore
+
         global _STOCK_ALIASES
         _STOCK_ALIASES = STOCK_ALIASES
 
@@ -122,9 +129,7 @@ class MultiIntentDetector:
     # Layer 2: 标的级拆分
     # ------------------------------------------------------------
 
-    def _split_by_targets(
-        self, text: str, slots: Optional[Dict[str, Any]] = None
-    ) -> List[str]:
+    def _split_by_targets(self, text: str, slots: Optional[Dict[str, Any]] = None) -> List[str]:
         """当段内含多个标的时，按软分隔符切分"""
         # 获取文本中的标的数（来自 STOCK_ALIASES 命中）
         stocks_found = self._find_stocks_in_text(text)
@@ -194,4 +199,5 @@ class MultiIntentDetector:
     def _rule_classify(text: str) -> Optional[str]:
         """复用 classifier._rule_classify（late import 规避循环依赖）"""
         from .classifier import _rule_classify  # type: ignore
+
         return _rule_classify(text)

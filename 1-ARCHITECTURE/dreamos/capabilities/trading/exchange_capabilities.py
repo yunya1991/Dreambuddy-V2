@@ -18,12 +18,14 @@ DreamOS — 交易所能力提供者 (ExchangeCapabilityProvider)
     - 不含 API Key 等敏感信息
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from typing import Dict, List, Optional, TYPE_CHECKING
 
 from dreamos.shared.capability import (
-    CapabilitySpec, ProviderType, CapabilityStatus,
+    CapabilitySpec,
+    ProviderType,
+    CapabilityStatus,
 )
 
 if TYPE_CHECKING:
@@ -108,6 +110,7 @@ _CAPABILITY_META: Dict[str, Dict[str, str]] = {
 # 交易所能力提供者
 # ============================================================
 
+
 class ExchangeCapabilityProvider:
     """交易所能力提供者 — 将交易所能力注册为 CapabilitySpec
 
@@ -130,16 +133,18 @@ class ExchangeCapabilityProvider:
             meta = _CAPABILITY_META.get(cap_id, {})
             category = meta.get("category", cap_id.split(".")[0])
             name = meta.get("name", cap_id)
-            caps.append(CapabilitySpec(
-                capability_id=cap_id,
-                category=category,
-                name=name,
-                provider_id=self.exchange_id,
-                provider_type=ProviderType.EXCHANGE,
-                properties=dict(props),
-                status=CapabilityStatus.AVAILABLE,
-                tags=[self.exchange_id],
-            ))
+            caps.append(
+                CapabilitySpec(
+                    capability_id=cap_id,
+                    category=category,
+                    name=name,
+                    provider_id=self.exchange_id,
+                    provider_type=ProviderType.EXCHANGE,
+                    properties=dict(props),
+                    status=CapabilityStatus.AVAILABLE,
+                    tags=[self.exchange_id],
+                )
+            )
         return caps
 
     def register_to(self, registry: "NodeRegistry") -> str:

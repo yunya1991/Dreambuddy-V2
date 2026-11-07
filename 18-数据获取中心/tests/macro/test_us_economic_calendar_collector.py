@@ -2,8 +2,8 @@
 
 覆盖：各指标采集、surprise 计算、FAIL-OPEN 降级、DataRecord 契约。
 """
-import pytest
 
+import pytest
 from data_center.collectors.macro.us_economic_calendar_collector import (
     UsEconomicCalendarCollector,
 )
@@ -148,6 +148,7 @@ def test_fetch_cpi_returns_cesi_when_history_sufficient(mocker):
     assert isinstance(r.metrics["cesi"], float)
     # cesi = 0.5 / σ_history
     import numpy as np
+
     expected_sigma = float(np.std([0.1, -0.1, 0.2, -0.2, 0.15, -0.15]))
     assert r.metrics["cesi"] == round(0.5 / expected_sigma, 3)
     # append_surprise 被调用，积累历史

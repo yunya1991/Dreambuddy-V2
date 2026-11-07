@@ -21,6 +21,7 @@ TransferLearner — 跨资产迁移学习（Phase 3.2）
 
 FAIL-OPEN：迁移失败 → 返回 valid=False
 """
+
 from __future__ import annotations
 
 import logging
@@ -35,6 +36,7 @@ logger = logging.getLogger(__name__)
 try:
     import torch
     import torch.nn as nn
+
     _TORCH_AVAILABLE = True
 except Exception:  # noqa: BLE001
     _TORCH_AVAILABLE = False
@@ -47,8 +49,8 @@ class TransferLearner:
     """
 
     # 迁移有效性阈值
-    SIMILARITY_THRESHOLD = 0.6   # 余弦相似度 > 0.6 才考虑迁移
-    ALPHA_THRESHOLD = 0.0        # 反事实 alpha > 0 才认可
+    SIMILARITY_THRESHOLD = 0.6  # 余弦相似度 > 0.6 才考虑迁移
+    ALPHA_THRESHOLD = 0.0  # 反事实 alpha > 0 才认可
 
     def __init__(
         self,
@@ -181,13 +183,19 @@ class TransferLearner:
         """
         try:
             if _TORCH_AVAILABLE:
-                return self._maml_torch(source_X, source_y, target_X, target_y, inner_lr, inner_steps)
+                return self._maml_torch(
+                    source_X, source_y, target_X, target_y, inner_lr, inner_steps
+                )
             else:
                 return self._maml_linear(source_X, source_y, target_X, target_y)
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-02] maml_adapt failed: %s", e)
-            return {"meta_loss": float("inf"), "adapted_loss": float("inf"),
-                    "source_loss": float("inf"), "improvement": 0.0}
+            return {
+                "meta_loss": float("inf"),
+                "adapted_loss": float("inf"),
+                "source_loss": float("inf"),
+                "improvement": 0.0,
+            }
 
     def _maml_torch(self, src_X, src_y, tgt_X, tgt_y, inner_lr, inner_steps):
         """torch MAML 实现"""
@@ -203,7 +211,8 @@ class TransferLearner:
             tgt_X = tgt_X.unsqueeze(1)
 
         model = nn.Sequential(
-            nn.Linear(d, 16), nn.ReLU(),
+            nn.Linear(d, 16),
+            nn.ReLU(),
             nn.Linear(16, 1),
         )
 
@@ -224,7 +233,7 @@ class TransferLearner:
             loss = ((pred - tgt_y) ** 2).mean()
             grads = torch.autograd.grad(loss, model.parameters(), create_graph=True)
             with torch.no_grad():
-                for p, g in zip(model.parameters(), grads):
+                for p, g in zip(model.parameters(), grads):  # noqa: B905
                     p.copy_(p - inner_lr * g)
 
         # 评估目标资产损失
@@ -404,7 +413,9 @@ class TransferLearner:
         """
         try:
             returns = np.asarray(returns, dtype=np.float64).ravel()
-            proto_result = self.compute_prototype(features if features is not None else returns.reshape(-1, 1), labels)
+            proto_result = self.compute_prototype(
+                features if features is not None else returns.reshape(-1, 1), labels
+            )
 
             pattern = {
                 "symbol": source_symbol,
@@ -418,8 +429,13 @@ class TransferLearner:
             return pattern
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-02] extract_pattern failed: %s", e)
-            return {"symbol": source_symbol, "returns": np.array([]), "features": None,
-                    "prototype": {}, "n_samples": 0}
+            return {
+                "symbol": source_symbol,
+                "returns": np.array([]),
+                "features": None,
+                "prototype": {},
+                "n_samples": 0,
+            }
 
     def transfer_to(
         self,

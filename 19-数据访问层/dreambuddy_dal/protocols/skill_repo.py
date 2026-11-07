@@ -5,6 +5,7 @@ dreambuddy_dal.protocols.skill_repo — SKILL 系统只读 Repository Protocol
 只读方法：list_skills / search_skills / get_skill
 写入（register/update）走 skill-creator 工作流，不在此 Protocol 暴露。
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

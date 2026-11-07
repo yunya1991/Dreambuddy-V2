@@ -8,10 +8,10 @@
 - MVP 桥接模式：_mock_action 支持测试注入，真实 PPO 权重加载后替换
 - K_bound 初始 0.80（§5.3 Phase E 从收紧起跑）
 """
+
 from __future__ import annotations
 
 import json
-import math
 import os
 import sys
 from dataclasses import dataclass, field
@@ -20,11 +20,26 @@ from typing import Any, Dict, Optional, Tuple
 
 # ── §3.3 动作空间默认边界（LOWER / UPPER 相对倍率） ──
 ACTION_BOUNDS = {
-    "addon_pct_mult":      {"lo": 0.80, "hi": 1.30, "abs_lo": 0.375, "abs_hi": 3.125},   # 绝对: addon_pct∈[3%,25%] / base 8%
-    "addon_size_mult":     {"lo": 0.60, "hi": 1.50, "abs_lo": 0.60, "abs_hi": 1.50},
-    "tp_pct_mult":         {"lo": 0.80, "hi": 1.30, "abs_lo": 0.375, "abs_hi": 3.00},      # 绝对: tp∈[1.5%,12%] / base 4%
-    "base_position_mult":  {"lo": 0.70, "hi": 1.20, "abs_lo": 0.50, "abs_hi": 2.00},       # 绝对: pct∈[5%,40%] / base 22%
-    "max_addons_delta":    {"lo": -1,   "hi": 0,    "abs_lo": -1,   "abs_hi": 0},          # 只可缩档
+    "addon_pct_mult": {
+        "lo": 0.80,
+        "hi": 1.30,
+        "abs_lo": 0.375,
+        "abs_hi": 3.125,
+    },  # 绝对: addon_pct∈[3%,25%] / base 8%
+    "addon_size_mult": {"lo": 0.60, "hi": 1.50, "abs_lo": 0.60, "abs_hi": 1.50},
+    "tp_pct_mult": {
+        "lo": 0.80,
+        "hi": 1.30,
+        "abs_lo": 0.375,
+        "abs_hi": 3.00,
+    },  # 绝对: tp∈[1.5%,12%] / base 4%
+    "base_position_mult": {
+        "lo": 0.70,
+        "hi": 1.20,
+        "abs_lo": 0.50,
+        "abs_hi": 2.00,
+    },  # 绝对: pct∈[5%,40%] / base 22%
+    "max_addons_delta": {"lo": -1, "hi": 0, "abs_lo": -1, "abs_hi": 0},  # 只可缩档
 }
 
 # §3.3 铁壳：总加仓预算不超过原 ×1.10
@@ -230,16 +245,45 @@ class PhaseEGateway:
         avg_pnl = float(s_state.get("recent_10_avg_pnl_ratio", 0.0))
         mdd = float(s_state.get("max_drawdown_30d", 0.05))
 
-        obs = np.array([
-            timing_score, structure, retrace, extension,
-            r3[0], r3[1], r3[2], long_en, short_en,
-            z5[0], z5[1], z5[2], z5[3], z5[4],
-            l5[0], l5[1], l5[2], l5[3], l5[4],
-            avg_entry_diff, unrealized, dist_liq, unused_9,
-            atr_pct, atr_z, realized_vol, vol_z,
-            btc_corr, btc_rsi, swing_d, swing_4h,
-            win_rate, avg_pnl, mdd,
-        ], dtype=np.float32)
+        obs = np.array(
+            [
+                timing_score,
+                structure,
+                retrace,
+                extension,
+                r3[0],
+                r3[1],
+                r3[2],
+                long_en,
+                short_en,
+                z5[0],
+                z5[1],
+                z5[2],
+                z5[3],
+                z5[4],
+                l5[0],
+                l5[1],
+                l5[2],
+                l5[3],
+                l5[4],
+                avg_entry_diff,
+                unrealized,
+                dist_liq,
+                unused_9,
+                atr_pct,
+                atr_z,
+                realized_vol,
+                vol_z,
+                btc_corr,
+                btc_rsi,
+                swing_d,
+                swing_4h,
+                win_rate,
+                avg_pnl,
+                mdd,
+            ],
+            dtype=np.float32,
+        )
         return obs
 
     # ── 核心：PPO 推理 → 5 维动作 ──
@@ -252,6 +296,7 @@ class PhaseEGateway:
         if self._ppo_model is not None:
             try:
                 import torch
+
                 obs = self._build_state_vector(s_state)  # (34,)
                 x = torch.from_numpy(obs).unsqueeze(0).unsqueeze(0)  # (1, 1, 34)
                 return self._ppo_model.get_action_dict(x)
@@ -465,17 +510,19 @@ class PhaseEGateway:
 
         # Point4c: 决策归档
         try:
-            self.write_decision_jsonl({
-                "coin": coin,
-                "s_state": s_state,
-                "inference_action": action_raw,
-                "shield_action": action,
-                "base_addon_pct": base_addon,
-                "base_tp_pct": base_tp,
-                "final_addon_pct": eff_addon,
-                "final_tp_pct": eff_tp,
-                "shield_flags": action.get("shield_flags", []),
-            })
+            self.write_decision_jsonl(
+                {
+                    "coin": coin,
+                    "s_state": s_state,
+                    "inference_action": action_raw,
+                    "shield_action": action,
+                    "base_addon_pct": base_addon,
+                    "base_tp_pct": base_tp,
+                    "final_addon_pct": eff_addon,
+                    "final_tp_pct": eff_tp,
+                    "shield_flags": action.get("shield_flags", []),
+                }
+            )
         except Exception:
             pass
         return result

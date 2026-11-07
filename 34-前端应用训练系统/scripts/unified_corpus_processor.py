@@ -17,6 +17,7 @@
 
 FAIL-OPEN：单源处理失败跳过并计数，不中断整体。
 """
+
 import argparse
 import glob
 import hashlib
@@ -39,10 +40,9 @@ INTENT_PAIR_SOURCES = [
 QUERY_DOC_SOURCES = [
     os.path.join(_REPO, "2-KNOWLEDGE", "9-RAG-INFRA", "bridge", "retrieval_memory_map.jsonl"),
 ]
-LOG_STREAM_SOURCES = (
-    glob.glob(os.path.join(_REPO, "11-易经推理系统", "data", "polling_trader", "trader_*.jsonl"))
-    + [os.path.join(_REPO, "11-易经推理系统", ".workbuddy", "memory_l4", "guardian", "alerts.jsonl")]
-)
+LOG_STREAM_SOURCES = glob.glob(
+    os.path.join(_REPO, "11-易经推理系统", "data", "polling_trader", "trader_*.jsonl")
+) + [os.path.join(_REPO, "11-易经推理系统", ".workbuddy", "memory_l4", "guardian", "alerts.jsonl")]
 EVENT_STREAM_SOURCES = [
     os.path.join(_REPO, "39-金融语义蒸馏系统", "semantic_events.jsonl"),
     os.path.join(_REPO, "33-REA逆向解析工程", "reflection_data", "training_cases.jsonl"),
@@ -122,7 +122,13 @@ def collect_intent_pairs(out, seen):
             if k in seen:
                 continue
             seen.add(k)
-            out.write(json.dumps({"message": sanitize(msg), "intent": intent, "source": os.path.basename(path)}, ensure_ascii=False) + "\n")
+            out.write(
+                json.dumps(
+                    {"message": sanitize(msg), "intent": intent, "source": os.path.basename(path)},
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
             n += 1
     # 训练检查点 semanticSamples（意图键 → 消息列表）
     if os.path.exists(CHECKPOINTS_PATH):
@@ -131,7 +137,9 @@ def collect_intent_pairs(out, seen):
                 ck = json.load(f)
             ss = ck.get("store", {}).get("S", [])
             if ss:
-                for intent, msgs in (ss[-1].get("state", {}).get("semanticSamples", {}) or {}).items():
+                for intent, msgs in (
+                    ss[-1].get("state", {}).get("semanticSamples", {}) or {}
+                ).items():
                     if is_noise_intent(intent):
                         STATS["intent_noise_filtered"] += 1
                         continue
@@ -142,7 +150,17 @@ def collect_intent_pairs(out, seen):
                         if k in seen:
                             continue
                         seen.add(k)
-                        out.write(json.dumps({"message": sanitize(msg), "intent": intent, "source": "checkpoints.semanticSamples"}, ensure_ascii=False) + "\n")
+                        out.write(
+                            json.dumps(
+                                {
+                                    "message": sanitize(msg),
+                                    "intent": intent,
+                                    "source": "checkpoints.semanticSamples",
+                                },
+                                ensure_ascii=False,
+                            )
+                            + "\n"
+                        )
                         n += 1
         except Exception:
             STATS["checkpoint_error"] += 1
@@ -159,6 +177,7 @@ def collect_newsflash(intent_out, pretrain_out, seen_intent, seen_pretrain):
     try:
         sys.path.insert(0, os.path.join(_REPO, "39-金融语义蒸馏系统", "scripts"))
         import psycopg2
+
         pwd = ""
         env_path = os.path.join(_REPO, "7-产物中台", "系统研究索引体系", ".env")
         try:
@@ -194,7 +213,10 @@ def collect_newsflash(intent_out, pretrain_out, seen_intent, seen_pretrain):
             k = text_key(desc)
             if k not in seen_pretrain:
                 seen_pretrain.add(k)
-                pretrain_out.write(json.dumps({"text": sanitize(desc), "source": sub_cat}, ensure_ascii=False) + "\n")
+                pretrain_out.write(
+                    json.dumps({"text": sanitize(desc), "source": sub_cat}, ensure_ascii=False)
+                    + "\n"
+                )
                 n_pt += 1
             # 事件类型意图对（天然标签）
             etype = m.get("od_event_type") or m.get("event_type") or ""
@@ -202,7 +224,18 @@ def collect_newsflash(intent_out, pretrain_out, seen_intent, seen_pretrain):
                 ik = text_key(desc + "|news_event:" + etype)
                 if ik not in seen_intent:
                     seen_intent.add(ik)
-                    intent_out.write(json.dumps({"message": sanitize(desc), "intent": "news_event", "event_type": etype, "source": sub_cat}, ensure_ascii=False) + "\n")
+                    intent_out.write(
+                        json.dumps(
+                            {
+                                "message": sanitize(desc),
+                                "intent": "news_event",
+                                "event_type": etype,
+                                "source": sub_cat,
+                            },
+                            ensure_ascii=False,
+                        )
+                        + "\n"
+                    )
                     n_ip += 1
         conn.close()
     except Exception:
@@ -224,7 +257,13 @@ def collect_query_doc_pairs(out, seen, limit=20000):
             if k in seen:
                 continue
             seen.add(k)
-            out.write(json.dumps({"query": sanitize(q), "document": sanitize(h), "source_file": src}, ensure_ascii=False) + "\n")
+            out.write(
+                json.dumps(
+                    {"query": sanitize(q), "document": sanitize(h), "source_file": src},
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
             n += 1
             if n >= limit:
                 return n
@@ -247,7 +286,10 @@ def collect_log_stream(pretrain_out, seen):
                 STATS["dedup_log"] += 1
                 continue
             seen.add(k)
-            pretrain_out.write(json.dumps({"text": msg, "source": os.path.basename(path)}, ensure_ascii=False) + "\n")
+            pretrain_out.write(
+                json.dumps({"text": msg, "source": os.path.basename(path)}, ensure_ascii=False)
+                + "\n"
+            )
             n += 1
     return n
 
@@ -264,7 +306,12 @@ def collect_event_stream(pretrain_out, seen):
                     k = text_key(text)
                     if k not in seen:
                         seen.add(k)
-                        pretrain_out.write(json.dumps({"text": text, "source": os.path.basename(path)}, ensure_ascii=False) + "\n")
+                        pretrain_out.write(
+                            json.dumps(
+                                {"text": text, "source": os.path.basename(path)}, ensure_ascii=False
+                            )
+                            + "\n"
+                        )
                         n += 1
             # training_cases 的 payload 文本
             payload = d.get("payload")
@@ -275,7 +322,13 @@ def collect_event_stream(pretrain_out, seen):
                         k = text_key(v)
                         if k not in seen:
                             seen.add(k)
-                            pretrain_out.write(json.dumps({"text": v, "source": os.path.basename(path)}, ensure_ascii=False) + "\n")
+                            pretrain_out.write(
+                                json.dumps(
+                                    {"text": v, "source": os.path.basename(path)},
+                                    ensure_ascii=False,
+                                )
+                                + "\n"
+                            )
                             n += 1
     return n
 
@@ -304,7 +357,9 @@ def collect_markdown(pretrain_out, seen):
                 continue
             seen.add(k)
             rel = os.path.relpath(path, _REPO)
-            pretrain_out.write(json.dumps({"text": sec[:2000], "source": rel}, ensure_ascii=False) + "\n")
+            pretrain_out.write(
+                json.dumps({"text": sec[:2000], "source": rel}, ensure_ascii=False) + "\n"
+            )
             n += 1
     return n
 
@@ -323,16 +378,22 @@ def collect_evaluator_labels(out):
             if verdict not in ("recommend", "hold", "reject"):
                 continue
             intent = d.get("intent") or {}
-            out.write(json.dumps({
-                "proposal_id": d.get("proposal_id") or os.path.basename(path),
-                "name": intent.get("name", ""),
-                "description": intent.get("description", ""),
-                "keywords": intent.get("keywords", []),
-                "examples": intent.get("examples", [])[:5],
-                "metrics": r.get("metrics", {}),
-                "reasons": r.get("reasons", [])[:5],
-                "verdict": verdict,
-            }, ensure_ascii=False) + "\n")
+            out.write(
+                json.dumps(
+                    {
+                        "proposal_id": d.get("proposal_id") or os.path.basename(path),
+                        "name": intent.get("name", ""),
+                        "description": intent.get("description", ""),
+                        "keywords": intent.get("keywords", []),
+                        "examples": intent.get("examples", [])[:5],
+                        "metrics": r.get("metrics", {}),
+                        "reasons": r.get("reasons", [])[:5],
+                        "verdict": verdict,
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
             n += 1
         except Exception:
             STATS["proposal_error"] += 1
@@ -343,10 +404,12 @@ def collect_evaluator_labels(out):
 def cmd_run(max_pretrain=None):
     os.makedirs(CORPUS_DIR, exist_ok=True)
     seen_intent, seen_qd, seen_pretrain = set(), set(), set()
-    with open(os.path.join(CORPUS_DIR, "intent_pairs.jsonl"), "w", encoding="utf-8") as f_ip, \
-         open(os.path.join(CORPUS_DIR, "query_doc_pairs.jsonl"), "w", encoding="utf-8") as f_qd, \
-         open(os.path.join(CORPUS_DIR, "pretrain_corpus.jsonl"), "w", encoding="utf-8") as f_pt, \
-         open(os.path.join(CORPUS_DIR, "evaluator_labels.jsonl"), "w", encoding="utf-8") as f_ev:
+    with (
+        open(os.path.join(CORPUS_DIR, "intent_pairs.jsonl"), "w", encoding="utf-8") as f_ip,
+        open(os.path.join(CORPUS_DIR, "query_doc_pairs.jsonl"), "w", encoding="utf-8") as f_qd,
+        open(os.path.join(CORPUS_DIR, "pretrain_corpus.jsonl"), "w", encoding="utf-8") as f_pt,
+        open(os.path.join(CORPUS_DIR, "evaluator_labels.jsonl"), "w", encoding="utf-8") as f_ev,
+    ):
         STATS["intent_pairs"] = collect_intent_pairs(f_ip, seen_intent)
         nf_ip, nf_pt = collect_newsflash(f_ip, f_pt, seen_intent, seen_pretrain)
         STATS["newsflash_intent_pairs"] = nf_ip
@@ -368,7 +431,15 @@ def cmd_run(max_pretrain=None):
     else:
         STATS["pretrain_final"] = sum(1 for _ in open(pt_path, encoding="utf-8"))
     with open(os.path.join(CORPUS_DIR, "corpus_stats.json"), "w", encoding="utf-8") as f:
-        json.dump({"stats": dict(STATS), "generated_at": __import__("datetime").datetime.now().isoformat(timespec="seconds")}, f, ensure_ascii=False, indent=2)
+        json.dump(
+            {
+                "stats": dict(STATS),
+                "generated_at": __import__("datetime").datetime.now().isoformat(timespec="seconds"),
+            },
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
     print(json.dumps(dict(STATS), ensure_ascii=False, indent=2))
     return 0
 

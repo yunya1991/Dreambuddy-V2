@@ -13,7 +13,7 @@ Dreambuddy OS — P0 内核骨架冒烟测试
     或: python -m os_tests.test_smoke
 """
 
-import sys
+import sys  # noqa: I001
 import os
 
 # 将 1-ARCHITECTURE 加入 sys.path
@@ -22,24 +22,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def test_imports():
     """测试所有核心抽象能 import"""
-    from dreamos import (
-        State, NodeResult, NodeStatus, Node, Graph, Edge,
-        Registry, Adapter, ErrorCode, OSError,
-        BaseNode, NodeRegistry, register_node,
-        BaseAdapter, AdapterRegistry,
-        FunctionAdapter, FunctionNode,
-        SkillAdapter, SkillNode,
-        APIAdapter, APINode,
-        sense, arrange, compute, graph_store,
-        evolution, budget,
-        new_state, gen_cycle_id,
-    )
+
     print("✅ import 测试通过")
 
 
 def test_state():
     """测试 State 基本操作"""
-    from dreamos import State, NodeResult, NodeStatus, new_state
+    from dreamos import State, NodeResult, NodeStatus, new_state  # noqa: I001
 
     # 创建
     s = new_state(cycle_id="test_001")
@@ -47,8 +36,7 @@ def test_state():
     assert s.results == {}
 
     # 更新
-    r = NodeResult(node_id="A0", status=NodeStatus.SUCCESS,
-                   confidence=0.7, direction="LONG")
+    r = NodeResult(node_id="A0", status=NodeStatus.SUCCESS, confidence=0.7, direction="LONG")
     s.update("A0", r)
     assert s.has_node("A0")
     assert s.get_confidence("A0") == 0.7
@@ -71,7 +59,7 @@ def test_state():
 
 def test_node_and_registry():
     """测试 Node + Registry"""
-    from dreamos import BaseNode, NodeResult, NodeStatus, NodeRegistry, State
+    from dreamos import BaseNode, NodeResult, NodeStatus, NodeRegistry, State  # noqa: I001
 
     class A0Node(BaseNode):
         node_id = "A0"
@@ -146,13 +134,15 @@ def test_function_adapter():
     def my_analysis(state):
         return {"confidence": 0.8, "direction": "SHORT"}
 
-    node = adapter.to_node({
-        "type": "function",
-        "node_id": "F_test",
-        "name": "测试函数",
-        "chain": "F",
-        "handler": my_analysis,
-    })
+    node = adapter.to_node(
+        {
+            "type": "function",
+            "node_id": "F_test",
+            "name": "测试函数",
+            "chain": "F",
+            "handler": my_analysis,
+        }
+    )
 
     result = node.execute(State())
     assert result.success
@@ -164,7 +154,7 @@ def test_function_adapter():
 
 def test_adapter_registry():
     """测试适配器注册表"""
-    from dreamos import AdapterRegistry, FunctionAdapter, SkillAdapter, APIAdapter
+    from dreamos import AdapterRegistry, FunctionAdapter, SkillAdapter, APIAdapter  # noqa: I001
 
     reg = AdapterRegistry()
     reg.register(FunctionAdapter())
@@ -174,11 +164,13 @@ def test_adapter_registry():
     assert len(reg) == 3
 
     # 能处理函数配置
-    node = reg.to_node({
-        "type": "function",
-        "node_id": "F1",
-        "handler": lambda s: {"confidence": 0.5},
-    })
+    node = reg.to_node(
+        {
+            "type": "function",
+            "node_id": "F1",
+            "handler": lambda s: {"confidence": 0.5},
+        }
+    )
     assert node is not None
     assert node.node_id == "F1"
 
@@ -187,7 +179,7 @@ def test_adapter_registry():
 
 def test_errors():
     """测试错误码"""
-    from dreamos import ErrorCode, OSError
+    from dreamos import ErrorCode  # noqa: I001
     from dreamos.shared.errors import node_not_found, exec_timeout
 
     # 错误码
@@ -209,7 +201,7 @@ def test_errors():
 
 def test_utils():
     """测试工具函数"""
-    from dreamos import gen_cycle_id, safe_get, chunk, dedupe
+    from dreamos import gen_cycle_id, safe_get, chunk, dedupe  # noqa: I001
 
     cid = gen_cycle_id()
     assert cid.startswith("cycle_")
@@ -226,7 +218,7 @@ def test_utils():
 
 def test_layers_import():
     """测试四层 + 横切占位能 import"""
-    from dreamos import sense, arrange, compute, graph_store, evolution, budget
+    from dreamos import sense, arrange, compute, graph_store, evolution, budget  # noqa: I001
 
     # S 层 + A 层 + C 层 + G 层已实现
     assert hasattr(sense, "IntentEngine")

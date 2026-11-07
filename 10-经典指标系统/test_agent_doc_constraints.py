@@ -1,9 +1,7 @@
-import unittest
-
 import copy
 import time
+import unittest
 from datetime import datetime, timedelta, timezone
-
 
 import ml_trade_service as svc
 
@@ -26,7 +24,9 @@ class TestAgentDocConstraints(unittest.TestCase):
 
     def test_doc_refs_enforced(self) -> None:
         refs = svc._agent_chat_enforce_doc_refs([])
-        keys = {(str(x.get("doc_path")), str(x.get("section"))) for x in refs if isinstance(x, dict)}
+        keys = {
+            (str(x.get("doc_path")), str(x.get("section"))) for x in refs if isinstance(x, dict)
+        }
         self.assertIn(("交易AI Agent 技术文档2.0.md", "1.3.1 两份文档分工（强约束）"), keys)
         self.assertIn(("技术文档.md", "(SSoT / Runbook)"), keys)
 
@@ -41,7 +41,9 @@ class TestAgentDocConstraints(unittest.TestCase):
 
     def test_doc_snippet_endpoint_supports_line_range(self) -> None:
         c = svc.app.test_client()
-        resp = c.get("/doc/snippet?doc=交易AI%20Agent%20技术文档2.0.md&start_line=24&end_line=36&max_chars=4000")
+        resp = c.get(
+            "/doc/snippet?doc=交易AI%20Agent%20技术文档2.0.md&start_line=24&end_line=36&max_chars=4000"
+        )
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json() or {}
         self.assertTrue(bool(data.get("ok")))
@@ -58,21 +60,25 @@ class TestAgentDocConstraints(unittest.TestCase):
         self.assertIn("fs.glob", names)
 
     def test_skill_code_search_finds_gate_reason(self) -> None:
-        out = svc._skill_code_search({"query": "daily_loss_limit", "files": ["ml_trade_service.py"], "max_hits": 20})
+        out = svc._skill_code_search(
+            {"query": "daily_loss_limit", "files": ["ml_trade_service.py"], "max_hits": 20}
+        )
         self.assertTrue(bool(out.get("ok")))
         self.assertGreater(int(out.get("count") or 0), 0)
 
     def test_skill_code_lines_can_read_tracker_state(self) -> None:
-        out = svc._skill_code_lines({"path": "user_data/tracker_state.json", "start_line": 1, "end_line": 5})
+        out = svc._skill_code_lines(
+            {"path": "user_data/tracker_state.json", "start_line": 1, "end_line": 5}
+        )
         self.assertTrue(bool(out.get("ok")))
         self.assertTrue(int(out.get("end_line") or 0) >= int(out.get("start_line") or 0))
         self.assertIsInstance(out.get("text"), str)
 
     def test_redact_sensitive_text_masks_tokens(self) -> None:
-        s = "api_key=abc123\nAuthorization: Bearer sk-abcdefghijklmnopqrstuvwxyz\n-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----"
+        s = "api_key=abc123\nAuthorization: Bearer sk-abcdefghijklmnopqrstuvwxyz\n-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----"  # secret-scan: allow
         out = svc._redact_sensitive_text(s)
         self.assertNotIn("abc123", out)
-        self.assertNotIn("sk-abcdefghijklmnopqrstuvwxyz", out)
+        self.assertNotIn("sk-abcdefghijklmnopqrstuvwxyz", out)  # secret-scan: allow
         self.assertIn("REDACTED", out)
 
     def test_loss_ladder_weekly_requires_daily_hits(self) -> None:
@@ -112,14 +118,18 @@ class TestAgentDocConstraints(unittest.TestCase):
                 }
             )
 
-            out, _ = svc._order_gate_open("BTC/USDT", "long", now_ms, features=None, meta={"system_id": "strategy"})
+            out, _ = svc._order_gate_open(
+                "BTC/USDT", "long", now_ms, features=None, meta={"system_id": "strategy"}
+            )
             self.assertNotEqual(out.get("reason"), "weekly_loss_limit")
 
             d0 = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
             svc._loss_ladder_daily_hit_add("strategy", wk, d0)
             svc._loss_ladder_daily_hit_add("strategy", wk, today)
 
-            out2, _ = svc._order_gate_open("BTC/USDT", "long", now_ms, features=None, meta={"system_id": "strategy"})
+            out2, _ = svc._order_gate_open(
+                "BTC/USDT", "long", now_ms, features=None, meta={"system_id": "strategy"}
+            )
             self.assertEqual(out2.get("reason"), "weekly_loss_limit")
         finally:
             svc.CONFIG.clear()
@@ -161,7 +171,9 @@ class TestAgentDocConstraints(unittest.TestCase):
                 }
             )
 
-            out, _ = svc._order_gate_open("BTC/USDT", "long", now_ms, features=None, meta={"system_id": "strategy"})
+            out, _ = svc._order_gate_open(
+                "BTC/USDT", "long", now_ms, features=None, meta={"system_id": "strategy"}
+            )
             self.assertEqual(out.get("reason"), "daily_loss_limit")
         finally:
             svc.CONFIG.clear()
@@ -190,7 +202,13 @@ class TestAgentDocConstraints(unittest.TestCase):
             out = svc._agent_config_patch_validate({"live_trading_enabled": True})
             self.assertFalse(bool(out.get("ok")))
             violations = out.get("violations") if isinstance(out.get("violations"), list) else []
-            self.assertTrue(any(str(v.get("error")) == "cannot_enable" for v in violations if isinstance(v, dict)))
+            self.assertTrue(
+                any(
+                    str(v.get("error")) == "cannot_enable"
+                    for v in violations
+                    if isinstance(v, dict)
+                )
+            )
         finally:
             svc.CONFIG.clear()
             svc.CONFIG.update(old)
@@ -198,8 +216,13 @@ class TestAgentDocConstraints(unittest.TestCase):
     def test_changeset_draft_build_rejects_non_allowlisted_patch(self) -> None:
         old_pick = svc._strategy_registry_get_entry
         try:
-            svc._strategy_registry_get_entry = lambda sid, z: {"gate_result": {"ok": True}, "metrics_summary": {"profit_factor": 2.0, "max_drawdown_pct": 0.1, "trades": 120}}
-            out = svc._agent_changeset_draft_build({"strategy_id": "S", "source_zip": "Z", "config_patch": {"not_allowed_key": 1}})
+            svc._strategy_registry_get_entry = lambda sid, z: {
+                "gate_result": {"ok": True},
+                "metrics_summary": {"profit_factor": 2.0, "max_drawdown_pct": 0.1, "trades": 120},
+            }
+            out = svc._agent_changeset_draft_build(
+                {"strategy_id": "S", "source_zip": "Z", "config_patch": {"not_allowed_key": 1}}
+            )
             self.assertFalse(bool(out.get("ok")))
             self.assertEqual(str(out.get("error")), "config_patch_rejected")
         finally:
@@ -211,10 +234,19 @@ class TestAgentDocConstraints(unittest.TestCase):
         try:
             svc.CONFIG.clear()
             svc.CONFIG.update({"max_open_trades": 5})
-            svc._strategy_registry_get_entry = lambda sid, z: {"gate_result": {"ok": True}, "metrics_summary": {"profit_factor": 2.0, "max_drawdown_pct": 0.1, "trades": 120}}
-            out = svc._agent_changeset_draft_build({"strategy_id": "S", "source_zip": "Z", "config_patch": {"max_open_trades": 3}})
+            svc._strategy_registry_get_entry = lambda sid, z: {
+                "gate_result": {"ok": True},
+                "metrics_summary": {"profit_factor": 2.0, "max_drawdown_pct": 0.1, "trades": 120},
+            }
+            out = svc._agent_changeset_draft_build(
+                {"strategy_id": "S", "source_zip": "Z", "config_patch": {"max_open_trades": 3}}
+            )
             self.assertTrue(bool(out.get("ok")))
-            cbd = out.get("change_bundle_draft") if isinstance(out.get("change_bundle_draft"), dict) else {}
+            cbd = (
+                out.get("change_bundle_draft")
+                if isinstance(out.get("change_bundle_draft"), dict)
+                else {}
+            )
             self.assertEqual(str(cbd.get("change_type")), "param")
             self.assertTrue(bool(str(cbd.get("change_id") or "").strip()))
             self.assertIsInstance(cbd.get("change_tags"), list)
@@ -224,8 +256,13 @@ class TestAgentDocConstraints(unittest.TestCase):
             cd = cbd.get("config_diff") if isinstance(cbd.get("config_diff"), dict) else {}
             ch = cd.get("changes") if isinstance(cd.get("changes"), list) else []
             self.assertGreater(len(ch), 0)
-            self.assertEqual(str((ch[0] if isinstance(ch[0], dict) else {}).get("key")), "max_open_trades")
-            self.assertIn(str((ch[0] if isinstance(ch[0], dict) else {}).get("direction")), ("tighten", "loosen", "neutral"))
+            self.assertEqual(
+                str((ch[0] if isinstance(ch[0], dict) else {}).get("key")), "max_open_trades"
+            )
+            self.assertIn(
+                str((ch[0] if isinstance(ch[0], dict) else {}).get("direction")),
+                ("tighten", "loosen", "neutral"),
+            )
         finally:
             svc._strategy_registry_get_entry = old_pick
             svc.CONFIG.clear()
@@ -234,7 +271,10 @@ class TestAgentDocConstraints(unittest.TestCase):
     def test_governance_policy_eval_rejects_non_allowlisted_patch(self) -> None:
         old_pick = svc._strategy_registry_get_entry
         try:
-            svc._strategy_registry_get_entry = lambda sid, z: {"gate_result": {"ok": True}, "metrics_summary": {"profit_factor": 2.0, "max_drawdown_pct": 0.1, "trades": 120}}
+            svc._strategy_registry_get_entry = lambda sid, z: {
+                "gate_result": {"ok": True},
+                "metrics_summary": {"profit_factor": 2.0, "max_drawdown_pct": 0.1, "trades": 120},
+            }
             pol = svc._governance_policy_resolve("gov_default")
             cs = {
                 "policy_ref": "gov_default",
@@ -254,7 +294,10 @@ class TestAgentDocConstraints(unittest.TestCase):
     def test_governance_changeset_apply_returns_fail_decision_for_bad_patch(self) -> None:
         old_pick = svc._strategy_registry_get_entry
         try:
-            svc._strategy_registry_get_entry = lambda sid, z: {"gate_result": {"ok": True}, "metrics_summary": {"profit_factor": 2.0, "max_drawdown_pct": 0.1, "trades": 120}}
+            svc._strategy_registry_get_entry = lambda sid, z: {
+                "gate_result": {"ok": True},
+                "metrics_summary": {"profit_factor": 2.0, "max_drawdown_pct": 0.1, "trades": 120},
+            }
             c = svc.app.test_client()
             resp = c.post(
                 "/governance/changeset/apply",
@@ -286,14 +329,22 @@ class TestAgentDocConstraints(unittest.TestCase):
         try:
             now_ms = int(time.time() * 1000)
             svc.CONFIG.clear()
-            svc.CONFIG.update({
-                "p1_exec_gate_enabled": True,
-                "p1_exec_order_consecutive_failures_thr": 3,
-            })
+            svc.CONFIG.update(
+                {
+                    "p1_exec_gate_enabled": True,
+                    "p1_exec_order_consecutive_failures_thr": 3,
+                }
+            )
             svc.TRACKER_STATE.clear()
-            svc.TRACKER_STATE.update({
-                "p1_exec": {"order_events": [], "consecutive_failures": 3, "restart_events": []},
-            })
+            svc.TRACKER_STATE.update(
+                {
+                    "p1_exec": {
+                        "order_events": [],
+                        "consecutive_failures": 3,
+                        "restart_events": [],
+                    },
+                }
+            )
             st = svc._p1_exec_gate_status(now_ms=now_ms)
             self.assertTrue(bool(st.get("blocked")))
             reasons = st.get("reasons") if isinstance(st.get("reasons"), list) else []
@@ -310,11 +361,13 @@ class TestAgentDocConstraints(unittest.TestCase):
         try:
             now_ms = int(time.time() * 1000)
             svc.CONFIG.clear()
-            svc.CONFIG.update({
-                "p1_exec_gate_enabled": True,
-                "p1_exec_order_window_sec": 30 * 60,
-                "p1_exec_order_fail_rate_thr": 0.10,
-            })
+            svc.CONFIG.update(
+                {
+                    "p1_exec_gate_enabled": True,
+                    "p1_exec_order_window_sec": 30 * 60,
+                    "p1_exec_order_fail_rate_thr": 0.10,
+                }
+            )
             events = []
             for i in range(20):
                 ok = True
@@ -322,9 +375,15 @@ class TestAgentDocConstraints(unittest.TestCase):
                     ok = False
                 events.append({"ts": int(now_ms) - i * 60_000, "ok": bool(ok)})
             svc.TRACKER_STATE.clear()
-            svc.TRACKER_STATE.update({
-                "p1_exec": {"order_events": events, "consecutive_failures": 0, "restart_events": []},
-            })
+            svc.TRACKER_STATE.update(
+                {
+                    "p1_exec": {
+                        "order_events": events,
+                        "consecutive_failures": 0,
+                        "restart_events": [],
+                    },
+                }
+            )
             st = svc._p1_exec_gate_status(now_ms=now_ms)
             self.assertTrue(bool(st.get("blocked")))
             reasons = st.get("reasons") if isinstance(st.get("reasons"), list) else []
@@ -341,19 +400,29 @@ class TestAgentDocConstraints(unittest.TestCase):
         try:
             now_ms = int(time.time() * 1000)
             svc.CONFIG.clear()
-            svc.CONFIG.update({
-                "loss_gate_enabled": True,
-                "macro_gate_enabled": False,
-                "p1_exec_gate_enabled": True,
-                "p1_exec_entry_gate_enabled": True,
-                "p1_exec_order_consecutive_failures_thr": 3,
-            })
+            svc.CONFIG.update(
+                {
+                    "loss_gate_enabled": True,
+                    "macro_gate_enabled": False,
+                    "p1_exec_gate_enabled": True,
+                    "p1_exec_entry_gate_enabled": True,
+                    "p1_exec_order_consecutive_failures_thr": 3,
+                }
+            )
             svc.TRACKER_STATE.clear()
-            svc.TRACKER_STATE.update({
-                "p1_exec": {"order_events": [], "consecutive_failures": 3, "restart_events": []},
-                "pnl_tracker": {},
-            })
-            out, _ = svc._order_gate_open("BTC/USDT", "long", now_ms, features=None, meta={"system_id": "strategy"})
+            svc.TRACKER_STATE.update(
+                {
+                    "p1_exec": {
+                        "order_events": [],
+                        "consecutive_failures": 3,
+                        "restart_events": [],
+                    },
+                    "pnl_tracker": {},
+                }
+            )
+            out, _ = svc._order_gate_open(
+                "BTC/USDT", "long", now_ms, features=None, meta={"system_id": "strategy"}
+            )
             self.assertEqual(str(out.get("reason")), "p1_exec_safety")
         finally:
             svc.CONFIG.clear()

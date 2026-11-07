@@ -7,6 +7,7 @@ SPEC-AGI升级蓝图.md §4.1.2
   - 高CS交易获得完整步长，不衰减
   - 冷启动阈值降至10样本（HC-AGI-02）
 """
+
 from __future__ import annotations
 
 
@@ -36,7 +37,9 @@ class ESSAdaptiveUpdater:
             self._ema_delta = float(ess_delta)
             return self._ema_delta
         # 低/中CS交易: EMA 平滑
-        self._ema_delta = self.ema_alpha * float(ess_delta) + (1.0 - self.ema_alpha) * self._ema_delta
+        self._ema_delta = (
+            self.ema_alpha * float(ess_delta) + (1.0 - self.ema_alpha) * self._ema_delta
+        )
         return self._ema_delta
 
     def effective_delta(self, ess_delta: float, cs: float) -> float:

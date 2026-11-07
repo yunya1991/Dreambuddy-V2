@@ -8,6 +8,7 @@
     cd 1-ARCHITECTURE
     python -m pytest dreamos/tests/test_capability_registry_e2e.py -v
 """
+
 from __future__ import annotations
 
 import sys
@@ -17,20 +18,24 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "dream-harness-bridge/packages/python-server"))
+sys.path.insert(
+    0, str(Path(__file__).parent.parent.parent / "dream-harness-bridge/packages/python-server")
+)
 
-from dreamos.registry.node_registry import NodeRegistry, get_default_registry
+from dreamos.registry.node_registry import NodeRegistry  # noqa: I001
 from dreamos.registry.base import BaseNode
 from dreamos.shared.capability import (
-    CapabilitySpec, StrategyRequirement, CapabilityMatcher,
-    ProviderType, CapabilityStatus,
+    StrategyRequirement,
+    CapabilityMatcher,
+    ProviderType,
+    CapabilityStatus,
 )
 from dreamos.shared.state import State, NodeResult, NodeStatus
-
 
 # ============================================================
 # Fixtures
 # ============================================================
+
 
 @pytest.fixture
 def registry() -> NodeRegistry:
@@ -42,9 +47,13 @@ def registry() -> NodeRegistry:
 @pytest.fixture
 def full_registry(registry: NodeRegistry) -> NodeRegistry:
     """包含交易所 + subagent + 子系统节点的完整注册表"""
-    from dreamos.capabilities.trading.exchange_capabilities import ExchangeCapabilityProvider
+    from dreamos.capabilities.trading.exchange_capabilities import (  # noqa: I001
+        ExchangeCapabilityProvider,
+    )  # noqa: I001
     from dreamos.capabilities.trading.nodes.subsystem_adapter_nodes import (
-        CS3TrendNode, AYJInferNode, CMartinV15Node,
+        CS3TrendNode,
+        AYJInferNode,
+        CMartinV15Node,
     )
     from subagent_registry import SubagentNode, SUBAGENT_REGISTRY_CONFIG
 
@@ -70,6 +79,7 @@ def full_registry(registry: NodeRegistry) -> NodeRegistry:
 
 class _MockStrategyNode(BaseNode):
     """需要 futures + leverage>=10 的策略节点"""
+
     node_id = "STRAT_MOCK"
     name = "模拟策略"
     chain = "T"
@@ -88,9 +98,11 @@ class _MockStrategyNode(BaseNode):
 # 1. 注册测试
 # ============================================================
 
+
 class TestRegistration:
     def test_exchange_registration(self, registry):
         from dreamos.capabilities.trading.exchange_capabilities import ExchangeCapabilityProvider
+
         nid = ExchangeCapabilityProvider("OKX").register_to(registry)
         assert nid == "OKX"
         caps = registry.get_node_capabilities("OKX")
@@ -103,6 +115,7 @@ class TestRegistration:
 
     def test_subsystem_node_capabilities(self, registry):
         from dreamos.capabilities.trading.nodes.subsystem_adapter_nodes import CS3TrendNode
+
         node = CS3TrendNode()
         registry.register(node)
         caps = registry.get_node_capabilities("C_S3_TREND")
@@ -111,7 +124,7 @@ class TestRegistration:
         assert caps[0].provider_type == ProviderType.SUBSYSTEM
 
     def test_subagent_capabilities(self, registry):
-        from subagent_registry import SubagentNode, SUBAGENT_REGISTRY_CONFIG
+        from subagent_registry import SubagentNode, SUBAGENT_REGISTRY_CONFIG  # noqa: I001
 
         class _A:
             def execute(self, x):
@@ -131,6 +144,7 @@ class TestRegistration:
 # ============================================================
 # 2. 查询测试
 # ============================================================
+
 
 class TestQuery:
     def test_list_by_category(self, full_registry):
@@ -159,6 +173,7 @@ class TestQuery:
 # ============================================================
 # 3. 匹配测试
 # ============================================================
+
 
 class TestMatching:
     def test_okx_supports_futures_strategy(self, full_registry):
@@ -208,9 +223,11 @@ class TestMatching:
 # 4. 降级测试
 # ============================================================
 
+
 class TestDegradation:
     def test_missing_required_capability_degrades(self, registry):
         import dreamos.registry.node_registry as nr_mod
+
         nr_mod._default_registry = registry
 
         strat = _MockStrategyNode()
@@ -224,9 +241,11 @@ class TestDegradation:
 
     def test_available_capability_succeeds(self, registry):
         import dreamos.registry.node_registry as nr_mod
+
         nr_mod._default_registry = registry
 
         from dreamos.capabilities.trading.exchange_capabilities import ExchangeCapabilityProvider
+
         ExchangeCapabilityProvider("OKX").register_to(registry)
 
         strat = _MockStrategyNode()
@@ -239,9 +258,11 @@ class TestDegradation:
 
     def test_unavailable_capability_degrades(self, registry):
         import dreamos.registry.node_registry as nr_mod
+
         nr_mod._default_registry = registry
 
         from dreamos.capabilities.trading.exchange_capabilities import ExchangeCapabilityProvider
+
         ExchangeCapabilityProvider("OKX").register_to(registry)
 
         strat = _MockStrategyNode()
@@ -254,6 +275,7 @@ class TestDegradation:
 
     def test_status_sync_on_failure(self, registry):
         from dreamos.capabilities.trading.nodes.subsystem_adapter_nodes import CS3TrendNode
+
         node = CS3TrendNode()
         registry.register(node)
 
@@ -266,6 +288,7 @@ class TestDegradation:
 
     def test_status_sync_on_success(self, registry):
         from dreamos.capabilities.trading.nodes.subsystem_adapter_nodes import CS3TrendNode
+
         node = CS3TrendNode()
         registry.register(node)
 
@@ -279,6 +302,7 @@ class TestDegradation:
 # ============================================================
 # 5. 性能测试
 # ============================================================
+
 
 class TestPerformance:
     def test_query_under_1ms(self, full_registry):
@@ -322,9 +346,11 @@ class TestPerformance:
 # 6. 回归测试 — 确保不破坏现有节点
 # ============================================================
 
+
 class TestBackwardCompatibility:
     def test_legacy_node_infers_capabilities(self, registry):
         """未显式声明 capabilities 的节点应自动推断"""
+
         class LegacyNode(BaseNode):
             node_id = "LEGACY_NODE"
             name = "遗留节点"
@@ -340,6 +366,7 @@ class TestBackwardCompatibility:
     def test_node_without_required_capabilities_passes(self, registry):
         """未声明 required_capabilities 的节点不应触发降级"""
         import dreamos.registry.node_registry as nr_mod
+
         nr_mod._default_registry = registry
 
         class SimpleNode(BaseNode):

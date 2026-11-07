@@ -87,9 +87,9 @@ def _clean_module_name(raw: str) -> str:
     return cleaned or raw.strip()
 
 
-def _extract_parameters(text: str, source_file: str, domain: str,
-                        nodes: List[Dict], edges: List[Dict],
-                        subject_id: str) -> None:
+def _extract_parameters(
+    text: str, source_file: str, domain: str, nodes: List[Dict], edges: List[Dict], subject_id: str
+) -> None:
     """抽取参数节点：内联 `name = value` 与 Markdown 表格 `| name | value |`。"""
     seen = set()  # 参数名去重
 
@@ -100,16 +100,24 @@ def _extract_parameters(text: str, source_file: str, domain: str,
             continue
         seen.add(name.lower())
         nid = node_id(NodeType.PARAMETER, name)
-        nodes.append({
-            "id": nid, "type": NodeType.PARAMETER.value,
-            "name": name, "value": value,
-            "source_file": source_file, "domain": domain,
-        })
-        edges.append({
-            "source": nid, "target": subject_id,
-            "relation": RelationType.CONFIGURED_BY.value,
-            "source_file": source_file,
-        })
+        nodes.append(
+            {
+                "id": nid,
+                "type": NodeType.PARAMETER.value,
+                "name": name,
+                "value": value,
+                "source_file": source_file,
+                "domain": domain,
+            }
+        )
+        edges.append(
+            {
+                "source": nid,
+                "target": subject_id,
+                "relation": RelationType.CONFIGURED_BY.value,
+                "source_file": source_file,
+            }
+        )
 
     # 2) Markdown 表格参数：列含"参数"表头，取后续行的 前两列(名称|值)
     lines = text.split("\n")
@@ -144,22 +152,36 @@ def _extract_parameters(text: str, source_file: str, domain: str,
             if name and _is_numeric(value) and name.lower() not in seen:
                 seen.add(name.lower())
                 nid = node_id(NodeType.PARAMETER, name)
-                nodes.append({
-                    "id": nid, "type": NodeType.PARAMETER.value,
-                    "name": name, "value": value,
-                    "source_file": source_file, "domain": domain,
-                })
-                edges.append({
-                    "source": nid, "target": subject_id,
-                    "relation": RelationType.CONFIGURED_BY.value,
-                    "source_file": source_file,
-                })
+                nodes.append(
+                    {
+                        "id": nid,
+                        "type": NodeType.PARAMETER.value,
+                        "name": name,
+                        "value": value,
+                        "source_file": source_file,
+                        "domain": domain,
+                    }
+                )
+                edges.append(
+                    {
+                        "source": nid,
+                        "target": subject_id,
+                        "relation": RelationType.CONFIGURED_BY.value,
+                        "source_file": source_file,
+                    }
+                )
 
 
-def _extract_dependency_modules(text: str, source_file: str, domain: str,
-                                nodes: List[Dict], edges: List[Dict],
-                                primary_module: str, primary_id: str,
-                                known_module_names: set) -> None:
+def _extract_dependency_modules(
+    text: str,
+    source_file: str,
+    domain: str,
+    nodes: List[Dict],
+    edges: List[Dict],
+    primary_module: str,
+    primary_id: str,
+    known_module_names: set,
+) -> None:
     """抽取模块依赖关系：从"与其他模块的关系"等表格与关键词附近抽取。
 
     区分两类关系表：
@@ -186,9 +208,7 @@ def _extract_dependency_modules(text: str, source_file: str, domain: str,
         if table_kind is None:
             header = "".join(cells)
             # 模块关系表
-            if "模块" in header and any(
-                kw in header for kw in ("关系", "关联", "依赖", "集成")
-            ):
+            if "模块" in header and any(kw in header for kw in ("关系", "关联", "依赖", "集成")):
                 table_kind = "module_rel"
                 name_col = 0
                 for idx, c in enumerate(cells):
@@ -210,24 +230,46 @@ def _extract_dependency_modules(text: str, source_file: str, domain: str,
                 if dep_name and dep_name != primary_module:
                     dep_id = node_id(NodeType.MODULE, dep_name)
                     known_module_names.add(dep_name)
-                    nodes.append({
-                        "id": dep_id, "type": NodeType.MODULE.value,
-                        "name": dep_name, "source_file": source_file, "domain": domain,
-                    })
-                    edges.append({
-                        "source": primary_id, "target": dep_id,
-                        "relation": RelationType.DEPENDS_ON.value,
-                        "source_file": source_file,
-                    })
+                    nodes.append(
+                        {
+                            "id": dep_id,
+                            "type": NodeType.MODULE.value,
+                            "name": dep_name,
+                            "source_file": source_file,
+                            "domain": domain,
+                        }
+                    )
+                    edges.append(
+                        {
+                            "source": primary_id,
+                            "target": dep_id,
+                            "relation": RelationType.DEPENDS_ON.value,
+                            "source_file": source_file,
+                        }
+                    )
         elif table_kind == "supply":
-            _process_supply_row(cells, source_file, domain, nodes, edges,
-                                primary_module, primary_id, known_module_names)
+            _process_supply_row(
+                cells,
+                source_file,
+                domain,
+                nodes,
+                edges,
+                primary_module,
+                primary_id,
+                known_module_names,
+            )
 
 
-def _process_supply_row(cells: List[str], source_file: str, domain: str,
-                        nodes: List[Dict], edges: List[Dict],
-                        primary_module: str, primary_id: str,
-                        known_module_names: set) -> None:
+def _process_supply_row(
+    cells: List[str],
+    source_file: str,
+    domain: str,
+    nodes: List[Dict],
+    edges: List[Dict],
+    primary_module: str,
+    primary_id: str,
+    known_module_names: set,
+) -> None:
     """处理"数据供给依赖"表行：供给方向主模块供给数据。
 
     仅当消费方（首列）涉及主模块时建立 FEEDS_DATA 边，避免无关边。
@@ -244,27 +286,43 @@ def _process_supply_row(cells: List[str], source_file: str, domain: str,
     # 供给方为 URL -> DataSource；否则作为 Module
     if supply_name.startswith(("http://", "https://")):
         sid = node_id(NodeType.DATA_SOURCE, supply_name)
-        nodes.append({
-            "id": sid, "type": NodeType.DATA_SOURCE.value,
-            "name": supply_name, "source_file": source_file, "domain": domain,
-        })
-        edges.append({
-            "source": sid, "target": primary_id,
-            "relation": RelationType.FEEDS_DATA.value,
-            "source_file": source_file,
-        })
+        nodes.append(
+            {
+                "id": sid,
+                "type": NodeType.DATA_SOURCE.value,
+                "name": supply_name,
+                "source_file": source_file,
+                "domain": domain,
+            }
+        )
+        edges.append(
+            {
+                "source": sid,
+                "target": primary_id,
+                "relation": RelationType.FEEDS_DATA.value,
+                "source_file": source_file,
+            }
+        )
     else:
         sid = node_id(NodeType.MODULE, supply_name)
         known_module_names.add(supply_name)
-        nodes.append({
-            "id": sid, "type": NodeType.MODULE.value,
-            "name": supply_name, "source_file": source_file, "domain": domain,
-        })
-        edges.append({
-            "source": primary_id, "target": sid,
-            "relation": RelationType.FEEDS_DATA.value,
-            "source_file": source_file,
-        })
+        nodes.append(
+            {
+                "id": sid,
+                "type": NodeType.MODULE.value,
+                "name": supply_name,
+                "source_file": source_file,
+                "domain": domain,
+            }
+        )
+        edges.append(
+            {
+                "source": primary_id,
+                "target": sid,
+                "relation": RelationType.FEEDS_DATA.value,
+                "source_file": source_file,
+            }
+        )
 
 
 def extract_entities(text: str, source_file: str, domain: str) -> Dict:
@@ -288,12 +346,16 @@ def extract_entities(text: str, source_file: str, domain: str) -> Dict:
     # 1) 当前文件节点
     file_name = source_file.rsplit("/", 1)[-1] if source_file else ""
     file_id = node_id(NodeType.FILE, file_name or source_file)
-    nodes.append({
-        "id": file_id, "type": NodeType.FILE.value,
-        "name": file_name or source_file,
-        "source_file": source_file, "extension": file_name.rsplit(".", 1)[-1] if "." in file_name else "",
-        "domain": domain,
-    })
+    nodes.append(
+        {
+            "id": file_id,
+            "type": NodeType.FILE.value,
+            "name": file_name or source_file,
+            "source_file": source_file,
+            "extension": file_name.rsplit(".", 1)[-1] if "." in file_name else "",
+            "domain": domain,
+        }
+    )
 
     # 2) 主模块：优先取"来源/定位"引用块（文件开头 > 引用）中的首个 NN-名称
     primary_module = ""
@@ -305,30 +367,46 @@ def extract_entities(text: str, source_file: str, domain: str) -> Dict:
     if head_mods:
         primary_module = head_mods[0]
         primary_id = node_id(NodeType.MODULE, primary_module)
-        nodes.append({
-            "id": primary_id, "type": NodeType.MODULE.value,
-            "name": primary_module, "source_file": source_file, "domain": domain,
-        })
-        edges.append({
-            "source": file_id, "target": primary_id,
-            "relation": RelationType.IMPLEMENTS.value,
-            "source_file": source_file,
-        })
+        nodes.append(
+            {
+                "id": primary_id,
+                "type": NodeType.MODULE.value,
+                "name": primary_module,
+                "source_file": source_file,
+                "domain": domain,
+            }
+        )
+        edges.append(
+            {
+                "source": file_id,
+                "target": primary_id,
+                "relation": RelationType.IMPLEMENTS.value,
+                "source_file": source_file,
+            }
+        )
     else:
         # 退化：取全文首个模块作为主模块
         all_mods = _MODULE_RE.findall(text)
         if all_mods:
             primary_module = all_mods[0]
             primary_id = node_id(NodeType.MODULE, primary_module)
-            nodes.append({
-                "id": primary_id, "type": NodeType.MODULE.value,
-                "name": primary_module, "source_file": source_file, "domain": domain,
-            })
-            edges.append({
-                "source": file_id, "target": primary_id,
-                "relation": RelationType.IMPLEMENTS.value,
-                "source_file": source_file,
-            })
+            nodes.append(
+                {
+                    "id": primary_id,
+                    "type": NodeType.MODULE.value,
+                    "name": primary_module,
+                    "source_file": source_file,
+                    "domain": domain,
+                }
+            )
+            edges.append(
+                {
+                    "source": file_id,
+                    "target": primary_id,
+                    "relation": RelationType.IMPLEMENTS.value,
+                    "source_file": source_file,
+                }
+            )
 
     # 3) H1 标题 -> 概念节点（文件主题），并连接到主模块
     h1_match = re.search(r"^#\s+(.+?)\s*$", text, re.MULTILINE)
@@ -337,21 +415,32 @@ def extract_entities(text: str, source_file: str, domain: str) -> Dict:
     if h1_match:
         h1 = h1_match.group(1).strip()
         h1_id = node_id(NodeType.CONCEPT, h1)
-        nodes.append({
-            "id": h1_id, "type": NodeType.CONCEPT.value,
-            "name": h1, "source_file": source_file, "domain": domain,
-        })
-        edges.append({
-            "source": file_id, "target": h1_id,
-            "relation": RelationType.RELATES_TO.value,
-            "source_file": source_file,
-        })
-        if primary_id:
-            edges.append({
-                "source": h1_id, "target": primary_id,
-                "relation": RelationType.IMPLEMENTS.value,
+        nodes.append(
+            {
+                "id": h1_id,
+                "type": NodeType.CONCEPT.value,
+                "name": h1,
                 "source_file": source_file,
-            })
+                "domain": domain,
+            }
+        )
+        edges.append(
+            {
+                "source": file_id,
+                "target": h1_id,
+                "relation": RelationType.RELATES_TO.value,
+                "source_file": source_file,
+            }
+        )
+        if primary_id:
+            edges.append(
+                {
+                    "source": h1_id,
+                    "target": primary_id,
+                    "relation": RelationType.IMPLEMENTS.value,
+                    "source_file": source_file,
+                }
+            )
         subject_id = h1_id
         concept_ids.append(h1_id)
 
@@ -365,16 +454,24 @@ def extract_entities(text: str, source_file: str, domain: str) -> Dict:
         if len(concept) < 2:
             continue
         cid = node_id(NodeType.CONCEPT, concept)
-        nodes.append({
-            "id": cid, "type": NodeType.CONCEPT.value,
-            "name": concept, "source_file": source_file, "domain": domain,
-        })
-        if primary_id:
-            edges.append({
-                "source": cid, "target": primary_id,
-                "relation": RelationType.IMPLEMENTS.value,
+        nodes.append(
+            {
+                "id": cid,
+                "type": NodeType.CONCEPT.value,
+                "name": concept,
                 "source_file": source_file,
-            })
+                "domain": domain,
+            }
+        )
+        if primary_id:
+            edges.append(
+                {
+                    "source": cid,
+                    "target": primary_id,
+                    "relation": RelationType.IMPLEMENTS.value,
+                    "source_file": source_file,
+                }
+            )
         concept_ids.append(cid)
 
     # 5) 参数抽取（挂载到主题概念或主模块）
@@ -386,50 +483,73 @@ def extract_entities(text: str, source_file: str, domain: str) -> Dict:
         if ref == file_name:
             continue
         rid = node_id(NodeType.FILE, ref)
-        nodes.append({
-            "id": rid, "type": NodeType.FILE.value,
-            "name": ref, "source_file": source_file,
-            "extension": ref.rsplit(".", 1)[-1],
-            "domain": domain,
-        })
-        edges.append({
-            "source": file_id, "target": rid,
-            "relation": RelationType.RELATES_TO.value,
-            "source_file": source_file,
-        })
+        nodes.append(
+            {
+                "id": rid,
+                "type": NodeType.FILE.value,
+                "name": ref,
+                "source_file": source_file,
+                "extension": ref.rsplit(".", 1)[-1],
+                "domain": domain,
+            }
+        )
+        edges.append(
+            {
+                "source": file_id,
+                "target": rid,
+                "relation": RelationType.RELATES_TO.value,
+                "source_file": source_file,
+            }
+        )
 
     # 7) 算法（#tag）-> 算法节点
     for m in _TAG_RE.finditer(text):
         tag = m.group(1)
         aid = node_id(NodeType.ALGORITHM, tag)
-        nodes.append({
-            "id": aid, "type": NodeType.ALGORITHM.value,
-            "name": tag, "source_file": source_file,
-        })
-        edges.append({
-            "source": subject_id, "target": aid,
-            "relation": RelationType.USES_ALGORITHM.value,
-            "source_file": source_file,
-        })
+        nodes.append(
+            {
+                "id": aid,
+                "type": NodeType.ALGORITHM.value,
+                "name": tag,
+                "source_file": source_file,
+            }
+        )
+        edges.append(
+            {
+                "source": subject_id,
+                "target": aid,
+                "relation": RelationType.USES_ALGORITHM.value,
+                "source_file": source_file,
+            }
+        )
 
     # 8) 数据源 URL
     for m in _URL_RE.finditer(text):
         url = m.group(0).rstrip(".,;)]）")
         dsid = node_id(NodeType.DATA_SOURCE, url)
-        nodes.append({
-            "id": dsid, "type": NodeType.DATA_SOURCE.value,
-            "name": url, "source_file": source_file, "domain": domain,
-        })
-        edges.append({
-            "source": dsid, "target": primary_id or subject_id,
-            "relation": RelationType.FEEDS_DATA.value,
-            "source_file": source_file,
-        })
+        nodes.append(
+            {
+                "id": dsid,
+                "type": NodeType.DATA_SOURCE.value,
+                "name": url,
+                "source_file": source_file,
+                "domain": domain,
+            }
+        )
+        edges.append(
+            {
+                "source": dsid,
+                "target": primary_id or subject_id,
+                "relation": RelationType.FEEDS_DATA.value,
+                "source_file": source_file,
+            }
+        )
 
     # 9) 模块依赖关系（关系表 + 供给表）
     known = {primary_module} if primary_module else set()
-    _extract_dependency_modules(text, source_file, domain, nodes, edges,
-                                primary_module, primary_id, known)
+    _extract_dependency_modules(
+        text, source_file, domain, nodes, edges, primary_module, primary_id, known
+    )
 
     return {"nodes": nodes, "edges": edges}
 

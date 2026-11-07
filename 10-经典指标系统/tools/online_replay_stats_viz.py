@@ -2,11 +2,12 @@
 import argparse
 import json
 import os
-from collections import Counter, defaultdict
+from collections import Counter
 from datetime import datetime
 from urllib import parse, request
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -96,8 +97,12 @@ def _stats(events, pair_prefix: str):
         "with_gate": with_gate,
         "zero_take": zero_take,
         "zero_take_rate": (zero_take / with_gate) if with_gate else None,
-        "arena_no_taker_rate": (reason.get("arena_no_taker", 0) / len(selected)) if selected else None,
-        "pc_below_threshold_rate": (reason.get("pc_below_threshold", 0) / len(selected)) if selected else None,
+        "arena_no_taker_rate": (
+            (reason.get("arena_no_taker", 0) / len(selected)) if selected else None
+        ),
+        "pc_below_threshold_rate": (
+            (reason.get("pc_below_threshold", 0) / len(selected)) if selected else None
+        ),
         "feature_cov_events": cov_events,
         "feature_cov_low_events": cov_low_events,
         "feature_cov_low_rate": (cov_low_events / cov_events) if cov_events else None,
@@ -124,7 +129,12 @@ def _plot_counts(ax, counter_dict, title, top_n=10):
 
 
 def _plot_rates(ax, stats):
-    keys = ["zero_take_rate", "arena_no_taker_rate", "pc_below_threshold_rate", "feature_cov_low_rate"]
+    keys = [
+        "zero_take_rate",
+        "arena_no_taker_rate",
+        "pc_below_threshold_rate",
+        "feature_cov_low_rate",
+    ]
     vals = [stats.get(k) for k in keys]
     vals = [0.0 if v is None else float(v) for v in vals]
     ax.bar(range(len(vals)), vals)
@@ -195,17 +205,23 @@ def main():
     fig.savefig(png_path, dpi=140)
     plt.close(fig)
 
-    print(json.dumps({
-        "source_mode": source_mode,
-        "events": stats.get("events"),
-        "with_gate": stats.get("with_gate"),
-        "zero_take_rate": stats.get("zero_take_rate"),
-        "arena_no_taker_rate": stats.get("arena_no_taker_rate"),
-        "pc_below_threshold_rate": stats.get("pc_below_threshold_rate"),
-        "feature_cov_low_rate": stats.get("feature_cov_low_rate"),
-        "json_path": json_path,
-        "png_path": png_path,
-    }, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "source_mode": source_mode,
+                "events": stats.get("events"),
+                "with_gate": stats.get("with_gate"),
+                "zero_take_rate": stats.get("zero_take_rate"),
+                "arena_no_taker_rate": stats.get("arena_no_taker_rate"),
+                "pc_below_threshold_rate": stats.get("pc_below_threshold_rate"),
+                "feature_cov_low_rate": stats.get("feature_cov_low_rate"),
+                "json_path": json_path,
+                "png_path": png_path,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
 
 
 if __name__ == "__main__":

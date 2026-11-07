@@ -12,12 +12,12 @@
   S7: G 层投影完整性（4 种事件类型）
   S8: 认知系统 record/verify 闭环
 """
+
 import json
+import os
 import subprocess
 import sys
-import os
 import time
-import hashlib
 from datetime import datetime
 
 SERVER = os.path.join(os.path.dirname(__file__), "..", "packages", "python-server", "server.py")
@@ -48,7 +48,9 @@ def call(method, params):
     proc = subprocess.run(
         [PYTHON, SERVER],
         input=json.dumps(payload) + "\n",
-        capture_output=True, text=True, timeout=60,
+        capture_output=True,
+        text=True,
+        timeout=60,
     )
     for line in proc.stdout.strip().split("\n"):
         line = line.strip()
@@ -87,30 +89,50 @@ def test_s1_normal_analysis():
     section("S1: 常规分析（BTC 趋势）")
     # S 层
     s = call("intent_gateway", {"user_input": "分析BTC趋势", "step": 1, "agent_id": "test-s1"})
-    check("S层 意图识别", s["ok"] and s["result"]["intent"] == "market_analysis",
-          f"intent={s['result']['intent']}")
+    check(
+        "S层 意图识别",
+        s["ok"] and s["result"]["intent"] == "market_analysis",
+        f"intent={s['result']['intent']}",
+    )
     # A 层
-    a = call("graph_planner", {"intent_type": "MARKET_ANALYSIS", "recommended_chain": "C", "confidence": 0.7})
-    check("A层 图编排", a["ok"] and len(a["result"].get("selected_nodes", [])) > 0,
-          f"nodes={a['result'].get('selected_nodes', [])[:4]}")
+    a = call(
+        "graph_planner",
+        {"intent_type": "MARKET_ANALYSIS", "recommended_chain": "C", "confidence": 0.7},
+    )
+    check(
+        "A层 图编排",
+        a["ok"] and len(a["result"].get("selected_nodes", [])) > 0,
+        f"nodes={a['result'].get('selected_nodes', [])[:4]}",
+    )
     # C 层
     c = call("execute_c_chain", {"symbol": "BTC", "timeframe": "4H"})
-    check("C链 执行成功", c["ok"] and "direction" in c["result"],
-          f"dir={c['result']['direction']}, conf={c['result']['confidence']}")
+    check(
+        "C链 执行成功",
+        c["ok"] and "direction" in c["result"],
+        f"dir={c['result']['direction']}, conf={c['result']['confidence']}",
+    )
     # Reflector
-    r = call("reflection", {
-        "mode": "decide",
-        "current_node_id": "C3",
-        "confidence": c["result"]["confidence"],
-        "direction": c["result"]["direction"],
-        "status": "SUCCESS",
-        "executed_count": 3, "max_nodes": 5,
-        "budget_remaining_ratio": 0.7,
-        "prev_results": [],
-    })
-    check("Reflector 决策", r["ok"] and r["result"]["echo"]["params"]["decision"] in
-          ["CONTINUE", "REDO", "JUMP_TO", "INSERT_BEFORE", "EARLY_TERMINATE"],
-          f"decision={r['result']['echo']['params']['decision']}")
+    r = call(
+        "reflection",
+        {
+            "mode": "decide",
+            "current_node_id": "C3",
+            "confidence": c["result"]["confidence"],
+            "direction": c["result"]["direction"],
+            "status": "SUCCESS",
+            "executed_count": 3,
+            "max_nodes": 5,
+            "budget_remaining_ratio": 0.7,
+            "prev_results": [],
+        },
+    )
+    check(
+        "Reflector 决策",
+        r["ok"]
+        and r["result"]["echo"]["params"]["decision"]
+        in ["CONTINUE", "REDO", "JUMP_TO", "INSERT_BEFORE", "EARLY_TERMINATE"],
+        f"decision={r['result']['echo']['params']['decision']}",
+    )
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -130,46 +152,59 @@ def test_s2_symbol_differentiation():
             print(f"  {sym}: dir={c['result']['direction']}, conf={c['result']['confidence']:.3f}")
 
     # 不同 symbol 应产出不同 direction 或 confidence
-    dirs = set(r["direction"] for r in results.values())
-    confs = set(round(r["confidence"], 3) for r in results.values())
-    check("4个symbol结果有差异", len(dirs) > 1 or len(confs) > 1,
-          f"directions={dirs}, confidences={confs}")
+    dirs = set(r["direction"] for r in results.values())  # noqa: C401
+    confs = set(round(r["confidence"], 3) for r in results.values())  # noqa: C401
+    check(
+        "4个symbol结果有差异",
+        len(dirs) > 1 or len(confs) > 1,
+        f"directions={dirs}, confidences={confs}",
+    )
 
     # 检查 C1 details 有 per-symbol 差异
     c1_confs = {}
     for sym, r in results.items():
         c1_data = r["details"].get("C1", {})
         c1_confs[sym] = round(c1_data.get("confidence", 0), 3)
-    check("C1节点 per-symbol 差异化", len(set(c1_confs.values())) > 1,
-          f"C1 confs={c1_confs}")
+    check("C1节点 per-symbol 差异化", len(set(c1_confs.values())) > 1, f"C1 confs={c1_confs}")
 
 
 # ═══════════════════════════════════════════════════════════════
 def test_s3_high_risk_intent():
     """S3: 高风险意图检测"""
     section("S3: 高风险意图检测（'all in' 关键词）")
-    s = call("intent_gateway", {
-        "user_input": "我要 all in 满仓干 BTC",
-        "step": 1, "agent_id": "test-s3",
-    })
-    check("S层 识别高风险", s["ok"] and s["result"].get("risk_level") == "high",
-          f"risk={s['result'].get('risk_level')}")
+    s = call(
+        "intent_gateway",
+        {
+            "user_input": "我要 all in 满仓干 BTC",
+            "step": 1,
+            "agent_id": "test-s3",
+        },
+    )
+    check(
+        "S层 识别高风险",
+        s["ok"] and s["result"].get("risk_level") == "high",
+        f"risk={s['result'].get('risk_level')}",
+    )
 
 
 # ═══════════════════════════════════════════════════════════════
 def test_s4_reflector_continue():
     """S4: Reflector CONTINUE 决策"""
     section("S4: Reflector CONTINUE（高置信度 + 充足预算）")
-    r = call("reflection", {
-        "mode": "decide",
-        "current_node_id": "C3",
-        "confidence": 0.85,
-        "direction": "LONG",
-        "status": "SUCCESS",
-        "executed_count": 3, "max_nodes": 5,
-        "budget_remaining_ratio": 0.7,
-        "prev_results": [],
-    })
+    r = call(
+        "reflection",
+        {
+            "mode": "decide",
+            "current_node_id": "C3",
+            "confidence": 0.85,
+            "direction": "LONG",
+            "status": "SUCCESS",
+            "executed_count": 3,
+            "max_nodes": 5,
+            "budget_remaining_ratio": 0.7,
+            "prev_results": [],
+        },
+    )
     decision = r["result"]["echo"]["params"]["decision"]
     check("高置信度→CONTINUE", decision == "CONTINUE", f"decision={decision}")
 
@@ -178,16 +213,20 @@ def test_s4_reflector_continue():
 def test_s5_reflector_redo():
     """S5: Reflector REDO 决策"""
     section("S5: Reflector REDO（低置信度）")
-    r = call("reflection", {
-        "mode": "decide",
-        "current_node_id": "C2",
-        "confidence": 0.2,
-        "direction": "LONG",
-        "status": "SUCCESS",  # DEGRADED 会直接返回 CONTINUE，需用 SUCCESS 触发置信度检查
-        "executed_count": 2, "max_nodes": 5,
-        "budget_remaining_ratio": 0.6,
-        "prev_results": [],
-    })
+    r = call(
+        "reflection",
+        {
+            "mode": "decide",
+            "current_node_id": "C2",
+            "confidence": 0.2,
+            "direction": "LONG",
+            "status": "SUCCESS",  # DEGRADED 会直接返回 CONTINUE，需用 SUCCESS 触发置信度检查
+            "executed_count": 2,
+            "max_nodes": 5,
+            "budget_remaining_ratio": 0.6,
+            "prev_results": [],
+        },
+    )
     decision = r["result"]["echo"]["params"]["decision"]
     check("低置信度→REDO", decision == "REDO", f"decision={decision}")
 
@@ -196,19 +235,26 @@ def test_s5_reflector_redo():
 def test_s6_reflector_jump_to():
     """S6: Reflector JUMP_TO 决策"""
     section("S6: Reflector JUMP_TO（预算不足）")
-    r = call("reflection", {
-        "mode": "decide",
-        "current_node_id": "C2",
-        "confidence": 0.5,
-        "direction": "LONG",
-        "status": "SUCCESS",
-        "executed_count": 4, "max_nodes": 5,
-        "budget_remaining_ratio": 0.1,  # 预算紧张
-        "prev_results": [],
-    })
+    r = call(
+        "reflection",
+        {
+            "mode": "decide",
+            "current_node_id": "C2",
+            "confidence": 0.5,
+            "direction": "LONG",
+            "status": "SUCCESS",
+            "executed_count": 4,
+            "max_nodes": 5,
+            "budget_remaining_ratio": 0.1,  # 预算紧张
+            "prev_results": [],
+        },
+    )
     decision = r["result"]["echo"]["params"]["decision"]
-    check("预算不足→JUMP_TO/EARLY_TERMINATE", decision in ["JUMP_TO", "EARLY_TERMINATE"],
-          f"decision={decision}")
+    check(
+        "预算不足→JUMP_TO/EARLY_TERMINATE",
+        decision in ["JUMP_TO", "EARLY_TERMINATE"],
+        f"decision={decision}",
+    )
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -218,13 +264,19 @@ def test_s7_g_layer_projection():
     session_id = f"test-s7-{int(time.time())}"
     event_types = ["intent_gate", "graph_node", "node_execution", "node_result"]
     for et in event_types:
-        r = call("session_consumer", {
-            "session_id": session_id,
-            "event_type": et,
-            "event_data": {"test": True, "type": et},
-        })
-        check(f"G层写入 {et}", r["ok"] and r["result"].get("written") == True,
-              f"status={r['result'].get('status')}")
+        r = call(
+            "session_consumer",
+            {
+                "session_id": session_id,
+                "event_type": et,
+                "event_data": {"test": True, "type": et},
+            },
+        )
+        check(
+            f"G层写入 {et}",
+            r["ok"] and r["result"].get("written") == True,  # noqa: E712
+            f"status={r['result'].get('status')}",
+        )
 
     # 验证 g_layer_events.jsonl 文件
     g_path = os.path.join(
@@ -240,11 +292,9 @@ def test_s7_g_layer_projection():
                         session_events.append(e)
                 except json.JSONDecodeError:
                     pass
-        check("G层 4种事件全部写入", len(session_events) == 4,
-              f"events={len(session_events)}")
-        written_types = set(e["event_type"] for e in session_events)
-        check("G层 事件类型完整", written_types == set(event_types),
-              f"types={written_types}")
+        check("G层 4种事件全部写入", len(session_events) == 4, f"events={len(session_events)}")
+        written_types = set(e["event_type"] for e in session_events)  # noqa: C401
+        check("G层 事件类型完整", written_types == set(event_types), f"types={written_types}")
     else:
         check("G层 文件存在", False, "g_layer_events.jsonl not found")
 
@@ -256,12 +306,12 @@ def test_s8_cognitive_loop():
     # 尝试调用认知系统
     try:
         cog_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "..",
-            "4-MEMORY", "9-工具与接口"
+            os.path.dirname(__file__), "..", "..", "..", "4-MEMORY", "9-工具与接口"
         )
         if cog_path not in sys.path:
             sys.path.insert(0, cog_path)
         from cognitive_loop_entry import get_cle
+
         cle = get_cle()
 
         # record
@@ -271,8 +321,11 @@ def test_s8_cognitive_loop():
 
         # recall
         results = cle.recall(context="集成测试 多场景验证", top_k=3, min_quality="C")
-        check("认知系统 recall", results is not None and len(results) > 0,
-              f"recall_count={len(results) if results else 0}")
+        check(
+            "认知系统 recall",
+            results is not None and len(results) > 0,
+            f"recall_count={len(results) if results else 0}",
+        )
 
         # verify
         if mem:
@@ -338,11 +391,15 @@ def main():
     # 断裂点修复验证
     section("5个断裂点修复验证")
     gaps = {
-        "G1: 数据→C层（per-symbol差异化）": any("C1节点" in r[1] and r[0] == "PASS" for r in RESULTS),
+        "G1: 数据→C层（per-symbol差异化）": any(
+            "C1节点" in r[1] and r[0] == "PASS" for r in RESULTS
+        ),
         "G2: G层→认知（事件自动消费）": any("G层" in r[1] and r[0] == "PASS" for r in RESULTS),
         "G3: RAG→A7（知识库检索）": True,  # 代码已集成，FAIL-OPEN
         "G4: 蒸馏→知识库（S/A级沉淀）": True,  # 代码已集成
-        "G5: Session→认知（同步record）": any("认知系统" in r[1] and r[0] == "PASS" for r in RESULTS),
+        "G5: Session→认知（同步record）": any(
+            "认知系统" in r[1] and r[0] == "PASS" for r in RESULTS
+        ),
     }
     for gap, fixed in gaps.items():
         status = f"{GREEN}✅ 已修复{RESET}" if fixed else f"{RED}❌ 未验证{RESET}"

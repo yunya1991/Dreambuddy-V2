@@ -1,7 +1,6 @@
 import argparse
 import json
 import math
-import os
 from bisect import bisect_left
 from collections import defaultdict, deque
 from dataclasses import dataclass
@@ -268,7 +267,9 @@ def _event_return_ratio(series: Series, evt: Dict[str, Any], horizon_ms: int) ->
     return float((px_f - open_px) / open_px)
 
 
-def _iter_events(dataset_dir: Path, since_ts: int, until_ts: int, max_files: int) -> List[Dict[str, Any]]:
+def _iter_events(
+    dataset_dir: Path, since_ts: int, until_ts: int, max_files: int
+) -> List[Dict[str, Any]]:
     files = sorted(dataset_dir.glob("*_events.jsonl"), key=lambda p: p.name)
     if max_files > 0:
         files = files[-int(max_files) :]
@@ -287,7 +288,9 @@ def _iter_events(dataset_dir: Path, since_ts: int, until_ts: int, max_files: int
     return out
 
 
-def _stake_scale(atr_pct: float, stake_target_atr_pct: float, scale_min: float, scale_max: float) -> float:
+def _stake_scale(
+    atr_pct: float, stake_target_atr_pct: float, scale_min: float, scale_max: float
+) -> float:
     ap = float(atr_pct)
     tgt = float(stake_target_atr_pct)
     if ap <= 0.0:
@@ -410,7 +413,12 @@ def _evaluate_combo(
         if ret_ratio is None:
             continue
         atr_pct = _get_event_atr_pct(evt)
-        scale = _stake_scale(atr_pct=atr_pct, stake_target_atr_pct=stake_target_atr_pct, scale_min=stake_scale_min, scale_max=stake_scale_max)
+        scale = _stake_scale(
+            atr_pct=atr_pct,
+            stake_target_atr_pct=stake_target_atr_pct,
+            scale_min=stake_scale_min,
+            scale_max=stake_scale_max,
+        )
         risk = float(atr_pct) * float(scale) if float(atr_pct) > 0 else float(stake_target_atr_pct)
         tr = float(ret_ratio) * float(scale)
         day = _day_key(_get_event_ts(evt))
@@ -431,8 +439,12 @@ def _evaluate_combo(
     sharpe = (avg_day / std_day) * math.sqrt(365.0) if std_day > 0 else 0.0
     max_dd = _max_drawdown_pct(daily_rets)
     ann_ret = _annualized_return_from_equity(eq_final, len(days))
-    calmar = float(ann_ret / max(1e-12, float(max_dd))) if float(max_dd) > 0 else (float(ann_ret) * 1e6)
-    ret_over_dd = float(tot_ret / max(1e-12, float(max_dd))) if float(max_dd) > 0 else (float(tot_ret) * 1e6)
+    calmar = (
+        float(ann_ret / max(1e-12, float(max_dd))) if float(max_dd) > 0 else (float(ann_ret) * 1e6)
+    )
+    ret_over_dd = (
+        float(tot_ret / max(1e-12, float(max_dd))) if float(max_dd) > 0 else (float(tot_ret) * 1e6)
+    )
 
     return {
         "take_rate": float(take_rate),
@@ -494,8 +506,16 @@ def main() -> int:
         horizon_h = _maybe_float(cfg.get("label_horizon_hours"), 12.0)
     horizon_ms = int(float(horizon_h) * 3600.0 * 1000.0)
 
-    take_rate_window = int(args.take_rate_window) if int(args.take_rate_window) > 0 else _maybe_int(cfg.get("arena_take_rate_window"), 2000)
-    take_rate_min_samples = int(args.take_rate_min_samples) if int(args.take_rate_min_samples) > 0 else _maybe_int(cfg.get("arena_take_rate_min_samples"), 200)
+    take_rate_window = (
+        int(args.take_rate_window)
+        if int(args.take_rate_window) > 0
+        else _maybe_int(cfg.get("arena_take_rate_window"), 2000)
+    )
+    take_rate_min_samples = (
+        int(args.take_rate_min_samples)
+        if int(args.take_rate_min_samples) > 0
+        else _maybe_int(cfg.get("arena_take_rate_min_samples"), 200)
+    )
     if int(args.by_regime) in (0, 1):
         by_regime = bool(int(args.by_regime))
     else:
@@ -513,7 +533,12 @@ def main() -> int:
     if not dataset_dir.exists():
         raise SystemExit(f"dataset_dir_not_found: {dataset_dir}")
 
-    events = _iter_events(dataset_dir=dataset_dir, since_ts=int(args.since_ts), until_ts=int(args.until_ts), max_files=int(args.max_files))
+    events = _iter_events(
+        dataset_dir=dataset_dir,
+        since_ts=int(args.since_ts),
+        until_ts=int(args.until_ts),
+        max_files=int(args.max_files),
+    )
     if not events:
         raise SystemExit("no_events")
 
@@ -582,7 +607,10 @@ def main() -> int:
     if bool(int(args.robust or 0)) and rows:
         idx: Dict[Tuple[float, float], Dict[str, Any]] = {}
         for r in rows:
-            k = (round(float(r.get("take_rate") or 0.0), 10), round(float(r.get("stake_target_atr_pct") or 0.0), 10))
+            k = (
+                round(float(r.get("take_rate") or 0.0), 10),
+                round(float(r.get("stake_target_atr_pct") or 0.0), 10),
+            )
             idx[k] = r
 
         def _metric(rr: Dict[str, Any]) -> float:

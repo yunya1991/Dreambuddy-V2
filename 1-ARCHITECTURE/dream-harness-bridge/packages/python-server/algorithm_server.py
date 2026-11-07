@@ -20,12 +20,12 @@ import os
 import sys
 import traceback
 from pathlib import Path
-from typing import Any
 
 # 复用 server.py 的 _send_stderr 和 _DREAMOS_ARCH_DIR
 # 同目录 import，运行时由 server.py 的 sys.path 保证可导入
 try:
-    from server import _send_stderr, _DREAMOS_ARCH_DIR, ENABLE_ALGORITHM_LAYER
+    from server import _send_stderr, _DREAMOS_ARCH_DIR, ENABLE_ALGORITHM_LAYER  # noqa: I001
+
     _ALGORITHM_TRIGGER_THRESHOLD = 0.70
     _AGENT_TAKEOVER_T3_CONFIDENCE = 0.88
     _SHADOW_REVIEW_SAMPLE_RATE = 0.30
@@ -33,6 +33,7 @@ try:
 except ImportError:
     # 独立运行时 fallback
     import os
+
     _send_stderr = lambda level, msg: sys.stderr.write(f"[{level}] {msg}\n")  # noqa: E731
     _DREAMOS_ARCH_DIR = str(Path(__file__).resolve().parent.parent.parent.parent)
     ENABLE_ALGORITHM_LAYER = os.environ.get("ENABLE_ALGORITHM_LAYER", "0") == "1"
@@ -45,6 +46,7 @@ except ImportError:
 # ============================================================
 # Layer 1: 算法识别 IPC handler
 # ============================================================
+
 
 def handle_algorithm_recognize(params: dict) -> dict:
     """Layer 1 算法识别 IPC handler
@@ -67,8 +69,9 @@ def handle_algorithm_recognize(params: dict) -> dict:
         # 2. 惰性 import DreamOS 识别器（F-06: 不在模块级 import）
         if _DREAMOS_ARCH_DIR not in sys.path:
             sys.path.insert(0, _DREAMOS_ARCH_DIR)
-        from dreamos.core.sense.complexity_classifier import (
-            classify_complexity, TIER_T3,
+        from dreamos.core.sense.complexity_classifier import (  # noqa: I001
+            classify_complexity,
+            TIER_T3,
         )
         from dreamos.core.sense.recognizers.rule_based import RuleBasedRecognizer
         from dreamos.core.sense.types import IntentInput
@@ -97,8 +100,7 @@ def handle_algorithm_recognize(params: dict) -> dict:
 
         # 6. 判断是否需要 Agent 接管
         agent_takeover_needed = (
-            complexity.tier == TIER_T3
-            or result.confidence >= _AGENT_TAKEOVER_T3_CONFIDENCE
+            complexity.tier == TIER_T3 or result.confidence >= _AGENT_TAKEOVER_T3_CONFIDENCE
         )
 
         return {
@@ -130,6 +132,7 @@ def handle_algorithm_recognize(params: dict) -> dict:
 # Layer 2: 影子评审 IPC handler (P0-3-S2)
 # ============================================================
 
+
 def handle_shadow_review(params: dict) -> dict:
     """Layer 2 影子评审 IPC handler
 
@@ -155,7 +158,8 @@ def handle_shadow_review(params: dict) -> dict:
         if similar_cases:
             # 简化版: 若 algorithm 决策与多数历史案例一致，则 consistent
             same_intent = sum(
-                1 for c in similar_cases
+                1
+                for c in similar_cases
                 if c.get("intent_type") == algorithm_result.get("intent_type")
             )
             review_confidence = same_intent / len(similar_cases)
@@ -186,11 +190,13 @@ def _recall_similar_cases(algorithm_result: dict) -> list:
     try:
         cog_path = str(
             Path(__file__).resolve().parent.parent.parent.parent.parent
-            / "4-MEMORY" / "9-工具与接口"
+            / "4-MEMORY"
+            / "9-工具与接口"
         )
         if cog_path not in sys.path:
             sys.path.insert(0, cog_path)
         from cognitive_loop_entry import get_cle
+
         cle = get_cle()
 
         context = (
@@ -206,6 +212,7 @@ def _recall_similar_cases(algorithm_result: dict) -> list:
 # ============================================================
 # Layer 3: Agent 接管 IPC handler (P0-4-S1)
 # ============================================================
+
 
 def handle_agent_takeover(params: dict) -> dict:
     """Layer 3 Agent 接管 IPC handler
@@ -226,10 +233,7 @@ def handle_agent_takeover(params: dict) -> dict:
         confidence = algorithm_result.get("confidence", 0.0)
 
         # T3 或高置信度 → 委托 Agent
-        should_delegate = (
-            tier == "T3"
-            or confidence >= _AGENT_TAKEOVER_T3_CONFIDENCE
-        )
+        should_delegate = tier == "T3" or confidence >= _AGENT_TAKEOVER_T3_CONFIDENCE
 
         if should_delegate:
             decision = "INSERT_BEFORE"

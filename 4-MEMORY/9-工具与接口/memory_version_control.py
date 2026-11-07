@@ -56,13 +56,11 @@ import argparse
 import hashlib
 import json
 import logging
-import os
-import sys
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -101,8 +99,9 @@ def _file_hash(content: str) -> str:
 @dataclass
 class CommitEntry:
     """版本提交记录"""
+
     commit_id: str = ""
-    parent_id: str = ""                    # 父 commit_id（空表示初始提交）
+    parent_id: str = ""  # 父 commit_id（空表示初始提交）
     timestamp: str = ""
     author: str = "system"
     message: str = ""
@@ -278,9 +277,7 @@ class MemoryVersionControl:
     def _generate_commit_id(self) -> str:
         """生成唯一的 commit_id"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        random_suffix = hashlib.sha256(
-            f"{timestamp}_{time.time_ns()}".encode()
-        ).hexdigest()[:8]
+        random_suffix = hashlib.sha256(f"{timestamp}_{time.time_ns()}".encode()).hexdigest()[:8]
         return f"{timestamp}_{random_suffix}"
 
     def _get_latest_commit(self) -> Optional[CommitEntry]:
@@ -313,21 +310,33 @@ class MemoryVersionControl:
         for entry in commits[:limit]:
             # 计算变更统计
             file_count = len(entry.files)
-            parent_files = self._commits[entry.parent_id].files if entry.parent_id and entry.parent_id in self._commits else {}
+            parent_files = (
+                self._commits[entry.parent_id].files
+                if entry.parent_id and entry.parent_id in self._commits
+                else {}
+            )
             added = len([f for f in entry.files if f not in parent_files])
-            modified = len([f for f in entry.files if f in parent_files and entry.files[f] != parent_files.get(f)])
+            modified = len(
+                [
+                    f
+                    for f in entry.files
+                    if f in parent_files and entry.files[f] != parent_files.get(f)
+                ]
+            )
             removed = len([f for f in parent_files if f not in entry.files])
 
-            result.append({
-                "commit_id": entry.commit_id,
-                "short_id": _short_id(entry.commit_id),
-                "parent_id": entry.parent_id,
-                "timestamp": entry.timestamp,
-                "author": entry.author,
-                "message": entry.message,
-                "file_count": file_count,
-                "changes": {"added": added, "modified": modified, "removed": removed},
-            })
+            result.append(
+                {
+                    "commit_id": entry.commit_id,
+                    "short_id": _short_id(entry.commit_id),
+                    "parent_id": entry.parent_id,
+                    "timestamp": entry.timestamp,
+                    "author": entry.author,
+                    "message": entry.message,
+                    "file_count": file_count,
+                    "changes": {"added": added, "modified": modified, "removed": removed},
+                }
+            )
         return result
 
     # ============================================================
@@ -387,23 +396,33 @@ class MemoryVersionControl:
             lines_b = content_b.splitlines(keepends=True)
 
             import difflib
-            diff_lines = list(difflib.unified_diff(
-                lines_a, lines_b,
-                fromfile=f"{rel_path}@{_short_id(commit_id_a)}",
-                tofile=f"{rel_path}@{_short_id(commit_id_b)}",
-                lineterm="",
-            ))
 
-            added = sum(1 for l in diff_lines if l.startswith("+") and not l.startswith("+++"))
-            removed = sum(1 for l in diff_lines if l.startswith("-") and not l.startswith("---"))
+            diff_lines = list(
+                difflib.unified_diff(
+                    lines_a,
+                    lines_b,
+                    fromfile=f"{rel_path}@{_short_id(commit_id_a)}",
+                    tofile=f"{rel_path}@{_short_id(commit_id_b)}",
+                    lineterm="",
+                )
+            )
 
-            result.append({
-                "file": rel_path,
-                "status": status,
-                "added_lines": added,
-                "removed_lines": removed,
-                "diff": "".join(diff_lines) if diff_lines else "",
-            })
+            added = sum(
+                1 for l in diff_lines if l.startswith("+") and not l.startswith("+++")  # noqa: E741
+            )  # noqa: E741
+            removed = sum(
+                1 for l in diff_lines if l.startswith("-") and not l.startswith("---")  # noqa: E741
+            )  # noqa: E741
+
+            result.append(
+                {
+                    "file": rel_path,
+                    "status": status,
+                    "added_lines": added,
+                    "removed_lines": removed,
+                    "diff": "".join(diff_lines) if diff_lines else "",
+                }
+            )
 
         return result
 
@@ -535,12 +554,14 @@ class MemoryVersionControl:
         result = []
         for rel_path, file_hash in entry.files.items():
             content = self._read_snapshot(commit_id, rel_path) or ""
-            result.append({
-                "file": rel_path,
-                "hash": file_hash,
-                "chars": len(content),
-                "lines": content.count("\n") + 1 if content else 0,
-            })
+            result.append(
+                {
+                    "file": rel_path,
+                    "hash": file_hash,
+                    "chars": len(content),
+                    "lines": content.count("\n") + 1 if content else 0,
+                }
+            )
         return result
 
     # ============================================================
@@ -558,7 +579,9 @@ class MemoryVersionControl:
             parent_files = self._commits[entry.parent_id].files
 
         added = len([f for f in entry.files if f not in parent_files])
-        modified = len([f for f in entry.files if f in parent_files and entry.files[f] != parent_files.get(f)])
+        modified = len(
+            [f for f in entry.files if f in parent_files and entry.files[f] != parent_files.get(f)]
+        )
         removed = len([f for f in parent_files if f not in entry.files])
 
         return {
@@ -624,13 +647,14 @@ class MemoryVersionControl:
 # CLI
 # ============================================================
 
+
 def _cli_commit(vc: MemoryVersionControl, args) -> int:
     """创建版本"""
     commit_id = vc.commit(args.message, author=args.author, allow_empty=args.allow_empty)
     if not commit_id:
         print("无变更，未创建 commit")
         return 1
-    print(f"✅ 提交成功")
+    print("✅ 提交成功")
     print(f"   commit: {_short_id(commit_id)}")
     print(f"   消息: {args.message}")
     print(f"   作者: {args.author}")
@@ -681,7 +705,7 @@ def _cli_diff(vc: MemoryVersionControl, args) -> int:
         print(f"{status_icon} {d['file']} ({d['status']})")
         print(f"   +{d['added_lines']} -{d['removed_lines']}")
         if args.verbose and d["diff"]:
-            print(f"   ---")
+            print("   ---")
             for line in d["diff"].split("\n")[:30]:
                 print(f"   {line}")
             if len(d["diff"].split("\n")) > 30:
@@ -703,7 +727,7 @@ def _cli_rollback(vc: MemoryVersionControl, args) -> int:
         print(f"❌ {e}")
         return 1
 
-    print(f"✅ 回滚成功")
+    print("✅ 回滚成功")
     print(f"   目标: {_short_id(result['rolled_back_to'])} ({result['target_timestamp'][:19]})")
     print(f"   消息: {result['target_message']}")
     if result["backup_commit_id"]:
@@ -726,7 +750,7 @@ def _cli_restore(vc: MemoryVersionControl, args) -> int:
     except ValueError as e:
         print(f"❌ {e}")
         return 1
-    print(f"✅ 恢复成功")
+    print("✅ 恢复成功")
     print(f"   文件: {result['restored_file']}")
     print(f"   来源: {_short_id(result['restored_from'])} ({result['target_timestamp'][:19]})")
     return 0
@@ -739,7 +763,7 @@ def _cli_show(vc: MemoryVersionControl, args) -> int:
     except ValueError as e:
         print(f"❌ {e}")
         return 1
-    print(f"📋 Commit 详情")
+    print("📋 Commit 详情")
     print(f"   ID: {info['commit_id']}")
     print(f"   父: {info['parent_short'] or '(无)'}")
     print(f"   时间: {info['timestamp'][:19]}")
@@ -749,7 +773,7 @@ def _cli_show(vc: MemoryVersionControl, args) -> int:
     changes = info["changes"]
     if changes["added"] or changes["modified"] or changes["removed"]:
         print(f"   变更: +{changes['added']} ~{changes['modified']} -{changes['removed']}")
-    print(f"   文件列表:")
+    print("   文件列表:")
     for f in info["files"]:
         print(f"     - {f}")
     return 0
@@ -762,15 +786,15 @@ def _cli_status(vc: MemoryVersionControl, args) -> int:
         print(status["message"])
         return 1
 
-    print(f"📊 工作区状态")
+    print("📊 工作区状态")
     print(f"   最新 commit: {status['latest_commit']}")
     print(f"   消息: {status['latest_message']}")
     print(f"   时间: {status['latest_timestamp'][:19]}")
 
     if status["is_clean"]:
-        print(f"   状态: ✅ 干净（无未提交变更）")
+        print("   状态: ✅ 干净（无未提交变更）")
     else:
-        print(f"   状态: ⚠️ 有未提交变更")
+        print("   状态: ⚠️ 有未提交变更")
         if status["modified"]:
             print(f"   修改: {len(status['modified'])} 个")
             for f in status["modified"]:

@@ -3,7 +3,11 @@
 7 场景压力测试 — 步进式笔记本框架 + 三链门禁 + 笔记本钩子
 测试所有子系统在高负载、边界值、错误恢复、跨Session场景下的稳定性。
 """
-import json, os, sys, time, shutil, re
+
+import json
+import os
+import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -17,6 +21,7 @@ PASS = 0
 FAIL = 0
 ERRORS = []
 
+
 def check(label, condition, detail=""):
     global PASS, FAIL
     if condition:
@@ -27,11 +32,14 @@ def check(label, condition, detail=""):
         ERRORS.append(f"❌ {label}: {detail}")
         return False
 
+
 def run(cmd):
     """Run a CLI command and return (exit_code, stdout, stderr)"""
     import subprocess
+
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
     return result.returncode, result.stdout, result.stderr
+
 
 def ensure_empty():
     """Ensure all state files are clean before test"""
@@ -42,20 +50,27 @@ def ensure_empty():
     if chain_file.exists():
         chain_file.unlink()
     # Clean test artifacts from done/todo/active
-    for d in [BASE/"0-NOTEBOOK"/"2-DONE", BASE/"0-NOTEBOOK"/"0-TODO", BASE/"0-NOTEBOOK"/"1-ACTIVE"]:
+    for d in [
+        BASE / "0-NOTEBOOK" / "2-DONE",
+        BASE / "0-NOTEBOOK" / "0-TODO",
+        BASE / "0-NOTEBOOK" / "1-ACTIVE",
+    ]:
         if d.exists():
             for f in d.glob("*"):
                 if f.name != "README.md" and f.stat().st_mtime > time.time() - 3600:
                     f.unlink()
+
 
 def print_header(s):
     print(f"\n{'='*60}")
     print(f"  {s}")
     print(f"{'='*60}")
 
+
 def print_result(label, ok):
     mark = "✅" if ok else "❌"
     print(f"  {mark} {label}")
+
 
 # =========================================================
 # SCENARIO 1: 高并发写入 (50+ 混合操作)
@@ -70,11 +85,17 @@ def test_scenario1():
     for i in range(tries):
         t0 = time.time()
         if i < 20:
-            rc, out, err = run(["python3", "scripts/step_controller.py", "start", f"压力测试任务_{i}"])
+            rc, out, err = run(
+                ["python3", "scripts/step_controller.py", "start", f"压力测试任务_{i}"]
+            )
         elif i < 40:
-            rc, out, err = run(["python3", "scripts/notebook_hook.py", "done", f"压力完成项_{i}", f"{i}号测试完成"])
+            rc, out, err = run(
+                ["python3", "scripts/notebook_hook.py", "done", f"压力完成项_{i}", f"{i}号测试完成"]
+            )
         else:
-            rc, out, err = run(["python3", "scripts/notebook_hook.py", "todo", f"压力待办_{i}", f"{i}号待办描述"])
+            rc, out, err = run(
+                ["python3", "scripts/notebook_hook.py", "todo", f"压力待办_{i}", f"{i}号待办描述"]
+            )
         elapsed = time.time() - t0
         times.append(elapsed)
         check(f"S1-操作{i}", rc == 0, f"exit={rc}, stderr={err[:100]}")
@@ -84,7 +105,9 @@ def test_scenario1():
     min_t = min(times)
     check("S1-平均耗时<200ms", avg < 0.2, f"avg={avg*1000:.1f}ms")
     check("S1-最大耗时<1s", max_t < 1.0, f"max={max_t*1000:.1f}ms")
-    print(f"  ⏱  {tries}次操作: avg={avg*1000:.1f}ms, min={min_t*1000:.1f}ms, max={max_t*1000:.1f}ms")
+    print(
+        f"  ⏱  {tries}次操作: avg={avg*1000:.1f}ms, min={min_t*1000:.1f}ms, max={max_t*1000:.1f}ms"
+    )
 
     # Verify NOTEBOOK.md is still valid markdown
     nb = BASE / "0-NOTEBOOK" / "NOTEBOOK.md"
@@ -95,15 +118,18 @@ def test_scenario1():
         check("S1-含完成区域", "## ✅ 已完成" in content or "## ✅ 最近完成" in content)
 
     # Verify DONE directory has files
-    done_files = list((BASE/"0-NOTEBOOK"/"2-DONE").glob("*.md"))
-    check(f"S1-完成项文件>10", len(done_files) > 10, f"got={len(done_files)}")
+    done_files = list((BASE / "0-NOTEBOOK" / "2-DONE").glob("*.md"))
+    check("S1-完成项文件>10", len(done_files) > 10, f"got={len(done_files)}")
 
     # Verify TODO directory has files
-    todo_files = list((BASE/"0-NOTEBOOK"/"0-TODO").glob("*.md"))
-    check(f"S1-待办项文件>10", len(todo_files) > 10, f"got={len(todo_files)}")
+    todo_files = list((BASE / "0-NOTEBOOK" / "0-TODO").glob("*.md"))
+    check("S1-待办项文件>10", len(todo_files) > 10, f"got={len(todo_files)}")
 
-    print(f"\n  S1 结果: {sum(1 for i in range(60) if check(f'S1-操作{i}', True, ''))}/60 + 4 验证 = ...")
+    print(
+        f"\n  S1 结果: {sum(1 for i in range(60) if check(f'S1-操作{i}', True, ''))}/60 + 4 验证 = ..."
+    )
     ensure_empty()
+
 
 # =========================================================
 # SCENARIO 2: 三链全流程 — Step1→Step7 完整路径
@@ -127,7 +153,11 @@ def test_scenario2():
     rc, out, err = run(["python3", "scripts/step_controller.py", "status"])
     check("S2-status", rc == 0)
     for step_num in range(1, 8):
-        check(f"S2-完成{step_num}", f"Step {step_num}" in out and ("✅" in out), f"step{step_num} not completed")
+        check(
+            f"S2-完成{step_num}",
+            f"Step {step_num}" in out and ("✅" in out),
+            f"step{step_num} not completed",
+        )
 
     # Verify step state file
     state_file = BASE / "0-NOTEBOOK" / ".step_state.json"
@@ -137,11 +167,16 @@ def test_scenario2():
         check("S2-全部7步完成", state["current_step"] == 8, f"current_step={state['current_step']}")
         for s in range(1, 8):
             st = state["steps"].get(str(s), {})
-            check(f"S2-step{s}_completed", st.get("status") == "completed", f"status={st.get('status')}")
+            check(
+                f"S2-step{s}_completed",
+                st.get("status") == "completed",
+                f"status={st.get('status')}",
+            )
 
     ensure_empty()
     print()
     return True
+
 
 # =========================================================
 # SCENARIO 3: 边界值测试
@@ -179,7 +214,7 @@ def test_scenario3():
 
     # 3g. 字符串参数代替数字
     rc, out, err = run(["python3", "scripts/step_controller.py", "step", "abc"])
-    check("S3g-字符串参数", rc != 0 or "ValueError" in err+out, out[:200])
+    check("S3g-字符串参数", rc != 0 or "ValueError" in err + out, out[:200])
 
     # 3h. notebook_hook 超长标题
     long_title = "A" * 500
@@ -196,24 +231,41 @@ def test_scenario3():
     check("S3j-路径注入", rc == 0 and "✅" in out, out[:200])
 
     # 3k. chain_guard 未初始化就 check
-    rc, out, err = run(["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "check", "d1", "x99"])
+    rc, out, err = run(
+        ["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "check", "d1", "x99"]
+    )
     check("S3k-chain_guard未初始化check", "未初始化" in out, out[:200])
 
     # 3l. chain_guard 初始化并approve后跨链非法跳转
-    rc2, out2, err2 = run(["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "init", "边界测试"])
-    rc2, out2, err2 = run(["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "approve", "d1"])  # 先完成d1
-    rc, out, err = run(["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "check", "d1", "z1"])
-    check("S3l-chain_guard跨链非法", "不合法" in out or "不允许" in out or "只允许" in out, out[:200])
+    rc2, out2, err2 = run(
+        ["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "init", "边界测试"]
+    )
+    rc2, out2, err2 = run(
+        ["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "approve", "d1"]
+    )  # 先完成d1
+    rc, out, err = run(
+        ["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "check", "d1", "z1"]
+    )
+    check(
+        "S3l-chain_guard跨链非法", "不合法" in out or "不允许" in out or "只允许" in out, out[:200]
+    )
     ensure_empty()
 
     # 3m. chain_guard approve后同链跳步（d1已完成，check d1→d3跳过d2）
-    rc2, out2, err2 = run(["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "init", "跳步测试"])
-    rc2, out2, err2 = run(["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "approve", "d1"])  # 先完成d1
-    rc, out, err = run(["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "check", "d1", "d3"])  # d1已完成,d3未激活→非法跳步
+    rc2, out2, err2 = run(
+        ["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "init", "跳步测试"]
+    )
+    rc2, out2, err2 = run(
+        ["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "approve", "d1"]
+    )  # 先完成d1
+    rc, out, err = run(
+        ["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "check", "d1", "d3"]
+    )  # d1已完成,d3未激活→非法跳步
     check("S3m-chain_guard跳步非法", "顺序" in out or "pending" in out or "应" in out, out[:200])
 
     ensure_empty()
     print()
+
 
 # =========================================================
 # SCENARIO 4: 跳步门禁 — skip / jump / all 权限验证
@@ -231,18 +283,28 @@ def test_scenario4():
     state_file = BASE / "0-NOTEBOOK" / ".step_state.json"
     if state_file.exists():
         state = json.loads(state_file.read_text())
-        check("S4a-skip1→step2激活", state.get("current_step") == 2, f"current={state.get('current_step')}")
+        check(
+            "S4a-skip1→step2激活",
+            state.get("current_step") == 2,
+            f"current={state.get('current_step')}",
+        )
 
     # 4b. jump: 从 Step 2 跳到 Step 6
     rc, out, err = run(["python3", "scripts/step_controller.py", "jump", "6"])
     check("S4b-jump6", rc == 0 and "🚀" in out, out[:200])
     if state_file.exists():
         state = json.loads(state_file.read_text())
-        check("S4b-jump→step6激活", state.get("current_step") == 6, f"current={state.get('current_step')}")
+        check(
+            "S4b-jump→step6激活",
+            state.get("current_step") == 6,
+            f"current={state.get('current_step')}",
+        )
         # Steps 2-5 should be skipped
         for s in range(2, 6):
             st = state["steps"].get(str(s), {})
-            check(f"S4b-step{s}_skipped", st.get("status") == "skipped", f"step{s}={st.get('status')}")
+            check(
+                f"S4b-step{s}_skipped", st.get("status") == "skipped", f"step{s}={st.get('status')}"
+            )
 
     # 4c. all: 直接全部标记完成
     ensure_empty()
@@ -255,27 +317,45 @@ def test_scenario4():
         check("S4c-all完成后8", state["current_step"] == 8, f"current={state['current_step']}")
         for s in range(1, 8):
             st = state["steps"].get(str(s), {})
-            check(f"S4c-step{s}_all", st.get("status") == "completed", f"step{s}={st.get('status')}")
+            check(
+                f"S4c-step{s}_all", st.get("status") == "completed", f"step{s}={st.get('status')}"
+            )
 
     # 4d. chain_guard override: d1→e1 (跳过d2-d4和z1-z4)
     ensure_empty()
-    rc, out, err = run(["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "init", "跳步门禁测试"])
+    rc, out, err = run(
+        ["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "init", "跳步门禁测试"]
+    )
     check("S4d-guard_init", rc == 0, out[:200])
 
-    rc, out, err = run(["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "override", "d1", "e1", "用户授权跳过全部中间阶段"])
+    rc, out, err = run(
+        [
+            "python3",
+            "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py",
+            "override",
+            "d1",
+            "e1",
+            "用户授权跳过全部中间阶段",
+        ]
+    )
     check("S4d-guard_override", rc == 0 and "🔄" in out, out[:200])
 
     chain_file = Path.home() / ".workbuddy" / "memory" / "chain_state.json"
     if chain_file.exists():
         state = json.loads(chain_file.read_text())
         check("S4d-跳转到e1", state["current_phase"] == "e1", f"current={state['current_phase']}")
-        skipped_d = [p["id"] for p in state["phases"] if p["status"] == "skipped" and p["id"].startswith("d")]
-        skipped_z = [p["id"] for p in state["phases"] if p["status"] == "skipped" and p["id"].startswith("z")]
+        skipped_d = [
+            p["id"] for p in state["phases"] if p["status"] == "skipped" and p["id"].startswith("d")
+        ]
+        skipped_z = [
+            p["id"] for p in state["phases"] if p["status"] == "skipped" and p["id"].startswith("z")
+        ]
         check(f"S4d-D系列跳过{len(skipped_d)}个", len(skipped_d) == 3, f"skipped={skipped_d}")
         check(f"S4d-Z系列跳过{len(skipped_z)}个", len(skipped_z) == 4, f"skipped={skipped_z}")
 
     ensure_empty()
     print()
+
 
 # =========================================================
 # SCENARIO 5: 错误恢复
@@ -316,8 +396,12 @@ def test_scenario5():
     if state_file.exists():
         state = json.loads(state_file.read_text())
         check("S5d-状态保留_step3", state["current_step"] == 3, f"current={state['current_step']}")
-        check("S5d-状态保留_steps", state["steps"]["1"]["status"] == "completed" and state["steps"]["2"]["status"] == "completed",
-              f"step1={state['steps']['1']['status']}, step2={state['steps']['2']['status']}")
+        check(
+            "S5d-状态保留_steps",
+            state["steps"]["1"]["status"] == "completed"
+            and state["steps"]["2"]["status"] == "completed",
+            f"step1={state['steps']['1']['status']}, step2={state['steps']['2']['status']}",
+        )
 
     # 5e. chain_guard 状态文件损坏 → 应返回默认状态（不崩溃）
     chain_file = Path.home() / ".workbuddy" / "memory" / "chain_state.json"
@@ -328,20 +412,27 @@ def test_scenario5():
 
     # 5f. chain_guard 空对象做check → 明确提示未初始化
     chain_file.write_text("{}")
-    rc, out, err = run(["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "check", "d1", "d2"])
+    rc, out, err = run(
+        ["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "check", "d1", "d2"]
+    )
     check("S5f-chain_guard空状态check", "未初始化" in out, out[:300])
 
     # 5g. 双系统同时操作 — step_controller + notebook_hook 交替
     ensure_empty()
     for i in range(20):
         if i % 2 == 0:
-            rc, out, err = run(["python3", "scripts/step_controller.py", "start", f"双系统测试_{i}"])
+            rc, out, err = run(
+                ["python3", "scripts/step_controller.py", "start", f"双系统测试_{i}"]
+            )
         else:
-            rc, out, err = run(["python3", "scripts/notebook_hook.py", "done", f"双系统完成_{i}", f"第{i}次交替"])
+            rc, out, err = run(
+                ["python3", "scripts/notebook_hook.py", "done", f"双系统完成_{i}", f"第{i}次交替"]
+            )
         check(f"S5g-交替操作{i}", rc == 0, out[:200])
 
     ensure_empty()
     print()
+
 
 # =========================================================
 # SCENARIO 6: 跨 Session 持久化
@@ -354,10 +445,20 @@ def test_scenario6():
     rc, out, err = run(["python3", "scripts/step_controller.py", "start", "跨Session测试"])
     check("S6a-启动", rc == 0, out[:200])
     for s in [1, 2, 3]:
-        rc, out, err = run(["python3", "scripts/step_controller.py", "step", str(s), f"Session A Step {s}"])
+        rc, out, err = run(
+            ["python3", "scripts/step_controller.py", "step", str(s), f"Session A Step {s}"]
+        )
         check(f"S6a-step{s}", rc == 0, out[:200])
         # 同时通知hooks
-        rc2, out2, err2 = run(["python3", "scripts/notebook_hook.py", "done", f"Session A Step {s}", f"跨Session步骤{s}完成"])
+        rc2, out2, err2 = run(
+            [
+                "python3",
+                "scripts/notebook_hook.py",
+                "done",
+                f"Session A Step {s}",
+                f"跨Session步骤{s}完成",
+            ]
+        )
     # 同步笔记本
     rc, out, err = run(["python3", "scripts/notebook_hook.py", "sync"])
 
@@ -365,31 +466,42 @@ def test_scenario6():
     state_file = BASE / "0-NOTEBOOK" / ".step_state.json"
     check("S6a-SessionA状态文件", state_file.exists())
     state_a = json.loads(state_file.read_text()) if state_file.exists() else {}
-    check("S6a-第4步激活", state_a.get("current_step") == 4, f"current={state_a.get('current_step')}")
+    check(
+        "S6a-第4步激活", state_a.get("current_step") == 4, f"current={state_a.get('current_step')}"
+    )
 
     # Session B: 新 session 读取状态继续
     # 模拟一个"新" session 读取 NOTEBOOK.md
     nb = BASE / "0-NOTEBOOK" / "NOTEBOOK.md"
     if nb.exists():
         content = nb.read_text()
-        check("S6b-步进面板含进度", "▶️" in content or "Step 4" in content or "思维链" in content,
-              "no visible progress indicator")
+        check(
+            "S6b-步进面板含进度",
+            "▶️" in content or "Step 4" in content or "思维链" in content,
+            "no visible progress indicator",
+        )
 
     rc, out, err = run(["python3", "scripts/step_controller.py", "status"])
-    check("S6b-SessionB状态正确", f"Step 4" in out or "思维链" in out, out[:200])
+    check("S6b-SessionB状态正确", "Step 4" in out or "思维链" in out, out[:200])
 
     # Session B 继续完成 Step 4-7
     for s in [4, 5, 6, 7]:
-        rc, out, err = run(["python3", "scripts/step_controller.py", "step", str(s), f"Session B Step {s}"])
+        rc, out, err = run(
+            ["python3", "scripts/step_controller.py", "step", str(s), f"Session B Step {s}"]
+        )
         check(f"S6b-step{s}", rc == 0, out[:200])
 
     # 验证全部完成
     state_final = json.loads(state_file.read_text()) if state_file.exists() else {}
-    check("S6c-最终完成", state_final.get("current_step") == 8, f"current={state_final.get('current_step')}")
+    check(
+        "S6c-最终完成",
+        state_final.get("current_step") == 8,
+        f"current={state_final.get('current_step')}",
+    )
 
     # 验证 notebook_hook 已完成项在跨 session 后仍被记录
-    done_files = list((BASE/"0-NOTEBOOK"/"2-DONE").glob("*.md"))
-    check(f"S6d-完成项>0", len(done_files) > 0)
+    done_files = list((BASE / "0-NOTEBOOK" / "2-DONE").glob("*.md"))
+    check("S6d-完成项>0", len(done_files) > 0)
 
     # 验证 sync 后 NOTEBOOK 显示跨 session 完成的项
     if nb.exists():
@@ -400,6 +512,7 @@ def test_scenario6():
     ensure_empty()
     print()
 
+
 # =========================================================
 # SCENARIO 7: 全系统压力
 # =========================================================
@@ -409,30 +522,50 @@ def test_scenario7():
 
     # 7a. 完整 D-Z-E 链 + 步进式 + 笔记本钩子同步
     # Phase 1: chain_guard init → step controller start
-    rc, out, err = run(["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "init", "全系统压力测试"])
+    rc, out, err = run(
+        ["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "init", "全系统压力测试"]
+    )
     check("S7a-guard_init", rc == 0, out[:200])
     rc, out, err = run(["python3", "scripts/step_controller.py", "start", "全系统压力测试"])
     check("S7a-step_start", rc == 0, out[:200])
 
     # Phase 2: 交错步进控制器 + 链推进（override模式） + 笔记本钩子
-    chain_steps = ["d1","d2","d3","d4","z1","z2","z3","z4","e1","e2","e3"]
+    chain_steps = ["d1", "d2", "d3", "d4", "z1", "z2", "z3", "z4", "e1", "e2", "e3"]
     for i in range(11):
         # Step controller one step
         if i < 7:
-            rc, out, err = run(["python3", "scripts/step_controller.py", "step", str(i+1), f"总压力步{i+1}"])
+            rc, out, err = run(
+                ["python3", "scripts/step_controller.py", "step", str(i + 1), f"总压力步{i+1}"]
+            )
             check(f"S7b-step{i+1}", rc == 0, out[:200])
 
         # Chain guard override (直接跳过到下一步，不需要complete前置)
         if i < 10:
             f = chain_steps[i]
-            t = chain_steps[i+1]
-            rc, out, err = run(["python3", "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py", "override", f, t, f"压力测试{i}→{i+1}"])
+            t = chain_steps[i + 1]
+            rc, out, err = run(
+                [
+                    "python3",
+                    "3-CHAIN-DEVELOPMENT/scripts/chain_guard.py",
+                    "override",
+                    f,
+                    t,
+                    f"压力测试{i}→{i+1}",
+                ]
+            )
 
         # Notebook hook at alternating intervals
         if i % 2 == 0:
-            rc, out, err = run(["python3", "scripts/notebook_hook.py", "done",
-                                f"全系统-{chain_steps[i] if i < 11 else 'done'}",
-                                f"阶段{i+1}/{11}完成", ""])
+            rc, out, err = run(
+                [
+                    "python3",
+                    "scripts/notebook_hook.py",
+                    "done",
+                    f"全系统-{chain_steps[i] if i < 11 else 'done'}",
+                    f"阶段{i+1}/{11}完成",
+                    "",
+                ]
+            )
             if rc != 0:
                 print(f"  ⚠️ notebook_hook done failed at i={i}: {err[:100]}")
 
@@ -464,6 +597,7 @@ def test_scenario7():
     ensure_empty()
     print()
 
+
 # =========================================================
 # 最终验证
 # =========================================================
@@ -481,7 +615,9 @@ def final_verify():
     rc, out, err = run(["python3", "scripts/step_controller.py", "start", "最终验证"])
     check("F-最终-start", rc == 0, out[:200])
 
-    rc, out, err = run(["python3", "scripts/notebook_hook.py", "done", "最终验证", "压力测试全部通过"])
+    rc, out, err = run(
+        ["python3", "scripts/notebook_hook.py", "done", "最终验证", "压力测试全部通过"]
+    )
     check("F-最终-done", rc == 0, out[:200])
 
     rc, out, err = run(["python3", "scripts/notebook_hook.py", "sync"])
@@ -492,16 +628,22 @@ def final_verify():
 
     ensure_empty()
     # Clean all test artifacts
-    for d in [BASE/"0-NOTEBOOK"/"2-DONE", BASE/"0-NOTEBOOK"/"0-TODO", BASE/"0-NOTEBOOK"/"1-ACTIVE"]:
+    for d in [
+        BASE / "0-NOTEBOOK" / "2-DONE",
+        BASE / "0-NOTEBOOK" / "0-TODO",
+        BASE / "0-NOTEBOOK" / "1-ACTIVE",
+    ]:
         if d.exists():
             for f in d.glob("*.md"):
                 if f.name != "README.md":
-                    try: f.unlink()
-                    except: pass
+                    try:
+                        f.unlink()
+                    except:  # noqa: E722
+                        pass
 
     nb = BASE / "0-NOTEBOOK" / "NOTEBOOK.md"
     if nb.exists():
-        content = nb.read_text()
+        content = nb.read_text()  # noqa: F841
         # Restore clean notebook template
         clean_nb = """# 🗒️ AI 工作笔记本
 
@@ -574,6 +716,7 @@ python3 scripts/step_controller.py status
         print("  ✅ NOTEBOOK.md 已恢复为干净模板")
     print()
 
+
 # =========================================================
 # MAIN
 # =========================================================
@@ -594,13 +737,13 @@ if __name__ == "__main__":
 
     total_time = time.time() - t_start
     print(f"{'='*60}")
-    print(f"📊 总结")
+    print("📊 总结")
     print(f"{'='*60}")
     print(f"  ✅ 通过: {PASS}")
     print(f"  ❌ 失败: {FAIL}")
     print(f"  ⏱  总耗时: {total_time:.1f}s")
     if FAIL > 0:
-        print(f"\n  错误详情:")
+        print("\n  错误详情:")
         for e in ERRORS[:20]:
             print(f"    {e}")
         if len(ERRORS) > 20:

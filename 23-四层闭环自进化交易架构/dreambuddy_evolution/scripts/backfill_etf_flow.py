@@ -14,6 +14,7 @@ FAIL-OPEN: 网络/解析异常 → 记录日志退出, 不中断.
 用法:
   python backfill_etf_flow.py [--start 2024-01-11] [--end 2025-01-01]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -42,6 +43,7 @@ def fetch_html() -> str:
     # 优先用 cloudscraper (绕过 Cloudflare), 回退到 requests
     try:
         import cloudscraper
+
         scraper = cloudscraper.create_scraper()
         resp = scraper.get(_URL, timeout=30)
         resp.raise_for_status()
@@ -93,6 +95,7 @@ def parse_html_table(html: str, start: datetime, end: datetime) -> list[tuple[da
     # 用 pandas.read_html 解析 (最稳健)
     try:
         import pandas as pd
+
         tables = pd.read_html(html)
         if not tables:
             logger.warning("pandas.read_html 未找到表格")
@@ -163,6 +166,7 @@ def write_to_dal(records: list[tuple[datetime, float]]) -> int:
         return 0
     try:
         from dreambuddy_dal import get_market_macro_repo
+
         repo = get_market_macro_repo(backend="sqlite_unified")
     except Exception as exc:
         logger.error("无法获取 DAL repo: %s", exc)

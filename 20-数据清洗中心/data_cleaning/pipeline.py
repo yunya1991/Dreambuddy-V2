@@ -14,6 +14,7 @@ fail-open（Spec§C6）：
   · 中间 cleaner 抛异常 → 记录 trace，跳过后续 cleaner，直接把当前 DF 兜底进入 Gate（enforce=False）
   · Gate enforce=True 抛 QualityGateFailed 时，如果 fail_open=True → catch 后返回 gate_passed=False 的 SilverRecord。
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -38,6 +39,7 @@ __all__ = ["DataCleaningPipeline", "PipelineConfig"]
 @dataclass
 class PipelineConfig:
     """可配置参数（Spec§C3.3）。"""
+
     target_freq: str = "1h"
     ffill_limit: int = 5
     z_threshold: float = 3.0
@@ -115,28 +117,35 @@ class DataCleaningPipeline:
 
         # ---------- Cleaner 链（fail-open: 任意异常→记 trace, 保持原 df, 进 Gate）
         try:
-            df = self._run_cleaner(self.dedup, df, trace, asset=_extract_first_asset(cleaned),
-                                   category=category)
+            df = self._run_cleaner(
+                self.dedup, df, trace, asset=_extract_first_asset(cleaned), category=category
+            )
             df = self._run_cleaner(self.outlier, df, trace, asset=_extract_first_asset(cleaned))
             df = self._run_cleaner(self.missing, df, trace)
             if self.cfg.enable_unit_normalize:
                 df = self._run_cleaner(self.unit, df, trace)
         except Exception as exc:  # noqa: BLE001
-            trace.append(CleanAction(
-                step="FAIL-OPEN-CATCH",
-                input_rows=len(df), output_rows=len(df),
-                note=f"{type(exc).__name__}: {exc}",
-            ))
+            trace.append(
+                CleanAction(
+                    step="FAIL-OPEN-CATCH",
+                    input_rows=len(df),
+                    output_rows=len(df),
+                    note=f"{type(exc).__name__}: {exc}",
+                )
+            )
             if not self.cfg.fail_open:
                 raise
             # fail-open: 直接把当前 df 兜底送出；不跑 Gate 流程（因为已经异常了，再送正常 Gate 可能 PASS，语义错）
             gate_passed = False
             issues = []
-            trace.append(CleanAction(
-                step="FAIL-OPEN(cleaner-exc)",
-                input_rows=len(df), output_rows=len(df),
-                note=f"{type(exc).__name__}: {exc}",
-            ))
+            trace.append(
+                CleanAction(
+                    step="FAIL-OPEN(cleaner-exc)",
+                    input_rows=len(df),
+                    output_rows=len(df),
+                    note=f"{type(exc).__name__}: {exc}",
+                )
+            )
             trace.finished_at = pd.Timestamp.utcnow().to_pydatetime()
             return SilverRecord(
                 bronze_id=_mk_bronze_id(records, source, category),
@@ -147,14 +156,18 @@ class DataCleaningPipeline:
             )
 
         # ---------- 还原成 [DataRecord]，再送 Gate
-        records_out = cleaned_df_to_records(
-            df,
-            source=source or _source_fallback(records, cleaned),
-            category=category or _category_fallback(records, cleaned),
-            sub_category=sub_category or _sub_fallback(records, cleaned),
-            asset_col="asset",
-            timestamp_col=self.cfg.timestamp_col,
-        ) if not df.empty else list(records)
+        records_out = (
+            cleaned_df_to_records(
+                df,
+                source=source or _source_fallback(records, cleaned),
+                category=category or _category_fallback(records, cleaned),
+                sub_category=sub_category or _sub_fallback(records, cleaned),
+                asset_col="asset",
+                timestamp_col=self.cfg.timestamp_col,
+            )
+            if not df.empty
+            else list(records)
+        )
 
         try:
             _gate_pass, issues = self.gate.validate(
@@ -169,11 +182,14 @@ class DataCleaningPipeline:
             if self.cfg.fail_open:
                 gate_passed = False
                 issues = exc.issues
-                trace.append(CleanAction(
-                    step="QualityGateFailed(catch-fail-open)",
-                    input_rows=0, output_rows=0,
-                    note=f"code={exc.code}, msg={exc.message}",
-                ))
+                trace.append(
+                    CleanAction(
+                        step="QualityGateFailed(catch-fail-open)",
+                        input_rows=0,
+                        output_rows=0,
+                        note=f"code={exc.code}, msg={exc.message}",
+                    )
+                )
             else:
                 raise
 
@@ -190,11 +206,14 @@ class DataCleaningPipeline:
     # ------------------------------------------------------------------
     def _run_cleaner(self, cleaner, df: pd.DataFrame, trace: CleaningTrace, **kw) -> pd.DataFrame:
         if df is None or df.empty:
-            trace.append(CleanAction(
-                step=type(cleaner).__name__,
-                input_rows=0, output_rows=0,
-                note="empty_df_skip",
-            ))
+            trace.append(
+                CleanAction(
+                    step=type(cleaner).__name__,
+                    input_rows=0,
+                    output_rows=0,
+                    note="empty_df_skip",
+                )
+            )
             return df
         out, _action = cleaner.clean(df, trace, **kw)
         return out

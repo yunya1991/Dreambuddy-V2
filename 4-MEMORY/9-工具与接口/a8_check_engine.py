@@ -4,7 +4,7 @@ A8 理论实践校验引擎 — 认知闭环的"观察"节点
 
 功能：对比 API_SPEC.md 中声明的接口与实际代码中的函数定义，
       检测文档-代码不一致，生成校验报告。
-      
+
       本引擎在认知架构中承担"观察（Observation）"角色：
       1. 作为认知闭环的第五步，产生实践层的观察结果
       2. 为 BayesianMemoryUpdater 提供输入，驱动记忆置信度更新
@@ -15,7 +15,7 @@ A8 理论实践校验引擎 — 认知闭环的"观察"节点
 
 输出：
     控制台报告 + a8_report.json
-    
+
 集成：
     与 auto_update_trigger.py 集成，形成完整的认知闭环流程
     与 bayesian_memory_updater.py 集成，实现贝叶斯记忆更新
@@ -23,22 +23,22 @@ A8 理论实践校验引擎 — 认知闭环的"观察"节点
 
 import ast
 import json
-import os
 import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import List, Set
 
 
 @dataclass
 class A8Report:
     """A8 校验报告"""
+
     subsystem: str
     doc_functions: Set[str] = field(default_factory=set)
     code_functions: Set[str] = field(default_factory=set)
     matched: List[str] = field(default_factory=list)
-    doc_only: List[str] = field(default_factory=list)   # 文档有，代码没有
+    doc_only: List[str] = field(default_factory=list)  # 文档有，代码没有
     code_only: List[str] = field(default_factory=list)  # 代码有，文档没有
     score: float = 0.0  # 一致性得分 0~100
 
@@ -182,7 +182,7 @@ def print_report(report: A8Report) -> None:
     print(f"{'='*60}")
 
     summary = report.to_dict()["summary"]
-    print(f"\n📊 概览:")
+    print("\n📊 概览:")
     print(f"   文档声明函数: {summary['doc_declared']}")
     print(f"   代码实现函数: {summary['code_implemented']}")
     print(f"   ✅ 匹配: {summary['matched']}")
@@ -191,14 +191,14 @@ def print_report(report: A8Report) -> None:
     print(f"   📈 一致性得分: {summary['consistency_score']}%")
 
     if report.doc_only:
-        print(f"\n⚠️  文档声明但未在代码中找到:")
+        print("\n⚠️  文档声明但未在代码中找到:")
         for f in report.doc_only[:10]:
             print(f"   - {f}")
         if len(report.doc_only) > 10:
             print(f"   ... 等共 {len(report.doc_only)} 项")
 
     if report.code_only:
-        print(f"\n❓ 代码实现但未在文档中找到:")
+        print("\n❓ 代码实现但未在文档中找到:")
         for f in report.code_only[:10]:
             print(f"   - {f}")
         if len(report.code_only) > 10:

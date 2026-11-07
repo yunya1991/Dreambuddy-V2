@@ -15,6 +15,7 @@
 红线：只产建议不产交易信号（SPEC 边界红线）；所有仓位为建议区间，
 交易决策归 23 系统三步门禁。
 """
+
 import json
 import os
 import sys
@@ -83,9 +84,9 @@ TRANSMISSION_ADJUST = {
 
 # 广度修正
 BREADTH_ADJUST = {
-    "strong": {"position_shift": 5},   # >=75
-    "mixed": {"position_shift": 0},    # 50-75
-    "weak": {"position_shift": -10},   # <50
+    "strong": {"position_shift": 5},  # >=75
+    "mixed": {"position_shift": 0},  # 50-75
+    "weak": {"position_shift": -10},  # <50
 }
 
 # 置信度修正
@@ -149,9 +150,12 @@ def main():
         "note": "滞胀修正：时钟失效降级时的独立映射，触发时覆盖象限基础映射",
     }
     rule1 = quadrant == "stagflation"
-    rule2 = (growth is not None and inflation is not None
-             and growth < thresholds.get("growth", 1.5)
-             and inflation > thresholds.get("inflation", 2.5))
+    rule2 = (
+        growth is not None
+        and inflation is not None
+        and growth < thresholds.get("growth", 1.5)
+        and inflation > thresholds.get("inflation", 2.5)
+    )
     if rule1 or rule2:
         stagflation_table["correction_active"] = True
         stagflation_table["corrected_mapping"] = QUADRANT_BASE["stagflation"]
@@ -245,13 +249,18 @@ def main():
 
     dump_json("strategy_mapping.json", mapping)
     dump_json("stagflation_correction_table.json", stagflation_table)
-    print(json.dumps({
-        "stance": stance,
-        "position_band_pct": band,
-        "quadrant": quadrant,
-        "stagflation_correction": stagflation_table["correction_active"],
-        "risk_notes": len(notes),
-    }, ensure_ascii=False))
+    print(
+        json.dumps(
+            {
+                "stance": stance,
+                "position_band_pct": band,
+                "quadrant": quadrant,
+                "stagflation_correction": stagflation_table["correction_active"],
+                "risk_notes": len(notes),
+            },
+            ensure_ascii=False,
+        )
+    )
 
 
 if __name__ == "__main__":

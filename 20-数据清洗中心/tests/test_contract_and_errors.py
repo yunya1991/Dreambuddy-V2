@@ -1,4 +1,5 @@
 """T1 · Contract + Errors 单测（RED → GREEN TDD）。"""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -58,7 +59,9 @@ class TestContractTypesExist:
             imputed_count=12,
             note="ffill(5) 11 + linear 1",
         )
-        trace = CleaningTrace(actions=[a1, a2], started_at=datetime.now(), finished_at=datetime.now())
+        trace = CleaningTrace(
+            actions=[a1, a2], started_at=datetime.now(), finished_at=datetime.now()
+        )
         assert trace.total_clipped == 7
         assert trace.total_imputed == 12
         assert len(trace.actions) == 2
@@ -104,6 +107,12 @@ class TestPackageExports:
         """__init__.py 必须直接导出：Contract三类型 + Errors二类型。"""
         import data_cleaning
 
-        for name in ("SilverRecord", "CleanedDF", "CleaningTrace",
-                     "CleaningAction", "CleaningError", "QualityGateFailed"):
+        for name in (
+            "SilverRecord",
+            "CleanedDF",
+            "CleaningTrace",
+            "CleaningAction",
+            "CleaningError",
+            "QualityGateFailed",
+        ):
             assert hasattr(data_cleaning, name), f"缺少导出: {name}"

@@ -13,6 +13,7 @@ SPEC-文件索引系统 v0.5 §3 P0 阶段
 
 位置: 41-文件索引系统/core/scanner.py
 """
+
 from __future__ import annotations
 
 import os
@@ -24,33 +25,73 @@ from typing import Iterator, Optional, Set
 class FileMeta:
     """文件元数据（L1 索引的原始输入，Evidence-First 来源证据）"""
 
-    path: str          # 相对根目录的路径（正斜杠分隔，跨平台一致）
-    name: str          # 文件名（含扩展名）
-    ext: str           # 扩展名（小写，含点，如 .md；无扩展名为空串）
-    mtime: float       # 修改时间戳（epoch 秒）
-    size: int          # 字节数
+    path: str  # 相对根目录的路径（正斜杠分隔，跨平台一致）
+    name: str  # 文件名（含扩展名）
+    ext: str  # 扩展名（小写，含点，如 .md；无扩展名为空串）
+    mtime: float  # 修改时间戳（epoch 秒）
+    size: int  # 字节数
 
 
 # 默认排除目录（SPEC §6：node_modules、.git、__pycache__、.next、日志、二进制）
 DEFAULT_EXCLUDE_DIRS = {
-    "node_modules", ".git", "__pycache__", ".next", ".pytest_cache",
-    ".venv", "venv", ".cache", ".pm2", ".hermes", ".training-checkpoints",
-    ".monitor-backups", ".workbuddy", ".cognitive", ".trae", ".claude",
-    ".npm", ".ssh", ".orca_term",
+    "node_modules",
+    ".git",
+    "__pycache__",
+    ".next",
+    ".pytest_cache",
+    ".venv",
+    "venv",
+    ".cache",
+    ".pm2",
+    ".hermes",
+    ".training-checkpoints",
+    ".monitor-backups",
+    ".workbuddy",
+    ".cognitive",
+    ".trae",
+    ".claude",
+    ".npm",
+    ".ssh",
+    ".orca_term",
 }
 
 # 默认排除的文件扩展名（二进制/日志/压缩包）
 DEFAULT_EXCLUDE_EXTS = {
-    ".pyc", ".pyo", ".so", ".dylib", ".dll", ".exe",
-    ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".webp",
-    ".pdf", ".zip", ".tar", ".gz", ".tgz",
-    ".log", ".sqlite", ".db", ".bak", ".lock",
+    ".pyc",
+    ".pyo",
+    ".so",
+    ".dylib",
+    ".dll",
+    ".exe",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".svg",
+    ".ico",
+    ".webp",
+    ".pdf",
+    ".zip",
+    ".tar",
+    ".gz",
+    ".tgz",
+    ".log",
+    ".sqlite",
+    ".db",
+    ".bak",
+    ".lock",
 }
 
 # 排除的文件名模式（精确匹配）
 DEFAULT_EXCLUDE_NAMES = {
-    ".DS_Store", ".gitkeep", ".gitignore", ".env", ".env.production",
-    ".bash_history", ".lesshst", ".sudo_as_admin_successful",
+    ".DS_Store",
+    ".gitkeep",
+    ".gitignore",
+    ".env",
+    ".env.production",
+    ".bash_history",
+    ".lesshst",
+    ".sudo_as_admin_successful",
 }
 
 
@@ -143,6 +184,7 @@ class FileScanner:
 # ----------------------------------------------------------------------
 # 类型推断（P0 基础版：按路径模式推断 type 标记，SPEC §6）
 # ----------------------------------------------------------------------
+
 
 def infer_type(rel_path: str) -> str:
     """按 SPEC §6 索引范围规则推断文件类型标记。

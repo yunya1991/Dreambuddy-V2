@@ -14,6 +14,7 @@
   - FAIL-OPEN L1: Session.get Timeout/SSLError/任何 Exception → []，不 throw。
   - FAIL-OPEN L2: lazy import 9基本面 sentiment_engine，ImportError → 全部 sentiment=0.5。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -40,49 +41,158 @@ _HTTP_TIMEOUT = 10
 # 14 组政策/行情关键词（event_type classification pipeline Step1 keyword_rules）
 _POLICY_KEYWORDS: dict[str, list[str]] = {
     "monetary_policy": [
-        "降息", "加息", "利率决议", "FOMC", "美联储", "欧央行", "央行",
-        "缩表", "扩表", "购债", "通胀", "CPI", "PCE", "点阵图",
+        "降息",
+        "加息",
+        "利率决议",
+        "FOMC",
+        "美联储",
+        "欧央行",
+        "央行",
+        "缩表",
+        "扩表",
+        "购债",
+        "通胀",
+        "CPI",
+        "PCE",
+        "点阵图",
     ],
     "crypto_regulation": [
-        "SEC", "监管", "牌照", "稳定币监管", "ETF", "以太坊现货ETF",
-        "现货ETF", "金管局", "金融委员会", "虚拟资产", "会计处理", "反洗钱",
+        "SEC",
+        "监管",
+        "牌照",
+        "稳定币监管",
+        "ETF",
+        "以太坊现货ETF",
+        "现货ETF",
+        "金管局",
+        "金融委员会",
+        "虚拟资产",
+        "会计处理",
+        "反洗钱",
     ],
     "us_policy": [
-        "财政部", "白宫", "国债", "出口管制", "AI芯片", "管制新规",
-        "制裁", "行政令", "国会", "债务上限", "预算",
+        "财政部",
+        "白宫",
+        "国债",
+        "出口管制",
+        "AI芯片",
+        "管制新规",
+        "制裁",
+        "行政令",
+        "国会",
+        "债务上限",
+        "预算",
     ],
     "us_data": [
-        "非农", "失业率", "CPI", "核心CPI", "PPI", "GDP", "零售销售",
-        "ISM", "PMI", "初请失业金", "消费支出", "耐用品",
+        "非农",
+        "失业率",
+        "CPI",
+        "核心CPI",
+        "PPI",
+        "GDP",
+        "零售销售",
+        "ISM",
+        "PMI",
+        "初请失业金",
+        "消费支出",
+        "耐用品",
     ],
     "geopolitics": [
-        "地缘", "霍尔木兹", "油轮", "中东", "俄乌", "制裁",
-        "导弹", "安理会", "朝核", "冲突", "动员", "军事",
+        "地缘",
+        "霍尔木兹",
+        "油轮",
+        "中东",
+        "俄乌",
+        "制裁",
+        "导弹",
+        "安理会",
+        "朝核",
+        "冲突",
+        "动员",
+        "军事",
     ],
     "security_incident": [
-        "PeckShield", "被盗", "攻击", "私钥泄露", "热钱包转出",
-        "黑客", "归还被盗资金", "漏洞", "闪电贷", " rug ",
+        "PeckShield",
+        "被盗",
+        "攻击",
+        "私钥泄露",
+        "热钱包转出",
+        "黑客",
+        "归还被盗资金",
+        "漏洞",
+        "闪电贷",
+        " rug ",
     ],
     "project_ecosystem": [
-        "ERC-", "V神", "Layer2", "升级", "主网", "账户抽象", "TPS",
-        "提案", "分叉", "路线图", "标准",
+        "ERC-",
+        "V神",
+        "Layer2",
+        "升级",
+        "主网",
+        "账户抽象",
+        "TPS",
+        "提案",
+        "分叉",
+        "路线图",
+        "标准",
     ],
     "market_sentiment": [
-        "巨鲸", "增持", "USDT溢价", "折价率", "GBTC", "灰度",
-        "恐惧贪婪", "贪婪区", "未平仓合约", "入场信号", "机构资金",
+        "巨鲸",
+        "增持",
+        "USDT溢价",
+        "折价率",
+        "GBTC",
+        "灰度",
+        "恐惧贪婪",
+        "贪婪区",
+        "未平仓合约",
+        "入场信号",
+        "机构资金",
     ],
     # ── P0 新增：代币级里程碑事件分类（第 9 类） ──
     # 覆盖：主网上线/跨链迁移/主网升级/代币解锁/审计通过/上线交易所/战略合作/集成发布
     # （标题中的具体 TICKER 再由 _extract_tickers_from_title 单独抓取，做 per-coin 映射）
     "token_milestone": [
-        "上线主网", "主网启动", "主网上线", "主网迁移", "跨链迁移",
-        "主网升级", "版本升级", "升级", "主链", "公链主网", "主网公测",
-        "代币解锁", "解锁亿枚", "解锁数量", "解锁 schedule", "解锁",
-        "审计通过", "安全审计", "CertiK", "慢雾审计", "Trail of Bits",
-        "上线交易所", "上线 Binance", "上线 Coinbase", "上线 OKX", "上线 Bybit",
-        "战略合作", "生态合作", "集成", "集成至", "合作发布",
-        "白皮书发布", "路线图更新", "激励计划", "空投", "提案",
-        "发布主网", "迁移至", "生态基金", "主网 beta",
+        "上线主网",
+        "主网启动",
+        "主网上线",
+        "主网迁移",
+        "跨链迁移",
+        "主网升级",
+        "版本升级",
+        "升级",
+        "主链",
+        "公链主网",
+        "主网公测",
+        "代币解锁",
+        "解锁亿枚",
+        "解锁数量",
+        "解锁 schedule",
+        "解锁",
+        "审计通过",
+        "安全审计",
+        "CertiK",
+        "慢雾审计",
+        "Trail of Bits",
+        "上线交易所",
+        "上线 Binance",
+        "上线 Coinbase",
+        "上线 OKX",
+        "上线 Bybit",
+        "战略合作",
+        "生态合作",
+        "集成",
+        "集成至",
+        "合作发布",
+        "白皮书发布",
+        "路线图更新",
+        "激励计划",
+        "空投",
+        "提案",
+        "发布主网",
+        "迁移至",
+        "生态基金",
+        "主网 beta",
     ],
 }
 
@@ -96,8 +206,13 @@ _CATEGORY_EVENT_TYPE_MAP: dict[str, str] = {}
 _EVENT_TYPE_ENUM = tuple(_POLICY_KEYWORDS.keys())
 
 # 5 attention_type
-_ATTENTION_TYPE_ENUM = ("policy_easing", "policy_tightening",
-                        "market_risk_on", "market_risk_off", "neutral")
+_ATTENTION_TYPE_ENUM = (
+    "policy_easing",
+    "policy_tightening",
+    "market_risk_on",
+    "market_risk_off",
+    "neutral",
+)
 
 # 4 档半衰期（Spec §4.3 / 半衰期表）
 #   · monetary_policy / crypto_regulation = 72h
@@ -118,12 +233,23 @@ _DECAY_HRS: dict[str, int] = {
 
 # 注意力方向（简版规则，复杂规则阶段2 6引擎接管）
 _ATTENTION_DIR: dict[str, str] = {
-    "降息": "policy_easing", "扩表": "policy_easing", "购债": "policy_easing",
-    "加息": "policy_tightening", "缩表": "policy_tightening",
-    "制裁": "market_risk_off", "管制新规": "market_risk_off", "被盗": "market_risk_off",
-    "攻击": "market_risk_off", "私钥泄露": "market_risk_off", "冲突": "market_risk_off",
-    "升级": "market_risk_on", "巨鲸": "market_risk_on", "增持": "market_risk_on",
-    "入场信号": "market_risk_on", "折价率收窄": "market_risk_on", "机构资金": "market_risk_on",
+    "降息": "policy_easing",
+    "扩表": "policy_easing",
+    "购债": "policy_easing",
+    "加息": "policy_tightening",
+    "缩表": "policy_tightening",
+    "制裁": "market_risk_off",
+    "管制新规": "market_risk_off",
+    "被盗": "market_risk_off",
+    "攻击": "market_risk_off",
+    "私钥泄露": "market_risk_off",
+    "冲突": "market_risk_off",
+    "升级": "market_risk_on",
+    "巨鲸": "market_risk_on",
+    "增持": "market_risk_on",
+    "入场信号": "market_risk_on",
+    "折价率收窄": "market_risk_on",
+    "机构资金": "market_risk_on",
     "贪婪区": "market_risk_on",
 }
 
@@ -141,25 +267,128 @@ def _md5_8(text: str) -> str:
 
 # ── 停用词（行业缩写/非代币TICKER/公司名，从 ticker 提取中剔除） ──
 _TICKER_STOPWORDS: set[str] = {
-    "THE", "AND", "GDP", "CPI", "PPI", "FOMC", "SEC", "ETF", "AI", "API",
-    "URL", "VIX", "USDT", "USDC", "BUSD", "DAI", "FDUSD", "USDP", "TUSD",
-    "Q1", "Q2", "Q3", "Q4", "P1", "P2", "P3", "NEWS", "ARC", "ARK",
-    "M1", "M2", "M3", "M4", "M5", "V0", "V1", "V2", "V3", "L1", "L2", "L3",
-    "IPO", "ICO", "IDO", "IEO", "TVL", "APY", "APR", "ROI", "PnL",
-    "KYC", "AML", "NFT", "DAO", "DEX", "CEX", "CLOB", "AMM", "RWA",
+    "THE",
+    "AND",
+    "GDP",
+    "CPI",
+    "PPI",
+    "FOMC",
+    "SEC",
+    "ETF",
+    "AI",
+    "API",
+    "URL",
+    "VIX",
+    "USDT",
+    "USDC",
+    "BUSD",
+    "DAI",
+    "FDUSD",
+    "USDP",
+    "TUSD",
+    "Q1",
+    "Q2",
+    "Q3",
+    "Q4",
+    "P1",
+    "P2",
+    "P3",
+    "NEWS",
+    "ARC",
+    "ARK",
+    "M1",
+    "M2",
+    "M3",
+    "M4",
+    "M5",
+    "V0",
+    "V1",
+    "V2",
+    "V3",
+    "L1",
+    "L2",
+    "L3",
+    "IPO",
+    "ICO",
+    "IDO",
+    "IEO",
+    "TVL",
+    "APY",
+    "APR",
+    "ROI",
+    "PnL",
+    "KYC",
+    "AML",
+    "NFT",
+    "DAO",
+    "DEX",
+    "CEX",
+    "CLOB",
+    "AMM",
+    "RWA",
     "MEV",  # 矿工可提取价值（不是代币）
     "CCIP",  # Chainlink 跨链协议名（不是代币）
-    "BTCETF", "ETHETF", "GBTC", "ESG", "OTC", "WSB", "FUD", "FOMO",
-    "FED", "ECB", "BOJ", "PBOC", "IMF", "OPEC", "AUM", "FDIC",
-    "SOLANA", "BITCOIN", "ETHEREUM",  # 这些是币种名全称，不抓作 TICKER
-    "COINBASE", "BINANCE", "OKX", "BYBIT", "KUCOIN", "KRAKEN",
-    "USD", "EUR", "JPY", "CNY", "GBP", "AUD", "CAD", "CHF", "HKD",
-    "WWW", "HTTPS", "HTTP", "HTML", "CSS", "JS", "RPC", "AWS",
+    "BTCETF",
+    "ETHETF",
+    "GBTC",
+    "ESG",
+    "OTC",
+    "WSB",
+    "FUD",
+    "FOMO",
+    "FED",
+    "ECB",
+    "BOJ",
+    "PBOC",
+    "IMF",
+    "OPEC",
+    "AUM",
+    "FDIC",
+    "SOLANA",
+    "BITCOIN",
+    "ETHEREUM",  # 这些是币种名全称，不抓作 TICKER
+    "COINBASE",
+    "BINANCE",
+    "OKX",
+    "BYBIT",
+    "KUCOIN",
+    "KRAKEN",
+    "USD",
+    "EUR",
+    "JPY",
+    "CNY",
+    "GBP",
+    "AUD",
+    "CAD",
+    "CHF",
+    "HKD",
+    "WWW",
+    "HTTPS",
+    "HTTP",
+    "HTML",
+    "CSS",
+    "JS",
+    "RPC",
+    "AWS",
     # 🆕 P0：中文边界修复后停用词补全——技术分析/金融会计术语（避免被误抓作币种）
-    "ATH", "ATL",  # 历史最高/最低
-    "DCA",        # Dollar-Cost Averaging 定投
-    "MACD", "RSI", "MA", "EMA", "BOLL", "CCI", "KDJ", "SAR", "DMI", "OBV", "WR", "MFI",  # 常用技术指标
-    "PE", "EPS", "ROE",  # 估值/财务指标
+    "ATH",
+    "ATL",  # 历史最高/最低
+    "DCA",  # Dollar-Cost Averaging 定投
+    "MACD",
+    "RSI",
+    "MA",
+    "EMA",
+    "BOLL",
+    "CCI",
+    "KDJ",
+    "SAR",
+    "DMI",
+    "OBV",
+    "WR",
+    "MFI",  # 常用技术指标
+    "PE",
+    "EPS",
+    "ROE",  # 估值/财务指标
 }
 
 
@@ -235,6 +464,7 @@ def compute_coin_event_positive_strength(
     FAIL-OPEN：任何异常 → (0.0, {error})。
     """
     import math as _m
+
     coin_up = (coin or "").strip().upper()
     debug: dict[str, Any] = {"coin": coin_up, "n_records": len(odaily_records_like or [])}
 
@@ -376,10 +606,12 @@ def _sentiment_lazy(title: str, description: str) -> tuple[float, bool]:
     try:
         # 9基本面真实路径：/9-基本面分析/engines/sentiment_engine.py
         import sys
+
         nine_root = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析"
         if nine_root not in sys.path:
             sys.path.insert(0, nine_root)
         from engines.sentiment_engine import SentimentEngine  # type: ignore
+
         engine = SentimentEngine()
         result = engine.analyze_text(f"{title}。{description}")
         # analyze_text 返回: {"score":[-1,1], "sentiment":positive/neutral/negative, ...}
@@ -427,7 +659,9 @@ class OdailyNewsflashCollector(BaseCollector):
         except Exception as e:  # noqa: BLE003  FAIL-OPEN L1 硬约束
             logger.warning(
                 "[FAIL-OPEN L1] Odaily fetch 异常 %s: %s，静默回退 []",
-                type(e).__name__, str(e)[:200], stack_info=True,
+                type(e).__name__,
+                str(e)[:200],
+                stack_info=True,
             )
             return []
 
@@ -443,8 +677,11 @@ class OdailyNewsflashCollector(BaseCollector):
             data = resp.json()
             return int(data.get("data", 0))
         except Exception as e:  # noqa: BLE003
-            logger.info("[FAIL-OPEN] checkHasNew 异常 %s: %s，fallback 拉 page",
-                        type(e).__name__, str(e)[:120])
+            logger.info(
+                "[FAIL-OPEN] checkHasNew 异常 %s: %s，fallback 拉 page",
+                type(e).__name__,
+                str(e)[:120],
+            )
             return None
 
     def _fetch_page(self, limit: int = 20) -> list[DataRecord]:
@@ -457,6 +694,7 @@ class OdailyNewsflashCollector(BaseCollector):
         # 429 限流：抛 RateLimitError（上层 dispatcher 已 fail-open）
         if resp.status_code == 429:
             from data_center.core.errors import RateLimitError
+
             raise RateLimitError("Odaily 429 rate limited")
         try:
             data = resp.json()
@@ -525,15 +763,19 @@ class OdailyNewsflashCollector(BaseCollector):
                     "od_title_hash": _md5_8(title),
                     "od_tickers_hit_csl": ticks_csl,  # P0 新增：逗号分隔 TICKER（CRCL,BTC,SOL...）
                 },
-                events=[{
-                    "event_type": et,
-                    "importance": 2 if is_important else 1,
-                    "published_ms": int(publish_ms),
-                }],
+                events=[
+                    {
+                        "event_type": et,
+                        "importance": 2 if is_important else 1,
+                        "published_ms": int(publish_ms),
+                    }
+                ],
                 timeseries=[],
                 raw={
-                    "title": title, "description": desc,
-                    "tags": item.get("tags", []), "newsUrl": item.get("newsUrl", ""),
+                    "title": title,
+                    "description": desc,
+                    "tags": item.get("tags", []),
+                    "newsUrl": item.get("newsUrl", ""),
                     "publishTimestamp": publish_ms,
                     "tickers_hit": ticks,  # P0 新增：结构化 list[str]，便于下游直接 compute_coin_event_positive_strength
                 },

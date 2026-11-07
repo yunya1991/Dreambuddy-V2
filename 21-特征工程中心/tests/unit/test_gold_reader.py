@@ -3,15 +3,14 @@
 GoldReader 调用 MarketMacroRepo.query_*_by_time()，
 将结果合并为 macro_df，供 FeaturePipeline.run() 使用。
 """
+
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
-import pytest
-
 from feature_hub.gold_reader import GoldReader
 
 
@@ -30,15 +29,33 @@ def _mock_repo():
     ]
     # open_interest: List[Tuple[str, Decimal, Decimal, datetime]]
     repo.query_open_interest_by_time.return_value = [
-        ("BTC", Decimal("50000"), Decimal("2000000000"), datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)),
+        (
+            "BTC",
+            Decimal("50000"),
+            Decimal("2000000000"),
+            datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),
+        ),
     ]
     # long_short_ratio: List[Tuple[str, Decimal, Decimal, Decimal, datetime]]
     repo.query_long_short_ratio_by_time.return_value = [
-        ("BTC", Decimal("0.62"), Decimal("0.38"), Decimal("1.63"), datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)),
+        (
+            "BTC",
+            Decimal("0.62"),
+            Decimal("0.38"),
+            Decimal("1.63"),
+            datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),
+        ),
     ]
     # taker_volume: List[Tuple[str, Decimal, Decimal, Decimal, Decimal, datetime]]
     repo.query_taker_volume_by_time.return_value = [
-        ("BTC", Decimal("1000"), Decimal("800"), Decimal("200"), Decimal("1.25"), datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)),
+        (
+            "BTC",
+            Decimal("1000"),
+            Decimal("800"),
+            Decimal("200"),
+            Decimal("1.25"),
+            datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),
+        ),
     ]
     return repo
 
@@ -114,8 +131,10 @@ def test_dal_exception_fail_open():
     repo = _mock_repo()
     # 所有查询都抛异常
     for method_name in [
-        "query_fear_greed_by_time", "query_funding_by_time",
-        "query_open_interest_by_time", "query_long_short_ratio_by_time",
+        "query_fear_greed_by_time",
+        "query_funding_by_time",
+        "query_open_interest_by_time",
+        "query_long_short_ratio_by_time",
         "query_taker_volume_by_time",
     ]:
         getattr(repo, method_name).side_effect = RuntimeError("DB lock")
@@ -135,19 +154,24 @@ def test_read_ohlcv_with_macro():
     repo = _mock_repo()
     reader = GoldReader(mm_repo=repo)
 
-    ohlcv_df = pd.DataFrame({
-        "timestamp": pd.date_range("2024-01-01", periods=5, freq="h", tz="UTC"),
-        "open": [40000, 41000, 42000, 41500, 43000],
-        "high": [41000, 42000, 43000, 42000, 44000],
-        "low": [39000, 40000, 41000, 40000, 42000],
-        "close": [41000, 42000, 41500, 43000, 43500],
-        "volume": [100, 120, 110, 130, 140],
-    })
+    ohlcv_df = pd.DataFrame(
+        {
+            "timestamp": pd.date_range("2024-01-01", periods=5, freq="h", tz="UTC"),
+            "open": [40000, 41000, 42000, 41500, 43000],
+            "high": [41000, 42000, 43000, 42000, 44000],
+            "low": [39000, 40000, 41000, 40000, 42000],
+            "close": [41000, 42000, 41500, 43000, 43500],
+            "volume": [100, 120, 110, 130, 140],
+        }
+    )
     start = datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)
     end = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
 
     df, macro_df = reader.read_ohlcv_with_macro(
-        symbol="BTC", start_ts=start, end_ts=end, ohlcv_df=ohlcv_df,
+        symbol="BTC",
+        start_ts=start,
+        end_ts=end,
+        ohlcv_df=ohlcv_df,
     )
 
     assert isinstance(df, pd.DataFrame)
@@ -166,7 +190,9 @@ def test_read_ohlcv_auto_fetch():
     # mock _fetch_ohlcv_from_dc 方法
     with patch.object(reader, "_fetch_ohlcv_from_dc", return_value=pd.DataFrame()):
         df, macro_df = reader.read_ohlcv_with_macro(
-            symbol="BTC", start_ts=start, end_ts=end,
+            symbol="BTC",
+            start_ts=start,
+            end_ts=end,
         )
         assert isinstance(df, pd.DataFrame)
         assert isinstance(macro_df, pd.DataFrame)

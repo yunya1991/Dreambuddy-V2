@@ -28,12 +28,10 @@ Dream OS 基线进化引擎 — 第三大核心（闭环的收束器）
 
 from __future__ import annotations
 
-import ast
-import copy
 import json
 import logging
 import re
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -48,20 +46,22 @@ MEMORY_ROOT = BASE_DIR / "4-MEMORY"
 
 # ── 数据模型 ──────────────────────────────────────────────────────────────
 
+
 @dataclass
 class ABTestResult:
     """A/B 回测对比结果（单场景）"""
-    scenario: str                          # "BTC 4H Jun-Aug 2026" / "ETH 1H bear 2025" 等
-    baseline: Dict[str, Any]               # baseline 指标
-    candidate: Dict[str, Any]              # candidate 指标
-    passed: bool = False                   # 是否通过（综合判断）
-    total_return_delta: float = 0.0        # 收益率差值（%）
-    win_rate_delta: float = 0.0            # 胜率差值（%）
-    drawdown_delta: float = 0.0            # 回撤差值（正=更小）
-    sharpe_delta: float = 0.0              # 夏普差值
+
+    scenario: str  # "BTC 4H Jun-Aug 2026" / "ETH 1H bear 2025" 等
+    baseline: Dict[str, Any]  # baseline 指标
+    candidate: Dict[str, Any]  # candidate 指标
+    passed: bool = False  # 是否通过（综合判断）
+    total_return_delta: float = 0.0  # 收益率差值（%）
+    win_rate_delta: float = 0.0  # 胜率差值（%）
+    drawdown_delta: float = 0.0  # 回撤差值（正=更小）
+    sharpe_delta: float = 0.0  # 夏普差值
     # 辅助：场景元数据（供普遍性跨行情段解析）
-    coin: str = ""                         # "BTC" / "ETH" / ...
-    regime: str = ""                       # "ranging" / "trend" / "bear" / "bull" / "high_vol" / ...
+    coin: str = ""  # "BTC" / "ETH" / ...
+    regime: str = ""  # "ranging" / "trend" / "bear" / "bull" / "high_vol" / ...
     reasons: List[str] = field(default_factory=list)  # 判定理由
     metrics_missing: List[str] = field(default_factory=list)
 
@@ -69,6 +69,7 @@ class ABTestResult:
 @dataclass
 class UniversalityVerdict:
     """普遍性校验结论"""
+
     patch_id: str
     total_scenarios: int = 0
     passed_scenarios: int = 0
@@ -85,7 +86,8 @@ class UniversalityVerdict:
 @dataclass
 class MemoryConvergeAction:
     """记忆收敛动作：升层 / 降层 / 淘汰 / 合并 / 保留"""
-    action: str               # PROMOTE / DEMOTE / DISCARD / MERGE / KEEP
+
+    action: str  # PROMOTE / DEMOTE / DISCARD / MERGE / KEEP
     memory_id: str
     memory_level_from: str
     memory_level_to: str = ""
@@ -96,36 +98,43 @@ class MemoryConvergeAction:
 @dataclass
 class CodePatch:
     """代码固化补丁（可执行的 patch 脚本 + 说明）"""
+
     patch_script_id: str
-    target_module_path: str              # 相对项目根，如 "11-易经推理系统/scripts/memory_l4/yijing_exit_system.py"
+    target_module_path: (
+        str  # 相对项目根，如 "11-易经推理系统/scripts/memory_l4/yijing_exit_system.py"
+    )
     target_param: str
     old_value: Any
     new_value: Any
-    script_content: str = ""             # 可执行 Python 脚本
-    manual_hint: str = ""                # 若自动修改危险，给出手动操作提示
+    script_content: str = ""  # 可执行 Python 脚本
+    manual_hint: str = ""  # 若自动修改危险，给出手动操作提示
     auto_applied: bool = False
 
 
 @dataclass
 class BaselineEntry:
     """基线注册表中的一条基线（版本化）"""
+
     baseline_id: str
-    version: str                         # 语义化版本：v5.1.0
-    effective_at: str                    # ISO 时间戳
-    category: str                        # PARAMETER / NODE_SET / FLOW / KNOWLEDGE
+    version: str  # 语义化版本：v5.1.0
+    effective_at: str  # ISO 时间戳
+    category: str  # PARAMETER / NODE_SET / FLOW / KNOWLEDGE
     target_module: str
-    target_key: str                      # 参数名或键
-    value: Any                           # 当前基线值
-    value_prev: Any = None               # 前一个基线值
-    evidence: Dict[str, Any] = field(default_factory=dict)  # 支撑证据（AB 结果摘要 / 普遍性通过说明）
+    target_key: str  # 参数名或键
+    value: Any  # 当前基线值
+    value_prev: Any = None  # 前一个基线值
+    evidence: Dict[str, Any] = field(
+        default_factory=dict
+    )  # 支撑证据（AB 结果摘要 / 普遍性通过说明）
     risks: List[str] = field(default_factory=list)
-    status: str = "ACTIVE"               # ACTIVE / SUPERSEDED / ROLLBACK
+    status: str = "ACTIVE"  # ACTIVE / SUPERSEDED / ROLLBACK
     notes: str = ""
 
 
 @dataclass
 class BaselineEvolutionReport:
     """基线进化完整报告"""
+
     generated_at: str = ""
     version_tag: str = ""
     # Step 1: 候选
@@ -151,10 +160,10 @@ class BaselineEvolutionReport:
 # ── 步骤 1：A/B 回测门控 ─────────────────────────────────────────────────
 
 # 通过阈值（基线进化的严苛门禁）
-MIN_RETURN_DELTA_PCT = 0.5          # 收益率至少提升 0.5%
-MAX_DRAWDOWN_INCREASE_PCT = 1.0     # 回撤最多恶化 1%
-MIN_WIN_RATE_DELTA_PCT = -2.0       # 胜率最多恶化 2%（允许牺牲一点胜率换盈亏比）
-MIN_SHARPE_DELTA = 0.0              # 夏普不允许下降
+MIN_RETURN_DELTA_PCT = 0.5  # 收益率至少提升 0.5%
+MAX_DRAWDOWN_INCREASE_PCT = 1.0  # 回撤最多恶化 1%
+MIN_WIN_RATE_DELTA_PCT = -2.0  # 胜率最多恶化 2%（允许牺牲一点胜率换盈亏比）
+MIN_SHARPE_DELTA = 0.0  # 夏普不允许下降
 
 
 def _compare_metrics(
@@ -165,8 +174,13 @@ def _compare_metrics(
     regime: str = "",
 ) -> ABTestResult:
     """对比 baseline vs candidate，给出是否通过回测门控"""
-    ab = ABTestResult(scenario=scenario, baseline=baseline_metrics, candidate=candidate_metrics,
-                      coin=coin, regime=regime)
+    ab = ABTestResult(
+        scenario=scenario,
+        baseline=baseline_metrics,
+        candidate=candidate_metrics,
+        coin=coin,
+        regime=regime,
+    )
 
     bl_ret = float(baseline_metrics.get("total_return_pct", 0))
     ca_ret = float(candidate_metrics.get("total_return_pct", 0))
@@ -179,19 +193,27 @@ def _compare_metrics(
 
     ab.total_return_delta = ca_ret - bl_ret
     ab.win_rate_delta = (ca_win - bl_win) * 100.0  # 改到 %
-    ab.drawdown_delta = bl_dd - ca_dd               # 正 = candidate 更小
+    ab.drawdown_delta = bl_dd - ca_dd  # 正 = candidate 更小
     ab.sharpe_delta = ca_sp - bl_sp
 
     # 逐条门禁
     checks = [
-        (ab.total_return_delta >= MIN_RETURN_DELTA_PCT,
-         f"收益率提升 {ab.total_return_delta:+.2f}% （≥+{MIN_RETURN_DELTA_PCT}%）"),
-        (ab.win_rate_delta >= MIN_WIN_RATE_DELTA_PCT,
-         f"胜率变化 {ab.win_rate_delta:+.1f}% （≥{MIN_WIN_RATE_DELTA_PCT}%）"),
-        (ab.drawdown_delta >= -MAX_DRAWDOWN_INCREASE_PCT,
-         f"回撤变化 {ab.drawdown_delta:+.2f}% （恶化不超过 -{MAX_DRAWDOWN_INCREASE_PCT}%）"),
-        (ab.sharpe_delta >= MIN_SHARPE_DELTA,
-         f"夏普变化 {ab.sharpe_delta:+.2f} （≥{MIN_SHARPE_DELTA}）"),
+        (
+            ab.total_return_delta >= MIN_RETURN_DELTA_PCT,
+            f"收益率提升 {ab.total_return_delta:+.2f}% （≥+{MIN_RETURN_DELTA_PCT}%）",
+        ),
+        (
+            ab.win_rate_delta >= MIN_WIN_RATE_DELTA_PCT,
+            f"胜率变化 {ab.win_rate_delta:+.1f}% （≥{MIN_WIN_RATE_DELTA_PCT}%）",
+        ),
+        (
+            ab.drawdown_delta >= -MAX_DRAWDOWN_INCREASE_PCT,
+            f"回撤变化 {ab.drawdown_delta:+.2f}% （恶化不超过 -{MAX_DRAWDOWN_INCREASE_PCT}%）",
+        ),
+        (
+            ab.sharpe_delta >= MIN_SHARPE_DELTA,
+            f"夏普变化 {ab.sharpe_delta:+.2f} （≥{MIN_SHARPE_DELTA}）",
+        ),
     ]
     for ok, reason in checks:
         if ok:
@@ -220,16 +242,16 @@ def _run_backtest_for_patch(
     若回测框架不可用，则基于 patch.new_value 的"更优假设"做半模拟打分（标记 simulated=True）。
     """
     import sys as _sys
+
     _sys.path.insert(0, str(Path(__file__).resolve().parent))
     simulated = False
     try:
+        from backtest_framework import calc_atr, calc_rsi  # noqa
         from dreamos_backtest_validation import (
-            fetch_okx_klines, generate_simulated_bars,
             run_backtest as framework_run_backtest,
         )
-        from backtest_framework import calc_rsi, calc_atr  # noqa
     except Exception:
-        framework_run_backtest = None  # type: ignore
+        framework_run_backtest = None  # type: ignore  # noqa: F841
         simulated = True
 
     # 构造参数注入：baseline 用旧值，candidate 用新值
@@ -239,7 +261,7 @@ def _run_backtest_for_patch(
     new_val = patch.get("new_value")
     old_val = patch.get("old_value")
 
-    scenario_bars = scenario.get("bars")
+    scenario_bars = scenario.get("bars")  # noqa: F841
     scenario_name = scenario.get("name", "sim")
 
     baseline_metrics: Dict[str, Any] = {}
@@ -256,6 +278,7 @@ def _run_backtest_for_patch(
         # 半模拟打分（基于 patch 方向 + 历史表现，给出合理但保守的 A/B 结果）
         # 这一步在真实系统里应替换为真正的 parameter-sweep 回测
         import random
+
         seed_str = f"{param}|{new_val}|{old_val}|{scenario_name}"
         rng = random.Random(abs(hash(seed_str)) % (2**31))
 
@@ -351,8 +374,8 @@ def _run_backtest_for_patch(
 
 # ── 步骤 2：普遍性校验 ────────────────────────────────────────────────────
 
-MIN_UNIVERSAL_PASS_RATE = 0.66   # 至少 66% 场景通过
-MIN_UNIQUE_COINS_PASS = 2       # 至少 2 个币种通过
+MIN_UNIVERSAL_PASS_RATE = 0.66  # 至少 66% 场景通过
+MIN_UNIQUE_COINS_PASS = 2  # 至少 2 个币种通过
 MIN_OUT_SAMPLE_REGIMES_PASS = 1  # 至少 1 个非"造它的那个"行情段通过
 
 
@@ -374,7 +397,9 @@ def _check_universality(
     if uv.pass_rate < MIN_UNIVERSAL_PASS_RATE:
         uv.reasons.append(f"❌ 通过率 {uv.pass_rate:.0%} < 要求 {MIN_UNIVERSAL_PASS_RATE:.0%}")
     else:
-        uv.reasons.append(f"✅ 通过率 {uv.passed_scenarios}/{uv.total_scenarios} = {uv.pass_rate:.0%}")
+        uv.reasons.append(
+            f"✅ 通过率 {uv.passed_scenarios}/{uv.total_scenarios} = {uv.pass_rate:.0%}"
+        )
 
     # Check 2：跨币种
     coins_passed = set()
@@ -387,7 +412,7 @@ def _check_universality(
         uv.reasons.append(f"✅ {len(coins_passed)} 个币种通过 ({','.join(sorted(coins_passed))})")
 
     # Check 3：跨行情段（必须覆盖 造它的行情 之外的至少一个）
-    origin_coin = origin_scenario.get("coin", "BTC")
+    origin_coin = origin_scenario.get("coin", "BTC")  # noqa: F841
     origin_regime = origin_scenario.get("regime", "neutral")
     out_regimes_passed = 0
     out_regimes_names: List[str] = []
@@ -399,15 +424,21 @@ def _check_universality(
             out_regimes_passed += 1
             out_regimes_names.append(f"{ab.coin or '?'}/{sc_regime}")
     if out_regimes_passed < MIN_OUT_SAMPLE_REGIMES_PASS:
-        uv.reasons.append(f"❌ 仅在造它的行情({origin_regime})外的 {out_regimes_passed} 个行情段通过 < {MIN_OUT_SAMPLE_REGIMES_PASS}")
+        uv.reasons.append(
+            f"❌ 仅在造它的行情({origin_regime})外的 {out_regimes_passed} 个行情段通过 < {MIN_OUT_SAMPLE_REGIMES_PASS}"
+        )
     else:
-        uv.reasons.append(f"✅ 在造它的行情外仍有 {out_regimes_passed} 个行情段通过 ({', '.join(out_regimes_names[:6])})")
+        uv.reasons.append(
+            f"✅ 在造它的行情外仍有 {out_regimes_passed} 个行情段通过 ({', '.join(out_regimes_names[:6])})"
+        )
 
-    uv.universal = all([
-        uv.pass_rate >= MIN_UNIVERSAL_PASS_RATE,
-        len(coins_passed) >= MIN_UNIQUE_COINS_PASS,
-        out_regimes_passed >= MIN_OUT_SAMPLE_REGIMES_PASS,
-    ])
+    uv.universal = all(
+        [
+            uv.pass_rate >= MIN_UNIVERSAL_PASS_RATE,
+            len(coins_passed) >= MIN_UNIQUE_COINS_PASS,
+            out_regimes_passed >= MIN_OUT_SAMPLE_REGIMES_PASS,
+        ]
+    )
     return uv
 
 
@@ -415,12 +446,12 @@ def _check_universality(
 
 # 各层级容量上限（模拟"重要记忆空间有限"）
 MEMORY_LEVEL_CAPACITY = {
-    "L0": 30,     # 元记忆（最少，最精华）
-    "L1": 100,    # 事实库
-    "L2": 150,    # 案例库
-    "L3": 80,     # 策略库
-    "L4": 40,     # 理论库
-    "L5": 20,     # 模型库
+    "L0": 30,  # 元记忆（最少，最精华）
+    "L1": 100,  # 事实库
+    "L2": 150,  # 案例库
+    "L3": 80,  # 策略库
+    "L4": 40,  # 理论库
+    "L5": 20,  # 模型库
 }
 
 # 升层置信度门槛
@@ -454,12 +485,15 @@ def _converge_memory(
         verified = bool(e.get("verified", False))  # 经过回测门控 = True
 
         if conf < DISCARD_CONFIDENCE_THRESHOLD:
-            actions.append(MemoryConvergeAction(
-                action="DISCARD", memory_id=e.get("memory_id", "?"),
-                memory_level_from=lvl,
-                rationale=f"置信度 {conf:.0%} < {DISCARD_CONFIDENCE_THRESHOLD:.0%}，丢弃",
-                confidence=conf,
-            ))
+            actions.append(
+                MemoryConvergeAction(
+                    action="DISCARD",
+                    memory_id=e.get("memory_id", "?"),
+                    memory_level_from=lvl,
+                    rationale=f"置信度 {conf:.0%} < {DISCARD_CONFIDENCE_THRESHOLD:.0%}，丢弃",
+                    confidence=conf,
+                )
+            )
             continue
 
         # 普遍性通过 + 高置信度 → 升一层（若存在上层路径）
@@ -467,23 +501,30 @@ def _converge_memory(
         if verified:
             for (from_l, to_l), thr in PROMOTE_CONFIDENCE_THRESHOLDS.items():
                 if lvl == from_l and conf >= thr:
-                    actions.append(MemoryConvergeAction(
-                        action="PROMOTE", memory_id=e.get("memory_id", "?"),
-                        memory_level_from=lvl, memory_level_to=to_l,
-                        rationale=f"回测通过 + 置信度 {conf:.0%} ≥ {thr:.0%}，升层 {from_l}→{to_l}",
-                        confidence=conf,
-                    ))
+                    actions.append(
+                        MemoryConvergeAction(
+                            action="PROMOTE",
+                            memory_id=e.get("memory_id", "?"),
+                            memory_level_from=lvl,
+                            memory_level_to=to_l,
+                            rationale=f"回测通过 + 置信度 {conf:.0%} ≥ {thr:.0%}，升层 {from_l}→{to_l}",
+                            confidence=conf,
+                        )
+                    )
                     promoted = True
                     e["memory_level"] = to_l  # 升层
                     break
 
         if not promoted:
-            actions.append(MemoryConvergeAction(
-                action="KEEP", memory_id=e.get("memory_id", "?"),
-                memory_level_from=lvl,
-                rationale=f"置信度 {conf:.0%}，保留在 {lvl}",
-                confidence=conf,
-            ))
+            actions.append(
+                MemoryConvergeAction(
+                    action="KEEP",
+                    memory_id=e.get("memory_id", "?"),
+                    memory_level_from=lvl,
+                    rationale=f"置信度 {conf:.0%}，保留在 {lvl}",
+                    confidence=conf,
+                )
+            )
         kept.append(e)
 
     # Step B: 处理现有条目（空间不够时 → 降层/淘汰低置信老条目，腾位置给新的）
@@ -515,36 +556,47 @@ def _converge_memory(
             eid = e.get("memory_id", "?")
             conf = float(e.get("confidence", 0))
             if conf < 0.45:
-                actions.append(MemoryConvergeAction(
-                    action="DISCARD", memory_id=eid,
-                    memory_level_from=lvl,
-                    rationale=f"{lvl} 容量 {cap} 已满 ({current})，低置信 {conf:.0%} 老记忆丢弃腾位",
-                    confidence=conf,
-                ))
+                actions.append(
+                    MemoryConvergeAction(
+                        action="DISCARD",
+                        memory_id=eid,
+                        memory_level_from=lvl,
+                        rationale=f"{lvl} 容量 {cap} 已满 ({current})，低置信 {conf:.0%} 老记忆丢弃腾位",
+                        confidence=conf,
+                    )
+                )
             else:
                 # 降一层（L1→不能降了，直接丢弃）
                 if lvl == "L1":
-                    actions.append(MemoryConvergeAction(
-                        action="DISCARD", memory_id=eid,
-                        memory_level_from=lvl,
-                        rationale=f"{lvl} 容量已满，置信 {conf:.0%} 老事实被新记忆挤出",
-                        confidence=conf,
-                    ))
+                    actions.append(
+                        MemoryConvergeAction(
+                            action="DISCARD",
+                            memory_id=eid,
+                            memory_level_from=lvl,
+                            rationale=f"{lvl} 容量已满，置信 {conf:.0%} 老事实被新记忆挤出",
+                            confidence=conf,
+                        )
+                    )
                 else:
                     from_level_map = {"L5": "L4", "L4": "L3", "L3": "L2", "L2": "L1"}
                     to_l = from_level_map.get(lvl, "L1")
-                    actions.append(MemoryConvergeAction(
-                        action="DEMOTE", memory_id=eid,
-                        memory_level_from=lvl, memory_level_to=to_l,
-                        rationale=f"{lvl} 容量已满，置信 {conf:.0%} 降层腾位",
-                        confidence=conf,
-                    ))
+                    actions.append(
+                        MemoryConvergeAction(
+                            action="DEMOTE",
+                            memory_id=eid,
+                            memory_level_from=lvl,
+                            memory_level_to=to_l,
+                            rationale=f"{lvl} 容量已满，置信 {conf:.0%} 降层腾位",
+                            confidence=conf,
+                        )
+                    )
             demoted_or_discarded += 1
 
     return actions, kept
 
 
 # ── 步骤 4：代码固化补丁生成 ─────────────────────────────────────────────
+
 
 def _generate_code_patch(
     patch: Dict[str, Any],
@@ -581,12 +633,12 @@ def _generate_code_patch(
         "#",
         "import ast, sys, pathlib, shutil",
         "",
-        f'TARGET = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else {_repo_root / target_path!r})',
+        f"TARGET = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else {_repo_root / target_path!r})",
         "",
         "def main():",
         "    src = TARGET.read_text(encoding='utf-8')",
-        f"    OLD = \"{target_param} = \" + repr({old_val!r})",
-        f"    NEW = \"{target_param} = \" + repr({new_val!r})",
+        f'    OLD = "{target_param} = " + repr({old_val!r})',
+        f'    NEW = "{target_param} = " + repr({new_val!r})',
         "    if OLD not in src:",
         "        print(f'[WARN] 未找到精确匹配: {OLD[:80]}')",
         "        # 降级：尝试 dataclass 字段匹配",
@@ -629,6 +681,7 @@ def _generate_code_patch(
 
 # ── 步骤 5：基线注册表读写 ────────────────────────────────────────────────
 
+
 def _load_registry() -> Dict[str, Any]:
     if REGISTRY_PATH.exists():
         try:
@@ -660,6 +713,7 @@ def _next_version(prev: str, bump_type: str = "minor") -> str:
 
 
 # ── 主入口：BaselineEvolutionEngine ─────────────────────────────────────
+
 
 def evolve_baseline(
     candidate_proposals: Dict[str, Any],
@@ -696,10 +750,16 @@ def evolve_baseline(
     # ─────────────────────────────────────────────────
     all_patches = candidate_proposals.get("strategy_patches", []) or []
     report.candidate_patches = [
-        {"patch_id": p.get("patch_id"), "patch_type": p.get("patch_type"),
-         "target_module": p.get("target_module"), "target_param": p.get("target_param"),
-         "old_value": p.get("old_value"), "new_value": p.get("new_value"),
-         "risk_level": p.get("risk_level"), "confidence": p.get("confidence")}
+        {
+            "patch_id": p.get("patch_id"),
+            "patch_type": p.get("patch_type"),
+            "target_module": p.get("target_module"),
+            "target_param": p.get("target_param"),
+            "old_value": p.get("old_value"),
+            "new_value": p.get("new_value"),
+            "risk_level": p.get("risk_level"),
+            "confidence": p.get("confidence"),
+        }
         for p in all_patches
     ]
     debug["steps_run"].append("0_candidate_prep")
@@ -724,8 +784,11 @@ def evolve_baseline(
         for sc in scenarios:
             baseline_m, candidate_m = _run_backtest_for_patch(patch, baseline_params, sc)
             ab = _compare_metrics(
-                sc.get("name", f"{pid}"), baseline_m, candidate_m,
-                coin=sc.get("coin", ""), regime=sc.get("regime", ""),
+                sc.get("name", f"{pid}"),
+                baseline_m,
+                candidate_m,
+                coin=sc.get("coin", ""),
+                regime=sc.get("regime", ""),
             )
             report.ab_tests.append(ab)
             universality_scenarios[pid].append(ab)
@@ -752,12 +815,22 @@ def evolve_baseline(
     universal_pids = set(report.patches_universal)
     for me in new_memory_entries_raw:
         tags = me.get("tags") or []
-        related_patch_tag = next((t.replace("patch:", "") for t in tags if str(t).startswith("patch:")), None)
+        related_patch_tag = next(
+            (t.replace("patch:", "") for t in tags if str(t).startswith("patch:")), None
+        )
         if related_patch_tag and related_patch_tag in universal_pids:
             me["verified"] = True
-        elif me.get("confidence", 0) >= 0.75 and len([
-            p for p in param_patches if str(me.get("content", "")).lower() in str(p.get("rationale", "")).lower()
-        ]) > 0:
+        elif (
+            me.get("confidence", 0) >= 0.75
+            and len(
+                [
+                    p
+                    for p in param_patches
+                    if str(me.get("content", "")).lower() in str(p.get("rationale", "")).lower()
+                ]
+            )
+            > 0
+        ):
             me["verified"] = True
         else:
             me["verified"] = False
@@ -768,22 +841,28 @@ def evolve_baseline(
     report.memory_space_after = len(memory_existing) + len(kept_entries)
     # 真正写回 4-MEMORY（根据 write_memory_flag）
     try:
-        from llm_cognitive_evolution import persist_memory_entries, MemoryEntry  # type: ignore
+        from llm_cognitive_evolution import MemoryEntry, persist_memory_entries  # type: ignore
+
         if write_memory_flag != "dry_run" and kept_entries:
             typed_entries = []
             for e in kept_entries:
-                typed_entries.append(MemoryEntry(
-                    memory_type=e.get("memory_type", "memory_unit"),
-                    memory_id=e.get("memory_id", ""),
-                    memory_level=e.get("memory_level", "L2"),
-                    title=e.get("title", ""),
-                    content=e.get("content", ""),
-                    tags=list(e.get("tags") or []),
-                    confidence=float(e.get("confidence", 0.5)),
-                    generated_at=e.get("generated_at") or datetime.now(timezone.utc).isoformat(),
-                ))
+                typed_entries.append(
+                    MemoryEntry(
+                        memory_type=e.get("memory_type", "memory_unit"),
+                        memory_id=e.get("memory_id", ""),
+                        memory_level=e.get("memory_level", "L2"),
+                        title=e.get("title", ""),
+                        content=e.get("content", ""),
+                        tags=list(e.get("tags") or []),
+                        confidence=float(e.get("confidence", 0.5)),
+                        generated_at=e.get("generated_at")
+                        or datetime.now(timezone.utc).isoformat(),
+                    )
+                )
             errors, _ = persist_memory_entries(
-                typed_entries, memory_root=str(MEMORY_ROOT), write_flag=write_memory_flag,
+                typed_entries,
+                memory_root=str(MEMORY_ROOT),
+                write_flag=write_memory_flag,
             )
             report.errors.extend(errors)
     except Exception as e:
@@ -846,12 +925,23 @@ def evolve_baseline(
                 value_prev=patch.get("old_value"),
                 evidence={
                     "ab_pass_rate": next(
-                        (f"{u.passed_scenarios}/{u.total_scenarios}" for u in report.universality if u.patch_id == pid),
+                        (
+                            f"{u.passed_scenarios}/{u.total_scenarios}"
+                            for u in report.universality
+                            if u.patch_id == pid
+                        ),
                         "n/a",
                     ),
                     "avg_return_delta_pct": next(
-                        (round(sum(a.total_return_delta for a in u.ab_results if a.passed) / max(1, len([a for a in u.ab_results if a.passed])), 2)
-                         for u in report.universality if u.patch_id == pid),
+                        (
+                            round(
+                                sum(a.total_return_delta for a in u.ab_results if a.passed)
+                                / max(1, len([a for a in u.ab_results if a.passed])),
+                                2,
+                            )
+                            for u in report.universality
+                            if u.patch_id == pid
+                        ),
                         None,
                     ),
                 },

@@ -1,4 +1,5 @@
 """T5 · UnitNormalizer：非USD×汇率 / %→/100 / 换手率%→ratio。"""
+
 from __future__ import annotations
 
 from typing import Iterable, Mapping
@@ -11,10 +12,10 @@ class UnitNormalizer:
     def __init__(
         self,
         *,
-        fx_rates: Mapping[str, float] | None = None,       # 如 {"EUR":1.10}（1 EUR = X USD）
-        price_columns: Iterable[str] = (),                 # 需按币种换算的列（后缀识别币种）
-        percent_columns: Iterable[str] = (),               # 需 /100 的百分数字段
-        turnover_columns: Iterable[str] = (),              # 换手率 %→ratio（同%，但单独分类便于审计）
+        fx_rates: Mapping[str, float] | None = None,  # 如 {"EUR":1.10}（1 EUR = X USD）
+        price_columns: Iterable[str] = (),  # 需按币种换算的列（后缀识别币种）
+        percent_columns: Iterable[str] = (),  # 需 /100 的百分数字段
+        turnover_columns: Iterable[str] = (),  # 换手率 %→ratio（同%，但单独分类便于审计）
     ) -> None:
         self.fx = dict(fx_rates or {"EUR": 1.10, "JPY": 0.0067, "GBP": 1.27})
         self.price_cols = list(price_columns)
@@ -22,7 +23,9 @@ class UnitNormalizer:
         self.turn_cols = list(turnover_columns)
 
     # ------------------------------------------------------------------
-    def clean(self, df: pd.DataFrame, trace: CleaningTrace, **_: object) -> tuple[pd.DataFrame, CleanAction]:
+    def clean(
+        self, df: pd.DataFrame, trace: CleaningTrace, **_: object
+    ) -> tuple[pd.DataFrame, CleanAction]:
         input_rows = len(df)
         clipped = 0
         imputed = 0

@@ -11,15 +11,14 @@ G层 - 图存储/压缩层测试
 4. 管理器 - 统一入口 + 持久化
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import unittest
 import tempfile
-from typing import Dict, Any, List
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from core.g_graph_storage import (
+from core.g_graph_storage import (  # noqa: I001
     # 类型
     BlueprintGraph,
     ArchitectureGraph,
@@ -28,25 +27,22 @@ from core.g_graph_storage import (
     ANode,
     CNode,
     BEdge,
-    AEdge,
     CEdge,
     NodeStatus,
     NodeType,
     ComponentType,
     NodeMetadata,
     CompressionStrategy,
-    CompressionResult,
-    # 组件
     ValueScorer,
     GraphCompressor,
     GraphExpander,
     GraphStorageManager,
 )
 
-
 # ============================================================
 # 测试工具
 # ============================================================
+
 
 def create_test_chronicle(node_count: int = 6) -> ChronicleGraph:
     """创建测试用时间线"""
@@ -118,6 +114,7 @@ def create_test_blueprint() -> BlueprintGraph:
 # 类型定义测试
 # ============================================================
 
+
 class TestGraphTypes(unittest.TestCase):
     """测试图模型类型定义"""
 
@@ -167,6 +164,7 @@ class TestGraphTypes(unittest.TestCase):
 # ============================================================
 # 压缩器测试
 # ============================================================
+
 
 class TestValueScorer(unittest.TestCase):
     """测试价值评估器"""
@@ -226,10 +224,7 @@ class TestGraphCompressor(unittest.TestCase):
         compressed_chron = result.compressed_chronicle
 
         # 检查压缩节点是否被标记
-        compressed_count = sum(
-            1 for n in compressed_chron.nodes.values()
-            if n.is_compressed
-        )
+        compressed_count = sum(1 for n in compressed_chron.nodes.values() if n.is_compressed)
         self.assertEqual(compressed_count, len(result.compressed_nodes))
 
     def test_compression_stats(self):
@@ -248,6 +243,7 @@ class TestGraphCompressor(unittest.TestCase):
 # ============================================================
 # 展开器测试
 # ============================================================
+
 
 class TestGraphExpander(unittest.TestCase):
     """测试图展开器"""
@@ -293,6 +289,7 @@ class TestGraphExpander(unittest.TestCase):
 # 管理器测试
 # ============================================================
 
+
 class TestGraphStorageManager(unittest.TestCase):
     """测试图存储管理器"""
 
@@ -314,7 +311,8 @@ class TestGraphStorageManager(unittest.TestCase):
         bp = mgr.create_blueprint("测试系统")
 
         # 添加一些节点
-        from core.g_graph_storage import BNode, ComponentType, BEdge
+        from core.g_graph_storage import BNode, ComponentType
+
         root = BNode(id="root", name="入口", type=ComponentType.COMPONENT)
         bp.add_node(root)
         bp.root_id = "root"
@@ -372,7 +370,7 @@ class TestGraphStorageManager(unittest.TestCase):
         """测试持久化"""
         with tempfile.TemporaryDirectory() as tmpdir:
             mgr = GraphStorageManager(storage_path=tmpdir)
-            bp = mgr.create_blueprint("持久化测试")
+            bp = mgr.create_blueprint("持久化测试")  # noqa: F841
             mgr.save_to_disk()
 
             # 创建新的管理器并加载
@@ -384,6 +382,7 @@ class TestGraphStorageManager(unittest.TestCase):
 # ============================================================
 # 集成测试（压缩+展开往返）
 # ============================================================
+
 
 class TestCompressExpandRoundTrip(unittest.TestCase):
     """测试压缩和展开的往返"""
@@ -425,11 +424,15 @@ class TestCompressExpandRoundTrip(unittest.TestCase):
 
         # 3. 模拟执行更新
         for nid in chron.nodes:
-            mgr.update_chronicle_node(chron.id, nid, {
-                "status": NodeStatus.COMPLETED,
-                "token_cost": 100,
-                "outputs": {"result": "ok"},
-            })
+            mgr.update_chronicle_node(
+                chron.id,
+                nid,
+                {
+                    "status": NodeStatus.COMPLETED,
+                    "token_cost": 100,
+                    "outputs": {"result": "ok"},
+                },
+            )
 
         # 4. 压缩
         result = mgr.compress_chronicle(chron.id)
@@ -445,5 +448,5 @@ class TestCompressExpandRoundTrip(unittest.TestCase):
 # 运行测试
 # ============================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

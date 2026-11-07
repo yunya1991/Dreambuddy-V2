@@ -11,38 +11,42 @@
 5. CFA 框架：宏观 - 行业 - 公司三层分析
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field  # noqa: I001
 from enum import Enum
-from typing import List, Dict, Optional, Tuple
-from datetime import datetime, timedelta
+from typing import List, Dict, Tuple
+from datetime import datetime
 
 
 class ImpactType(Enum):
     """影响类型"""
-    POSITIVE = "positive"      # 利好
-    NEGATIVE = "negative"      # 利空
-    NEUTRAL = "neutral"        # 中性
-    UNCERTAIN = "uncertain"    # 不确定
+
+    POSITIVE = "positive"  # 利好
+    NEGATIVE = "negative"  # 利空
+    NEUTRAL = "neutral"  # 中性
+    UNCERTAIN = "uncertain"  # 不确定
 
 
 class TimeHorizon(Enum):
     """时间维度"""
-    IMMEDIATE = "T0"    # 当日/即时
-    SHORT = "T1"        # 数日/短期
-    MEDIUM = "T2"       # 数周/中期
-    LONG = "T3"         # 数月/长期
+
+    IMMEDIATE = "T0"  # 当日/即时
+    SHORT = "T1"  # 数日/短期
+    MEDIUM = "T2"  # 数周/中期
+    LONG = "T3"  # 数月/长期
 
 
 class ConfidenceLevel(Enum):
     """可信度等级（基于 CFA 框架）"""
-    HIGH = "high"      # 官方/一手/可验证
+
+    HIGH = "high"  # 官方/一手/可验证
     MEDIUM = "medium"  # 主流/多源一致
-    LOW = "low"        # 单源/传闻/观点
+    LOW = "low"  # 单源/传闻/观点
 
 
 @dataclass
 class NewsItem:
     """新闻项目"""
+
     title: str
     content: str
     source: str
@@ -55,14 +59,14 @@ class NewsItem:
     confidence: ConfidenceLevel = ConfidenceLevel.MEDIUM
 
     # 价值投资分析维度
-    affects_moat: bool = False      # 是否影响护城河
-    affects_management: bool = False # 是否影响管理层评估
-    affects_financials: bool = False # 是否影响财务状况
+    affects_moat: bool = False  # 是否影响护城河
+    affects_management: bool = False  # 是否影响管理层评估
+    affects_financials: bool = False  # 是否影响财务状况
 
     # 宏观分析维度（达利欧框架）
     affects_productivity: bool = False  # 生产力影响
-    affects_debt_cycle: bool = False    # 债务周期影响
-    affects_liquidity: bool = False     # 流动性影响
+    affects_debt_cycle: bool = False  # 债务周期影响
+    affects_liquidity: bool = False  # 流动性影响
 
     # 评分
     signal_strength: float = 0.0  # 信号强度 (-1 到 +1)
@@ -74,6 +78,7 @@ class NewsItem:
 @dataclass
 class SignalAnalysis:
     """信号分析结果"""
+
     timestamp: datetime
     news_items: List[NewsItem]
 
@@ -82,12 +87,12 @@ class SignalAnalysis:
     confidence_weighted_signal: float = 0.0  # 可信度加权信号
 
     # 分类信号
-    macro_signal: float = 0.0       # 宏观信号
-    industry_signal: float = 0.0    # 行业信号
-    company_signal: float = 0.0     # 公司信号
+    macro_signal: float = 0.0  # 宏观信号
+    industry_signal: float = 0.0  # 行业信号
+    company_signal: float = 0.0  # 公司信号
 
     # 时间维度信号
-    immediate_signal: float = 0.0   # 即时信号
+    immediate_signal: float = 0.0  # 即时信号
     short_term_signal: float = 0.0  # 短期信号
 
     # 风险提示
@@ -115,7 +120,7 @@ class TraditionalFinanceAnalyzer:
         self.confidence_weights = {
             ConfidenceLevel.HIGH: 1.0,
             ConfidenceLevel.MEDIUM: 0.6,
-            ConfidenceLevel.LOW: 0.3
+            ConfidenceLevel.LOW: 0.3,
         }
 
         # 时间衰减因子
@@ -123,7 +128,7 @@ class TraditionalFinanceAnalyzer:
             TimeHorizon.IMMEDIATE: 1.0,
             TimeHorizon.SHORT: 0.7,
             TimeHorizon.MEDIUM: 0.4,
-            TimeHorizon.LONG: 0.2
+            TimeHorizon.LONG: 0.2,
         }
 
         # 影响类型基础分值
@@ -131,7 +136,7 @@ class TraditionalFinanceAnalyzer:
             ImpactType.POSITIVE: 0.5,
             ImpactType.NEUTRAL: 0.0,
             ImpactType.NEGATIVE: -0.5,
-            ImpactType.UNCERTAIN: 0.0
+            ImpactType.UNCERTAIN: 0.0,
         }
 
         # 负面偏见系数（安全边际原则）
@@ -151,8 +156,10 @@ class TraditionalFinanceAnalyzer:
             title=news_data.get("title", ""),
             content=news_data.get("summary", news_data.get("key_fact", "")),
             source=news_data.get("source_url", ""),
-            published_at=datetime.fromisoformat(news_data.get("published_at", datetime.now().isoformat())),
-            category=news_data.get("category", news_data.get("topic", "general"))
+            published_at=datetime.fromisoformat(
+                news_data.get("published_at", datetime.now().isoformat())
+            ),
+            category=news_data.get("category", news_data.get("topic", "general")),
         )
 
         # 1. 可信度评估
@@ -166,7 +173,11 @@ class TraditionalFinanceAnalyzer:
 
         # 2. 时间维度评估
         horizon = news_data.get("impact_horizon", "T1")
-        item.time_horizon = TimeHorizon(horizon) if horizon in [h.value for h in TimeHorizon] else TimeHorizon.MEDIUM
+        item.time_horizon = (
+            TimeHorizon(horizon)
+            if horizon in [h.value for h in TimeHorizon]
+            else TimeHorizon.MEDIUM
+        )
 
         # 3. 影响类型和信号强度分析
         item.impact_type, item.signal_strength = self._analyze_signal_strength(news_data)
@@ -194,28 +205,57 @@ class TraditionalFinanceAnalyzer:
         - 影响路径描述
         - 风险旗标
         """
-        text = (news_data.get("title", "") + " " +
-                news_data.get("summary", "") + " " +
-                news_data.get("key_fact", "") + " " +
-                news_data.get("market_impact", "")).lower()
+        text = (
+            news_data.get("title", "")
+            + " "
+            + news_data.get("summary", "")
+            + " "
+            + news_data.get("key_fact", "")
+            + " "
+            + news_data.get("market_impact", "")
+        ).lower()
 
         # 利好关键词
         positive_keywords = [
-            "利好", "上涨", "突破", "新高", "流入", "强劲", "超预期",
-            "宽松", "放松", "支持", "增长", "繁荣", "复苏"
+            "利好",
+            "上涨",
+            "突破",
+            "新高",
+            "流入",
+            "强劲",
+            "超预期",
+            "宽松",
+            "放松",
+            "支持",
+            "增长",
+            "繁荣",
+            "复苏",
         ]
 
         # 利空关键词
         negative_keywords = [
-            "利空", "下跌", "抛售", "调查", "风险", "担忧", "收紧",
-            "调查", "监管", "制裁", "衰退", "危机", "违约", "恶化",
-            "承压", "利空", "抛售", "暴跌"
+            "利空",
+            "下跌",
+            "抛售",
+            "调查",
+            "风险",
+            "担忧",
+            "收紧",
+            "调查",
+            "监管",
+            "制裁",
+            "衰退",
+            "危机",
+            "违约",
+            "恶化",
+            "承压",
+            "利空",
+            "抛售",
+            "暴跌",
         ]
 
         # 不确定性关键词
-        uncertain_keywords = [
-            "传闻", "可能", "考虑", "拟", "或", "预计", "分析师称"
-        ]
+        uncertain_keywords = ["传闻", "可能", "考虑", "拟", "或", "预计", "分析师称"]
 
         pos_score = sum(1 for kw in positive_keywords if kw in text)
         neg_score = sum(1 for kw in negative_keywords if kw in text)
@@ -251,34 +291,54 @@ class TraditionalFinanceAnalyzer:
 
     def _check_moat_impact(self, news_data: Dict) -> bool:
         """检查是否影响护城河（结构性竞争优势）"""
-        text = (news_data.get("title", "") + " " +
-                news_data.get("content", "")).lower()
+        text = (news_data.get("title", "") + " " + news_data.get("content", "")).lower()
 
         moat_keywords = [
-            "市场份额", "垄断", "壁垒", "专利", "技术领先",
-            "网络效应", "转换成本", "规模优势", "品牌"
+            "市场份额",
+            "垄断",
+            "壁垒",
+            "专利",
+            "技术领先",
+            "网络效应",
+            "转换成本",
+            "规模优势",
+            "品牌",
         ]
         return any(kw in text for kw in moat_keywords)
 
     def _check_debt_cycle_impact(self, news_data: Dict) -> bool:
         """检查是否影响债务周期"""
-        text = (news_data.get("title", "") + " " +
-                news_data.get("content", "")).lower()
+        text = (news_data.get("title", "") + " " + news_data.get("content", "")).lower()
 
         debt_keywords = [
-            "利率", "降息", "加息", "信贷", "债务", "杠杆",
-            "美联储", "货币政策", "流动性", "量化宽松"
+            "利率",
+            "降息",
+            "加息",
+            "信贷",
+            "债务",
+            "杠杆",
+            "美联储",
+            "货币政策",
+            "流动性",
+            "量化宽松",
         ]
         return any(kw in text for kw in debt_keywords)
 
     def _check_liquidity_impact(self, news_data: Dict) -> bool:
         """检查是否影响流动性"""
-        text = (news_data.get("title", "") + " " +
-                news_data.get("content", "")).lower()
+        text = (news_data.get("title", "") + " " + news_data.get("content", "")).lower()
 
         liquidity_keywords = [
-            "ETF", "流入", "流出", "资金", "成交量", "交易量",
-            "储备", "供给", "需求", "持仓"
+            "ETF",
+            "流入",
+            "流出",
+            "资金",
+            "成交量",
+            "交易量",
+            "储备",
+            "供给",
+            "需求",
+            "持仓",
         ]
         return any(kw in text for kw in liquidity_keywords)
 
@@ -292,10 +352,7 @@ class TraditionalFinanceAnalyzer:
         3. 负面偏见
         4. 宏观 - 行业 - 公司三层分离
         """
-        analysis = SignalAnalysis(
-            timestamp=datetime.now(),
-            news_items=news_items
-        )
+        analysis = SignalAnalysis(timestamp=datetime.now(), news_items=news_items)
 
         if not news_items:
             return analysis
@@ -347,19 +404,31 @@ class TraditionalFinanceAnalyzer:
                             bucket.append(s)
 
         # 综合信号（简单平均）
-        analysis.composite_signal = sum(weighted_signals) / len(weighted_signals) if weighted_signals else 0
+        analysis.composite_signal = (
+            sum(weighted_signals) / len(weighted_signals) if weighted_signals else 0
+        )
 
         # 可信度加权信号（考虑负面偏见）
-        analysis.confidence_weighted_signal = sum(weighted_signals) / len(weighted_signals) if weighted_signals else 0
+        analysis.confidence_weighted_signal = (
+            sum(weighted_signals) / len(weighted_signals) if weighted_signals else 0
+        )
 
         # 分类信号
         analysis.macro_signal = sum(macro_signals) / len(macro_signals) if macro_signals else 0
-        analysis.industry_signal = sum(industry_signals) / len(industry_signals) if industry_signals else 0
-        analysis.company_signal = sum(company_signals) / len(company_signals) if company_signals else 0
+        analysis.industry_signal = (
+            sum(industry_signals) / len(industry_signals) if industry_signals else 0
+        )
+        analysis.company_signal = (
+            sum(company_signals) / len(company_signals) if company_signals else 0
+        )
 
         # 时间维度信号
-        analysis.immediate_signal = sum(immediate_signals) / len(immediate_signals) if immediate_signals else 0
-        analysis.short_term_signal = sum(short_term_signals) / len(short_term_signals) if short_term_signals else 0
+        analysis.immediate_signal = (
+            sum(immediate_signals) / len(immediate_signals) if immediate_signals else 0
+        )
+        analysis.short_term_signal = (
+            sum(short_term_signals) / len(short_term_signals) if short_term_signals else 0
+        )
 
         if merged_risk_flags:
             analysis.risk_flags = [
@@ -368,7 +437,9 @@ class TraditionalFinanceAnalyzer:
             ]
 
         # 生成投资建议
-        analysis.recommendation, analysis.position_suggestion = self._generate_recommendation(analysis)
+        analysis.recommendation, analysis.position_suggestion = self._generate_recommendation(
+            analysis
+        )
 
         return analysis
 
@@ -426,7 +497,7 @@ def example_usage():
         "source_confidence": "high",
         "impact_horizon": "T0",
         "market_impact": "短期利好 BTC 价格",
-        "risk_flags": []
+        "risk_flags": [],
     }
 
     item = analyzer.analyze_news(news_data)

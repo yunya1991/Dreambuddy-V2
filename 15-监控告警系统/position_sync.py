@@ -14,23 +14,22 @@
 
 使用方式：
     from position_sync import PositionSyncService, V15SyncAdapter, YijingSyncAdapter
-    
+
     service = PositionSyncService()
     service.register_adapter("v15", V15SyncAdapter())
     service.sync_all()
-    
+
     # 或单独同步某个系统
     service.sync("v15")
 """
-import json
-import os
-import sys
-import shutil
-from datetime import datetime, timezone, timedelta
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable
-from abc import ABC, abstractmethod
 
+import json
+import shutil
+import sys
+from abc import ABC, abstractmethod
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, List
 
 BASE_DIR = Path(__file__).parent
 CONFIG_DIR = BASE_DIR / "config"
@@ -99,9 +98,15 @@ class PositionSyncService:
     - 自动备份: 修改前自动备份 state 文件，最多保留 20 份
     """
 
-    def __init__(self, okx_client=None, dry_run: bool = None,
-                 close_confirm_count: int = None, close_confirm_window_minutes: int = None,
-                 max_backups: int = None, skip_close_on_api_error: bool = None):
+    def __init__(
+        self,
+        okx_client=None,
+        dry_run: bool = None,
+        close_confirm_count: int = None,
+        close_confirm_window_minutes: int = None,
+        max_backups: int = None,
+        skip_close_on_api_error: bool = None,
+    ):
         self.adapters: Dict[str, PositionSyncAdapter] = {}
         self.okx_client = okx_client
         self._init_okx_client()
@@ -125,7 +130,7 @@ class PositionSyncService:
         self.skip_close_on_api_error = skip_close_on_api_error
         self._pending_closes: Dict[str, Dict[str, str]] = {}
         if dry_run:
-            print(f"[PositionSync] 🛡️  只读模式（dry_run=True）— 仅检测，不修改 state 文件")
+            print("[PositionSync] 🛡️  只读模式（dry_run=True）— 仅检测，不修改 state 文件")
 
     def _init_okx_client(self):
         """初始化OKX客户端（延迟加载）"""
@@ -137,6 +142,7 @@ class PositionSyncService:
             if str(v15_lib_path) not in sys.path:
                 sys.path.insert(0, str(v15_lib_path))
             from okx_client import OKXSimulatedClient
+
             self.okx_client = OKXSimulatedClient()
         except Exception as e:
             print(f"[PositionSync] OKX客户端初始化失败: {e}")
@@ -161,7 +167,7 @@ class PositionSyncService:
     def _backup_state_file(self, adapter: PositionSyncAdapter, adapter_name: str):
         """备份 state 文件（修改前调用）"""
         try:
-            state_file = getattr(adapter, '_state_file', None)
+            state_file = getattr(adapter, "_state_file", None)
             if not state_file:
                 return
             if not state_file.exists():
@@ -173,7 +179,7 @@ class PositionSyncService:
 
             backups = sorted(BACKUP_DIR.glob(f"{adapter_name}_*.json"))
             if len(backups) > self.max_backups:
-                for old in backups[:-self.max_backups]:
+                for old in backups[: -self.max_backups]:
                     try:
                         old.unlink()
                     except Exception:
@@ -225,7 +231,9 @@ class PositionSyncService:
         pending = self._pending_closes.get(adapter_name, {})
 
         if coin in pending:
-            first_ts = datetime.fromisoformat(pending[coin].split("|")[0] if "|" in pending[coin] else pending[coin])
+            first_ts = datetime.fromisoformat(
+                pending[coin].split("|")[0] if "|" in pending[coin] else pending[coin]
+            )
             count_str = pending[coin].split("|")[1] if "|" in pending[coin] else "1"
             count = int(count_str)
             elapsed = (now - first_ts).total_seconds() / 60
@@ -233,12 +241,16 @@ class PositionSyncService:
             if elapsed <= self.close_confirm_window_minutes:
                 count += 1
                 if count >= self.close_confirm_count:
-                    print(f"  ✅ 确认通过（{count}/{self.close_confirm_count}次，首次检测 {elapsed:.0f} 分钟前），允许删除")
+                    print(
+                        f"  ✅ 确认通过（{count}/{self.close_confirm_count}次，首次检测 {elapsed:.0f} 分钟前），允许删除"
+                    )
                     del pending[coin]
                     return True
                 else:
                     pending[coin] = f"{first_ts.isoformat()}|{count}"
-                    print(f"  ⏳ 已检测 {count}/{self.close_confirm_count} 次（首次 {elapsed:.0f} 分钟前），继续等待")
+                    print(
+                        f"  ⏳ 已检测 {count}/{self.close_confirm_count} 次（首次 {elapsed:.0f} 分钟前），继续等待"
+                    )
                     return False
             else:
                 print(f"  ⏳ 首次检测已超过 {self.close_confirm_window_minutes} 分钟，重置确认计数")
@@ -246,7 +258,9 @@ class PositionSyncService:
                 return False
         else:
             pending[coin] = f"{now.isoformat()}|1"
-            print(f"  ⏳ 第 1/{self.close_confirm_count} 次检测到平仓，等待二次确认（{self.close_confirm_window_minutes} 分钟窗口内）")
+            print(
+                f"  ⏳ 第 1/{self.close_confirm_count} 次检测到平仓，等待二次确认（{self.close_confirm_window_minutes} 分钟窗口内）"
+            )
             return False
 
     def sync(self, adapter_name: str) -> Dict:
@@ -264,7 +278,11 @@ class PositionSyncService:
 
         state = adapter.load_local_state()
         if not state:
-            return {"status": "error", "message": f"{system_name} 本地状态加载失败", "system": system_name}
+            return {
+                "status": "error",
+                "message": f"{system_name} 本地状态加载失败",
+                "system": system_name,
+            }
 
         local_positions = adapter.get_state_positions(state)
         coins = adapter.get_coins()
@@ -283,10 +301,12 @@ class PositionSyncService:
 
         for coin in sorted(externally_closed):
             pos = local_positions[coin]
-            print(f"[{coin}] ⚠️  检测到外部平仓: entry={pos.get('entry_price', 0):.4f} sz={pos.get('sz', 0)}")
+            print(
+                f"[{coin}] ⚠️  检测到外部平仓: entry={pos.get('entry_price', 0):.4f} sz={pos.get('sz', 0)}"
+            )
 
             if not api_healthy and self.skip_close_on_api_error:
-                print(f"  🛡️  API 不健康，跳过删除（防止误删）")
+                print("  🛡️  API 不健康，跳过删除（防止误删）")
                 skipped_close_due_to_api = True
                 continue
 
@@ -295,13 +315,15 @@ class PositionSyncService:
                 if not self.dry_run:
                     state = adapter.remove_position(state, coin)
                 else:
-                    print(f"  🛡️  只读模式，不执行删除")
+                    print("  🛡️  只读模式，不执行删除")
             else:
                 pending_closed.append(coin)
 
         for coin in sorted(externally_opened):
             p = exchange_positions[coin]
-            print(f"[{coin}] ℹ️  检测到外部开仓: avg_px={p.get('avg_px', 0):.4f} pos={p.get('pos', 0)} upl={p.get('upl', 0):.2f}")
+            print(
+                f"[{coin}] ℹ️  检测到外部开仓: avg_px={p.get('avg_px', 0):.4f} pos={p.get('pos', 0)} upl={p.get('upl', 0):.2f}"
+            )
 
         for coin in sorted(local_keys & exchange_keys):
             p = exchange_positions[coin]
@@ -314,7 +336,9 @@ class PositionSyncService:
 
                 pnl = updated_pos.get("unrealized_pnl", 0)
                 pnl_pct = updated_pos.get("profit_pct", 0)
-                print(f"[{coin}] ✅ 同步完成: mark=${updated_pos.get('current_price', 0):.4f} pnl=${pnl:.2f} ({pnl_pct:+.2%})")
+                print(
+                    f"[{coin}] ✅ 同步完成: mark=${updated_pos.get('current_price', 0):.4f} pnl=${pnl:.2f} ({pnl_pct:+.2%})"
+                )
 
         if not self.dry_run and (confirmed_closed or synced_positions):
             self._backup_state_file(adapter, adapter_name)
@@ -366,7 +390,9 @@ class PositionSyncService:
             result = self.sync(name)
             results.append(result)
 
-        total_positions = sum(r.get("total_positions", 0) for r in results if r.get("status") == "success")
+        total_positions = sum(
+            r.get("total_positions", 0) for r in results if r.get("status") == "success"
+        )
         print(f"\n[PositionSync] 全部同步完成 | 总持仓:{total_positions}")
         return results
 
@@ -436,7 +462,9 @@ class YijingSyncAdapter(PositionSyncAdapter):
     def __init__(self):
         self.base_dir = Path(__file__).parent.parent / "11-易经推理系统"
         self._state_file = self.base_dir / "data" / "okx_sim" / "config.json"
-        self._fallback_file = self.base_dir / ".workbuddy" / "memory_l4" / "risk" / "risk_state.json"
+        self._fallback_file = (
+            self.base_dir / ".workbuddy" / "memory_l4" / "risk" / "risk_state.json"
+        )
 
     def get_system_name(self) -> str:
         return "易经推理系统"
@@ -592,7 +620,9 @@ def _get_sync_config() -> Dict:
     return {
         "dry_run": cfg.get("dry_run", DEFAULT_DRY_RUN),
         "close_confirm_count": cfg.get("close_confirm_count", CLOSE_CONFIRM_COUNT),
-        "close_confirm_window_minutes": cfg.get("close_confirm_window_minutes", CLOSE_CONFIRM_WINDOW_MINUTES),
+        "close_confirm_window_minutes": cfg.get(
+            "close_confirm_window_minutes", CLOSE_CONFIRM_WINDOW_MINUTES
+        ),
         "max_backups": cfg.get("max_backups", MAX_BACKUPS),
         "skip_close_on_api_error": cfg.get("skip_close_on_api_error", True),
     }

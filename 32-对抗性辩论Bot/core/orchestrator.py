@@ -9,16 +9,19 @@ SPEC 3.1 + 2.2 + 10 的核心组件：
 - /inject：注入观点传给辩手
 - /pause + /resume：暂停/恢复（超时自动 stop）
 """
+
 from __future__ import annotations
 
 import asyncio
 import logging
 
-from core.agents import BullAgent, BearAgent, JudgeAgent
+from core.agents import BearAgent, BullAgent, JudgeAgent
 from core.marketing import MarketingExtractor
 from core.models import (
-    Argument, Turn, Verdict, MarketingMaterial,
-    DebateQualityScore, DebateResult,
+    Argument,
+    DebateResult,
+    Turn,
+    Verdict,
 )
 from core.quality import QualityEvaluator
 from core.telegram_bot import TelegramDualBot
@@ -115,7 +118,10 @@ class DebateOrchestrator:
     # ─── 主入口 ──────────────────────────────────────────────────
 
     async def run(
-        self, topic: str, chat_id: int, max_rounds: int = 2,
+        self,
+        topic: str,
+        chat_id: int,
+        max_rounds: int = 2,
         background: str = "",
     ) -> DebateResult:
         """执行一场完整辩论。
@@ -165,7 +171,10 @@ class DebateOrchestrator:
             self.stop(chat_id)
 
     async def _run_debate(
-        self, topic: str, chat_id: int, max_rounds: int,
+        self,
+        topic: str,
+        chat_id: int,
+        max_rounds: int,
         background: str,
     ) -> DebateResult:
         """执行辩论主循环。"""
@@ -178,14 +187,16 @@ class DebateOrchestrator:
         # 注入观点写入 transcript
         injected_views = self._injected_views.get(chat_id, [])
         for view in injected_views:
-            transcript.append(Turn(
-                speaker="inject", round=0, content=view,
-            ))
+            transcript.append(
+                Turn(
+                    speaker="inject",
+                    round=0,
+                    content=view,
+                )
+            )
 
         # 注入观点传给辩手（None 如果空）
-        views_for_agents: list[str] | None = (
-            list(injected_views) if injected_views else None
-        )
+        views_for_agents: list[str] | None = list(injected_views) if injected_views else None
 
         # ─── 辩论轮次循环 ────────────────────────────────────
         for round_num in range(1, max_rounds + 1):
@@ -195,14 +206,23 @@ class DebateOrchestrator:
             # 正方发言
             self.status = "bull_turn"
             bull_arg = await self.bull_agent.argue(
-                topic, transcript, background, views_for_agents,
+                topic,
+                transcript,
+                background,
+                views_for_agents,
             )
             await self.telegram_dual_bot.send_as(
-                "bull", chat_id, _format_argument(bull_arg, "正方"),
+                "bull",
+                chat_id,
+                _format_argument(bull_arg, "正方"),
             )
-            transcript.append(Turn(
-                speaker="bull", round=round_num, content=bull_arg,
-            ))
+            transcript.append(
+                Turn(
+                    speaker="bull",
+                    round=round_num,
+                    content=bull_arg,
+                )
+            )
 
             # 暂停检查（不检查 stop — 当前轮必须完成）
             await self._wait_if_paused(chat_id)
@@ -210,14 +230,23 @@ class DebateOrchestrator:
             # 反方反驳
             self.status = "bear_turn"
             bear_arg = await self.bear_agent.rebut(
-                topic, transcript, background, views_for_agents,
+                topic,
+                transcript,
+                background,
+                views_for_agents,
             )
             await self.telegram_dual_bot.send_as(
-                "bear", chat_id, _format_argument(bear_arg, "反方"),
+                "bear",
+                chat_id,
+                _format_argument(bear_arg, "反方"),
             )
-            transcript.append(Turn(
-                speaker="bear", round=round_num, content=bear_arg,
-            ))
+            transcript.append(
+                Turn(
+                    speaker="bear",
+                    round=round_num,
+                    content=bear_arg,
+                )
+            )
 
             # 暂停检查
             await self._wait_if_paused(chat_id)
@@ -228,22 +257,32 @@ class DebateOrchestrator:
             self.status = "judging"
             verdict = await self.judge_agent.synthesize(topic, transcript)
             await self.telegram_dual_bot.send_as(
-                "judge", chat_id, _format_verdict(verdict),
+                "judge",
+                chat_id,
+                _format_verdict(verdict),
             )
-            transcript.append(Turn(
-                speaker="judge", round=max_rounds, content=verdict,
-            ))
+            transcript.append(
+                Turn(
+                    speaker="judge",
+                    round=max_rounds,
+                    content=verdict,
+                )
+            )
 
         # ─── 营销素材提取 ────────────────────────────────────
         self.status = "marketing"
         material = await self.marketing_extractor.extract(
-            topic, transcript, verdict,
+            topic,
+            transcript,
+            verdict,
         )
 
         # ─── 质量评估 ────────────────────────────────────────
         self.status = "quality"
         quality_score = await self.quality_evaluator.evaluate(
-            topic, transcript, material,
+            topic,
+            transcript,
+            material,
         )
 
         # ─── 完成 ────────────────────────────────────────────

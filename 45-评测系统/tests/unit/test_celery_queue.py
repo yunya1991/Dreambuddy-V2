@@ -10,6 +10,7 @@ test_celery_queue.py — P1-2b Celery 跨进程队列适配测试
 - fail-closed：Celery/Redis 依赖缺失时 RuntimeError，禁止静默降级
 - worker 任务：瞬时失败指数退避重试；硬性失败不重试（语义对齐 Runner）
 """
+
 from __future__ import annotations
 
 import sys
@@ -17,13 +18,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-import pytest  # noqa: E402
+import pytest  # noqa: E402, I001
 
 from core.celery_queue import (  # noqa: E402
     DISCARDED_KEY,
     HIGH_QUEUE,
     NORMAL_QUEUE,
-    PENDING_KEY,
     TASK_NAME,
     CeleryTaskQueue,
     InMemorySetStore,

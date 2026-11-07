@@ -12,12 +12,12 @@
 
 FAIL-OPEN：任何异常 → 0.0。
 """
+
 from __future__ import annotations
 
 import json
 import math
 import os
-import sqlite3
 import sys
 from statistics import mean, stdev
 from typing import Dict
@@ -26,8 +26,8 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
 
-from force_vector.coin_fundamental_ranker import get_yfinance_symbol
-from force_vector._store_port import fetch_latest_record
+from force_vector._store_port import fetch_latest_record  # noqa: E402
+from force_vector.coin_fundamental_ranker import get_yfinance_symbol  # noqa: E402
 
 _REPO = os.path.normpath(os.path.join(_THIS_DIR, "..", "..", "..", ".."))
 _DATA_CENTER_ROOT = os.path.join(_REPO, "18-数据获取中心")
@@ -51,8 +51,12 @@ def _fetch_stock_info(db_path: str, symbol: str) -> dict:
         return {}
     try:
         row = fetch_latest_record(
-            db_path, "yfinance", "finance",
-            f"stock_info_{symbol}", switch="STOCK", columns="metrics",
+            db_path,
+            "yfinance",
+            "finance",
+            f"stock_info_{symbol}",
+            switch="STOCK",
+            columns="metrics",
         )
         return _safe_json(row["metrics"]) if row else {}
     except Exception:
@@ -64,8 +68,12 @@ def _fetch_stock_financials(db_path: str, symbol: str) -> dict:
         return {}
     try:
         row = fetch_latest_record(
-            db_path, "yfinance", "finance",
-            f"stock_financials_{symbol}", switch="STOCK", columns="timeseries",
+            db_path,
+            "yfinance",
+            "finance",
+            f"stock_financials_{symbol}",
+            switch="STOCK",
+            columns="timeseries",
         )
         if not row:
             return {}
@@ -76,6 +84,7 @@ def _fetch_stock_financials(db_path: str, symbol: str) -> dict:
 
 
 # ── 纯计算 ──
+
 
 def compute_earnings_stability(earnings_ts: list) -> float:
     """4Q 盈利 Sharpe → 稳定→正。"""

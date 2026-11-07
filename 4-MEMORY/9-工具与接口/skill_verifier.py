@@ -7,6 +7,7 @@ Task 12 遗漏交付物补齐——供 Task 18/19 的 cognitive_session 调用�
 例如 TDD 的 HARD-GATE "先写代码后补测试且未删除=违反"——
 判定条件：行动链中写代码先于写测试，且测试后无删除代码段记录。
 """
+
 import re
 from typing import Any, Dict, List
 
@@ -35,20 +36,10 @@ def verify_skill_followed(
     Returns: {followed, score, checklist_matched, checklist_missed,
               gate_violations, gate_respected, detail}
     """
-    action_text = " ".join(
-        str(a.get("detail", "")) for a in action_chain
-    ).lower()
-    file_events = [
-        a for a in action_chain if a.get("action_type") == "file_change"
-    ]
-    tools_used = {
-        a.get("tool", "")
-        for a in action_chain
-        if a.get("action_type") == "tool_call"
-    }
-    commits = [
-        a for a in action_chain if a.get("action_type") == "git_commit"
-    ]
+    action_text = " ".join(str(a.get("detail", "")) for a in action_chain).lower()
+    file_events = [a for a in action_chain if a.get("action_type") == "file_change"]
+    tools_used = {a.get("tool", "") for a in action_chain if a.get("action_type") == "tool_call"}
+    commits = [a for a in action_chain if a.get("action_type") == "git_commit"]
 
     checklist_matched, checklist_missed = [], []
     for item in skill.checklists:
@@ -65,8 +56,10 @@ def verify_skill_followed(
             gate_respected.append(gate)
 
     score = compute_follow_score(
-        len(checklist_matched), len(skill.checklists),
-        len(gate_respected), len(skill.hard_gates),
+        len(checklist_matched),
+        len(skill.checklists),
+        len(gate_respected),
+        len(skill.hard_gates),
     )
 
     return {
@@ -99,9 +92,7 @@ def _checklist_hit(
     return hits >= max(1, len(keywords) // 3)  # 至少命中 1/3 关键词
 
 
-def _gate_violated(
-    gate: str, action_text: str, file_events: list, commits: list
-) -> bool:
+def _gate_violated(gate: str, action_text: str, file_events: list, commits: list) -> bool:
     """HARD-GATE 违反判定（反向时序排除，设计节 4.4）。
 
     例如 TDD "NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST"：
@@ -117,9 +108,7 @@ def _gate_violated(
         for i, ev in enumerate(file_events):
             f = ev.get("file", "").lower()
             is_test = "test" in f or "/tests/" in f or "test_" in f
-            is_code = not is_test and (
-                f.endswith(".py") or f.endswith(".ts")
-            )
+            is_code = not is_test and (f.endswith(".py") or f.endswith(".ts"))
             if is_test:
                 test_indices.append(i)
             elif is_code:

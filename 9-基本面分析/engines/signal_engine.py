@@ -3,11 +3,8 @@
 基于多维度指标生成交易信号，支持自适应权重和贝叶斯置信度
 """
 
-import math
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional, Tuple
-from collections import defaultdict
-
+from typing import Any, Dict, List, Optional, Tuple
 
 # 信号类型定义
 SIGNAL_TYPES = {
@@ -56,8 +53,7 @@ class SignalEngine:
         # 自适应权重：记录各模块的预测成功/失败次数
         # 使用 Beta(α=1, β=1) 均匀先验
         self._module_stats: Dict[str, Dict[str, float]] = {
-            m: {"alpha": 1.0, "beta": 1.0, "predictions": 0}
-            for m in DEFAULT_MODULE_WEIGHTS
+            m: {"alpha": 1.0, "beta": 1.0, "predictions": 0} for m in DEFAULT_MODULE_WEIGHTS
         }
 
         # 滚动统计：综合得分的历史分布
@@ -104,7 +100,7 @@ class SignalEngine:
         # 后验均值
         posterior = alpha / total
         # 方差越小，置信度越高
-        variance = (alpha * beta) / (total ** 2 * (total + 1))
+        variance = (alpha * beta) / (total**2 * (total + 1))
         precision = 1.0 - 4.0 * variance  # [0, 1]
 
         # 融合：原始置信度 × 后验准确率 × 精度
@@ -317,18 +313,20 @@ class SignalEngine:
         for module_name, info in module_scores.items():
             sig_type, reason, priority = self._top_signal_for_module(module_name, info)
             if sig_type:
-                top_signals.append({
-                    "id": f"sig_composite_{module_name}",
-                    "type": sig_type,
-                    "module": module_name,
-                    "strength": round(abs(info["score"]), 2),
-                    "confidence": round(info["confidence"], 2),
-                    "reason": reason,
-                    "horizon": "medium",
-                    "factors": [module_name],
-                    "created_at": now,
-                    "priority": priority,
-                })
+                top_signals.append(
+                    {
+                        "id": f"sig_composite_{module_name}",
+                        "type": sig_type,
+                        "module": module_name,
+                        "strength": round(abs(info["score"]), 2),
+                        "confidence": round(info["confidence"], 2),
+                        "reason": reason,
+                        "horizon": "medium",
+                        "factors": [module_name],
+                        "created_at": now,
+                        "priority": priority,
+                    }
+                )
 
         top_signals = self.rank_signals(top_signals)
 
@@ -342,8 +340,10 @@ class SignalEngine:
         score_percentile = 50.0
         if len(self._score_history) >= 10:
             hist_mean = sum(self._score_history) / len(self._score_history)
-            hist_var = sum((x - hist_mean) ** 2 for x in self._score_history) / max(1, len(self._score_history) - 1)
-            hist_std = hist_var ** 0.5
+            hist_var = sum((x - hist_mean) ** 2 for x in self._score_history) / max(
+                1, len(self._score_history) - 1
+            )
+            hist_std = hist_var**0.5
             if hist_std > 0:
                 score_z = max(-3.0, min(3.0, (weighted_score - hist_mean) / hist_std))
             below = sum(1 for x in self._score_history if x < weighted_score)
@@ -359,7 +359,8 @@ class SignalEngine:
             "cross_module_validation": {
                 "consistency_score": int(round(consistency)),
                 "divergent_modules": [
-                    m for m, d in directions_map.items()
+                    m
+                    for m, d in directions_map.items()
                     if d != ("bullish" if bullish_ratio >= bearish_ratio else "bearish")
                     and d != "neutral"
                 ],
@@ -374,7 +375,9 @@ class SignalEngine:
                 "history_size": len(self._score_history),
                 "module_weights": weight_details,
                 "raw_composite_score": round(raw_composite_score, 3),
-                "ewma_composite_score": round(self._composite_ewma, 3) if self._composite_ewma is not None else None,
+                "ewma_composite_score": (
+                    round(self._composite_ewma, 3) if self._composite_ewma is not None else None
+                ),
             },
         }
 
@@ -449,10 +452,23 @@ class SignalEngine:
         def has(*names: str) -> bool:
             return any(n in keys_lower for n in names)
 
-        if has("smart_money_direction", "smart_money", "etf_net_flow", "liquidation_pressure",
-                "funding_rate", "stablecoin_supply_change", "whale_activity"):
+        if has(
+            "smart_money_direction",
+            "smart_money",
+            "etf_net_flow",
+            "liquidation_pressure",
+            "funding_rate",
+            "stablecoin_supply_change",
+            "whale_activity",
+        ):
             return "flow"
-        if has("sentiment_index", "fear_greed_index", "narrative_heat", "consensus_level", "reversal_risk"):
+        if has(
+            "sentiment_index",
+            "fear_greed_index",
+            "narrative_heat",
+            "consensus_level",
+            "reversal_risk",
+        ):
             return "sentiment"
         if has("policy_score", "dxy_strength", "rate_impact", "crypto_friendly_score"):
             return "macro"
@@ -500,7 +516,9 @@ class SignalEngine:
             out.append(risk)
         return out
 
-    def _event_signals(self, events: List[Dict[str, Any]], core: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _event_signals(
+        self, events: List[Dict[str, Any]], core: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         out: List[Dict[str, Any]] = []
         if not events:
             return out
@@ -515,22 +533,26 @@ class SignalEngine:
             signal_type = sig_type_map.get(impact, "risk_alert")
             self.signal_counter += 1
             reason_value = ev.get("reason") or ev.get("title") or f"{ev_type} 事件发生"
-            out.append({
-                "id": f"sig_event_{self.signal_counter:04d}",
-                "type": signal_type,
-                "module": "event",
-                "strength": weight,
-                "confidence": 0.55,
-                "reason": self._format_reason(ev_type, reason_value),
-                "horizon": "short",
-                "factors": [ev_type, severity],
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "priority": 6,
-            })
+            out.append(
+                {
+                    "id": f"sig_event_{self.signal_counter:04d}",
+                    "type": signal_type,
+                    "module": "event",
+                    "strength": weight,
+                    "confidence": 0.55,
+                    "reason": self._format_reason(ev_type, reason_value),
+                    "horizon": "short",
+                    "factors": [ev_type, severity],
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "priority": 6,
+                }
+            )
         return out
 
     # ---------- FeatureHub 特征驱动信号 ----------
-    def _feature_signals(self, features: Dict[str, float], core: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _feature_signals(
+        self, features: Dict[str, float], core: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """基于 FeatureHub 衍生特征生成信号。
 
         使用的关键特征：
@@ -557,18 +579,20 @@ class SignalEngine:
             strength = min(abs(mom_7d) * 5, 0.8)
             confidence = min(0.4 + trend_strength * 0.1 + stability * 0.2, 0.85)
             self.signal_counter += 1
-            out.append({
-                "id": f"sig_feat_mom_{self.signal_counter:04d}",
-                "type": sig_type,
-                "module": "feature",
-                "strength": round(strength, 3),
-                "confidence": round(confidence, 3),
-                "reason": f"FeatureHub 7日动量 {mom_7d:+.3f}，趋势强度 {trend_strength:.2f}",
-                "horizon": "medium",
-                "factors": ["momentum_7d", "trend_strength"],
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "priority": 5,
-            })
+            out.append(
+                {
+                    "id": f"sig_feat_mom_{self.signal_counter:04d}",
+                    "type": sig_type,
+                    "module": "feature",
+                    "strength": round(strength, 3),
+                    "confidence": round(confidence, 3),
+                    "reason": f"FeatureHub 7日动量 {mom_7d:+.3f}，趋势强度 {trend_strength:.2f}",
+                    "horizon": "medium",
+                    "factors": ["momentum_7d", "trend_strength"],
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "priority": 5,
+                }
+            )
 
         # 2. Z-score 极值信号（均值回归）
         if abs(zscore) > 1.5:
@@ -576,34 +600,38 @@ class SignalEngine:
             strength = min(abs(zscore) / 4.0, 0.7)
             confidence = min(0.35 + abs(mean_rev) * 0.1, 0.75)
             self.signal_counter += 1
-            out.append({
-                "id": f"sig_feat_zscore_{self.signal_counter:04d}",
-                "type": sig_type,
-                "module": "feature",
-                "strength": round(strength, 3),
-                "confidence": round(confidence, 3),
-                "reason": f"FeatureHub Z-score {zscore:+.2f}σ 偏离，均值回归压力 {mean_rev:+.2f}",
-                "horizon": "short",
-                "factors": ["zscore_20d", "mean_reversion"],
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "priority": 6,
-            })
+            out.append(
+                {
+                    "id": f"sig_feat_zscore_{self.signal_counter:04d}",
+                    "type": sig_type,
+                    "module": "feature",
+                    "strength": round(strength, 3),
+                    "confidence": round(confidence, 3),
+                    "reason": f"FeatureHub Z-score {zscore:+.2f}σ 偏离，均值回归压力 {mean_rev:+.2f}",
+                    "horizon": "short",
+                    "factors": ["zscore_20d", "mean_reversion"],
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "priority": 6,
+                }
+            )
 
         # 3. 稳定性预警（低稳定性 → 风险提示）
         if stability < 0.3:
             self.signal_counter += 1
-            out.append({
-                "id": f"sig_feat_vol_{self.signal_counter:04d}",
-                "type": "risk_alert",
-                "module": "feature",
-                "strength": round((0.5 - stability) * 1.2, 3),
-                "confidence": 0.6,
-                "reason": f"FeatureHub 稳定性评分 {stability:.2f} 偏低，波动加剧",
-                "horizon": "short",
-                "factors": ["stability_score", "volatility"],
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "priority": 4,
-            })
+            out.append(
+                {
+                    "id": f"sig_feat_vol_{self.signal_counter:04d}",
+                    "type": "risk_alert",
+                    "module": "feature",
+                    "strength": round((0.5 - stability) * 1.2, 3),
+                    "confidence": 0.6,
+                    "reason": f"FeatureHub 稳定性评分 {stability:.2f} 偏低，波动加剧",
+                    "horizon": "short",
+                    "factors": ["stability_score", "volatility"],
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "priority": 4,
+                }
+            )
 
         return out
 
@@ -616,7 +644,7 @@ class SignalEngine:
 
         mom_7d = features.get("fund_momentum_7d", 0.0)
         trend_strength = features.get("fund_trend_strength", 0.0)
-        stability = features.get("fund_stability_score", 0.5)
+        stability = features.get("fund_stability_score", 0.5)  # noqa: F841
 
         boosted: List[Dict[str, Any]] = []
         for sig in signals:
@@ -624,9 +652,8 @@ class SignalEngine:
             sig_type = sig.get("type", "")
 
             # 方向一致性增强：动量方向与信号方向一致 → confidence 提升
-            direction_match = (
-                (sig_type == "buy" and mom_7d > 0) or
-                (sig_type == "sell" and mom_7d < 0)
+            direction_match = (sig_type == "buy" and mom_7d > 0) or (
+                sig_type == "sell" and mom_7d < 0
             )
             boost = 0.0
             if direction_match:
@@ -658,35 +685,55 @@ class SignalEngine:
 
         if direction == "up" and velocity > 0.3 and sentiment > 55:
             return {
-                "id": sig_id, "type": "strong_buy", "module": "trend",
-                "strength": 0.8, "confidence": min(1.0, velocity + 0.3),
-                "reason": "上升趋势强劲，多头信号确认", "horizon": "short",
+                "id": sig_id,
+                "type": "strong_buy",
+                "module": "trend",
+                "strength": 0.8,
+                "confidence": min(1.0, velocity + 0.3),
+                "reason": "上升趋势强劲，多头信号确认",
+                "horizon": "short",
                 "factors": ["趋势向上", "速度较快", "情绪乐观"],
-                "created_at": ts, "priority": 8,
+                "created_at": ts,
+                "priority": 8,
             }
         if direction == "up" and sentiment > 52:
             return {
-                "id": sig_id, "type": "buy", "module": "trend",
-                "strength": 0.6, "confidence": min(1.0, sentiment / 100),
-                "reason": "趋势向上，看涨信号", "horizon": "medium",
+                "id": sig_id,
+                "type": "buy",
+                "module": "trend",
+                "strength": 0.6,
+                "confidence": min(1.0, sentiment / 100),
+                "reason": "趋势向上，看涨信号",
+                "horizon": "medium",
                 "factors": ["趋势向上", "情绪偏好"],
-                "created_at": ts, "priority": 6,
+                "created_at": ts,
+                "priority": 6,
             }
         if direction == "down" and velocity < -0.3 and sentiment < 45:
             return {
-                "id": sig_id, "type": "strong_sell", "module": "trend",
-                "strength": 0.8, "confidence": min(1.0, abs(velocity) + 0.3),
-                "reason": "下降趋势强劲，空头信号确认", "horizon": "short",
+                "id": sig_id,
+                "type": "strong_sell",
+                "module": "trend",
+                "strength": 0.8,
+                "confidence": min(1.0, abs(velocity) + 0.3),
+                "reason": "下降趋势强劲，空头信号确认",
+                "horizon": "short",
                 "factors": ["趋势向下", "速度较快", "情绪悲观"],
-                "created_at": ts, "priority": 8,
+                "created_at": ts,
+                "priority": 8,
             }
         if direction == "down" and sentiment < 48:
             return {
-                "id": sig_id, "type": "sell", "module": "trend",
-                "strength": 0.6, "confidence": min(1.0, (100 - sentiment) / 100),
-                "reason": "趋势向下，看跌信号", "horizon": "medium",
+                "id": sig_id,
+                "type": "sell",
+                "module": "trend",
+                "strength": 0.6,
+                "confidence": min(1.0, (100 - sentiment) / 100),
+                "reason": "趋势向下，看跌信号",
+                "horizon": "medium",
                 "factors": ["趋势向下", "情绪偏弱"],
-                "created_at": ts, "priority": 6,
+                "created_at": ts,
+                "priority": 6,
             }
         return None
 
@@ -700,23 +747,35 @@ class SignalEngine:
 
         if fear_greed >= 85 or sentiment >= 80:
             return {
-                "id": sig_id, "type": "sell", "module": "sentiment",
-                "strength": 0.5, "confidence": 0.6,
+                "id": sig_id,
+                "type": "sell",
+                "module": "sentiment",
+                "strength": 0.5,
+                "confidence": 0.6,
                 "reason": self._format_reason("fear_greed", fear_greed),
-                "horizon": "short", "factors": ["情绪极端", "警惕回调"],
-                "created_at": ts, "priority": 7,
+                "horizon": "short",
+                "factors": ["情绪极端", "警惕回调"],
+                "created_at": ts,
+                "priority": 7,
             }
         if fear_greed <= 15 or sentiment <= 20:
             return {
-                "id": sig_id, "type": "buy", "module": "sentiment",
-                "strength": 0.5, "confidence": 0.6,
+                "id": sig_id,
+                "type": "buy",
+                "module": "sentiment",
+                "strength": 0.5,
+                "confidence": 0.6,
                 "reason": self._format_reason("fear_greed_low", fear_greed),
-                "horizon": "medium", "factors": ["情绪极端", "逆向机会"],
-                "created_at": ts, "priority": 7,
+                "horizon": "medium",
+                "factors": ["情绪极端", "逆向机会"],
+                "created_at": ts,
+                "priority": 7,
             }
         return None
 
-    def _divergence_signal(self, velocity: float, acceleration: float, sentiment: float) -> Optional[Dict]:
+    def _divergence_signal(
+        self, velocity: float, acceleration: float, sentiment: float
+    ) -> Optional[Dict]:
         self.signal_counter += 1
         sig_id = f"sig_div_{self.signal_counter:04d}"
         ts = datetime.now(timezone.utc).isoformat()
@@ -727,19 +786,29 @@ class SignalEngine:
 
         if velocity > 0.2 and acceleration < -0.2 and sentiment < 40:
             return {
-                "id": sig_id, "type": "sell", "module": "divergence",
-                "strength": 0.6, "confidence": 0.7,
-                "reason": "价格与情绪背离，警惕反转", "horizon": "short",
+                "id": sig_id,
+                "type": "sell",
+                "module": "divergence",
+                "strength": 0.6,
+                "confidence": 0.7,
+                "reason": "价格与情绪背离，警惕反转",
+                "horizon": "short",
                 "factors": ["顶背离", "动量减弱"],
-                "created_at": ts, "priority": 7,
+                "created_at": ts,
+                "priority": 7,
             }
         if velocity < -0.2 and acceleration > 0.2 and sentiment > 60:
             return {
-                "id": sig_id, "type": "buy", "module": "divergence",
-                "strength": 0.6, "confidence": 0.7,
-                "reason": "价格与情绪背离，可能反弹", "horizon": "short",
+                "id": sig_id,
+                "type": "buy",
+                "module": "divergence",
+                "strength": 0.6,
+                "confidence": 0.7,
+                "reason": "价格与情绪背离，可能反弹",
+                "horizon": "short",
                 "factors": ["底背离", "动量增强"],
-                "created_at": ts, "priority": 7,
+                "created_at": ts,
+                "priority": 7,
             }
         return None
 
@@ -754,11 +823,16 @@ class SignalEngine:
 
         if stress == "high" and (sentiment > 60 or fear_greed > 70):
             return {
-                "id": sig_id, "type": "reduce", "module": "risk",
-                "strength": 0.5, "confidence": 0.6,
-                "reason": "市场压力较大，建议减仓", "horizon": "short",
+                "id": sig_id,
+                "type": "reduce",
+                "module": "risk",
+                "strength": 0.5,
+                "confidence": 0.6,
+                "reason": "市场压力较大，建议减仓",
+                "horizon": "short",
                 "factors": ["市场高压", "风险警惕"],
-                "created_at": ts, "priority": 8,
+                "created_at": ts,
+                "priority": 8,
             }
         return None
 
@@ -769,16 +843,28 @@ class SignalEngine:
         out: List[Dict[str, Any]] = []
         now = datetime.now(timezone.utc).isoformat()
 
-        def make_sig(sig_type: str, strength: float, confidence: float,
-                     reason: str, module: str, factors: List[str],
-                     priority: int = 5, horizon: str = "medium") -> Dict[str, Any]:
+        def make_sig(
+            sig_type: str,
+            strength: float,
+            confidence: float,
+            reason: str,
+            module: str,
+            factors: List[str],
+            priority: int = 5,
+            horizon: str = "medium",
+        ) -> Dict[str, Any]:
             self.signal_counter += 1
             return {
                 "id": f"sig_{module}_{self.signal_counter:04d}",
-                "type": sig_type, "module": module,
-                "strength": strength, "confidence": confidence,
-                "reason": reason, "horizon": horizon,
-                "factors": factors, "created_at": now, "priority": priority,
+                "type": sig_type,
+                "module": module,
+                "strength": strength,
+                "confidence": confidence,
+                "reason": reason,
+                "horizon": horizon,
+                "factors": factors,
+                "created_at": now,
+                "priority": priority,
             }
 
         if module_name == "flow":
@@ -791,30 +877,65 @@ class SignalEngine:
             ex_net = _to_float(metrics.get("exchange_net_flow", 0), 0.0)
 
             if smart_money > 0.3 or etf_flow > 100:
-                out.append(make_sig(
-                    "buy", min(0.7, 0.5 + smart_money / 2 + etf_flow / 400),
-                    0.75, self._format_reason("smart_money_etf", (smart_money, etf_flow)),
-                    "flow", ["聪明钱流入", "ETF 净流入"], priority=8))
+                out.append(
+                    make_sig(
+                        "buy",
+                        min(0.7, 0.5 + smart_money / 2 + etf_flow / 400),
+                        0.75,
+                        self._format_reason("smart_money_etf", (smart_money, etf_flow)),
+                        "flow",
+                        ["聪明钱流入", "ETF 净流入"],
+                        priority=8,
+                    )
+                )
             if liq > 70:
-                out.append(make_sig(
-                    "buy", min(0.65, 0.4 + liq / 200), 0.6,
-                    self._format_reason("liquidation", liq),
-                    "flow", ["高清算压力", "反向机会"], priority=7))
+                out.append(
+                    make_sig(
+                        "buy",
+                        min(0.65, 0.4 + liq / 200),
+                        0.6,
+                        self._format_reason("liquidation", liq),
+                        "flow",
+                        ["高清算压力", "反向机会"],
+                        priority=7,
+                    )
+                )
             if funding > 0.05:
-                out.append(make_sig(
-                    "reduce", 0.55, 0.6,
-                    self._format_reason("funding_high", funding),
-                    "flow", ["资金费率过高", "多头拥挤"], priority=7))
+                out.append(
+                    make_sig(
+                        "reduce",
+                        0.55,
+                        0.6,
+                        self._format_reason("funding_high", funding),
+                        "flow",
+                        ["资金费率过高", "多头拥挤"],
+                        priority=7,
+                    )
+                )
             if stable > 0:
-                out.append(make_sig(
-                    "buy", min(0.55, 0.35 + stable / 200), 0.55,
-                    self._format_reason("stablecoin", stable),
-                    "flow", ["稳定币供给增加", "潜在买入"], priority=6))
+                out.append(
+                    make_sig(
+                        "buy",
+                        min(0.55, 0.35 + stable / 200),
+                        0.55,
+                        self._format_reason("stablecoin", stable),
+                        "flow",
+                        ["稳定币供给增加", "潜在买入"],
+                        priority=6,
+                    )
+                )
             if whale > 0.5 and ex_net < 0:
-                out.append(make_sig(
-                    "strong_buy", 0.75, 0.7,
-                    self._format_reason("whale_exchange", (whale, ex_net)),
-                    "flow", ["鲸鱼活跃", "交易所外流"], priority=8))
+                out.append(
+                    make_sig(
+                        "strong_buy",
+                        0.75,
+                        0.7,
+                        self._format_reason("whale_exchange", (whale, ex_net)),
+                        "flow",
+                        ["鲸鱼活跃", "交易所外流"],
+                        priority=8,
+                    )
+                )
 
         elif module_name == "sentiment":
             sent_idx = _to_float(metrics.get("sentiment_index", 50), 50.0)
@@ -824,31 +945,77 @@ class SignalEngine:
             rev_risk = _to_float(metrics.get("reversal_risk", 0), 0.0)
 
             if sent_idx > 60:
-                out.append(make_sig(
-                    "buy", min(0.6, 0.35 + (sent_idx - 50) / 100), 0.6,
-                    self._format_reason("sentiment_up", sent_idx),
-                    "sentiment", ["情绪指数上升"], priority=6))
+                out.append(
+                    make_sig(
+                        "buy",
+                        min(0.6, 0.35 + (sent_idx - 50) / 100),
+                        0.6,
+                        self._format_reason("sentiment_up", sent_idx),
+                        "sentiment",
+                        ["情绪指数上升"],
+                        priority=6,
+                    )
+                )
             elif sent_idx < 40:
-                out.append(make_sig(
-                    "sell", min(0.55, 0.35 + (50 - sent_idx) / 100), 0.6,
-                    self._format_reason("sentiment_down", sent_idx),
-                    "sentiment", ["情绪指数下降"], priority=6))
+                out.append(
+                    make_sig(
+                        "sell",
+                        min(0.55, 0.35 + (50 - sent_idx) / 100),
+                        0.6,
+                        self._format_reason("sentiment_down", sent_idx),
+                        "sentiment",
+                        ["情绪指数下降"],
+                        priority=6,
+                    )
+                )
             if fgi >= 85:
-                out.append(make_sig(
-                    "sell", 0.6, 0.65, self._format_reason("fear_greed", fgi),
-                    "sentiment", ["极度贪婪", "警惕回调"], priority=8))
+                out.append(
+                    make_sig(
+                        "sell",
+                        0.6,
+                        0.65,
+                        self._format_reason("fear_greed", fgi),
+                        "sentiment",
+                        ["极度贪婪", "警惕回调"],
+                        priority=8,
+                    )
+                )
             elif fgi <= 20:
-                out.append(make_sig(
-                    "buy", 0.6, 0.65, self._format_reason("fear_greed_low", fgi),
-                    "sentiment", ["极度恐惧", "逆向机会"], priority=8))
+                out.append(
+                    make_sig(
+                        "buy",
+                        0.6,
+                        0.65,
+                        self._format_reason("fear_greed_low", fgi),
+                        "sentiment",
+                        ["极度恐惧", "逆向机会"],
+                        priority=8,
+                    )
+                )
             if heat > 0.8 and rev_risk > 0.5:
-                out.append(make_sig(
-                    "reduce", 0.55, 0.6, self._format_reason("fomo", heat),
-                    "sentiment", ["FOMO 升温", "反转风险上升"], priority=7))
+                out.append(
+                    make_sig(
+                        "reduce",
+                        0.55,
+                        0.6,
+                        self._format_reason("fomo", heat),
+                        "sentiment",
+                        ["FOMO 升温", "反转风险上升"],
+                        priority=7,
+                    )
+                )
             if consensus < 20:
-                out.append(make_sig(
-                    "buy", 0.5, 0.55, self._format_reason("consensus_low", consensus),
-                    "sentiment", ["共识极低", "反向操作"], priority=6))
+                out.append(
+                    make_sig(
+                        "buy",
+                        0.5,
+                        0.55,
+                        self._format_reason("consensus_low", consensus),
+                        "sentiment",
+                        ["共识极低", "反向操作"],
+                        priority=6,
+                    )
+                )
 
         elif module_name == "macro":
             policy = _to_float(metrics.get("policy_score", 50), 50.0)
@@ -857,31 +1024,77 @@ class SignalEngine:
             friendly = _to_float(metrics.get("crypto_friendly_score", 50), 50.0)
 
             if policy > 60:
-                out.append(make_sig(
-                    "buy", min(0.6, 0.4 + (policy - 50) / 100), 0.65,
-                    self._format_reason("policy_friendly", policy),
-                    "macro", ["政策偏友好"], priority=7))
+                out.append(
+                    make_sig(
+                        "buy",
+                        min(0.6, 0.4 + (policy - 50) / 100),
+                        0.65,
+                        self._format_reason("policy_friendly", policy),
+                        "macro",
+                        ["政策偏友好"],
+                        priority=7,
+                    )
+                )
             elif policy < 40:
-                out.append(make_sig(
-                    "sell", min(0.6, 0.4 + (50 - policy) / 100), 0.65,
-                    self._format_reason("policy_restrictive", policy),
-                    "macro", ["政策偏紧缩"], priority=7))
+                out.append(
+                    make_sig(
+                        "sell",
+                        min(0.6, 0.4 + (50 - policy) / 100),
+                        0.65,
+                        self._format_reason("policy_restrictive", policy),
+                        "macro",
+                        ["政策偏紧缩"],
+                        priority=7,
+                    )
+                )
             if dxy < 45:
-                out.append(make_sig(
-                    "buy", 0.55, 0.6, self._format_reason("dxy_weak", dxy),
-                    "macro", ["美元走弱", "风险资产利好"], priority=7))
+                out.append(
+                    make_sig(
+                        "buy",
+                        0.55,
+                        0.6,
+                        self._format_reason("dxy_weak", dxy),
+                        "macro",
+                        ["美元走弱", "风险资产利好"],
+                        priority=7,
+                    )
+                )
             elif dxy > 60:
-                out.append(make_sig(
-                    "sell", 0.55, 0.6, self._format_reason("dxy_strong", dxy),
-                    "macro", ["美元走强", "风险资产承压"], priority=7))
+                out.append(
+                    make_sig(
+                        "sell",
+                        0.55,
+                        0.6,
+                        self._format_reason("dxy_strong", dxy),
+                        "macro",
+                        ["美元走强", "风险资产承压"],
+                        priority=7,
+                    )
+                )
             if rate < -0.3:
-                out.append(make_sig(
-                    "risk_alert", 0.6, 0.65, self._format_reason("rate_shock", rate),
-                    "macro", ["利率冲击预警"], priority=8))
+                out.append(
+                    make_sig(
+                        "risk_alert",
+                        0.6,
+                        0.65,
+                        self._format_reason("rate_shock", rate),
+                        "macro",
+                        ["利率冲击预警"],
+                        priority=8,
+                    )
+                )
             if friendly > 70:
-                out.append(make_sig(
-                    "buy", 0.55, 0.55, self._format_reason("crypto_friendly", friendly),
-                    "macro", ["宏观友好度高"], priority=6))
+                out.append(
+                    make_sig(
+                        "buy",
+                        0.55,
+                        0.55,
+                        self._format_reason("crypto_friendly", friendly),
+                        "macro",
+                        ["宏观友好度高"],
+                        priority=6,
+                    )
+                )
 
         elif module_name == "valuation":
             mvrv = _to_float(metrics.get("mvrv_z_score", 0), 0.0)
@@ -891,37 +1104,101 @@ class SignalEngine:
             mayer = _to_float(metrics.get("mayer_multiple", 1), 1.0)
 
             if mvrv < -1:
-                out.append(make_sig(
-                    "strong_buy", 0.8, 0.75, self._format_reason("mvrv_low", mvrv),
-                    "valuation", ["MVRV 低估区"], priority=9))
+                out.append(
+                    make_sig(
+                        "strong_buy",
+                        0.8,
+                        0.75,
+                        self._format_reason("mvrv_low", mvrv),
+                        "valuation",
+                        ["MVRV 低估区"],
+                        priority=9,
+                    )
+                )
             elif mvrv > 2:
-                out.append(make_sig(
-                    "strong_sell", 0.8, 0.75, self._format_reason("mvrv_high", mvrv),
-                    "valuation", ["MVRV 过热区"], priority=9))
+                out.append(
+                    make_sig(
+                        "strong_sell",
+                        0.8,
+                        0.75,
+                        self._format_reason("mvrv_high", mvrv),
+                        "valuation",
+                        ["MVRV 过热区"],
+                        priority=9,
+                    )
+                )
             if sopr < 0.95:
-                out.append(make_sig(
-                    "buy", 0.55, 0.6, self._format_reason("sopr_loss", sopr),
-                    "valuation", ["SOPR 亏损区", "洗盘接近尾声"], priority=7))
+                out.append(
+                    make_sig(
+                        "buy",
+                        0.55,
+                        0.6,
+                        self._format_reason("sopr_loss", sopr),
+                        "valuation",
+                        ["SOPR 亏损区", "洗盘接近尾声"],
+                        priority=7,
+                    )
+                )
             elif sopr > 1.05:
-                out.append(make_sig(
-                    "reduce", 0.55, 0.6, self._format_reason("sopr_profit", sopr),
-                    "valuation", ["SOPR 盈利区", "警惕获利回吐"], priority=6))
+                out.append(
+                    make_sig(
+                        "reduce",
+                        0.55,
+                        0.6,
+                        self._format_reason("sopr_profit", sopr),
+                        "valuation",
+                        ["SOPR 盈利区", "警惕获利回吐"],
+                        priority=6,
+                    )
+                )
             if ahr < 0.45:
-                out.append(make_sig(
-                    "buy", 0.6, 0.65, self._format_reason("ahr_dca", ahr),
-                    "valuation", ["AHR999 定投区"], priority=7))
+                out.append(
+                    make_sig(
+                        "buy",
+                        0.6,
+                        0.65,
+                        self._format_reason("ahr_dca", ahr),
+                        "valuation",
+                        ["AHR999 定投区"],
+                        priority=7,
+                    )
+                )
             if pi > 0.9:
-                out.append(make_sig(
-                    "strong_sell", 0.75, 0.7, self._format_reason("pi_top", pi),
-                    "valuation", ["Pi Cycle 顶部预警"], priority=9))
+                out.append(
+                    make_sig(
+                        "strong_sell",
+                        0.75,
+                        0.7,
+                        self._format_reason("pi_top", pi),
+                        "valuation",
+                        ["Pi Cycle 顶部预警"],
+                        priority=9,
+                    )
+                )
             if mayer > 2.4:
-                out.append(make_sig(
-                    "sell", 0.6, 0.65, self._format_reason("mayer_high", mayer),
-                    "valuation", ["Mayer Multiple 过热"], priority=7))
+                out.append(
+                    make_sig(
+                        "sell",
+                        0.6,
+                        0.65,
+                        self._format_reason("mayer_high", mayer),
+                        "valuation",
+                        ["Mayer Multiple 过热"],
+                        priority=7,
+                    )
+                )
             elif mayer < 0.6:
-                out.append(make_sig(
-                    "buy", 0.6, 0.65, self._format_reason("mayer_low", mayer),
-                    "valuation", ["Mayer Multiple 过冷"], priority=7))
+                out.append(
+                    make_sig(
+                        "buy",
+                        0.6,
+                        0.65,
+                        self._format_reason("mayer_low", mayer),
+                        "valuation",
+                        ["Mayer Multiple 过冷"],
+                        priority=7,
+                    )
+                )
 
         elif module_name == "onchain":
             whale_acc = _to_float(metrics.get("whale_accumulation_score", 50), 50.0)
@@ -930,85 +1207,197 @@ class SignalEngine:
             gas = _to_float(metrics.get("gas_price_gwei", 30), 30.0)
 
             if whale_acc > 60:
-                out.append(make_sig(
-                    "buy", min(0.7, 0.4 + (whale_acc - 50) / 100), 0.7,
-                    self._format_reason("whale_accumulate", whale_acc),
-                    "onchain", ["鲸鱼持续积累"], priority=8))
+                out.append(
+                    make_sig(
+                        "buy",
+                        min(0.7, 0.4 + (whale_acc - 50) / 100),
+                        0.7,
+                        self._format_reason("whale_accumulate", whale_acc),
+                        "onchain",
+                        ["鲸鱼持续积累"],
+                        priority=8,
+                    )
+                )
             if ex_net < 0:
-                out.append(make_sig(
-                    "buy", 0.6, 0.65, self._format_reason("exchange_outflow", ex_net),
-                    "onchain", ["交易所净流出", "场外积累"], priority=7))
+                out.append(
+                    make_sig(
+                        "buy",
+                        0.6,
+                        0.65,
+                        self._format_reason("exchange_outflow", ex_net),
+                        "onchain",
+                        ["交易所净流出", "场外积累"],
+                        priority=7,
+                    )
+                )
             if miner < 40:
-                out.append(make_sig(
-                    "buy", 0.55, 0.6, self._format_reason("miner_holding", miner),
-                    "onchain", ["矿工囤币", "供给减少"], priority=6))
+                out.append(
+                    make_sig(
+                        "buy",
+                        0.55,
+                        0.6,
+                        self._format_reason("miner_holding", miner),
+                        "onchain",
+                        ["矿工囤币", "供给减少"],
+                        priority=6,
+                    )
+                )
             elif miner > 70:
-                out.append(make_sig(
-                    "sell", 0.55, 0.6, self._format_reason("miner_selling", miner),
-                    "onchain", ["矿工出货"], priority=6))
+                out.append(
+                    make_sig(
+                        "sell",
+                        0.55,
+                        0.6,
+                        self._format_reason("miner_selling", miner),
+                        "onchain",
+                        ["矿工出货"],
+                        priority=6,
+                    )
+                )
             if gas > 80:
-                out.append(make_sig(
-                    "buy", 0.5, 0.55, self._format_reason("gas_hot", gas),
-                    "onchain", ["Gas 热潮", "链上活动活跃"], priority=5))
+                out.append(
+                    make_sig(
+                        "buy",
+                        0.5,
+                        0.55,
+                        self._format_reason("gas_hot", gas),
+                        "onchain",
+                        ["Gas 热潮", "链上活动活跃"],
+                        priority=5,
+                    )
+                )
 
         elif module_name == "news":
             news_sent = _to_float(metrics.get("news_sentiment", 0), 0.0)
             news_vol = _to_float(metrics.get("news_volume", 0), 0.0)
             if news_sent > 0.5 and news_vol > 50:
-                out.append(make_sig(
-                    "buy", 0.55, 0.6, self._format_reason("news_positive", (news_sent, news_vol)),
-                    "news", ["新闻偏多", "热度较高"], priority=7))
+                out.append(
+                    make_sig(
+                        "buy",
+                        0.55,
+                        0.6,
+                        self._format_reason("news_positive", (news_sent, news_vol)),
+                        "news",
+                        ["新闻偏多", "热度较高"],
+                        priority=7,
+                    )
+                )
             elif news_sent < -0.3:
-                out.append(make_sig(
-                    "sell", 0.55, 0.6, self._format_reason("news_negative", (news_sent, news_vol)),
-                    "news", ["新闻偏空"], priority=7))
+                out.append(
+                    make_sig(
+                        "sell",
+                        0.55,
+                        0.6,
+                        self._format_reason("news_negative", (news_sent, news_vol)),
+                        "news",
+                        ["新闻偏空"],
+                        priority=7,
+                    )
+                )
 
         elif module_name == "breadth":
             adv = _to_float(metrics.get("advancers", 50), 50.0)
             dec = _to_float(metrics.get("decliners", 50), 50.0)
             if adv > dec * 1.5:
-                out.append(make_sig(
-                    "buy", 0.55, 0.6, self._format_reason("breadth_strong", (adv, dec)),
-                    "breadth", ["市场广度偏多"], priority=6))
+                out.append(
+                    make_sig(
+                        "buy",
+                        0.55,
+                        0.6,
+                        self._format_reason("breadth_strong", (adv, dec)),
+                        "breadth",
+                        ["市场广度偏多"],
+                        priority=6,
+                    )
+                )
             elif dec > adv * 1.5:
-                out.append(make_sig(
-                    "sell", 0.55, 0.6, self._format_reason("breadth_weak", (adv, dec)),
-                    "breadth", ["市场广度偏空"], priority=6))
+                out.append(
+                    make_sig(
+                        "sell",
+                        0.55,
+                        0.6,
+                        self._format_reason("breadth_weak", (adv, dec)),
+                        "breadth",
+                        ["市场广度偏空"],
+                        priority=6,
+                    )
+                )
 
         elif module_name == "intermarket":
             spx = _to_float(metrics.get("spx_correlation", 0), 0.0)
             gold = _to_float(metrics.get("gold_correlation", 0), 0.0)
             if spx > 0.6:
-                out.append(make_sig(
-                    "risk_alert", 0.5, 0.55, self._format_reason("spx_correlated", spx),
-                    "intermarket", ["与美股相关性高", "风险偏好联动"], priority=6))
+                out.append(
+                    make_sig(
+                        "risk_alert",
+                        0.5,
+                        0.55,
+                        self._format_reason("spx_correlated", spx),
+                        "intermarket",
+                        ["与美股相关性高", "风险偏好联动"],
+                        priority=6,
+                    )
+                )
             if gold > 0.4:
-                out.append(make_sig(
-                    "buy", 0.5, 0.55, self._format_reason("gold_correlated", gold),
-                    "intermarket", ["与黄金联动", "避险属性显现"], priority=5))
+                out.append(
+                    make_sig(
+                        "buy",
+                        0.5,
+                        0.55,
+                        self._format_reason("gold_correlated", gold),
+                        "intermarket",
+                        ["与黄金联动", "避险属性显现"],
+                        priority=5,
+                    )
+                )
 
         elif module_name == "calendar":
-            upc = _to_float(metrics.get("upcoming_events_count",
-                                        metrics.get("calendar_events", 0)), 0.0)
+            upc = _to_float(
+                metrics.get("upcoming_events_count", metrics.get("calendar_events", 0)), 0.0
+            )
             if upc > 3:
-                out.append(make_sig(
-                    "hold", 0.45, 0.5, self._format_reason("calendar_dense", upc),
-                    "calendar", ["近期事件密集", "建议观望"], priority=6))
+                out.append(
+                    make_sig(
+                        "hold",
+                        0.45,
+                        0.5,
+                        self._format_reason("calendar_dense", upc),
+                        "calendar",
+                        ["近期事件密集", "建议观望"],
+                        priority=6,
+                    )
+                )
 
         elif module_name == "narrative":
             nar = _to_float(metrics.get("narrative_score", 0.5), 0.5)
             if nar > 0.7:
-                out.append(make_sig(
-                    "buy", 0.55, 0.55, self._format_reason("narrative_hot", nar),
-                    "narrative", ["叙事热度高"], priority=6))
+                out.append(
+                    make_sig(
+                        "buy",
+                        0.55,
+                        0.55,
+                        self._format_reason("narrative_hot", nar),
+                        "narrative",
+                        ["叙事热度高"],
+                        priority=6,
+                    )
+                )
 
         else:
             score = _to_float(resistance_3d.get("direction_score", 0), 0.0)
             if abs(score) > 0.2:
                 sig_type = "buy" if score > 0 else "sell"
-                out.append(make_sig(
-                    sig_type, 0.45, 0.55, self._format_reason("generic", score),
-                    "generic", ["综合方向"], priority=5))
+                out.append(
+                    make_sig(
+                        sig_type,
+                        0.45,
+                        0.55,
+                        self._format_reason("generic", score),
+                        "generic",
+                        ["综合方向"],
+                        priority=5,
+                    )
+                )
 
         return out
 
@@ -1268,21 +1657,29 @@ class SignalEngine:
             if strength < 15:
                 continue
             if score > 0:
-                candidates.append({
-                    "module": module_name, "signal": "buy",
-                    "reason": f"{module_name} 模块偏多({score:+.2f})",
-                    "strength": int(round(strength)),
-                })
+                candidates.append(
+                    {
+                        "module": module_name,
+                        "signal": "buy",
+                        "reason": f"{module_name} 模块偏多({score:+.2f})",
+                        "strength": int(round(strength)),
+                    }
+                )
             else:
-                candidates.append({
-                    "module": module_name, "signal": "sell",
-                    "reason": f"{module_name} 模块偏空({score:+.2f})",
-                    "strength": int(round(strength)),
-                })
+                candidates.append(
+                    {
+                        "module": module_name,
+                        "signal": "sell",
+                        "reason": f"{module_name} 模块偏空({score:+.2f})",
+                        "strength": int(round(strength)),
+                    }
+                )
         candidates.sort(key=lambda x: x["strength"], reverse=True)
         return candidates[:3]
 
-    def _top_signal_for_module(self, module_name: str, info: Dict[str, Any]) -> Tuple[str, str, int]:
+    def _top_signal_for_module(
+        self, module_name: str, info: Dict[str, Any]
+    ) -> Tuple[str, str, int]:
         score = _to_float(info.get("score", 0), 0.0)
         if score > 0.3:
             return "strong_buy", f"{module_name} 综合方向强烈看多，方向得分{score:+.2f}", 9

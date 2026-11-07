@@ -21,9 +21,9 @@ DistributedBacktest API:
   - aggregate 结果汇总（加权平均、最大回撤取 max）
   - FAIL-OPEN 降级单机
 """
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations  # noqa: I001
+
 
 from dreambuddy_evolution.scripts.distributed_backtest import DistributedBacktest
 
@@ -59,7 +59,8 @@ class TestSplitByTime:
 
     def test_split_by_time_continuous(self):
         """分割后时间段连续无重叠无遗漏"""
-        from datetime import datetime, timedelta
+        from datetime import datetime
+
         bt = DistributedBacktest()
         tasks = bt.split_by_time("2024-01-01", "2024-02-01", n_workers=4)
         # 验证连续性

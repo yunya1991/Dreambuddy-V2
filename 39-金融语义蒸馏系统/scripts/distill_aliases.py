@@ -17,6 +17,7 @@
 
 FAIL-OPEN: 任何环节失败不阻塞，输出告警后退出码 0；仅幻觉代号存在时退出码 1。
 """
+
 import argparse
 import json
 import os
@@ -24,8 +25,12 @@ import sys
 import urllib.request
 
 ALIASES_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "..",
-    "3.1-FRONTEND", "scripts", "entity_aliases.json",
+    os.path.dirname(os.path.abspath(__file__)),
+    "..",
+    "..",
+    "3.1-FRONTEND",
+    "scripts",
+    "entity_aliases.json",
 )
 OKX_SPOT_URL = "https://www.okx.com/api/v5/public/instruments?instType=SPOT"
 OKX_SWAP_URL = "https://www.okx.com/api/v5/public/instruments?instType=SWAP"
@@ -65,11 +70,13 @@ def llm_distill_aliases(symbols):
         "为以下交易标的生成中英文别名（含俗称与常见变体），"
         f"输出 JSON 对象 {{代号: [别名...]}}，别名不含代号本身: {','.join(symbols)}"
     )
-    body = json.dumps({
-        "model": "deepseek-chat",
-        "messages": [{"role": "user", "content": prompt}],
-        "response_format": {"type": "json_object"},
-    }).encode("utf-8")
+    body = json.dumps(
+        {
+            "model": "deepseek-chat",
+            "messages": [{"role": "user", "content": prompt}],
+            "response_format": {"type": "json_object"},
+        }
+    ).encode("utf-8")
     req = urllib.request.Request(
         DEEPSEEK_CHAT_URL,
         data=body,

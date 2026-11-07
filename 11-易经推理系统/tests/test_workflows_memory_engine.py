@@ -6,7 +6,7 @@ def test_memory_engine_retrieve_for_decision_structured_only():
         assert topk == 2
         return [
             {"id": "TC_1", "kind": "case", "score": 0.9, "refs": {"case_id": "TC_1"}},
-            {"id": "D_1", "kind": "distill", "score": 0.8, "refs": {"distill_id": "D_1"}}
+            {"id": "D_1", "kind": "distill", "score": 0.8, "refs": {"distill_id": "D_1"}},
         ]
 
     memory = MemoryEngine(structured_retriever=structured_retriever)

@@ -47,13 +47,15 @@ def reduce_algorithm(target: str, function_name: str | None = None) -> dict[str,
     }
 
     if not os.path.isfile(target):
-        result["evidence"].append(Evidence(
-            result=f"文件不存在: {target}",
-            provenance={"target": target},
-            confidence=1.0,
-            known_gaps=["无法分析不存在的文件"],
-            level="observation",
-        ))
+        result["evidence"].append(
+            Evidence(
+                result=f"文件不存在: {target}",
+                provenance={"target": target},
+                confidence=1.0,
+                known_gaps=["无法分析不存在的文件"],
+                level="observation",
+            )
+        )
         return result
 
     try:
@@ -61,13 +63,15 @@ def reduce_algorithm(target: str, function_name: str | None = None) -> dict[str,
             source = f.read()
         tree = ast.parse(source, filename=target)
     except (SyntaxError, UnicodeDecodeError) as e:
-        result["evidence"].append(Evidence(
-            result=f"解析失败: {e}",
-            provenance={"target": target},
-            confidence=1.0,
-            known_gaps=["语法错误或编码错误，无法分析"],
-            level="observation",
-        ))
+        result["evidence"].append(
+            Evidence(
+                result=f"解析失败: {e}",
+                provenance={"target": target},
+                confidence=1.0,
+                known_gaps=["语法错误或编码错误，无法分析"],
+                level="observation",
+            )
+        )
         return result
 
     # 收集所有函数定义
@@ -86,12 +90,14 @@ def reduce_algorithm(target: str, function_name: str | None = None) -> dict[str,
         patterns = _detect_patterns(func)
         pseudo = _generate_pseudo_code(func, patterns)
 
-        result["functions"].append({
-            "name": func.name,
-            "patterns": patterns,
-            "pseudo_code": pseudo,
-            "line": func.lineno,
-        })
+        result["functions"].append(
+            {
+                "name": func.name,
+                "patterns": patterns,
+                "pseudo_code": pseudo,
+                "line": func.lineno,
+            }
+        )
 
         all_patterns.extend(patterns)
         all_pseudo.append(pseudo)
@@ -107,7 +113,9 @@ def reduce_algorithm(target: str, function_name: str | None = None) -> dict[str,
 
     result["pseudo_code"] = all_pseudo
     result["evidence"] = _build_evidence(
-        len(all_funcs), unique_patterns, target,
+        len(all_funcs),
+        unique_patterns,
+        target,
     )
 
     return result
@@ -116,6 +124,7 @@ def reduce_algorithm(target: str, function_name: str | None = None) -> dict[str,
 # ---------------------------------------------------------------------------
 # 模式检测
 # ---------------------------------------------------------------------------
+
 
 def _detect_patterns(func: ast.FunctionDef | ast.AsyncFunctionDef) -> list[dict[str, Any]]:
     """检测函数中的算法模式。"""
@@ -130,11 +139,13 @@ def _detect_patterns(func: ast.FunctionDef | ast.AsyncFunctionDef) -> list[dict[
                 is_recursive = True
                 break
     if is_recursive:
-        patterns.append({
-            "type": "递归 recursion",
-            "description": f"函数 {func.name} 在自身体内调用自身",
-            "line": func.lineno,
-        })
+        patterns.append(
+            {
+                "type": "递归 recursion",
+                "description": f"函数 {func.name} 在自身体内调用自身",
+                "line": func.lineno,
+            }
+        )
 
     # 迭代检测：for/while 循环
     has_loop = False
@@ -143,11 +154,13 @@ def _detect_patterns(func: ast.FunctionDef | ast.AsyncFunctionDef) -> list[dict[
             has_loop = True
             break
     if has_loop:
-        patterns.append({
-            "type": "迭代 iteration",
-            "description": f"函数 {func.name} 包含循环结构",
-            "line": func.lineno,
-        })
+        patterns.append(
+            {
+                "type": "迭代 iteration",
+                "description": f"函数 {func.name} 包含循环结构",
+                "line": func.lineno,
+            }
+        )
 
     # 累加器检测：变量 += 循环内
     has_accumulator = False
@@ -157,11 +170,13 @@ def _detect_patterns(func: ast.FunctionDef | ast.AsyncFunctionDef) -> list[dict[
                 has_accumulator = True
                 break
     if has_accumulator:
-        patterns.append({
-            "type": "累加器 accumulator",
-            "description": f"函数 {func.name} 使用累加器模式 (var += ...)",
-            "line": func.lineno,
-        })
+        patterns.append(
+            {
+                "type": "累加器 accumulator",
+                "description": f"函数 {func.name} 使用累加器模式 (var += ...)",
+                "line": func.lineno,
+            }
+        )
 
     # 条件分支检测：if-elif-else 链（≥2个分支）
     if_count = 0
@@ -169,21 +184,25 @@ def _detect_patterns(func: ast.FunctionDef | ast.AsyncFunctionDef) -> list[dict[
         if isinstance(node, ast.If):
             if_count += 1
     if if_count >= 2:
-        patterns.append({
-            "type": "条件分支 conditional_branch",
-            "description": f"函数 {func.name} 包含多重条件分支 ({if_count} 个 if)",
-            "line": func.lineno,
-        })
+        patterns.append(
+            {
+                "type": "条件分支 conditional_branch",
+                "description": f"函数 {func.name} 包含多重条件分支 ({if_count} 个 if)",
+                "line": func.lineno,
+            }
+        )
 
     # 分治检测：递归 + 处理子问题（二分/切片操作）
     if is_recursive:
         for node in ast.walk(func):
             if isinstance(node, ast.Subscript) and isinstance(node.slice, ast.Slice):
-                patterns.append({
-                    "type": "分治 divide_and_conquer",
-                    "description": f"函数 {func.name} 递归 + 切片操作，疑似分治策略",
-                    "line": func.lineno,
-                })
+                patterns.append(
+                    {
+                        "type": "分治 divide_and_conquer",
+                        "description": f"函数 {func.name} 递归 + 切片操作，疑似分治策略",
+                        "line": func.lineno,
+                    }
+                )
                 break
 
     # 动态规划检测：缓存（字典存储）+ 递归
@@ -200,43 +219,53 @@ def _detect_patterns(func: ast.FunctionDef | ast.AsyncFunctionDef) -> list[dict[
             has_cache = True
             break
     if is_recursive and has_cache:
-        patterns.append({
-            "type": "动态规划 dynamic_programming",
-            "description": f"函数 {func.name} 递归 + 缓存，疑似动态规划",
-            "line": func.lineno,
-        })
+        patterns.append(
+            {
+                "type": "动态规划 dynamic_programming",
+                "description": f"函数 {func.name} 递归 + 缓存，疑似动态规划",
+                "line": func.lineno,
+            }
+        )
 
     # 梯度更新检测：param -= lr * grad（或 param = param - lr * grad）
     if _is_gradient_update(func):
-        patterns.append({
-            "type": "梯度更新 gradient_update",
-            "description": f"函数 {func.name} 使用梯度更新模式 (param -= lr * grad)",
-            "line": func.lineno,
-        })
+        patterns.append(
+            {
+                "type": "梯度更新 gradient_update",
+                "description": f"函数 {func.name} 使用梯度更新模式 (param -= lr * grad)",
+                "line": func.lineno,
+            }
+        )
 
     # 相似性检索检测：相似度计算 + 排序取 top_k
     if _is_similarity_search(func):
-        patterns.append({
-            "type": "相似性检索 similarity_search",
-            "description": f"函数 {func.name} 使用相似性检索模式 (similarity + top_k)",
-            "line": func.lineno,
-        })
+        patterns.append(
+            {
+                "type": "相似性检索 similarity_search",
+                "description": f"函数 {func.name} 使用相似性检索模式 (similarity + top_k)",
+                "line": func.lineno,
+            }
+        )
 
     # 贝叶斯更新检测：posterior = likelihood * prior
     if _is_bayesian_update(func):
-        patterns.append({
-            "type": "贝叶斯更新 bayesian_update",
-            "description": f"函数 {func.name} 使用贝叶斯更新模式 (posterior ∝ likelihood × prior)",
-            "line": func.lineno,
-        })
+        patterns.append(
+            {
+                "type": "贝叶斯更新 bayesian_update",
+                "description": f"函数 {func.name} 使用贝叶斯更新模式 (posterior ∝ likelihood × prior)",
+                "line": func.lineno,
+            }
+        )
 
     # 状态机检测：if state == X: state = Y
     if _is_state_machine(func):
-        patterns.append({
-            "type": "状态机 state_machine",
-            "description": f"函数 {func.name} 使用状态机模式 (state 转移)",
-            "line": func.lineno,
-        })
+        patterns.append(
+            {
+                "type": "状态机 state_machine",
+                "description": f"函数 {func.name} 使用状态机模式 (state 转移)",
+                "line": func.lineno,
+            }
+        )
 
     return patterns
 
@@ -244,6 +273,7 @@ def _detect_patterns(func: ast.FunctionDef | ast.AsyncFunctionDef) -> list[dict[
 # ---------------------------------------------------------------------------
 # 伪代码生成
 # ---------------------------------------------------------------------------
+
 
 def _generate_pseudo_code(
     func: ast.FunctionDef | ast.AsyncFunctionDef,
@@ -285,7 +315,7 @@ def _generate_pseudo_code(
                 lines.append("  return <value>")
                 break
 
-    if not any("return" in l for l in lines[1:]):
+    if not any("return" in l for l in lines[1:]):  # noqa: E741
         lines.append("  return <implicit None>")
 
     return "\n".join(lines)
@@ -295,6 +325,7 @@ def _generate_pseudo_code(
 # Evidence 构建
 # ---------------------------------------------------------------------------
 
+
 def _build_evidence(
     n_funcs: int,
     patterns: list[dict[str, Any]],
@@ -302,26 +333,30 @@ def _build_evidence(
 ) -> list[Evidence]:
     evidence: list[Evidence] = []
 
-    evidence.append(Evidence(
-        result=f"检测到 {n_funcs} 个函数, {len(patterns)} 种算法模式",
-        provenance={"file": target, "analysis": "algorithm_reduction"},
-        confidence=0.9,
-        known_gaps=[
-            "AST 模式匹配无法识别非标准实现（如函数指针/lambda 递归）",
-            "伪代码为模板生成，不反映具体业务逻辑",
-            "动态特性（eval/exec/反射）无法静态分析",
-        ],
-        level="derivation",
-    ))
+    evidence.append(
+        Evidence(
+            result=f"检测到 {n_funcs} 个函数, {len(patterns)} 种算法模式",
+            provenance={"file": target, "analysis": "algorithm_reduction"},
+            confidence=0.9,
+            known_gaps=[
+                "AST 模式匹配无法识别非标准实现（如函数指针/lambda 递归）",
+                "伪代码为模板生成，不反映具体业务逻辑",
+                "动态特性（eval/exec/反射）无法静态分析",
+            ],
+            level="derivation",
+        )
+    )
 
     for p in patterns:
-        evidence.append(Evidence(
-            result=f"模式: {p['type']} — {p['description']}",
-            provenance={"file": target, "line": p["line"], "analysis": "pattern_match"},
-            confidence=0.8,
-            known_gaps=["模式匹配基于结构特征，可能误报"],
-            level="inference",
-        ))
+        evidence.append(
+            Evidence(
+                result=f"模式: {p['type']} — {p['description']}",
+                provenance={"file": target, "line": p["line"], "analysis": "pattern_match"},
+                confidence=0.8,
+                known_gaps=["模式匹配基于结构特征，可能误报"],
+                level="inference",
+            )
+        )
 
     return evidence
 
@@ -329,6 +364,7 @@ def _build_evidence(
 # ---------------------------------------------------------------------------
 # 辅助
 # ---------------------------------------------------------------------------
+
 
 def _call_name(node: ast.expr) -> str | None:
     if isinstance(node, ast.Name):
@@ -341,6 +377,7 @@ def _call_name(node: ast.expr) -> str | None:
 # ---------------------------------------------------------------------------
 # 领域算法模式检测（梯度更新/相似性检索/贝叶斯更新/状态机）
 # ---------------------------------------------------------------------------
+
 
 def _is_gradient_update(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
     """梯度更新形态：param -= lr * grad 或 param = param - lr * grad。"""
@@ -407,13 +444,15 @@ def _is_bayesian_update(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
     for node in ast.walk(func):
         if isinstance(node, ast.Assign):
             # 赋值表达式子树中存在乘法且乘项带贝叶斯语义
-            if _has_bayes_keyword(_assign_target_names(node)) \
-                    and _mult_contains_bayes_terms(node.value):
+            if _has_bayes_keyword(_assign_target_names(node)) and _mult_contains_bayes_terms(
+                node.value
+            ):
                 return True
         if isinstance(node, ast.AugAssign) and isinstance(node.op, ast.Mult):
             # posterior *= likelihood
-            if _has_bayes_keyword(_assign_target_names(node)) \
-                    and _has_bayes_keyword(_expr_names(node.value)):
+            if _has_bayes_keyword(_assign_target_names(node)) and _has_bayes_keyword(
+                _expr_names(node.value)
+            ):
                 return True
     return False
 
@@ -443,16 +482,14 @@ def _is_state_machine(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
         # 状态比较: if state == "idle" / status in ("a", "b")
         if isinstance(node, ast.Compare):
             operands = [node.left] + list(node.comparators)
-            if any(
-                isinstance(o, ast.Name) and _is_state_name(o.id)
-                for o in operands
-            ):
+            if any(isinstance(o, ast.Name) and _is_state_name(o.id) for o in operands):
                 has_state_compare = True
         # 状态赋值: state = "running" 或 state = transition(state, event)
         if isinstance(node, (ast.Assign, ast.AugAssign)):
             if any(_is_state_name(n) for n in _assign_target_names(node)):
                 if isinstance(node, ast.Assign) and isinstance(
-                    node.value, (ast.Constant, ast.Call),
+                    node.value,
+                    (ast.Constant, ast.Call),
                 ):
                     has_state_assign = True
     return has_state_compare and has_state_assign

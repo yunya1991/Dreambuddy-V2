@@ -37,8 +37,10 @@ jobs:
           # Fetch main branch (gh-pages is already checked out)
           git fetch origin main
           # Checkout logs from main branch into current working tree
+          # logs/ 可能尚未入库（首次运行/被清理），缺失时跳过而非阻断
           git checkout FETCH_HEAD -- experiments/ab-trading/logs/ 2>/dev/null || \
-            git checkout origin/main -- experiments/ab-trading/logs/
+            git checkout origin/main -- experiments/ab-trading/logs/ 2>/dev/null || \
+            echo "WARN: experiments/ab-trading/logs/ not found on main, skip"
           echo "Agent A logs: $(ls experiments/ab-trading/logs/agent_a/ 2>/dev/null | wc -l | tr -d ' ') files"
           echo "Agent B logs: $(ls experiments/ab-trading/logs/agent_b/ 2>/dev/null | wc -l | tr -d ' ') files"
 

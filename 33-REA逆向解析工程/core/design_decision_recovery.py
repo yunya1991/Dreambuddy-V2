@@ -7,6 +7,7 @@ Evidence-First 硬约束：每条决策必须引用 ≥1 条 observation/derivat
 Inference 控制硬约束：替代方案推断必须为 inference 级 + known_gaps 非空（NFR-1a）。
 FAIL-OPEN：异常/无决策时返回 level=unknown Evidence（NFR-7）。
 """
+
 from __future__ import annotations
 
 import ast
@@ -17,8 +18,8 @@ from typing import Any
 from .architecture_pattern_detector import ArchitecturePatternDetector
 from .evidence import Evidence, EvidenceLevel
 
-
 # ---------- 数据结构 ----------
+
 
 @dataclass
 class DesignDecision:
@@ -27,6 +28,7 @@ class DesignDecision:
     alternatives 是 dict 列表（含 result/level/known_gaps 字段），便于客户端直接消费。
     inference 级替代方案受 NFR-1a 硬约束（known_gaps 非空、confidence≤0.6）。
     """
+
     decision: str
     context: str
     consequences: list[str] = field(default_factory=list)
@@ -53,6 +55,7 @@ _TRADEOFF_MARKERS = {
 
 
 # ---------- 还原器 ----------
+
 
 class DesignDecisionRecoverer:
     """设计决策还原器。
@@ -97,7 +100,7 @@ class DesignDecisionRecoverer:
                     decision=f"采用 {p['pattern']} 架构模式",
                     context=f"目录结构匹配 {p['pattern']} 模式约定，命中目录: {', '.join(p.get('matched_dirs', []))}",
                     consequences=[
-                        f"该模式约束了后续模块的组织方式",
+                        "该模式约束了后续模块的组织方式",
                         "需保持模块职责边界，避免破坏模式完整性",
                     ],
                     alternatives=[],
@@ -129,44 +132,52 @@ class DesignDecisionRecoverer:
             primary = decisions[-1] if decisions else None
             if primary is not None:
                 for alt_ev in alternative_evs:
-                    primary.alternatives.append({
-                        "result": alt_ev.result,
-                        "level": alt_ev.level.value,
-                        "known_gaps": alt_ev.known_gaps,
-                        "provenance": alt_ev.provenance,
-                        "confidence": alt_ev.confidence,
-                        "evidence_id": alt_ev.evidence_id,
-                    })
-            else:
-                for alt_ev in alternative_evs:
-                    decisions.append(DesignDecision(
-                        decision=f"替代方案推断：{alt_ev.result}",
-                        context="基于代码共存的实现线索推断",
-                        consequences=["提示曾被考虑但未采纳的方向"],
-                        alternatives=[{
+                    primary.alternatives.append(
+                        {
                             "result": alt_ev.result,
                             "level": alt_ev.level.value,
                             "known_gaps": alt_ev.known_gaps,
                             "provenance": alt_ev.provenance,
                             "confidence": alt_ev.confidence,
                             "evidence_id": alt_ev.evidence_id,
-                        }],
-                        evidence=alt_ev,  # inference 级作主证据（NFR-1a：不计入 evidence_chain_score 分子）
-                    ))
+                        }
+                    )
+            else:
+                for alt_ev in alternative_evs:
+                    decisions.append(
+                        DesignDecision(
+                            decision=f"替代方案推断：{alt_ev.result}",
+                            context="基于代码共存的实现线索推断",
+                            consequences=["提示曾被考虑但未采纳的方向"],
+                            alternatives=[
+                                {
+                                    "result": alt_ev.result,
+                                    "level": alt_ev.level.value,
+                                    "known_gaps": alt_ev.known_gaps,
+                                    "provenance": alt_ev.provenance,
+                                    "confidence": alt_ev.confidence,
+                                    "evidence_id": alt_ev.evidence_id,
+                                }
+                            ],
+                            evidence=alt_ev,  # inference 级作主证据（NFR-1a：不计入 evidence_chain_score 分子）
+                        )
+                    )
             all_evidence.extend(alternative_evs)
 
         # 无任何决策 → 降级
         if not decisions:
-            all_evidence.append(Evidence(
-                result="未检测到可还原的设计决策",
-                level=EvidenceLevel.UNKNOWN,
-                provenance={"target": target, "analysis": "design_decision_recovery"},
-                confidence=0.2,
-                known_gaps=[
-                    "目标可能缺乏目录结构特征、权衡注释、并存实现等决策信号",
-                    "需人工审查源码以补充设计决策",
-                ],
-            ))
+            all_evidence.append(
+                Evidence(
+                    result="未检测到可还原的设计决策",
+                    level=EvidenceLevel.UNKNOWN,
+                    provenance={"target": target, "analysis": "design_decision_recovery"},
+                    confidence=0.2,
+                    known_gaps=[
+                        "目标可能缺乏目录结构特征、权衡注释、并存实现等决策信号",
+                        "需人工审查源码以补充设计决策",
+                    ],
+                )
+            )
 
         return {
             "target": target,
@@ -196,18 +207,20 @@ class DesignDecisionRecoverer:
                     if isinstance(docstring, str):
                         for marker, hint in _TRADEOFF_MARKERS.items():
                             if marker in docstring:
-                                evidence_list.append(Evidence(
-                                    result=f"{marker} 权衡痕迹: {hint}",
-                                    level=EvidenceLevel.OBSERVATION,
-                                    provenance={
-                                        "file": fpath,
-                                        "line": node.lineno,
-                                        "marker": marker,
-                                        "comment": docstring.strip()[:200],
-                                    },
-                                    confidence=0.9,
-                                    known_gaps=["注释仅是间接证据，需结合代码结构确认实际权衡"],
-                                ))
+                                evidence_list.append(
+                                    Evidence(
+                                        result=f"{marker} 权衡痕迹: {hint}",
+                                        level=EvidenceLevel.OBSERVATION,
+                                        provenance={
+                                            "file": fpath,
+                                            "line": node.lineno,
+                                            "marker": marker,
+                                            "comment": docstring.strip()[:200],
+                                        },
+                                        confidence=0.9,
+                                        known_gaps=["注释仅是间接证据，需结合代码结构确认实际权衡"],
+                                    )
+                                )
                                 break
             # 行内注释扫描（# TODO 等）
             for line_no, line in enumerate(source.splitlines(), start=1):
@@ -215,18 +228,20 @@ class DesignDecisionRecoverer:
                 if stripped.startswith("#"):
                     for marker, hint in _TRADEOFF_MARKERS.items():
                         if marker in stripped:
-                            evidence_list.append(Evidence(
-                                result=f"{marker} 权衡痕迹: {hint}",
-                                level=EvidenceLevel.OBSERVATION,
-                                provenance={
-                                    "file": fpath,
-                                    "line": line_no,
-                                    "marker": marker,
-                                    "comment": stripped[:200],
-                                },
-                                confidence=0.85,
-                                known_gaps=["注释仅是间接证据，需结合代码结构确认实际权衡"],
-                            ))
+                            evidence_list.append(
+                                Evidence(
+                                    result=f"{marker} 权衡痕迹: {hint}",
+                                    level=EvidenceLevel.OBSERVATION,
+                                    provenance={
+                                        "file": fpath,
+                                        "line": line_no,
+                                        "marker": marker,
+                                        "comment": stripped[:200],
+                                    },
+                                    confidence=0.85,
+                                    known_gaps=["注释仅是间接证据，需结合代码结构确认实际权衡"],
+                                )
+                            )
                             break
 
         return evidence_list
@@ -257,19 +272,21 @@ class DesignDecisionRecoverer:
                         has_raw_sql = True
 
             if has_orm_import and has_raw_sql:
-                alternatives.append(Evidence(
-                    result="推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底",
-                    level=EvidenceLevel.INFERENCE,
-                    provenance={
-                        "file": fpath,
-                        "analysis": "orm_raw_sql_coexistence",
-                    },
-                    confidence=0.5,
-                    known_gaps=[
-                        "推断基于代码共存，无直接证据证明设计意图",
-                        "原生 SQL 可能仅用于性能优化或特殊查询，非替代方案遗留",
-                    ],
-                ))
+                alternatives.append(
+                    Evidence(
+                        result="推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底",
+                        level=EvidenceLevel.INFERENCE,
+                        provenance={
+                            "file": fpath,
+                            "analysis": "orm_raw_sql_coexistence",
+                        },
+                        confidence=0.5,
+                        known_gaps=[
+                            "推断基于代码共存，无直接证据证明设计意图",
+                            "原生 SQL 可能仅用于性能优化或特殊查询，非替代方案遗留",
+                        ],
+                    )
+                )
 
         return alternatives
 
@@ -310,6 +327,7 @@ class DesignDecisionRecoverer:
 
 
 # ---------- 模块级入口 ----------
+
 
 def recover_decisions(target: str) -> dict[str, Any]:
     """设计决策还原的模块级入口。

@@ -1,7 +1,6 @@
 import importlib.util
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -21,6 +20,7 @@ def _payload(out):
 # ---------------------------------------------------------------------------
 # 1. Full A1→A2→A3→A4→A5→A6→A9 chain (A0 integrated into A1/A2/A3)
 # ---------------------------------------------------------------------------
+
 
 def _full_chain_payload():
     return {
@@ -110,6 +110,7 @@ def test_full_chain_a1_through_a9_all_envelopes_valid(tmp_path: Path):
 # 2. A4 BLOCK retry logic
 # ---------------------------------------------------------------------------
 
+
 def test_execution_loop_a4_block_triggers_a3_retry(tmp_path: Path):
     """When A4 returns BLOCK, the orchestrator re-runs A3 then A4."""
     mod = _load_module("workflows/trading-decision/orchestrator/execution_loop.py")
@@ -142,6 +143,7 @@ def test_execution_loop_a4_block_triggers_a3_retry(tmp_path: Path):
 # ---------------------------------------------------------------------------
 # 3. A5 FAIL retry logic
 # ---------------------------------------------------------------------------
+
 
 def test_execution_loop_a5_fail_triggers_a4_recheck(tmp_path: Path):
     """When A5 returns execution_status=FAIL, the orchestrator re-runs A4 then A5."""
@@ -200,6 +202,7 @@ def test_execution_loop_a5_fail_triggers_a4_recheck(tmp_path: Path):
 # 4. A5 → A6 intelligence notification in execution loop
 # ---------------------------------------------------------------------------
 
+
 def test_execution_loop_includes_a6_intelligence_stage(tmp_path: Path):
     """Per spec: A5 execution result notifies A6 intelligence monitoring."""
     mod = _load_module("workflows/trading-decision/orchestrator/execution_loop.py")
@@ -228,7 +231,11 @@ def test_execution_loop_includes_a6_intelligence_stage(tmp_path: Path):
     assert "A6" in out["stage_outputs"]
     assert "A6" in out["visited_stages"]
     # Verify A5 → A6 transition message
-    a5_to_a6 = [m for m in out["messages"] if m["header"]["source"] == "A5" and m["header"]["target"] == "A6"]
+    a5_to_a6 = [
+        m
+        for m in out["messages"]
+        if m["header"]["source"] == "A5" and m["header"]["target"] == "A6"
+    ]
     assert len(a5_to_a6) >= 1
     assert a5_to_a6[0]["header"]["loop_type"] == "execution"
 
@@ -236,6 +243,7 @@ def test_execution_loop_includes_a6_intelligence_stage(tmp_path: Path):
 # ---------------------------------------------------------------------------
 # 5. A6 L0 boundary test
 # ---------------------------------------------------------------------------
+
 
 def test_a6_l0_boundary_risk_score_0899_not_l0(tmp_path: Path):
     """risk_score=0.899 should NOT trigger L0 (threshold is >= 0.9)."""
@@ -274,6 +282,7 @@ def test_a6_l0_boundary_risk_score_0900_is_l0(tmp_path: Path):
 # 6. A6 L3 theory-practice divergence triggers A1+A3 restart
 # ---------------------------------------------------------------------------
 
+
 def test_a6_l3_theory_practice_divergence_restarts_research(tmp_path: Path):
     """theory_practice_score < 0.7 should trigger L3 → A1+A3 restart."""
     mod = _load_module("workflows/trading-decision/A6_intelligence/entrypoint.py")
@@ -287,7 +296,11 @@ def test_a6_l3_theory_practice_divergence_restarts_research(tmp_path: Path):
     )
     payload = _payload(out)
     assert payload["route_summary"]["L3"] == 1
-    l3_targets = {e["header"]["target"] for e in payload["routed_events"] if e["payload"].get("alert_level") == "L3"}
+    l3_targets = {
+        e["header"]["target"]
+        for e in payload["routed_events"]
+        if e["payload"].get("alert_level") == "L3"
+    }
     assert "A1" in l3_targets
     assert "A3" in l3_targets
 
@@ -295,6 +308,7 @@ def test_a6_l3_theory_practice_divergence_restarts_research(tmp_path: Path):
 # ---------------------------------------------------------------------------
 # 7. A0 as utility callable for contradiction analysis
 # ---------------------------------------------------------------------------
+
 
 def test_a0_callable_from_other_stages():
     """A0 should be independently callable by A1/A2/A3 for contradiction analysis."""
@@ -326,6 +340,7 @@ def test_a0_empty_contradictions_returns_neutral():
 # ---------------------------------------------------------------------------
 # 8. A9 → A7 governance trigger
 # ---------------------------------------------------------------------------
+
 
 def test_a9_triggers_a7_governance(tmp_path: Path):
     """A9 exit should envelope to A7 (governance loop practice record)."""

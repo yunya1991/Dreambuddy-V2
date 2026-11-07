@@ -23,7 +23,8 @@ _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
 # 43 层信号产出物路径
 _43_SIGNAL_PATH = os.path.join(
     os.path.join(_DREAMBUDDY_ROOT, "43-战略承接推演层"),
-    "runtime", "strategic_extension_signal.json",
+    "runtime",
+    "strategic_extension_signal.json",
 )
 
 # 42 层 SignalBus 模块路径
@@ -59,21 +60,29 @@ def main() -> int:
 
     signal = load_43_signal()
     if not signal.get("source"):
-        print(json.dumps({"status": "unavailable", "reason": signal.get("note")}, ensure_ascii=False))
+        print(
+            json.dumps({"status": "unavailable", "reason": signal.get("note")}, ensure_ascii=False)
+        )
         return 1
 
     bus = SignalBus()
     result = publish_to_bus(bus, signal)
     state = bus.flush()
-    print(json.dumps({
-        "publish_result": result.get("status"),
-        "reason": result.get("reason"),
-        "bus_signal_count": state["signal_count"],
-        "bus_sources": state["sources"],
-        "signal_id": signal.get("signal_id"),
-        "source": signal.get("source"),
-        "shadow": signal.get("shadow"),
-    }, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "publish_result": result.get("status"),
+                "reason": result.get("reason"),
+                "bus_signal_count": state["signal_count"],
+                "bus_sources": state["sources"],
+                "signal_id": signal.get("signal_id"),
+                "source": signal.get("source"),
+                "shadow": signal.get("shadow"),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 0 if result.get("status") == "accepted" else 1
 
 

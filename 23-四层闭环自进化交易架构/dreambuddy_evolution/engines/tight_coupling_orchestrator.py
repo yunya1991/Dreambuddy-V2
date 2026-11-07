@@ -5,7 +5,7 @@ TightCouplingOrchestrator (§一·七 两条链路紧耦合流)
 7 步闭环: 观察→推断→实验→测量→反思→学习→泛化→回馈
 RippleEngine(§0.7) → test position(§1.5.5) → ReflectionEngine(§1.6) → ESS feedback
 """
-import sys
+
 import logging
 from pathlib import Path
 from typing import Any
@@ -23,9 +23,10 @@ class TightCouplingOrchestrator:
         mode: "MVP" = 松耦合(Lark人工中转), "Phase2" = 紧耦合(全自动)
         """
         self.mode = mode
-        from dreambuddy_evolution.engines.ripple_engine import RippleEngine
-        from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
         from dreambuddy_evolution.core.level0_path_cost import compute_d_star
+        from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+        from dreambuddy_evolution.engines.ripple_engine import RippleEngine
+
         self.ripple = RippleEngine()
         self.reflection = ReflectionEngine()
         self._compute_d_star = compute_d_star
@@ -57,8 +58,13 @@ class TightCouplingOrchestrator:
             }
         except Exception as e:
             logger.warning("[FO] observe fail: %s", e)
-            return {"ri": 0.50, "is_ripple_source": False, "leader_r_vector": {},
-                    "leader_symbol": "", "ess_top_direction": ""}
+            return {
+                "ri": 0.50,
+                "is_ripple_source": False,
+                "leader_r_vector": {},
+                "leader_symbol": "",
+                "ess_top_direction": "",
+            }
 
     def hypothesize(self, obs: dict[str, Any]) -> dict[str, Any]:
         """步骤② 推断: RI 阈值表 → 推断标记"""
@@ -109,9 +115,15 @@ class TightCouplingOrchestrator:
                 action = "WAIT"
 
             snapshot = self.reflection.create_snapshot(
-                symbol=symbol, u_open=u_open, action=action,
-                level0_dstar=d_star, ess_id=ess_id, ess_dir=ess_dir,
-                cbr_sim=cbr_sim, cbr_top1_outcome="TP", cluster_id=cluster_id,
+                symbol=symbol,
+                u_open=u_open,
+                action=action,
+                level0_dstar=d_star,
+                ess_id=ess_id,
+                ess_dir=ess_dir,
+                cbr_sim=cbr_sim,
+                cbr_top1_outcome="TP",
+                cluster_id=cluster_id,
             )
 
             return {
@@ -124,12 +136,23 @@ class TightCouplingOrchestrator:
         except Exception as e:
             logger.warning("[FO] experiment fail: %s", e)
             snap = self.reflection.create_snapshot(
-                symbol=symbol, u_open=0.0, action="WAIT",
-                level0_dstar="WAIT", ess_id=ess_id, ess_dir="",
-                cbr_sim=cbr_sim, cbr_top1_outcome="", cluster_id=cluster_id,
+                symbol=symbol,
+                u_open=0.0,
+                action="WAIT",
+                level0_dstar="WAIT",
+                ess_id=ess_id,
+                ess_dir="",
+                cbr_sim=cbr_sim,
+                cbr_top1_outcome="",
+                cluster_id=cluster_id,
             )
-            return {"action": "WAIT", "u_open": 0.0, "pre_trade_snapshot": snap,
-                    "aligned": False, "d_star": "WAIT"}
+            return {
+                "action": "WAIT",
+                "u_open": 0.0,
+                "pre_trade_snapshot": snap,
+                "aligned": False,
+                "d_star": "WAIT",
+            }
 
     def measure(
         self,

@@ -16,6 +16,7 @@
 
 TDD 驱动：见 11-易经推理系统/tests/test_bdsm_phase0_snapshot.py
 """
+
 from __future__ import annotations
 
 import json
@@ -40,7 +41,9 @@ for _p in (_MEM_L4_DIR, _REPO_11_ABS):
 # 包 不存在（只有 scripts.memory_l4.force_vector），因此两个路径都试。
 # 同时作为独立脚本 运行（顶层包 force_vector 直接可用），第二个路径成功。
 # 最终兜底 为 8 币 常量，保证 FAIL-OPEN 字节等价 neutral。
-_BDSM_FALLBACK_COINS = frozenset({"UNI", "PUMP", "HYPE", "AAVE", "SOL", "CRCL", "ETH", "BTC", "ZEC", "ARB"})
+_BDSM_FALLBACK_COINS = frozenset(
+    {"UNI", "PUMP", "HYPE", "AAVE", "SOL", "CRCL", "ETH", "BTC", "ZEC", "ARB"}
+)
 
 _BDSM_COINS_IMP = None  # type: "frozenset[str] | None"
 for _bdsm_mod_path in (
@@ -84,8 +87,14 @@ _E7_NEGATIVE_BIAS_MULTIPLIER = 1.3
 ENABLE_SECTOR_VALUATION = os.environ.get("ENABLE_SECTOR_VALUATION", "1").lower() in ("1", "true")
 ENABLE_SECTOR_WATERLINE = os.environ.get("ENABLE_SECTOR_WATERLINE", "1").lower() in ("1", "true")
 ENABLE_UNDERVALUED_SCAN = os.environ.get("ENABLE_UNDERVALUED_SCAN", "1").lower() in ("1", "true")
-ENABLE_MULTI_DIM_VALUATION = os.environ.get("ENABLE_MULTI_DIM_VALUATION", "1").lower() in ("1", "true")
-ENABLE_FOLLOW_UP_CATALYST = os.environ.get("ENABLE_FOLLOW_UP_CATALYST", "1").lower() in ("1", "true")
+ENABLE_MULTI_DIM_VALUATION = os.environ.get("ENABLE_MULTI_DIM_VALUATION", "1").lower() in (
+    "1",
+    "true",
+)
+ENABLE_FOLLOW_UP_CATALYST = os.environ.get("ENABLE_FOLLOW_UP_CATALYST", "1").lower() in (
+    "1",
+    "true",
+)
 ENABLE_OVERHEAT_SIGNAL = os.environ.get("ENABLE_OVERHEAT_SIGNAL", "1").lower() in ("1", "true")
 
 # ── §6 sector_valuation 中性默认常量 ────────────────────────────────────
@@ -123,6 +132,7 @@ _SECTOR_VALUATION_CACHE: Dict[str, Any] = {}
 _COIN_TO_SECTOR: Dict[str, str] = {}
 try:
     from force_vector.coin_fundamental_crypto import SECTOR_MAP  # noqa: E402
+
     for _sec, _coins in SECTOR_MAP.items():
         for _c in _coins:
             _COIN_TO_SECTOR[_c] = _sec
@@ -132,9 +142,9 @@ except Exception:  # pragma: no cover
 # 复用编排器（from import 形式，便于测试 mock force_vector.bdsm_snapshot_writer.SectorValuationOrchestrator）
 try:
     from force_vector.sector_valuation_orchestrator import (  # noqa: E402
+        SectorOverheatSignal,
         SectorValuationOrchestrator,
         SectorValuationResult,
-        SectorOverheatSignal,
     )
 except Exception:  # pragma: no cover - 编排器缺失时降级中性
     SectorValuationOrchestrator = None  # type: ignore[assignment]
@@ -200,6 +210,7 @@ def _extract_multi_dim_valuation_for_coin(coin: str, db_path: Optional[str]) -> 
         return dict(_NEUTRAL_MULTI_DIM_VALUATION)
     try:
         from force_vector.multi_dim_valuation import compute_multi_dim_valuation
+
         md = compute_multi_dim_valuation(coin, db_path)
         return {
             "mc_fees_pct": float(md.get("mc_fees_pct", 50.0)),
@@ -229,9 +240,12 @@ def _extract_undervalued_peers_for_coin(coin: str, orch_result: Any) -> List[Dic
         sectors = getattr(scan, "sectors", {}) or {}
         peers = sectors.get(coin_sector, [])
         return [
-            {"coin": str(getattr(p, "coin", "")),
-             "opportunity_score": float(getattr(p, "opportunity_score", 0.0))}
-            for p in peers if getattr(p, "coin", "") != coin
+            {
+                "coin": str(getattr(p, "coin", "")),
+                "opportunity_score": float(getattr(p, "opportunity_score", 0.0)),
+            }
+            for p in peers
+            if getattr(p, "coin", "") != coin
         ]
     except Exception as exc:
         logger.warning("undervalued_peers FAIL-OPEN coin=%s: %s", coin, exc)
@@ -302,16 +316,21 @@ def _build_sector_valuation_summary(orch_result: Any) -> Dict[str, Any]:
         top_opps = []
         if scan is not None:
             for p in getattr(scan, "top_opportunities", []) or []:
-                top_opps.append({
-                    "coin": str(getattr(p, "coin", "")),
-                    "sector": str(getattr(p, "sector", "")),
-                    "opportunity_score": float(getattr(p, "opportunity_score", 0.0)),
-                    "rank": str(getattr(p, "rank", "C")),
-                })
-        overheat_sectors = [str(getattr(oh, "sector", ""))
-                            for oh in getattr(orch_result, "overheat_signals", []) or []]
+                top_opps.append(
+                    {
+                        "coin": str(getattr(p, "coin", "")),
+                        "sector": str(getattr(p, "sector", "")),
+                        "opportunity_score": float(getattr(p, "opportunity_score", 0.0)),
+                        "rank": str(getattr(p, "rank", "C")),
+                    }
+                )
+        overheat_sectors = [
+            str(getattr(oh, "sector", ""))
+            for oh in getattr(orch_result, "overheat_signals", []) or []
+        ]
         return {
-            "generated_at": str(getattr(orch_result, "timestamp", "")) or datetime.now(timezone.utc).isoformat(),
+            "generated_at": str(getattr(orch_result, "timestamp", ""))
+            or datetime.now(timezone.utc).isoformat(),
             "waterlines": waterlines,
             "top_opportunities": top_opps,
             "overheat_sectors": overheat_sectors,
@@ -361,14 +380,16 @@ def _fetch_snapshot_klines(coin: str) -> list:
                 break
             # OKX 返回按时间降序（最新在前），反转为升序后追加
             for k in reversed(raw):
-                all_klines.append({
-                    "ts": int(k[0]),
-                    "o": float(k[1]),
-                    "h": float(k[2]),
-                    "l": float(k[3]),
-                    "c": float(k[4]),
-                    "v": float(k[5]),
-                })
+                all_klines.append(
+                    {
+                        "ts": int(k[0]),
+                        "o": float(k[1]),
+                        "h": float(k[2]),
+                        "l": float(k[3]),
+                        "c": float(k[4]),
+                        "v": float(k[5]),
+                    }
+                )
             before_ts = int(raw[-1][0])  # 用本批最早一根 ts 作为下页 before
         all_klines.sort(key=lambda x: x["ts"])  # 最终按时间升序
         _KLINE_CACHE[cache_key] = all_klines
@@ -381,6 +402,7 @@ def _fetch_snapshot_klines(coin: str) -> list:
 # =========================================================================
 # §3.3 FAIL-OPEN 中性快照（R3 落地）
 # =========================================================================
+
 
 def _neutral_coin_entry(reason: str = "insufficient_data") -> Dict[str, Any]:
     """单币中性兜底：字节等价「BDSM 不存在」。"""
@@ -438,7 +460,7 @@ def _neutral_coin_entry(reason: str = "insufficient_data") -> Dict[str, Any]:
         "buffett_discount_applied": False,
         # v1.3 Phase 0 字段
         "technical_assessment": ta,
-        "ts_score": ta["ts_score"],          # P0-A1: 顶层 alias（PollingTrader 直接 .get）
+        "ts_score": ta["ts_score"],  # P0-A1: 顶层 alias（PollingTrader 直接 .get）
         "cvs": 0.0,
         "cvs_ratio": 0.0,
         "scaling_plan": scaling_plan,
@@ -473,6 +495,7 @@ def neutral_snapshot(reason: str = "generic_fallback") -> Dict[str, Any]:
 # =========================================================================
 # §4.1 方向约束 + §4.2 仓位上限系数
 # =========================================================================
+
 
 def _compute_direction(score: float, data_quality: str) -> str:
     """§4.1 方向硬约束公式。
@@ -540,19 +563,11 @@ def _compute_direction_v2(
         return "SHORT_ONLY"
 
     # L2 价值退出否决 → LONG_BLOCKED
-    if (
-        value_exit_action == "full_exit"
-        and bds_score < 0.0
-        and confidence >= 0.70
-    ):
+    if value_exit_action == "full_exit" and bds_score < 0.0 and confidence >= 0.70:
         return "LONG_BLOCKED"
 
     # L3 估值-BDS 矛盾 → LONG_BLOCKED（L2 未触发时的补充防线）
-    if (
-        valuation_percentile > 85.0
-        and bds_score < 0.0
-        and data_quality == "sufficient"
-    ):
+    if valuation_percentile > 85.0 and bds_score < 0.0 and data_quality == "sufficient":
         return "LONG_BLOCKED"
 
     return "NEUTRAL"
@@ -583,6 +598,7 @@ def _compute_cap_multiplier(rank: str, score: float, data_quality: str) -> float
 # =========================================================================
 # §3.2.1 技术面评估器（v1.3 新增）— RSI / MA200 / 成交量 / ATR
 # =========================================================================
+
 
 def _compute_rsi(closes: list, period: int = 14) -> float:
     """RSI(14) — Wilder's smoothing 法。"""
@@ -655,8 +671,10 @@ def _compute_technical_assessment(
     ma200_deviation = (current_price - ma_long_val) / ma_long_val * 100.0
 
     if len(closes) >= ma_long + 1:
-        ma_long_prev = sum(closes[-ma_long - 1:-1]) / ma_long
-        ma200_slope = (ma_long_val - ma_long_prev) / ma_long_prev * 100.0 if ma_long_prev > 0 else 0.0
+        ma_long_prev = sum(closes[-ma_long - 1 : -1]) / ma_long
+        ma200_slope = (
+            (ma_long_val - ma_long_prev) / ma_long_prev * 100.0 if ma_long_prev > 0 else 0.0
+        )
     else:
         ma200_slope = 0.0
 
@@ -698,6 +716,7 @@ def _compute_technical_assessment(
 # §3.2.2 综合估值分（CVS）
 # =========================================================================
 
+
 def _compute_cvs(bds_score: float, ts_score: float) -> tuple:
     """§3.2.2 CVS = BDS×0.6 + TS×0.4，映射 ratio。"""
     cvs = round(bds_score * 0.6 + ts_score * 0.4, 4)
@@ -715,6 +734,7 @@ def _compute_cvs(bds_score: float, ts_score: float) -> tuple:
 # =========================================================================
 # §3.3.1 趋势止损（MA200 / MA128 破位）
 # =========================================================================
+
 
 def _compute_trend_stop(
     coin: str,
@@ -743,7 +763,7 @@ def _compute_trend_stop(
     ma_short_val = sum(closes[-ma_short:]) / ma_short
 
     # MA200 斜率
-    ma_long_prev = sum(closes[-ma_long - 1:-1]) / ma_long
+    ma_long_prev = sum(closes[-ma_long - 1 : -1]) / ma_long
     ma200_slope = (ma_long_val - ma_long_prev) / ma_long_prev * 100.0 if ma_long_prev > 0 else 0.0
     ma200_slope_negative = ma200_slope < 0
 
@@ -751,7 +771,7 @@ def _compute_trend_stop(
     below_days = 0
     for i in range(len(closes) - 1, -1, -1):
         if i >= ma_long - 1:
-            ma_at_i = sum(closes[i - ma_long + 1:i + 1]) / ma_long
+            ma_at_i = sum(closes[i - ma_long + 1 : i + 1]) / ma_long
             if closes[i] < ma_at_i:
                 below_days += 1
             else:
@@ -786,6 +806,7 @@ def _compute_trend_stop(
 # =========================================================================
 # §3.4.2 价值发现止盈
 # =========================================================================
+
 
 def _compute_value_exit(
     bds_score: float,
@@ -829,7 +850,10 @@ def _compute_value_exit(
 # §4.3 B1~B5 基本面出场触发（需要最近 N 日历史快照对比）
 # =========================================================================
 
-def _load_history_snapshots(out_dir: str, today_str: str, days: int = _HISTORY_DAYS_FOR_EXIT_TRIGGERS) -> Dict[str, Dict[str, Any]]:
+
+def _load_history_snapshots(
+    out_dir: str, today_str: str, days: int = _HISTORY_DAYS_FOR_EXIT_TRIGGERS
+) -> Dict[str, Dict[str, Any]]:
     """加载最近 days 天的历史快照（不含今日），返回 {YYYY-MM-DD: snapshot_dict}。"""
     history: Dict[str, Dict[str, Any]] = {}
     # 尝试倒推 days 天，每个对应日期读文件；读不到跳过（FAIL-OPEN：历史缺失不影响今日结论）
@@ -838,6 +862,7 @@ def _load_history_snapshots(out_dir: str, today_str: str, days: int = _HISTORY_D
     except ValueError:
         return history
     from datetime import timedelta
+
     for i in range(1, days + 1):
         d = today_d - timedelta(days=i)
         ds = d.isoformat()
@@ -853,7 +878,9 @@ def _load_history_snapshots(out_dir: str, today_str: str, days: int = _HISTORY_D
     return history
 
 
-def _detect_exit_action(coin: str, today_entry: Dict[str, Any], history: Dict[str, Dict[str, Any]]) -> tuple[str, list[str]]:
+def _detect_exit_action(
+    coin: str, today_entry: Dict[str, Any], history: Dict[str, Dict[str, Any]]
+) -> tuple[str, list[str]]:
     """§4.3 B1~B5 出场触发检测。返回 (action, triggers)。
 
     优先级：CLOSE_ALL > REDUCE_80 > REDUCE_50 > NONE。
@@ -930,7 +957,9 @@ def _b2_triggers(y: Dict[str, Any], t: Dict[str, Any]) -> list[str]:
 
 def _rank_tumbling(window: list[Dict[str, Any]]) -> bool:
     """B5: 3 天内 ≥ 2 级下降（S→B 或 A→C），或最近 ≥ 3 天 rank=C。"""
-    rank_series = [_RANK_ORDER.get(d.get("rank", "B"), 2) for d in window if d.get("available", False)]
+    rank_series = [
+        _RANK_ORDER.get(d.get("rank", "B"), 2) for d in window if d.get("available", False)
+    ]
     if len(rank_series) < 3:
         return False
     first, last = rank_series[0], rank_series[-1]
@@ -973,6 +1002,7 @@ def _b3_score_break(window: list[Dict[str, Any]]) -> bool:
 # Phase 3 巴菲特要素（开关保护）
 # =========================================================================
 
+
 def _maybe_apply_buffett_discount(score_raw: float) -> tuple[float, bool]:
     """Phase 3 可选：score × 0.7 安全边际折扣。"""
     if not ENABLE_BUFFETT_DISCOUNT:
@@ -991,6 +1021,7 @@ def _maybe_apply_e7_bias(e7: float) -> float:
 # =========================================================================
 # 真实快照生成（逐币 compute_all + classify_phase）
 # =========================================================================
+
 
 def _build_coin_entry(coin: str, db_path: str | None = None) -> Dict[str, Any]:
     """对单个币种执行 compute_signal → 计算约束。
@@ -1065,6 +1096,7 @@ def _build_coin_entry(coin: str, db_path: str | None = None) -> Dict[str, Any]:
     # Phase 识别 — 签名：classify_phase(coin, sub_signals:Dict, valuation_percentile:float)
     try:
         from force_vector.coin_fundamental_phase_classifier import classify_phase  # noqa: WPS433
+
         val_pct_input = float(sub_signals.get("valuation_percentile", 50.0))
         phase_obj = classify_phase(
             coin, sub_signals=dict(sub_signals), valuation_percentile=val_pct_input
@@ -1120,7 +1152,9 @@ def _build_coin_entry(coin: str, db_path: str | None = None) -> Dict[str, Any]:
     try:
         _klines = _fetch_snapshot_klines(coin)
         if _klines and len(_klines) >= MA_LONG_DEFAULT:
-            _ta = _compute_technical_assessment(coin, _klines, ma_long=MA_LONG_DEFAULT, ma_short=128)
+            _ta = _compute_technical_assessment(
+                coin, _klines, ma_long=MA_LONG_DEFAULT, ma_short=128
+            )
             _ts_score = float(_ta.get("ts_score", 0.0) or 0.0)
             _cvs, _cvs_ratio = _compute_cvs(bds_score, _ts_score)
             _trend_stop = _compute_trend_stop(coin, _klines, ma_long=MA_LONG_DEFAULT, ma_short=128)
@@ -1150,7 +1184,9 @@ def _build_coin_entry(coin: str, db_path: str | None = None) -> Dict[str, Any]:
                 "completed": False,
                 "avg_entry_price": 0.0,
             }
-            entry["trend_stop"] = dict(_trend_stop) if isinstance(_trend_stop, dict) else {"action": "none"}
+            entry["trend_stop"] = (
+                dict(_trend_stop) if isinstance(_trend_stop, dict) else {"action": "none"}
+            )
             entry["value_exit"] = dict(_ve) if isinstance(_ve, dict) else {"action": "none"}
             entry["valuation_percentile"] = round(_val_merged, 2)
         else:
@@ -1197,6 +1233,7 @@ def _build_coin_entry(coin: str, db_path: str | None = None) -> Dict[str, Any]:
     # ── 战术小仓资格（2026-09-06 Phase 1）────────────────────────────
     try:
         from force_vector.bdsm_tactical_position import tactical_entry_check
+
         entry["tactical_position_eligibility"] = bool(tactical_entry_check(entry))
     except Exception:
         entry["tactical_position_eligibility"] = False  # FAIL-OPEN
@@ -1224,6 +1261,7 @@ def _build_coin_entry(coin: str, db_path: str | None = None) -> Dict[str, Any]:
 # =========================================================================
 # 对外主入口：write_snapshot
 # =========================================================================
+
 
 def write_snapshot(
     out_dir: str | None = None,
@@ -1261,7 +1299,9 @@ def write_snapshot(
             coins_data[coin] = _neutral_coin_entry("dry_run_db_read_disabled")
 
     # 加载最近 4 日快照 → 计算 B1~B5 出场触发
-    history = _load_history_snapshots(actual_dir, today_str) if dry_run_read_coin_data_from_db else {}
+    history = (
+        _load_history_snapshots(actual_dir, today_str) if dry_run_read_coin_data_from_db else {}
+    )
     for coin, entry in coins_data.items():
         if not entry["available"]:
             continue  # 数据不可靠不出场
@@ -1306,6 +1346,7 @@ def write_snapshot(
 # BCRM 侧读取入口：读取今日快照，FAIL-OPEN 中性兜底
 # =========================================================================
 
+
 def load_today_snapshot(out_dir: str | None = None) -> Dict[str, Any]:
     """BCRM 每 K 线周期调用：读当日快照，任何异常返回 neutral_snapshot()。
 
@@ -1335,14 +1376,20 @@ def load_today_snapshot(out_dir: str | None = None) -> Dict[str, Any]:
 # CLI 入口：python bdsm_snapshot_writer.py [--no-db] [--out-dir DIR] [--target-date YYYY-MM-DD]
 # =========================================================================
 
+
 def _cli_main() -> int:
     import argparse
 
     parser = argparse.ArgumentParser(description="BDSM 每日快照生成")
     parser.add_argument("--out-dir", default=None, help="输出目录（默认 .workbuddy/bdsm）")
-    parser.add_argument("--no-db", action="store_true", help="不读 DB，全填充中性骨架（仅做结构/写入测试）")
-    parser.add_argument("--target-date", default=None,
-                        help="目标日期 YYYY-MM-DD（用于 --backfill 模式或指定日期生成快照）")
+    parser.add_argument(
+        "--no-db", action="store_true", help="不读 DB，全填充中性骨架（仅做结构/写入测试）"
+    )
+    parser.add_argument(
+        "--target-date",
+        default=None,
+        help="目标日期 YYYY-MM-DD（用于 --backfill 模式或指定日期生成快照）",
+    )
     args = parser.parse_args()
     try:
         write_snapshot(

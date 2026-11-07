@@ -1,12 +1,17 @@
-import os
+import os  # noqa: I001
 import sys
-from pathlib import Path
 import json
 
 # Add project root to path
 sys.path.append(os.getcwd())
 
-from ml_trade_service import _find_pair_file, _get_pair_cache, _data_dirs, _build_data_index, DATA_INDEX
+from ml_trade_service import (  # noqa: I001
+    _find_pair_file,
+    _get_pair_cache,
+    _data_dirs,
+    _build_data_index,
+    DATA_INDEX,
+)
 
 print("Data dirs:", _data_dirs())
 

@@ -13,6 +13,7 @@ TDD 覆盖:
   P0.1-T3.2 full_retrain() 从头训练
   P0.1-T3.3 FAIL-OPEN: 在线训练失败回退上次权重
 """
+
 from __future__ import annotations
 
 import sys
@@ -29,7 +30,7 @@ if str(REPO) not in sys.path:
 def test_online_trainer_init():
     """P0.1-T1.1: NeuralSDEOnlineTrainer 初始化正确."""
     try:
-        import torch
+        import torch  # noqa: F401
     except ImportError:
         pytest.skip("torch not available")
 
@@ -52,7 +53,7 @@ def test_online_trainer_init():
 def test_fine_tune_returns_report():
     """P0.1-T1.2: fine_tune() 接受新数据, 返回 report dict."""
     try:
-        import torch
+        import torch  # noqa: F401
     except ImportError:
         pytest.skip("torch not available")
 
@@ -91,9 +92,7 @@ def test_fine_tune_changes_weights():
     model._sample_count = 5000
 
     # 保存初始权重
-    initial_weights = {
-        name: p.clone() for name, p in model.drift_net.named_parameters()
-    }
+    initial_weights = {name: p.clone() for name, p in model.drift_net.named_parameters()}
 
     trainer = NeuralSDEOnlineTrainer(base_model=model, fine_tune_lr=1e-4)
     np.random.seed(42)
@@ -114,7 +113,7 @@ def test_fine_tune_changes_weights():
 def test_rolling_window_truncates_old_data():
     """P0.1-T2.1: rolling_window 截断过旧数据."""
     try:
-        import torch
+        import torch  # noqa: F401
     except ImportError:
         pytest.skip("torch not available")
 
@@ -132,7 +131,7 @@ def test_rolling_window_truncates_old_data():
 def test_should_retrain_by_interval():
     """P0.1-T3.1: should_retrain() 按间隔阈值判断."""
     try:
-        import torch
+        import torch  # noqa: F401
     except ImportError:
         pytest.skip("torch not available")
 
@@ -165,14 +164,8 @@ def test_ewc_loss_computation():
     trainer = NeuralSDEOnlineTrainer(base_model=model, ewc_lambda=1000.0)
 
     # 模拟计算 Fisher 信息
-    fisher = {
-        name: torch.ones_like(p) * 0.5
-        for name, p in model.drift_net.named_parameters()
-    }
-    optimal_params = {
-        name: p.clone()
-        for name, p in model.drift_net.named_parameters()
-    }
+    fisher = {name: torch.ones_like(p) * 0.5 for name, p in model.drift_net.named_parameters()}
+    optimal_params = {name: p.clone() for name, p in model.drift_net.named_parameters()}
 
     # 保存当前参数作为 optimal
     ewc_loss = trainer._ewc_loss(fisher, optimal_params)

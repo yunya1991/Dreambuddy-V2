@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any  # noqa: I001
 from datetime import datetime, timezone
 
 try:
@@ -8,31 +8,33 @@ except ImportError:
 
 try:
     from . import llm_bridge
+
     _HAS_LLM = True
 except ImportError:
     try:
         import llm_bridge
+
         _HAS_LLM = True
     except ImportError:
         _HAS_LLM = False
 
 
 @register_skill(
-    "dream-strategy-designer",
-    "6-TRADING/skills/dream-strategy-designer/SKILL.md",
-    "2.7.0"
+    "dream-strategy-designer", "6-TRADING/skills/dream-strategy-designer/SKILL.md", "2.7.0"
 )
 def a3_strategy_designer_handler(inputs: Dict[str, Any], engine) -> Dict[str, Any]:
     a1_result = inputs.get("a1_result", {})
     a2_result = inputs.get("a2_result", {})
-    positions = inputs.get("positions", {})
+    positions = inputs.get("positions", {})  # noqa: F841
     market = inputs.get("market", {})
 
     fpa = a2_result.get("first_principles_analysis", {}) if isinstance(a2_result, dict) else {}
     synthesis = fpa.get("synthesis", {}) if isinstance(fpa, dict) else {}
     brain = fpa.get("brain_analysis", {}) if isinstance(fpa, dict) else {}
     trend = fpa.get("trend_analysis", {}) if isinstance(fpa, dict) else {}
-    regime_class = a2_result.get("market_regime_classification", {}) if isinstance(a2_result, dict) else {}
+    regime_class = (
+        a2_result.get("market_regime_classification", {}) if isinstance(a2_result, dict) else {}
+    )
 
     least_resistance_path = synthesis.get("least_resistance_path", "NEUTRAL")
     confidence = synthesis.get("path_confidence", 0.5)
@@ -41,7 +43,9 @@ def a3_strategy_designer_handler(inputs: Dict[str, Any], engine) -> Dict[str, An
     main_contradiction = brain.get("main_contradiction", {}).get("primary", "")
     a0_analysis = brain.get("a0_contradiction_analysis", {})
 
-    directive_bias = _determine_directive_bias(least_resistance_path, confidence, regime, a0_analysis)
+    directive_bias = _determine_directive_bias(
+        least_resistance_path, confidence, regime, a0_analysis
+    )
 
     position_modifier = _calculate_position_modifier(confidence, a0_analysis, regime)
 
@@ -55,7 +59,9 @@ def a3_strategy_designer_handler(inputs: Dict[str, Any], engine) -> Dict[str, An
 
     timing_guidance = _build_timing_guidance(regime, directive_bias, confidence)
 
-    contradiction_handling = _build_contradiction_handling(a0_analysis, main_contradiction, directive_bias)
+    contradiction_handling = _build_contradiction_handling(
+        a0_analysis, main_contradiction, directive_bias
+    )
 
     strategy_directive = {
         "directive_bias": directive_bias,
@@ -94,7 +100,11 @@ def a3_strategy_designer_handler(inputs: Dict[str, Any], engine) -> Dict[str, An
     if _HAS_LLM and inputs.get("use_llm", False):
         try:
             a1_report = a1_result.get("research_report", {}) if isinstance(a1_result, dict) else {}
-            a2_fpa = a2_result.get("first_principles_analysis", {}) if isinstance(a2_result, dict) else {}
+            a2_fpa = (
+                a2_result.get("first_principles_analysis", {})
+                if isinstance(a2_result, dict)
+                else {}
+            )
             llm_result = llm_bridge.enhance_a3_strategy(
                 a1_report=a1_report,
                 a2_analysis=a2_fpa,
@@ -233,53 +243,67 @@ def _build_exit_conditions(directive_bias: str, regime: str, confidence: float) 
     if directive_bias in ("LONG", "SHORT"):
         stop_pct = 0.05 if confidence >= 0.7 else 0.03
         take_profit_pct = 0.10 if confidence >= 0.7 else 0.06
-        conditions.append({
-            "type": "stop_loss",
-            "trigger": f"亏损达到{int(stop_pct * 100)}%",
-            "action": "全部平仓",
-            "enforcement": "HARD",
-        })
-        conditions.append({
-            "type": "take_profit",
-            "trigger": f"盈利达到{int(take_profit_pct * 100)}%",
-            "action": "分批止盈，先平50%",
-            "enforcement": "SOFT",
-        })
+        conditions.append(
+            {
+                "type": "stop_loss",
+                "trigger": f"亏损达到{int(stop_pct * 100)}%",
+                "action": "全部平仓",
+                "enforcement": "HARD",
+            }
+        )
+        conditions.append(
+            {
+                "type": "take_profit",
+                "trigger": f"盈利达到{int(take_profit_pct * 100)}%",
+                "action": "分批止盈，先平50%",
+                "enforcement": "SOFT",
+            }
+        )
     elif directive_bias == "PROBE":
-        conditions.append({
-            "type": "stop_loss",
-            "trigger": "亏损达到3%",
-            "action": "全部平仓",
-            "enforcement": "HARD",
-        })
-        conditions.append({
-            "type": "take_profit",
-            "trigger": "盈利达到5%",
-            "action": "全部止盈",
-            "enforcement": "SOFT",
-        })
+        conditions.append(
+            {
+                "type": "stop_loss",
+                "trigger": "亏损达到3%",
+                "action": "全部平仓",
+                "enforcement": "HARD",
+            }
+        )
+        conditions.append(
+            {
+                "type": "take_profit",
+                "trigger": "盈利达到5%",
+                "action": "全部止盈",
+                "enforcement": "SOFT",
+            }
+        )
 
     if regime == "RANGE_BOUND":
-        conditions.append({
-            "type": "timeout",
-            "trigger": "持仓超过48小时未突破区间",
-            "action": "减仓50%",
-            "enforcement": "SOFT",
-        })
+        conditions.append(
+            {
+                "type": "timeout",
+                "trigger": "持仓超过48小时未突破区间",
+                "action": "减仓50%",
+                "enforcement": "SOFT",
+            }
+        )
     elif regime in ("TREND_STRONG", "BREAKOUT_PENDING"):
-        conditions.append({
-            "type": "trailing_stop",
-            "trigger": "从最高点回撤5%",
-            "action": "逐步止盈",
-            "enforcement": "SOFT",
-        })
+        conditions.append(
+            {
+                "type": "trailing_stop",
+                "trigger": "从最高点回撤5%",
+                "action": "逐步止盈",
+                "enforcement": "SOFT",
+            }
+        )
 
-    conditions.append({
-        "type": "timeout",
-        "trigger": "持仓超过72小时方向未明",
-        "action": "评估是否离场",
-        "enforcement": "SOFT",
-    })
+    conditions.append(
+        {
+            "type": "timeout",
+            "trigger": "持仓超过72小时方向未明",
+            "action": "评估是否离场",
+            "enforcement": "SOFT",
+        }
+    )
 
     return conditions
 
@@ -336,7 +360,9 @@ def _build_timing_guidance(regime: str, directive_bias: str, confidence: float) 
         return "根据市场变化灵活调整，保持谨慎，控制仓位"
 
 
-def _build_contradiction_handling(a0_analysis: Dict, main_contradiction: str, directive_bias: str) -> Dict:
+def _build_contradiction_handling(
+    a0_analysis: Dict, main_contradiction: str, directive_bias: str
+) -> Dict:
     clarity = a0_analysis.get("contradiction_clarity", "MODERATE")
     monitoring_points = a0_analysis.get("monitoring_points", [])
     transformation_risk = a0_analysis.get("transformation_risk", "LOW")
@@ -367,21 +393,45 @@ def _build_contradiction_handling(a0_analysis: Dict, main_contradiction: str, di
 def _distill_features(a1_result: Dict, a2_result: Dict, market: Dict) -> Dict:
     fpa = a2_result.get("first_principles_analysis", {}) if isinstance(a2_result, dict) else {}
     trend = fpa.get("trend_analysis", {}) if isinstance(fpa, dict) else {}
-    technical = fpa.get("dual_dimension_analysis", {}).get("technical", {}) if isinstance(fpa.get("dual_dimension_analysis", {}), dict) else {}
-    regime_class = a2_result.get("market_regime_classification", {}) if isinstance(a2_result, dict) else {}
+    technical = (
+        fpa.get("dual_dimension_analysis", {}).get("technical", {})
+        if isinstance(fpa.get("dual_dimension_analysis", {}), dict)
+        else {}
+    )
+    regime_class = (
+        a2_result.get("market_regime_classification", {}) if isinstance(a2_result, dict) else {}
+    )
 
     trend_direction = trend.get("trend_direction", "NEUTRAL")
     momentum = trend.get("trend_momentum", "stable")
-    vol_state = technical.get("volatility", {}).get("atr_state", "NORMAL") if isinstance(technical.get("volatility", {}), dict) else "NORMAL"
+    vol_state = (
+        technical.get("volatility", {}).get("atr_state", "NORMAL")
+        if isinstance(technical.get("volatility", {}), dict)
+        else "NORMAL"
+    )
     regime = regime_class.get("regime", "RANGE_BOUND")
 
     a1_report = a1_result.get("research_report", {}) if isinstance(a1_result, dict) else {}
-    a1_market_state = a1_report.get("market_state", {}) if isinstance(a1_report, dict) else {}
-    sentiment = a1_report.get("macro_snapshot", {}).get("sentiment", "neutral") if isinstance(a1_report.get("macro_snapshot", {}), dict) else "neutral"
-    onchain = a1_report.get("onchain_signals", {}) if isinstance(a1_report.get("onchain_signals", {}), dict) else {}
+    a1_market_state = (  # noqa: F841
+        a1_report.get("market_state", {}) if isinstance(a1_report, dict) else {}
+    )  # noqa: F841
+    sentiment = (
+        a1_report.get("macro_snapshot", {}).get("sentiment", "neutral")
+        if isinstance(a1_report.get("macro_snapshot", {}), dict)
+        else "neutral"
+    )
+    onchain = (
+        a1_report.get("onchain_signals", {})
+        if isinstance(a1_report.get("onchain_signals", {}), dict)
+        else {}
+    )
     capital_flow = onchain.get("etf_flow", onchain.get("whale_activity", "neutral"))
 
-    direction = "BULL" if trend_direction in ("BULL", "NEUTRAL_UP") else "BEAR" if trend_direction in ("BEAR", "NEUTRAL_DOWN") else "NEUTRAL"
+    direction = (
+        "BULL"
+        if trend_direction in ("BULL", "NEUTRAL_UP")
+        else "BEAR" if trend_direction in ("BEAR", "NEUTRAL_DOWN") else "NEUTRAL"
+    )
 
     return {
         "direction": direction,

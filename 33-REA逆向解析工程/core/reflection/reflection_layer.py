@@ -74,32 +74,36 @@ class ReflectionLayer:
         out: List[CritiqueFinding] = []
         for dec in report.get("decisions", []):
             if not dec.get("evidence_refs"):
-                out.append(CritiqueFinding(
-                    level="R1",
-                    severity=SEVERITY_WARNING,
-                    message="方向选择缺少证据支撑: " + str(dec.get("direction", "")),
-                    target=str(dec.get("direction", "")),
-                    evidence=reverse_evidence(
-                        result="方向选择无证据引用",
-                        level=EvidenceLevel.DERIVATION,
-                        provenance={"stage": "R1", "decision": dec},
-                        confidence=0.8,
-                    ),
-                ))
+                out.append(
+                    CritiqueFinding(
+                        level="R1",
+                        severity=SEVERITY_WARNING,
+                        message="方向选择缺少证据支撑: " + str(dec.get("direction", "")),
+                        target=str(dec.get("direction", "")),
+                        evidence=reverse_evidence(
+                            result="方向选择无证据引用",
+                            level=EvidenceLevel.DERIVATION,
+                            provenance={"stage": "R1", "decision": dec},
+                            confidence=0.8,
+                        ),
+                    )
+                )
         conflict = report.get("path_conflict")
         if conflict and not conflict.get("adjudication_basis"):
-            out.append(CritiqueFinding(
-                level="R1",
-                severity=SEVERITY_WARNING,
-                message="内外路径冲突但无裁决依据记录",
-                target=str(conflict.get("topic", "")),
-                evidence=reverse_evidence(
-                    result="路径冲突未记录裁决依据",
-                    level=EvidenceLevel.DERIVATION,
-                    provenance={"stage": "R1", "conflict": conflict},
-                    confidence=0.9,
-                ),
-            ))
+            out.append(
+                CritiqueFinding(
+                    level="R1",
+                    severity=SEVERITY_WARNING,
+                    message="内外路径冲突但无裁决依据记录",
+                    target=str(conflict.get("topic", "")),
+                    evidence=reverse_evidence(
+                        result="路径冲突未记录裁决依据",
+                        level=EvidenceLevel.DERIVATION,
+                        provenance={"stage": "R1", "conflict": conflict},
+                        confidence=0.9,
+                    ),
+                )
+            )
         return out
 
     def _r2_tactics(self, report: Dict[str, Any]) -> List[CritiqueFinding]:
@@ -108,51 +112,59 @@ class ReflectionLayer:
         calls = int(cost.get("calls") or 0)
         conclusions = report.get("conclusions", [])
         if calls > OVER_ANALYSIS_CALLS:
-            out.append(CritiqueFinding(
-                level="R2",
-                severity=SEVERITY_WARNING,
-                message="疑似过度分析：调用数 " + str(calls) + " 超过阈值 " + str(OVER_ANALYSIS_CALLS),
-                target="cost",
-                evidence=reverse_evidence(
-                    result="分析成本超阈值",
-                    level=EvidenceLevel.DERIVATION,
-                    provenance={"stage": "R2", "calls": calls},
-                    confidence=0.7,
-                ),
-            ))
+            out.append(
+                CritiqueFinding(
+                    level="R2",
+                    severity=SEVERITY_WARNING,
+                    message="疑似过度分析：调用数 "
+                    + str(calls)
+                    + " 超过阈值 "
+                    + str(OVER_ANALYSIS_CALLS),
+                    target="cost",
+                    evidence=reverse_evidence(
+                        result="分析成本超阈值",
+                        level=EvidenceLevel.DERIVATION,
+                        provenance={"stage": "R2", "calls": calls},
+                        confidence=0.7,
+                    ),
+                )
+            )
         uncertain = [
-            c for c in conclusions
-            if 1.0 - float(c.get("confidence", 1.0)) > HIGH_UNCERTAINTY
+            c for c in conclusions if 1.0 - float(c.get("confidence", 1.0)) > HIGH_UNCERTAINTY
         ]
         if calls < UNDER_ANALYSIS_CALLS and uncertain:
-            out.append(CritiqueFinding(
-                level="R2",
-                severity=SEVERITY_WARNING,
-                message="疑似分析不足：调用数低但存在高不确定结论",
-                target="cost",
-                evidence=reverse_evidence(
-                    result="分析深度不足",
-                    level=EvidenceLevel.DERIVATION,
-                    provenance={"stage": "R2", "calls": calls, "uncertain": len(uncertain)},
-                    confidence=0.7,
-                ),
-            ))
+            out.append(
+                CritiqueFinding(
+                    level="R2",
+                    severity=SEVERITY_WARNING,
+                    message="疑似分析不足：调用数低但存在高不确定结论",
+                    target="cost",
+                    evidence=reverse_evidence(
+                        result="分析深度不足",
+                        level=EvidenceLevel.DERIVATION,
+                        provenance={"stage": "R2", "calls": calls, "uncertain": len(uncertain)},
+                        confidence=0.7,
+                    ),
+                )
+            )
         return out
 
     def _r3_execution(self, report: Dict[str, Any]) -> List[CritiqueFinding]:
         out: List[CritiqueFinding] = []
         for c in report.get("conclusions", []):
             if not c.get("evidence_refs"):
-                out.append(CritiqueFinding(
-                    level="R3",
-                    severity=SEVERITY_CRITICAL,
-                    message="纸上谈兵：声称分析结论但无证据链记录: " + str(c.get("claim", "")),
-                    target=str(c.get("claim", "")),
-                    evidence=reverse_evidence(
-                        result="结论无证据链记录（纸上谈兵检测命中）",
-                        level=EvidenceLevel.OBSERVATION,
-                        provenance={"stage": "R3", "conclusion": c},
-                        confidence=1.0,
-                    ),
-                ))
+                out.append(
+                    CritiqueFinding(
+                        level="R3",
+                        severity=SEVERITY_CRITICAL,
+                        message="纸上谈兵：声称分析结论但无证据链记录: " + str(c.get("claim", "")),
+                        target=str(c.get("claim", "")),
+                        evidence=reverse_evidence(
+                            result="结论无证据链记录（纸上谈兵检测命中）",
+                            level=EvidenceLevel.OBSERVATION,
+                            provenance={"stage": "R3", "conclusion": c},
+                            confidence=1.0,
+                        ),
+                    )
+                )
         return out

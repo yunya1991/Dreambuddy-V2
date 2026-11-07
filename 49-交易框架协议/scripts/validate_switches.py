@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """M0-04: validate switch registry against agi_config."""
+
 from __future__ import annotations
 
 import json
@@ -39,9 +40,7 @@ def validate() -> list[str]:
         if entry.get("kind") not in VALID_KINDS:
             errors.append(f"{name}: invalid kind {entry.get('kind')!r}")
         if entry.get("production_impact") not in VALID_IMPACTS:
-            errors.append(
-                f"{name}: invalid production_impact {entry.get('production_impact')!r}"
-            )
+            errors.append(f"{name}: invalid production_impact {entry.get('production_impact')!r}")
         if name not in AGI_SWITCHES:
             errors.append(f"{name}: not registered in AGI_SWITCHES")
         elif bool(AGI_SWITCHES[name]) != bool(entry.get("default")):

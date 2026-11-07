@@ -1,4 +1,5 @@
 """EventDrivenStrategy 测试 — 买预期卖事实 + 实际利率 5 维评分。"""
+
 from event_driven.event_driven_strategy import EventDrivenStrategy
 
 
@@ -39,6 +40,7 @@ def test_not_in_fomc_cycle_returns_neutral():
 # T4 P0 盲区修复：解除 in_fomc_cycle 硬限制（SPEC §3.2.1）
 # 非农/CPI/PPI 虽不在 FOMC 议息周期，但实质影响加息预期，必须激活策略
 # ================================================================
+
 
 def test_not_in_fomc_but_cesi_trigger_activates_strategy():
     """非 FOMC 周期 + CESI ≥ +1.5σ → 不再返回 mode='none'（CESI 触发激活）。"""
@@ -121,6 +123,7 @@ def test_not_in_fomc_unknown_event_type_returns_neutral():
 # _score_real_rate 用 fedwatch.effr 替代 BASE_RATE_MIDPOINT=3.625 硬编码
 # ================================================================
 
+
 def test_assess_forward_guidance_uses_fedwatch_real_hike_prob():
     """event_ctx.hike_prob=0 + fedwatch.hike_prob=0.85 → 应识别为 hawkish（用真实概率）。"""
     strat = EventDrivenStrategy()
@@ -190,12 +193,15 @@ def test_score_real_rate_uses_fedwatch_effr_not_hardcoded():
     ctx["hike_prob"] = 0  # 0 * 0.25 = 0，不影响 nominal_rate
     s = strat._score_real_rate(kd, ctx)
     # 5.0 - 4.5 = 0.5 → 落入 < 1.0 区间 → 0.65
-    assert s == 0.65, f"应使用 fedwatch.effr=5.0 计算 real_rate=0.5 → 0.65，但返回 {s}（可能仍用硬编码 3.625）"
+    assert (
+        s == 0.65
+    ), f"应使用 fedwatch.effr=5.0 计算 real_rate=0.5 → 0.65，但返回 {s}（可能仍用硬编码 3.625）"
 
 
 # ================================================================
 # 买预期卖事实 核心逻辑测试
 # ================================================================
+
 
 def test_buy_expectation_short_signal():
     """买预期阶段：高加息概率 + 价格下跌 → SHORT（利空正在被定价）。"""
@@ -240,6 +246,7 @@ def test_event_day_long_signal():
 # 实际利率维度测试
 # ================================================================
 
+
 def test_real_rate_negative_bullish():
     """实际利率为负（CPI > 名义利率）→ 强烈利好黄金。"""
     strat = EventDrivenStrategy()
@@ -275,6 +282,7 @@ def test_real_rate_no_data_returns_neutral():
 # 前瞻指引测试
 # ================================================================
 
+
 def test_forward_guidance_hawkish_dot_plot():
     """点阵图偏鹰（暗示更多加息）→ composite 折扣。"""
     strat = EventDrivenStrategy()
@@ -302,6 +310,7 @@ def test_forward_guidance_dovish():
 # ================================================================
 # 原有维度测试（保持）
 # ================================================================
+
 
 def test_resilience_score_cpi_surprise_no_drop():
     """CPI 超预期但价格没跌 → 高抗跌分。"""

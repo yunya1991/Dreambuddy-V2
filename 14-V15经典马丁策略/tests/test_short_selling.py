@@ -7,6 +7,7 @@
 3. strategy_params SHORT 方向止损逻辑
 4. 向后兼容（V15_ALLOW_SHORT=false 时行为不变）
 """
+
 import sys
 import unittest
 from pathlib import Path
@@ -16,15 +17,17 @@ BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
 sys.path.insert(0, str(BASE_DIR / "core"))
 
-from direction_gate import (
-    DirectionGate, MarketRegime, TradeDirection, GateResult,
-    evaluate_direction, reset_gate,
+from direction_gate import (  # noqa: E402
+    DirectionGate,
+    MarketRegime,
+    TradeDirection,
+    reset_gate,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════
 # 1. DirectionGate 三状态模型测试
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class TestDirectionGateStates(unittest.TestCase):
     """DirectionGate 核心状态判断（MA128 + BTC风向标模型）"""
@@ -36,7 +39,9 @@ class TestDirectionGateStates(unittest.TestCase):
     def test_long_preferred_price_above_daily_ma128(self):
         """BTC做空闸门未打开 → LONG_PREFERRED，只做多（默认保守）"""
         r = self.gate.evaluate(
-            current_price=65000, daily_ma128=60000, weekly_ma200=55000,
+            current_price=65000,
+            daily_ma128=60000,
+            weekly_ma200=55000,
             recent_daily_closes=[64000, 63500, 63000],
             btc_short_enabled=False,
         )
@@ -48,7 +53,9 @@ class TestDirectionGateStates(unittest.TestCase):
     def test_short_allowed_btc_gate_open_above_weekly(self):
         """BTC做空闸门打开 + 在周MA200上方 → SHORT_ALLOWED，允许做空"""
         r = self.gate.evaluate(
-            current_price=58000, daily_ma128=60000, weekly_ma200=55000,
+            current_price=58000,
+            daily_ma128=60000,
+            weekly_ma200=55000,
             recent_daily_closes=[59000, 58500, 58000],
             btc_short_enabled=True,
         )
@@ -60,7 +67,9 @@ class TestDirectionGateStates(unittest.TestCase):
     def test_long_only_force_at_weekly_ma200(self):
         """跌至周线MA200 → LONG_ONLY_FORCE，强制做多"""
         r = self.gate.evaluate(
-            current_price=54000, daily_ma128=60000, weekly_ma200=55000,
+            current_price=54000,
+            daily_ma128=60000,
+            weekly_ma200=55000,
             recent_daily_closes=[54500, 54000, 53500],
             btc_short_enabled=True,
         )
@@ -73,7 +82,9 @@ class TestDirectionGateStates(unittest.TestCase):
         """全局开关关闭 → 永远只做多"""
         gate = DirectionGate(allow_short=False)
         r = gate.evaluate(
-            current_price=58000, daily_ma128=60000, weekly_ma200=55000,
+            current_price=58000,
+            daily_ma128=60000,
+            weekly_ma200=55000,
             recent_daily_closes=[59000, 58500, 58000],
             btc_short_enabled=True,
         )
@@ -106,11 +117,13 @@ class TestDirectionGateEdgeCases(unittest.TestCase):
         """周MA200缓冲带避免临界点频繁切换"""
         gate = DirectionGate(allow_short=True, buffer_pct=0.01)
         weekly_ma200 = 55000
-        weekly_buffer = weekly_ma200 * 0.01  # 550
+        weekly_buffer = weekly_ma200 * 0.01  # 550  # noqa: F841
 
         # 刚好在周MA200+buffer内 → 强制做多（LONG_ONLY_FORCE）
         r = gate.evaluate(
-            current_price=55400, daily_ma128=60000, weekly_ma200=weekly_ma200,
+            current_price=55400,
+            daily_ma128=60000,
+            weekly_ma200=weekly_ma200,
             recent_daily_closes=[55600, 55500, 55400],  # 最近收盘价55400 < 55550(=55000+550)
             btc_short_enabled=True,
         )
@@ -121,7 +134,9 @@ class TestDirectionGateEdgeCases(unittest.TestCase):
         """BTC做空闸门关闭 → 永远只做多（即便价格低于日MA128）"""
         gate = DirectionGate(allow_short=True)
         r = gate.evaluate(
-            current_price=58000, daily_ma128=60000, weekly_ma200=55000,
+            current_price=58000,
+            daily_ma128=60000,
+            weekly_ma200=55000,
             recent_daily_closes=[59000, 58500, 58000],
             btc_short_enabled=False,  # 闸门关闭
         )
@@ -132,7 +147,9 @@ class TestDirectionGateEdgeCases(unittest.TestCase):
         """无recent_daily_closes时回退到current_price判断周线位置"""
         gate = DirectionGate(allow_short=True)
         r = gate.evaluate(
-            current_price=58000, daily_ma128=60000, weekly_ma200=55000,
+            current_price=58000,
+            daily_ma128=60000,
+            weekly_ma200=55000,
             recent_daily_closes=None,
             btc_short_enabled=True,
         )
@@ -143,15 +160,9 @@ class TestDirectionGateEdgeCases(unittest.TestCase):
     def test_valid_breakdown_3_days_close_below_ma128(self):
         """_check_valid_breakdown: 连续3日收盘价低于MA128 → 有效跌破"""
         gate = DirectionGate(allow_short=True)
-        self.assertTrue(gate._check_valid_breakdown(
-            [61000, 60500, 59000, 58500, 58000], 60000
-        ))
-        self.assertFalse(gate._check_valid_breakdown(
-            [61000, 60500, 60100], 60000  # 只有2日低于
-        ))
-        self.assertFalse(gate._check_valid_breakdown(
-            [59000, 58000], 60000  # 不足3日
-        ))
+        self.assertTrue(gate._check_valid_breakdown([61000, 60500, 59000, 58500, 58000], 60000))
+        self.assertFalse(gate._check_valid_breakdown([61000, 60500, 60100], 60000))  # 只有2日低于
+        self.assertFalse(gate._check_valid_breakdown([59000, 58000], 60000))  # 不足3日
 
 
 class TestGateResultDict(unittest.TestCase):
@@ -159,8 +170,9 @@ class TestGateResultDict(unittest.TestCase):
 
     def test_to_dict_contains_all_fields(self):
         gate = DirectionGate(allow_short=True)
-        r = gate.evaluate(current_price=65000, daily_ma128=60000, weekly_ma200=55000,
-                          btc_short_enabled=False)
+        r = gate.evaluate(
+            current_price=65000, daily_ma128=60000, weekly_ma200=55000, btc_short_enabled=False
+        )
         d = r.to_dict()
         self.assertIn("regime", d)
         self.assertIn("allowed_direction", d)
@@ -175,8 +187,9 @@ class TestGateResultDict(unittest.TestCase):
 
     def test_to_dict_short_enabled_true(self):
         gate = DirectionGate(allow_short=True)
-        r = gate.evaluate(current_price=58000, daily_ma128=60000, weekly_ma200=55000,
-                          btc_short_enabled=True)
+        r = gate.evaluate(
+            current_price=58000, daily_ma128=60000, weekly_ma200=55000, btc_short_enabled=True
+        )
         d = r.to_dict()
         self.assertTrue(d["short_enabled"])
         self.assertTrue(d["long_enabled"])
@@ -186,6 +199,7 @@ class TestGateResultDict(unittest.TestCase):
 # 2. 做空执行逻辑测试（Mock OKX 客户端）
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestShortPositionExecution(unittest.TestCase):
     """做空开仓/加仓/止盈/止损执行逻辑"""
 
@@ -194,7 +208,8 @@ class TestShortPositionExecution(unittest.TestCase):
         self.mock_client = MagicMock()
         self.mock_client.place_order.return_value = {"ok": True, "data": {"ordId": "test123"}}
         self.mock_client._get.return_value = {
-            "code": "0", "data": [{"lotSz": "1", "ctVal": "0.01"}]
+            "code": "0",
+            "data": [{"lotSz": "1", "ctVal": "0.01"}],
         }
         self.state = {
             "positions": {},
@@ -222,13 +237,13 @@ class TestShortPositionExecution(unittest.TestCase):
             "reasons": ["测试做多信号"],
         }
 
-    @patch('v15_trader._get_dynamic_params')
-    @patch('v15_trader.AUTO_EXECUTE', True)
-    @patch('v15_trader.LEVERAGE', 5.0)
-    @patch('v15_trader.MAX_ADDONS', 3)
-    @patch('v15_trader.get_contract_info', return_value=(1, 0.01))
-    @patch('v15_trader.calc_lot_sz', return_value=10)
-    @patch('capital_manager.calculate_per_coin_allocation')
+    @patch("v15_trader._get_dynamic_params")
+    @patch("v15_trader.AUTO_EXECUTE", True)
+    @patch("v15_trader.LEVERAGE", 5.0)
+    @patch("v15_trader.MAX_ADDONS", 3)
+    @patch("v15_trader.get_contract_info", return_value=(1, 0.01))
+    @patch("v15_trader.calc_lot_sz", return_value=10)
+    @patch("capital_manager.calculate_per_coin_allocation")
     def test_open_short_position_uses_sell_and_short_side(
         self, mock_alloc, mock_lot, mock_info, mock_params
     ):
@@ -264,15 +279,19 @@ class TestShortPositionExecution(unittest.TestCase):
             "addon1_usd": 80,
             "addon2_usd": 60,
             "addon3_usd": 40,
-            "adjustments": {"strength_mult": 1.0, "conf_mult": 1.0, "vol_adjust": 1.0,
-                           "combined_mult": 1.0, "elder_ray_direction": "BEAR_TREND",
-                           "elder_ray_ema_trend": "N/A", "elder_ray_strength": 0},
+            "adjustments": {
+                "strength_mult": 1.0,
+                "conf_mult": 1.0,
+                "vol_adjust": 1.0,
+                "combined_mult": 1.0,
+                "elder_ray_direction": "BEAR_TREND",
+                "elder_ray_ema_trend": "N/A",
+                "elder_ray_strength": 0,
+            },
         }
 
         decision = self._make_short_decision(conf=75)
-        result = v15_trader.execute_open_position(
-            self.mock_client, "BTC", decision, self.state
-        )
+        result = v15_trader.execute_open_position(self.mock_client, "BTC", decision, self.state)
 
         self.assertTrue(result)
         # 验证下单参数：做空用 sell + short
@@ -286,13 +305,13 @@ class TestShortPositionExecution(unittest.TestCase):
         pos = self.state["positions"]["BTC"]
         self.assertEqual(pos["direction"], "SHORT")
 
-    @patch('v15_trader._get_dynamic_params')
-    @patch('v15_trader.AUTO_EXECUTE', True)
-    @patch('v15_trader.LEVERAGE', 5.0)
-    @patch('v15_trader.MAX_ADDONS', 3)
-    @patch('v15_trader.get_contract_info', return_value=(1, 0.01))
-    @patch('v15_trader.calc_lot_sz', return_value=10)
-    @patch('capital_manager.calculate_capital_allocation')
+    @patch("v15_trader._get_dynamic_params")
+    @patch("v15_trader.AUTO_EXECUTE", True)
+    @patch("v15_trader.LEVERAGE", 5.0)
+    @patch("v15_trader.MAX_ADDONS", 3)
+    @patch("v15_trader.get_contract_info", return_value=(1, 0.01))
+    @patch("v15_trader.calc_lot_sz", return_value=10)
+    @patch("capital_manager.calculate_capital_allocation")
     def test_addon_short_triggers_on_price_rise(
         self, mock_capital, mock_lot, mock_info, mock_params
     ):
@@ -348,12 +367,10 @@ class TestShortPositionExecution(unittest.TestCase):
         self.assertEqual(call_kwargs[1]["pos_side"], "short")
         self.assertEqual(pos["addons"], 1)
 
-    @patch('v15_trader._get_dynamic_params')
-    @patch('v15_trader.AUTO_EXECUTE', True)
-    @patch('v15_trader.get_contract_info', return_value=(1, 0.01))
-    def test_addon_short_skipped_when_price_not_rising(
-        self, mock_info, mock_params
-    ):
+    @patch("v15_trader._get_dynamic_params")
+    @patch("v15_trader.AUTO_EXECUTE", True)
+    @patch("v15_trader.get_contract_info", return_value=(1, 0.01))
+    def test_addon_short_skipped_when_price_not_rising(self, mock_info, mock_params):
         """做空加仓：价格未上涨到加仓间距时跳过"""
         import v15_trader
 
@@ -393,7 +410,7 @@ class TestShortPositionExecution(unittest.TestCase):
             "addon3_usd": 40,
         }
 
-        with patch('capital_manager.calculate_capital_allocation') as mock_cap:
+        with patch("capital_manager.calculate_capital_allocation") as mock_cap:
             mock_cap.return_value = {
                 "recommendations": {"allow_addon": True},
                 "single_position_cost": {"base_usd": 100},
@@ -403,12 +420,10 @@ class TestShortPositionExecution(unittest.TestCase):
         self.assertFalse(result)
         self.mock_client.place_order.assert_not_called()
 
-    @patch('v15_trader._get_dynamic_params')
-    @patch('v15_trader.AUTO_EXECUTE', True)
-    @patch('v15_trader.get_contract_info', return_value=(1, 0.01))
-    def test_take_profit_short_uses_buy_side(
-        self, mock_info, mock_params
-    ):
+    @patch("v15_trader._get_dynamic_params")
+    @patch("v15_trader.AUTO_EXECUTE", True)
+    @patch("v15_trader.get_contract_info", return_value=(1, 0.01))
+    def test_take_profit_short_uses_buy_side(self, mock_info, mock_params):
         """做空止盈：价格下跌到止盈线，用 buy+short 平仓"""
         import v15_trader
 
@@ -455,12 +470,10 @@ class TestShortPositionExecution(unittest.TestCase):
         self.assertEqual(self.state["total_wins"], 1)
         self.assertNotIn("BTC", self.state["positions"])
 
-    @patch('v15_trader._get_dynamic_params')
-    @patch('v15_trader.AUTO_EXECUTE', True)
-    @patch('v15_trader.get_contract_info', return_value=(1, 0.01))
-    def test_stop_loss_short_uses_buy_side(
-        self, mock_info, mock_params
-    ):
+    @patch("v15_trader._get_dynamic_params")
+    @patch("v15_trader.AUTO_EXECUTE", True)
+    @patch("v15_trader.get_contract_info", return_value=(1, 0.01))
+    def test_stop_loss_short_uses_buy_side(self, mock_info, mock_params):
         """做空止损：止损触发，用 buy+short 平仓"""
         import v15_trader
 
@@ -512,18 +525,21 @@ class TestLongBackwardCompatibility(unittest.TestCase):
     def setUp(self):
         self.mock_client = MagicMock()
         self.mock_client.place_order.return_value = {"ok": True, "data": {}}
-        self.state = {"positions": {}, "total_trades": 0, "total_wins": 0,
-                      "daily_pnl": 0.0, "consecutive_losses": 0}
+        self.state = {
+            "positions": {},
+            "total_trades": 0,
+            "total_wins": 0,
+            "daily_pnl": 0.0,
+            "consecutive_losses": 0,
+        }
 
-    @patch('v15_trader._get_dynamic_params')
-    @patch('v15_trader.AUTO_EXECUTE', True)
-    @patch('v15_trader.LEVERAGE', 5.0)
-    @patch('v15_trader.get_contract_info', return_value=(1, 0.01))
-    @patch('v15_trader.calc_lot_sz', return_value=10)
-    @patch('capital_manager.calculate_per_coin_allocation')
-    def test_open_long_uses_buy_and_long_side(
-        self, mock_alloc, mock_lot, mock_info, mock_params
-    ):
+    @patch("v15_trader._get_dynamic_params")
+    @patch("v15_trader.AUTO_EXECUTE", True)
+    @patch("v15_trader.LEVERAGE", 5.0)
+    @patch("v15_trader.get_contract_info", return_value=(1, 0.01))
+    @patch("v15_trader.calc_lot_sz", return_value=10)
+    @patch("capital_manager.calculate_per_coin_allocation")
+    def test_open_long_uses_buy_and_long_side(self, mock_alloc, mock_lot, mock_info, mock_params):
         """做多开仓仍使用 side=buy, pos_side=long"""
         import v15_trader
 
@@ -556,9 +572,15 @@ class TestLongBackwardCompatibility(unittest.TestCase):
             "addon1_usd": 80,
             "addon2_usd": 60,
             "addon3_usd": 40,
-            "adjustments": {"strength_mult": 1.0, "conf_mult": 1.0, "vol_adjust": 1.0,
-                           "combined_mult": 1.0, "elder_ray_direction": "BULL_TREND",
-                           "elder_ray_ema_trend": "N/A", "elder_ray_strength": 0},
+            "adjustments": {
+                "strength_mult": 1.0,
+                "conf_mult": 1.0,
+                "vol_adjust": 1.0,
+                "combined_mult": 1.0,
+                "elder_ray_direction": "BULL_TREND",
+                "elder_ray_ema_trend": "N/A",
+                "elder_ray_strength": 0,
+            },
         }
 
         decision = {"action": "OPEN_BULL", "confidence": 75, "vol_mult": 1.0, "reasons": []}
@@ -574,12 +596,10 @@ class TestLongBackwardCompatibility(unittest.TestCase):
         pos = self.state["positions"]["BTC"]
         self.assertEqual(pos["direction"], "LONG")
 
-    @patch('v15_trader._get_dynamic_params')
-    @patch('v15_trader.AUTO_EXECUTE', True)
-    @patch('v15_trader.get_contract_info', return_value=(1, 0.01))
-    def test_take_profit_long_uses_sell_side(
-        self, mock_info, mock_params
-    ):
+    @patch("v15_trader._get_dynamic_params")
+    @patch("v15_trader.AUTO_EXECUTE", True)
+    @patch("v15_trader.get_contract_info", return_value=(1, 0.01))
+    def test_take_profit_long_uses_sell_side(self, mock_info, mock_params):
         """做多止盈仍使用 side=sell, pos_side=long"""
         import v15_trader
 
@@ -627,6 +647,7 @@ class TestLongBackwardCompatibility(unittest.TestCase):
 # ═══════════════════════════════════════════════════════════════════════
 # 3. strategy_params SHORT 方向止损逻辑测试
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class TestShortStopLossLogic(unittest.TestCase):
     """做空方向止损逻辑验证"""
@@ -706,6 +727,7 @@ class TestShortStopLossLogic(unittest.TestCase):
 # 4. 方向状态转移完整性测试
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestStateTransitions(unittest.TestCase):
     """多空状态转移场景测试（MA128 + BTC风向标模型）"""
 
@@ -717,7 +739,9 @@ class TestStateTransitions(unittest.TestCase):
         """从做多优先转为允许做空（BTC做空闸门打开）"""
         # 第1步：BTC做空闸门关闭 → LONG_PREFERRED
         r1 = self.gate.evaluate(
-            current_price=65000, daily_ma128=60000, weekly_ma200=55000,
+            current_price=65000,
+            daily_ma128=60000,
+            weekly_ma200=55000,
             recent_daily_closes=[64000, 63500, 63000],
             btc_short_enabled=False,
         )
@@ -726,7 +750,9 @@ class TestStateTransitions(unittest.TestCase):
 
         # 第2步：BTC做空闸门打开 → SHORT_ALLOWED
         r2 = self.gate.evaluate(
-            current_price=58000, daily_ma128=60000, weekly_ma200=55000,
+            current_price=58000,
+            daily_ma128=60000,
+            weekly_ma200=55000,
             recent_daily_closes=[59000, 58500, 58000],
             btc_short_enabled=True,
         )
@@ -736,7 +762,9 @@ class TestStateTransitions(unittest.TestCase):
     def test_transition_short_to_long_only_force(self):
         """从允许做空转为强制做多（跌至周MA200）"""
         r = self.gate.evaluate(
-            current_price=54000, daily_ma128=60000, weekly_ma200=55000,
+            current_price=54000,
+            daily_ma128=60000,
+            weekly_ma200=55000,
             recent_daily_closes=[54500, 54000, 53500],
             btc_short_enabled=True,
         )
@@ -748,7 +776,9 @@ class TestStateTransitions(unittest.TestCase):
         """恢复到做多优先（BTC做空闸门关闭）"""
         # BTC做空闸门关闭 → LONG_PREFERRED
         r = self.gate.evaluate(
-            current_price=62000, daily_ma128=60000, weekly_ma200=55000,
+            current_price=62000,
+            daily_ma128=60000,
+            weekly_ma200=55000,
             recent_daily_closes=[61500, 61000, 60500],
             btc_short_enabled=False,
         )

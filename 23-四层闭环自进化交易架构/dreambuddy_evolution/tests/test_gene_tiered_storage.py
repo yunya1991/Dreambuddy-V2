@@ -15,6 +15,7 @@ SPEC: SPEC-ds4架构借鉴与系统增强.md §3.2 Dimension 1
   - L0 核心基因完整精度（HC-DS4-10）
   - 对外接口兼容性（load_gene_library 结构不变）
 """
+
 from __future__ import annotations
 
 import pytest
@@ -80,10 +81,20 @@ class TestGeneTieredLoad:
     def test_load_tiered_returns_tier_info(self):
         """load_tiered 返回 tier_info 分级信息"""
         combos = [
-            {"combo_id": "CB-001", "ess": 0.85, "n_samples": 200,
-             "condition_ids": ["CD-1"], "action_ids": ["AC-1"]},
-            {"combo_id": "CB-002", "ess": 0.3, "n_samples": 10,
-             "condition_ids": ["CD-2"], "action_ids": ["AC-2"]},
+            {
+                "combo_id": "CB-001",
+                "ess": 0.85,
+                "n_samples": 200,
+                "condition_ids": ["CD-1"],
+                "action_ids": ["AC-1"],
+            },
+            {
+                "combo_id": "CB-002",
+                "ess": 0.3,
+                "n_samples": 10,
+                "condition_ids": ["CD-2"],
+                "action_ids": ["AC-2"],
+            },
         ]
         library = {"combinations": combos}
         result = GeneTieredStorage.load_tiered(library)
@@ -99,12 +110,22 @@ class TestGeneTieredLoad:
     def test_load_tiered_preserves_complete_data(self):
         """分级加载后，所有组合的完整数据仍在 combinations 中（对外接口不变）"""
         combos = [
-            {"combo_id": "CB-001", "ess": 0.85, "n_samples": 200,
-             "condition_ids": ["CD-1"], "action_ids": ["AC-1"],
-             "parameters": {"risk": 0.5}},
-            {"combo_id": "CB-002", "ess": 0.3, "n_samples": 10,
-             "condition_ids": ["CD-2"], "action_ids": ["AC-2"],
-             "parameters": {"risk": 0.3}},
+            {
+                "combo_id": "CB-001",
+                "ess": 0.85,
+                "n_samples": 200,
+                "condition_ids": ["CD-1"],
+                "action_ids": ["AC-1"],
+                "parameters": {"risk": 0.5},
+            },
+            {
+                "combo_id": "CB-002",
+                "ess": 0.3,
+                "n_samples": 10,
+                "condition_ids": ["CD-2"],
+                "action_ids": ["AC-2"],
+                "parameters": {"risk": 0.3},
+            },
         ]
         library = {"combinations": combos}
         result = GeneTieredStorage.load_tiered(library)
@@ -117,7 +138,9 @@ class TestGeneTieredLoad:
     def test_load_tiered_l0_full_precision(self):
         """HC-DS4-10: L0 核心基因保持完整精度，不得有损压缩"""
         combo = {
-            "combo_id": "CB-001", "ess": 0.85123456789, "n_samples": 200,
+            "combo_id": "CB-001",
+            "ess": 0.85123456789,
+            "n_samples": 200,
             "parameters": {"risk_multiplier": 0.7, "timeframe": "1d"},
             "meta": {"strategy_type": "breakout", "H": 0.82, "S": 0.82},
         }
@@ -135,6 +158,7 @@ class TestGeneTieredLoad:
 
     def test_load_tiered_fail_open_on_error(self, monkeypatch):
         """HC-DS4-02: 分级失败 → 降级为全量加载（返回原 library）"""
+
         # 模拟 classify 抛异常
         def broken_classify(combo):
             raise RuntimeError("simulated failure")
@@ -160,8 +184,11 @@ class TestGeneTieredMemoryOptimization:
     def test_l1_candidate_stripped_metadata(self):
         """L1 候选基因在 tier_info 中只存元数据（不存完整 parameters）"""
         combo = {
-            "combo_id": "CB-002", "ess": 0.6, "n_samples": 10,
-            "condition_ids": ["CD-2"], "action_ids": ["AC-2"],
+            "combo_id": "CB-002",
+            "ess": 0.6,
+            "n_samples": 10,
+            "condition_ids": ["CD-2"],
+            "action_ids": ["AC-2"],
             "parameters": {"risk_multiplier": 1.3, "timeframe": "1h"},
         }
         library = {"combinations": [combo]}

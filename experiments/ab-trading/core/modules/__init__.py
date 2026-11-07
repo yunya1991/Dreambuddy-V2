@@ -9,42 +9,42 @@ Dreambuddy OS 模块适配器层
 - 可扩展：新模块只需添加适配器，无需修改调度层
 """
 
+from .adapter_framework import (
+    APIAdapter,
+    BaseModuleAdapter,
+    LocalAdapter,
+    ModuleExecutor,
+    NodeAdapter,
+    SkillAdapter,
+    get_module_executor,
+)
 from .classic_indicators import ClassicIndicatorsClient
 from .fundamental_api import FundamentalAPIClient
-from .skill_loader import SkillLoader, execute_skill
 from .module_registry import (
     ModuleInfo,
     ModuleRegistry,
     get_module_registry,
     reload_registry,
 )
+from .skill_loader import SkillLoader, execute_skill
 from .unified_types import (
-    ModuleResult,
-    ExecutionContext,
-    ModuleOutputs,
-    ConfidenceDimensions,
+    AdapterType,
     ChainWeights,
+    ConfidenceDimensions,
+    ExecutionContext,
+    ExecutionEngine,
+    ModuleOutputs,
     ModuleQueryParams,
-    create_success_result,
-    create_failure_result,
-    create_fallback_result,
-    create_default_context,
+    ModuleResult,
+    ModuleStatus,
+    SecurityLevel,
     SkillChain,
     ThinkStage,
     TradeDirection,
-    SecurityLevel,
-    ModuleStatus,
-    AdapterType,
-    ExecutionEngine,
-)
-from .adapter_framework import (
-    BaseModuleAdapter,
-    SkillAdapter,
-    APIAdapter,
-    LocalAdapter,
-    NodeAdapter,
-    ModuleExecutor,
-    get_module_executor,
+    create_default_context,
+    create_failure_result,
+    create_fallback_result,
+    create_success_result,
 )
 
 __all__ = [

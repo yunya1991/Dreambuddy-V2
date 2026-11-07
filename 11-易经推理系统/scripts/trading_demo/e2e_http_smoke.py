@@ -2,7 +2,6 @@ import importlib.util
 import json
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -25,8 +24,18 @@ def main() -> int:
         host, port = server.server_address
         tp = adapters.HTTPTransport(base_url=f"http://{host}:{port}")
         env = {
-            "header": {"trace_id": "trace-demo-1", "loop_type": "execution", "target": "A4", "type": "EVENT"},
-            "payload": {"trace_id": "trace-demo-1", "max_drawdown_pct": 1.2, "position_ratio": 0.25, "stop_loss_pct": 1.5},
+            "header": {
+                "trace_id": "trace-demo-1",
+                "loop_type": "execution",
+                "target": "A4",
+                "type": "EVENT",
+            },
+            "payload": {
+                "trace_id": "trace-demo-1",
+                "max_drawdown_pct": 1.2,
+                "position_ratio": 0.25,
+                "stop_loss_pct": 1.5,
+            },
         }
         rsp = tp.send_envelope(env)
         print(json.dumps(rsp, ensure_ascii=False))
@@ -39,4 +48,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

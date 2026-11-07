@@ -7,13 +7,13 @@
   - parse 自适应/非自适应
   - 异常日志记录
 """
+
 from __future__ import annotations
 
 import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from data_center.crawler.scrapling_engine import ScraplingEngine
 
 
@@ -40,7 +40,10 @@ class TestFetchHtmlModes:
         mock_page.body = b"<html>http</html>"
         mock_fetcher = MagicMock()
         mock_fetcher.get.return_value = mock_page
-        with patch.dict("sys.modules", {"scrapling": MagicMock(), "scrapling.fetchers": MagicMock(Fetcher=mock_fetcher)}):
+        with patch.dict(
+            "sys.modules",
+            {"scrapling": MagicMock(), "scrapling.fetchers": MagicMock(Fetcher=mock_fetcher)},
+        ):
             html = engine.fetch_html("http://example.com", mode="http")
         assert html == "<html>http</html>"
 
@@ -50,7 +53,10 @@ class TestFetchHtmlModes:
         mock_page.body = b"<html>dynamic</html>"
         mock_df = MagicMock()
         mock_df.fetch.return_value = mock_page
-        with patch.dict("sys.modules", {"scrapling": MagicMock(), "scrapling.fetchers": MagicMock(DynamicFetcher=mock_df)}):
+        with patch.dict(
+            "sys.modules",
+            {"scrapling": MagicMock(), "scrapling.fetchers": MagicMock(DynamicFetcher=mock_df)},
+        ):
             html = engine.fetch_html("http://example.com", mode="dynamic")
         assert html == "<html>dynamic</html>"
 
@@ -60,7 +66,10 @@ class TestFetchHtmlModes:
         mock_page.body = b"<html>stealthy</html>"
         mock_sf = MagicMock()
         mock_sf.fetch.return_value = mock_page
-        with patch.dict("sys.modules", {"scrapling": MagicMock(), "scrapling.fetchers": MagicMock(StealthyFetcher=mock_sf)}):
+        with patch.dict(
+            "sys.modules",
+            {"scrapling": MagicMock(), "scrapling.fetchers": MagicMock(StealthyFetcher=mock_sf)},
+        ):
             html = engine.fetch_html("http://example.com", mode="stealthy")
         assert html == "<html>stealthy</html>"
 
@@ -87,7 +96,9 @@ class TestFailOpenChain:
         mock_sf.fetch.side_effect = RuntimeError("cloudflare block")
 
         fake_fetchers = MagicMock(DynamicFetcher=mock_df, StealthyFetcher=mock_sf)
-        with patch.dict("sys.modules", {"scrapling": MagicMock(), "scrapling.fetchers": fake_fetchers}):
+        with patch.dict(
+            "sys.modules", {"scrapling": MagicMock(), "scrapling.fetchers": fake_fetchers}
+        ):
             html = engine.fetch_html("http://example.com", mode="stealthy")
         assert html == "<html>dynamic</html>"
 
@@ -104,11 +115,17 @@ class TestFailOpenChain:
         mock_fetcher = MagicMock()
         mock_fetcher.get.side_effect = RuntimeError("blocked")
         fake_fetchers = MagicMock(
-            StealthyFetcher=mock_sf, DynamicFetcher=mock_df, Fetcher=mock_fetcher,
+            StealthyFetcher=mock_sf,
+            DynamicFetcher=mock_df,
+            Fetcher=mock_fetcher,
         )
 
-        with patch("data_center.crawler.scrapling_engine.requests.get", return_value=mock_resp), \
-             patch.dict("sys.modules", {"scrapling": MagicMock(), "scrapling.fetchers": fake_fetchers}):
+        with (
+            patch("data_center.crawler.scrapling_engine.requests.get", return_value=mock_resp),
+            patch.dict(
+                "sys.modules", {"scrapling": MagicMock(), "scrapling.fetchers": fake_fetchers}
+            ),
+        ):
             html = engine.fetch_html("http://example.com", mode="stealthy")
         assert html == ""
 
@@ -117,8 +134,10 @@ class TestFailOpenChain:
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.text = "<html>static_fallback</html>"
-        with patch("data_center.crawler.scrapling_engine.requests.get", return_value=mock_resp), \
-             patch.object(engine, "_lazy_import", return_value=None):
+        with (
+            patch("data_center.crawler.scrapling_engine.requests.get", return_value=mock_resp),
+            patch.object(engine, "_lazy_import", return_value=None),
+        ):
             html = engine.fetch_html("http://example.com", mode="http")
         assert html == "<html>static_fallback</html>"
 
@@ -155,7 +174,7 @@ class TestParse:
                 "item": ".item",
                 "title": "text",
                 "link": "href",
-            }
+            },
         }
         # scrapling 未安装 → adaptive 失败 → 回退 static
         with patch.dict("sys.modules", {}):
@@ -189,7 +208,9 @@ class TestLogging:
             return None
 
         with caplog.at_level(logging.WARNING, logger="data_center.crawler.scrapling_engine"):
-            with patch("data_center.crawler.scrapling_engine.requests.get", return_value=mock_resp), \
-                 patch.object(engine, "_lazy_import", side_effect=fake_lazy_import):
+            with (
+                patch("data_center.crawler.scrapling_engine.requests.get", return_value=mock_resp),
+                patch.object(engine, "_lazy_import", side_effect=fake_lazy_import),
+            ):
                 engine.fetch_html("http://example.com", mode="stealthy")
         assert any("失败" in rec.message for rec in caplog.records)

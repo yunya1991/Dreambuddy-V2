@@ -15,7 +15,7 @@
     positions = strategy.generate_signals(daily_df)
 """
 
-import pandas as pd
+import pandas as pd  # noqa: I001
 import numpy as np
 
 
@@ -88,7 +88,9 @@ class AltcoinTrendStrategy:
         rsi = self._compute_rsi(close, self.rsi_period)
         atr = self._compute_atr(high, low, close, self.atr_period)
 
-        btc_shadow_position = self._compute_halving_shadow(n) if self.halving_shadow_enabled else np.ones(n)
+        btc_shadow_position = (
+            self._compute_halving_shadow(n) if self.halving_shadow_enabled else np.ones(n)
+        )
 
         for i in range(self.ma_period, n):
             price_above_ma = close[i] > ma[i]
@@ -158,17 +160,15 @@ class AltcoinTrendStrategy:
         rsi = 100 - (100 / (1 + rs))
         return rsi
 
-    def _compute_atr(self, high: np.ndarray, low: np.ndarray, close: np.ndarray, period: int) -> np.ndarray:
+    def _compute_atr(
+        self, high: np.ndarray, low: np.ndarray, close: np.ndarray, period: int
+    ) -> np.ndarray:
         """计算ATR"""
         atr = np.zeros(len(close))
         tr = np.zeros(len(close))
 
         for i in range(1, len(close)):
-            tr[i] = max(
-                high[i] - low[i],
-                abs(high[i] - close[i - 1]),
-                abs(low[i] - close[i - 1])
-            )
+            tr[i] = max(high[i] - low[i], abs(high[i] - close[i - 1]), abs(low[i] - close[i - 1]))
 
         for i in range(period, len(close)):
             atr[i] = np.mean(tr[i - period + 1 : i + 1])
@@ -285,7 +285,7 @@ class AltcoinTrendStrategy:
 
 
 if __name__ == "__main__":
-    import json
+    import json  # noqa: I001
     from backtest.engine import BacktestEngine
 
     with open("data/historical/ETH_1D_730d.json") as f:

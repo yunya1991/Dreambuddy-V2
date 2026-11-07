@@ -35,39 +35,42 @@ from typing import Any, Callable, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 # ── 决策阈值 (来自 CLAUDE.md) ────────────────────────────
-SKILL_REUSE_THRESHOLD = 2       # 流程被复用 ≥ 2 次
+SKILL_REUSE_THRESHOLD = 2  # 流程被复用 ≥ 2 次
 SKILL_MULTI_STEP_THRESHOLD = 3  # 涉及多步编排 ≥ 3 步
-SKILL_BSK_STEP_THRESHOLD = 1    # 涉及 bsk 自动化 ≥ 1 步
+SKILL_BSK_STEP_THRESHOLD = 1  # 涉及 bsk 自动化 ≥ 1 步
 
 
 class ReflectionAction(str, Enum):
     """反思后执行的动作"""
-    CREATE_SKILL = "create_skill"    # 创建新 SKILL
-    RECORD_ONLY = "record_only"     # 仅记录经验
-    NO_ACTION = "no_action"          # 无可记录内容
+
+    CREATE_SKILL = "create_skill"  # 创建新 SKILL
+    RECORD_ONLY = "record_only"  # 仅记录经验
+    NO_ACTION = "no_action"  # 无可记录内容
 
 
 class TracePattern(str, Enum):
     """trace 分析识别的模式"""
-    REPEATED_FLOW = "repeated_flow"          # 流程被复用
-    MULTI_STEP = "multi_step"                # 多步编排
-    BSK_AUTOMATION = "bsk_automation"        # bsk 自动化
-    ERROR_FIX_CYCLE = "error_fix_cycle"      # 错误-修复循环
+
+    REPEATED_FLOW = "repeated_flow"  # 流程被复用
+    MULTI_STEP = "multi_step"  # 多步编排
+    BSK_AUTOMATION = "bsk_automation"  # bsk 自动化
+    ERROR_FIX_CYCLE = "error_fix_cycle"  # 错误-修复循环
     SINGLE_OCCURRENCE = "single_occurrence"  # 单次发生
 
 
 @dataclass
 class TraceAnalysis:
     """24h trace 分析结果"""
+
     total_events: int = 0
     total_traces: int = 0
     error_events: int = 0
     fix_events: int = 0
     patterns: List[TracePattern] = field(default_factory=list)
-    repeated_flows: Dict[str, int] = field(default_factory=dict)   # flow_name → count
-    multi_step_traces: int = 0          # ≥3 步的 trace 数
-    bsk_automated_traces: int = 0       # 涉及 bsk 的 trace 数
-    error_fix_cycles: int = 0           # 错误-修复循环数
+    repeated_flows: Dict[str, int] = field(default_factory=dict)  # flow_name → count
+    multi_step_traces: int = 0  # ≥3 步的 trace 数
+    bsk_automated_traces: int = 0  # 涉及 bsk 的 trace 数
+    error_fix_cycles: int = 0  # 错误-修复循环数
     top_error_nodes: List[Dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -88,6 +91,7 @@ class TraceAnalysis:
 @dataclass
 class SkillDecision:
     """SKILL 创建决策"""
+
     should_create: bool
     action: ReflectionAction
     reason: str
@@ -107,15 +111,14 @@ class SkillDecision:
 @dataclass
 class ReflectionReport:
     """反思报告"""
+
     analysis: TraceAnalysis
     decision: SkillDecision
     skill_created: bool = False
     skill_name: Optional[str] = None
     recorded: bool = False
     memory_id: Optional[str] = None
-    reflected_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z"
-    )
+    reflected_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z")
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -180,9 +183,7 @@ class HermesReflector:
         for jsonl_file in self._events_root.rglob("*.jsonl"):
             # 按文件修改时间过滤
             try:
-                mtime = datetime.fromtimestamp(
-                    jsonl_file.stat().st_mtime, tz=timezone.utc
-                )
+                mtime = datetime.fromtimestamp(jsonl_file.stat().st_mtime, tz=timezone.utc)
                 if mtime < cutoff:
                     continue
             except OSError:
@@ -240,7 +241,7 @@ class HermesReflector:
         # 识别模式
         # 1. 重复流程 (同一 trace_id 有多个事件 → 多步编排)
         flow_counts: Dict[str, int] = {}
-        for tid, evs in traces.items():
+        for tid, evs in traces.items():  # noqa: B007
             # 用 (system, layer) 组合作为 flow 标识
             for ev in evs:
                 flow_key = f"{ev.get('system', '')}/{ev.get('layer', '')}"
@@ -259,17 +260,13 @@ class HermesReflector:
 
         # 重复流程: 同一 flow 出现 ≥2 次
         analysis.repeated_flows = {
-            k: v for k, v in flow_counts.items()
-            if v >= SKILL_REUSE_THRESHOLD
+            k: v for k, v in flow_counts.items() if v >= SKILL_REUSE_THRESHOLD
         }
 
         # 错误-修复循环: 同一 trace 内既有 fail 又有 fix
-        for tid, evs in traces.items():
+        for tid, evs in traces.items():  # noqa: B007
             has_fail = any(e.get("status") == "fail" for e in evs)
-            has_fix = any(
-                e.get("event_type") in ("bugfix", "fix_applied", "auto_fix")
-                for e in evs
-            )
+            has_fix = any(e.get("event_type") in ("bugfix", "fix_applied", "auto_fix") for e in evs)
             if has_fail and has_fix:
                 analysis.error_fix_cycles += 1
 
@@ -296,9 +293,7 @@ class HermesReflector:
 
     # ── SKILL 创建决策 ───────────────────────────────────
 
-    def evaluate_skill_creation(
-        self, analysis: TraceAnalysis
-    ) -> SkillDecision:
+    def evaluate_skill_creation(self, analysis: TraceAnalysis) -> SkillDecision:
         """根据决策树评估是否创建 SKILL"""
         matched: List[str] = []
 
@@ -318,15 +313,12 @@ class HermesReflector:
 
         # 判据 3: 涉及 bsk 自动化 ≥ 1 步
         if analysis.bsk_automated_traces >= SKILL_BSK_STEP_THRESHOLD:
-            matched.append(
-                f"涉及 bsk 自动化: {analysis.bsk_automated_traces} 个 trace"
-            )
+            matched.append(f"涉及 bsk 自动化: {analysis.bsk_automated_traces} 个 trace")
 
         # 判据 4: 错误-修复循环 (衍生判据: 高频 bug 模式值得 SKILL)
         if analysis.error_fix_cycles >= 2:
             matched.append(
-                f"错误-修复循环 {analysis.error_fix_cycles} 次 "
-                f"(高频 bug 模式值得形成 SKILL)"
+                f"错误-修复循环 {analysis.error_fix_cycles} 次 " f"(高频 bug 模式值得形成 SKILL)"
             )
 
         if matched:
@@ -387,7 +379,7 @@ class HermesReflector:
         # Step 3: 创建 SKILL
         if decision.should_create and self._skill_creator_fn:
             try:
-                result = self._skill_creator_fn(
+                result = self._skill_creator_fn(  # noqa: F841
                     skill_name=decision.skill_name,
                     criteria=decision.matched_criteria,
                     analysis=analysis.to_dict(),

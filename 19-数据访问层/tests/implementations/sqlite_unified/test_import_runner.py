@@ -22,6 +22,7 @@ TDD 用例：
   3. test_batch_dry_run_does_not_write_rows → dry_run=True 后查询行数=0
   4. test_ma_migration_audit_written → 执行后 ma_migration_audit 存在 category='migration_script' 行
 """
+
 from __future__ import annotations
 
 import tempfile
@@ -57,13 +58,18 @@ def test_runner_runs_three_batches_and_reports(work_dir):
     from dreambuddy_dal.implementations.sqlite_unified.import_runner import (
         import_all_batches,
     )
+
     data_dir = work_dir / "data"
     db_path = work_dir / "dreambuddy_core.db"
 
     reports = import_all_batches(str(data_dir), str(db_path), dry_run=False)
     assert isinstance(reports, list) and len(reports) == 3
     batch_ids = [r.batch_id for r in reports]
-    assert batch_ids == ["BATCH-1-core-trade", "BATCH-2-performance-risk", "BATCH-3-macro-config-kg"]
+    assert batch_ids == [
+        "BATCH-1-core-trade",
+        "BATCH-2-performance-risk",
+        "BATCH-3-macro-config-kg",
+    ]
 
     # 每个 report 都是合法字段
     for r in reports:
@@ -78,6 +84,7 @@ def test_batch_import_is_idempotent(work_dir):
     from dreambuddy_dal.implementations.sqlite_unified.import_runner import (
         import_all_batches,
     )
+
     data_dir = work_dir / "data"
     db_path = work_dir / "dreambuddy_core.db"
 
@@ -90,9 +97,9 @@ def test_batch_import_is_idempotent(work_dir):
     total_applied_2 = sum(r.applied for r in reports_2)
 
     # 第二次：幂等 → 0 APPLIED（或 ≤ 第 1 次的极小值，上限 5% 容差）
-    assert total_applied_2 <= max(1, total_applied_1 // 20), (
-        f"幂等不成立：run1={total_applied_1} run2={total_applied_2}"
-    )
+    assert total_applied_2 <= max(
+        1, total_applied_1 // 20
+    ), f"幂等不成立：run1={total_applied_1} run2={total_applied_2}"
 
     # 看业务表行数（忽略审计表自增行和单例种子表的重复 count）
     with get_sqlite_connection(str(db_path)) as conn:
@@ -110,6 +117,7 @@ def test_dry_run_writes_zero_rows(work_dir):
     from dreambuddy_dal.implementations.sqlite_unified.import_runner import (
         import_all_batches,
     )
+
     data_dir = work_dir / "data"
     db_path = work_dir / "dreambuddy_core.db"
 
@@ -128,28 +136,27 @@ def test_ma_migration_audit_written(work_dir):
     from dreambuddy_dal.implementations.sqlite_unified.import_runner import (
         import_all_batches,
     )
+
     data_dir = work_dir / "data"
     db_path = work_dir / "dreambuddy_core.db"
 
     import_all_batches(str(data_dir), str(db_path), dry_run=False)
 
     with get_sqlite_connection(str(db_path)) as conn:
-        rows = conn.execute(
-            """
+        rows = conn.execute("""
             SELECT category, entity_key, result
             FROM ma_migration_audit
             WHERE category='migration_script'
             ORDER BY id ASC
-            """
-        ).fetchall()
+            """).fetchall()
     batch_keys = [r[1] for r in rows]
     # 至少包含 3 个 batch_id
     for expected in ["core-trade", "performance-risk", "macro-config-kg"]:
-        assert any(expected in (k or "") for k in batch_keys), (
-            f"ma_migration_audit 缺 {expected} 审计行，实际 keys={batch_keys}"
-        )
+        assert any(
+            expected in (k or "") for k in batch_keys
+        ), f"ma_migration_audit 缺 {expected} 审计行，实际 keys={batch_keys}"
     # 每条都得有合法 result ∈ {APPLIED,SKIPPED,FAILED,WARN}
-    for (_cat, _key, result) in rows:
+    for _cat, _key, result in rows:
         assert result in {"APPLIED", "SKIPPED", "FAILED", "WARN"}
 
 
@@ -159,13 +166,22 @@ def test_ma_migration_audit_written(work_dir):
 # 只看有真实业务数据流进流出的表（不含种子 ma_schema_version / rs_state 单行、
 # 不含 ma_migration_audit / ma_integrity_log 自增审计表）
 _CORE_BUSINESS_TABLES = [
-    "tr_trades", "tr_daily_stats", "tr_daily_stats_overrides",
-    "po_positions", "po_price_refresh_log",
-    "mm_fear_greed", "mm_funding_rate", "mm_open_interest",
-    "mm_liquidation", "mm_long_short_ratio", "mm_taker_volume",
+    "tr_trades",
+    "tr_daily_stats",
+    "tr_daily_stats_overrides",
+    "po_positions",
+    "po_price_refresh_log",
+    "mm_fear_greed",
+    "mm_funding_rate",
+    "mm_open_interest",
+    "mm_liquidation",
+    "mm_long_short_ratio",
+    "mm_taker_volume",
     "rs_cases",
     "cv_config_versions",
-    "kg_entities", "kg_entity_aliases", "kg_triples",
+    "kg_entities",
+    "kg_entity_aliases",
+    "kg_triples",
 ]
 
 

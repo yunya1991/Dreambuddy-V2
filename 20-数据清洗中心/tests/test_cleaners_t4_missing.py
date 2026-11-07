@@ -7,6 +7,7 @@ T4-4  宏观：linear → 拖尾 → 50
 T4-5  事件：发生=1 / 未发生=0
 T4-6  事件：未知（NaN）→ 0.5 中性
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -19,11 +20,13 @@ class TestMissingImputer:
         from data_cleaning.cleaners.missing_imputer import MissingImputer
         from data_cleaning.contract import CleaningTrace
 
-        df = pd.DataFrame({
-            "timestamp": pd.date_range("2026-08-01 10:00", periods=7, freq="1h"),
-            "close": [10.0, np.nan, np.nan, np.nan, np.nan, np.nan, 20.0],  # 5 个空
-            "category": ["timeseries"] * 7,
-        })
+        df = pd.DataFrame(
+            {
+                "timestamp": pd.date_range("2026-08-01 10:00", periods=7, freq="1h"),
+                "close": [10.0, np.nan, np.nan, np.nan, np.nan, np.nan, 20.0],  # 5 个空
+                "category": ["timeseries"] * 7,
+            }
+        )
         imp = MissingImputer(ffill_limit=5, fail_open_value=50.0)
         out, action = imp.clean(df, CleaningTrace())
         close = out["close"].tolist()
@@ -38,11 +41,13 @@ class TestMissingImputer:
         from data_cleaning.cleaners.missing_imputer import MissingImputer
         from data_cleaning.contract import CleaningTrace
 
-        df = pd.DataFrame({
-            "timestamp": pd.date_range("2026-08-01 10:00", periods=10, freq="1h"),
-            "close": [10.0] + [np.nan] * 8 + [30.0],  # >5 个空
-            "category": ["timeseries"] * 10,
-        })
+        df = pd.DataFrame(
+            {
+                "timestamp": pd.date_range("2026-08-01 10:00", periods=10, freq="1h"),
+                "close": [10.0] + [np.nan] * 8 + [30.0],  # >5 个空
+                "category": ["timeseries"] * 10,
+            }
+        )
         imp = MissingImputer(ffill_limit=5, fail_open_value=50.0)
         out, _ = imp.clean(df, CleaningTrace())
         close = out["close"]
@@ -59,12 +64,14 @@ class TestMissingImputer:
         from data_cleaning.cleaners.missing_imputer import MissingImputer
         from data_cleaning.contract import CleaningTrace
 
-        df = pd.DataFrame({
-            "timestamp": pd.date_range("2026-08-01", periods=4, freq="1h"),
-            "close": [np.nan] * 4,
-            "volume": [np.nan] * 4,
-            "category": ["timeseries"] * 4,
-        })
+        df = pd.DataFrame(
+            {
+                "timestamp": pd.date_range("2026-08-01", periods=4, freq="1h"),
+                "close": [np.nan] * 4,
+                "volume": [np.nan] * 4,
+                "category": ["timeseries"] * 4,
+            }
+        )
         imp = MissingImputer(fail_open_value=50.0)
         out, _ = imp.clean(df, CleaningTrace())
         assert (out["close"] == 50.0).all()
@@ -78,11 +85,13 @@ class TestMissingImputer:
         ts = pd.date_range("2026-08-01", periods=15, freq="1h")
         # 前后 3 个已知，中间 >10 个空（比 limit 大很多）
         values = [2.0, 2.0, 2.0] + [np.nan] * 9 + [2.0, 2.0, 2.0]
-        df = pd.DataFrame({
-            "timestamp": ts,
-            "m2_growth": values,
-            "category": ["macro"] * 15,
-        })
+        df = pd.DataFrame(
+            {
+                "timestamp": ts,
+                "m2_growth": values,
+                "category": ["macro"] * 15,
+            }
+        )
         imp = MissingImputer(fail_open_value=50.0)
         out, _ = imp.clean(df, CleaningTrace())
         # macro 用线性：稳定期不变，中间被线性插
@@ -95,11 +104,13 @@ class TestMissingImputer:
         from data_cleaning.cleaners.missing_imputer import MissingImputer
         from data_cleaning.contract import CleaningTrace
 
-        df = pd.DataFrame({
-            "timestamp": pd.date_range("2026-08-01", periods=3, freq="1h"),
-            "fomc_hike": [True, False, True],
-            "category": ["events"] * 3,
-        })
+        df = pd.DataFrame(
+            {
+                "timestamp": pd.date_range("2026-08-01", periods=3, freq="1h"),
+                "fomc_hike": [True, False, True],
+                "category": ["events"] * 3,
+            }
+        )
         imp = MissingImputer()
         out, _ = imp.clean(df, CleaningTrace())
         # bool → int: True=1, False=0
@@ -110,11 +121,13 @@ class TestMissingImputer:
         from data_cleaning.cleaners.missing_imputer import MissingImputer
         from data_cleaning.contract import CleaningTrace
 
-        df = pd.DataFrame({
-            "timestamp": pd.date_range("2026-08-01", periods=4, freq="1h"),
-            "fomc_hike": [True, np.nan, np.nan, False],
-            "category": ["events"] * 4,
-        })
+        df = pd.DataFrame(
+            {
+                "timestamp": pd.date_range("2026-08-01", periods=4, freq="1h"),
+                "fomc_hike": [True, np.nan, np.nan, False],
+                "category": ["events"] * 4,
+            }
+        )
         imp = MissingImputer()
         out, _ = imp.clean(df, CleaningTrace())
         vals = out["fomc_hike"].tolist()

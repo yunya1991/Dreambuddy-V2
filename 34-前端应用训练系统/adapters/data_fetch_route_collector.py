@@ -11,6 +11,7 @@ dsh_trace JSON 行,获取 4-7 节点路由链路序列,专供 DSH 层训练。
 
 依赖 dispatcher.py 的 _emit_dsh_trace 方法（EN_DSH_TRACE=true 启用）。
 """
+
 import io
 import json
 import os
@@ -27,17 +28,18 @@ for _p in [_THIS_DIR, _34_DIR, _18_DIR, _20_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
-
 # 复用 cleaning_trace_collector 的样本 DataRecord 构造函数
-from cleaning_trace_collector import (
-    _mk_ohlcv_records, _mk_macro_records, _mk_news_records,
+from cleaning_trace_collector import (  # noqa: E402
+    _mk_macro_records,
+    _mk_news_records,
+    _mk_ohlcv_records,
 )
-
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 # ============================================================
 # Mock runner 函数 — 模拟 collector.fetch() 返回不同类型数据
 # ============================================================
+
 
 def _runner_normal_ohlcv(params: dict) -> list:
     """正常 OHLCV 时序列（触发 silver + gate_pass + dal_write）。"""
@@ -62,22 +64,24 @@ def _runner_empty(params: dict) -> list:
 def _runner_error(params: dict) -> list:
     """runner 抛异常（触发 collector.error,4 节点 failure 路径）。"""
     from data_center.core.errors import SourceUnavailableError
+
     raise SourceUnavailableError("mock runner error for DSH trace")
 
 
 # 样本批次: (label, category, source, runner_fn)
 _SAMPLE_BATCHES = [
-    ("normal_ohlcv", "finance", "sample_ccxt",   _runner_normal_ohlcv),
-    ("macro_cpi",    "macro",   "sample_fred",   _runner_macro),
-    ("news_rss",     "news",    "sample_rsshub", _runner_news),
-    ("empty_result", "finance", "sample_ccxt",   _runner_empty),
-    ("runner_error", "finance", "sample_ccxt",   _runner_error),
+    ("normal_ohlcv", "finance", "sample_ccxt", _runner_normal_ohlcv),
+    ("macro_cpi", "macro", "sample_fred", _runner_macro),
+    ("news_rss", "news", "sample_rsshub", _runner_news),
+    ("empty_result", "finance", "sample_ccxt", _runner_empty),
+    ("runner_error", "finance", "sample_ccxt", _runner_error),
 ]
 
 
 # ============================================================
 # 采集器主体
 # ============================================================
+
 
 class DataFetchRouteCollector(TrainingDataProvider):
     """18-数据获取中心 dispatcher 路由链路采集器。
@@ -95,9 +99,7 @@ class DataFetchRouteCollector(TrainingDataProvider):
     def get_quality_threshold(self) -> str:
         return "A"
 
-    def fetch_cases(
-        self, limit: int = 100, since: Optional[str] = None
-    ) -> List[TrainingCase]:
+    def fetch_cases(self, limit: int = 100, since: Optional[str] = None) -> List[TrainingCase]:
         """跑样本批次采集 dispatcher 路由链路序列。
 
         Args:
@@ -147,28 +149,30 @@ class DataFetchRouteCollector(TrainingDataProvider):
                         continue  # DSH 层需要 ≥2 节点
 
                     outcome = trace.get("outcome", "success")
-                    cases.append(TrainingCase(
-                        intent=f"data_fetch.{category}.{source}",
-                        actions=node_seq,
-                        outcome_text=outcome,
-                        learned=[
-                            f"node_count={len(node_seq)}",
-                            f"outcome={outcome}",
-                            f"duration_ms={trace.get('duration_ms', 0)}",
-                        ],
-                        layer_tags=["DSH"],
-                        quality="A",
-                        confidence=0.8 if outcome == "success" else 0.4,
-                        source="data_fetch_route",
-                        metadata={
-                            "batch_label": label,
-                            "category": category,
-                            "source": source,
-                            "duration_ms": trace.get("duration_ms", 0),
-                            "result_count": trace.get("result_count", 0),
-                            "node_count": len(node_seq),
-                        },
-                    ))
+                    cases.append(
+                        TrainingCase(
+                            intent=f"data_fetch.{category}.{source}",
+                            actions=node_seq,
+                            outcome_text=outcome,
+                            learned=[
+                                f"node_count={len(node_seq)}",
+                                f"outcome={outcome}",
+                                f"duration_ms={trace.get('duration_ms', 0)}",
+                            ],
+                            layer_tags=["DSH"],
+                            quality="A",
+                            confidence=0.8 if outcome == "success" else 0.4,
+                            source="data_fetch_route",
+                            metadata={
+                                "batch_label": label,
+                                "category": category,
+                                "source": source,
+                                "duration_ms": trace.get("duration_ms", 0),
+                                "result_count": trace.get("result_count", 0),
+                                "node_count": len(node_seq),
+                            },
+                        )
+                    )
                 except Exception:
                     continue  # FAIL-OPEN: 单批次失败不影响其他
         finally:

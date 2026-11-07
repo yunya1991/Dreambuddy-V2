@@ -1,7 +1,6 @@
 import importlib.util
 from pathlib import Path
 
-
 REPO_ROOT = Path("/Users/zhangjiangtao/WorkBuddy/dream-multiskill-v2")
 
 
@@ -58,4 +57,3 @@ def test_ensure_contract_fields_sets_defaults():
     assert isinstance(payload["memory_refs"], list)
     assert isinstance(payload["evidence_refs"], list)
     assert payload["producer"].startswith("workflows/trading-decision/")
-

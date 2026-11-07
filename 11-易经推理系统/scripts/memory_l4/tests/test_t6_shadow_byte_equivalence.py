@@ -4,16 +4,14 @@
   cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统
   python3 -m pytest scripts/memory_l4/tests/test_t6_shadow_byte_equivalence.py -v --tb=short
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import json
 import pickle
 import sys
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict
-
-import pytest
 
 THIS_DIR = Path(__file__).resolve().parent
 MEMORY_L4_DIR = THIS_DIR.parent
@@ -52,9 +50,7 @@ class TestSwitchesOffEquivalence:
         """
         # --- 1. 强制所有新增开关为 False（模拟改造前/开关全关） ---
         # 关闭 SHADOW_LOGGER_ENABLED
-        monkeypatch.setattr(
-            "scripts.memory_l4.bcrm2.shadow_logger.SHADOW_LOGGER_ENABLED", False
-        )
+        monkeypatch.setattr("scripts.memory_l4.bcrm2.shadow_logger.SHADOW_LOGGER_ENABLED", False)
         # 关闭 ALPHA_BLEND_ENABLED
         try:
             monkeypatch.setattr(
@@ -85,11 +81,12 @@ class TestSwitchesOffEquivalence:
 
         # 2d. state_cache：开关全关时调用 FiveDomainHeuristicScorer(enable=False)
         #     → 必须返回 default_fail_open()（参见 polling_trader.py:871-876 F1红线断言）
-        from scripts.memory_l4.five_domain_scorer import FiveDomainState, FiveDomainHeuristicScorer
-        from dataclasses import asdict as _asdict
-
         # 用临时目录避免污染 runtime
         import tempfile
+        from dataclasses import asdict as _asdict
+
+        from scripts.memory_l4.five_domain_scorer import FiveDomainHeuristicScorer, FiveDomainState
+
         with tempfile.TemporaryDirectory() as tmpdir:
             cache_path = Path(tmpdir) / "five_domain_state.json"
             scorer = FiveDomainHeuristicScorer(enable=False, state_cache_path=cache_path)
@@ -115,9 +112,9 @@ class TestSwitchesOffEquivalence:
             )
 
             # 额外：pickle 字节等价（更严格）
-            assert _byte_equiv(cache_dict, default_dict), (
-                "state_cache 与 default_fail_open() pickle 字节不等价"
-            )
+            assert _byte_equiv(
+                cache_dict, default_dict
+            ), "state_cache 与 default_fail_open() pickle 字节不等价"
 
 
 # ================================================================
@@ -136,8 +133,9 @@ class TestShadowNeverModifiesRealParams:
           3. save_shadow_log 记录的真实交易字段
         """
         import tempfile
-        from bcrm2.storage import EvolutionStorageSQLite
+
         from bcrm2.parameter_mapper import ParameterMapper
+        from bcrm2.storage import EvolutionStorageSQLite
 
         # --- 1. 准备 baseline（开关全关）值 ---
         baseline_mapper_calls: list = []
@@ -178,9 +176,7 @@ class TestShadowNeverModifiesRealParams:
         baseline_shadow_records.append(dict(baseline_shadow_actual_fields))
 
         # --- 2. 开启影子模式（SHADOW_LOGGER_ENABLED=True），但绝不修改真实参数 ---
-        monkeypatch.setattr(
-            "scripts.memory_l4.bcrm2.shadow_logger.SHADOW_LOGGER_ENABLED", True
-        )
+        monkeypatch.setattr("scripts.memory_l4.bcrm2.shadow_logger.SHADOW_LOGGER_ENABLED", True)
 
         # 2a. T2: 调用 mapper（即使开启影子，L/T/C 输入不应被修改）
         #     影子模式只在 ShadowLogger.record_polling 中读取 mapper 输出，
@@ -188,9 +184,9 @@ class TestShadowNeverModifiesRealParams:
         L_shadow, T_shadow, C_shadow = 0.23, -0.15, 0.72  # 与 baseline 完全相同
         shadow_ranges = pm.map_global_parameters(L_shadow, T_shadow, C_shadow)
         # 断言：相同输入 → 字节等价输出（mapper 无状态，纯函数）
-        assert _sorted_dict(dict(baseline_ranges)) == _sorted_dict(dict(shadow_ranges)), (
-            "T2 mapper：相同 L/T/C 输入在影子模式下输出不一致！"
-        )
+        assert _sorted_dict(dict(baseline_ranges)) == _sorted_dict(
+            dict(shadow_ranges)
+        ), "T2 mapper：相同 L/T/C 输入在影子模式下输出不一致！"
         # 断言：输入参数未被修改（纯函数验证）
         assert L_shadow == L_baseline, "T2 mapper 修改了输入 L！"
         assert T_shadow == T_baseline, "T2 mapper 修改了输入 T！"
@@ -215,13 +211,10 @@ class TestShadowNeverModifiesRealParams:
             bv = baseline_open_args[k]
             sv = shadow_open_args[k]
             assert bv == sv, (
-                f"T3 position_tracker：影子模式修改了真实字段 {k}！"
-                f" baseline={bv} shadow={sv}"
+                f"T3 position_tracker：影子模式修改了真实字段 {k}！" f" baseline={bv} shadow={sv}"
             )
             # 严格字节等价（pickle）
-            assert _byte_equiv(bv, sv), (
-                f"T3 position_tracker：字段 {k} pickle 字节不等价 baseline"
-            )
+            assert _byte_equiv(bv, sv), f"T3 position_tracker：字段 {k} pickle 字节不等价 baseline"
 
         # 2c. T4: save_shadow_log 记录的真实交易字段
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -231,27 +224,39 @@ class TestShadowNeverModifiesRealParams:
             # 构造完整 shadow record（含新12字段 T5 影子）
             full_record = {
                 # reactive
-                "reactive_L": 0.23, "reactive_T": -0.15, "reactive_C": 0.72,
+                "reactive_L": 0.23,
+                "reactive_T": -0.15,
+                "reactive_C": 0.72,
                 "reactive_regime": "TREND_UP",
-                "reactive_pos_mult": 1.0, "reactive_tp_mult": 1.0,
-                "reactive_sl_mult": 1.0, "reactive_threshold": 1.0,
+                "reactive_pos_mult": 1.0,
+                "reactive_tp_mult": 1.0,
+                "reactive_sl_mult": 1.0,
+                "reactive_threshold": 1.0,
                 # forecast
-                "forecast_L": 0.30, "forecast_T": -0.10,
+                "forecast_L": 0.30,
+                "forecast_T": -0.10,
                 "forecast_global_ranges": json.dumps({"global_position_mult": [0.8, 1.2]}),
                 "forecast_sector_weights": json.dumps({"weights": {"defi": 0.2}}),
                 # baseline 6
-                "baseline_pos_mult": 1.0, "baseline_tp_mult": 1.0,
-                "baseline_sl_mult": 1.0, "baseline_threshold_mult": 1.0,
+                "baseline_pos_mult": 1.0,
+                "baseline_tp_mult": 1.0,
+                "baseline_sl_mult": 1.0,
+                "baseline_threshold_mult": 1.0,
                 "baseline_long_conf_threshold": 0.7955,
                 "baseline_short_conf_threshold": 0.7955,
                 # ai 7
-                "ai_pos_mult": 1.05, "ai_tp_mult": 1.03, "ai_sl_mult": 0.97,
+                "ai_pos_mult": 1.05,
+                "ai_tp_mult": 1.03,
+                "ai_sl_mult": 0.97,
                 "ai_threshold_mult": 1.02,
-                "ai_long_threshold": 0.78, "ai_short_threshold": 0.81,
+                "ai_long_threshold": 0.78,
+                "ai_short_threshold": 0.81,
                 "ai_ls_ratio_cap": 2.0,
                 # effective 6
-                "effective_pos_mult": 1.0, "effective_tp_mult": 1.0,
-                "effective_sl_mult": 1.0, "effective_threshold_mult": 1.0,
+                "effective_pos_mult": 1.0,
+                "effective_tp_mult": 1.0,
+                "effective_sl_mult": 1.0,
+                "effective_threshold_mult": 1.0,
                 "effective_long_conf_threshold": 0.7955,
                 "effective_short_conf_threshold": 0.7955,
                 # 元数据 2
@@ -265,7 +270,8 @@ class TestShadowNeverModifiesRealParams:
                 "actual_sl_px": baseline_open_args["sl_px"],
                 "actual_threshold": baseline_open_args["threshold"],
                 # FMA 2
-                "fma_on_allowed": True, "fma_on_eff_threshold": 0.82,
+                "fma_on_allowed": True,
+                "fma_on_eff_threshold": 0.82,
                 # T5 新12字段（仅影子，不影响真实交易）
                 "fd_crypto_war_state": "攻守兼备-中",
                 "fd_crypto_total_score": 78.5,
@@ -295,9 +301,9 @@ class TestShadowNeverModifiesRealParams:
                     f" baseline={baseline_val} saved={actual_val}"
                 )
                 # pickle 字节等价（对于 str/float 简单类型，== 已足够；额外验证）
-                assert _byte_equiv(actual_val, baseline_val), (
-                    f"T4 save_shadow_log：字段 {k} pickle 字节不等价 baseline"
-                )
+                assert _byte_equiv(
+                    actual_val, baseline_val
+                ), f"T4 save_shadow_log：字段 {k} pickle 字节不等价 baseline"
 
             # 额外断言：T5 新字段存在且不影响原42列
             assert row.get("fd_crypto_war_state") == "攻守兼备-中"

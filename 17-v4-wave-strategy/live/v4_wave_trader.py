@@ -10,12 +10,12 @@
 3. 使用 AsterExecutor 进行实盘下单
 """
 
-import os
-import sys
 import json
-import time
-import signal
 import logging
+import os
+import signal
+import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -41,20 +41,19 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
         logging.FileHandler(MODULE_DIR / "logs" / "v4_wave_trader.log"),
-        logging.StreamHandler()
-    ]
+        logging.StreamHandler(),
+    ],
 )
 logger = logging.getLogger(__name__)
 
 sys.path.insert(0, str(MODULE_DIR))
 sys.path.insert(0, str(PROJECT_ROOT / "12-三屏趋势系统"))
 
-from v4_wave_engine import compute_v4_wave_signal
+from v4_wave_engine import compute_v4_wave_signal  # noqa: E402
 
 SANPING_LIVE_DIR = PROJECT_ROOT / "12-三屏趋势系统" / "live"
 sys.path.insert(0, str(SANPING_LIVE_DIR.parent))
-from live.aster_executor import AsterExecutor
-
+from live.aster_executor import AsterExecutor  # noqa: E402
 
 SL_BASE_PCT = 0.04
 SL_TREND_CONTINUATION_PCT = 0.06
@@ -94,12 +93,10 @@ def _compute_sltp(full_signal: dict, current_price: float) -> dict:
     wave_dir = str(wave.get("wave_direction", "NEUTRAL")).upper()
     v4_dir = str(v4.get("v4_direction", "NEUTRAL")).upper()
 
-    is_trend_continuation = any(
-        label in wave_label for label in WAVE_TREND_CONTINUATION
-    ) or (wave_dir == "LONG" and v4_dir == "BULL")
-    is_reversal = any(
-        label in wave_label for label in WAVE_REVERSAL
+    is_trend_continuation = any(label in wave_label for label in WAVE_TREND_CONTINUATION) or (
+        wave_dir == "LONG" and v4_dir == "BULL"
     )
+    is_reversal = any(label in wave_label for label in WAVE_REVERSAL)
 
     if is_reversal:
         sl_pct = SL_REVERSAL_PCT
@@ -165,7 +162,9 @@ class V4WaveTrader:
     def initialize(self):
         try:
             self.executor = AsterExecutor()
-            logger.info(f"[Aster] 执行器已加载 owner={self.executor.config.owner[:14]}... dry_run={self.executor.config.dry_run}")
+            logger.info(
+                f"[Aster] 执行器已加载 owner={self.executor.config.owner[:14]}... dry_run={self.executor.config.dry_run}"
+            )
             if AUTO_EXECUTE and not self.executor.config.dry_run:
                 logger.warning("⚠️ 实盘模式已启用，将执行真实交易")
             else:
@@ -192,7 +191,9 @@ class V4WaveTrader:
 
     def run_once(self):
         logger.info(f"{'='*60}")
-        logger.info(f"V4+波浪策略轮询 @ {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
+        logger.info(
+            f"V4+波浪策略轮询 @ {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}"
+        )
         logger.info(f"{'='*60}")
 
         positions = self.get_positions()
@@ -241,7 +242,9 @@ class V4WaveTrader:
                 direction = final_signal.get("direction", "NEUTRAL")
                 confidence = final_signal.get("confidence", 0)
 
-                logger.info(f"  信号: action={action}, direction={direction}, confidence={confidence:.1f}%")
+                logger.info(
+                    f"  信号: action={action}, direction={direction}, confidence={confidence:.1f}%"
+                )
 
                 if action in ("ENTER_LONG", "ENTER_SHORT"):
                     if symbol_upper in positions:
@@ -253,14 +256,14 @@ class V4WaveTrader:
                 elif action == "EXIT_LONG" or action == "EXIT_SHORT":
                     self._handle_exit(symbol_upper, action, direction)
                 else:
-                    logger.info(f"  无交易信号，继续持有")
+                    logger.info("  无交易信号，继续持有")
 
             except Exception as e:
                 logger.error(f"[{symbol_upper}] 分析失败: {e}")
 
         self._dynamic_adjust_sltp(positions, full_signal_map)
 
-        logger.info(f"本轮轮询完成\n")
+        logger.info("本轮轮询完成\n")
 
     def _check_sltp(self, positions: dict):
         if not positions:
@@ -303,34 +306,53 @@ class V4WaveTrader:
                     drawdown_from_peak = (mark_px - peak_px) / peak_px
 
                 if pnl_pct >= trailing_activate and drawdown_from_peak >= trailing_callback:
-                    logger.info(f"  [{symbol}] 🎯 移动止盈触发: pnl={pnl_pct*100:.2f}%, "
-                                f"峰值回撤={drawdown_from_peak*100:.2f}% (阈值{trailing_callback*100:.1f}%)")
-                    self._handle_exit(symbol, "EXIT_LONG" if side == "long" else "EXIT_SHORT",
-                                      "BULL" if side == "long" else "BEAR",
-                                      reason="trailing_take_profit")
+                    logger.info(
+                        f"  [{symbol}] 🎯 移动止盈触发: pnl={pnl_pct*100:.2f}%, "
+                        f"峰值回撤={drawdown_from_peak*100:.2f}% (阈值{trailing_callback*100:.1f}%)"
+                    )
+                    self._handle_exit(
+                        symbol,
+                        "EXIT_LONG" if side == "long" else "EXIT_SHORT",
+                        "BULL" if side == "long" else "BEAR",
+                        reason="trailing_take_profit",
+                    )
                     continue
                 else:
-                    logger.info(f"  [{symbol}] 移动止盈监控: pnl={pnl_pct*100:.2f}%, "
-                                f"峰值回撤={drawdown_from_peak*100:.2f}% "
-                                f"(需pnl≥{trailing_activate*100}%且回撤≥{trailing_callback*100}%)")
+                    logger.info(
+                        f"  [{symbol}] 移动止盈监控: pnl={pnl_pct*100:.2f}%, "
+                        f"峰值回撤={drawdown_from_peak*100:.2f}% "
+                        f"(需pnl≥{trailing_activate*100}%且回撤≥{trailing_callback*100}%)"
+                    )
 
             if sl_pct != 0 and pnl_pct <= -sl_pct:
-                sl_desc = f"pnl≤-{sl_pct*100:.1f}%" if sl_pct > 0 else f"pnl≤+{-sl_pct*100:.1f}%(锁利润)"
+                sl_desc = (
+                    f"pnl≤-{sl_pct*100:.1f}%" if sl_pct > 0 else f"pnl≤+{-sl_pct*100:.1f}%(锁利润)"
+                )
                 logger.info(f"  [{symbol}] 🛑 止损触发: pnl={pnl_pct*100:.2f}%, 阈值{sl_desc}")
-                self._handle_exit(symbol, "EXIT_LONG" if side == "long" else "EXIT_SHORT",
-                                  "BULL" if side == "long" else "BEAR",
-                                  reason="stop_loss")
+                self._handle_exit(
+                    symbol,
+                    "EXIT_LONG" if side == "long" else "EXIT_SHORT",
+                    "BULL" if side == "long" else "BEAR",
+                    reason="stop_loss",
+                )
                 continue
 
             if not trailing_enabled and tp_pct > 0 and pnl_pct >= tp_pct:
-                logger.info(f"  [{symbol}] 🎯 止盈触发: pnl={pnl_pct*100:.2f}%, 阈值={tp_pct*100:.1f}%")
-                self._handle_exit(symbol, "EXIT_LONG" if side == "long" else "EXIT_SHORT",
-                                  "BULL" if side == "long" else "BEAR",
-                                  reason="take_profit")
+                logger.info(
+                    f"  [{symbol}] 🎯 止盈触发: pnl={pnl_pct*100:.2f}%, 阈值={tp_pct*100:.1f}%"
+                )
+                self._handle_exit(
+                    symbol,
+                    "EXIT_LONG" if side == "long" else "EXIT_SHORT",
+                    "BULL" if side == "long" else "BEAR",
+                    reason="take_profit",
+                )
                 continue
 
-            logger.info(f"  [{symbol}] SL/TP 监控: pnl={pnl_pct*100:.2f}%, "
-                        f"SL={sl_pct*100:+.1f}%, TP=+{tp_pct*100:.1f}%, mode={meta.get('sltp_mode','--')}")
+            logger.info(
+                f"  [{symbol}] SL/TP 监控: pnl={pnl_pct*100:.2f}%, "
+                f"SL={sl_pct*100:+.1f}%, TP=+{tp_pct*100:.1f}%, mode={meta.get('sltp_mode','--')}"
+            )
 
         self._save_position_meta()
 
@@ -338,7 +360,7 @@ class V4WaveTrader:
         if not positions:
             return
 
-        for symbol, pos_data in positions.items():
+        for symbol, pos_data in positions.items():  # noqa: B007
             meta = self._position_sltp.get(symbol)
             full_signal = full_signal_map.get(symbol)
             if not meta or not full_signal:
@@ -363,8 +385,11 @@ class V4WaveTrader:
             side = meta.get("side", "long")
             if entry_px <= 0:
                 continue
-            pnl_pct = ((current_price - entry_px) / entry_px) if side == "long" \
-                      else ((entry_px - current_price) / entry_px)
+            pnl_pct = (
+                ((current_price - entry_px) / entry_px)
+                if side == "long"
+                else ((entry_px - current_price) / entry_px)
+            )
 
             final_signal = full_signal.get("final_signal", {})
             wave = final_signal.get("wave_strategy", {}) or {}
@@ -372,7 +397,7 @@ class V4WaveTrader:
             wave_label = str(wave.get("wave_label", "")).upper()
             wave_dir = str(wave.get("wave_direction", "NEUTRAL")).upper()
 
-            old_reason = meta.get("reason", "")
+            old_reason = meta.get("reason", "")  # noqa: F841
             old_wave_conf = float(meta.get("wave_conf_at_open", wave_conf))
             if "wave_conf_at_open" not in meta:
                 meta["wave_conf_at_open"] = old_wave_conf
@@ -391,8 +416,9 @@ class V4WaveTrader:
                 risk_reasons.append(f"浪型转反转({wave_label})")
 
             pos_side = meta.get("side", "long")
-            if (pos_side == "long" and wave_dir == "SHORT") or \
-               (pos_side == "short" and wave_dir == "LONG"):
+            if (pos_side == "long" and wave_dir == "SHORT") or (
+                pos_side == "short" and wave_dir == "LONG"
+            ):
                 risk_increasing = True
                 risk_reasons.append(f"波浪方向({wave_dir})与持仓({pos_side})冲突")
 
@@ -409,8 +435,10 @@ class V4WaveTrader:
                 transition = "反转" if old_is_reversal else "默认"
                 trend_reasons.append(f"浪型{transition}→趋势延续({wave_label})")
 
-            if pnl_pct > 0.03 and ((pos_side == "long" and wave_dir == "LONG") or \
-                                    (pos_side == "short" and wave_dir == "SHORT")):
+            if pnl_pct > 0.03 and (
+                (pos_side == "long" and wave_dir == "LONG")
+                or (pos_side == "short" and wave_dir == "SHORT")
+            ):
                 if not risk_increasing:
                     trend_strengthening = True
                     trend_reasons.append(f"已盈利{pnl_pct*100:.1f}%+方向一致")
@@ -463,7 +491,11 @@ class V4WaveTrader:
                 meta["sl_pct"] = adjusted_sl
                 meta["tp_pct"] = adjusted_tp
                 meta["trailing_enabled"] = adjusted_trailing
-                meta["sltp_mode"] = new_mode + ("_risk_adj" if risk_increasing else ("_trend_adj" if trend_strengthening else ""))
+                meta["sltp_mode"] = new_mode + (
+                    "_risk_adj"
+                    if risk_increasing
+                    else ("_trend_adj" if trend_strengthening else "")
+                )
                 meta["last_adjusted_at"] = datetime.now(timezone.utc).isoformat()
                 meta["last_adjustment"] = "; ".join(adjustment_log)
                 self._save_position_meta()
@@ -509,10 +541,14 @@ class V4WaveTrader:
         if sl_r.get("ok"):
             meta["sl_order_id"] = sl_r.get("order_id")
             meta["sl_order_price"] = sl_price
-            sl_desc = f"pnl≤-{sl_pct*100:.1f}%" if sl_pct > 0 else (
-                "保本" if sl_pct == 0 else f"pnl≤+{-sl_pct*100:.1f}%(锁利润)"
+            sl_desc = (
+                f"pnl≤-{sl_pct*100:.1f}%"
+                if sl_pct > 0
+                else ("保本" if sl_pct == 0 else f"pnl≤+{-sl_pct*100:.1f}%(锁利润)")
             )
-            logger.info(f"  [{symbol}] 🛡️ 止损硬单已挂: @${sl_price} ({sl_desc}) orderId={sl_r.get('order_id')}")
+            logger.info(
+                f"  [{symbol}] 🛡️ 止损硬单已挂: @${sl_price} ({sl_desc}) orderId={sl_r.get('order_id')}"
+            )
         else:
             logger.error(f"  [{symbol}] ❌ 止损硬单挂单失败: {sl_r.get('error')}")
 
@@ -526,7 +562,9 @@ class V4WaveTrader:
             if tp_r.get("ok"):
                 meta["tp_order_id"] = tp_r.get("order_id")
                 meta["tp_order_price"] = tp_price
-                logger.info(f"  [{symbol}] 🎯 止盈硬单已挂: @${tp_price} (+{tp_pct*100:.1f}%) orderId={tp_r.get('order_id')}")
+                logger.info(
+                    f"  [{symbol}] 🎯 止盈硬单已挂: @${tp_price} (+{tp_pct*100:.1f}%) orderId={tp_r.get('order_id')}"
+                )
             else:
                 logger.error(f"  [{symbol}] ❌ 止盈硬单挂单失败: {tp_r.get('error')}")
         else:
@@ -536,16 +574,18 @@ class V4WaveTrader:
 
     def _handle_entry(self, symbol, action, direction, confidence, full_signal):
         if not AUTO_EXECUTE:
-            logger.info(f"  [模拟] AUTO_EXECUTE=false，跳过开仓")
+            logger.info("  [模拟] AUTO_EXECUTE=false，跳过开仓")
             return
 
         try:
             current_price = full_signal.get("price", 0)
             if not current_price:
-                logger.warning(f"  当前价格未知，跳过开仓")
+                logger.warning("  当前价格未知，跳过开仓")
                 return
 
-            position_pct = full_signal.get("final_signal", {}).get("position", {}).get("position_pct", 0.05)
+            position_pct = (
+                full_signal.get("final_signal", {}).get("position", {}).get("position_pct", 0.05)
+            )
             leverage = full_signal.get("final_signal", {}).get("leverage", 3)
 
             pos_side = "long" if direction == "BULL" else "short"
@@ -556,16 +596,17 @@ class V4WaveTrader:
                 return
 
             sltp = _compute_sltp(full_signal, current_price)
-            logger.info(f"  开仓: {pos_side} {symbol} @ ${current_price:.2f}, 名义价值=${notional_usd:.2f}, 杠杆={leverage}x")
+            logger.info(
+                f"  开仓: {pos_side} {symbol} @ ${current_price:.2f}, 名义价值=${notional_usd:.2f}, 杠杆={leverage}x"
+            )
             logger.info(f"  [SL/TP] 模式={sltp['sltp_mode']}: {sltp['reason']}")
-            logger.info(f"  [SL/TP] 止损=-{sltp['stop_loss_pct']*100:.1f}%, 止盈=+{sltp['take_profit_pct']*100:.1f}%, "
-                        f"移动止盈={'开' if sltp['trailing_enabled'] else '关'}")
+            logger.info(
+                f"  [SL/TP] 止损=-{sltp['stop_loss_pct']*100:.1f}%, 止盈=+{sltp['take_profit_pct']*100:.1f}%, "
+                f"移动止盈={'开' if sltp['trailing_enabled'] else '关'}"
+            )
 
             result = self.executor.place_market_order(
-                coin=symbol,
-                side=pos_side,
-                notional_usd=notional_usd,
-                leverage=leverage
+                coin=symbol, side=pos_side, notional_usd=notional_usd, leverage=leverage
             )
 
             if result.get("ok"):
@@ -604,7 +645,7 @@ class V4WaveTrader:
 
     def _handle_exit(self, symbol, action, direction, reason=None):
         if not AUTO_EXECUTE:
-            logger.info(f"  [模拟] AUTO_EXECUTE=false，跳过平仓")
+            logger.info("  [模拟] AUTO_EXECUTE=false，跳过平仓")
             return
 
         try:
@@ -629,7 +670,7 @@ class V4WaveTrader:
 
     def _calc_notional(self, symbol, position_pct):
         try:
-            balance = self.executor.get_balance("USDT")
+            balance = self.executor.get_balance("USDT")  # noqa: F841
             available = self.executor.get_available_balance("USDT")
             max_position_pct = float(os.environ.get("MAX_POSITION_PCT", 25)) / 100
             effective_pct = min(position_pct, max_position_pct)
@@ -648,11 +689,11 @@ class V4WaveTrader:
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
 
-        logger.info(f"V4+波浪策略实盘执行器启动（独立版）")
+        logger.info("V4+波浪策略实盘执行器启动（独立版）")
         logger.info(f"交易对: {TREND_SYMBOLS}")
         logger.info(f"轮询间隔: {RUN_INTERVAL}秒")
         logger.info(f"自动执行: {AUTO_EXECUTE}")
-        logger.info(f"按 Ctrl+C 停止...\n")
+        logger.info("按 Ctrl+C 停止...\n")
 
         while self._running:
             try:

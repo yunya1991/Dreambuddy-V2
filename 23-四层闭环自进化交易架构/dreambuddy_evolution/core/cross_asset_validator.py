@@ -12,6 +12,7 @@ P1-5: 影子验证不只在 BTC，扩展到 ETH/SOL 等
 鲁棒性: 基因在多个资产上均通过统计检验才算鲁棒，避免单标的过拟合。
 参考: architecture-evaluation-23.md P1 改进建议 #5
 """
+
 from __future__ import annotations
 
 import logging
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 def _import_check():
     from dreambuddy_evolution.core.gene_promotion_stats import check_promotion_with_stats
+
     return check_promotion_with_stats
 
 
@@ -44,8 +46,9 @@ class CrossAssetValidator:
             logger.error(f"[P1-5] 导入 gene_promotion_stats 失败: {exc}")
             self._check = None
 
-    def validate(self, asset_samples: dict[str, list[dict[str, Any]]],
-                 min_assets_pass: int = 2) -> dict[str, Any]:
+    def validate(
+        self, asset_samples: dict[str, list[dict[str, Any]]], min_assets_pass: int = 2
+    ) -> dict[str, Any]:
         """执行跨资产验证.
 
         Args:
@@ -75,8 +78,10 @@ class CrossAssetValidator:
 
         if self._check is None:
             # FAIL-OPEN: 模块不可用，全部标记不通过
-            per_asset = {sym: {"promote": False, "reason": "stats module unavailable"}
-                         for sym in asset_samples}
+            per_asset = {
+                sym: {"promote": False, "reason": "stats module unavailable"}
+                for sym in asset_samples
+            }
             return {
                 "per_asset": per_asset,
                 "n_assets_evaluated": len(asset_samples),

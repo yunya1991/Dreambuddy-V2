@@ -10,6 +10,7 @@
 
 对比指标：胜率、总收益、最大回撤、Calmar、夏普
 """
+
 from __future__ import annotations
 
 import json
@@ -26,15 +27,18 @@ _SCRIPTS = _MEMORY_L4.parent
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
-from memory_l4.bcrm2.asset_classifier import classify_asset
-from memory_l4.bcrm2.sl_tp_config import get_sltp_params
-from memory_l4.bcrm2.sltp_bayesian_optimizer import (
-    load_klines, compute_atr, FEE_PCT, POSITION_PCT,
-    TRADE_INTERVAL, MAX_HOLD_BARS,
+from memory_l4.bcrm2.asset_classifier import classify_asset  # noqa: E402
+from memory_l4.bcrm2.sl_tp_config import get_sltp_params  # noqa: E402
+from memory_l4.bcrm2.sltp_bayesian_optimizer import (  # noqa: E402
+    FEE_PCT,
+    MAX_HOLD_BARS,
+    POSITION_PCT,
+    TRADE_INTERVAL,
+    compute_atr,
+    load_klines,
 )
 
-SYMBOLS = ["BTC", "ETH", "SOL", "BNB", "XRP", "LINK", "DOGE", "PEPE",
-           "UNI", "AAVE", "NVDA", "AMZN"]
+SYMBOLS = ["BTC", "ETH", "SOL", "BNB", "XRP", "LINK", "DOGE", "PEPE", "UNI", "AAVE", "NVDA", "AMZN"]
 
 
 def detect_regime(closes: np.ndarray, i: int, lookback: int = 50) -> str:
@@ -46,7 +50,7 @@ def detect_regime(closes: np.ndarray, i: int, lookback: int = 50) -> str:
     """
     if i < lookback + 20:
         return "chop"
-    ma = pd.Series(closes[:i+1]).rolling(20).mean().values
+    ma = pd.Series(closes[: i + 1]).rolling(20).mean().values
     ma_recent = ma[i]
     ma_past = ma[i - lookback]
     if ma_past <= 0 or np.isnan(ma_recent) or np.isnan(ma_past):
@@ -123,11 +127,19 @@ def run_ablation_backtest(
         exit_px = None
         for j in range(i + 1, min(i + MAX_HOLD_BARS + 1, n)):
             if direction > 0:
-                if lows[j] <= sl_px: exit_px = sl_px; break
-                if highs[j] >= tp_px: exit_px = tp_px; break
+                if lows[j] <= sl_px:
+                    exit_px = sl_px
+                    break
+                if highs[j] >= tp_px:
+                    exit_px = tp_px
+                    break
             else:
-                if highs[j] >= sl_px: exit_px = sl_px; break
-                if lows[j] <= tp_px: exit_px = tp_px; break
+                if highs[j] >= sl_px:
+                    exit_px = sl_px
+                    break
+                if lows[j] <= tp_px:
+                    exit_px = tp_px
+                    break
         if exit_px is None:
             exit_px = closes[min(i + MAX_HOLD_BARS, n - 1)]
 
@@ -138,13 +150,19 @@ def run_ablation_backtest(
         ret -= 2 * FEE_PCT
         position_ret = ret * POSITION_PCT
         trades.append(position_ret)
-        equity *= (1 + position_ret)
+        equity *= 1 + position_ret
         equity_curve.append(equity)
         i += TRADE_INTERVAL
 
     if not trades:
-        return {"trades": 0, "win_rate": 0, "total_return": 0,
-                "max_drawdown": 0, "calmar": 0, "sharpe": 0}
+        return {
+            "trades": 0,
+            "win_rate": 0,
+            "total_return": 0,
+            "max_drawdown": 0,
+            "calmar": 0,
+            "sharpe": 0,
+        }
 
     trades_arr = np.array(trades)
     win_rate = float(np.mean(trades_arr > 0))
@@ -154,7 +172,11 @@ def run_ablation_backtest(
     drawdown = (equity_arr - peak) / peak
     max_drawdown = float(np.min(drawdown))
     calmar = total_return / abs(max_drawdown) if max_drawdown < 0 else 0
-    sharpe = float(np.mean(trades_arr) / np.std(trades_arr) * np.sqrt(252)) if np.std(trades_arr) > 0 else 0
+    sharpe = (
+        float(np.mean(trades_arr) / np.std(trades_arr) * np.sqrt(252))
+        if np.std(trades_arr) > 0
+        else 0
+    )
 
     return {
         "trades": len(trades),
@@ -180,10 +202,12 @@ def main():
                 continue
             res = run_ablation_backtest(df, sym, config)
             results[config][sym] = res
-            print(f"  {sym:6s} WR={res['win_rate']*100:5.1f}% "
-                  f"ret={res['total_return']*100:+6.1f}% "
-                  f"DD={res['max_drawdown']*100:6.1f}% "
-                  f"Calmar={res['calmar']:+5.2f}")
+            print(
+                f"  {sym:6s} WR={res['win_rate']*100:5.1f}% "
+                f"ret={res['total_return']*100:+6.1f}% "
+                f"DD={res['max_drawdown']*100:6.1f}% "
+                f"Calmar={res['calmar']:+5.2f}"
+            )
 
     # 汇总：各配置的平均指标
     print(f"\n{'='*60}")
@@ -208,8 +232,10 @@ def main():
             "avg_sharpe": round(float(avg_sharpe), 4),
             "n_symbols": len(sym_results),
         }
-        print(f"{config:<12} {avg_wr*100:7.1f}% {avg_ret*100:+7.1f}% "
-              f"{avg_dd*100:7.1f}% {avg_calmar:+7.2f} {avg_sharpe:+7.2f}")
+        print(
+            f"{config:<12} {avg_wr*100:7.1f}% {avg_ret*100:+7.1f}% "
+            f"{avg_dd*100:7.1f}% {avg_calmar:+7.2f} {avg_sharpe:+7.2f}"
+        )
 
     # 保存
     out = {"configs": results, "summary": summary}
@@ -227,7 +253,11 @@ def main():
             continue
         s = summary.get(config, {})
         if base and s:
-            calmar_gain = (s["avg_calmar"] - base["avg_calmar"]) / abs(base["avg_calmar"]) * 100 if base["avg_calmar"] != 0 else 0
+            calmar_gain = (
+                (s["avg_calmar"] - base["avg_calmar"]) / abs(base["avg_calmar"]) * 100
+                if base["avg_calmar"] != 0
+                else 0
+            )
             ret_gain = (s["avg_total_return"] - base["avg_total_return"]) * 100
             print(f"  {config:<12} Calmar {calmar_gain:+.1f}% | 收益 {ret_gain:+.1f}%")
 

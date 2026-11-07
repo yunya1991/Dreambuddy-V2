@@ -3,6 +3,7 @@
 从 evolution_pipeline.py _discover_paths/_select_optimal_path/_apply_high_order_factors 抽出。
 当前为委托模式（通过 pipeline 引用委托），后续 Phase 逐步将实现搬入。
 """
+
 import logging
 from typing import Any
 
@@ -34,15 +35,21 @@ class PathDiscoveryService:
             return self._pipeline._apply_high_order_factors(r_out, symbol)
         return r_out
 
-    def discover_paths(self, r_out: dict, kline_data: dict | None = None,
-                       market_data: dict | None = None, symbol: str = "") -> list[dict]:
+    def discover_paths(
+        self,
+        r_out: dict,
+        kline_data: dict | None = None,
+        market_data: dict | None = None,
+        symbol: str = "",
+    ) -> list[dict]:
         """多源路径发现。委托 pipeline._discover_paths。"""
         if self._pipeline is not None:
             return self._pipeline._discover_paths(r_out, kline_data, market_data, symbol)
         return []
 
-    def select_optimal_path(self, paths: list[dict], r_out: dict,
-                            market_data: dict | None = None) -> dict:
+    def select_optimal_path(
+        self, paths: list[dict], r_out: dict, market_data: dict | None = None
+    ) -> dict:
         """路径寻优。委托 pipeline._select_optimal_path。"""
         if self._pipeline is not None:
             return self._pipeline._select_optimal_path(paths, r_out, market_data)

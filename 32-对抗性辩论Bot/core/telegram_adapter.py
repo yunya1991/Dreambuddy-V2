@@ -8,11 +8,11 @@ Telegram Bot API 端点：
 - getUpdates:   GET  https://api.telegram.org/bot{token}/getUpdates
 - getChatMember: GET https://api.telegram.org/bot{token}/getChatMember
 """
+
 from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
 
 import httpx
 
@@ -33,8 +33,7 @@ class TelegramHTTPClient:
     原因：透明代理环境下 httpx.AsyncClient 连接超时，sync 客户端正常。
     """
 
-    def __init__(self, token: str, api_base: str = API_BASE,
-                 timeout: float = 30.0):
+    def __init__(self, token: str, api_base: str = API_BASE, timeout: float = 30.0):
         self.token = token
         self.api_base = api_base
         self.timeout = timeout
@@ -60,16 +59,17 @@ class TelegramHTTPClient:
         data = resp.json()
         if not data.get("ok"):
             raise RuntimeError(
-                f"Telegram API error ({endpoint}): "
-                f"{data.get('description', 'unknown')}"
+                f"Telegram API error ({endpoint}): " f"{data.get('description', 'unknown')}"
             )
         return data["result"]
 
-    async def _request(self, method: str, endpoint: str,
-                       **kwargs) -> dict:
+    async def _request(self, method: str, endpoint: str, **kwargs) -> dict:
         """统一请求处理（async 包装 sync）。"""
         return await asyncio.to_thread(
-            self._sync_request, method, endpoint, **kwargs,
+            self._sync_request,
+            method,
+            endpoint,
+            **kwargs,
         )
 
     # ─── TelegramBotClient Protocol ───────────────────────────
@@ -77,13 +77,15 @@ class TelegramHTTPClient:
     async def send_message(self, chat_id: int, text: str) -> dict:
         """发送消息到指定 chat。"""
         return await self._request(
-            "POST", "sendMessage", chat_id=chat_id, text=text,
+            "POST",
+            "sendMessage",
+            chat_id=chat_id,
+            text=text,
         )
 
     # ─── Listener 辅助方法 ────────────────────────────────────
 
-    async def get_updates(self, offset: int = 0,
-                          timeout: int = 30) -> list[dict]:
+    async def get_updates(self, offset: int = 0, timeout: int = 30) -> list[dict]:
         """长轮询获取新消息。
 
         Args:
@@ -94,18 +96,23 @@ class TelegramHTTPClient:
             update 列表
         """
         return await self._request(
-            "GET", "getUpdates", offset=offset, timeout=timeout,
+            "GET",
+            "getUpdates",
+            offset=offset,
+            timeout=timeout,
         )
 
-    async def get_chat_member(self, chat_id: int,
-                               user_id: int) -> str:
+    async def get_chat_member(self, chat_id: int, user_id: int) -> str:
         """获取用户在群中的成员状态。
 
         Returns:
             状态字符串（creator/administrator/member/left/kicked）
         """
         result = await self._request(
-            "GET", "getChatMember", chat_id=chat_id, user_id=user_id,
+            "GET",
+            "getChatMember",
+            chat_id=chat_id,
+            user_id=user_id,
         )
         return result["status"]
 

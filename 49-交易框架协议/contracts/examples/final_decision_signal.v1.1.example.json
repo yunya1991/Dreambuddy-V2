@@ -1,0 +1,37 @@
+{
+  "signal_id": "50-nn|ETH-USDT-SWAP|2026-11-08T00:00:00Z|long",
+  "source": "50-nn",
+  "ts": "2026-11-08T00:00:00Z",
+  "symbol": "ETH-USDT-SWAP",
+  "direction": "long",
+  "confidence": 0.68,
+  "horizon": "hours",
+  "risk_exposure_hint": 0.3,
+  "expires_at": "2026-11-08T04:00:00Z",
+  "mode": "paper",
+  "shadow": true,
+  "constraint_id": "constraint-demo-001",
+  "constraint_applied_at": "2026-11-08T00:00:01Z",
+  "payload": {
+    "action": "long",
+    "position_tier": "standard",
+    "position_mult": 0.7,
+    "d_star": "long",
+    "ri": 0.6,
+    "l4_v": 0.12,
+    "regime": "bull",
+    "primary_contradiction": {
+      "dimension": "D3",
+      "direction": "long",
+      "strength": 0.5,
+      "confidence": 0.6
+    },
+    "contradiction_shift": {},
+    "elastic_result": {},
+    "cross_validation": {},
+    "path": {},
+    "evidence_summary": {},
+    "gene_versions": {},
+    "control_group": "23-demo-001"
+  }
+}

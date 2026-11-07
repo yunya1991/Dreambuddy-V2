@@ -22,19 +22,41 @@ def _fetch_json(url: str, timeout_sec: float) -> Tuple[bool, Dict[str, Any]]:
             raw = r.read().decode("utf-8", errors="replace")
             data = json.loads(raw)
             if not isinstance(data, dict):
-                return False, {"error": "non_dict_response", "url": url, "elapsed_sec": round(time.time() - started, 3)}
+                return False, {
+                    "error": "non_dict_response",
+                    "url": url,
+                    "elapsed_sec": round(time.time() - started, 3),
+                }
             data["_elapsed_sec"] = round(time.time() - started, 3)
             return True, data
     except HTTPError as e:
         body = e.read().decode("utf-8", errors="replace")
-        return False, {"error": "http_error", "status": int(e.code), "url": url, "body": body[:400], "elapsed_sec": round(time.time() - started, 3)}
+        return False, {
+            "error": "http_error",
+            "status": int(e.code),
+            "url": url,
+            "body": body[:400],
+            "elapsed_sec": round(time.time() - started, 3),
+        }
     except URLError as e:
-        return False, {"error": "url_error", "url": url, "reason": str(e.reason), "elapsed_sec": round(time.time() - started, 3)}
+        return False, {
+            "error": "url_error",
+            "url": url,
+            "reason": str(e.reason),
+            "elapsed_sec": round(time.time() - started, 3),
+        }
     except Exception as e:
-        return False, {"error": "exception", "url": url, "reason": f"{type(e).__name__}: {str(e)}", "elapsed_sec": round(time.time() - started, 3)}
+        return False, {
+            "error": "exception",
+            "url": url,
+            "reason": f"{type(e).__name__}: {str(e)}",
+            "elapsed_sec": round(time.time() - started, 3),
+        }
 
 
-def _fetch_json_retry(url: str, timeout_sec: float, retries: int, retry_sleep_sec: float) -> Tuple[bool, Dict[str, Any]]:
+def _fetch_json_retry(
+    url: str, timeout_sec: float, retries: int, retry_sleep_sec: float
+) -> Tuple[bool, Dict[str, Any]]:
     last: Dict[str, Any] = {}
     total = max(1, int(retries))
     for i in range(total):
@@ -60,7 +82,15 @@ def _field_missing(rep: Dict[str, Any], fields: List[str]) -> List[str]:
 
 
 def _check_contract(rep: Dict[str, Any]) -> Dict[str, Any]:
-    required_top = ["generated_at", "execution_gate", "bias", "filter", "risk_off", "quality_summary", "evidence_refs"]
+    required_top = [
+        "generated_at",
+        "execution_gate",
+        "bias",
+        "filter",
+        "risk_off",
+        "quality_summary",
+        "evidence_refs",
+    ]
     missing = _field_missing(rep, required_top)
     gate_ok = str(rep.get("execution_gate") or "").strip() == "readonly_advisory"
     quality = rep.get("quality_summary") if isinstance(rep.get("quality_summary"), dict) else {}
@@ -118,16 +148,33 @@ def main() -> None:
         retry_sleep_sec=float(args.retry_sleep_sec),
     )
 
-    research_contract = _check_contract(research_rep) if research_ok else {"ok": False, "reason": research_rep.get("error")}
-    trading_contract = _check_contract(trading_rep) if trading_ok else {"ok": False, "reason": trading_rep.get("error")}
+    research_contract = (
+        _check_contract(research_rep)
+        if research_ok
+        else {"ok": False, "reason": research_rep.get("error")}
+    )
+    trading_contract = (
+        _check_contract(trading_rep)
+        if trading_ok
+        else {"ok": False, "reason": trading_rep.get("error")}
+    )
     research_generated_at = research_rep.get("generated_at") if research_ok else None
     trading_generated_at = trading_rep.get("generated_at") if trading_ok else None
     research_ms = _parse_iso_to_ms(research_generated_at)
     trading_ms = _parse_iso_to_ms(trading_generated_at)
-    sync_lag_sec = (abs(research_ms - trading_ms) // 1000) if (research_ms > 0 and trading_ms > 0) else -1
+    sync_lag_sec = (
+        (abs(research_ms - trading_ms) // 1000) if (research_ms > 0 and trading_ms > 0) else -1
+    )
     sync_ok = (sync_lag_sec >= 0) and (sync_lag_sec <= int(args.max_sync_lag_sec))
 
-    chain_ok = bool(skill.get("exists")) and research_ok and trading_ok and research_contract.get("ok") and trading_contract.get("ok") and sync_ok
+    chain_ok = (
+        bool(skill.get("exists"))
+        and research_ok
+        and trading_ok
+        and research_contract.get("ok")
+        and trading_contract.get("ok")
+        and sync_ok
+    )
     out = {
         "ok": bool(chain_ok),
         "ts": ts,

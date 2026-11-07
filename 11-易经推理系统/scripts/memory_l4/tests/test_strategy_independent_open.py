@@ -4,54 +4,96 @@
 测试三层信号组合 → 独立买卖信号 → 建仓。
 模式对标 test_evolution_direction_gate.py 的 mock trader 方式。
 """
-import pytest
-from unittest.mock import MagicMock, patch
-from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, Tuple
+
+from dataclasses import dataclass, field  # noqa: I001
+from typing import Any, Dict
+from unittest.mock import MagicMock
 
 
 @dataclass
 class MockFiveDomainState:
     """轻量 mock FiveDomainState。"""
-    war_state: Dict[str, str] = field(default_factory=lambda: {
-        "crypto_usdt": "ALLOW", "us_stock": "ALLOW", "precious_metal": "ALLOW",
-    })
-    direction_state: Dict[str, str] = field(default_factory=lambda: {
-        "crypto_usdt": "NEUTRAL", "us_stock": "NEUTRAL", "precious_metal": "NEUTRAL",
-    })
-    aggregate_position_cap_pct: Dict[str, float] = field(default_factory=lambda: {
-        "crypto_usdt": 1.0, "us_stock": 1.0, "precious_metal": 1.0,
-    })
-    position_mult: Dict[str, float] = field(default_factory=lambda: {
-        "crypto_usdt": 1.0, "us_stock": 1.0, "precious_metal": 1.0,
-    })
-    allowed_style_mask: Dict[str, Dict[str, bool]] = field(default_factory=lambda: {
-        "crypto_usdt": {"trend_follow": True, "breakout": True, "mean_revert": True,
-                         "momentum": True, "volatility": True, "emergency": True},
-    })
-    five_scores: Dict[str, Dict[str, int]] = field(default_factory=lambda: {
-        "crypto_usdt": {"dao": 70, "tian": 70, "di": 70, "jiang": 70, "fa": 70},
-    })
+
+    war_state: Dict[str, str] = field(
+        default_factory=lambda: {
+            "crypto_usdt": "ALLOW",
+            "us_stock": "ALLOW",
+            "precious_metal": "ALLOW",
+        }
+    )
+    direction_state: Dict[str, str] = field(
+        default_factory=lambda: {
+            "crypto_usdt": "NEUTRAL",
+            "us_stock": "NEUTRAL",
+            "precious_metal": "NEUTRAL",
+        }
+    )
+    aggregate_position_cap_pct: Dict[str, float] = field(
+        default_factory=lambda: {
+            "crypto_usdt": 1.0,
+            "us_stock": 1.0,
+            "precious_metal": 1.0,
+        }
+    )
+    position_mult: Dict[str, float] = field(
+        default_factory=lambda: {
+            "crypto_usdt": 1.0,
+            "us_stock": 1.0,
+            "precious_metal": 1.0,
+        }
+    )
+    allowed_style_mask: Dict[str, Dict[str, bool]] = field(
+        default_factory=lambda: {
+            "crypto_usdt": {
+                "trend_follow": True,
+                "breakout": True,
+                "mean_revert": True,
+                "momentum": True,
+                "volatility": True,
+                "emergency": True,
+            },
+        }
+    )
+    five_scores: Dict[str, Dict[str, int]] = field(
+        default_factory=lambda: {
+            "crypto_usdt": {"dao": 70, "tian": 70, "di": 70, "jiang": 70, "fa": 70},
+        }
+    )
 
 
 @dataclass
 class MockStrategySelection:
     """轻量 mock StrategySelection。"""
+
     strategy_type: str = "trend_follow"
-    style_exposures: Dict[str, float] = field(default_factory=lambda: {
-        "trend_follow": 0.8, "breakout": 0.3, "mean_revert": 0.2,
-        "momentum": 0.4, "volatility": 0.1, "emergency": 0.5,
-    })
+    style_exposures: Dict[str, float] = field(
+        default_factory=lambda: {
+            "trend_follow": 0.8,
+            "breakout": 0.3,
+            "mean_revert": 0.2,
+            "momentum": 0.4,
+            "volatility": 0.1,
+            "emergency": 0.5,
+        }
+    )
     calibration_biases: Dict[str, Any] = field(default_factory=lambda: {"sl_tighten_factor": 1.0})
 
 
 class TestComputeStrategyOpenSignal:
     """测试 _compute_strategy_open_signal 三层信号组合。"""
 
-    def _make_trader(self, war_state="ALLOW", direction_state="NEUTRAL",
-                     strategy_type="trend_follow", d_star="long", ri=0.65,
-                     coin="BTC", cls="crypto_usdt"):
+    def _make_trader(
+        self,
+        war_state="ALLOW",
+        direction_state="NEUTRAL",
+        strategy_type="trend_follow",
+        d_star="long",
+        ri=0.65,
+        coin="BTC",
+        cls="crypto_usdt",
+    ):
         from scripts.memory_l4.polling_trader import PollingTrader
+
         bot = PollingTrader.__new__(PollingTrader)
 
         # 战略层 cache
@@ -192,10 +234,17 @@ class TestComputeStrategyOpenSignal:
 class TestStrategyIndependentOpen:
     """测试 _strategy_independent_open 主开仓入口。"""
 
-    def _make_trader_full(self, enable=True, war_state="ALLOW",
-                          direction_state="NEUTRAL", has_position=False,
-                          in_cooldown=False, fuse_block=False):
+    def _make_trader_full(
+        self,
+        enable=True,
+        war_state="ALLOW",
+        direction_state="NEUTRAL",
+        has_position=False,
+        in_cooldown=False,
+        fuse_block=False,
+    ):
         from scripts.memory_l4.polling_trader import PollingTrader
+
         bot = PollingTrader.__new__(PollingTrader)
 
         # 开关

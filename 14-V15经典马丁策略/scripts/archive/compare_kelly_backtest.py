@@ -10,16 +10,17 @@
   - 如果KELLY收益变差（收益更低 或 回撤显著增大）→ ❌ 回退基线
   - 如果KELLY与BASE相同（凯利建议=基线）→ ➡️ 无影响
 """
-import sys
+
 import json
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent
 sys.path.insert(0, str(BASE_DIR / "core"))
 sys.path.insert(0, str(BASE_DIR / "lib"))
 
-from v15_backtest import run_backtest, fetch_klines
-from kelly_optimizer import format_kelly_report
+from kelly_optimizer import format_kelly_report  # noqa: E402
+from v15_backtest import fetch_klines, run_backtest  # noqa: E402
 
 coins = ["BTC", "ETH", "SOL", "ARB", "OP", "UNI"]
 limit = 1500
@@ -42,14 +43,20 @@ for coin in coins:
 
     # 基线：固定22%底仓
     r_base = run_backtest(
-        coin=coin, klines=klines, use_atr=True,
-        use_kelly=False, base_position_pct=KELLY_BASE_PCT,
+        coin=coin,
+        klines=klines,
+        use_atr=True,
+        use_kelly=False,
+        base_position_pct=KELLY_BASE_PCT,
     )
 
     # 凯利优化
     r_kelly = run_backtest(
-        coin=coin, klines=klines, use_atr=True,
-        use_kelly=True, kelly_base_pct=KELLY_BASE_PCT,
+        coin=coin,
+        klines=klines,
+        use_atr=True,
+        use_kelly=True,
+        kelly_base_pct=KELLY_BASE_PCT,
     )
 
     all_results.append((coin, r_base, r_kelly))
@@ -58,6 +65,7 @@ for coin in coins:
     kp_dict = r_kelly.get("kelly_params")
     if kp_dict:
         from kelly_optimizer import KellyParams
+
         kp = KellyParams(**kp_dict)
         print(format_kelly_report(kp, coin))
 
@@ -65,8 +73,10 @@ for coin in coins:
 print("\n" + "=" * 95)
 print("  📊 凯利公式底仓优化对比汇总")
 print("=" * 95)
-print(f"  {'币种':>6}  {'模式':>6}  {'底仓%':>7}  {'总收益':>10}  {'交易数':>6}  {'胜率':>8}  "
-      f"{'盈亏比':>8}  {'最大回撤':>10}  {'夏普':>8}  {'连亏':>5}")
+print(
+    f"  {'币种':>6}  {'模式':>6}  {'底仓%':>7}  {'总收益':>10}  {'交易数':>6}  {'胜率':>8}  "
+    f"{'盈亏比':>8}  {'最大回撤':>10}  {'夏普':>8}  {'连亏':>5}"
+)
 print("-" * 95)
 
 for coin, r_base, r_kelly in all_results:
@@ -76,9 +86,11 @@ for coin, r_base, r_kelly in all_results:
             continue
         m = r["metrics"]
         eff_pct = r.get("effective_base_pct", r.get("base_position_pct", 0))
-        print(f"  {coin:>6}  {label:>6}  {eff_pct*100:>6.1f}%  {m['total_return_pct']:>+8.2f}%  "
-              f"{m['total_trades']:>6}  {m['win_rate']*100:>7.2f}%  {m['profit_factor']:>8.2f}  "
-              f"{m['max_drawdown_pct']:>9.2f}%  {m['sharpe_ratio']:>8.4f}  {m['max_consecutive_losses']:>5}")
+        print(
+            f"  {coin:>6}  {label:>6}  {eff_pct*100:>6.1f}%  {m['total_return_pct']:>+8.2f}%  "
+            f"{m['total_trades']:>6}  {m['win_rate']*100:>7.2f}%  {m['profit_factor']:>8.2f}  "
+            f"{m['max_drawdown_pct']:>9.2f}%  {m['sharpe_ratio']:>8.4f}  {m['max_consecutive_losses']:>5}"
+        )
     print("-" * 95)
 
 # ── 效果总结与回退决策 ──
@@ -121,8 +133,10 @@ for coin, r_base, r_kelly in all_results:
         status = "➡️ 持平"
         decision = "保持基线（无显著改善）"
 
-    print(f"  {coin:>6}: 收益{ret_diff:>+7.2f}%  回撤{dd_diff:>+6.2f}%  夏普{sharpe_diff:>+7.4f}  "
-          f"{status}  → {decision}")
+    print(
+        f"  {coin:>6}: 收益{ret_diff:>+7.2f}%  回撤{dd_diff:>+6.2f}%  夏普{sharpe_diff:>+7.4f}  "
+        f"{status}  → {decision}"
+    )
 
 print("  " + "-" * 70)
 
@@ -132,8 +146,8 @@ if worse_coins:
     print(f"  ❌ 以下币种凯利优化表现变差: {', '.join(worse_coins)}")
     print(f"  → 建议回退到固定{KELLY_BASE_PCT*100:.0f}%基线底仓")
 elif overall_better:
-    print(f"  ✅ 所有币种凯利优化均未变差，可启用凯利公式底仓优化")
-    print(f"  → 采用半凯利(0.5x) + 保守估计 + 2%单笔风控上限")
+    print("  ✅ 所有币种凯利优化均未变差，可启用凯利公式底仓优化")
+    print("  → 采用半凯利(0.5x) + 保守估计 + 2%单笔风控上限")
 else:
     print(f"  ➡️ 凯利优化无显著改善，保持固定{KELLY_BASE_PCT*100:.0f}%基线底仓即可")
 
@@ -153,25 +167,27 @@ for coin, r_base, r_kelly in all_results:
     if "error" in r_base or "error" in r_kelly:
         continue
     kp_dict = r_kelly.get("kelly_params")
-    output["results"].append({
-        "coin": coin,
-        "base": {
-            "total_return_pct": r_base["metrics"]["total_return_pct"],
-            "max_drawdown_pct": r_base["metrics"]["max_drawdown_pct"],
-            "sharpe_ratio": r_base["metrics"]["sharpe_ratio"],
-            "total_trades": r_base["metrics"]["total_trades"],
-            "win_rate": r_base["metrics"]["win_rate"],
-        },
-        "kelly": {
-            "total_return_pct": r_kelly["metrics"]["total_return_pct"],
-            "max_drawdown_pct": r_kelly["metrics"]["max_drawdown_pct"],
-            "sharpe_ratio": r_kelly["metrics"]["sharpe_ratio"],
-            "total_trades": r_kelly["metrics"]["total_trades"],
-            "win_rate": r_kelly["metrics"]["win_rate"],
-            "effective_base_pct": r_kelly.get("effective_base_pct"),
-        },
-        "kelly_params": kp_dict,
-    })
+    output["results"].append(
+        {
+            "coin": coin,
+            "base": {
+                "total_return_pct": r_base["metrics"]["total_return_pct"],
+                "max_drawdown_pct": r_base["metrics"]["max_drawdown_pct"],
+                "sharpe_ratio": r_base["metrics"]["sharpe_ratio"],
+                "total_trades": r_base["metrics"]["total_trades"],
+                "win_rate": r_base["metrics"]["win_rate"],
+            },
+            "kelly": {
+                "total_return_pct": r_kelly["metrics"]["total_return_pct"],
+                "max_drawdown_pct": r_kelly["metrics"]["max_drawdown_pct"],
+                "sharpe_ratio": r_kelly["metrics"]["sharpe_ratio"],
+                "total_trades": r_kelly["metrics"]["total_trades"],
+                "win_rate": r_kelly["metrics"]["win_rate"],
+                "effective_base_pct": r_kelly.get("effective_base_pct"),
+            },
+            "kelly_params": kp_dict,
+        }
+    )
 
 with open(output_file, "w") as f:
     json.dump(output, f, indent=2, ensure_ascii=False)

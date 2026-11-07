@@ -6,6 +6,7 @@ TDD fixtures:
   - fake_alerts:      monkeypatch dreambuddy_core/alert_bridge → 计数（避免 Lark API 依赖）
   - fake_sentiment_0: SentimentEngine monkeypatch USE_FINBERT=0 → sent=0.5（TR-RV-06 场景）
 """
+
 from __future__ import annotations
 
 import json
@@ -18,7 +19,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]  # 4-MEMORY/tests -> 4-MEMORY ->
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-ROOT = Path(__file__).resolve().parents[2]  # repo root（4-MEMORY 是 repo 子目录，parents[1]=repo root）
+ROOT = (
+    Path(__file__).resolve().parents[2]
+)  # repo root（4-MEMORY 是 repo 子目录，parents[1]=repo root）
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -60,7 +63,9 @@ def tmp_gene_dir(tmp_path, monkeypatch):
         },
         "version": "1.0",
     }
-    (cond_dir / "CD-MA200-GT-FIB0786.json").write_text(json.dumps(ok_cond, indent=2), encoding="utf-8")
+    (cond_dir / "CD-MA200-GT-FIB0786.json").write_text(
+        json.dumps(ok_cond, indent=2), encoding="utf-8"
+    )
 
     # 2. 最小合法 ACTION 样本
     ok_action = {
@@ -81,7 +86,9 @@ def tmp_gene_dir(tmp_path, monkeypatch):
         },
         "version": "1.0",
     }
-    (act_dir / "AC-LONG-3SL-6TP-05SIZE.json").write_text(json.dumps(ok_action, indent=2), encoding="utf-8")
+    (act_dir / "AC-LONG-3SL-6TP-05SIZE.json").write_text(
+        json.dumps(ok_action, indent=2), encoding="utf-8"
+    )
 
     # 3. 恶意注入 CONDITION 样本（TR-SG-08 恶意注入 不 crash 只跳过）
     bad_cond_xss = {
@@ -90,8 +97,10 @@ def tmp_gene_dir(tmp_path, monkeypatch):
         "condition_type": "indicator",
         "expression": "1 > 0",
         "parameters": {},
-        "code_ref": {"file": f"<script src='evil.js'>{'.'*1000}</script>",
-                     "lines": {"low": 1, "high": 2}},
+        "code_ref": {
+            "file": f"<script src='evil.js'>{'.'*1000}</script>",
+            "lines": {"low": 1, "high": 2},
+        },
         "version": "1.0",
     }
     (cond_dir / "BAD-XSS.json").write_text(json.dumps(bad_cond_xss, indent=2), encoding="utf-8")
@@ -142,6 +151,7 @@ def fake_alerts(monkeypatch):
     # 尝试 monkeypatch 项目 alert_bridge（如存在）；无论 import 是否成功，fake 都作为 fixture 提供给测试
     try:
         from dreambuddy_evolution import alert_bridge as ab
+
         monkeypatch.setattr(ab, "send_alert", FakeAlert.send, raising=False)
     except Exception:
         pass  # CI 环境可能没有真实 alert module；所有测试 accept FakeAlert 注入
@@ -155,10 +165,13 @@ def fake_alerts(monkeypatch):
 def fake_sentiment_0(monkeypatch):
     class FakeSentimentEngine:
         USE_FINBERT: int = 0
+
         def get_sentiment(self, *args, **kwargs):
             return 0.5  # L1 默认降级 55/45 → quality_score 扣0.15
+
     try:
         from 九基本面分析.engines import sentiment_engine as sent_mod
+
         monkeypatch.setattr(sent_mod, "USE_FINBERT", 0, raising=False)
     except Exception:
         pass

@@ -20,7 +20,7 @@ import importlib
 import inspect
 import pkgutil
 import threading
-from typing import Dict, List, Optional, Any, Protocol
+from typing import Any, Dict, List, Optional, Protocol
 
 from dreamos.registry import NodeRegistry
 
@@ -156,8 +156,7 @@ class CapabilityRegistry:
 
     # ── 意图匹配 ──────────────────────────────────
 
-    def find_by_intent(self, intent_type: str,
-                       keywords: Optional[List[str]] = None) -> List[tuple]:
+    def find_by_intent(self, intent_type: str, keywords: Optional[List[str]] = None) -> List[tuple]:
         """根据意图类型查找匹配的能力域
 
         Returns:
@@ -173,8 +172,7 @@ class CapabilityRegistry:
         results.sort(key=lambda x: x[1], reverse=True)
         return results
 
-    def best_match(self, intent_type: str,
-                   keywords: Optional[List[str]] = None) -> Optional[tuple]:
+    def best_match(self, intent_type: str, keywords: Optional[List[str]] = None) -> Optional[tuple]:
         """查找最匹配的能力域
 
         Returns:

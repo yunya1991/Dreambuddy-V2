@@ -6,10 +6,10 @@
 
 所有方法 FAIL-OPEN：异常时返回中性默认（强度乘数 1.0，不扭曲 30d 主信号）。
 """
+
 from __future__ import annotations
 
 import numpy as np
-
 from force_vector.models import CycleComparison
 
 # 方向中性阈值：|dir| < 0.1 视为无明确方向
@@ -19,8 +19,9 @@ _NEUTRAL_THRESHOLD = 0.1
 class CycleComparator:
     """7 天 + 30 天双窗口共振校验器。"""
 
-    def compare(self, direction_7d: float, direction_30d: float,
-                magnitude_7d: float, magnitude_30d: float) -> CycleComparison:
+    def compare(
+        self, direction_7d: float, direction_30d: float, magnitude_7d: float, magnitude_30d: float
+    ) -> CycleComparison:
         """7天+30天双窗口共振校验。
 
         判定矩阵（短=7d，长=30d，方向中性阈值 |dir|<0.1）：
@@ -84,7 +85,8 @@ class CycleComparator:
                 resonance_state="persistent",
                 strength_multiplier=1.0,
                 final_direction=float(direction_30d) if self._is_number(direction_30d) else 0.0,
-                final_magnitude=(float(magnitude_30d) if self._is_number(magnitude_30d) else 0.0) * 1.0,
+                final_magnitude=(float(magnitude_30d) if self._is_number(magnitude_30d) else 0.0)
+                * 1.0,
             )
 
     @staticmethod

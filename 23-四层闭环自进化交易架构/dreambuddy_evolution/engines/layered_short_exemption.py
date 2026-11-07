@@ -19,6 +19,7 @@ SPEC-自进化系统做空能力疏通探讨 §4 路径B：
 生产接线: polling_trader.py 检测 → _fds.layered_short_exemption_result →
 路径B 消费分支（3因子全豁免/2因子试探）。
 """
+
 from __future__ import annotations
 
 import logging
@@ -40,6 +41,7 @@ class LayeredExemptionResult:
         factors_satisfied: 满足的因子数 (0-3)
         allow_add_position: 是否允许加仓 (全豁免=True, 试探/不豁免=False)
     """
+
     layer: int
     exempted: bool
     position_multiplier: float
@@ -56,13 +58,13 @@ class LayeredShortExemption:
     开关开启时启用分层豁免（2 因子也能试探豁免）。
     """
 
-    PATTERN_THRESHOLD = -0.5   # 头肩顶 pattern_factor <= -0.5
+    PATTERN_THRESHOLD = -0.5  # 头肩顶 pattern_factor <= -0.5
     ETF_OUTFLOW_THRESHOLD = -0.1  # ETF 净流出（归一化 < -0.1，严格小于）
 
     # 分层参数（SPEC §4 路径B 探讨值）
-    FULL_POSITION = 0.7    # 全豁免仓位
-    TRIAL_POSITION = 0.2   # 试探豁免仓位
-    STOP_LOSS = 0.5        # 止损倍数（全豁免和试探豁免统一 0.5x）
+    FULL_POSITION = 0.7  # 全豁免仓位
+    TRIAL_POSITION = 0.2  # 试探豁免仓位
+    STOP_LOSS = 0.5  # 止损倍数（全豁免和试探豁免统一 0.5x）
 
     def __init__(self) -> None:
         pass
@@ -86,6 +88,7 @@ class LayeredShortExemption:
         try:
             # 开关检查
             from dreambuddy_evolution.agi_config import get_switch
+
             switch_on = get_switch("enable_layered_short_exemption")
         except Exception as e:
             logger.debug("[FO] LayeredShortExemption switch check fail: %s", e)
@@ -137,6 +140,7 @@ class LayeredShortExemption:
         # 开关关闭时，扩展因子不参与
         try:
             from dreambuddy_evolution.agi_config import get_switch
+
             if not get_switch("enable_layered_short_exemption"):
                 return base_result
         except Exception:

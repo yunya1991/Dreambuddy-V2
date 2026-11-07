@@ -15,7 +15,8 @@ stderr: 错误日志和 import 噪音（不污染 stdout）
   - FAIL-OPEN: 异常返回 {ok: false, error, traceback}, 不崩溃
   - stdout 行过滤: import 和 handler 执行期间重定向 stdout 到 stderr
 """
-import sys
+
+import sys  # noqa: I001
 import os
 import json
 import traceback
@@ -31,7 +32,7 @@ def _resolve_server_dir():
 def _safe_print(payload):
     """唯一向 stdout 输出的入口，确保单行 JSON。"""
     sys.stdout = sys.__stdout__
-    sys.stdout.write(json.dumps(payload, ensure_ascii=False) + '\n')
+    sys.stdout.write(json.dumps(payload, ensure_ascii=False) + "\n")
     sys.stdout.flush()
 
 
@@ -41,7 +42,7 @@ def main():
         return
 
     tool_name = sys.argv[1]
-    args_raw = sys.argv[2] if len(sys.argv) > 2 else '{}'
+    args_raw = sys.argv[2] if len(sys.argv) > 2 else "{}"
     try:
         args = json.loads(args_raw) if args_raw else {}
     except json.JSONDecodeError as e:
@@ -57,18 +58,22 @@ def main():
             sys.path.insert(0, server_dir)
         from case_bank_server import TOOL_HANDLERS  # noqa
     except Exception as e:
-        _safe_print({
-            "ok": False,
-            "error": f"import_failed: {type(e).__name__}: {e}",
-            "traceback": traceback.format_exc(),
-        })
+        _safe_print(
+            {
+                "ok": False,
+                "error": f"import_failed: {type(e).__name__}: {e}",
+                "traceback": traceback.format_exc(),
+            }
+        )
         return
 
     if tool_name not in TOOL_HANDLERS:
-        _safe_print({
-            "ok": False,
-            "error": f"unknown tool: {tool_name}. available: {sorted(TOOL_HANDLERS.keys())}",
-        })
+        _safe_print(
+            {
+                "ok": False,
+                "error": f"unknown tool: {tool_name}. available: {sorted(TOOL_HANDLERS.keys())}",
+            }
+        )
         return
 
     try:
@@ -80,11 +85,13 @@ def main():
             data = {"raw": result_text}
         _safe_print({"ok": True, "data": data})
     except Exception as e:
-        _safe_print({
-            "ok": False,
-            "error": f"handler_error: {type(e).__name__}: {e}",
-            "traceback": traceback.format_exc(),
-        })
+        _safe_print(
+            {
+                "ok": False,
+                "error": f"handler_error: {type(e).__name__}: {e}",
+                "traceback": traceback.format_exc(),
+            }
+        )
 
 
 if __name__ == "__main__":

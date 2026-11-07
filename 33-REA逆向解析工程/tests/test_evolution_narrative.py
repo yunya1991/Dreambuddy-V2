@@ -3,13 +3,12 @@
 Task 3 of PoE 工程实践复现器 SPEC。
 依据：TASKS-工程实践复现器.md TR-3.1 / TR-3.2 / TR-3.3
 """
-import os
+
+import os  # noqa: I001
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
-
-import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -65,7 +64,9 @@ def test_generate_narrative_detects_turning_point():
         Path(d, "models", "user.py").write_text("class User:\n    pass\n")
         _commit(d, "refactor: split app into MVC modules")
         # 后续增量
-        Path(d, "models", "user.py").write_text("class User:\n    def __init__(self, name):\n        self.name = name\n")
+        Path(d, "models", "user.py").write_text(
+            "class User:\n    def __init__(self, name):\n        self.name = name\n"
+        )
         _commit(d, "feat: add User name field")
 
         result = generate_narrative(d)
@@ -80,7 +81,9 @@ def test_generate_narrative_detects_turning_point():
 
         tp = turning_points[0]
         assert "commit" in tp, "转折点应含 commit hash"
-        assert tp["commit"] in all_hashes, f"commit hash 必须存在于 git log (TR-3.1): {tp['commit']}"
+        assert (
+            tp["commit"] in all_hashes
+        ), f"commit hash 必须存在于 git log (TR-3.1): {tp['commit']}"
         assert "change_stats" in tp, "转折点应含变更统计"
         assert tp["change_stats"].get("files_changed", 0) > 0, "变更统计非零 (TR-3.1)"
 

@@ -15,6 +15,7 @@
 FAIL-OPEN：任何异常（db 不存在/表缺失/JSON 畸形/数据不足）→ 返回空 list，
 不阻塞阶段识别（phase_classifier 收到空 list 走默认规则）。
 """
+
 from __future__ import annotations
 
 import json
@@ -46,22 +47,42 @@ _SEVEN_DAYS_MS = 7 * 24 * 3600 * 1000
 # 注意：mainnet_launch 关键词必须用精确词组（如"主网上线"），不能包含单独的
 # "主网"，否则"主网升级"会被误判为 mainnet_launch。
 _MAINNET_LAUNCH_KEYWORDS: List[str] = [
-    "主网上线", "上线主网", "主网启动", "主网迁移", "跨链迁移",
-    "主网公测", "发布主网", "主网 beta", "主网beta", "主网正式上线",
-    "主网公测", "主网启动",
+    "主网上线",
+    "上线主网",
+    "主网启动",
+    "主网迁移",
+    "跨链迁移",
+    "主网公测",
+    "发布主网",
+    "主网 beta",
+    "主网beta",
+    "主网正式上线",
+    "主网公测",
+    "主网启动",
 ]
 _UPGRADE_KEYWORDS: List[str] = [
-    "主网升级", "版本升级", "协议升级", "升级", "主链升级",
+    "主网升级",
+    "版本升级",
+    "协议升级",
+    "升级",
+    "主链升级",
 ]
 _PARTNERSHIP_KEYWORDS: List[str] = [
-    "战略合作", "生态合作", "集成至", "合作发布", "合作",
-    "伙伴关系", "集成", "生态基金",
+    "战略合作",
+    "生态合作",
+    "集成至",
+    "合作发布",
+    "合作",
+    "伙伴关系",
+    "集成",
+    "生态基金",
 ]
 
 
 # ===========================================================================
 # 纯函数：事件类型细分
 # ===========================================================================
+
 
 def _classify_event_type_from_title(title: str) -> str:
     """从快讯标题关键词细分事件类型。
@@ -99,6 +120,7 @@ def _classify_event_type_from_title(title: str) -> str:
 # 纯函数：状态判断（pending/landed）
 # ===========================================================================
 
+
 def _compute_status_from_age(published_ms: int, now_ms: Optional[int] = None) -> str:
     """根据发布时间距今判断事件状态。
 
@@ -129,6 +151,7 @@ def _compute_status_from_age(published_ms: int, now_ms: Optional[int] = None) ->
 # 辅助：安全 JSON 解析（兼容双重编码）
 # ===========================================================================
 
+
 def _safe_json_loads(s: Any, default: Any) -> Any:
     """安全解析 JSON 字符串，兼容双重编码。
 
@@ -158,6 +181,7 @@ def _safe_json_loads(s: Any, default: Any) -> Any:
 # ===========================================================================
 # DB 查询：事件时间线
 # ===========================================================================
+
 
 def query_event_timeline(coin: str, db_path: Optional[str] = None) -> List[Dict[str, Any]]:
     """从 data_center.db 查询指定代币的里程碑事件时间线。
@@ -209,11 +233,7 @@ def query_event_timeline(coin: str, db_path: Optional[str] = None) -> List[Dict[
 
             # 过滤：od_tickers_hit_csl 必须包含目标 coin
             tickers_csl = str(metrics.get("od_tickers_hit_csl", "") or "")
-            tickers = [
-                t.strip().upper()
-                for t in tickers_csl.split(",")
-                if t and t.strip()
-            ]
+            tickers = [t.strip().upper() for t in tickers_csl.split(",") if t and t.strip()]
             if coin_up not in tickers:
                 continue
 
@@ -244,12 +264,14 @@ def query_event_timeline(coin: str, db_path: Optional[str] = None) -> List[Dict[
                     published_ms = 0
 
             status = _compute_status_from_age(published_ms, now_ms)
-            events_out.append({
-                "type": sub_type,
-                "status": status,
-                "published_ms": published_ms,
-                "title": title,
-            })
+            events_out.append(
+                {
+                    "type": sub_type,
+                    "status": status,
+                    "published_ms": published_ms,
+                    "title": title,
+                }
+            )
 
         # 按时间倒序排序（最新在前）
         events_out.sort(key=lambda e: e.get("published_ms", 0), reverse=True)

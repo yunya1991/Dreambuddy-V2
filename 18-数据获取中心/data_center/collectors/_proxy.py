@@ -3,6 +3,7 @@
 读取 macOS 系统代理（scutil --proxy），返回代理 URL 或 None。
 不修改全局环境变量，避免影响飞书/Hermes 等需要直连的调用。
 """
+
 from __future__ import annotations
 
 import os

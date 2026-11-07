@@ -712,7 +712,7 @@ class TemporalSignatureExtractor:
 
 #### 4.6.9 β 原型验证结果（2026-11-03，F1/F2/F3 预演）
 
-> 完整报告：[prototype/temporal_signature_beta/report.md](../../prototype/temporal_signature_beta/report.md) ｜ 代码 `proto_beta.py` ｜ 原始结果 `beta_result.json`
+> 完整报告：`prototype/temporal_signature_beta/report.md`（未入库） ｜ 代码 `proto_beta.py` ｜ 原始结果 `beta_result.json`
 > 数据：云端 `semantic_events.jsonl`（4 条达标流 / 3 对 / 平均 104 窗）+ `atomic_events.jsonl`（2 条达标流 / 1 对 / 588 窗）
 
 | 门槛 | 阈值 | 实测 | 结论 |
@@ -788,8 +788,8 @@ class TemporalSignatureExtractor:
 | `S1_READY` → `S3_READY` | 仅认 `ablation_result.json` 的 `f1_pass` + `f2_pass` 均为 true | 记状态 | ❌ **不自动改图**（S3 接线必须人工审查，H2） |
 
 **实现**
-- [shadow_gate.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/mcp_shells/_shared/shadow_gate.py)：流式评估（内存 O(域×信号)，不加载全量 JSON）+ 状态机 + CLI（`--evaluate` 只读 / `--promote` 强制评估）
-- [temporal_signature_extractor.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/mcp_shells/_shared/temporal_signature_extractor.py)：S0 窗口 → `D×10 + C(D,2)×2` 维（每域 poe/latency 各 5 维签名 + 域对 Lévy area/lag），无 look-ahead、零训练、FAIL-OPEN
+- [shadow_gate.py](../../../mcp_shells/_shared/shadow_gate.py)：流式评估（内存 O(域×信号)，不加载全量 JSON）+ 状态机 + CLI（`--evaluate` 只读 / `--promote` 强制评估）
+- [temporal_signature_extractor.py](../../../mcp_shells/_shared/temporal_signature_extractor.py)：S0 窗口 → `D×10 + C(D,2)×2` 维（每域 poe/latency 各 5 维签名 + 域对 Lévy area/lag），无 look-ahead、零训练、FAIL-OPEN
 - 驱动每轮结束调用门禁；开关关闭时**零 IO**直接跳过
 
 **云端首测**：`enabled=true / stage=S0.5 / data_not_ready`（coverage 0.011d、continuous 0），与实际相符。
@@ -843,9 +843,9 @@ trajectories.jsonl（185 天覆盖，16 条连续流就绪）
 S1_READY → S3_READY（仅记状态，不自动改图；S3 接线仍需人工审查 H2）
 ```
 
-三步由 [run_cloud_loop.sh](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/47-MCP管理系统/prototype/temporal_signature_beta/run_cloud_loop.sh) 串联，`dreambuddy-ablation-loop.timer` 每 6 小时自动触发。
+三步由 [run_cloud_loop.sh](../../prototype/temporal_signature_beta/run_cloud_loop.sh) 串联，`dreambuddy-ablation-loop.timer` 每 6 小时自动触发。
 
-**历史回填（[backfill_trajectories.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/47-MCP管理系统/prototype/temporal_signature_beta/backfill_trajectories.py)）**
+**历史回填（[backfill_trajectories.py](../../prototype/temporal_signature_beta/backfill_trajectories.py)）**
 
 数据充分性门禁（§4.6.6 F5）要求 `coverage_days ≥ 180`、`continuous_streams ≥ 10`、每流 `obs ≥ 200`。自然累积需 6 个月，太慢。回填脚本一次性生成 185 天合成轨迹：
 
@@ -857,7 +857,7 @@ S1_READY → S3_READY（仅记状态，不自动改图；S3 接线仍需人工�
 | 幂等 | 按 `batch_id` 前缀 `backfill-` 分离回填/真实条目，重复运行只替换回填部分 |
 | 隔离 | 回填 ts < 真实数据最早 ts - 1h，不污染在线区间 |
 
-**消融 runner 契约（[run_ablation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/47-MCP管理系统/prototype/temporal_signature_beta/run_ablation.py)）**
+**消融 runner 契约（[run_ablation.py](../../prototype/temporal_signature_beta/run_ablation.py)）**
 
 | 项 | 说明 |
 |---|---|

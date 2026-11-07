@@ -11,7 +11,14 @@ def test_sys_monitor_restart_after_apply_requires_launchd(monkeypatch):
 
     def fake_schedule(*, now_ms: int, reason: str, delay_sec: float, exit_code: int):
         called["n"] += 1
-        return {"ok": True, "scheduled": True, "ts": int(now_ms), "reason": reason, "delay_sec": float(delay_sec), "exit_code": int(exit_code)}
+        return {
+            "ok": True,
+            "scheduled": True,
+            "ts": int(now_ms),
+            "reason": reason,
+            "delay_sec": float(delay_sec),
+            "exit_code": int(exit_code),
+        }
 
     monkeypatch.setattr(svc, "_self_restart_schedule", fake_schedule)
     monkeypatch.delenv("XPC_SERVICE_NAME", raising=False)
@@ -42,7 +49,14 @@ def test_sys_monitor_restart_after_apply_cooldown(monkeypatch):
 
     def fake_schedule(*, now_ms: int, reason: str, delay_sec: float, exit_code: int):
         called["n"] += 1
-        return {"ok": True, "scheduled": True, "ts": int(now_ms), "reason": reason, "delay_sec": float(delay_sec), "exit_code": int(exit_code)}
+        return {
+            "ok": True,
+            "scheduled": True,
+            "ts": int(now_ms),
+            "reason": reason,
+            "delay_sec": float(delay_sec),
+            "exit_code": int(exit_code),
+        }
 
     monkeypatch.setattr(svc, "_self_restart_schedule", fake_schedule)
     monkeypatch.setenv("XPC_SERVICE_NAME", "com.ft.ml_trade_service.8092")

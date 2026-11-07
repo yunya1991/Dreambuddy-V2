@@ -12,6 +12,7 @@
 - FAIL-OPEN：全 abstain → 回退布尔路径
 - 零回归：signals=None 走原路径
 """
+
 from __future__ import annotations
 
 import time
@@ -30,17 +31,16 @@ _K = 0.25
 @dataclass(frozen=True)
 class VerificationSignal:
     """单维度验证信号输入 DTO。"""
-    stage: str                          # cycle_consistency / factuality / applicability
-    verdict: str                        # pass / fail / abstain
-    verifier_id: str                    # 验证者标识（角色分离用）
-    evidence_hash: str = ""             # 可审计证据哈希
-    latency_ms: float = 0.0             # 验证耗时
+
+    stage: str  # cycle_consistency / factuality / applicability
+    verdict: str  # pass / fail / abstain
+    verifier_id: str  # 验证者标识（角色分离用）
+    evidence_hash: str = ""  # 可审计证据哈希
+    latency_ms: float = 0.0  # 验证耗时
 
     def __post_init__(self) -> None:
         if self.verdict not in _VALID_VERDICTS:
-            raise ValueError(
-                f"verdict 必须是 {_VALID_VERDICTS}，got {self.verdict!r}"
-            )
+            raise ValueError(f"verdict 必须是 {_VALID_VERDICTS}，got {self.verdict!r}")
 
 
 @dataclass(frozen=True)
@@ -49,9 +49,10 @@ class VerificationRecord:
 
     更正只能追加 CORRECTION 记录，不可修改本条。
     """
+
     memory_id: str
-    signals: Tuple[VerificationSignal, ...]    # tuple 保证不可变
-    weight_version: str                         # 权重版本（可重算）
+    signals: Tuple[VerificationSignal, ...]  # tuple 保证不可变
+    weight_version: str  # 权重版本（可重算）
     ts: float = field(default_factory=time.time)
     correlation_id: Optional[str] = None
 
@@ -66,9 +67,7 @@ class VerificationRecord:
 
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> "VerificationRecord":
-        signals = tuple(
-            VerificationSignal(**s) for s in d.get("signals", [])
-        )
+        signals = tuple(VerificationSignal(**s) for s in d.get("signals", []))
         return cls(
             memory_id=d["memory_id"],
             signals=signals,
@@ -81,8 +80,9 @@ class VerificationRecord:
 @dataclass(frozen=True)
 class VerificationOutcome:
     """verify 聚合结果（判定表输出）。"""
+
     memory_id: str
-    path: str                          # "boolean" / "fractional" / "fallback"
+    path: str  # "boolean" / "fractional" / "fallback"
     old_confidence: float
     new_confidence: float
     old_quality: str
@@ -91,7 +91,7 @@ class VerificationOutcome:
     p: Optional[float] = None
     n_active: int = 0
     has_fail: bool = False
-    gate: str = "pass"                 # pass / blocked / fallback
+    gate: str = "pass"  # pass / blocked / fallback
     # 布尔路径字段
     success: Optional[bool] = None
 
@@ -99,6 +99,7 @@ class VerificationOutcome:
 # ---------------------------------------------------------------------------
 # 聚合 p 计算
 # ---------------------------------------------------------------------------
+
 
 def compute_aggregated_p(
     signals: List[VerificationSignal],
@@ -121,6 +122,7 @@ def compute_aggregated_p(
 # 分数化 Δconf
 # ---------------------------------------------------------------------------
 
+
 def compute_fractional_delta(p: float, conf: float) -> float:
     """计算分数化置信度增量，clip 到 [−0.15, +0.10]。
 
@@ -134,6 +136,7 @@ def compute_fractional_delta(p: float, conf: float) -> float:
 # ---------------------------------------------------------------------------
 # quorum 判定
 # ---------------------------------------------------------------------------
+
 
 def resolve_quorum(
     verdicts: List[str],

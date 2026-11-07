@@ -9,9 +9,8 @@ P1-2 RED: EngineRouter 组件契约测试
   get_event_driven_strategy / get_reflection_scanner — 懒加载 getters
 - run_path_discovery(...)->dict — 路径发现层
 """
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations  # noqa: I001
 
 
 class TestEngineRouterContract:
@@ -22,6 +21,7 @@ class TestEngineRouterContract:
 
     def test_class_instantiates(self):
         from dreambuddy_evolution.engines.engine_router import EngineRouter
+
         router = EngineRouter()
         assert router is not None
 
@@ -31,6 +31,7 @@ class TestAgiEnhance:
 
     def test_returns_fallback_when_switch_disabled(self):
         from dreambuddy_evolution.engines.engine_router import EngineRouter
+
         router = EngineRouter()
         # 关闭的开关应返回 fallback
         result = router.agi_enhance(
@@ -43,6 +44,7 @@ class TestAgiEnhance:
 
     def test_returns_primary_when_switch_enabled(self):
         from dreambuddy_evolution.engines.engine_router import EngineRouter
+
         router = EngineRouter()
         # 假设 enable_signature_engine 是开启的（生产默认）— 测试可能跳过
         result = router.agi_enhance(
@@ -58,13 +60,19 @@ class TestRunPathDiscovery:
 
     def test_returns_dict(self):
         from dreambuddy_evolution.engines.engine_router import EngineRouter
+
         router = EngineRouter()
         # 最简输入，FAIL-OPEN 应返回 dict
         result = router.run_path_discovery(
             symbol="BTC-USDT-SWAP",
             d_star="long",
             r_vector={"R_up": 0.5, "R_down": 0.3},
-            kline_data={"close": [100.0] * 20, "high": [105.0] * 20, "low": [95.0] * 20, "volume": [1000.0] * 20},
+            kline_data={
+                "close": [100.0] * 20,
+                "high": [105.0] * 20,
+                "low": [95.0] * 20,
+                "volume": [1000.0] * 20,
+            },
             mode="Phase2",
         )
         assert isinstance(result, dict)

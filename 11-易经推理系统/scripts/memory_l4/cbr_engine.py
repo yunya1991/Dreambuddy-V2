@@ -13,27 +13,25 @@ CBR (Case-Based Reasoning) 案例检索引擎
 
 import json
 import math
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import sys
-
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.cbr_similarity import (
-    DEFAULT_CASE_SIM_WEIGHTS,
+from scripts.memory_l4.cbr_similarity import (  # noqa: E402
     build_default_case_retriever,
 )
-from scripts.memory_l4.paths import memory_l4_cases_dir, workbuddy_dir
-
+from scripts.memory_l4.paths import memory_l4_cases_dir, workbuddy_dir  # noqa: E402
 
 # ─────────────────────────────────────────────
 # 数据模型
 # ─────────────────────────────────────────────
+
 
 @dataclass
 class CBRCase:
@@ -43,10 +41,11 @@ class CBRCase:
         pattern: 价格形态（head_shoulders_top, neckline_break 等）
         case_type: 案例类型（trade=交易案例 / pattern=形态案例）
     """
+
     case_id: str
     inst_id: Optional[str] = None
-    regime: Optional[str] = None           # 市态，如 "recovery|sprout"
-    decision: Optional[str] = None         # long / short
+    regime: Optional[str] = None  # 市态，如 "recovery|sprout"
+    decision: Optional[str] = None  # long / short
     confidence: float = 0.0
     volatility: float = 0.0
     entry_price: float = 0.0
@@ -65,8 +64,8 @@ class CBRCase:
     system_source: Optional[str] = None
     timestamp: Optional[str] = None
     # P2 扩展：形态案例字段
-    pattern: Optional[str] = None           # 价格形态（head_shoulders_top 等）
-    case_type: str = "trade"               # trade / pattern
+    pattern: Optional[str] = None  # 价格形态（head_shoulders_top 等）
+    case_type: str = "trade"  # trade / pattern
     # 原始 case 字典（保留完整信息）
     raw: Dict[str, Any] = field(default_factory=dict, repr=False)
 
@@ -94,19 +93,20 @@ class CBRQuery:
     扩展字段：
         pattern: 当前价格形态（用于检索形态案例）
     """
+
     inst_id: Optional[str] = None
     regime: Optional[str] = None
-    decision: Optional[str] = None         # 拟议方向
-    confidence: float = 0.0                # BCRM 输出置信度
-    volatility: float = 0.0                # 当前 ATR/波动率
-    entry_price: float = 0.0               # 当前价格
+    decision: Optional[str] = None  # 拟议方向
+    confidence: float = 0.0  # BCRM 输出置信度
+    volatility: float = 0.0  # 当前 ATR/波动率
+    entry_price: float = 0.0  # 当前价格
     quadrant: Dict[str, float] = field(default_factory=dict)
     evidence_chain: Dict[str, List[Dict]] = field(default_factory=dict)
     # 风险预算
     max_drawdown: float = 0.05
     risk_budget: float = 0.02
     # P2 扩展：形态查询字段
-    pattern: Optional[str] = None          # 当前价格形态
+    pattern: Optional[str] = None  # 当前价格形态
 
     def to_feature_dict(self) -> Dict[str, Any]:
         return {
@@ -125,6 +125,7 @@ class CBRQuery:
 @dataclass
 class RetrievedCase:
     """检索结果：案例 + 相似度分数。"""
+
     case: CBRCase
     similarity: float
     rank: int = 0
@@ -133,20 +134,22 @@ class RetrievedCase:
 @dataclass
 class ReuseResult:
     """复用结果：从相似案例聚合的策略建议。"""
+
     suggested_leverage: float
     suggested_position_pct: float
     suggested_sl_atr: float
     suggested_tp_atr: float
     suggested_hold_bars: int
-    confidence_boost: float          # 基于历史成功率的置信度调整
-    profit_rate: float               # 相似案例中盈利比例
-    avg_pnl: float                   # 相似案例平均收益
-    risk_notes: List[str]            # 风险提示（从失败案例提取）
+    confidence_boost: float  # 基于历史成功率的置信度调整
+    profit_rate: float  # 相似案例中盈利比例
+    avg_pnl: float  # 相似案例平均收益
+    risk_notes: List[str]  # 风险提示（从失败案例提取）
 
 
 @dataclass
 class ReviseResult:
     """修正结果：根据当前市态和风险调整后的最终策略。"""
+
     final_leverage: float
     final_position_pct: float
     final_sl_atr: float
@@ -159,6 +162,7 @@ class ReviseResult:
 @dataclass
 class CBRCycleResult:
     """完整的 CBR 循环结果。"""
+
     query: CBRQuery
     retrieved: List[RetrievedCase]
     reuse: ReuseResult
@@ -169,6 +173,7 @@ class CBRCycleResult:
 # ─────────────────────────────────────────────
 # 案例库管理
 # ─────────────────────────────────────────────
+
 
 class CaseBase:
     """CBR 案例库：从 L4 cases 加载并管理。"""
@@ -217,7 +222,7 @@ class CaseBase:
         do = raw.get("decision_outcome") or {}
         env = raw.get("environment_snapshot") or {}
         q = raw.get("quadrant") or {}
-        ev = q.get("evidence") or {} if isinstance(q, dict) else {}
+        ev = q.get("evidence") or {} if isinstance(q, dict) else {}  # noqa: F841
         review = raw.get("review") or {}
 
         return CBRCase(
@@ -295,6 +300,7 @@ class CaseBase:
 # ─────────────────────────────────────────────
 # CBR 引擎核心
 # ─────────────────────────────────────────────
+
 
 class CBREngine:
     """CBR 案例检索引擎：实现 4R 循环。"""
@@ -380,7 +386,7 @@ class CBREngine:
         # 盈利案例参数聚合
         if profit_cases:
             weights = [r.similarity for r in profit_cases]
-            total_w = sum(weights)
+            total_w = sum(weights)  # noqa: F841
 
             def _wavg(key: str, default: float) -> float:
                 vals = []
@@ -404,7 +410,8 @@ class CBREngine:
                     position_pcts.append((pct, r.similarity))
             suggested_position_pct = (
                 sum(v * w for v, w in position_pcts) / sum(w for _, w in position_pcts)
-                if position_pcts else 0.1
+                if position_pcts
+                else 0.1
             )
 
             # SL/TP ATR 倍数（从 lessons 中推断或默认值）
@@ -558,6 +565,7 @@ class CBREngine:
     def cycle(self, query: CBRQuery) -> CBRCycleResult:
         """执行完整的 CBR 4R 循环。"""
         import time
+
         start = time.perf_counter()
 
         retrieved = self.retrieve(query)
@@ -609,6 +617,7 @@ class CBREngine:
 # CLI / 测试入口
 # ─────────────────────────────────────────────
 
+
 def main() -> None:
     import argparse
 
@@ -627,7 +636,7 @@ def main() -> None:
     engine.load(use_index=True)
 
     print(f"案例库统计: {engine.get_case_stats()}")
-    print(f"---")
+    print("---")
 
     query = CBRQuery(
         inst_id=args.inst,
@@ -643,11 +652,13 @@ def main() -> None:
     print(f"检索耗时: {result.duration_ms}ms")
     print(f"检索到 {len(result.retrieved)} 个相似案例:")
     for r in result.retrieved:
-        print(f"  #{r.rank} {r.case.case_id} sim={r.similarity:.3f} "
-              f"pnl={r.case.pnl_pct} regime={r.case.regime}")
+        print(
+            f"  #{r.rank} {r.case.case_id} sim={r.similarity:.3f} "
+            f"pnl={r.case.pnl_pct} regime={r.case.regime}"
+        )
 
-    print(f"---")
-    print(f"复用结果:")
+    print("---")
+    print("复用结果:")
     print(f"  建议杠杆: {result.reuse.suggested_leverage}x")
     print(f"  建议仓位: {result.reuse.suggested_position_pct:.2%}")
     print(f"  建议止损: {result.reuse.suggested_sl_atr}x ATR")
@@ -658,8 +669,8 @@ def main() -> None:
     if result.reuse.risk_notes:
         print(f"  风险提示: {result.reuse.risk_notes}")
 
-    print(f"---")
-    print(f"修正结果:")
+    print("---")
+    print("修正结果:")
     print(f"  最终杠杆: {result.revise.final_leverage}x")
     print(f"  最终仓位: {result.revise.final_position_pct:.2%}")
     print(f"  最终止损: {result.revise.final_sl_atr}x ATR")
@@ -687,10 +698,10 @@ if __name__ == "__main__":
 #       G3（flock LOCK_EX|LOCK_NB 非阻塞，0.1s 超时→failopen）/
 #       G6（缺 case_id 静默 False，不抛 KeyError）
 # ================================================================
-import fcntl as _fcntl
-import tempfile as _tempfile
-import os as _os
-import time as _time
+import fcntl as _fcntl  # noqa: E402
+import os as _os  # noqa: E402
+import tempfile as _tempfile  # noqa: E402
+import time as _time  # noqa: E402
 
 _JSONL_LOCK_TIMEOUT_S = 0.1
 _JSONL_SCHEMA_VERSION = "v0.3"
@@ -701,8 +712,13 @@ CBR_CANONICAL_5D_KEYS = {
     # momentum 5 项
     "momentum": ["rsi_14", "macd_hist", "roc_5d", "roc_20d", "hexagram_confidence"],
     # ma_position 5 项
-    "ma_position": ["dist_sma20_pct", "dist_sma50_pct", "dist_sma200_pct",
-                    "ma20_50_gap_pct", "triple_ma_order"],
+    "ma_position": [
+        "dist_sma20_pct",
+        "dist_sma50_pct",
+        "dist_sma200_pct",
+        "ma20_50_gap_pct",
+        "triple_ma_order",
+    ],
     # volatility 3 项
     "volatility": ["atr14_norm_pct", "atr14_20d_quantile", "bollinger_width_pct"],
     # volume 2 项
@@ -754,6 +770,7 @@ class CBRJsonlStore:
                     self._jsonl_path.touch(mode=0o644, exist_ok=True)
             except Exception as _e:  # noqa: BLE001
                 import logging as _logging
+
                 _logging.getLogger(__name__).warning(
                     f"[CBRJsonlStore] runtime init failed, force-disable: {_e}"
                 )
@@ -810,9 +827,14 @@ class CBRJsonlStore:
         except Exception:  # noqa: BLE001 / G2: never raise to caller
             return False
 
-    def finalize_by_case_id(self, case_id: str, exit_snapshot: Dict[str, Any],
-                            pnl_pct: Optional[float], pnl_usdt: Optional[float],
-                            is_profit: Optional[bool]) -> bool:
+    def finalize_by_case_id(
+        self,
+        case_id: str,
+        exit_snapshot: Dict[str, Any],
+        pnl_pct: Optional[float],
+        pnl_usdt: Optional[float],
+        is_profit: Optional[bool],
+    ) -> bool:
         """Finalize a semi entry by case_id (read → update → atomic rewrite).
 
         Missing case_id → silently False (G6). Idempotent on repeated identical calls.
@@ -848,8 +870,12 @@ class CBRJsonlStore:
                         return False
                     # atomic rewrite（temp file + fsync + os.replace）
                     with _tempfile.NamedTemporaryFile(
-                            "w", encoding="utf-8", dir=str(self._runtime_dir),
-                            delete=False, suffix=".jsonl.tmp") as tf:
+                        "w",
+                        encoding="utf-8",
+                        dir=str(self._runtime_dir),
+                        delete=False,
+                        suffix=".jsonl.tmp",
+                    ) as tf:
                         tf.write("\n".join(new_lines) + "\n")
                         tf.flush()
                         _os.fsync(tf.fileno())
@@ -894,8 +920,9 @@ class CBRJsonlStore:
         return float(raw_match) * tag_mult * age_decay
 
     # ──────── CBR v3.0 §2.5：predict_topk（θ*门槛命中 + HIGH_LOSS 负对称 boost）────────
-    def predict_topk(self, top_cases: List[Dict[str, Any]],
-                     raw_scores: Dict[str, float]) -> Dict[str, Any]:
+    def predict_topk(
+        self, top_cases: List[Dict[str, Any]], raw_scores: Dict[str, float]
+    ) -> Dict[str, Any]:
         """对 topk 候选计算最终排序与 match_boost（w_B 合成项）。
 
         返回结构：
@@ -949,12 +976,16 @@ class CBRJsonlStore:
                 note = f"未命中θ*={theta:.2f}（top1={top1_raw:.3f}）"
             elif top1_tag in ("HIGH_WIN", "MANUAL_CLASSIC"):
                 match_boost = +gamma * activation * top1_age_decay
-                note = (f"正基线命中[{top1_tag}]：+{gamma:.2f} × {activation:.2f}(act) "
-                        f"× {top1_age_decay:.2f}(decay) = {match_boost:+.4f}")
+                note = (
+                    f"正基线命中[{top1_tag}]：+{gamma:.2f} × {activation:.2f}(act) "
+                    f"× {top1_age_decay:.2f}(decay) = {match_boost:+.4f}"
+                )
             elif top1_tag == "HIGH_LOSS":
                 match_boost = -gamma * activation * top1_age_decay
-                note = (f"负基线命中[HIGH_LOSS]：-{gamma:.2f} × {activation:.2f}(act) "
-                        f"× {top1_age_decay:.2f}(decay) = {match_boost:+.4f}")
+                note = (
+                    f"负基线命中[HIGH_LOSS]：-{gamma:.2f} × {activation:.2f}(act) "
+                    f"× {top1_age_decay:.2f}(decay) = {match_boost:+.4f}"
+                )
             else:
                 match_boost = 0.0
                 note = f"NORMAL 无加成（命中θ*={theta:.2f}但tag无乘数）"
@@ -977,15 +1008,16 @@ class CBRJsonlStore:
             }
 
     # ──────── Phase2 reserved shells（not implemented yet）────────
-    def retrieve_similar(self, query_vec: Dict[str, float], top_k: int = 5,
-                         mu: Optional[Dict[str, float]] = None,
-                         sigma: Optional[Dict[str, float]] = None):
-        raise NotImplementedError(
-            "Phase2: call migrate_jsonl_to_sqlite() OR after sample>=50."
-        )
+    def retrieve_similar(
+        self,
+        query_vec: Dict[str, float],
+        top_k: int = 5,
+        mu: Optional[Dict[str, float]] = None,
+        sigma: Optional[Dict[str, float]] = None,
+    ):
+        raise NotImplementedError("Phase2: call migrate_jsonl_to_sqlite() OR after sample>=50.")
 
     def migrate_jsonl_to_sqlite(self, sqlite_path: Optional[Path] = None) -> int:
         raise NotImplementedError(
             "Phase2 one-off JSONL→SQLite migration: will be delivered in next plan."
         )
-

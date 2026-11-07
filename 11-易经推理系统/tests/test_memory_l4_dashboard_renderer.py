@@ -15,7 +15,7 @@ def test_render_dashboard_html(tmp_path: Path):
                 "y": 0.6,
                 "inst_id": "BTC-USDT-SWAP",
                 "regime": "RANGE_BOUND",
-                "tags": []
+                "tags": [],
             },
             {
                 "id": "D_1",
@@ -24,27 +24,26 @@ def test_render_dashboard_html(tmp_path: Path):
                 "y": 0.7,
                 "inst_id": None,
                 "regime": None,
-                "tags": []
-            }
+                "tags": [],
+            },
         ],
         "performance": {
             "win_rate": 0.66,
             "profit_factor": 1.8,
             "max_drawdown": 5.0,
-            "avg_pnl_usdt": 3.2
+            "avg_pnl_usdt": 3.2,
         },
-        "aggregations": {
-            "cases_by_regime": {"RANGE_BOUND": 1}
-        },
+        "aggregations": {"cases_by_regime": {"RANGE_BOUND": 1}},
         "migration_trends": [
-            {"id": "D_1", "kind": "distill", "series": [{"ts": "2026-01-01T00:00:00+08:00", "y": 0.7}]}
+            {
+                "id": "D_1",
+                "kind": "distill",
+                "series": [{"ts": "2026-01-01T00:00:00+08:00", "y": 0.7}],
+            }
         ],
         "bandit_daily_rollup": {
             "total_updates": 3,
-            "reason_counts": {
-                "episode_close_realized": 2,
-                "episode_ingest_estimated": 1
-            },
+            "reason_counts": {"episode_close_realized": 2, "episode_ingest_estimated": 1},
             "threshold_meta": {
                 "window_days": 7,
                 "sample_size": 7,
@@ -52,9 +51,9 @@ def test_render_dashboard_html(tmp_path: Path):
                 "raw_percentile": 41.25,
                 "min_cap": 30,
                 "max_cap": 70,
-                "fallback_used": False
-            }
-        }
+                "fallback_used": False,
+            },
+        },
     }
 
     out = tmp_path / "dashboard.html"
@@ -110,7 +109,11 @@ def test_render_dashboard_html_supports_custom_bandit_alert_threshold(tmp_path: 
         "bandit_alert_threshold_pct": 55,
         "bandit_daily_rollup": {
             "daily_reason_series": [
-                {"date": "2026-05-09", "reason_counts": {"episode_close_realized": 3, "episode_ingest_estimated": 2}, "total_updates": 5}
+                {
+                    "date": "2026-05-09",
+                    "reason_counts": {"episode_close_realized": 3, "episode_ingest_estimated": 2},
+                    "total_updates": 5,
+                }
             ],
             "reason_counts": {"episode_close_realized": 3, "episode_ingest_estimated": 2},
             "total_updates": 5,
@@ -131,7 +134,11 @@ def test_render_dashboard_html_uses_bandit_rollup_threshold_by_default(tmp_path:
         "bandit_daily_rollup": {
             "recommended_alert_threshold_pct": 52,
             "daily_reason_series": [
-                {"date": "2026-05-09", "reason_counts": {"episode_close_realized": 2, "episode_ingest_estimated": 2}, "total_updates": 4}
+                {
+                    "date": "2026-05-09",
+                    "reason_counts": {"episode_close_realized": 2, "episode_ingest_estimated": 2},
+                    "total_updates": 4,
+                }
             ],
             "reason_counts": {"episode_close_realized": 2, "episode_ingest_estimated": 2},
             "total_updates": 4,

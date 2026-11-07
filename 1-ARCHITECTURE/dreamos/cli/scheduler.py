@@ -14,21 +14,21 @@ Dream OS 定时调度器
     scheduler.start()
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import time
 import sys
 import threading
 import logging
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, Any, Callable, Optional, List
 from enum import Enum
 from pathlib import Path
-from collections import defaultdict
 
 try:
     import croniter
+
     HAS_CRONITER = True
 except ImportError:
     HAS_CRONITER = False
@@ -297,15 +297,17 @@ class DreamOSScheduler:
         jobs_file = self.data_dir / "scheduler_jobs.json"
         jobs_data = []
         for job in self.jobs.values():
-            jobs_data.append({
-                "name": job.name,
-                "cron_expr": job.cron_expr,
-                "enabled": job.enabled,
-                "symbols": getattr(job, "symbols", []),
-                "dry_run": getattr(job, "dry_run", True),
-                "exchange": getattr(job, "exchange", "hyperliquid"),
-                "job_type": getattr(job, "job_type", "scan"),
-            })
+            jobs_data.append(
+                {
+                    "name": job.name,
+                    "cron_expr": job.cron_expr,
+                    "enabled": job.enabled,
+                    "symbols": getattr(job, "symbols", []),
+                    "dry_run": getattr(job, "dry_run", True),
+                    "exchange": getattr(job, "exchange", "hyperliquid"),
+                    "job_type": getattr(job, "job_type", "scan"),
+                }
+            )
         with open(jobs_file, "w") as f:
             json.dump(jobs_data, f, indent=2)
 
@@ -329,14 +331,19 @@ class DreamOSScheduler:
                         # P0-2: 离场检查任务
                         def _exit_check(_dr=dry_run, _ex=exchange):
                             from dreamos.cli.auto_trader import AutoTrader
+
                             trader = AutoTrader(dry_run=_dr, exchange=_ex)
                             try:
                                 result = trader.run_exit_check_all()
                                 # P0.5-B2: 错误必须显式告警,不得静默为 "0 个持仓"
                                 if isinstance(result, dict) and result.get("error"):
-                                    logger.warning(f"离场检查失败 (dry_run={_dr}, exchange={_ex}): {result.get('error')}")
+                                    logger.warning(
+                                        f"离场检查失败 (dry_run={_dr}, exchange={_ex}): {result.get('error')}"
+                                    )
                                     return result
-                                logger.info(f"离场检查完成: {result.get('checked', 0)} 个持仓, {result.get('exits', 0)} 个离场, tpsl更新={result.get('tpsl_updated', 0)}")
+                                logger.info(
+                                    f"离场检查完成: {result.get('checked', 0)} 个持仓, {result.get('exits', 0)} 个离场, tpsl更新={result.get('tpsl_updated', 0)}"
+                                )
                                 return result
                             except Exception as e:
                                 logger.warning(f"离场检查失败 (dry_run={_dr}, exchange={_ex}): {e}")
@@ -353,25 +360,39 @@ class DreamOSScheduler:
                         # 回测评估任务
                         bt_interval = job_data.get("interval", "1h")
                         bt_budget = job_data.get("budget", "lean")
+
                         def _backtest(_symbols=symbols, _interval=bt_interval, _budget=bt_budget):
                             import subprocess
+
                             try:
                                 # 兜底: job 配置漏 symbols 时用默认币种，避免 join("") → 报告全 0
-                                bt_symbols = [s for s in _symbols if s and s.strip()] if _symbols else []
+                                bt_symbols = (
+                                    [s for s in _symbols if s and s.strip()] if _symbols else []
+                                )
                                 if not bt_symbols:
                                     bt_symbols = ["BTC", "ETH", "SOL"]
-                                    logger.warning("backtest job 未配置 symbols，回退默认 BTC,ETH,SOL")
+                                    logger.warning(
+                                        "backtest job 未配置 symbols，回退默认 BTC,ETH,SOL"
+                                    )
                                 # P0.5-B1: 跨平台修复 — 用当前解释器+相对仓库路径,不再硬编码 Mac 路径
                                 _arch_dir = str(Path(__file__).resolve().parent.parent.parent)
                                 cmd = [
-                                    sys.executable, "-m",
+                                    sys.executable,
+                                    "-m",
                                     "dreamos.cli.dreamos_backtester",
-                                    "--symbols", ",".join(bt_symbols),
-                                    "--interval", _interval,
-                                    "--budget", _budget,
+                                    "--symbols",
+                                    ",".join(bt_symbols),
+                                    "--interval",
+                                    _interval,
+                                    "--budget",
+                                    _budget,
                                 ]
-                                result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800, cwd=_arch_dir)
-                                logger.info(f"回测评估完成: {result.stdout[-200:] if result.stdout else 'no output'}")
+                                result = subprocess.run(
+                                    cmd, capture_output=True, text=True, timeout=1800, cwd=_arch_dir
+                                )
+                                logger.info(
+                                    f"回测评估完成: {result.stdout[-200:] if result.stdout else 'no output'}"
+                                )
                                 return {"exit_code": result.returncode}
                             except Exception as e:
                                 logger.warning(f"回测评估失败: {e}")
@@ -384,20 +405,29 @@ class DreamOSScheduler:
                     elif job_type == "optimize":
                         # 编排优化任务
                         opt_interval = job_data.get("interval", "1h")
+
                         def _optimize(_symbols=symbols, _interval=opt_interval):
                             import subprocess
+
                             try:
                                 # P0.5-B1: 跨平台修复 — 用当前解释器+相对仓库路径,不再硬编码 Mac 路径
                                 _arch_dir = str(Path(__file__).resolve().parent.parent.parent)
                                 cmd = [
-                                    sys.executable, "-m",
+                                    sys.executable,
+                                    "-m",
                                     "dreamos.cli.dreamos_backtester",
-                                    "--symbols", ",".join(_symbols),
-                                    "--interval", _interval,
+                                    "--symbols",
+                                    ",".join(_symbols),
+                                    "--interval",
+                                    _interval,
                                     "--optimize",
                                 ]
-                                result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600, cwd=_arch_dir)
-                                logger.info(f"编排优化完成: {result.stdout[-200:] if result.stdout else 'no output'}")
+                                result = subprocess.run(
+                                    cmd, capture_output=True, text=True, timeout=3600, cwd=_arch_dir
+                                )
+                                logger.info(
+                                    f"编排优化完成: {result.stdout[-200:] if result.stdout else 'no output'}"
+                                )
                                 return {"exit_code": result.returncode}
                             except Exception as e:
                                 logger.warning(f"编排优化失败: {e}")
@@ -413,8 +443,11 @@ class DreamOSScheduler:
                         # 状态/账本从磁盘恢复(持久化),seed用小时时间桶保证每周期卦象不重复
                         def _orchestrate(_symbols=symbols, _dr=dry_run, _ex=exchange):
                             try:
-                                from dreamos.capabilities.trading.orchestrator_v2 import OrchestratorV2
+                                from dreamos.capabilities.trading.orchestrator_v2 import (  # noqa: I001
+                                    OrchestratorV2,
+                                )
                                 import time as _time
+
                                 hour_seed = int(_time.time() // 3600)
                                 orch = OrchestratorV2(use_hermes=False, seed=hour_seed)
                                 # job级 dry_run 直接落到 executor（不依赖环境变量）
@@ -436,10 +469,17 @@ class DreamOSScheduler:
                                     try:
                                         pools = orch.coin_selector._load_persisted_pools()
                                         if pools:
-                                            from dreamos.capabilities.trading import coin_selector as _cs
+                                            from dreamos.capabilities.trading import (
+                                                coin_selector as _cs,
+                                            )
+
                                             pool_regime = pools.get("regime", "")
-                                            long_merged = _cs.merge_dynamic_scores(pools.get("long_pool", []))
-                                            short_merged = _cs.merge_dynamic_scores(pools.get("short_pool", []))
+                                            long_merged = _cs.merge_dynamic_scores(
+                                                pools.get("long_pool", [])
+                                            )
+                                            short_merged = _cs.merge_dynamic_scores(  # noqa: F841
+                                                pools.get("short_pool", [])
+                                            )
                                             ordered = []
                                             for item in long_merged:  # 纯多: 仅取多池
                                                 s = (item or {}).get("symbol", "")
@@ -449,31 +489,44 @@ class DreamOSScheduler:
                                             pool_source = pools.get("source", "coin_pool.json")
                                             # PROP-20260816B: 候选供给=周报原始排序Top8
                                             # (hermes-weekly 已是大模型排序产出, 切Top8即粗选)
-                                            hedge_long_cands = list(pools.get("long_pool", []))[:HEDGE_CAND_TOP_N]
-                                            hedge_short_cands = list(pools.get("short_pool", []))[:HEDGE_CAND_TOP_N]
+                                            hedge_long_cands = list(pools.get("long_pool", []))[
+                                                :HEDGE_CAND_TOP_N
+                                            ]
+                                            hedge_short_cands = list(pools.get("short_pool", []))[
+                                                :HEDGE_CAND_TOP_N
+                                            ]
                                     except Exception as e:
                                         logger.warning(f"F层编排: 币池加载失败({e}), 回退默认池")
                                 if not target_symbols:
                                     target_symbols = ["BTC", "ETH", "SOL"]
                                     pool_source = "default"
-                                logger.info(f"F层编排启动: {len(target_symbols)}币种 {target_symbols} | 来源={pool_source}")
+                                logger.info(
+                                    f"F层编排启动: {len(target_symbols)}币种 {target_symbols} | 来源={pool_source}"
+                                )
                                 results = []
                                 # PROP-20260816B: V15循环中收集注入价, 供对冲候选复用
                                 # (避免重复行情拉取; 未注入到的币 price=0 → price_ok=False)
                                 v15_prices: Dict[str, float] = {}
                                 # PROP-20260816 P1: B层指标注入(修复F-1数据饥饿)
-                                from dreamos.cli.auto_trader import AutoTrader
-                                from dreamos.capabilities.trading.market_enrichment import enrich_market_data
+                                from dreamos.cli.auto_trader import AutoTrader  # noqa: I001
+                                from dreamos.capabilities.trading.market_enrichment import (
+                                    enrich_market_data,
+                                )
+
                                 try:
                                     trader = AutoTrader(dry_run=True, exchange=_ex)
                                 except Exception as e:
                                     trader = None
-                                    logger.warning(f"F层编排: AutoTrader创建失败({e}), 本周期回退0价驱动")
+                                    logger.warning(
+                                        f"F层编排: AutoTrader创建失败({e}), 本周期回退0价驱动"
+                                    )
                                 for sym in target_symbols:
                                     md = {"symbol": sym, "entry_price": 0.0, "close_price": 0.0}
                                     if trader is not None:
                                         try:
-                                            md = enrich_market_data(sym, md, trader._fetch_market_data)
+                                            md = enrich_market_data(
+                                                sym, md, trader._fetch_market_data
+                                            )
                                             if md.get("ma20"):
                                                 logger.info(
                                                     f"F层编排 {sym}: 指标注入完成 ma5/10/20="
@@ -481,21 +534,28 @@ class DreamOSScheduler:
                                                     f"momentum={md.get('momentum_direction')} vol={md.get('volatility')}"
                                                 )
                                         except Exception as e:
-                                            logger.warning(f"F层编排 {sym}: 指标注入失败(降级): {e}")
+                                            logger.warning(
+                                                f"F层编排 {sym}: 指标注入失败(降级): {e}"
+                                            )
                                     v15_prices[sym] = float(md.get("close_price") or 0.0)
                                     cr = orch.run_cycle(md)
-                                    results.append({
-                                        "symbol": sym,
-                                        "cycle_id": cr.get("cycle_id"),
-                                        "status": cr.get("status"),
-                                        "direction": cr.get("signal", {}).get("direction"),
-                                        "confidence": cr.get("signal", {}).get("confidence"),
-                                        "position_status": cr.get("execution", {}).get("status"),
-                                    })
+                                    results.append(
+                                        {
+                                            "symbol": sym,
+                                            "cycle_id": cr.get("cycle_id"),
+                                            "status": cr.get("status"),
+                                            "direction": cr.get("signal", {}).get("direction"),
+                                            "confidence": cr.get("signal", {}).get("confidence"),
+                                            "position_status": cr.get("execution", {}).get(
+                                                "status"
+                                            ),
+                                        }
+                                    )
 
                                 # PROP-20260816 模块1: 已评估币的 B层 conf 回写动态排名层
                                 try:
                                     from dreamos.capabilities.trading import coin_selector as _cs_w
+
                                     for r in results:
                                         if r.get("confidence") is not None:
                                             _cs_w.record_dynamic_score(
@@ -509,7 +569,10 @@ class DreamOSScheduler:
                                 # PROP-20260816 模块3/4: 对冲路径 — 先巡检存量对离场,再评估新对入场
                                 hedge_report = {}
                                 try:
-                                    from dreamos.capabilities.trading.hedge_executor import HedgeExecutor
+                                    from dreamos.capabilities.trading.hedge_executor import (
+                                        HedgeExecutor,
+                                    )
+
                                     hedge = HedgeExecutor(dry_run=bool(_dr))
 
                                     def _hedge_px(sym):
@@ -518,10 +581,18 @@ class DreamOSScheduler:
                                         try:
                                             md_h = enrich_market_data(
                                                 sym,
-                                                {"symbol": sym, "entry_price": 0.0, "close_price": 0.0},
+                                                {
+                                                    "symbol": sym,
+                                                    "entry_price": 0.0,
+                                                    "close_price": 0.0,
+                                                },
                                                 trader._fetch_market_data,
                                             )
-                                            return float(md_h.get("close_price") or md_h.get("entry_price") or 0.0)
+                                            return float(
+                                                md_h.get("close_price")
+                                                or md_h.get("entry_price")
+                                                or 0.0
+                                            )
                                         except Exception:
                                             return 0.0
 
@@ -530,14 +601,25 @@ class DreamOSScheduler:
                                     if open_pair is not None:
                                         px_open = {
                                             open_pair.long_symbol: _hedge_px(open_pair.long_symbol),
-                                            open_pair.short_symbol: _hedge_px(open_pair.short_symbol),
+                                            open_pair.short_symbol: _hedge_px(
+                                                open_pair.short_symbol
+                                            ),
                                         }
                                         hedge_report["exits"] = hedge.manage_exits(px_open)
                                     # 2) PROP-20260816B: 新对入场评估 — Top8候选→引擎逐个推导→conf排名择优
                                     #    （仅有币池来源且无存量对时）
-                                    if hedge_long_cands and hedge_short_cands and not hedge.has_open_pair():
-                                        from dreamos.capabilities.trading.hedge_executor import pick_best_candidate
-                                        results_by_sym = {r.get("symbol"): r for r in results if r.get("symbol")}
+                                    if (
+                                        hedge_long_cands
+                                        and hedge_short_cands
+                                        and not hedge.has_open_pair()
+                                    ):
+                                        from dreamos.capabilities.trading.hedge_executor import (
+                                            pick_best_candidate,
+                                        )
+
+                                        results_by_sym = {
+                                            r.get("symbol"): r for r in results if r.get("symbol")
+                                        }
                                         eval_cache: Dict[str, Dict[str, Any]] = {}
 
                                         def _hedge_b_signal(sym: str) -> Dict[str, Any]:
@@ -547,27 +629,46 @@ class DreamOSScheduler:
                                             行情拉取失败(close_price≤0) → price_ok=False,
                                             排名阶段自动淘汰（根治 KPEPE 类无数据候选）。
                                             """
-                                            md_c = {"symbol": sym, "entry_price": 0.0, "close_price": 0.0}
+                                            md_c = {
+                                                "symbol": sym,
+                                                "entry_price": 0.0,
+                                                "close_price": 0.0,
+                                            }
                                             if trader is not None:
                                                 try:
-                                                    md_c = enrich_market_data(sym, md_c, trader._fetch_market_data)
+                                                    md_c = enrich_market_data(
+                                                        sym, md_c, trader._fetch_market_data
+                                                    )
                                                 except Exception as e:
-                                                    logger.warning(f"F层编排: 对冲候选 {sym} 指标注入失败(降级): {e}")
+                                                    logger.warning(
+                                                        f"F层编排: 对冲候选 {sym} 指标注入失败(降级): {e}"
+                                                    )
                                             px_c = float(md_c.get("close_price") or 0.0)
                                             if px_c <= 0:
-                                                return {"symbol": sym, "direction": "", "confidence": 0.0,
-                                                        "price": 0.0, "price_ok": False, "reused": False}
+                                                return {
+                                                    "symbol": sym,
+                                                    "direction": "",
+                                                    "confidence": 0.0,
+                                                    "price": 0.0,
+                                                    "price_ok": False,
+                                                    "reused": False,
+                                                }
                                             try:
                                                 ctx_c = orch.reviewer.get_cognitive_context(sym)
-                                                adj_c = float(ctx_c.get("confidence_adjustment", 0.0) or 0.0)
+                                                adj_c = float(
+                                                    ctx_c.get("confidence_adjustment", 0.0) or 0.0
+                                                )
                                             except Exception:
                                                 adj_c = 0.0
                                             sig_c = orch.signal_generator.generate(md_c)
                                             raw_c = float(sig_c.get("confidence", 0.0) or 0.0)
                                             return {
                                                 "symbol": sym,
-                                                "direction": sig_c.get("direction", "HOLD") or "HOLD",
-                                                "confidence": round(max(0.0, min(1.0, raw_c + adj_c)), 4),
+                                                "direction": sig_c.get("direction", "HOLD")
+                                                or "HOLD",
+                                                "confidence": round(
+                                                    max(0.0, min(1.0, raw_c + adj_c)), 4
+                                                ),
                                                 "confidence_raw": raw_c,
                                                 "price": px_c,
                                                 "price_ok": True,
@@ -596,18 +697,23 @@ class DreamOSScheduler:
 
                                         long_evals = [
                                             _eval_candidate((c or {}).get("symbol", ""))
-                                            for c in hedge_long_cands if (c or {}).get("symbol")
+                                            for c in hedge_long_cands
+                                            if (c or {}).get("symbol")
                                         ]
                                         short_evals = [
                                             _eval_candidate((c or {}).get("symbol", ""))
-                                            for c in hedge_short_cands if (c or {}).get("symbol")
+                                            for c in hedge_short_cands
+                                            if (c or {}).get("symbol")
                                         ]
 
                                         # PROP-20260816B 模块5: 新评估候选动态分回写
                                         # （V15已回写的复用候选跳过, 避免 cycles_seen 重复计数;
                                         #   无数据候选不回写, degenerate conf 会污染动态层）
                                         try:
-                                            from dreamos.capabilities.trading import coin_selector as _cs_s
+                                            from dreamos.capabilities.trading import (
+                                                coin_selector as _cs_s,
+                                            )
+
                                             for ev in long_evals + short_evals:
                                                 if ev.get("reused") or not ev.get("price_ok"):
                                                     continue
@@ -623,12 +729,20 @@ class DreamOSScheduler:
                                             "long_evaluated": len(long_evals),
                                             "short_evaluated": len(short_evals),
                                             "best_long": (
-                                                {"symbol": best_long["symbol"], "confidence": best_long["confidence"]}
-                                                if best_long else None
+                                                {
+                                                    "symbol": best_long["symbol"],
+                                                    "confidence": best_long["confidence"],
+                                                }
+                                                if best_long
+                                                else None
                                             ),
                                             "best_short": (
-                                                {"symbol": best_short["symbol"], "confidence": best_short["confidence"]}
-                                                if best_short else None
+                                                {
+                                                    "symbol": best_short["symbol"],
+                                                    "confidence": best_short["confidence"],
+                                                }
+                                                if best_short
+                                                else None
                                             ),
                                         }
                                         if best_long is None or best_short is None:
@@ -641,12 +755,23 @@ class DreamOSScheduler:
                                         else:
                                             ls = best_long["symbol"]
                                             ss = best_short["symbol"]
-                                            px_en = {ls: best_long["price"], ss: best_short["price"]}
+                                            px_en = {
+                                                ls: best_long["price"],
+                                                ss: best_short["price"],
+                                            }
                                             hedge_report["entry"] = hedge.evaluate_entry(
-                                                {"symbol": ls}, {"symbol": ss},
-                                                {"direction": best_long["direction"], "confidence": best_long["confidence"]},
-                                                {"direction": best_short["direction"], "confidence": best_short["confidence"]},
-                                                pool_regime, px_en,
+                                                {"symbol": ls},
+                                                {"symbol": ss},
+                                                {
+                                                    "direction": best_long["direction"],
+                                                    "confidence": best_long["confidence"],
+                                                },
+                                                {
+                                                    "direction": best_short["direction"],
+                                                    "confidence": best_short["confidence"],
+                                                },
+                                                pool_regime,
+                                                px_en,
                                             )
                                     if hedge_report:
                                         logger.info(f"F层对冲路径: {hedge_report}")
@@ -662,7 +787,11 @@ class DreamOSScheduler:
                                     f"F层编排完成: {len(results)}周期 [{summary}] "
                                     f"| 累计 cycles={st['total_cycles']} pnl={st['total_pnl']}"
                                 )
-                                return {"cycles": results, "status_summary": st, "hedge": hedge_report}
+                                return {
+                                    "cycles": results,
+                                    "status_summary": st,
+                                    "hedge": hedge_report,
+                                }
                             except Exception as e:
                                 logger.warning(f"F层编排失败: {e}")
                                 return {"error": str(e)}
@@ -681,8 +810,11 @@ class DreamOSScheduler:
                         # （V15_DATA_SOURCE=hyperliquid + V15_EXECUTION=paper）
                         def _v15_full():
                             import subprocess
+
                             try:
-                                _repo_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+                                _repo_root = str(
+                                    Path(__file__).resolve().parent.parent.parent.parent
+                                )
                                 _v15_dir = str(Path(_repo_root) / "14-V15经典马丁策略")
                                 _code = (
                                     "import sys; sys.path.insert(0, 'core'); sys.path.insert(0, 'lib'); "
@@ -690,11 +822,16 @@ class DreamOSScheduler:
                                 )
                                 result = subprocess.run(
                                     [sys.executable, "-c", _code],
-                                    capture_output=True, text=True, timeout=1200,
-                                    cwd=_v15_dir)
+                                    capture_output=True,
+                                    text=True,
+                                    timeout=1200,
+                                    cwd=_v15_dir,
+                                )
                                 _tail = (result.stdout or "")[-200:]
                                 if result.returncode != 0:
-                                    logger.warning(f"V15完整轮询异常 rc={result.returncode}: {(result.stderr or '')[-200:]}")
+                                    logger.warning(
+                                        f"V15完整轮询异常 rc={result.returncode}: {(result.stderr or '')[-200:]}"
+                                    )
                                 else:
                                     logger.info(f"V15完整轮询完成: {_tail}")
                                 return {"exit_code": result.returncode, "tail": _tail}
@@ -710,15 +847,20 @@ class DreamOSScheduler:
                         # 默认: 扫描交易任务
                         def _scan_single(symbol: str, _dr=dry_run, _ex=exchange):
                             from dreamos.cli.auto_trader import AutoTrader
+
                             trader = AutoTrader(dry_run=_dr, exchange=_ex)
                             try:
                                 return trader.run_auto_trade(symbol)
                             except Exception as e:
-                                logger.warning(f"调度扫描 {symbol} 失败 (dry_run={_dr}, exchange={_ex}): {e}")
+                                logger.warning(
+                                    f"调度扫描 {symbol} 失败 (dry_run={_dr}, exchange={_ex}): {e}"
+                                )
                                 return {"error": str(e)}
 
                         if symbols:
-                            job = self.add_scan_job(name, cron_expr, symbols, _scan_single, enabled=enabled)
+                            job = self.add_scan_job(
+                                name, cron_expr, symbols, _scan_single, enabled=enabled
+                            )
                             if job is not None:
                                 job.dry_run = dry_run
                                 job.exchange = exchange

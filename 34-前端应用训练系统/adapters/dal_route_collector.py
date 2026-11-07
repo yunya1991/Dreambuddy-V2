@@ -14,6 +14,7 @@
   - 增量采集: 基于 run_at 时间戳
   - FAIL-OPEN: DB 不存在/查询失败返回空列表
 """
+
 import json
 import os
 import sys
@@ -29,7 +30,7 @@ for _p in [_THIS_DIR, _34_DIR, _19_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 
 def _get_db_path() -> str:
@@ -92,9 +93,7 @@ class DalRouteCollector(TrainingDataProvider):
     def get_quality_threshold(self) -> str:
         return "A"
 
-    def fetch_cases(
-        self, limit: int = 100, since: Optional[str] = None
-    ) -> List[TrainingCase]:
+    def fetch_cases(self, limit: int = 100, since: Optional[str] = None) -> List[TrainingCase]:
         """查询 ma_migration_audit 表采集 DAL 调用链序列。
 
         Args:
@@ -144,8 +143,16 @@ class DalRouteCollector(TrainingDataProvider):
             return cases
 
         for row in rows:
-            (category, event_name, entity_key, result, severity,
-             details_json, latency_ms, run_at) = row
+            (
+                category,
+                event_name,
+                entity_key,
+                result,
+                severity,
+                details_json,
+                latency_ms,
+                run_at,
+            ) = row
 
             template = _CATEGORY_TEMPLATES.get(category)
             if not template:
@@ -165,25 +172,26 @@ class DalRouteCollector(TrainingDataProvider):
             except (json.JSONDecodeError, TypeError):
                 details = {}
 
-            cases.append(TrainingCase(
-                intent=f"dal_{category}",
-                actions=node_seq,
-                outcome_text=outcome,
-                learned=[f"category={category}", f"result={outcome}",
-                         f"severity={severity}"],
-                layer_tags=["DSH"],
-                quality="A",
-                confidence=confidence,
-                source="dal_route",
-                metadata={
-                    "category": category,
-                    "event_name": event_name,
-                    "entity_key": entity_key,
-                    "severity": severity,
-                    "latency_ms": latency_ms,
-                    "run_at": run_at,
-                    "details": details,
-                },
-            ))
+            cases.append(
+                TrainingCase(
+                    intent=f"dal_{category}",
+                    actions=node_seq,
+                    outcome_text=outcome,
+                    learned=[f"category={category}", f"result={outcome}", f"severity={severity}"],
+                    layer_tags=["DSH"],
+                    quality="A",
+                    confidence=confidence,
+                    source="dal_route",
+                    metadata={
+                        "category": category,
+                        "event_name": event_name,
+                        "entity_key": entity_key,
+                        "severity": severity,
+                        "latency_ms": latency_ms,
+                        "run_at": run_at,
+                        "details": details,
+                    },
+                )
+            )
 
         return cases

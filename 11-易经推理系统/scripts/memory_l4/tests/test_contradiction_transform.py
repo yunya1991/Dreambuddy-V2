@@ -15,17 +15,21 @@
 S4辅助：crr>0.3或mr<0.5时，已触发条件置信度权重 ×1.2（不增加触发数）
 transforming = 触发条件数>=2 或 data_quality_warning触发 或 (S4佐证 且 触发条件数>=1)
 """
-import pytest
+
 import sys
 from pathlib import Path
+
+import pytest
 
 # 将 memory_l4 注入 sys.path，使 force_vector.* 可导入
 _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.contradiction_transform_detector import ContradictionTransformDetector
-from force_vector.models import ContradictionTransform, ElasticityBeta
+from force_vector.contradiction_transform_detector import (  # noqa: E402
+    ContradictionTransformDetector,
+)  # noqa: E402, I001
+from force_vector.models import ContradictionTransform, ElasticityBeta  # noqa: E402
 
 
 def _make_beta(decay: bool = False, amplification: bool = False) -> ElasticityBeta:

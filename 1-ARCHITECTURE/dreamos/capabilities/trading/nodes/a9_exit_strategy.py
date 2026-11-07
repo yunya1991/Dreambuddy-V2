@@ -4,10 +4,10 @@ A9 离场决策节点 — 四层离场决策链
 
 from __future__ import annotations
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 
 class A9ExitStrategyNode(BaseNode):
@@ -86,7 +86,9 @@ class A9ExitStrategyNode(BaseNode):
         exit_price = price
 
         exit_checks = [
-            self._check_atr_stop(direction, price, entry_price, stop_loss, atr_pct, bars_held, sl_factor),
+            self._check_atr_stop(
+                direction, price, entry_price, stop_loss, atr_pct, bars_held, sl_factor
+            ),
             self._check_moving_tp(direction, price, entry_price, take_profit, atr_pct, bars_held),
             self._check_signal_reversal(state, direction),
             self._check_time_exit(state),
@@ -126,9 +128,16 @@ class A9ExitStrategyNode(BaseNode):
             },
         )
 
-    def _check_atr_stop(self, direction: str, price: float, entry: float,
-                        sl: float, atr_pct: float,
-                        bars_held: int = 0, sl_factor: float = 1.0) -> tuple:
+    def _check_atr_stop(
+        self,
+        direction: str,
+        price: float,
+        entry: float,
+        sl: float,
+        atr_pct: float,
+        bars_held: int = 0,
+        sl_factor: float = 1.0,
+    ) -> tuple:
         """ATR 止损检查 — 时间衰减 × 市场状态复合因子
 
         sl_factor = time_factor × regime_factor
@@ -140,7 +149,9 @@ class A9ExitStrategyNode(BaseNode):
 
         # 前 20 根 K 线：用复合因子放宽止损
         if bars_held <= 20:
-            sl_distance = abs(entry - sl) * sl_factor if entry != sl else atr_pct * entry * sl_factor
+            sl_distance = (
+                abs(entry - sl) * sl_factor if entry != sl else atr_pct * entry * sl_factor
+            )
             if direction == "LONG":
                 sl = entry - sl_distance
             else:
@@ -161,15 +172,30 @@ class A9ExitStrategyNode(BaseNode):
 
         if direction == "LONG":
             if price <= sl:
-                return "EXIT", f"ATR止损触发: 现价${price:.4f} ≤ 止损${sl:.4f} (持仓{bars_held}根, factor={sl_factor:.2f})", sl
+                return (
+                    "EXIT",
+                    f"ATR止损触发: 现价${price:.4f} ≤ 止损${sl:.4f} (持仓{bars_held}根, factor={sl_factor:.2f})",
+                    sl,
+                )
         else:
             if price >= sl:
-                return "EXIT", f"ATR止损触发: 现价${price:.4f} ≥ 止损${sl:.4f} (持仓{bars_held}根, factor={sl_factor:.2f})", sl
+                return (
+                    "EXIT",
+                    f"ATR止损触发: 现价${price:.4f} ≥ 止损${sl:.4f} (持仓{bars_held}根, factor={sl_factor:.2f})",
+                    sl,
+                )
 
         return "HOLD", "", price
 
-    def _check_moving_tp(self, direction: str, price: float, entry: float,
-                         tp: float, atr_pct: float, bars_held: int = 0) -> tuple:
+    def _check_moving_tp(
+        self,
+        direction: str,
+        price: float,
+        entry: float,
+        tp: float,
+        atr_pct: float,
+        bars_held: int = 0,
+    ) -> tuple:
         """移动止盈检查 — 20 根 K 线后激活"""
         if tp == 0:
             return "HOLD", "", price
@@ -184,11 +210,19 @@ class A9ExitStrategyNode(BaseNode):
             if direction == "LONG":
                 trail_price = price * (1 - trail_pct)
                 if price <= trail_price:
-                    return "EXIT", f"移动止盈触发: 现价${price:.4f} ≤ 追踪价${trail_price:.4f} (持仓{bars_held}根)", trail_price
+                    return (
+                        "EXIT",
+                        f"移动止盈触发: 现价${price:.4f} ≤ 追踪价${trail_price:.4f} (持仓{bars_held}根)",
+                        trail_price,
+                    )
             else:
                 trail_price = price * (1 + trail_pct)
                 if price >= trail_price:
-                    return "EXIT", f"移动止盈触发: 现价${price:.4f} ≥ 追踪价${trail_price:.4f} (持仓{bars_held}根)", trail_price
+                    return (
+                        "EXIT",
+                        f"移动止盈触发: 现价${price:.4f} ≥ 追踪价${trail_price:.4f} (持仓{bars_held}根)",
+                        trail_price,
+                    )
 
         if direction == "LONG":
             if price >= tp:
@@ -204,6 +238,7 @@ class A9ExitStrategyNode(BaseNode):
         cycle_id = getattr(state, "cycle_id", "")
         if cycle_id:
             import re
+
             match = re.search(r"-(\d+)$", cycle_id)
             if match:
                 return int(match.group(1))
@@ -221,6 +256,7 @@ class A9ExitStrategyNode(BaseNode):
         """
         try:
             from dreamos.core.sense.scenario_classifier import ScenarioClassifier
+
             classifier = ScenarioClassifier()
             scenario = classifier.classify(mkt)
             if scenario.trend in ("BULL", "BEAR"):
@@ -272,7 +308,11 @@ class A9ExitStrategyNode(BaseNode):
                 if result.direction != "HOLD" and result.direction != direction:
                     conf = getattr(result, "confidence", 0)
                     if conf >= 0.5:
-                        return "EXIT", f"信号反转: {node_id} 给出 {result.direction} (置信度{conf:.0%})", 0
+                        return (
+                            "EXIT",
+                            f"信号反转: {node_id} 给出 {result.direction} (置信度{conf:.0%})",
+                            0,
+                        )
 
         return "HOLD", "", 0
 
@@ -280,6 +320,7 @@ class A9ExitStrategyNode(BaseNode):
         cycle_id = getattr(state, "cycle_id", "")
         if cycle_id:
             import re
+
             match = re.search(r"-(\d+)$", cycle_id)
             if match:
                 cycle_num = int(match.group(1))

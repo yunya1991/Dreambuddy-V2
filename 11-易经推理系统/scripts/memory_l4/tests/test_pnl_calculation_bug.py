@@ -17,12 +17,10 @@
   - episode JSON 字段映射
   - PnL 计算公式正确性
 """
+
 import json
 import sys
-import tempfile
-import shutil
 from pathlib import Path
-from dataclasses import asdict
 
 import pytest
 
@@ -36,24 +34,28 @@ class TestTradeRecordFields:
 
     def test_position_qty_field_exists(self):
         from scripts.memory_l4.trading_utils import TradeRecord
+
         rec = TradeRecord()
         assert hasattr(rec, "position_qty")
         assert rec.position_qty == 0.0
 
     def test_position_usdt_field_exists(self):
         from scripts.memory_l4.trading_utils import TradeRecord
+
         rec = TradeRecord()
         assert hasattr(rec, "position_usdt")
         assert rec.position_usdt == 0.0
 
     def test_margin_usdt_field_exists(self):
         from scripts.memory_l4.trading_utils import TradeRecord
+
         rec = TradeRecord()
         assert hasattr(rec, "margin_usdt")
         assert rec.margin_usdt == 0.0
 
     def test_leverage_field_exists(self):
         from scripts.memory_l4.trading_utils import TradeRecord
+
         rec = TradeRecord()
         assert hasattr(rec, "leverage")
         assert rec.leverage == 1
@@ -65,6 +67,7 @@ class TestOpenPositionWithSize:
     @pytest.fixture
     def tracker(self, tmp_path, monkeypatch):
         from scripts.memory_l4.trading_utils import PositionTracker
+
         # 创建临时目录
         pos_dir = tmp_path / "open_positions"
         pos_dir.mkdir()
@@ -116,6 +119,7 @@ class TestEpisodeJSONMapping:
     def test_episode_json_uses_position_qty_not_position_size(self):
         """episode JSON 应使用 position_qty 而非 position_size（getattr 默认值 0.01）"""
         from scripts.memory_l4.trading_utils import TradeRecord
+
         rec = TradeRecord(
             coin="OKB",
             inst_id="OKB-USDT-SWAP",
@@ -176,6 +180,7 @@ class TestPnLCalculation:
     def test_upl_uses_rec_position_usdt_first(self):
         """upl 计算优先用 rec.position_usdt，而非 OKX API fallback"""
         from scripts.memory_l4.trading_utils import TradeRecord
+
         rec = TradeRecord(
             entry_price=112.72,
             exit_price=112.75,
@@ -195,6 +200,7 @@ class TestPersistenceRoundTrip:
     def test_save_load_preserves_position_fields(self, tmp_path, monkeypatch):
         """保存和加载 TradeRecord 时仓位字段不丢失"""
         from scripts.memory_l4.trading_utils import PositionTracker
+
         pos_dir = tmp_path / "open_positions"
         pos_dir.mkdir()
         # monkeypatch positions_dir
@@ -202,7 +208,7 @@ class TestPersistenceRoundTrip:
         tracker.positions_dir = pos_dir
         tracker.open_positions = {}
         tracker.last_close_info = {}
-        rec = tracker.open_position(
+        rec = tracker.open_position(  # noqa: F841
             coin="OKB",
             inst_id="OKB-USDT-SWAP",
             direction="long",

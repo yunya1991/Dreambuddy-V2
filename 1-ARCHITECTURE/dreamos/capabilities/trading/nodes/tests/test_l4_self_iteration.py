@@ -13,26 +13,39 @@ import pytest
 PROJECT_ROOT = Path(__file__).resolve().parents[5]
 sys.path.insert(0, str(PROJECT_ROOT / "1-ARCHITECTURE"))
 
-from dreamos.core.compute.hermes_reflector import (
-    HermesReflector, TraceAnalysis, SkillDecision, ReflectionReport,
-    TracePattern, ReflectionAction,
+from dreamos.core.compute.case_ingest_gate import (  # noqa: E402
+    CaseIngestGate,
+    IngestDecision,
+    IngestReport,
+    LearningValue,
 )
-from dreamos.core.compute.param_optimizer import (
-    ParamOptimizer, TrialResult, OptimizationResult, OptimizationStatus,
-    ApplyDecision, CostAdaptiveScheduler,
+from dreamos.core.compute.doc_sync_trigger import (  # noqa: E402
+    ChangeReport,
+    ChangeType,
+    DocSyncTrigger,
+    FileChange,
+    SyncAction,
 )
-from dreamos.core.compute.case_ingest_gate import (
-    CaseIngestGate, LearningValue, IngestReport, IngestDecision,
+from dreamos.core.compute.hermes_reflector import (  # noqa: E402
+    HermesReflector,
+    ReflectionAction,
+    SkillDecision,
+    TraceAnalysis,
+    TracePattern,
 )
-from dreamos.core.compute.doc_sync_trigger import (
-    DocSyncTrigger, ChangeReport, SyncReport, FileChange,
-    ChangeType, SyncAction,
+from dreamos.core.compute.param_optimizer import (  # noqa: E402
+    ApplyDecision,
+    CostAdaptiveScheduler,
+    OptimizationResult,
+    OptimizationStatus,
+    ParamOptimizer,
+    TrialResult,
 )
-
 
 # ═══════════════════════════════════════════════════════════════
 # L4.1 hermes 反思自动化
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestHermesTraceAnalysis:
     """trace 分析测试"""
@@ -75,7 +88,13 @@ class TestHermesTraceAnalysis:
         with tempfile.TemporaryDirectory() as tmpdir:
             events = [
                 {"trace_id": "t1", "system": "dreamos", "node": "A1", "status": "fail"},
-                {"trace_id": "t1", "system": "dreamos", "node": "A1", "event_type": "bugfix", "status": "ok"},
+                {
+                    "trace_id": "t1",
+                    "system": "dreamos",
+                    "node": "A1",
+                    "event_type": "bugfix",
+                    "status": "ok",
+                },
             ]
             root = self._make_events(tmpdir, events)
             reflector = HermesReflector(events_root=root)
@@ -89,8 +108,13 @@ class TestHermesTraceAnalysis:
         """bsk 自动化检测"""
         with tempfile.TemporaryDirectory() as tmpdir:
             events = [
-                {"trace_id": "t1", "system": "dreamos", "node": "A1", "status": "ok",
-                 "meta": {"bsk_automated": True}},
+                {
+                    "trace_id": "t1",
+                    "system": "dreamos",
+                    "node": "A1",
+                    "status": "ok",
+                    "meta": {"bsk_automated": True},
+                },
             ]
             root = self._make_events(tmpdir, events)
             reflector = HermesReflector(events_root=root)
@@ -263,6 +287,7 @@ class TestHermesReflect:
 # L4.2 参数自优化
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestTrialResult:
     """试验结果测试"""
 
@@ -356,7 +381,9 @@ class TestParamOptimizer:
             return [params["a"], params["a"] * 0.9, params["a"] * 1.1]
 
         result = opt.optimize(
-            objective, baseline_score=0.2, n_trials=15,
+            objective,
+            baseline_score=0.2,
+            n_trials=15,
             walk_forward_fn=walk_forward,
         )
         assert result.status == OptimizationStatus.COMPLETED
@@ -400,8 +427,11 @@ class TestCostAdaptiveScheduler:
 
     def test_interval_clamped(self):
         s = CostAdaptiveScheduler(
-            default_interval_ms=5000, min_interval_ms=1000, max_interval_ms=60000,
-            cost_threshold_ms=100, adjust_window=3,
+            default_interval_ms=5000,
+            min_interval_ms=1000,
+            max_interval_ms=60000,
+            cost_threshold_ms=100,
+            adjust_window=3,
         )
         for _ in range(5):
             s.record_cost("A1", 10000)  # very high cost
@@ -418,6 +448,7 @@ class TestCostAdaptiveScheduler:
 # ═══════════════════════════════════════════════════════════════
 # L4.3 案例库自动 ingest
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestLearningValue:
     """学习价值评估测试"""
@@ -438,68 +469,78 @@ class TestCaseIngestGate:
         mock_ingest = MagicMock(return_value="case-001")
         gate = CaseIngestGate(recall_fn=mock_recall, ingest_fn=mock_ingest)
 
-        result = gate.evaluate_and_ingest({
-            "direction": "LONG",
-            "pnl_pct": 0.08,
-            "confidence": 0.9,
-            "indicators": {"rsi14": 22, "volume_ratio": 2.5, "price_change_pct": 0.04},
-        })
+        result = gate.evaluate_and_ingest(
+            {
+                "direction": "LONG",
+                "pnl_pct": 0.08,
+                "confidence": 0.9,
+                "indicators": {"rsi14": 22, "volume_ratio": 2.5, "price_change_pct": 0.04},
+            }
+        )
         assert result.decision == IngestDecision.INGEST
         assert result.ingested is True
         assert result.case_id == "case-001"
 
     def test_low_value_skip(self):
         """低价值案例 → SKIP"""
-        mock_recall = MagicMock(return_value=[
-            {"content": "LONG 历史记录"} for _ in range(10)
-        ])
+        mock_recall = MagicMock(return_value=[{"content": "LONG 历史记录"} for _ in range(10)])
         gate = CaseIngestGate(recall_fn=mock_recall)
 
-        result = gate.evaluate_and_ingest({
-            "direction": "LONG",
-            "pnl_pct": 0.001,
-            "confidence": 0.3,
-            "indicators": {"rsi14": 50, "volume_ratio": 1.0},
-        })
+        result = gate.evaluate_and_ingest(
+            {
+                "direction": "LONG",
+                "pnl_pct": 0.001,
+                "confidence": 0.3,
+                "indicators": {"rsi14": 50, "volume_ratio": 1.0},
+            }
+        )
         assert result.decision == IngestDecision.SKIP
 
     def test_medium_value_deferred(self):
         """中等价值 → DEFERRED"""
-        mock_recall = MagicMock(return_value=[
-            {"content": "LONG 历史记录"},
-            {"content": "SHORT 另一条记录"},
-            {"content": "NEUTRAL 第三条"},
-        ])
+        mock_recall = MagicMock(
+            return_value=[
+                {"content": "LONG 历史记录"},
+                {"content": "SHORT 另一条记录"},
+                {"content": "NEUTRAL 第三条"},
+            ]
+        )
         gate = CaseIngestGate(recall_fn=mock_recall)
 
-        result = gate.evaluate_and_ingest({
-            "direction": "LONG",
-            "pnl_pct": 0.03,
-            "confidence": 0.5,
-            "indicators": {"rsi14": 30},
-        })
+        result = gate.evaluate_and_ingest(
+            {
+                "direction": "LONG",
+                "pnl_pct": 0.03,
+                "confidence": 0.5,
+                "indicators": {"rsi14": 30},
+            }
+        )
         assert result.decision == IngestDecision.DEFERRED
 
     def test_anomaly_detection(self):
         """异常度检测"""
         gate = CaseIngestGate()
-        value = gate.evaluate_learning_value({
-            "direction": "LONG",
-            "pnl_pct": 0.05,
-            "confidence": 0.8,
-            "indicators": {"rsi14": 20, "volume_ratio": 3.0, "price_change_pct": 0.05},
-        })
+        value = gate.evaluate_learning_value(
+            {
+                "direction": "LONG",
+                "pnl_pct": 0.05,
+                "confidence": 0.8,
+                "indicators": {"rsi14": 20, "volume_ratio": 3.0, "price_change_pct": 0.05},
+            }
+        )
         assert value.anomaly > 0.5
 
     def test_no_recall_fn(self):
         """无 recall_fn → 全新 → 高新颖性"""
         gate = CaseIngestGate()
-        value = gate.evaluate_learning_value({
-            "direction": "LONG",
-            "pnl_pct": 0.05,
-            "confidence": 0.8,
-            "indicators": {"rsi14": 25},
-        })
+        value = gate.evaluate_learning_value(
+            {
+                "direction": "LONG",
+                "pnl_pct": 0.05,
+                "confidence": 0.8,
+                "indicators": {"rsi14": 25},
+            }
+        )
         assert value.novelty == 1.0  # 无历史 → 全新
 
     def test_to_dict(self):
@@ -520,6 +561,7 @@ class TestCaseIngestGate:
 # L4.4 文档自同步
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestFileChange:
     """文件变更测试"""
 
@@ -534,10 +576,12 @@ class TestChangeReport:
     """变更报告测试"""
 
     def test_major_changes(self):
-        r = ChangeReport(changes=[
-            FileChange("a.py", ChangeType.MODIFIED, impact_level="minor"),
-            FileChange("b.py", ChangeType.ADDED, impact_level="major"),
-        ])
+        r = ChangeReport(
+            changes=[
+                FileChange("a.py", ChangeType.MODIFIED, impact_level="minor"),
+                FileChange("b.py", ChangeType.ADDED, impact_level="major"),
+            ]
+        )
         assert len(r.major_changes) == 1
 
     def test_to_dict(self):
@@ -625,11 +669,13 @@ class TestDocSyncTrigger:
     def test_sync_calls_fn(self):
         """同步调用 sync_fn"""
         with tempfile.TemporaryDirectory() as tmpdir:
-            mock_sync = MagicMock(return_value={
-                "index_updated": True,
-                "knowledge_updated": True,
-                "lint_passed": True,
-            })
+            mock_sync = MagicMock(
+                return_value={
+                    "index_updated": True,
+                    "knowledge_updated": True,
+                    "lint_passed": True,
+                }
+            )
             mock_record = MagicMock(return_value="mem-1")
             trigger = DocSyncTrigger(
                 project_root=Path(tmpdir),

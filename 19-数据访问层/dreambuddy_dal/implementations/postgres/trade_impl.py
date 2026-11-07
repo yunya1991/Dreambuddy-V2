@@ -6,6 +6,7 @@
 - SQL 方言差异：占位符 %s；建表 DDL 为 PG 语法（TEXT 主键 + timestamptz）
 - Decimal→TEXT、ISO 时间戳、close_info JSON、枚举小写：与 sqlite_unified 完全同口径
 """
+
 from __future__ import annotations
 
 import json
@@ -13,14 +14,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 
-from dreambuddy_dal.protocols.trade_repo import TradeRepository
-from dreambuddy_dal.unified_models import (
-    CloseInfo,
-    DailyStats,
-    ExitReason,
-    TradeRecord,
-    TradeStatus,
-)
+from dreambuddy_dal.implementations.postgres.connection import get_pg_connection
 
 # 复用 sqlite_unified 的序列化（字段级一致的唯一事实源）
 from dreambuddy_dal.implementations.sqlite_unified.trade_impl import (
@@ -31,8 +25,14 @@ from dreambuddy_dal.implementations.sqlite_unified.trade_impl import (
     _trade_from_row,
     _trade_to_bind,
 )
-
-from dreambuddy_dal.implementations.postgres.connection import get_pg_connection
+from dreambuddy_dal.protocols.trade_repo import TradeRepository
+from dreambuddy_dal.unified_models import (
+    CloseInfo,
+    DailyStats,
+    ExitReason,
+    TradeRecord,
+    TradeStatus,
+)
 
 # =====================================================================
 # PG DDL（幂等建表；列集与 sqlite_unified schema_init + 补列后一致）
@@ -107,8 +107,9 @@ class PostgresTradeRepository(TradeRepository):
     def _conn(self):
         if self._dsn:
             import psycopg2
+
             return psycopg2.connect(self._dsn)
-        from dreambuddy_dal.implementations.postgres.connection import get_pg_connection
+
         return get_pg_connection()
 
     def _ensure_schema(self) -> None:
@@ -130,9 +131,7 @@ class PostgresTradeRepository(TradeRepository):
     def add_trade(self, trade: TradeRecord) -> Optional[str]:
         with self._conn() as conn:
             with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT 1 FROM tr_trades WHERE trade_id=%s", (trade.trade_id,)
-                )
+                cur.execute("SELECT 1 FROM tr_trades WHERE trade_id=%s", (trade.trade_id,))
                 if cur.fetchone():
                     return None
                 binds = _trade_to_bind(trade)
@@ -217,9 +216,7 @@ class PostgresTradeRepository(TradeRepository):
         )
         with self._conn() as conn:
             with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT status FROM tr_trades WHERE trade_id=%s", (trade_id,)
-                )
+                cur.execute("SELECT status FROM tr_trades WHERE trade_id=%s", (trade_id,))
                 row = cur.fetchone()
                 if row is None:
                     raise ValueError(f"close_position 失败：trade_id={trade_id!r} 不存在")
@@ -278,14 +275,20 @@ class PostgresTradeRepository(TradeRepository):
                         """,
                         (
                             stats.stat_date,
-                            str(stats.start_equity), str(stats.end_equity),
-                            str(stats.net_pnl), float(stats.max_drawdown),
-                            int(stats.win_count), int(stats.loss_count),
+                            str(stats.start_equity),
+                            str(stats.end_equity),
+                            str(stats.net_pnl),
+                            float(stats.max_drawdown),
+                            int(stats.win_count),
+                            int(stats.loss_count),
                             str(stats.trading_volume),
                             int(stats.overrides_applied),
                             stats.manual_override_note,
                             json.dumps(stats.extra_payload, ensure_ascii=False),
-                            stats.stat_date, stats.symbol, stats.sub_system, stats.strategy_name,
+                            stats.stat_date,
+                            stats.symbol,
+                            stats.sub_system,
+                            stats.strategy_name,
                         ),
                     )
                 else:
@@ -299,11 +302,17 @@ class PostgresTradeRepository(TradeRepository):
                         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """,
                         (
-                            stats.stat_date, stats.stat_date, stats.symbol, stats.sub_system,
+                            stats.stat_date,
+                            stats.stat_date,
+                            stats.symbol,
+                            stats.sub_system,
                             stats.strategy_name,
-                            str(stats.start_equity), str(stats.end_equity),
-                            str(stats.net_pnl), float(stats.max_drawdown),
-                            int(stats.win_count), int(stats.loss_count),
+                            str(stats.start_equity),
+                            str(stats.end_equity),
+                            str(stats.net_pnl),
+                            float(stats.max_drawdown),
+                            int(stats.win_count),
+                            int(stats.loss_count),
                             str(stats.trading_volume),
                             int(stats.overrides_applied),
                             stats.manual_override_note,
@@ -321,6 +330,7 @@ class PostgresTradeRepository(TradeRepository):
         strategy_name: Optional[str] = None,
     ) -> Optional[DailyStats]:
         from decimal import Decimal as _D
+
         where = ["s.stat_date=%s", "s.symbol=%s"]
         args: list[object] = [stat_date, symbol]
         if sub_system:
@@ -347,8 +357,7 @@ class PostgresTradeRepository(TradeRepository):
                 row = cur.fetchone()
         if not row:
             return None
-        (sd, sym, subs, sname, seq, eeq, net, mdd, wcnt, lcnt, tv,
-         oa, mon, ep_raw) = row
+        sd, sym, subs, sname, seq, eeq, net, mdd, wcnt, lcnt, tv, oa, mon, ep_raw = row
         try:
             ep = json.loads(ep_raw) if ep_raw else {}
         except Exception:

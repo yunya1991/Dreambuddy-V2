@@ -2,16 +2,16 @@
 """
 CBR 分片检索回测脚本 — 验证分片检索 vs 普通检索的质量和性能
 """
-import time
-import json
-from pathlib import Path
+
 import sys
+import time
+from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parents[3]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.cbr_engine import CBREngine, CBRQuery, RetrievedCase
+from scripts.memory_l4.cbr_engine import CBREngine, CBRQuery  # noqa: E402
 
 
 def run_benchmark():
@@ -72,7 +72,7 @@ def run_benchmark():
             entry_price=test_case.entry_price,
         )
 
-        train_cases = cases[:i] + cases[i+1:]
+        train_cases = cases[:i] + cases[i + 1 :]
 
         engine_normal.case_base.cases = train_cases
         normal_results = engine_normal.retrieve(q)
@@ -94,13 +94,21 @@ def run_benchmark():
         if (i + 1) % 10 == 0:
             print(f"进度: {i+1}/{sample_size}")
 
-    print(f"\n检索成功率:")
+    print("\n检索成功率:")
     print(f"  普通检索: {normal_hits}/{sample_size} = {normal_hits/sample_size*100:.1f}%")
     print(f"  分片检索: {sharded_hits}/{sample_size} = {sharded_hits/sample_size*100:.1f}%")
 
-    print(f"\nTop-1 平均相似度:")
-    print(f"  普通检索: {normal_top1_sim_sum/normal_hits:.4f}" if normal_hits > 0 else "  普通检索: N/A")
-    print(f"  分片检索: {sharded_top1_sim_sum/sharded_hits:.4f}" if sharded_hits > 0 else "  分片检索: N/A")
+    print("\nTop-1 平均相似度:")
+    print(
+        f"  普通检索: {normal_top1_sim_sum/normal_hits:.4f}"
+        if normal_hits > 0
+        else "  普通检索: N/A"
+    )
+    print(
+        f"  分片检索: {sharded_top1_sim_sum/sharded_hits:.4f}"
+        if sharded_hits > 0
+        else "  分片检索: N/A"
+    )
 
     print("\n=== 极端查询测试 ===")
     edge_queries = [

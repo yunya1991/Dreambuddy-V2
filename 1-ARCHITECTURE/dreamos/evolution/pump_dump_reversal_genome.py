@@ -13,6 +13,7 @@
 
 镜像 WashoutReversalGenome (做多), 方向相反.
 """
+
 from __future__ import annotations
 
 import logging
@@ -23,7 +24,7 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from .pump_dump_ending_detector import PumpDumpEndingSignal, PumpDumpEndingDetector
+from .pump_dump_ending_detector import PumpDumpEndingDetector, PumpDumpEndingSignal
 from .pump_dump_reversal_case_library import PumpDumpReversalCaseLibrary
 from .washout_bayesian_updater import BayesianUpdater
 from .washout_case_library import WashoutCase
@@ -41,6 +42,7 @@ _ENDING_WEIGHT = 0.4
 @dataclass(frozen=True)
 class PumpDumpReversalSignal:
     """拉高出货做空信号输出契约."""
+
     direction: str  # "SHORT" / "NONE"
     confidence: float
     washout_verdict: object
@@ -57,10 +59,15 @@ class PumpDumpReversalSignal:
 class PumpDumpReversalGenome:
     """拉高出货做空基因组 (镜像 WashoutReversalGenome)."""
 
-    def __init__(self, washout_detector, ending_detector: PumpDumpEndingDetector,
-                 case_library: PumpDumpReversalCaseLibrary,
-                 bayesian_updater: BayesianUpdater, enable: bool = False,
-                 sandbox_validate_fn=None):
+    def __init__(
+        self,
+        washout_detector,
+        ending_detector: PumpDumpEndingDetector,
+        case_library: PumpDumpReversalCaseLibrary,
+        bayesian_updater: BayesianUpdater,
+        enable: bool = False,
+        sandbox_validate_fn=None,
+    ):
         self.washout_detector = washout_detector
         self.ending_detector = ending_detector
         self.case_library = case_library
@@ -68,70 +75,108 @@ class PumpDumpReversalGenome:
         self.enable = bool(enable)
         self.sandbox_validate_fn = sandbox_validate_fn
 
-    def detect_signal(self, coin: str, df: pd.DataFrame,
-                      macro_data: Dict) -> PumpDumpReversalSignal:
+    def detect_signal(
+        self, coin: str, df: pd.DataFrame, macro_data: Dict
+    ) -> PumpDumpReversalSignal:
         ts = datetime.now(timezone.utc).isoformat()
         na = PumpDumpEndingSignal.not_activated("genome_disabled")
 
         if not self.enable:
             return PumpDumpReversalSignal(
-                direction="NONE", confidence=0.0, washout_verdict=None,
-                ending_signal=na, reason="genome_disabled", timestamp=ts)
+                direction="NONE",
+                confidence=0.0,
+                washout_verdict=None,
+                ending_signal=na,
+                reason="genome_disabled",
+                timestamp=ts,
+            )
 
         try:
             verdict = self.washout_detector.run(coin, df, macro_data)
             if verdict is None:
                 return PumpDumpReversalSignal(
-                    direction="NONE", confidence=0.0, washout_verdict=None,
-                    ending_signal=na, reason="verdict_none", timestamp=ts)
+                    direction="NONE",
+                    confidence=0.0,
+                    washout_verdict=None,
+                    ending_signal=na,
+                    reason="verdict_none",
+                    timestamp=ts,
+                )
 
-            label_val = (verdict.label.value if hasattr(verdict.label, "value")
-                         else str(verdict.label).lower())
+            label_val = (
+                verdict.label.value
+                if hasattr(verdict.label, "value")
+                else str(verdict.label).lower()
+            )
 
             # HC-P2: 仅 WEAKNESS (拉高出货/真弱势) 才进入做空判定
             if label_val != "weakness":
                 return PumpDumpReversalSignal(
-                    direction="NONE", confidence=0.0, washout_verdict=verdict,
-                    ending_signal=na, reason=f"label={label_val}", timestamp=ts)
+                    direction="NONE",
+                    confidence=0.0,
+                    washout_verdict=verdict,
+                    ending_signal=na,
+                    reason=f"label={label_val}",
+                    timestamp=ts,
+                )
 
             if verdict.confidence < _WEAKNESS_CONFIDENCE_THRESHOLD:
                 return PumpDumpReversalSignal(
-                    direction="NONE", confidence=0.0, washout_verdict=verdict,
+                    direction="NONE",
+                    confidence=0.0,
+                    washout_verdict=verdict,
                     ending_signal=na,
-                    reason=f"conf_low={verdict.confidence:.3f}", timestamp=ts)
+                    reason=f"conf_low={verdict.confidence:.3f}",
+                    timestamp=ts,
+                )
 
             ending = self.ending_detector.check(df, macro_data)
             if not ending.activated:
                 return PumpDumpReversalSignal(
-                    direction="NONE", confidence=0.0, washout_verdict=verdict,
+                    direction="NONE",
+                    confidence=0.0,
+                    washout_verdict=verdict,
                     ending_signal=ending,
-                    reason=f"ending_not_activated:{ending.reason}", timestamp=ts)
+                    reason=f"ending_not_activated:{ending.reason}",
+                    timestamp=ts,
+                )
 
-            confidence = (verdict.confidence * _CONF_WEIGHT
-                          + ending.confidence * _ENDING_WEIGHT)
+            confidence = verdict.confidence * _CONF_WEIGHT + ending.confidence * _ENDING_WEIGHT
             confidence = max(0.0, min(1.0, confidence))
 
             if confidence < _PROBE_THRESHOLD:
                 return PumpDumpReversalSignal(
-                    direction="NONE", confidence=confidence,
-                    washout_verdict=verdict, ending_signal=ending,
-                    reason=f"below_threshold={confidence:.3f}", timestamp=ts)
+                    direction="NONE",
+                    confidence=confidence,
+                    washout_verdict=verdict,
+                    ending_signal=ending,
+                    reason=f"below_threshold={confidence:.3f}",
+                    timestamp=ts,
+                )
 
             return PumpDumpReversalSignal(
-                direction="SHORT", confidence=confidence,
-                washout_verdict=verdict, ending_signal=ending,
-                reason=(f"weakness_conf={verdict.confidence:.3f}"
-                        f"+ending_conf={ending.confidence:.3f}"
-                        f"+combined={confidence:.3f}"),
-                timestamp=ts)
+                direction="SHORT",
+                confidence=confidence,
+                washout_verdict=verdict,
+                ending_signal=ending,
+                reason=(
+                    f"weakness_conf={verdict.confidence:.3f}"
+                    f"+ending_conf={ending.confidence:.3f}"
+                    f"+combined={confidence:.3f}"
+                ),
+                timestamp=ts,
+            )
         except Exception as e:
             tb = traceback.format_exc()
             logger.error("PumpDumpReversalGenome.detect_signal FAIL-OPEN err=%s\n%s", e, tb)
             return PumpDumpReversalSignal(
-                direction="NONE", confidence=0.0, washout_verdict=None,
-                ending_signal=PumpDumpEndingSignal.not_activated(
-                    f"exception:{type(e).__name__}"),
-                reason=f"exception:{type(e).__name__}", timestamp=ts)
+                direction="NONE",
+                confidence=0.0,
+                washout_verdict=None,
+                ending_signal=PumpDumpEndingSignal.not_activated(f"exception:{type(e).__name__}"),
+                reason=f"exception:{type(e).__name__}",
+                timestamp=ts,
+            )
 
     def record_case(self, case: WashoutCase) -> None:
         try:
@@ -142,18 +187,31 @@ class PumpDumpReversalGenome:
     def evolve(self, proposal: Optional[Dict] = None) -> Dict:
         try:
             if self.sandbox_validate_fn is None:
-                return {"accepted": False, "score": 0.0, "baseline_score": 0.0,
-                        "reason": "no_sandbox_validate_fn"}
+                return {
+                    "accepted": False,
+                    "score": 0.0,
+                    "baseline_score": 0.0,
+                    "reason": "no_sandbox_validate_fn",
+                }
             if proposal is None:
-                proposal = {"scenario_id": "pump_dump_default",
-                            "new_pattern": "knn_bayesian",
-                            "nodes": ["PumpDumpReversalGenome"], "score": 0.5}
+                proposal = {
+                    "scenario_id": "pump_dump_default",
+                    "new_pattern": "knn_bayesian",
+                    "nodes": ["PumpDumpReversalGenome"],
+                    "score": 0.5,
+                }
             accepted = bool(self.sandbox_validate_fn(proposal))
-            return {"accepted": accepted,
-                    "score": float(proposal.get("score", 0.0)),
-                    "baseline_score": float(proposal.get("baseline_score", 0.0)),
-                    "reason": "sandbox_passed" if accepted else "sandbox_rejected"}
+            return {
+                "accepted": accepted,
+                "score": float(proposal.get("score", 0.0)),
+                "baseline_score": float(proposal.get("baseline_score", 0.0)),
+                "reason": "sandbox_passed" if accepted else "sandbox_rejected",
+            }
         except Exception as e:
             logger.warning("PumpDumpReversalGenome.evolve FAIL-OPEN: %s", e)
-            return {"accepted": False, "score": 0.0, "baseline_score": 0.0,
-                    "reason": f"exception:{type(e).__name__}"}
+            return {
+                "accepted": False,
+                "score": 0.0,
+                "baseline_score": 0.0,
+                "reason": f"exception:{type(e).__name__}",
+            }

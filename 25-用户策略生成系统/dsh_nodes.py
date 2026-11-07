@@ -17,26 +17,23 @@
     {"method": "s25_backtest", "params": {...}} → S25_backtest(params)
     {"method": "s25_compare", "params": {...}} → S25_compare(params)
 """
+
 from __future__ import annotations
 
+# 确保模块可导入
+import sys
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
-
-# 确保模块可导入
-import os
-import sys
+from typing import Any, Dict, Optional
 
 _MODULE_DIR = Path(__file__).resolve().parent
 if str(_MODULE_DIR) not in sys.path:
     sys.path.insert(0, str(_MODULE_DIR))
 
-from strategy_gen.backtest_engine import run_backtest
-from strategy_gen.baseline import baseline_get, baseline_list, baseline_metrics
-from strategy_gen.compare import compare_with_baseline, compute_score
-from strategy_gen.intent import generate_from_intent
-
+from strategy_gen.backtest_engine import run_backtest  # noqa: E402
+from strategy_gen.compare import compare_with_baseline  # noqa: E402
+from strategy_gen.intent import generate_from_intent  # noqa: E402
 
 __all__ = [
     "S25_intent",
@@ -80,6 +77,7 @@ def _gen_trace_id(prefix: str = "s25") -> str:
 # S25_intent - 用户意图 → 策略设计
 # ---------------------------------------------------------------------------
 
+
 def S25_intent(params: Dict[str, Any]) -> Dict[str, Any]:
     """S25_intent 节点：用户意图 → S1-S5 策略链生成策略设计。
 
@@ -99,8 +97,13 @@ def S25_intent(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     intent = str(params.get("intent") or "").strip()
     if not intent:
-        return _make_output("S25_intent", str(params.get("trace_id") or _gen_trace_id()),
-                            ok=False, result={}, error="missing_intent")
+        return _make_output(
+            "S25_intent",
+            str(params.get("trace_id") or _gen_trace_id()),
+            ok=False,
+            result={},
+            error="missing_intent",
+        )
     symbol = params.get("symbol")
     timeframe = params.get("timeframe")
     trace_id = str(params.get("trace_id") or _gen_trace_id())
@@ -111,12 +114,15 @@ def S25_intent(params: Dict[str, Any]) -> Dict[str, Any]:
             result["trace_id"] = trace_id
         return _make_output("S25_intent", trace_id, ok=True, result=result)
     except Exception as e:
-        return _make_output("S25_intent", trace_id, ok=False, result={}, error=f"{type(e).__name__}: {e}")
+        return _make_output(
+            "S25_intent", trace_id, ok=False, result={}, error=f"{type(e).__name__}: {e}"
+        )
 
 
 # ---------------------------------------------------------------------------
 # S25_backtest - 策略回测
 # ---------------------------------------------------------------------------
+
 
 def S25_backtest(params: Dict[str, Any]) -> Dict[str, Any]:
     """S25_backtest 节点：策略 → 回测验证。
@@ -135,25 +141,32 @@ def S25_backtest(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     strategy_id = str(params.get("strategy_id") or "").strip()
     if not strategy_id:
-        return _make_output("S25_backtest", str(params.get("trace_id") or _gen_trace_id("s25bt")),
-                            ok=False, result={}, error="missing_strategy_id")
+        return _make_output(
+            "S25_backtest",
+            str(params.get("trace_id") or _gen_trace_id("s25bt")),
+            ok=False,
+            result={},
+            error="missing_strategy_id",
+        )
     source_zip = str(params.get("source_zip") or "").strip() or None
     trace_id = str(params.get("trace_id") or _gen_trace_id("s25bt"))
     # 透传其他参数
-    kwargs = {k: v for k, v in params.items()
-              if k not in ("strategy_id", "source_zip", "trace_id")}
+    kwargs = {k: v for k, v in params.items() if k not in ("strategy_id", "source_zip", "trace_id")}
     try:
         result = run_backtest(strategy_id, source_zip, **kwargs)
         if isinstance(result, dict):
             result["trace_id"] = trace_id
         return _make_output("S25_backtest", trace_id, ok=True, result=result)
     except Exception as e:
-        return _make_output("S25_backtest", trace_id, ok=False, result={}, error=f"{type(e).__name__}: {e}")
+        return _make_output(
+            "S25_backtest", trace_id, ok=False, result={}, error=f"{type(e).__name__}: {e}"
+        )
 
 
 # ---------------------------------------------------------------------------
 # S25_compare - 基线对比
 # ---------------------------------------------------------------------------
+
 
 def S25_compare(params: Dict[str, Any]) -> Dict[str, Any]:
     """S25_compare 节点：用户策略 vs 基线对比。
@@ -171,19 +184,24 @@ def S25_compare(params: Dict[str, Any]) -> Dict[str, Any]:
         ok=False:
             error: 错误描述
     """
-    user_metrics = params.get("user_metrics") if isinstance(params.get("user_metrics"), dict) else {}
-    baseline_metrics = params.get("baseline_metrics") if isinstance(params.get("baseline_metrics"), dict) else {}
+    user_metrics = (
+        params.get("user_metrics") if isinstance(params.get("user_metrics"), dict) else {}
+    )
+    baseline_metrics = (
+        params.get("baseline_metrics") if isinstance(params.get("baseline_metrics"), dict) else {}
+    )
     trace_id = str(params.get("trace_id") or _gen_trace_id("s25cmp"))
     if not user_metrics or not baseline_metrics:
-        return _make_output("S25_compare", trace_id,
-                            ok=False, result={}, error="missing_metrics")
+        return _make_output("S25_compare", trace_id, ok=False, result={}, error="missing_metrics")
     try:
         result = compare_with_baseline(user_metrics, baseline_metrics)
         if isinstance(result, dict):
             result["trace_id"] = trace_id
         return _make_output("S25_compare", trace_id, ok=True, result=result)
     except Exception as e:
-        return _make_output("S25_compare", trace_id, ok=False, result={}, error=f"{type(e).__name__}: {e}")
+        return _make_output(
+            "S25_compare", trace_id, ok=False, result={}, error=f"{type(e).__name__}: {e}"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -207,15 +225,21 @@ def dispatch(method: str, params: Dict[str, Any]) -> Dict[str, Any]:
     fn = DSH_NODE_REGISTRY.get(method)
     if fn is None:
         return _make_output(
-            "S25_unknown", str(params.get("trace_id") or _gen_trace_id()),
-            ok=False, result={}, error=f"unknown_method: {method}",
+            "S25_unknown",
+            str(params.get("trace_id") or _gen_trace_id()),
+            ok=False,
+            result={},
+            error=f"unknown_method: {method}",
         )
     try:
         return fn(params)
     except Exception as e:
         return _make_output(
-            "S25_error", str(params.get("trace_id") or _gen_trace_id()),
-            ok=False, result={}, error=f"{type(e).__name__}: {e}",
+            "S25_error",
+            str(params.get("trace_id") or _gen_trace_id()),
+            ok=False,
+            result={},
+            error=f"{type(e).__name__}: {e}",
         )
 
 
@@ -232,10 +256,22 @@ if __name__ == "__main__":
     r2 = S25_backtest({"strategy_id": "test_strat_001"})
     print(r2)
     print("=== S25_compare self-test ===")
-    r3 = S25_compare({
-        "user_metrics": {"profit_factor": 1.5, "max_drawdown_pct": 8.0, "winrate": 55.0,
-                          "sharpe_ratio": 1.2, "trades": 100},
-        "baseline_metrics": {"profit_factor": 1.3, "max_drawdown_pct": 10.0, "winrate": 50.0,
-                               "sharpe_ratio": 1.0, "trades": 100},
-    })
+    r3 = S25_compare(
+        {
+            "user_metrics": {
+                "profit_factor": 1.5,
+                "max_drawdown_pct": 8.0,
+                "winrate": 55.0,
+                "sharpe_ratio": 1.2,
+                "trades": 100,
+            },
+            "baseline_metrics": {
+                "profit_factor": 1.3,
+                "max_drawdown_pct": 10.0,
+                "winrate": 50.0,
+                "sharpe_ratio": 1.0,
+                "trades": 100,
+            },
+        }
+    )
     print(r3)

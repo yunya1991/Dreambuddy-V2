@@ -20,6 +20,7 @@ Phase 1 扩展（全部为**可选开关**，关闭时完全不干扰 JSON schem
   Layer 7: (可选 --sector-weights) ParameterMapper.map_sector_weights → 5 板块权重
   Layer 8: (可选 --with-lgbm)   LGBMCalibrator → 校准 8 态概率
 """
+
 from __future__ import annotations
 
 import argparse
@@ -38,14 +39,15 @@ _MEMORY_L4_DIR = _BCRM2_DIR.parent
 if str(_MEMORY_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_MEMORY_L4_DIR))
 
-from bcrm2.indicators import IndicatorBank                       # noqa: E402
-from bcrm2.score_composer import ScoreComposer                   # noqa: E402
-from bcrm2.temporal_smoother import TemporalSmoother             # noqa: E402
-from bcrm2.regime_mapper import RegimeMapper, REGIME_ORDER       # noqa: E402
-from bcrm2.storage import (                                       # noqa: E402
-    EvolutionStorageJSON, EvolutionStorageSQLite, RegimeStateFrame,
+from bcrm2.indicators import IndicatorBank  # noqa: E402
+from bcrm2.regime_mapper import RegimeMapper  # noqa: E402
+from bcrm2.score_composer import ScoreComposer  # noqa: E402
+from bcrm2.storage import (  # noqa: E402
+    EvolutionStorageJSON,
+    EvolutionStorageSQLite,
+    RegimeStateFrame,
 )
-
+from bcrm2.temporal_smoother import TemporalSmoother  # noqa: E402
 
 # ================================================================
 # Phase 1 P1.5/P1.6：SQLite 单例 + ensure_evolution_db
@@ -67,8 +69,9 @@ def ensure_evolution_db(db_path: Optional[Union[str, Path]] = None) -> Path:
     return p
 
 
-def get_storage(db_path: Optional[Union[str, Path]] = None,
-                reuse_singleton: bool = True) -> EvolutionStorageSQLite:
+def get_storage(
+    db_path: Optional[Union[str, Path]] = None, reuse_singleton: bool = True
+) -> EvolutionStorageSQLite:
     """获取 EvolutionStorageSQLite 单例（供 Flask 路由复用同一连接）。
 
     首次调用会 ensure_evolution_db + 创建单例；后续调用返回同一对象。
@@ -102,9 +105,27 @@ BTC_KEY_DATES = [
     #   ATH 69k:    L≈+3.1, T≈+1.6 → FOMO_RALLY / TREND_UP_STRONG
     #   FTX 底:     L≈-2.3, T≈-1.5 → CONSOLIDATION（深熊区间）
     #   2024-04-20: L≈+2.7, T≈+1.5 → FOMO_RALLY（减半后牛市）
-    ("ATH_69k",      "2021-11-10", lambda L,T: L >= +2.0, lambda L,T: T >= +1.0, "ATH 顶：L≥+2 且 T≥+1 → 牛市狂热区"),
-    ("FTX_low",      "2022-11-21", lambda L,T: L <= -1.5, lambda L,T: T <= -1.0, "FTX 熊市底：L≤-1.5 且 T≤-1 → 深熊区间"),
-    ("halving_2024", "2024-04-20", lambda L,T: L >= +1.5, lambda L,T: T >= +1.0, "2024 减半后：L≥+1.5 且 T≥+1 → 牛市延续"),
+    (
+        "ATH_69k",
+        "2021-11-10",
+        lambda L, T: L >= +2.0,
+        lambda L, T: T >= +1.0,
+        "ATH 顶：L≥+2 且 T≥+1 → 牛市狂热区",
+    ),
+    (
+        "FTX_low",
+        "2022-11-21",
+        lambda L, T: L <= -1.5,
+        lambda L, T: T <= -1.0,
+        "FTX 熊市底：L≤-1.5 且 T≤-1 → 深熊区间",
+    ),
+    (
+        "halving_2024",
+        "2024-04-20",
+        lambda L, T: L >= +1.5,
+        lambda L, T: T >= +1.0,
+        "2024 减半后：L≥+1.5 且 T≥+1 → 牛市延续",
+    ),
 ]
 
 
@@ -118,7 +139,9 @@ def _read_csv(csv_path: Path) -> pd.DataFrame:
     """统一读取：timestamp 列 → index；缺 high/low/volume 则自动派生。"""
     df = pd.read_csv(csv_path)
     # 兼容 "timestamp" / "datetime" / "date" 等列名
-    ts_candidates = [c for c in df.columns if c.lower() in {"timestamp", "datetime", "date", "time"}]
+    ts_candidates = [
+        c for c in df.columns if c.lower() in {"timestamp", "datetime", "date", "time"}
+    ]
     if ts_candidates:
         ts_col = ts_candidates[0]
         df[ts_col] = pd.to_datetime(df[ts_col])
@@ -131,7 +154,7 @@ def _read_csv(csv_path: Path) -> pd.DataFrame:
     if "high" not in df.columns:
         df["high"] = close * 1.001
     if "low" not in df.columns:
-        df["low"]  = close * 0.999
+        df["low"] = close * 0.999
     if "volume" not in df.columns:
         df["volume"] = 1.0
     # 确保所有核心列 float
@@ -156,7 +179,8 @@ def build_trajectory_frames(
     n = len(df)
     # Layer 4：序列级 transform_sequence（批量）
     mapper_result = mapper.transform_sequence(
-        level_smooth, trend_smooth,
+        level_smooth,
+        trend_smooth,
         indicators=indicators,
         hmm_state=hmm_state,
         bocpd_cp_prob=bocpd_cp_prob,
@@ -171,7 +195,11 @@ def build_trajectory_frames(
     for i in range(n):
         mr = mapper_result[i]
         indicators_row = {k: float(ind_arr[k][i]) for k in main12}
-        date_str = df.index[i].strftime("%Y-%m-%d") if hasattr(df.index[i], "strftime") else str(df.index[i])
+        date_str = (
+            df.index[i].strftime("%Y-%m-%d")
+            if hasattr(df.index[i], "strftime")
+            else str(df.index[i])
+        )
         frame = RegimeStateFrame(
             t=date_str,
             price=float(close_arr[i]),
@@ -190,9 +218,13 @@ def build_trajectory_frames(
     return frames
 
 
-def run_pipeline(csv: Path, window: int, symbol: str,
-                 calibrate: bool, run_acceptance: bool,
-                 ) -> EvolutionStorageJSON:
+def run_pipeline(
+    csv: Path,
+    window: int,
+    symbol: str,
+    calibrate: bool,
+    run_acceptance: bool,
+) -> EvolutionStorageJSON:
     # Layer 0
     df = _read_csv(csv)
     n_total = len(df)
@@ -216,6 +248,7 @@ def run_pipeline(csv: Path, window: int, symbol: str,
     if calibrate and symbol.upper().startswith("BTC"):
         try:
             from bcrm2.labels.regime_labeler import generate_8state_label
+
             labels = generate_8state_label(df, forward_days=20, lookback=252)
             valid = labels.notna()
             if valid.sum() >= 200:
@@ -223,7 +256,9 @@ def run_pipeline(csv: Path, window: int, symbol: str,
                     labels[valid], level_raw[valid], trend_raw[valid], min_samples=50
                 )
                 mapper = RegimeMapper(centers=new_centers, softmax_temperature=0.6)
-                print(f"[pipeline] BTC 冷启动中心校准 OK，有效样本 {int(valid.sum())} 条", flush=True)
+                print(
+                    f"[pipeline] BTC 冷启动中心校准 OK，有效样本 {int(valid.sum())} 条", flush=True
+                )
             else:
                 print(f"[pipeline] 有效标签仅 {int(valid.sum())} < 200，跳过冷启动校准", flush=True)
         except Exception as e:
@@ -231,9 +266,15 @@ def run_pipeline(csv: Path, window: int, symbol: str,
 
     # 组装所有帧（全样本 N 条）
     all_frames = build_trajectory_frames(
-        df, mapper, indicators,
-        level_raw, trend_raw,
-        so.level_smooth, so.trend_smooth, so.hmm_state, so.bocpd_cp_prob,
+        df,
+        mapper,
+        indicators,
+        level_raw,
+        trend_raw,
+        so.level_smooth,
+        so.trend_smooth,
+        so.hmm_state,
+        so.bocpd_cp_prob,
     )
 
     # 只保留最后 window 条做 trajectory
@@ -257,7 +298,10 @@ def run_pipeline(csv: Path, window: int, symbol: str,
                 "check": desc,
                 "pass": ok,
             }
-            print(f"[acceptance] {tag:16s} [{actual_date}] L={L:+.2f} T={T:+.2f} → {'PASS' if ok else 'FAIL'}", flush=True)
+            print(
+                f"[acceptance] {tag:16s} [{actual_date}] L={L:+.2f} T={T:+.2f} → {'PASS' if ok else 'FAIL'}",
+                flush=True,
+            )
 
     store = EvolutionStorageJSON(
         symbol=symbol,
@@ -297,20 +341,24 @@ _DEFAULT_IDENTITY_BETAS = {
     # 所有板块 β=1.0, α=0, corr=0.5 → 中性无偏直通时 softmax 均匀 0.20
     # 若用户需要真实板块权重，可扩展 CLI 加 sector csv 接口（当前保留 identity 基线）
     "defi": (1.0, 0.0, 0.5),
-    "ai":   (1.0, 0.0, 0.5),
-    "rwa":  (1.0, 0.0, 0.5),
+    "ai": (1.0, 0.0, 0.5),
+    "rwa": (1.0, 0.0, 0.5),
     "meme": (1.0, 0.0, 0.5),
-    "l2":   (1.0, 0.0, 0.5),
+    "l2": (1.0, 0.0, 0.5),
 }
 
 
 def _default_stats_row() -> Dict[str, float]:
     """ParameterMapper 的 stats_row（当前未使用，预留滚动分位锚点）。"""
     return {
-        "L_p10_60d": -3.0, "L_p90_60d": 3.0,
-        "T_p10_60d": -2.5, "T_p90_60d": 2.8,
-        "L_p10_252d": -3.0, "L_p90_252d": 3.0,
-        "T_p10_252d": -2.5, "T_p90_252d": 2.8,
+        "L_p10_60d": -3.0,
+        "L_p90_60d": 3.0,
+        "T_p10_60d": -2.5,
+        "T_p90_60d": 2.8,
+        "L_p10_252d": -3.0,
+        "L_p90_252d": 3.0,
+        "T_p10_252d": -2.5,
+        "T_p90_252d": 2.8,
     }
 
 
@@ -328,18 +376,28 @@ def append_extensions_to_payload(
 
     若所有扩展关闭，直接原封不动返回 payload（字节等价 P0）。
     """
-    if not any([enable_global_ranges, enable_sector_weights,
-                lgbm_calibrator_dir is not None, feature_schema_out is not None]):
+    if not any(
+        [
+            enable_global_ranges,
+            enable_sector_weights,
+            lgbm_calibrator_dir is not None,
+            feature_schema_out is not None,
+        ]
+    ):
         return payload
 
     # Feature schema out（一次性导出，不加入 payload，避免污染字节，保持回滚）
     if feature_schema_out is not None:
         from bcrm2.feature_registry import FeatureRegistry
+
         schema = FeatureRegistry.build_feature_schema(set_name=feature_set)
         fso = Path(feature_schema_out).expanduser().resolve()
         fso.parent.mkdir(parents=True, exist_ok=True)
         fso.write_text(json.dumps(schema, ensure_ascii=False, indent=2), encoding="utf-8")
-        print(f"[ext] FeatureRegistry schema → {fso} （{len(schema.get('feature_names_in_order', []))} 列）", flush=True)
+        print(
+            f"[ext] FeatureRegistry schema → {fso} （{len(schema.get('feature_names_in_order', []))} 列）",
+            flush=True,
+        )
 
     ctx: Optional[Dict[str, Any]] = getattr(store, "_pipeline_context", None)
     if ctx is None:
@@ -361,30 +419,36 @@ def append_extensions_to_payload(
     # ---- (1) Global Ranges ----
     if enable_global_ranges:
         from bcrm2.parameter_mapper import ParameterMapper
+
         pm = ParameterMapper()
         ranges_seq: List[Dict[str, List[float]]] = []
         for i in range(w):
             r = pm.map_global_parameters(
-                L=float(L_win.iloc[i]), T=float(T_win.iloc[i]),
-                C=float(C_win.iloc[i]), stats_row=stats_row,
+                L=float(L_win.iloc[i]),
+                T=float(T_win.iloc[i]),
+                C=float(C_win.iloc[i]),
+                stats_row=stats_row,
             )
             ranges_seq.append({k: [float(lo), float(hi)] for k, (lo, hi) in r.items()})
         payload["global_ranges"] = ranges_seq
         payload["global_ranges_latest"] = ranges_seq[-1]
         print(f"[ext] 已追加 global_ranges（{w} 帧，6 参数 [lo,hi] 范围）", flush=True)
         latest_6 = ranges_seq[-1]
-        snap_center = {k: round(0.5*(v[0]+v[1]), 4) for k, v in latest_6.items()}
+        snap_center = {k: round(0.5 * (v[0] + v[1]), 4) for k, v in latest_6.items()}
         print(f"       最新中心：{snap_center}", flush=True)
 
     # ---- (2) Sector Weights（默认 identity betas；无偏时 0.20 均匀，满足 identity 不变量）----
     if enable_sector_weights:
         from bcrm2.parameter_mapper import ParameterMapper
+
         pm = ParameterMapper()
         w_seq: List[Dict[str, float]] = []
         for i in range(w):
             wt = pm.map_sector_weights(
-                L=float(L_win.iloc[i]), T=float(T_win.iloc[i]),
-                C=float(C_win.iloc[i]), sector_betas=_DEFAULT_IDENTITY_BETAS,
+                L=float(L_win.iloc[i]),
+                T=float(T_win.iloc[i]),
+                C=float(C_win.iloc[i]),
+                sector_betas=_DEFAULT_IDENTITY_BETAS,
             )
             w_seq.append({k: round(float(v), 6) for k, v in wt.items()})
         payload["sector_weights"] = w_seq
@@ -395,8 +459,9 @@ def append_extensions_to_payload(
 
     # ---- (3) LGBM Calibrated probs ----
     if lgbm_calibrator_dir is not None:
-        from bcrm2.lgbm_calibrator import LGBMCalibrator
         from bcrm2.feature_registry import FeatureRegistry
+        from bcrm2.lgbm_calibrator import LGBMCalibrator
+
         cal_dir = Path(lgbm_calibrator_dir).expanduser().resolve()
         print(f"[ext] 加载 LGBMCalibrator ← {cal_dir}", flush=True)
         cal = LGBMCalibrator.load(str(cal_dir))
@@ -431,41 +496,74 @@ def append_extensions_to_payload(
         p_cal = cal.calibrate(p_gauss, X_recent)
         # 转 List[Dict[str,float]]，不修改原 frame 的 regime_probs，独立追加
         calibrated = [
-            {str(name): round(float(p_cal[i, j]), 6)
-             for j, name in enumerate(cal.regime_order)}
+            {str(name): round(float(p_cal[i, j]), 6) for j, name in enumerate(cal.regime_order)}
             for i in range(w)
         ]
         payload["regime_probs_calibrated_traj"] = calibrated
         top1_cal = max(calibrated[-1].items(), key=lambda kv: kv[1])
-        print(f"[ext] 已追加 regime_probs_calibrated_traj（{w} 帧），"
-              f"最新 top1_cal={top1_cal[0]}({top1_cal[1]:.3f})", flush=True)
+        print(
+            f"[ext] 已追加 regime_probs_calibrated_traj（{w} 帧），"
+            f"最新 top1_cal={top1_cal[0]}({top1_cal[1]:.3f})",
+            flush=True,
+        )
 
     return payload
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description="Evolution Engine — 形态演化流水线 CLI（Phase 0 兼容 + Phase 1 扩展）")
-    parser.add_argument("--csv", required=True, help="OHLCV CSV 路径（timestamp/open/high/low/close/volume）")
+    parser = argparse.ArgumentParser(
+        description="Evolution Engine — 形态演化流水线 CLI（Phase 0 兼容 + Phase 1 扩展）"
+    )
+    parser.add_argument(
+        "--csv", required=True, help="OHLCV CSV 路径（timestamp/open/high/low/close/volume）"
+    )
     parser.add_argument("--out", required=True, help="输出 trajectory JSON 路径")
     parser.add_argument("--window", type=int, default=90, help="trajectory 最近 N 日（默认 90）")
     parser.add_argument("--symbol", type=str, default="UNKNOWN", help="交易对代号，默认 UNKNOWN")
     parser.add_argument("--no-calibrate", action="store_true", help="跳过 BTC 冷启动中心校准")
-    parser.add_argument("--run-acceptance", action="store_true", help="输出 4 关键日期象限验收（仅 BTC 有效）")
+    parser.add_argument(
+        "--run-acceptance", action="store_true", help="输出 4 关键日期象限验收（仅 BTC 有效）"
+    )
 
     # ---------- Phase 1 扩展开关（默认关闭 → 100% 字节等价 P0） ----------
-    parser.add_argument("--global-ranges", action="store_true",
-                        help="【Phase 1】输出 6 个全局参数范围（global_ranges + global_ranges_latest）")
-    parser.add_argument("--sector-weights", action="store_true",
-                        help="【Phase 1】输出 5 板块权重（sector_weights + sector_weights_latest），默认 identity betas")
-    parser.add_argument("--with-lgbm", type=str, default=None, metavar="DIR",
-                        help="【Phase 1】用 train_lgbm_calibrator_v4.py 产出目录，追加 regime_probs_calibrated_traj")
-    parser.add_argument("--feature-set", type=str, default="btc_morphology_v4",
-                        help="【Phase 1】--with-lgbm/--feature-schema-out 使用的特征集名")
-    parser.add_argument("--feature-schema-out", type=str, default=None, metavar="PATH",
-                        help="【Phase 1】将 FeatureRegistry v4 schema JSON 输出到该路径")
-    parser.add_argument("--sqlite-db", type=str, default=None, metavar="PATH",
-                        help="【Phase 1 P1.5】将 trajectory 写入 SQLite（默认不写）。"
-                             "若指定，等价于 ensure_evolution_db(db_path) 并 upsert 全部帧 + dotplot")
+    parser.add_argument(
+        "--global-ranges",
+        action="store_true",
+        help="【Phase 1】输出 6 个全局参数范围（global_ranges + global_ranges_latest）",
+    )
+    parser.add_argument(
+        "--sector-weights",
+        action="store_true",
+        help="【Phase 1】输出 5 板块权重（sector_weights + sector_weights_latest），默认 identity betas",
+    )
+    parser.add_argument(
+        "--with-lgbm",
+        type=str,
+        default=None,
+        metavar="DIR",
+        help="【Phase 1】用 train_lgbm_calibrator_v4.py 产出目录，追加 regime_probs_calibrated_traj",
+    )
+    parser.add_argument(
+        "--feature-set",
+        type=str,
+        default="btc_morphology_v4",
+        help="【Phase 1】--with-lgbm/--feature-schema-out 使用的特征集名",
+    )
+    parser.add_argument(
+        "--feature-schema-out",
+        type=str,
+        default=None,
+        metavar="PATH",
+        help="【Phase 1】将 FeatureRegistry v4 schema JSON 输出到该路径",
+    )
+    parser.add_argument(
+        "--sqlite-db",
+        type=str,
+        default=None,
+        metavar="PATH",
+        help="【Phase 1 P1.5】将 trajectory 写入 SQLite（默认不写）。"
+        "若指定，等价于 ensure_evolution_db(db_path) 并 upsert 全部帧 + dotplot",
+    )
 
     args = parser.parse_args(argv)
 
@@ -475,7 +573,7 @@ def main(argv=None) -> int:
         print(f"[error] CSV 不存在: {csv_path}", file=sys.stderr)
         return 2
 
-    calibrate = (not args.no_calibrate)
+    calibrate = not args.no_calibrate
     store = run_pipeline(csv_path, args.window, args.symbol, calibrate, args.run_acceptance)
 
     # --- 基础序列化（P0 原 schema） ---
@@ -483,7 +581,8 @@ def main(argv=None) -> int:
 
     # --- Phase 1 扩展（开关全部关闭时 append_extensions_to_payload 直通返回，字节 100% 等价 P0） ---
     extended_dict = append_extensions_to_payload(
-        base_dict, store,
+        base_dict,
+        store,
         enable_global_ranges=args.global_ranges,
         enable_sector_weights=args.sector_weights,
         lgbm_calibrator_dir=args.with_lgbm,
@@ -502,15 +601,16 @@ def main(argv=None) -> int:
         # 用独立实例（不复用单例，避免 CLI 与 Flask 服务冲突）
         with EvolutionStorageSQLite(db_path) as storage:
             # upsert 全部 frames（不只是 trajectory 90 天）
-            all_traj_frames: List[RegimeStateFrame] = getattr(store, "_pipeline_context", {}).get(
-                "all_frames", None
-            ) or store.trajectory  # fallback：没存 all_frames 时退化为 trajectory
+            all_traj_frames: List[RegimeStateFrame] = (
+                getattr(store, "_pipeline_context", {}).get("all_frames", None) or store.trajectory
+            )  # fallback：没存 all_frames 时退化为 trajectory
             n_written = storage.upsert_daily_batch(args.symbol or "BTCUSDT", all_traj_frames)
             print(f"[sqlite] upsert_daily_batch OK：{n_written} 条 frame → {db_path}", flush=True)
 
             # 计算并保存 dotplot（基于全部 frames，最后一日作为 target）
             try:
                 from bcrm2.labels.regime_labeler import generate_8state_label
+
                 df_all = store._pipeline_context["df"]  # type: ignore[attr-defined]
                 indicators_all = store._pipeline_context["indicators"]  # type: ignore[attr-defined]
                 labels = generate_8state_label(df_all, forward_days=20, lookback=252)
@@ -525,7 +625,10 @@ def main(argv=None) -> int:
                         ind_valid, labels_valid, min_samples=20, target_index=len(labels_valid) - 1
                     )
                     storage.save_dotplot(args.symbol or "BTCUSDT", dotplot)
-                    print(f"[sqlite] dotplot OK：target_idx={dotplot['target_index']} → saved", flush=True)
+                    print(
+                        f"[sqlite] dotplot OK：target_idx={dotplot['target_index']} → saved",
+                        flush=True,
+                    )
                 else:
                     print(f"[sqlite] 跳过 dotplot：有效标签 {int(valid.sum())} < 200", flush=True)
             except Exception as e:

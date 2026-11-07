@@ -36,6 +36,7 @@
   - GWT: Global Workspace Theory (Baars, Dehaene)
   - HOT: Higher-Order Thought 双层意识
 """
+
 from __future__ import annotations
 
 import threading
@@ -44,7 +45,6 @@ from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional
-
 
 # ============================================================
 # 常量
@@ -152,7 +152,7 @@ class WorkspaceBus:
             self._history.append(content)
 
             # 广播到所有订阅者（FAIL-OPEN：单个失败不阻塞）
-            for sub_id, callback in list(self._subscribers.items()):
+            for sub_id, callback in list(self._subscribers.items()):  # noqa: B007
                 try:
                     callback(content)
                 except Exception:
@@ -289,10 +289,13 @@ if __name__ == "__main__":
     # 模拟 5 子系统订阅
     received = {"memory": 0, "skill": 0, "knowledge": 0, "docs": 0, "index": 0}
     for name in received:
+
         def make_cb(n):
             def cb(content):
                 received[n] += 1
+
             return cb
+
         bus.subscribe(name, make_cb(name))
 
     # 低置信广播（不应点燃）

@@ -13,12 +13,12 @@
 
 FAIL-OPEN：任何异常 → 对应信号返回 0.0，不阻塞整体。
 """
+
 from __future__ import annotations
 
 import json
 import math
 import os
-import sqlite3
 import sys
 from statistics import mean, stdev
 from typing import Dict, Optional
@@ -28,8 +28,8 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
 
-from force_vector._store_port import fetch_latest_record
-from force_vector.coin_fundamental_ranker import (
+from force_vector._store_port import fetch_latest_record  # noqa: E402
+from force_vector.coin_fundamental_ranker import (  # noqa: E402
     get_coingecko_id,
     get_protocol_mapping,
 )
@@ -47,18 +47,18 @@ _L1_NVT_MEDIAN_PRIOR: Dict[str, float] = {
 # 当 coin_data 无 mcap 时构造矿工费近似（不影响 coin_info 已提供时的主路径）
 # 哈希率近似：按最新公开量级 TH/s
 _L1_HASH_RATE_PRIOR_THs: Dict[str, float] = {
-    "BTC": 900_000_000.0,   # ≈ 900 EH/s = 900M TH/s（2026 年中量级）
+    "BTC": 900_000_000.0,  # ≈ 900 EH/s = 900M TH/s（2026 年中量级）
     "ETH": 20_000_000_000.0,  # validators×effort 代理
-    "SOL": 5_000_000.0,      # compute-units proxy
+    "SOL": 5_000_000.0,  # compute-units proxy
     "CRCL": 1_000_000.0,
 }
 # L1 revenue_quality 每 TH/s 矿工费效率的「中性点」：tanh((eff - neutral)/scale)
 # 单位 = USD / (day × TH/s)。BTC 历史公开的矿工费/哈希率约 0.008 $/TH/day（2024-2025 均价）。
 # 这里留中性值，使得正常水平 → 0；高效超 0 → +；低迷 <0 → −
 _L1_EFFICIENCY_NEUTRAL: Dict[str, float] = {
-    "BTC": 0.010,       # 0.01 USD / (TH/day)
-    "ETH": 0.0004,      # ETH validators 等效值 低 2 数量级
-    "SOL": 0.15,        # SOL compute-units 高 1 数量级
+    "BTC": 0.010,  # 0.01 USD / (TH/day)
+    "ETH": 0.0004,  # ETH validators 等效值 低 2 数量级
+    "SOL": 0.15,  # SOL compute-units 高 1 数量级
     "CRCL": 0.05,
 }
 # L1 RQ 效率系数的尺度参数（1σ 偏离）
@@ -223,6 +223,7 @@ def compute_e8_cross_sector_valuation(coin: str, db_path: str) -> float:
     e8 = 1.0 - (pct / 50.0)
     return max(-1.0, min(1.0, e8))
 
+
 # data_center.db 默认路径：dreambuddy-v2/18-数据获取中心/data_center.db
 # force_vector → memory_l4 → scripts → 11-易经推理系统 → dreambuddy-v2（4级）
 _REPO = os.path.normpath(os.path.join(_THIS_DIR, "..", "..", "..", ".."))
@@ -273,6 +274,7 @@ _BDSM_SOURCE_MAP: Dict[str, Dict[str, object]] = {
 # 数据读取（SQLite）
 # ===========================================================================
 
+
 def _safe_json(text) -> any:
     if isinstance(text, dict):
         return text
@@ -291,15 +293,21 @@ def _fetch_protocol_fees(db_path: str, protocol: str) -> dict:
         return {}
     try:
         row = fetch_latest_record(
-            db_path, "defillama", "protocol",
-            f"fees_{protocol}", switch="CRYPTO",
+            db_path,
+            "defillama",
+            "protocol",
+            f"fees_{protocol}",
+            switch="CRYPTO",
             columns="metrics, timeseries",
         )
         if row is None:
             return {}
         metrics = _safe_json(row["metrics"])
         ts = _safe_json(row["timeseries"])
-        return {"fees_30d": metrics.get("fees_30d", 0.0), "timeseries": ts if isinstance(ts, list) else []}
+        return {
+            "fees_30d": metrics.get("fees_30d", 0.0),
+            "timeseries": ts if isinstance(ts, list) else [],
+        }
     except Exception:
         return {}
 
@@ -310,8 +318,12 @@ def _fetch_coin_info(db_path: str, coin_id: str) -> dict:
         return {}
     try:
         row = fetch_latest_record(
-            db_path, "coingecko", "coin",
-            coin_id, switch="CRYPTO", columns="metrics",
+            db_path,
+            "coingecko",
+            "coin",
+            coin_id,
+            switch="CRYPTO",
+            columns="metrics",
         )
         if row is None:
             return {}
@@ -330,8 +342,12 @@ def _fetch_protocol_tvl(db_path: str, protocol: str) -> dict:
     try:
         # 最新一条 all_protocols 记录
         row = fetch_latest_record(
-            db_path, "defillama", "protocol",
-            "all_protocols", switch="CRYPTO", columns="timeseries",
+            db_path,
+            "defillama",
+            "protocol",
+            "all_protocols",
+            switch="CRYPTO",
+            columns="timeseries",
         )
         if row is None:
             return {}
@@ -340,7 +356,9 @@ def _fetch_protocol_tvl(db_path: str, protocol: str) -> dict:
             return {}
         # 在 timeseries 中查找指定 protocol
         for p in ts:
-            if isinstance(p, dict) and (p.get("slug") == protocol or p.get("name", "").lower() == protocol):
+            if isinstance(p, dict) and (
+                p.get("slug") == protocol or p.get("name", "").lower() == protocol
+            ):
                 return {"tvl": float(p.get("tvl") or 0.0), "tvl_7d_ago": None}
         return {}
     except Exception:
@@ -357,8 +375,12 @@ def _fetch_bdsm_data(db_path: str, source: str) -> dict:
         return {}
     try:
         row = fetch_latest_record(
-            db_path, source, "bdsm",
-            None, switch="CRYPTO", columns="metrics, raw",
+            db_path,
+            source,
+            "bdsm",
+            None,
+            switch="CRYPTO",
+            columns="metrics, raw",
         )
         if row is None:
             return {}
@@ -405,10 +427,18 @@ def _build_fees_by_chain(coin: str, metrics: dict, raw: dict) -> Dict[str, float
             if total_reserves > 0:
                 # 按储备组成分配收入代理
                 return {
-                    "sii_deposits": rev * float(metrics.get("usdc_sii_deposits_bln", 0)) / total_reserves,
-                    "overnight_repo": rev * float(metrics.get("usdc_overnight_repo_bln", 0)) / total_reserves,
-                    "treasuries_3m": rev * float(metrics.get("usdc_treasuries_3m_bln", 0)) / total_reserves,
-                    "other_bank_deposits": rev * float(metrics.get("usdc_other_bank_deposits_bln", 0)) / total_reserves,
+                    "sii_deposits": rev
+                    * float(metrics.get("usdc_sii_deposits_bln", 0))
+                    / total_reserves,
+                    "overnight_repo": rev
+                    * float(metrics.get("usdc_overnight_repo_bln", 0))
+                    / total_reserves,
+                    "treasuries_3m": rev
+                    * float(metrics.get("usdc_treasuries_3m_bln", 0))
+                    / total_reserves,
+                    "other_bank_deposits": rev
+                    * float(metrics.get("usdc_other_bank_deposits_bln", 0))
+                    / total_reserves,
                 }
     return {}
 
@@ -428,8 +458,16 @@ def _compute_bdsm_signals(
     # ── E5: supply shrinkage intensity ──────────────────────────
     circ = float(metrics.get("circulating_supply", 0) or 0)
     max_sup = float(metrics.get("max_supply", 0) or 0)
-    has_revenue = 1.0 if float(metrics.get("annualized_revenue_usd", 0) or
-                               metrics.get("annualized_protocol_revenue_usd", 0) or 0) > 0 else 0.0
+    has_revenue = (
+        1.0
+        if float(
+            metrics.get("annualized_revenue_usd", 0)
+            or metrics.get("annualized_protocol_revenue_usd", 0)
+            or 0
+        )
+        > 0
+        else 0.0
+    )
     if circ > 0 and max_sup > 0:
         e5 = compute_supply_shrinkage_intensity(circ, max_sup, 1.0)
     elif "total_supply_offset_pct" in metrics:
@@ -441,10 +479,12 @@ def _compute_bdsm_signals(
         e5 = max(-1.0, min(1.0, math.tanh(lock * 2.0 + has_revenue * 0.3)))
 
     # ── E6: value capture delta (年化收入/市值 归一化) ───────────
-    rev = float(metrics.get("annualized_revenue_usd", 0) or
-                metrics.get("annualized_protocol_revenue_usd", 0) or 0)
-    mcap = float(metrics.get("market_cap_usd", 0) or
-                 metrics.get("pump_fdv_usd", 0) or 0)
+    rev = float(
+        metrics.get("annualized_revenue_usd", 0)
+        or metrics.get("annualized_protocol_revenue_usd", 0)
+        or 0
+    )
+    mcap = float(metrics.get("market_cap_usd", 0) or metrics.get("pump_fdv_usd", 0) or 0)
     if rev > 0 and mcap > 0:
         yield_ratio = rev / mcap
         # 5% 年化收益率 → tanh(0) = 0（中性），> 5% → 正，< 5% → 负
@@ -465,6 +505,7 @@ def _compute_bdsm_signals(
 # ===========================================================================
 # 纯计算函数
 # ===========================================================================
+
 
 def compute_revenue_stability(fees_timeseries: list) -> float:
     """费用 Sharpe ratio → 稳定→正信号。
@@ -571,9 +612,7 @@ def compute_supply_shrinkage_intensity(
     return max(-1.0, min(1.0, math.tanh(lock_ratio * 2.0 + has_fees * 0.3)))
 
 
-def compute_value_capture_delta(
-    fees_growth_rate: float, tvl_growth_rate: float
-) -> float:
+def compute_value_capture_delta(fees_growth_rate: float, tvl_growth_rate: float) -> float:
     """价值捕获质变 delta → 费用增长超TVL→正信号（E6，阶段识别器输入特征）。
 
     UNI Robinhood 接入案例：费用收入大幅增长，超 TVL 增长 → 价值捕获能力提升。
@@ -635,8 +674,8 @@ def compute_revenue_sustainability(
     # 2. 来源类型评分
     _TYPE_SCORES = {
         "protocol_surplus": 1.0,  # 最稳定（SKY）
-        "trading_fee": 0.6,      # 高波动但规模大（HYPE/UNI）
-        "asset_yield": 0.5,      # 中等
+        "trading_fee": 0.6,  # 高波动但规模大（HYPE/UNI）
+        "asset_yield": 0.5,  # 中等
         "mixed": 0.5,
     }
     type_score = _TYPE_SCORES.get(source_type, 0.5)
@@ -674,6 +713,7 @@ def _calc_growth_rate(timeseries: list) -> Optional[float]:
 # E1-E4 替代：矿工费时序 / NVT估值 / 活跃地址增速 / 矿工费哈希率效率
 # ===========================================================================
 
+
 def _fetch_L1_chain_metrics(coin: str, db_path: str) -> dict:
     """从 SQLite data_center.db 读取 L1 链上指标。
 
@@ -698,8 +738,11 @@ def _fetch_L1_chain_metrics(coin: str, db_path: str) -> dict:
         if coin_id:
             try:
                 row = fetch_latest_record(
-                    db_path, "chain_onchain", "l1",
-                    f"l1_{coin_id}", switch="CRYPTO",
+                    db_path,
+                    "chain_onchain",
+                    "l1",
+                    f"l1_{coin_id}",
+                    switch="CRYPTO",
                     columns="timeseries",
                 )
                 if row is not None:
@@ -739,14 +782,12 @@ def _L1_miner_proxy_fallback(coin: str, db_path: str) -> dict:
     price_7d_ago = 0.0
     try:
         import requests  # noqa: WPS433
+
         cache_key = (coin or "").upper()
         inst_id = f"{cache_key}-USDT-SWAP"
         url = "https://www.okx.com/api/v5/market/history-candles"
         params = {"instId": inst_id, "bar": "1D", "limit": "120"}
-        proxies = (
-            {"http": _L1_HTTP_PROXY, "https": _L1_HTTP_PROXY}
-            if _L1_HTTP_PROXY else None
-        )
+        proxies = {"http": _L1_HTTP_PROXY, "https": _L1_HTTP_PROXY} if _L1_HTTP_PROXY else None
         data = requests.get(url, params=params, proxies=proxies, timeout=10).json()
         raw = list(reversed(data.get("data", []) or []))
         if len(raw) >= 30:
@@ -761,7 +802,9 @@ def _L1_miner_proxy_fallback(coin: str, db_path: str) -> dict:
                     if vol_USD <= 0 and len(k) > 5:  # 旧 API 回退：vol×close
                         vol_USD = float(k[5] or 0.0) * close_p
                     ts = int(k[0])
-                    from datetime import datetime, timezone as _tz  # noqa: WPS433
+                    from datetime import datetime  # noqa: WPS433
+                    from datetime import timezone as _tz
+
                     d = datetime.fromtimestamp(ts / 1000, tz=_tz.utc).strftime("%Y-%m-%d")
                     # 矿工费近似：daily USD volume × fee_rate_prior ≈ 日交易量 × 0.2%~0.5% 作为矿工费总额代理
                     # BTC 历史矿工费 / 链上日交易量比率 ≈ 0.003；交易所×链上×chain_frac 的有效系数 ≈ 0.0008
@@ -796,7 +839,7 @@ def _L1_miner_proxy_fallback(coin: str, db_path: str) -> dict:
             price_7d_ago = 0.0
     except Exception:
         ts_30 = []
-        miner_30d_total = 0.0
+        miner_30d_total = 0.0  # noqa: F841
 
     # 1. 取流通市值 & 供给（走既有 _fetch_coin_info / 若空则 K线价格 × coingecko 流通供给量级先验）
     coin_id = get_coingecko_id(coin) or ""
@@ -808,7 +851,9 @@ def _L1_miner_proxy_fallback(coin: str, db_path: str) -> dict:
     }
     market_cap_usd = 0.0
     try:
-        coin_info = _fetch_coin_info(db_path, coin_id) if (coin_id and os.path.exists(db_path)) else {}
+        coin_info = (
+            _fetch_coin_info(db_path, coin_id) if (coin_id and os.path.exists(db_path)) else {}
+        )
         market_cap_usd = float(coin_info.get("market_cap_usd", 0) or 0)
     except Exception:
         coin_info = {}
@@ -842,13 +887,21 @@ def _L1_miner_proxy_fallback(coin: str, db_path: str) -> dict:
     addr_now = 0.0
     addr_7d_ago = 0.0
     try:
-        vol_all_full = [float(x[7] or 0.0) if (isinstance(x, list) and len(x) > 7) else 0.0
-                        for x in raw]
+        vol_all_full = [
+            float(x[7] or 0.0) if (isinstance(x, list) and len(x) > 7) else 0.0 for x in raw
+        ]
         # Fallback: 如果 volCcyQuote 都 0，用 vol×close 近似
         _pr_now = float(raw[-1][4] or 0.0) if len(raw) >= 1 and isinstance(raw[-1], list) else 0.0
-        if all(v == 0 for v in vol_all_full[-5:]) and _pr_now > 0 and isinstance(raw[-1], list) and len(raw[-1]) > 5:
-            vol_all_full = [(float(k[5] or 0.0) * float(k[4] or 0.0)) if isinstance(k, list) else 0.0
-                            for k in raw]
+        if (
+            all(v == 0 for v in vol_all_full[-5:])
+            and _pr_now > 0
+            and isinstance(raw[-1], list)
+            and len(raw[-1]) > 5
+        ):
+            vol_all_full = [
+                (float(k[5] or 0.0) * float(k[4] or 0.0)) if isinstance(k, list) else 0.0
+                for k in raw
+            ]
         # 优先 90 日：前 30d 日均 vs 60-90d 前的 30d 日均
         if len(vol_all_full) >= 90 and all(v > 0 for v in vol_all_full[-90:]):
             recent = sum(vol_all_full[-30:]) / 30.0
@@ -890,8 +943,7 @@ def _L1_miner_proxy_fallback(coin: str, db_path: str) -> dict:
                 hi = min(len(vals), i + 4)
                 smoothed.append(sum(vals[lo:hi]) / max(1, hi - lo))
             return [
-                {"date": series[i].get("date"), "fees_usd": smoothed[i]}
-                for i in range(len(series))
+                {"date": series[i].get("date"), "fees_usd": smoothed[i]} for i in range(len(series))
             ]
 
         smooth_ts = _smooth(ts_30)
@@ -924,18 +976,16 @@ def compute_L1_nvt_mean_reversion(nvt_current: float, nvt_median: float) -> floa
         return 0.0
     # ratio < 1 → 低估 → deviation < 0 → -tanh(负) = 正（符合原 mc_fees_mean_reversion 方向）
     ratio = nvt_current / nvt_median
-    deviation = (math.log10(ratio) - 0) / 0.15   # 0.15 log10 ≈ 1.41× 为 1σ 偏离
+    deviation = (math.log10(ratio) - 0) / 0.15  # 0.15 log10 ≈ 1.41× 为 1σ 偏离
     return max(-1.0, min(1.0, -math.tanh(deviation)))
 
 
-def compute_L1_revenue_quality(coin: str,
-                               miner_fees_30d_avg: float,
-                               hashrate_THs: float) -> float:
+def compute_L1_revenue_quality(coin: str, miner_fees_30d_avg: float, hashrate_THs: float) -> float:
     """L1 专属收入质量（E4）：每 TH/s 安全投入能产出多少日均矿工费。"""
     if hashrate_THs <= 0 or miner_fees_30d_avg <= 0:
         return 0.0
     try:
-        efficiency = miner_fees_30d_avg / hashrate_THs   # USD / (TH·day)
+        efficiency = miner_fees_30d_avg / hashrate_THs  # USD / (TH·day)
     except ZeroDivisionError:
         return 0.0
     key = (coin or "").upper()
@@ -954,7 +1004,7 @@ def compute_L1_tvl_growth_momentum(addr_current: float, addr_past: float) -> flo
     """
     if addr_past is None or addr_past <= 0 or addr_current <= 0:
         return 0.0
-    growth = (addr_current - addr_past) / addr_past   # 30d × 30d 区间内总增长 ≈ 年化/4
+    growth = (addr_current - addr_past) / addr_past  # 30d × 30d 区间内总增长 ≈ 年化/4
     # 25% 区间增速 → 强信号。
     return max(-1.0, min(1.0, math.tanh(growth / 0.25)))
 
@@ -982,6 +1032,7 @@ def _L1_calc_dual_slope_growth(timeseries: list) -> Optional[float]:
 # 组合函数
 # ===========================================================================
 
+
 def compute_all(coin: str, db_path: str = DEFAULT_DB_PATH) -> Dict[str, float]:
     """计算指定加密货币的七个基本面信号（含 E5/E6/E7 阶段识别器输入）。
 
@@ -993,9 +1044,9 @@ def compute_all(coin: str, db_path: str = DEFAULT_DB_PATH) -> Dict[str, float]:
         "mc_fees_mean_reversion": 0.0,
         "tvl_growth_momentum": 0.0,
         "revenue_quality": 0.0,
-        "supply_shrinkage_intensity": 0.0,   # E5
-        "value_capture_delta": 0.0,          # E6
-        "revenue_sustainability": 0.0,        # E7 (BDSM RQ)
+        "supply_shrinkage_intensity": 0.0,  # E5
+        "value_capture_delta": 0.0,  # E6
+        "revenue_sustainability": 0.0,  # E7 (BDSM RQ)
     }
     try:
         coin_id = get_coingecko_id(coin)
@@ -1034,8 +1085,9 @@ def compute_all(coin: str, db_path: str = DEFAULT_DB_PATH) -> Dict[str, float]:
                     tvl_data = {
                         "tvl": addr_now,
                         "tvl_7d_ago": (
-                            float(addr_7d) if isinstance(addr_7d, (int, float, str)) and
-                            float(addr_7d) > 0 else None
+                            float(addr_7d)
+                            if isinstance(addr_7d, (int, float, str)) and float(addr_7d) > 0
+                            else None
                         ),
                     }
 
@@ -1062,9 +1114,7 @@ def compute_all(coin: str, db_path: str = DEFAULT_DB_PATH) -> Dict[str, float]:
                     market_cap, fees_30d
                 )
         else:
-            result["mc_fees_mean_reversion"] = compute_mc_fees_mean_reversion(
-                market_cap, fees_30d
-            )
+            result["mc_fees_mean_reversion"] = compute_mc_fees_mean_reversion(market_cap, fees_30d)
 
         # 3. TVL Growth Momentum
         #   DeFi 币：TVL 7d 增速同构 compute_tvl_growth_momentum (1σ=5%)
@@ -1072,13 +1122,9 @@ def compute_all(coin: str, db_path: str = DEFAULT_DB_PATH) -> Dict[str, float]:
         tvl_current = float(tvl_data.get("tvl", 0))
         tvl_7d_ago = tvl_data.get("tvl_7d_ago")
         if l1_data:
-            result["tvl_growth_momentum"] = compute_L1_tvl_growth_momentum(
-                tvl_current, tvl_7d_ago
-            )
+            result["tvl_growth_momentum"] = compute_L1_tvl_growth_momentum(tvl_current, tvl_7d_ago)
         else:
-            result["tvl_growth_momentum"] = compute_tvl_growth_momentum(
-                tvl_current, tvl_7d_ago
-            )
+            result["tvl_growth_momentum"] = compute_tvl_growth_momentum(tvl_current, tvl_7d_ago)
 
         # 4. Revenue Quality
         # fees_30d_avg = fees_30d / 30（日均矿工费 / 协议费）
@@ -1086,9 +1132,7 @@ def compute_all(coin: str, db_path: str = DEFAULT_DB_PATH) -> Dict[str, float]:
         if l1_data:
             # L1 专用：分币种 TH/s 矿工费效率（避免 DeFi fees/tvl 中性 0.001 错配）
             hashrate = float(l1_data.get("hashrate_THs", 0) or 0)
-            result["revenue_quality"] = compute_L1_revenue_quality(
-                coin, fees_30d_avg, hashrate
-            )
+            result["revenue_quality"] = compute_L1_revenue_quality(coin, fees_30d_avg, hashrate)
         else:
             result["revenue_quality"] = compute_revenue_quality(fees_30d_avg, tvl_current)
 
@@ -1098,9 +1142,7 @@ def compute_all(coin: str, db_path: str = DEFAULT_DB_PATH) -> Dict[str, float]:
             bdsm_metrics = bdsm_data.get("metrics", {})
             bdsm_raw = bdsm_data.get("raw", {})
             if bdsm_metrics:
-                e5, e6, e7 = _compute_bdsm_signals(
-                    coin, bdsm_metrics, bdsm_raw, bdsm_info
-                )
+                e5, e6, e7 = _compute_bdsm_signals(coin, bdsm_metrics, bdsm_raw, bdsm_info)
                 result["supply_shrinkage_intensity"] = e5
                 result["value_capture_delta"] = e6
                 result["revenue_sustainability"] = e7
@@ -1131,9 +1173,7 @@ def compute_all(coin: str, db_path: str = DEFAULT_DB_PATH) -> Dict[str, float]:
                         delta = float(fees_growth_rate) - float(tvl_growth_rate)
                     except (TypeError, ValueError):
                         delta = 0.0
-                    result["value_capture_delta"] = max(
-                        -1.0, min(1.0, math.tanh(delta / 0.60))
-                    )
+                    result["value_capture_delta"] = max(-1.0, min(1.0, math.tanh(delta / 0.60)))
             else:
                 fees_growth_rate = _calc_growth_rate(fees_ts)
                 result["value_capture_delta"] = compute_value_capture_delta(
@@ -1145,9 +1185,7 @@ def compute_all(coin: str, db_path: str = DEFAULT_DB_PATH) -> Dict[str, float]:
         # 8. E8 板块横向估值（Cross-Sector Valuation）
         # 区分「自身高估」vs「板块共振」，与纵向 valuation_percentile 交叉验证
         try:
-            result["e8_cross_sector_valuation"] = compute_e8_cross_sector_valuation(
-                coin, db_path
-            )
+            result["e8_cross_sector_valuation"] = compute_e8_cross_sector_valuation(coin, db_path)
         except Exception:
             result["e8_cross_sector_valuation"] = 0.0  # FAIL-OPEN
 

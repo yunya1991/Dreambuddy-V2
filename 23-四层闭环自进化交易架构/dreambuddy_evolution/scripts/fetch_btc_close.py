@@ -6,6 +6,7 @@
 使用方式:
   python3 -m dreambuddy_evolution.scripts.fetch_btc_close
 """
+
 from __future__ import annotations
 
 import json

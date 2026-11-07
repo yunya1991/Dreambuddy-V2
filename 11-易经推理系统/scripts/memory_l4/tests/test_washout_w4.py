@@ -34,12 +34,13 @@ TDD 测试清单 (§9.4 共 14 项):
   T13 / test_washout_classifier_evolution_engine_integration  — 与 EvolutionEngine 集成
   T14 / test_washout_detector_with_classifier_predict         — WashoutDetector 注入 classifier 走 KNN/Bayesian
 """
+
 from __future__ import annotations
 
 import math
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict
 
 import pytest
 
@@ -68,12 +69,12 @@ from scripts.memory_l4.bcrm2.washout_detector import (  # noqa: E402
     WashoutVerdict,
 )
 
+from dreamos.evolution.washout_bayesian_updater import (  # noqa: E402
+    BayesianUpdater,
+)
 from dreamos.evolution.washout_case_library import (  # noqa: E402
     WashoutCase,
     WashoutCaseLibrary,
-)
-from dreamos.evolution.washout_bayesian_updater import (  # noqa: E402
-    BayesianUpdater,
 )
 from dreamos.evolution.washout_classifier import (  # noqa: E402
     WashoutClassifier,
@@ -99,6 +100,7 @@ def _make_case(
         pnl_pct: 闭环盈亏百分比
     """
     import math as _m
+
     reward = _m.tanh(pnl_pct / 0.02)
     return WashoutCase(
         case_id=case_id,
@@ -115,20 +117,20 @@ def _make_case(
 
 # 洗盘特征模板（缩量 + 支撑守住 + 振幅收窄 + 低位 + 反弹强）
 _WASHOUT_FEATURES: Dict[str, float] = {
-    "volume_ratio_20d": 0.5,      # 缩量
-    "support_holds_count": 3.0,   # 3 次守住支撑
-    "atr_compress_ratio": 0.7,    # 振幅收窄
-    "cycle_position_365d": 0.2,   # 低位
-    "rebound_ratio_5d": 0.7,      # 反弹强
+    "volume_ratio_20d": 0.5,  # 缩量
+    "support_holds_count": 3.0,  # 3 次守住支撑
+    "atr_compress_ratio": 0.7,  # 振幅收窄
+    "cycle_position_365d": 0.2,  # 低位
+    "rebound_ratio_5d": 0.7,  # 反弹强
 }
 
 # 真弱势特征模板（放量 + 破位 + 振幅扩大 + 高位 + 反弹弱）
 _WEAKNESS_FEATURES: Dict[str, float] = {
-    "volume_ratio_20d": 2.0,      # 放量
-    "support_holds_count": 0.0,   # 无守住
-    "atr_compress_ratio": 1.5,    # 振幅扩大
-    "cycle_position_365d": 0.8,   # 高位
-    "rebound_ratio_5d": 0.2,      # 反弹弱
+    "volume_ratio_20d": 2.0,  # 放量
+    "support_holds_count": 0.0,  # 无守住
+    "atr_compress_ratio": 1.5,  # 振幅扩大
+    "cycle_position_365d": 0.8,  # 高位
+    "rebound_ratio_5d": 0.2,  # 反弹弱
 }
 
 # 中间特征（query 在两类中间）
@@ -243,9 +245,9 @@ class TestClassifierInsufficientCases:
         # 降级 → UNKNOWN + reason 含 "fallback" 或 "insufficient"
         assert verdict.label == WashoutLabel.UNKNOWN
         reason_lower = verdict.reason.lower()
-        assert "fallback" in reason_lower or "insufficient" in reason_lower, (
-            f"reason 应含 fallback/insufficient, got '{verdict.reason}'"
-        )
+        assert (
+            "fallback" in reason_lower or "insufficient" in reason_lower
+        ), f"reason 应含 fallback/insufficient, got '{verdict.reason}'"
 
 
 # ============================================================
@@ -260,9 +262,9 @@ class TestClassifierPredictWashout:
         verdict = clf.predict(_WASHOUT_FEATURES)
 
         # 5 邻居全是 washout → posterior = (1+5)/(1+1+5) = 6/7 ≈ 0.857 > 0.65
-        assert verdict.label == WashoutLabel.WASHOUT, (
-            f"应为 WASHOUT, got {verdict.label} conf={verdict.confidence}"
-        )
+        assert (
+            verdict.label == WashoutLabel.WASHOUT
+        ), f"应为 WASHOUT, got {verdict.label} conf={verdict.confidence}"
         assert verdict.confidence > 0.65
         assert verdict.trigger_activated is True
         assert "knn" in verdict.reason.lower() or "bayesian" in verdict.reason.lower()
@@ -280,9 +282,9 @@ class TestClassifierPredictWeakness:
         verdict = clf.predict(_WEAKNESS_FEATURES)
 
         # 5 邻居全是 weakness → posterior = (1+0)/(1+1+5) = 1/7 ≈ 0.143 < 0.35
-        assert verdict.label == WashoutLabel.WEAKNESS, (
-            f"应为 WEAKNESS, got {verdict.label} conf={verdict.confidence}"
-        )
+        assert (
+            verdict.label == WashoutLabel.WEAKNESS
+        ), f"应为 WEAKNESS, got {verdict.label} conf={verdict.confidence}"
         assert verdict.confidence > 0.65  # confidence = 1 - posterior = 6/7
 
 
@@ -391,6 +393,7 @@ class TestClassifierEvolveSandboxValidate:
 
     def test_washout_classifier_evolve_sandbox_reject(self):
         """sandbox_validate 返回 False → accepted=False."""
+
         def mock_validate(proposal: Dict) -> bool:
             return False
 
@@ -474,9 +477,7 @@ class TestClassifierNoLLM:
             assert full_path.exists(), f"文件不存在: {rel_path}"
             content = full_path.read_text(encoding="utf-8")
             for pattern in llm_patterns:
-                assert pattern not in content, (
-                    f"{rel_path} 含禁用的 LLM 调用模式: '{pattern}'"
-                )
+                assert pattern not in content, f"{rel_path} 含禁用的 LLM 调用模式: '{pattern}'"
 
 
 # ============================================================
@@ -503,12 +504,14 @@ class TestClassifierEvolutionEngineIntegration:
         assert clf.sandbox_validate_fn.__self__ is engine
 
         # 调用 evolve (proposal 不完整或 backtester 无数据 → accepted=False, 但集成点已验证)
-        result = clf.evolve(proposal={
-            "scenario_id": "washout_integration_test",
-            "new_pattern": "c_g_chain",
-            "nodes": ["C1", "C2", "C3"],
-            "score": 0.5,
-        })
+        result = clf.evolve(
+            proposal={
+                "scenario_id": "washout_integration_test",
+                "new_pattern": "c_g_chain",
+                "nodes": ["C1", "C2", "C3"],
+                "score": 0.5,
+            }
+        )
         assert isinstance(result, dict)
         assert "accepted" in result
         # 集成点验证: evolve 成功调用了 engine._sandbox_validate (未抛异常)
@@ -524,8 +527,8 @@ class TestWashoutDetectorWithClassifier:
     def test_washout_detector_with_classifier_predict(self):
         # 构造一个触发门通过的 df (30d 涨幅 20% + 回撤 8%)
         # 使用 require_above_ma200=False 避免需要 200+ 数据点
-        import pandas as pd
         import numpy as np
+        import pandas as pd
         from scripts.memory_l4.bcrm2.washout_trigger_gate import WashoutTriggerGate
 
         # 触发门逻辑: start_price=close[-31], peak=max(high[-30:]), runup=peak/start-1
@@ -534,13 +537,16 @@ class TestWashoutDetectorWithClassifier:
         dates = pd.date_range("2026-01-01", periods=n, freq="1h", tz="UTC")
         # 前 30 天平 100, 后 5 天涨到 120, 再 25 天跌到 110.4
         closes = [100.0] * 30 + list(np.linspace(100, 120, 5)) + list(np.linspace(120, 110.4, 25))
-        df = pd.DataFrame({
-            "open": closes,
-            "high": [c * 1.005 for c in closes],
-            "low": [c * 0.995 for c in closes],
-            "close": closes,
-            "volume": [1000.0] * n,
-        }, index=dates)
+        df = pd.DataFrame(
+            {
+                "open": closes,
+                "high": [c * 1.005 for c in closes],
+                "low": [c * 0.995 for c in closes],
+                "close": closes,
+                "volume": [1000.0] * n,
+            },
+            index=dates,
+        )
 
         # 构造 classifier (30 washout 案例)
         lib = _build_washout_library(n_washout=30, n_weakness=2)
@@ -568,28 +574,31 @@ class TestWashoutDetectorWithClassifier:
         )
         assert verdict.confidence > 0.65
         # reason 不应是 w1_trigger_passed_classifier_pending
-        assert "w1_trigger_passed" not in verdict.reason, (
-            f"classifier 已注入, 不应返回 w1_trigger_passed, got '{verdict.reason}'"
-        )
+        assert (
+            "w1_trigger_passed" not in verdict.reason
+        ), f"classifier 已注入, 不应返回 w1_trigger_passed, got '{verdict.reason}'"
         # feature_snapshot 应含 washout 特征 (来自 mock extractor)
         assert "volume_ratio_20d" in verdict.feature_snapshot
 
     def test_washout_detector_without_classifier_still_w1_path(self):
         """零回归验证: classifier=None 时仍走 W1 路径 (字节等价)."""
-        import pandas as pd
         import numpy as np
+        import pandas as pd
         from scripts.memory_l4.bcrm2.washout_trigger_gate import WashoutTriggerGate
 
         n = 60
         dates = pd.date_range("2026-01-01", periods=n, freq="1h", tz="UTC")
         closes = [100.0] * 30 + list(np.linspace(100, 120, 5)) + list(np.linspace(120, 110.4, 25))
-        df = pd.DataFrame({
-            "open": closes,
-            "high": [c * 1.005 for c in closes],
-            "low": [c * 0.995 for c in closes],
-            "close": closes,
-            "volume": [1000.0] * n,
-        }, index=dates)
+        df = pd.DataFrame(
+            {
+                "open": closes,
+                "high": [c * 1.005 for c in closes],
+                "low": [c * 0.995 for c in closes],
+                "close": closes,
+                "volume": [1000.0] * n,
+            },
+            index=dates,
+        )
 
         # require_above_ma200=False 让触发门通过
         gate = WashoutTriggerGate(require_above_ma200=False)
@@ -616,9 +625,11 @@ class TestClassifierFailOpen:
 
     def test_classifier_predict_on_exception_fail_open(self):
         """case_library 异常 → unknown() 不抛错."""
+
         class _BrokenLib:
             def __len__(self):
                 return 50  # >= min_cases
+
             def knn_search(self, *a, **kw):
                 raise RuntimeError("broken library")
 

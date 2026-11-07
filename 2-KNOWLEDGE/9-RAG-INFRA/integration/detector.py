@@ -14,32 +14,64 @@ from typing import Dict, List, Optional
 
 # 传统金融：WebSearch 常见关键词
 FINANCE_KEYWORDS: Dict[str, List[str]] = {
-    "quant-methods": ["量化", "Kalman", "PCA", "IC", "Sharpe", "回测",
-                      "贝叶斯", "蒙特卡洛", "Black-Scholes", "Greeks", "定价"],
-    "risk-models": ["风控", "对冲", "止损", "止盈", "仓位",
-                    "波动率", "风险中性", "套利"],
-    "market-structure": ["做市", "订单簿", "流动性", "资金费率", "基差",
-                         "期限结构", "收益率曲线", "相关系数"],
-    "trading-psychology": ["交易心理", "行为金融", "决策偏差",
-                           "情绪交易", "过度自信", "损失厌恶"],
+    "quant-methods": [
+        "量化",
+        "Kalman",
+        "PCA",
+        "IC",
+        "Sharpe",
+        "回测",
+        "贝叶斯",
+        "蒙特卡洛",
+        "Black-Scholes",
+        "Greeks",
+        "定价",
+    ],
+    "risk-models": ["风控", "对冲", "止损", "止盈", "仓位", "波动率", "风险中性", "套利"],
+    "market-structure": [
+        "做市",
+        "订单簿",
+        "流动性",
+        "资金费率",
+        "基差",
+        "期限结构",
+        "收益率曲线",
+        "相关系数",
+    ],
+    "trading-psychology": ["交易心理", "行为金融", "决策偏差", "情绪交易", "过度自信", "损失厌恶"],
 }
 
 # 技术方案：架构 / 算法 / 测试
 TECHNICAL_KEYWORDS: Dict[str, List[str]] = {
-    "architecture": ["架构", "设计模式", "微服务", "消息队列", "缓存策略",
-                     "RAG", "知识图谱", "Fail-Open", "Shadow模式"],
-    "algorithms": ["算法", "分块", "索引", "检索", "排序", "过滤",
-                   "分词", "向量化", "embedding"],
-    "testing": ["TDD", "单元测试", "集成测试", "回归测试",
-                "测试覆盖", "mock", "fixture"],
+    "architecture": [
+        "架构",
+        "设计模式",
+        "微服务",
+        "消息队列",
+        "缓存策略",
+        "RAG",
+        "知识图谱",
+        "Fail-Open",
+        "Shadow模式",
+    ],
+    "algorithms": ["算法", "分块", "索引", "检索", "排序", "过滤", "分词", "向量化", "embedding"],
+    "testing": ["TDD", "单元测试", "集成测试", "回归测试", "测试覆盖", "mock", "fixture"],
 }
 
 # GitHub 仓库名关键词 → 子分类推断
 GITHUB_REPO_KEYWORDS: Dict[str, List[str]] = {
-    "ml-frameworks": ["langchain", "llama", "transformers", "pytorch",
-                      "tensorflow", "scikit", "sklearn", "xgboost", "huggingface"],
-    "trading-systems": ["backtrader", "vnpy", "freqtrade", "zipline",
-                        "ccxt", "quantconnect"],
+    "ml-frameworks": [
+        "langchain",
+        "llama",
+        "transformers",
+        "pytorch",
+        "tensorflow",
+        "scikit",
+        "sklearn",
+        "xgboost",
+        "huggingface",
+    ],
+    "trading-systems": ["backtrader", "vnpy", "freqtrade", "zipline", "ccxt", "quantconnect"],
     "data-engineering": ["airflow", "spark", "kafka", "pandas", "polars", "duckdb"],
     "infra-tools": ["docker", "kubernetes", "k8s", "terraform", "nginx", "redis"],
 }
@@ -81,9 +113,14 @@ def _make_tags(keywords: List[str]) -> List[str]:
     return tags
 
 
-def _build_detection(det_type: str, category: str, subcategory: str,
-                    keywords_matched: List[str], first_pos: int,
-                    content: str) -> Dict:
+def _build_detection(
+    det_type: str,
+    category: str,
+    subcategory: str,
+    keywords_matched: List[str],
+    first_pos: int,
+    content: str,
+) -> Dict:
     """构建单条检测结果字典。"""
     start = max(0, first_pos - 100)
     end = min(len(content), first_pos + 100)
@@ -99,8 +136,9 @@ def _build_detection(det_type: str, category: str, subcategory: str,
     }
 
 
-def _detect_by_keyword_map(content: str, keyword_map: Dict[str, List[str]],
-                          det_type: str, category: str) -> Optional[Dict]:
+def _detect_by_keyword_map(
+    content: str, keyword_map: Dict[str, List[str]], det_type: str, category: str
+) -> Optional[Dict]:
     """通用关键词检测：选出匹配最多的子分类，构建检测结果。
 
     同数匹配时按字典序保留首个（Python 3.7+ 保序，结果确定性）。
@@ -125,8 +163,7 @@ def _detect_by_keyword_map(content: str, keyword_map: Dict[str, List[str]],
 
     if best_sub is None or not best_matched:
         return None
-    return _build_detection(det_type, category, best_sub, best_matched,
-                           best_pos, content)
+    return _build_detection(det_type, category, best_sub, best_matched, best_pos, content)
 
 
 def _detect_github(content: str) -> Optional[Dict]:
@@ -169,8 +206,7 @@ def _detect_github(content: str) -> Optional[Dict]:
 
     # 摘要位置：优先 URL，其次 repo/仓库
     first_pos = url_match.start() if url_match else (repo_pos if repo_pos >= 0 else 0)
-    return _build_detection("github", "github", best_sub, best_matched,
-                           first_pos, content)
+    return _build_detection("github", "github", best_sub, best_matched, first_pos, content)
 
 
 def detect_research(content: str) -> List[Dict]:

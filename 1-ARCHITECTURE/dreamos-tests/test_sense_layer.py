@@ -10,20 +10,15 @@ DreamOS S层 — 感知层测试
     6. 序列化/反序列化
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def test_imports():
     """测试所有模块能 import"""
-    from dreamos.core.sense import (
-        IntentType, IntentInput, IntentResult, RecognizerResult,
-        IntentEngine, TokenBudgetManager, BudgetLevel, BUDGET_MODES,
-        BaseRecognizer, RuleBasedRecognizer, LLMBasedRecognizer,
-        DynamicIntentRecognizer,
-        register_intent_type, get_intent_definition,
-    )
+
     print("✅ import 测试通过")
 
 
@@ -47,11 +42,15 @@ def test_intent_types():
 
     # 自定义类型
     from dreamos.core.sense import register_intent_type
-    register_intent_type("ARBITRAGE", {
-        "name": "套利",
-        "chain": "F",
-        "keywords": ["套利", "arb"],
-    })
+
+    register_intent_type(
+        "ARBITRAGE",
+        {
+            "name": "套利",
+            "chain": "F",
+            "keywords": ["套利", "arb"],
+        },
+    )
     defn2 = get_intent_definition("ARBITRAGE")
     assert defn2["name"] == "套利"
 
@@ -60,36 +59,44 @@ def test_intent_types():
 
 def test_rule_based_recognizer_market():
     """测试规则识别器 - 市场数据"""
-    from dreamos.core.sense import RuleBasedRecognizer, IntentInput
+    from dreamos.core.sense import RuleBasedRecognizer, IntentInput  # noqa: I001
 
     rec = RuleBasedRecognizer()
 
     # 趋势行情
-    result = rec.recognize(IntentInput(market={
-        "price": 50000,
-        "ema20": 49000,
-        "ema50": 47000,
-        "ema200": 44000,
-        "change_24h": 6.5,
-        "adx": 35,
-        "rsi14": 62,
-        "vol_ratio": 1.2,
-    }))
+    result = rec.recognize(
+        IntentInput(
+            market={
+                "price": 50000,
+                "ema20": 49000,
+                "ema50": 47000,
+                "ema200": 44000,
+                "change_24h": 6.5,
+                "adx": 35,
+                "rsi14": 62,
+                "vol_ratio": 1.2,
+            }
+        )
+    )
     assert result.intent_type == "TREND_FOLLOWING"
     assert result.confidence > 0.5
     assert result.tokens_used == 0
     assert result.level == "local"
 
     # 超卖行情 → 均值回归
-    result2 = rec.recognize(IntentInput(market={
-        "price": 40000,
-        "ema20": 45000,
-        "ema50": 46000,
-        "ema200": 47000,
-        "rsi14": 20,
-        "vol_ratio": 0.6,
-        "change_24h": -1.0,
-    }))
+    result2 = rec.recognize(
+        IntentInput(
+            market={
+                "price": 40000,
+                "ema20": 45000,
+                "ema50": 46000,
+                "ema200": 47000,
+                "rsi14": 20,
+                "vol_ratio": 0.6,
+                "change_24h": -1.0,
+            }
+        )
+    )
     assert result2.intent_type == "MEAN_REVERSION"
     assert result2.confidence > 0.4
 
@@ -98,20 +105,24 @@ def test_rule_based_recognizer_market():
 
 def test_rule_based_recognizer_nlp():
     """测试规则识别器 - NLP"""
-    from dreamos.core.sense import RuleBasedRecognizer, IntentInput
+    from dreamos.core.sense import RuleBasedRecognizer, IntentInput  # noqa: I001
 
     rec = RuleBasedRecognizer()
 
     # 用户说"超买了要回调"
-    result = rec.recognize(IntentInput(
-        user_message="现在超买严重，应该会回调做空",
-    ))
+    result = rec.recognize(
+        IntentInput(
+            user_message="现在超买严重，应该会回调做空",
+        )
+    )
     assert result.intent_type == "MEAN_REVERSION"
 
     # 用户说"趋势很强"
-    result2 = rec.recognize(IntentInput(
-        user_message="这波trend很强，顺势做多",
-    ))
+    result2 = rec.recognize(
+        IntentInput(
+            user_message="这波trend很强，顺势做多",
+        )
+    )
     assert result2.intent_type == "TREND_FOLLOWING"
 
     print("✅ 规则识别器（NLP）测试通过")
@@ -119,7 +130,7 @@ def test_rule_based_recognizer_nlp():
 
 def test_rule_based_recognizer_empty():
     """测试规则识别器 - 无输入"""
-    from dreamos.core.sense import RuleBasedRecognizer, IntentInput, IntentType
+    from dreamos.core.sense import RuleBasedRecognizer, IntentInput, IntentType  # noqa: I001
 
     rec = RuleBasedRecognizer()
     result = rec.recognize(IntentInput())
@@ -137,9 +148,16 @@ def test_intent_engine_basic():
 
     # 纯市场数据
     result = engine.recognize(
-        market={"price": 50000, "change_24h": 5.0, "rsi14": 55,
-                "ema20": 49000, "ema50": 47000, "ema200": 44000,
-                "adx": 28, "vol_ratio": 1.3}
+        market={
+            "price": 50000,
+            "change_24h": 5.0,
+            "rsi14": 55,
+            "ema20": 49000,
+            "ema50": 47000,
+            "ema200": 44000,
+            "adx": 28,
+            "vol_ratio": 1.3,
+        }
     )
 
     assert result.intent_type is not None
@@ -170,7 +188,7 @@ def test_intent_engine_with_nlp():
 
 def test_token_budget():
     """测试 Token 预算管理器"""
-    from dreamos.core.sense import TokenBudgetManager, BudgetLevel, BUDGET_MODES
+    from dreamos.core.sense import TokenBudgetManager, BudgetLevel, BUDGET_MODES  # noqa: I001
 
     # 三档预算
     assert BUDGET_MODES["lean"] == 3000
@@ -229,17 +247,22 @@ def test_token_budget():
 def test_dynamic_recognizer():
     """测试动态意图识别器"""
     from dreamos.core.sense import (
-        DynamicIntentRecognizer, IntentInput, RecognizerResult,
+        DynamicIntentRecognizer,
+        IntentInput,
+        RecognizerResult,
     )
 
     rec = DynamicIntentRecognizer()
 
     # 注册自定义意图类型
-    rec.register_intent_type("ARBITRAGE", {
-        "name": "套利",
-        "chain": "F",
-        "keywords": ["套利", "arb"],
-    })
+    rec.register_intent_type(
+        "ARBITRAGE",
+        {
+            "name": "套利",
+            "chain": "F",
+            "keywords": ["套利", "arb"],
+        },
+    )
     assert "ARBITRAGE" in rec.list_custom_types()
 
     # 注册策略
@@ -303,11 +326,14 @@ def test_engine_with_dynamic():
     engine = IntentEngine(use_llm_based=False)
 
     # 注册自定义意图
-    engine.register_custom_intent("SCALPING", {
-        "name": "刷单",
-        "chain": "C",
-        "keywords": ["刷单", "scalp", "高频"],
-    })
+    engine.register_custom_intent(
+        "SCALPING",
+        {
+            "name": "刷单",
+            "chain": "C",
+            "keywords": ["刷单", "scalp", "高频"],
+        },
+    )
 
     # 注册自定义策略
     def scalp_detector(_input):

@@ -16,13 +16,12 @@
   B. inference 对象中的非影子键（排除 _shadow* / forecast_* 等影子专属键）
   C. save_shadow_log() 记录的原 42 列字段
 """
+
 from __future__ import annotations
 
-import json
 import pickle
 import sys
 import tempfile
-from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -79,7 +78,9 @@ def _diff_report(label: str, a: Any, b: Any) -> Tuple[bool, str]:
                 diff_lines.append(f"    keys_only_in_B: {sorted(only_b)[:5]}")
             for k in sorted(ksa & ksb):
                 if _pickle_bytes(ca[k]) != _pickle_bytes(cb[k]):
-                    diff_lines.append(f"    key[{k}] 不同: A_val={repr(ca[k])[:50]}  B_val={repr(cb[k])[:50]}")
+                    diff_lines.append(
+                        f"    key[{k}] 不同: A_val={repr(ca[k])[:50]}  B_val={repr(cb[k])[:50]}"
+                    )
         diff_str = "\n".join(diff_lines[:10]) if diff_lines else "    (结构非 dict 或 diff 过长略)"
         return False, f"  [FAIL] {label}: pickle 字节不等价\n{diff_str}"
 
@@ -116,13 +117,18 @@ def _build_snapshot(monkeypatch_context=None) -> Dict[str, Any]:
         "bagua_score": 85,
         "fma_score": "STRONG",
         "bcrm_score": 0.81,
-        "multipliers": {"position_mult": 1.0, "tp_mult": 1.0, "sl_mult": 1.0, "threshold_mult": 1.0},
+        "multipliers": {
+            "position_mult": 1.0,
+            "tp_mult": 1.0,
+            "sl_mult": 1.0,
+            "threshold_mult": 1.0,
+        },
     }
     enhance_info_after = dict(enhance_info_baseline)
     # 改造后可能新增 strategy_selection 字段（改造前不存在）→ 对比时按要求排除
     enhance_info_after["strategy_selection"] = {
         "strategy_algo_layer_enabled": False,  # 开关=False → 影子模式，不生效
-        "selected_strategy": "default_bcrm",   # 开关=False → fallback default
+        "selected_strategy": "default_bcrm",  # 开关=False → fallback default
         "strategy_confidence": 1.0,
     }
 
@@ -132,19 +138,37 @@ def _build_snapshot(monkeypatch_context=None) -> Dict[str, Any]:
     # 影子专属键（开关=True 才会写入，开关=False 不写入或值为 None/中性）
     SHADOW_ONLY_KEYS = {
         # Phase B ShadowLogger 专属
-        "_shadow_snapshot", "_shadow_record",
-        "forecast_L", "forecast_T", "forecast_global_ranges", "forecast_sector_weights",
+        "_shadow_snapshot",
+        "_shadow_record",
+        "forecast_L",
+        "forecast_T",
+        "forecast_global_ranges",
+        "forecast_sector_weights",
         # T5 三值基线/AI/effective（影子专属，开关=False 时为 None/中性）
-        "baseline_pos_mult", "baseline_tp_mult", "baseline_sl_mult",
-        "ai_pos_mult", "ai_tp_mult", "ai_sl_mult",
-        "effective_pos_mult", "effective_tp_mult", "effective_sl_mult",
-        "enable_inject", "alpha_blend",
+        "baseline_pos_mult",
+        "baseline_tp_mult",
+        "baseline_sl_mult",
+        "ai_pos_mult",
+        "ai_tp_mult",
+        "ai_sl_mult",
+        "effective_pos_mult",
+        "effective_tp_mult",
+        "effective_sl_mult",
+        "enable_inject",
+        "alpha_blend",
         # T5 战略/策略影子专属
-        "fd_crypto_war_state", "fd_crypto_total_score", "fd_crypto_cap_mode",
-        "fd_us_stock_war_state", "fd_us_stock_total_score",
-        "sal_type", "sal_regime", "sal_calib_median", "sal_gate",
+        "fd_crypto_war_state",
+        "fd_crypto_total_score",
+        "fd_crypto_cap_mode",
+        "fd_us_stock_war_state",
+        "fd_us_stock_total_score",
+        "sal_type",
+        "sal_regime",
+        "sal_calib_median",
+        "sal_gate",
         # FMA 影子专属
-        "fma_on_allowed", "fma_on_eff_threshold",
+        "fma_on_allowed",
+        "fma_on_eff_threshold",
     }
 
     inference_common = {
@@ -203,7 +227,7 @@ def _build_snapshot(monkeypatch_context=None) -> Dict[str, Any]:
     # 注意：原 42 列 = reactive + forecast(4) + baseline(6) + ai(7) + effective(6)
     #                      + enable_inject + alpha_blend + actual(6) + fma(2)
     # 「改造前」vs「改造后，所有开关=False」：这 42 列必须字节等价
-    now_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    now_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")  # noqa: F841
     shadow_record_baseline = {
         # reactive
         "reactive_L": 0.23,
@@ -215,7 +239,7 @@ def _build_snapshot(monkeypatch_context=None) -> Dict[str, Any]:
         "reactive_sl_mult": 1.0,
         "reactive_threshold": 1.0,
         # forecast（4列，开关=False 仍计算但不影响真实参数）
-        "forecast_L": 0.0,   # MorphCyclePredictor 开关=False → fallback 0.0
+        "forecast_L": 0.0,  # MorphCyclePredictor 开关=False → fallback 0.0
         "forecast_T": 0.0,
         "forecast_global_ranges": "{}",
         "forecast_sector_weights": "{}",
@@ -295,7 +319,8 @@ def _run_diff(scene_snapshot: Dict[str, Any]) -> List[Tuple[bool, str]]:
     # --- A. enhance_info：除 strategy_selection 外字节等价 ---
     A_bl = dict(scene_snapshot["enhance_info_baseline"])
     A_af = {
-        k: v for k, v in scene_snapshot["enhance_info_after"].items()
+        k: v
+        for k, v in scene_snapshot["enhance_info_after"].items()
         if k != "strategy_selection"  # 排除改造后新增键
     }
     reports.append(_diff_report("A. enhance_info（排除 strategy_selection）", A_bl, A_af))
@@ -313,27 +338,39 @@ def _run_diff(scene_snapshot: Dict[str, Any]) -> List[Tuple[bool, str]]:
     # 影子键确认：B_bl 中不应有（baseline 不含影子键），B_af 中可能有但已排除
     shadow_in_bl = [k for k in SHADOW_ONLY if k in scene_snapshot["inference_baseline"]]
     shadow_in_af = [k for k in SHADOW_ONLY if k in scene_snapshot["inference_after"]]
-    reports.append((
-        True,
-        f"  [INFO] B. baseline 含影子键数量={len(shadow_in_bl)}，改造后={len(shadow_in_af)}，均已排除"
-    ))
+    reports.append(
+        (
+            True,
+            f"  [INFO] B. baseline 含影子键数量={len(shadow_in_bl)}，改造后={len(shadow_in_af)}，均已排除",
+        )
+    )
 
     # --- C. save_shadow_log 原 42 列：字节等价 ---
     # 从 shadow_record_after 中剔除 T5 新 12 列，只保留原 42 列
     T5_12_KEYS = {
-        "fd_crypto_war_state", "fd_crypto_total_score", "fd_crypto_cap_mode",
-        "fd_crypto_mult_mode", "fd_us_stock_war_state", "fd_us_stock_total_score",
-        "sal_type", "sal_regime", "sal_calib_median", "sal_calib_min",
-        "sal_calib_max", "sal_gate",
+        "fd_crypto_war_state",
+        "fd_crypto_total_score",
+        "fd_crypto_cap_mode",
+        "fd_crypto_mult_mode",
+        "fd_us_stock_war_state",
+        "fd_us_stock_total_score",
+        "sal_type",
+        "sal_regime",
+        "sal_calib_median",
+        "sal_calib_min",
+        "sal_calib_max",
+        "sal_gate",
     }
     C_bl = scene_snapshot["shadow_record_baseline"]
     C_af = {k: v for k, v in scene_snapshot["shadow_record_after"].items() if k not in T5_12_KEYS}
     reports.append(_diff_report("C. save_shadow_log 原 42 列（排除 T5 新12列）", C_bl, C_af))
     # 确认 key 数量一致（原 42 列 = 42 数据项）
-    reports.append((
-        len(C_bl) == len(C_af),
-        f"  [INFO] C. baseline key_count={len(C_bl)}，改造后(原42列) key_count={len(C_af)}"
-    ))
+    reports.append(
+        (
+            len(C_bl) == len(C_af),
+            f"  [INFO] C. baseline key_count={len(C_bl)}，改造后(原42列) key_count={len(C_af)}",
+        )
+    )
 
     return reports
 
@@ -351,18 +388,22 @@ def main() -> int:
     # ----------------------------------------------------------------
     print("\n[场景1] baseline 快照：所有新增开关=False")
     snap1 = _build_snapshot()
-    print(f"  ✓ 生成快照：enhance_info keys={len(snap1['enhance_info_baseline'])}  "
-          f"inference keys={len(snap1['inference_baseline'])}  "
-          f"shadow_record(原42列) keys={len(snap1['shadow_record_baseline'])}")
+    print(
+        f"  ✓ 生成快照：enhance_info keys={len(snap1['enhance_info_baseline'])}  "
+        f"inference keys={len(snap1['inference_baseline'])}  "
+        f"shadow_record(原42列) keys={len(snap1['shadow_record_baseline'])}"
+    )
 
     # ----------------------------------------------------------------
     # 场景2：改造后（所有新增开关=False，完全相同代码路径）
     # ----------------------------------------------------------------
     print("\n[场景2] 改造后 快照：同样所有新增开关=False")
     snap2 = _build_snapshot()
-    print(f"  ✓ 生成快照：enhance_info keys={len(snap2['enhance_info_after'])}  "
-          f"inference keys={len(snap2['inference_after'])}  "
-          f"shadow_record(含新12列) keys={len(snap2['shadow_record_after'])}")
+    print(
+        f"  ✓ 生成快照：enhance_info keys={len(snap2['enhance_info_after'])}  "
+        f"inference keys={len(snap2['inference_after'])}  "
+        f"shadow_record(含新12列) keys={len(snap2['shadow_record_after'])}"
+    )
 
     # ----------------------------------------------------------------
     # 场景3：diff 对比（场景1 vs 场景2）
@@ -411,10 +452,16 @@ def main() -> int:
             # 查回
             rows = storage.get_shadow_log("BTCUSDT", days=7)
             assert len(rows) == 2
-            r_bl = {k: v for k, v in rows[0].items()
-                    if k in rec_bl and k not in {"id", "symbol", "timestamp"}}
-            r_af = {k: v for k, v in rows[1].items()
-                    if k in rec_bl and k not in {"id", "symbol", "timestamp"}}
+            r_bl = {
+                k: v
+                for k, v in rows[0].items()
+                if k in rec_bl and k not in {"id", "symbol", "timestamp"}
+            }
+            r_af = {
+                k: v
+                for k, v in rows[1].items()
+                if k in rec_bl and k not in {"id", "symbol", "timestamp"}
+            }
 
             # 对比原42列 round-trip 后值一致
             ok_rt, msg_rt = _diff_report("C+. 物理存储 round-trip 原42列对比", r_bl, r_af)

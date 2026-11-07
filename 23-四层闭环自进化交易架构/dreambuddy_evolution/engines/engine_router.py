@@ -4,6 +4,7 @@
 
 来源: SPEC v0.3 §2.B — kline_event_handler 多职责缝合体拆分
 """
+
 from __future__ import annotations
 
 import logging
@@ -71,6 +72,7 @@ class EngineRouter:
         """
         try:
             from dreambuddy_evolution.agi_config import is_enabled
+
             if not is_enabled(switch):
                 return fallback
         except Exception:
@@ -89,6 +91,7 @@ class EngineRouter:
         if self._sig_engine is None:
             try:
                 from dreambuddy_evolution.core.signature_engine import SignatureEngine
+
                 self._sig_engine = SignatureEngine(depth=3)
             except Exception as e:
                 logger.debug("[FO-AGI] SignatureEngine init fail: %s", e)
@@ -100,6 +103,7 @@ class EngineRouter:
         if self._pattern_detector is None:
             try:
                 from dreambuddy_evolution.engines.pattern_detector import PatternDetector
+
                 self._pattern_detector = PatternDetector()
             except Exception as e:
                 logger.debug("[FO-AGI] PatternDetector init fail: %s", e)
@@ -111,6 +115,7 @@ class EngineRouter:
         if self._regime_classifier is None:
             try:
                 from dreambuddy_evolution.core.regime_classifier import RegimeClassifier
+
                 self._regime_classifier = RegimeClassifier()
             except Exception as e:
                 logger.debug("[FO-AGI] RegimeClassifier init fail: %s", e)
@@ -122,6 +127,7 @@ class EngineRouter:
         if self._path_integral_engine is None:
             try:
                 from dreambuddy_evolution.core.path_integral import PathIntegralEngine
+
                 self._path_integral_engine = PathIntegralEngine(n_paths=1000)
             except Exception as e:
                 logger.debug("[FO-AGI] PathIntegralEngine init fail: %s", e)
@@ -133,6 +139,7 @@ class EngineRouter:
         if self._uncertainty_quant is None:
             try:
                 from dreambuddy_evolution.core.uncertainty_quantifier import UncertaintyQuantifier
+
                 self._uncertainty_quant = UncertaintyQuantifier()
             except Exception as e:
                 logger.debug("[FO-AGI] UncertaintyQuantifier init fail: %s", e)
@@ -144,6 +151,7 @@ class EngineRouter:
         if self._meta_cognition_gate is None:
             try:
                 from dreambuddy_evolution.engines.meta_cognition_gate import MetaCognitionGate
+
                 self._meta_cognition_gate = MetaCognitionGate()
             except Exception as e:
                 logger.debug("[FO-AGI] MetaCognitionGate init fail: %s", e)
@@ -155,6 +163,7 @@ class EngineRouter:
         if self._evolution_pipeline is None:
             try:
                 from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
+
                 self._evolution_pipeline = EvolutionPipeline(trader=getattr(self, "_trader", None))
                 self._path_layer_enabled = True
                 logger.info("[PathLayer] EvolutionPipeline 初始化成功，路径发现层已启用")
@@ -170,11 +179,13 @@ class EngineRouter:
             try:
                 import sys
                 from pathlib import Path
+
                 repo_root = Path(__file__).resolve().parents[3]
                 _29_dir = repo_root / "29-事件驱动策略系统"
                 if str(_29_dir) not in sys.path:
                     sys.path.insert(0, str(_29_dir))
                 from event_driven import EventDrivenStrategy
+
                 self._event_driven_strategy = EventDrivenStrategy()
                 logger.info("[EventDriven] EventDrivenStrategy 初始化成功（影子模式）")
             except Exception as e:
@@ -187,6 +198,7 @@ class EngineRouter:
         if self._reflection_scanner is None:
             try:
                 from dreambuddy_evolution.engines.reflection_scanner import ReflectionScanner
+
                 self._reflection_scanner = ReflectionScanner(project_root=self._project_root)
             except Exception as e:
                 logger.warning("[FO] ReflectionScanner init fail: %s", e)
@@ -198,6 +210,7 @@ class EngineRouter:
         if self._subsystem_bridge is None:
             try:
                 from dreambuddy_evolution.adapters.subsystem_bridge import SubSystemBridge
+
                 self._subsystem_bridge = SubSystemBridge()
             except Exception as e:
                 logger.debug("[PathLayer] SubSystemBridge init fail: %s", e)
@@ -265,22 +278,31 @@ class EngineRouter:
                 # Phase 1: 事件驱动路径注入（支持 Facade 传入 monkeypatch 后的类）
                 try:
                     from dreambuddy_evolution.agi_config import is_enabled
-                    _eds_cls = event_driven_strategy_cls if event_driven_strategy_cls is not None else EventDrivenStrategy
+
+                    _eds_cls = (
+                        event_driven_strategy_cls
+                        if event_driven_strategy_cls is not None
+                        else EventDrivenStrategy
+                    )
                     if is_enabled("enable_event_driven_path") and _eds_cls is not None:
                         eds = _eds_cls()
                         event_signal = eds.evaluate(kline_data)
-                        if event_signal is not None and \
-                           getattr(event_signal, "signal", "neutral") != "neutral" and \
-                           float(getattr(event_signal, "strength", 0.0)) >= 0.60:
-                            paths.append({
-                                "source": "event_driven",
-                                "direction": event_signal.signal,
-                                "score": float(event_signal.strength),
-                                "validated": True,
-                                "low_conviction": float(event_signal.strength) < 0.50,
-                                "event_phase": getattr(event_signal, "event_phase", None),
-                                "reason": getattr(event_signal, "reason", ""),
-                            })
+                        if (
+                            event_signal is not None
+                            and getattr(event_signal, "signal", "neutral") != "neutral"
+                            and float(getattr(event_signal, "strength", 0.0)) >= 0.60
+                        ):
+                            paths.append(
+                                {
+                                    "source": "event_driven",
+                                    "direction": event_signal.signal,
+                                    "score": float(event_signal.strength),
+                                    "validated": True,
+                                    "low_conviction": float(event_signal.strength) < 0.50,
+                                    "event_phase": getattr(event_signal, "event_phase", None),
+                                    "reason": getattr(event_signal, "reason", ""),
+                                }
+                            )
                             path_info["path_count"] = len(paths)
                 except Exception as e:
                     logger.debug("[PathLayer] event-driven path injection fail (FAIL-OPEN): %s", e)
@@ -292,7 +314,8 @@ class EngineRouter:
                     raw_optimal = pipeline._select_optimal_path(paths, r_vector, market_data)
                     self._last_dimension_predictions = (
                         raw_optimal.get("dimension_predictions", {})
-                        if isinstance(raw_optimal, dict) else {}
+                        if isinstance(raw_optimal, dict)
+                        else {}
                     )
                     if raw_optimal and raw_optimal.get("optimal_path"):
                         op = raw_optimal["optimal_path"]
@@ -308,17 +331,11 @@ class EngineRouter:
                         optimal = None
                     if optimal:
                         path_info["optimal_source"] = optimal.get("source")
-                        path_info["optimal_score"] = round(
-                            float(optimal.get("score", 0.0)), 6
-                        )
+                        path_info["optimal_score"] = round(float(optimal.get("score", 0.0)), 6)
                         path_info["validated"] = optimal.get("validated", False)
-                        path_info["low_conviction"] = optimal.get(
-                            "low_conviction", False
-                        )
+                        path_info["low_conviction"] = optimal.get("low_conviction", False)
                         _pi = raw_optimal.get("path_info") or raw_optimal
-                        path_info["primary_contradiction"] = _pi.get(
-                            "primary_contradiction"
-                        )
+                        path_info["primary_contradiction"] = _pi.get("primary_contradiction")
                         path_info["structural_break"] = _pi.get("structural_break")
                         path_info["shift_result"] = _pi.get("shift_result")
                         path_info["reflexivity_fuel"] = _pi.get("reflexivity_fuel")
@@ -336,9 +353,7 @@ class EngineRouter:
                             path_info["hjb_policy"] = _hjb
 
                         opt_dir = optimal.get("direction", "")
-                        if opt_dir in ("long", "short") and optimal.get(
-                            "validated", False
-                        ):
+                        if opt_dir in ("long", "short") and optimal.get("validated", False):
                             path_info["d_star_adjusted"] = opt_dir
                             if optimal.get("low_conviction", False):
                                 ri = ri * 0.7
@@ -349,8 +364,7 @@ class EngineRouter:
                                     ri,
                                 )
                             logger.info(
-                                "[PathLayer] %s 路径发现覆盖 d*: %s→%s "
-                                "source=%s score=%.4f",
+                                "[PathLayer] %s 路径发现覆盖 d*: %s→%s " "source=%s score=%.4f",
                                 symbol,
                                 d_star,
                                 opt_dir,
@@ -361,6 +375,8 @@ class EngineRouter:
             path_info["ri_adjusted"] = ri
 
         except Exception as e:
-            logger.warning("[PathLayer] %s 路径发现层 crash: %s\n%s", symbol, e, traceback.format_exc())
+            logger.warning(
+                "[PathLayer] %s 路径发现层 crash: %s\n%s", symbol, e, traceback.format_exc()
+            )
 
         return path_info

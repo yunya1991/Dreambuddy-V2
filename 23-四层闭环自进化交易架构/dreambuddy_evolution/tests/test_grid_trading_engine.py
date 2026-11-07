@@ -14,6 +14,7 @@ Phase C TDD 测试：GridTradingEngine 网格交易引擎
 参考：SPEC-趋势跟踪正金字塔与网格策略落地.md Phase C
 硬约束：HC-TF-05（硬止损 8%，趋势市暂停）、HC-TF-07（FAIL-OPEN）
 """
+
 from __future__ import annotations
 
 import sys
@@ -32,10 +33,11 @@ if str(REPO) not in sys.path:
 def test_grid_trading_engine_importable():
     """T1: GridTradingEngine 模块可导入"""
     from dreambuddy_evolution.engines.grid_trading import (
-        GridTradingEngine,
         GridParameterCalculator,
         GridRiskGate,
+        GridTradingEngine,
     )
+
     assert GridTradingEngine is not None
     assert GridParameterCalculator is not None
     assert GridRiskGate is not None

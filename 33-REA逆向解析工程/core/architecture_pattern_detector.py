@@ -6,25 +6,26 @@ PoE Task 1：识别 MVC / 分层 / 事件驱动 / 管道过滤 / 插件化 / 微
 Evidence-First 硬约束：无证据的结论禁止输出（NFR-1）。
 FAIL-OPEN：异常/无模式时返回 level=unknown 的 Evidence（NFR-7）。
 """
+
 from __future__ import annotations
 
-import ast
 import os
 from dataclasses import dataclass, field
 from typing import Any
 
 from .evidence import Evidence, EvidenceLevel
 
-
 # ---------- 模式定义 ----------
+
 
 @dataclass
 class PatternRule:
     """架构模式识别规则。"""
-    pattern: str                  # 模式名（如 "MVC"）
-    required_dirs: list[str]      # 必须同时出现的目录关键字
-    confidence: float = 0.8       # 命中时置信度
-    level: str = "derivation"    # 默认 derivation 级（基于目录结构推导）
+
+    pattern: str  # 模式名（如 "MVC"）
+    required_dirs: list[str]  # 必须同时出现的目录关键字
+    confidence: float = 0.8  # 命中时置信度
+    level: str = "derivation"  # 默认 derivation 级（基于目录结构推导）
     known_gaps: list[str] = field(default_factory=list)
 
 
@@ -52,7 +53,9 @@ _DEFAULT_RULES: list[PatternRule] = [
         pattern="EventDriven",
         required_dirs=["events", "handlers"],
         confidence=0.7,
-        known_gaps=["events/handlers 目录可能仅是辅助模块，需结合装饰器（@handler）或消息队列代码确认"],
+        known_gaps=[
+            "events/handlers 目录可能仅是辅助模块，需结合装饰器（@handler）或消息队列代码确认"
+        ],
     ),
     PatternRule(
         pattern="Pipeline",
@@ -77,9 +80,11 @@ _DEFAULT_RULES: list[PatternRule] = [
 
 # ---------- 结果数据结构 ----------
 
+
 @dataclass
 class PatternConclusion:
     """架构模式结论（带 Evidence 引用）。"""
+
     pattern: str
     evidence: Evidence
     matched_dirs: list[str] = field(default_factory=list)
@@ -93,6 +98,7 @@ class PatternConclusion:
 
 
 # ---------- 识别器 ----------
+
 
 class ArchitecturePatternDetector:
     """架构模式识别器。
@@ -147,29 +153,33 @@ class ArchitecturePatternDetector:
                     confidence=rule.confidence,
                     known_gaps=list(rule.known_gaps),
                 )
-                conclusions.append(PatternConclusion(
-                    pattern=rule.pattern,
-                    evidence=ev,
-                    matched_dirs=matched,
-                ))
+                conclusions.append(
+                    PatternConclusion(
+                        pattern=rule.pattern,
+                        evidence=ev,
+                        matched_dirs=matched,
+                    )
+                )
                 all_evidence.append(ev)
 
         # 无任何模式命中 → 输出 unknown Evidence
         if not conclusions:
-            all_evidence.append(Evidence(
-                result="未检测到已知架构模式",
-                level=EvidenceLevel.UNKNOWN,
-                provenance={
-                    "target": target,
-                    "scanned_dirs": scanned_dirs,
-                    "analysis": "directory_naming_convention",
-                },
-                confidence=0.3,
-                known_gaps=[
-                    "目标目录的子目录命名不匹配任何预定义模式",
-                    "可能采用非标准命名或自定义架构，需结合 import 关系和代码内容人工确认",
-                ],
-            ))
+            all_evidence.append(
+                Evidence(
+                    result="未检测到已知架构模式",
+                    level=EvidenceLevel.UNKNOWN,
+                    provenance={
+                        "target": target,
+                        "scanned_dirs": scanned_dirs,
+                        "analysis": "directory_naming_convention",
+                    },
+                    confidence=0.3,
+                    known_gaps=[
+                        "目标目录的子目录命名不匹配任何预定义模式",
+                        "可能采用非标准命名或自定义架构，需结合 import 关系和代码内容人工确认",
+                    ],
+                )
+            )
 
         return {
             "target": target,
@@ -236,6 +246,7 @@ class ArchitecturePatternDetector:
 
 
 # ---------- 模块级入口 ----------
+
 
 def detect_architecture_patterns(target: str) -> dict[str, Any]:
     """架构模式识别的模块级入口。

@@ -5,10 +5,11 @@
 实际方向，逐项判定 consistent / divergent，并按背离数量对象限置信度降级。
 结果写入 asset_rotation.json 的 divergence 字段。
 """
+
 import json
+import os
 import sqlite3
 from datetime import datetime, timezone
-import os
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
 _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
@@ -127,13 +128,15 @@ def main():
         else:
             verdict = "divergent"
             n_div += 1
-        checks.append({
-            "asset": asset,
-            "expected_dir": expected,
-            "actual_momentum_3m_pct": actual_mom,
-            "actual_dir": actual_dir,
-            "verdict": verdict,
-        })
+        checks.append(
+            {
+                "asset": asset,
+                "expected_dir": expected,
+                "actual_momentum_3m_pct": actual_mom,
+                "actual_dir": actual_dir,
+                "verdict": verdict,
+            }
+        )
 
     # HY OAS 信用利差走阔背离（v0.7 新增，自动纳入背离计数）
     oas = hy_oas_signal()
@@ -159,11 +162,15 @@ def main():
 
     print(f"quadrant={quadrant}  divergent={n_div}  confidence={confidence}")
     for c in checks:
-        print(f"  {c['asset']:<12} expected={c['expected_dir']:+d}  "
-              f"actual={str(c['actual_momentum_3m_pct']):>7}%  {c['verdict']}")
+        print(
+            f"  {c['asset']:<12} expected={c['expected_dir']:+d}  "
+            f"actual={str(c['actual_momentum_3m_pct']):>7}%  {c['verdict']}"
+        )
     if oas:
-        print(f"  HY_OAS        latest={oas['latest']}  chg20d={oas['change_20d']:+.2f}  "
-              f"divergent={oas['divergent']}")
+        print(
+            f"  HY_OAS        latest={oas['latest']}  chg20d={oas['change_20d']:+.2f}  "
+            f"divergent={oas['divergent']}"
+        )
 
 
 if __name__ == "__main__":

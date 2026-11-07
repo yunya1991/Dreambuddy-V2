@@ -7,19 +7,19 @@
 - FAIL-OPEN 兜底 Argument
 - 上下文注入（transcript / background / injected_views）
 """
+
 from __future__ import annotations
 
 import json
 from typing import Sequence
 
 import pytest
-
+from core.agents import BearAgent, BullAgent
 from core.models import Argument, Turn
-from core.agents import BullAgent, BearAgent, LLMClient
-from core.prompts import BULL_SYSTEM_PROMPT, BEAR_SYSTEM_PROMPT
-
+from core.prompts import BEAR_SYSTEM_PROMPT, BULL_SYSTEM_PROMPT
 
 # ─── Mock LLM Client ──────────────────────────────────────────────
+
 
 class MockLLMClient:
     """可控的 LLM mock：按调用顺序返回预设响应。"""
@@ -29,13 +29,14 @@ class MockLLMClient:
         self._call_idx = 0
         self.calls: list[dict] = []  # 记录每次调用的参数
 
-    async def chat(self, system_prompt: str, user_prompt: str,
-                   max_tokens: int = 600) -> str:
-        self.calls.append({
-            "system": system_prompt,
-            "user": user_prompt,
-            "max_tokens": max_tokens,
-        })
+    async def chat(self, system_prompt: str, user_prompt: str, max_tokens: int = 600) -> str:
+        self.calls.append(
+            {
+                "system": system_prompt,
+                "user": user_prompt,
+                "max_tokens": max_tokens,
+            }
+        )
         if self._call_idx < len(self._responses):
             resp = self._responses[self._call_idx]
             self._call_idx += 1
@@ -47,40 +48,58 @@ class MockLLMClient:
 
 # ─── 辅助 ─────────────────────────────────────────────────────────
 
+
 def make_bull_arg() -> Argument:
-    return Argument(thesis="BTC 是数字黄金", arguments=["稀缺性", "机构入场"],
-                    quote="数字时代的诺克斯堡", confidence=0.85, raw="{}")
+    return Argument(
+        thesis="BTC 是数字黄金",
+        arguments=["稀缺性", "机构入场"],
+        quote="数字时代的诺克斯堡",
+        confidence=0.85,
+        raw="{}",
+    )
 
 
 def make_bear_arg() -> Argument:
-    return Argument(thesis="BTC 不是数字黄金", arguments=["波动率太高", "无内在价值"],
-                    quote="投机泡沫终将破灭", confidence=0.75, raw="{}")
+    return Argument(
+        thesis="BTC 不是数字黄金",
+        arguments=["波动率太高", "无内在价值"],
+        quote="投机泡沫终将破灭",
+        confidence=0.75,
+        raw="{}",
+    )
 
 
-VALID_BULL_JSON = json.dumps({
-    "thesis": "BTC 是真正的数字黄金",
-    "arguments": ["总量恒定 2100 万枚，具备稀缺性", "机构持续增持，需求稳定增长"],
-    "quote": "数字时代的诺克斯堡",
-    "confidence": 0.85,
-}, ensure_ascii=False)
+VALID_BULL_JSON = json.dumps(
+    {
+        "thesis": "BTC 是真正的数字黄金",
+        "arguments": ["总量恒定 2100 万枚，具备稀缺性", "机构持续增持，需求稳定增长"],
+        "quote": "数字时代的诺克斯堡",
+        "confidence": 0.85,
+    },
+    ensure_ascii=False,
+)
 
-VALID_BEAR_JSON = json.dumps({
-    "thesis": "BTC 不是数字黄金",
-    "arguments": ["年化波动率超 60%，远超黄金", "无内在价值，全靠共识支撑"],
-    "quote": "共识一旦崩塌，泡沫终将破灭",
-    "confidence": 0.72,
-}, ensure_ascii=False)
+VALID_BEAR_JSON = json.dumps(
+    {
+        "thesis": "BTC 不是数字黄金",
+        "arguments": ["年化波动率超 60%，远超黄金", "无内在价值，全靠共识支撑"],
+        "quote": "共识一旦崩塌，泡沫终将破灭",
+        "confidence": 0.72,
+    },
+    ensure_ascii=False,
+)
 
 INVALID_JSON = "这不是JSON，只是一段普通文本。"
 
-JSON_WITH_EXTRA = '''
+JSON_WITH_EXTRA = """
 好的，我来分析一下。
 {"thesis": "BTC 是数字黄金", "arguments": ["稀缺性"], "quote": "金句", "confidence": 0.8}
 以上是我的论点。
-'''
+"""
 
 
 # ─── BullAgent 测试 ───────────────────────────────────────────────
+
 
 class TestBullAgent:
     """正方辩手。"""
@@ -169,8 +188,7 @@ class TestBullAgent:
         """群主注入的观点应出现在 user prompt。"""
         mock = MockLLMClient([VALID_BULL_JSON])
         agent = BullAgent(mock)
-        await agent.argue("BTC 是数字黄金吗？", [],
-                          injected_views=["请讨论 ETF 的影响"])
+        await agent.argue("BTC 是数字黄金吗？", [], injected_views=["请讨论 ETF 的影响"])
 
         user_prompt = mock.calls[0]["user"]
         assert "ETF" in user_prompt
@@ -196,6 +214,7 @@ class TestBullAgent:
 
 
 # ─── BearAgent 测试 ───────────────────────────────────────────────
+
 
 class TestBearAgent:
     """反方辩手。"""
@@ -254,6 +273,7 @@ class TestBearAgent:
 
 
 # ─── Prompt 模板测试 ──────────────────────────────────────────────
+
 
 class TestPrompts:
     """立场 prompt 模板。"""

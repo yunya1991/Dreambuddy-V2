@@ -13,24 +13,32 @@ GREEN 阶段实现 intent_evaluator_agent.py 后全部通过。
   6. 认知闭环 recall + record 调用
   7. 低置信度触发评估 + 高置信度不触发
 """
-import pytest
+
+import pytest  # noqa: I001
 import sys
 import os
 
 # 确保路径
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
 
 def test_module_import():
     """测试 1: 模块可导入"""
-    from dreamos.core.sense.evaluators.intent_evaluator_agent import IntentEvaluatorAgent, EvalResult
+    from dreamos.core.sense.evaluators.intent_evaluator_agent import (  # noqa: I001
+        IntentEvaluatorAgent,
+        EvalResult,
+    )
+
     assert IntentEvaluatorAgent is not None
     assert EvalResult is not None
 
 
 def test_fail_open_no_llm_fn():
     """测试 2: 无 llm_fn → 规则降级，原 confidence 透传"""
-    from dreamos.core.sense.evaluators.intent_evaluator_agent import IntentEvaluatorAgent, EvalResult
+    from dreamos.core.sense.evaluators.intent_evaluator_agent import (  # noqa: I001
+        IntentEvaluatorAgent,
+        EvalResult,
+    )
     from dreamos.core.sense.types import IntentResult
 
     agent = IntentEvaluatorAgent()  # 无 llm_fn
@@ -44,7 +52,10 @@ def test_fail_open_no_llm_fn():
 
 def test_fail_open_exception():
     """测试 3: LLM 异常 → FAIL-OPEN 返回安全默认"""
-    from dreamos.core.sense.evaluators.intent_evaluator_agent import IntentEvaluatorAgent, EvalResult
+    from dreamos.core.sense.evaluators.intent_evaluator_agent import (  # noqa: I001
+        IntentEvaluatorAgent,
+        EvalResult,
+    )
     from dreamos.core.sense.types import IntentResult
 
     def bad_llm(prompt: str) -> str:
@@ -61,7 +72,10 @@ def test_fail_open_exception():
 
 def test_empty_intent_result():
     """测试 4: 空 IntentResult → 返回安全默认"""
-    from dreamos.core.sense.evaluators.intent_evaluator_agent import IntentEvaluatorAgent, EvalResult
+    from dreamos.core.sense.evaluators.intent_evaluator_agent import (  # noqa: I001
+        IntentEvaluatorAgent,
+        EvalResult,
+    )
     from dreamos.core.sense.types import IntentResult
 
     agent = IntentEvaluatorAgent()
@@ -74,18 +88,24 @@ def test_empty_intent_result():
 
 def test_llm_evaluation_normal_path():
     """测试 5: LLM 正常评估路径"""
-    from dreamos.core.sense.evaluators.intent_evaluator_agent import IntentEvaluatorAgent, EvalResult
+    from dreamos.core.sense.evaluators.intent_evaluator_agent import (  # noqa: I001
+        IntentEvaluatorAgent,
+        EvalResult,
+    )
     from dreamos.core.sense.types import IntentResult
 
     def mock_llm(prompt: str) -> str:
         # 返回 JSON 格式的评估结果
         import json
-        return json.dumps({
-            "adjusted_confidence": 0.78,
-            "clarified_intent": "trend_following",
-            "route_suggestion": "A_chain",
-            "reasoning": "用户明确询问趋势分析"
-        })
+
+        return json.dumps(
+            {
+                "adjusted_confidence": 0.78,
+                "clarified_intent": "trend_following",
+                "route_suggestion": "A_chain",
+                "reasoning": "用户明确询问趋势分析",
+            }
+        )
 
     agent = IntentEvaluatorAgent(llm_fn=mock_llm)
     intent = IntentResult(intent_type="trend_following", confidence=0.55)
@@ -99,7 +119,9 @@ def test_llm_evaluation_normal_path():
 
 def test_cognitive_recall_record():
     """测试 6: 认知闭环 recall + record 调用"""
-    from dreamos.core.sense.evaluators.intent_evaluator_agent import IntentEvaluatorAgent, EvalResult
+    from dreamos.core.sense.evaluators.intent_evaluator_agent import (
+        IntentEvaluatorAgent,
+    )
     from dreamos.core.sense.types import IntentResult
 
     class MockCognitive:
@@ -118,16 +140,19 @@ def test_cognitive_recall_record():
 
     def mock_llm(prompt: str) -> str:
         import json
-        return json.dumps({
-            "adjusted_confidence": 0.72,
-            "clarified_intent": "trend_following",
-            "route_suggestion": None,
-            "reasoning": "意图明确"
-        })
+
+        return json.dumps(
+            {
+                "adjusted_confidence": 0.72,
+                "clarified_intent": "trend_following",
+                "route_suggestion": None,
+                "reasoning": "意图明确",
+            }
+        )
 
     agent = IntentEvaluatorAgent(llm_fn=mock_llm, cognitive_adapter=cog)
     intent = IntentResult(intent_type="trend_following", confidence=0.55)
-    result = agent.evaluate(intent, context={"user_message": "分析BTC趋势"})
+    result = agent.evaluate(intent, context={"user_message": "分析BTC趋势"})  # noqa: F841
 
     # recall 应被调用
     assert len(cog.recalled) >= 1
@@ -146,6 +171,7 @@ def test_low_confidence_triggers_evaluation():
     def mock_llm(prompt: str) -> str:
         call_count["llm"] += 1
         import json
+
         return json.dumps({"adjusted_confidence": 0.80, "clarified_intent": "trend_following"})
 
     agent = IntentEvaluatorAgent(llm_fn=mock_llm)

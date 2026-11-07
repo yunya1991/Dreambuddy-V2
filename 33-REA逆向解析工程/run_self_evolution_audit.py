@@ -7,6 +7,7 @@
 
 输出 Evidence-based 报告到 reports/。
 """
+
 from __future__ import annotations
 
 import json
@@ -17,13 +18,16 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from core.investigation_workflow import investigate
-from core.dependency_graph import DependencyGraph
-from core.algorithm_reducer import reduce_algorithm
-from core.git_history import trace_git_history
+from core.algorithm_reducer import reduce_algorithm  # noqa: E402
+from core.dependency_graph import DependencyGraph  # noqa: E402
+from core.git_history import trace_git_history  # noqa: E402
+from core.investigation_workflow import investigate  # noqa: E402
 
 TARGET_BASE = os.path.join(
-    HERE, "..", "23-四层闭环自进化交易架构", "dreambuddy_evolution",
+    HERE,
+    "..",
+    "23-四层闭环自进化交易架构",
+    "dreambuddy_evolution",
 )
 TARGET_BASE = os.path.abspath(TARGET_BASE)
 REPORT_DIR = os.path.join(HERE, "reports")
@@ -53,9 +57,7 @@ def run_pipeline_investigate() -> dict:
     result = investigate(target, feature="四层闭环主编排")
     # 序列化 evidence
     result["evidence"] = [ev_to_dict(e) for e in result.get("evidence", [])]
-    result["phases"] = {
-        k: phase_evidence_to_dict(v) for k, v in result.get("phases", {}).items()
-    }
+    result["phases"] = {k: phase_evidence_to_dict(v) for k, v in result.get("phases", {}).items()}
     return result
 
 
@@ -149,7 +151,9 @@ def main() -> None:
     print(f"engines nodes: {len(ed.get('nodes', []))} edges: {len(ed.get('edges', []))}")
     ke = report.get("key_engine_algorithms", {})
     for e in ke.get("engines", []):
-        print(f"  {e.get('file')}: {len(e.get('functions', []))} funcs, {len(e.get('patterns', []))} patterns")
+        print(
+            f"  {e.get('file')}: {len(e.get('functions', []))} funcs, {len(e.get('patterns', []))} patterns"
+        )
     gh = report.get("git_history", {})
     for gf in gh.get("files", []):
         print(f"  git {gf.get('file')}: {gf.get('summary', gf.get('error', '?'))}")

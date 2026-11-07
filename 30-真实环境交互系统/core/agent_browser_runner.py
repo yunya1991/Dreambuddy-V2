@@ -25,6 +25,7 @@
 
 参考：/Users/zhangjiangtao/.trae-cn/skills/agent-browser/SKILL.md
 """
+
 from __future__ import annotations
 
 import json
@@ -42,6 +43,7 @@ logger = logging.getLogger("real_env.agent_browser_runner")
 @dataclass
 class AgentBrowserStep:
     """单条 agent-browser 命令执行结果"""
+
     command: str
     exit_code: int
     stdout: str
@@ -52,6 +54,7 @@ class AgentBrowserStep:
 @dataclass
 class AgentBrowserResult:
     """agent-browser 任务执行结果"""
+
     task: str
     passed: bool
     steps: List[AgentBrowserStep] = field(default_factory=list)
@@ -193,8 +196,9 @@ class AgentBrowserRunner:
     # ------------------------------------------------------------------
     # 命令执行
     # ------------------------------------------------------------------
-    def run_command(self, args: List[str], session: Optional[str] = None,
-                    timeout: Optional[int] = None) -> AgentBrowserStep:
+    def run_command(
+        self, args: List[str], session: Optional[str] = None, timeout: Optional[int] = None
+    ) -> AgentBrowserStep:
         """执行单条 agent-browser 命令。
 
         Args:
@@ -247,9 +251,9 @@ class AgentBrowserRunner:
     # ------------------------------------------------------------------
     # 多步任务执行
     # ------------------------------------------------------------------
-    def run_task(self, steps: List[dict],
-                 session: Optional[str] = None,
-                 callback: Optional[Any] = None) -> AgentBrowserResult:
+    def run_task(
+        self, steps: List[dict], session: Optional[str] = None, callback: Optional[Any] = None
+    ) -> AgentBrowserResult:
         """从 YAML steps 列表执行多步任务。
 
         每步执行后调用 callback（可选），GLM-5.2 可注入判断逻辑：
@@ -283,7 +287,8 @@ class AgentBrowserRunner:
                 all_passed = False
                 logger.warning(
                     "Step failed (exit=%d), bailing: %s",
-                    step_result.exit_code, step_result.command,
+                    step_result.exit_code,
+                    step_result.command,
                 )
                 break
 
@@ -292,8 +297,7 @@ class AgentBrowserRunner:
                 try:
                     should_continue = callback(step_result)
                     if not should_continue:
-                        logger.info("Callback signaled stop after: %s",
-                                    step_result.command)
+                        logger.info("Callback signaled stop after: %s", step_result.command)
                         break
                 except Exception as e:
                     logger.warning("Callback error: %s", e)
@@ -345,8 +349,7 @@ class AgentBrowserRunner:
 
         return result
 
-    def run_batch(self, steps: List[list],
-                  session: Optional[str] = None) -> AgentBrowserResult:
+    def run_batch(self, steps: List[list], session: Optional[str] = None) -> AgentBrowserResult:
         """batch 模式：通过 stdin 传 JSON 数组一次性执行。
 
         Args:
@@ -404,8 +407,9 @@ class AgentBrowserRunner:
     # ------------------------------------------------------------------
     # 三重验证集成
     # ------------------------------------------------------------------
-    def _run_verification(self, assertions: Optional[Dict[str, Any]],
-                         session: Optional[str] = None) -> VerificationResult:
+    def _run_verification(
+        self, assertions: Optional[Dict[str, Any]], session: Optional[str] = None
+    ) -> VerificationResult:
         """用 agent-browser snapshot/screenshot/network 做三重验证。
 
         - DOM 断言：调用 `snapshot -i`，从 stdout 文本检查 selector

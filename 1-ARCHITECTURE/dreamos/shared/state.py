@@ -18,29 +18,31 @@ Dreambuddy OS — State 全局状态抽象
 from __future__ import annotations
 
 import copy
-from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-
+from typing import Any, Dict, List, Optional
 
 # ============================================================
 # 节点状态枚举
 # ============================================================
 
+
 class NodeStatus(Enum):
     """节点执行状态"""
-    PENDING = "pending"          # 等待执行
-    RUNNING = "running"          # 执行中
-    SUCCESS = "success"          # 成功
-    FAILED = "failed"            # 失败
-    SKIPPED = "skipped"          # 跳过
-    DEGRADED = "degraded"        # 降级执行
+
+    PENDING = "pending"  # 等待执行
+    RUNNING = "running"  # 执行中
+    SUCCESS = "success"  # 成功
+    FAILED = "failed"  # 失败
+    SKIPPED = "skipped"  # 跳过
+    DEGRADED = "degraded"  # 降级执行
 
 
 # ============================================================
 # 节点执行结果
 # ============================================================
+
 
 @dataclass
 class NodeResult:
@@ -49,11 +51,12 @@ class NodeResult:
     每个节点执行后产出 NodeResult，框架将其合并到 State。
     所有字段都有合理默认值，节点只需填写关心的字段。
     """
+
     node_id: str
     status: NodeStatus = NodeStatus.SUCCESS
     outputs: Dict[str, Any] = field(default_factory=dict)
-    confidence: float = 0.0                          # 0-1
-    direction: Optional[str] = None                  # LONG / SHORT / HOLD / NEUTRAL
+    confidence: float = 0.0  # 0-1
+    direction: Optional[str] = None  # LONG / SHORT / HOLD / NEUTRAL
     error: Optional[str] = None
     error_code: Optional[str] = None
     latency_ms: float = 0.0
@@ -87,6 +90,7 @@ class NodeResult:
 # ============================================================
 # State — 执行图的全局状态
 # ============================================================
+
 
 @dataclass
 class State:
@@ -156,13 +160,15 @@ class State:
     def update(self, node_id: str, result: NodeResult) -> "State":
         """节点执行后更新状态（链式调用）"""
         self.results[node_id] = result
-        self.trace.append({
-            "node_id": node_id,
-            "status": result.status.value,
-            "confidence": result.confidence,
-            "direction": result.direction,
-            "ts": datetime.utcnow().isoformat(),
-        })
+        self.trace.append(
+            {
+                "node_id": node_id,
+                "status": result.status.value,
+                "confidence": result.confidence,
+                "direction": result.direction,
+                "ts": datetime.utcnow().isoformat(),
+            }
+        )
         self.updated_at = datetime.utcnow()
         return self
 
@@ -262,6 +268,7 @@ class State:
 # ============================================================
 # 工厂函数
 # ============================================================
+
 
 def new_state(cycle_id: str = "", **kwargs) -> State:
     """创建新的 State 实例"""

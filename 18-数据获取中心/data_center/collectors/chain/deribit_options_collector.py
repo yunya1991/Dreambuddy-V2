@@ -8,6 +8,7 @@
 
 用于 AGI 蓝图 L1 感知层期权数据（Max Pain / DVOL / Put-Call Ratio）。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -35,7 +36,7 @@ class DeribitOptionsCollector(BaseCollector):
 
     def fetch(self, params: dict) -> list[DataRecord]:
         currency = params.get("currency", "BTC")  # BTC / ETH
-        kind = params.get("kind", "option")       # option / future
+        kind = params.get("kind", "option")  # option / future
 
         try:
             summary = self._get_book_summary(currency, kind)
@@ -89,7 +90,10 @@ class DeribitOptionsCollector(BaseCollector):
             events=[],
             timeseries=[
                 {"strike": k, "oi": v}
-                for k, v in sorted(by_strike.items(), key=lambda x: float(x[0]) if x[0].replace(".", "").isdigit() else 0)
+                for k, v in sorted(
+                    by_strike.items(),
+                    key=lambda x: float(x[0]) if x[0].replace(".", "").isdigit() else 0,
+                )
             ][:30],
             raw={
                 "source": "deribit.com",

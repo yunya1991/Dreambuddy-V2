@@ -4,9 +4,9 @@ L1 = 审计标签（强制开启，写入 trades_table 2 列 war_state + overlap
 L2 = 同向放大抑制（默认开，war_state=COOLDOWN/FREEZE 且 pos>0.5 且 overlap>0.40 → cap 0.40）
 L3 = 反向熔断（默认关，war_state 防守档 + BCRM2 连续 3 笔 30%+仓位亏损 → pause 4h）
 """
+
 import pandas as pd
 import pytest
-from datetime import datetime, timezone, timedelta
 
 
 @pytest.fixture
@@ -31,13 +31,19 @@ class TestDualGuardL1AuditTag:
         """screen_engine（或等价 BCRM2 config 对象）含 FEATURE_INTEGRATION_GUARD。"""
         try:
             from scripts.memory_l4.bcrm2 import screen_engine as se
-            assert hasattr(se, "FEATURE_INTEGRATION_GUARD") or hasattr(se.Bcrm2Config, "FEATURE_INTEGRATION_GUARD")
+
+            assert hasattr(se, "FEATURE_INTEGRATION_GUARD") or hasattr(
+                se.Bcrm2Config, "FEATURE_INTEGRATION_GUARD"
+            )
         except (ImportError, AttributeError):
             # screen_engine 可能在 experiments 模块。两个入口都需要检查。
             import importlib
+
             ok = False
-            for mod in ["experiments.ab-trading.screen_engine",
-                        "experiments.ab_trading.screen_engine"]:
+            for mod in [
+                "experiments.ab-trading.screen_engine",
+                "experiments.ab_trading.screen_engine",
+            ]:
                 try:
                     m = importlib.import_module(mod)
                     ok = hasattr(m, "FEATURE_INTEGRATION_GUARD")
@@ -47,22 +53,26 @@ class TestDualGuardL1AuditTag:
                     pass
             if not ok:
                 # 最后兜底：在 screen_engine.py 同级或 config 同级定义
-                raise AssertionError("FEATURE_INTEGRATION_GUARD 配置未定义（FAIL-RED）")
+                raise AssertionError(  # noqa: B904
+                    "FEATURE_INTEGRATION_GUARD 配置未定义（FAIL-RED）"
+                )  # noqa: B904
 
     def test_feature_guard_definition_exists(self, guard_default_config):
         """feature_integration_guard.py 或 screen_engine.py 中应有 get_feature_integration_guard()。"""
         # 先看 screen_engine
         try:
             from experiments.ab_trading.screen_engine import (
-                get_feature_integration_guard, FEATURE_INTEGRATION_GUARD
+                get_feature_integration_guard,
             )
+
             g = get_feature_integration_guard()
             for k in guard_default_config:
                 assert k in g, f"缺配置项 {k}"
         except Exception:
             from scripts.memory_l4.bcrm2.screen_engine import (
-                get_feature_integration_guard, FEATURE_INTEGRATION_GUARD
+                get_feature_integration_guard,
             )
+
             g = get_feature_integration_guard()
             for k in guard_default_config:
                 assert k in g, f"缺配置项 {k}"
@@ -108,8 +118,11 @@ class TestDualGuardL2SameDirectionSuppression:
         except Exception:
             from scripts.memory_l4.bcrm2.screen_engine import apply_l2_if_needed
         new_pos, log_line = apply_l2_if_needed(
-            position_pct=0.62, war_state="FREEZE", overlap_pct=0.46,
-            guard_cfg=guard_default_config, trade_id="T1",
+            position_pct=0.62,
+            war_state="FREEZE",
+            overlap_pct=0.46,
+            guard_cfg=guard_default_config,
+            trade_id="T1",
         )
         assert abs(new_pos - 0.40) < 1e-9, f"未 cap 到 0.40，得到 {new_pos}"
         assert "[L2-SUPPRESS]" in log_line
@@ -122,8 +135,11 @@ class TestDualGuardL2SameDirectionSuppression:
         except Exception:
             from scripts.memory_l4.bcrm2.screen_engine import apply_l2_if_needed
         new_pos, log_line = apply_l2_if_needed(
-            position_pct=0.62, war_state="FREEZE", overlap_pct=0.18,
-            guard_cfg=guard_default_config, trade_id="T1",
+            position_pct=0.62,
+            war_state="FREEZE",
+            overlap_pct=0.18,
+            guard_cfg=guard_default_config,
+            trade_id="T1",
         )
         assert new_pos == 0.62
 
@@ -134,8 +150,11 @@ class TestDualGuardL2SameDirectionSuppression:
         except Exception:
             from scripts.memory_l4.bcrm2.screen_engine import apply_l2_if_needed
         new_pos, _ = apply_l2_if_needed(
-            position_pct=0.62, war_state="ALLOW", overlap_pct=0.46,
-            guard_cfg=guard_default_config, trade_id="T1",
+            position_pct=0.62,
+            war_state="ALLOW",
+            overlap_pct=0.46,
+            guard_cfg=guard_default_config,
+            trade_id="T1",
         )
         assert new_pos == 0.62
 
@@ -148,8 +167,11 @@ class TestDualGuardL2SameDirectionSuppression:
         cfg = dict(guard_default_config)
         cfg["enable_l2_same_direction_suppression"] = False
         new_pos, _ = apply_l2_if_needed(
-            position_pct=0.62, war_state="FREEZE", overlap_pct=0.46,
-            guard_cfg=cfg, trade_id="T1",
+            position_pct=0.62,
+            war_state="FREEZE",
+            overlap_pct=0.46,
+            guard_cfg=cfg,
+            trade_id="T1",
         )
         assert new_pos == 0.62
 
@@ -168,7 +190,9 @@ class TestDualGuardL3ReverseCircuitBreaker:
             for i in range(3)
         ]
         paused, until_ts, log_line = check_l3_and_maybe_pause(
-            recent, guard_cfg=guard_default_config, now=pd.Timestamp("2026-01-01 12:00", tz="UTC"),
+            recent,
+            guard_cfg=guard_default_config,
+            now=pd.Timestamp("2026-01-01 12:00", tz="UTC"),
         )
         assert paused is False
 
@@ -204,7 +228,9 @@ class TestDualGuardL3ReverseCircuitBreaker:
             for i in range(3)
         ]
         paused, _, _ = check_l3_and_maybe_pause(
-            recent, guard_cfg=cfg, now=pd.Timestamp("2026-01-01", tz="UTC"),
+            recent,
+            guard_cfg=cfg,
+            now=pd.Timestamp("2026-01-01", tz="UTC"),
         )
         assert paused is False
 
@@ -217,11 +243,18 @@ class TestDualGuardL3ReverseCircuitBreaker:
         cfg = dict(guard_default_config)
         cfg["enable_l3_conflict_circuit_breaker"] = True
         recent = [
-            {"trade_id": "T0", "position_pct": 0.10, "pnl": -10.0, "war_state": "COOLDOWN"},  # <30% 忽略
+            {
+                "trade_id": "T0",
+                "position_pct": 0.10,
+                "pnl": -10.0,
+                "war_state": "COOLDOWN",
+            },  # <30% 忽略
             {"trade_id": "T1", "position_pct": 0.40, "pnl": -10.0, "war_state": "COOLDOWN"},
             {"trade_id": "T2", "position_pct": 0.40, "pnl": -10.0, "war_state": "COOLDOWN"},
         ]
         paused, _, _ = check_l3_and_maybe_pause(
-            recent, guard_cfg=cfg, now=pd.Timestamp("2026-01-01", tz="UTC"),
+            recent,
+            guard_cfg=cfg,
+            now=pd.Timestamp("2026-01-01", tz="UTC"),
         )
         assert paused is False

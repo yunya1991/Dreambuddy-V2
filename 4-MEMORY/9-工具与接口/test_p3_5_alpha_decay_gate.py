@@ -19,6 +19,7 @@ RED 契约:
 
 参考: SPEC-CognitiveSystem-Evolution.md §1.1 + §4.3 P3-5
 """
+
 from __future__ import annotations
 
 import inspect

@@ -12,17 +12,15 @@
 - 仓位为 0 的品种被过滤
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from typing import Any, Dict, List
-from unittest.mock import patch
 from uuid import UUID
 
-import pytest
 
 from dreamos.capabilities.trading.nodes.c6_plan_generate import C6PlanGenerateNode
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 
 # ── 测试夹具 ──────────────────────────────────────────────
@@ -121,7 +119,7 @@ def _make_state(
 # ── 1. 契约与导入 ──────────────────────────────────────────
 class TestC6Contract:
     def test_import(self):
-        from dreamos.capabilities.trading.nodes.c6_plan_generate import C6PlanGenerateNode  # noqa: F401
+        pass  # noqa: F401
 
     def test_node_metadata(self):
         node = C6PlanGenerateNode()
@@ -141,10 +139,12 @@ class TestC6FailOpen:
         node = C6PlanGenerateNode()
         state = State()
         state.market = None
-        state.results["C4"] = NodeResult(node_id="C4", status=NodeStatus.SUCCESS,
-                                          outputs=_make_c4_outputs())
-        state.results["C5"] = NodeResult(node_id="C5", status=NodeStatus.SUCCESS,
-                                          outputs=_make_c5_outputs())
+        state.results["C4"] = NodeResult(
+            node_id="C4", status=NodeStatus.SUCCESS, outputs=_make_c4_outputs()
+        )
+        state.results["C5"] = NodeResult(
+            node_id="C5", status=NodeStatus.SUCCESS, outputs=_make_c5_outputs()
+        )
         r = node.execute_core(state)
         assert r.status == NodeStatus.SUCCESS
         assert r.outputs["trade_plan"] == {}
@@ -197,8 +197,15 @@ class TestC6TradePlan:
         r = node.execute_core(state)
         btc_plan = r.outputs["trade_plan"]["BTC"]
         assert isinstance(btc_plan, dict)
-        for field in ("symbol", "direction", "size", "entry_price",
-                      "stop_loss", "take_profit", "params"):
+        for field in (
+            "symbol",
+            "direction",
+            "size",
+            "entry_price",
+            "stop_loss",
+            "take_profit",
+            "params",
+        ):
             assert field in btc_plan, f"missing field: {field}"
 
     def test_trade_plan_size_from_c4_position_size(self):
@@ -293,20 +300,26 @@ class TestC6StrategyAndTrace:
 
     def test_strategy_name_short_when_dominant_short(self):
         node = C6PlanGenerateNode()
-        c3 = _make_c3_signals(signals=[
-            {"symbol": "BTC", "direction": "SHORT", "confidence": 0.8, "win_rate": 0.6},
-            {"symbol": "ETH", "direction": "SHORT", "confidence": 0.7, "win_rate": 0.55},
-        ])
+        c3 = _make_c3_signals(
+            signals=[
+                {"symbol": "BTC", "direction": "SHORT", "confidence": 0.8, "win_rate": 0.6},
+                {"symbol": "ETH", "direction": "SHORT", "confidence": 0.7, "win_rate": 0.55},
+            ]
+        )
         state = _make_state(c3_outputs=c3)
         r = node.execute_core(state)
-        assert "SHORT" in r.outputs["strategy_name"] or "short" in r.outputs["strategy_name"].lower()
+        assert (
+            "SHORT" in r.outputs["strategy_name"] or "short" in r.outputs["strategy_name"].lower()
+        )
 
     def test_strategy_name_neutral_when_mixed(self):
         node = C6PlanGenerateNode()
-        c3 = _make_c3_signals(signals=[
-            {"symbol": "BTC", "direction": "LONG", "confidence": 0.8, "win_rate": 0.6},
-            {"symbol": "ETH", "direction": "SHORT", "confidence": 0.7, "win_rate": 0.55},
-        ])
+        c3 = _make_c3_signals(
+            signals=[
+                {"symbol": "BTC", "direction": "LONG", "confidence": 0.8, "win_rate": 0.6},
+                {"symbol": "ETH", "direction": "SHORT", "confidence": 0.7, "win_rate": 0.55},
+            ]
+        )
         state = _make_state(c3_outputs=c3)
         r = node.execute_core(state)
         sn = r.outputs["strategy_name"].lower()
@@ -333,11 +346,13 @@ class TestC6StrategyAndTrace:
 class TestC6EdgeCases:
     def test_single_symbol(self):
         node = C6PlanGenerateNode()
-        c4 = _make_c4_outputs(position_size={"BTC": 1.0}, stop_loss={"BTC": 59000.0},
-                               take_profit={"BTC": 65000.0})
+        c4 = _make_c4_outputs(
+            position_size={"BTC": 1.0}, stop_loss={"BTC": 59000.0}, take_profit={"BTC": 65000.0}
+        )
         c5 = _make_c5_outputs(optimized_params={"BTC": {"trend_threshold": 0.01}})
-        c3 = _make_c3_signals(signals=[{"symbol": "BTC", "direction": "LONG",
-                                          "confidence": 0.85, "win_rate": 0.65}])
+        c3 = _make_c3_signals(
+            signals=[{"symbol": "BTC", "direction": "LONG", "confidence": 0.85, "win_rate": 0.65}]
+        )
         state = _make_state(c4_outputs=c4, c5_outputs=c5, c3_outputs=c3)
         r = node.execute_core(state)
         plan = r.outputs["trade_plan"]

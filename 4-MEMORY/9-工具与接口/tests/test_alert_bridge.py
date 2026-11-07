@@ -1,11 +1,12 @@
 """alert_bridge 飞书告警桥接单测（设计节 7.6）。"""
+
 import sys
 import time
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from alert_bridge import send_cognitive_alert, _build_alert_message, _should_dedup
+from alert_bridge import send_cognitive_alert, _build_alert_message, _should_dedup  # noqa: I001
 
 
 def test_build_alert_message_critical():
@@ -55,6 +56,7 @@ def test_send_cognitive_alert_calls_feishu():
 def test_send_cognitive_alert_dedup_skips():
     """10 分钟内重复告警应跳过。"""
     import alert_bridge
+
     # 重置去重表，避免受其它用例影响
     alert_bridge._last_sent.clear()
     with patch("alert_bridge._send_via_feishu") as mock_send:
@@ -62,7 +64,9 @@ def test_send_cognitive_alert_dedup_skips():
         # 第一次发送
         send_cognitive_alert(condition="条件B", level="Warning", context={"skill_id": "tdd"})
         # 第二次应被去重
-        result = send_cognitive_alert(condition="条件B", level="Warning", context={"skill_id": "tdd"})
+        result = send_cognitive_alert(
+            condition="条件B", level="Warning", context={"skill_id": "tdd"}
+        )
         assert result["sent"] is False
         assert "dedup" in result.get("reason", "").lower()
         # 只调用了一次

@@ -18,6 +18,7 @@ SPEC §0.5.2: HBM 需求 / 资本开支 / 半导体景气度 → 0.0-1.0
 HC: 开关关断时返回 0.5（中性）
 HC: FAIL-OPEN 异常返回 0.5
 """
+
 from __future__ import annotations
 
 import logging

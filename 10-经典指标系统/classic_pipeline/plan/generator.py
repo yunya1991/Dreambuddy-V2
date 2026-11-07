@@ -2,6 +2,7 @@
 
 聚合信号和风控输出生成交易计划。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
@@ -25,7 +26,7 @@ def generate(
         {entry_decision, direction, entry_price, stop_loss, take_profit,
          position_size, confidence, strategy}
     """
-    cfg = config or {}
+    cfg = config or {}  # noqa: F841
     direction = str(signal.get("direction") or "neutral").strip().lower()
     confidence = _sf0(signal.get("confidence"), 0.0)
 

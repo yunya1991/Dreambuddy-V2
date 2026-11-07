@@ -12,25 +12,28 @@ P2-8 spec §4.2 核心逻辑：左右脑并行决策的整合层。
 
 胼胝体 = A7 门禁的升级版：从单通道阈值门禁 → 双通道对比整合门禁。
 """
+
 from dataclasses import dataclass, field
-from typing import Optional, List
 from enum import Enum
+from typing import List, Optional
 
 
 class AgreementLevel(Enum):
     """左右脑一致性等级"""
-    FULL_CONSENSUS = "full_consensus"       # 三者一致
-    LR_CONSENSUS = "lr_consensus"           # 左右一致但与A0不同
-    LR_DIVERGENT = "lr_divergent"           # 左右分歧
-    RIGHT_SKIP = "right_skip"               # 右脑未启用/无信号
+
+    FULL_CONSENSUS = "full_consensus"  # 三者一致
+    LR_CONSENSUS = "lr_consensus"  # 左右一致但与A0不同
+    LR_DIVERGENT = "lr_divergent"  # 左右分歧
+    RIGHT_SKIP = "right_skip"  # 右脑未启用/无信号
 
 
 @dataclass
 class ChannelResult:
     """单通道决策结果"""
-    direction: str        # "LONG" / "SHORT" / "HOLD"
-    confidence: float     # [0, 1]
-    source: str = ""      # "left_brain" / "right_brain" / "a0"
+
+    direction: str  # "LONG" / "SHORT" / "HOLD"
+    confidence: float  # [0, 1]
+    source: str = ""  # "left_brain" / "right_brain" / "a0"
     reasoning: List[str] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
 
@@ -38,11 +41,12 @@ class ChannelResult:
 @dataclass
 class IntegrationResult:
     """胼胝体整合结果"""
-    direction: str                # 整合后方向
-    confidence: float             # 整合后置信度
+
+    direction: str  # 整合后方向
+    confidence: float  # 整合后置信度
     agreement_level: AgreementLevel
-    gate_passed: bool             # 是否通过门禁
-    gate_reason: str              # 门禁理由
+    gate_passed: bool  # 是否通过门禁
+    gate_reason: str  # 门禁理由
     left_brain: Optional[ChannelResult] = None
     right_brain: Optional[ChannelResult] = None
     a0_direction: str = "HOLD"
@@ -113,20 +117,23 @@ class CorpusCallosum:
         # ── 三种整合场景 ──────────────────────────────────────────
 
         # 场景1: 三者一致
-        if (left.direction == right.direction == a0_direction
-                and left.direction != "HOLD"):
+        if left.direction == right.direction == a0_direction and left.direction != "HOLD":
             return self._integrate_full_consensus(left, right, a0_direction)
 
         # 场景2: 左右一致但与 A0 相反（或 A0=HOLD）
-        if (left.direction == right.direction
-                and left.direction != "HOLD"
-                and left.direction != a0_direction):
+        if (
+            left.direction == right.direction
+            and left.direction != "HOLD"
+            and left.direction != a0_direction
+        ):
             return self._integrate_lr_consensus(left, right, a0_direction)
 
         # 场景2b: 左右一致且 A0=HOLD（A0 无方向，跟随左右）
-        if (left.direction == right.direction
-                and left.direction != "HOLD"
-                and a0_direction == "HOLD"):
+        if (
+            left.direction == right.direction
+            and left.direction != "HOLD"
+            and a0_direction == "HOLD"
+        ):
             return self._integrate_lr_consensus(left, right, a0_direction)
 
         # 场景3: 左右分歧
@@ -145,8 +152,10 @@ class CorpusCallosum:
         base_conf = max(left.confidence, right.confidence)
         adjusted = min(base_conf + self.consensus_bonus, 0.95)
         gate_passed = adjusted >= self.gate_threshold
-        reason = (f"三者一致({left.direction}) → 置信度加成"
-                  f"+{self.consensus_bonus:.2f} → {adjusted:.0%}")
+        reason = (
+            f"三者一致({left.direction}) → 置信度加成"
+            f"+{self.consensus_bonus:.2f} → {adjusted:.0%}"
+        )
         return IntegrationResult(
             direction=left.direction,
             confidence=adjusted,
@@ -172,9 +181,11 @@ class CorpusCallosum:
         base_conf = max(left.confidence, right.confidence)
         adjusted = max(base_conf - self.lr_consensus_penalty, 0.30)
         gate_passed = adjusted >= self.gate_threshold and final_dir != "HOLD"
-        conflict_note = (f"左右一致({left.direction}) vs A0({a0_dir})"
-                         if a0_dir != "HOLD" else
-                         f"左右一致({left.direction}), A0=HOLD")
+        conflict_note = (
+            f"左右一致({left.direction}) vs A0({a0_dir})"
+            if a0_dir != "HOLD"
+            else f"左右一致({left.direction}), A0=HOLD"
+        )
         reason = f"{conflict_note} → 取A0方向({final_dir}), 降置信-{self.lr_consensus_penalty:.2f}"
         return IntegrationResult(
             direction=final_dir,
@@ -203,8 +214,10 @@ class CorpusCallosum:
         base_conf = max(left.confidence, right.confidence)
         adjusted = max(base_conf - self.divergence_penalty, 0.25)
         gate_passed = adjusted >= self.gate_threshold and final_dir != "HOLD"
-        reason = (f"左右分歧(左={left.direction}/右={right.direction}) "
-                  f"→ 取A0({final_dir}), 降置信-{self.divergence_penalty:.2f}, 标记分歧")
+        reason = (
+            f"左右分歧(左={left.direction}/右={right.direction}) "
+            f"→ 取A0({final_dir}), 降置信-{self.divergence_penalty:.2f}, 标记分歧"
+        )
         return IntegrationResult(
             direction=final_dir,
             confidence=adjusted,
@@ -218,13 +231,13 @@ class CorpusCallosum:
             confidence_adjustment=-self.divergence_penalty,
         )
 
-    def _integrate_single_channel(
-        self, left: ChannelResult, a0_dir: str
-    ) -> IntegrationResult:
+    def _integrate_single_channel(self, left: ChannelResult, a0_dir: str) -> IntegrationResult:
         """右脑未启用 → 单通道（左脑直接过门禁，与原 A7 行为一致）"""
         gate_passed = left.confidence >= self.gate_threshold and left.direction != "HOLD"
-        reason = (f"单通道(左脑) conf={left.confidence:.0%} "
-                  f"{'✅' if gate_passed else '❌'} 门槛={self.gate_threshold:.0%}")
+        reason = (
+            f"单通道(左脑) conf={left.confidence:.0%} "
+            f"{'✅' if gate_passed else '❌'} 门槛={self.gate_threshold:.0%}"
+        )
         return IntegrationResult(
             direction=left.direction,
             confidence=left.confidence,

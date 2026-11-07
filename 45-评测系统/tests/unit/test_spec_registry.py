@@ -11,6 +11,7 @@ test_spec_registry.py — P2-9 spec 注册表与全量 spec_hash 测试
 - 向后兼容：未提供注册表时保持占位实现
 - FileSpecRegistry：list 与 {"specs": [...]} 两种文件形态
 """
+
 from __future__ import annotations
 
 import json
@@ -19,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-import pytest  # noqa: E402
+import pytest  # noqa: E402, I001
 
 from core.gateway import CategoriesConfig, Gateway, spec_hash_placeholder  # noqa: E402
 from core.spec_registry import (  # noqa: E402

@@ -5,10 +5,11 @@
 资金收缩回主流层（contracting）为周期晚期/顶部预警信号。
 与 cycle_state.json 的 MA200 牛熊锚点联动，结果写入 sector_transmission.json。
 """
+
 import json
+import os
 from datetime import datetime, timezone
 from statistics import median
-import os
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
 _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
@@ -29,6 +30,7 @@ LAYERS = {
 
 def fetch_daily(symbol):
     import ccxt
+
     ex = ccxt.okx({"enableRateLimit": True})
     o = ex.fetch_ohlcv(symbol, "1d", limit=120)
     return [c[4] for c in o if c[4]]
@@ -56,7 +58,7 @@ def main():
             print(f"{sym:<12} layer={layer:<9} mom={mom}%  samples={len(closes)}")
 
     btc_mom = assets["BTC/USDT"]["momentum_3m_pct"]
-    for sym, a in assets.items():
+    for sym, a in assets.items():  # noqa: B007
         if a["momentum_3m_pct"] is not None and btc_mom is not None:
             a["relative_strength_vs_btc"] = round(a["momentum_3m_pct"] - btc_mom, 2)
         else:
@@ -65,15 +67,22 @@ def main():
     # 各层动量中位数
     layer_medians = {}
     for layer, symbols in LAYERS.items():
-        moms = [assets[s]["momentum_3m_pct"] for s in symbols
-                if assets[s]["momentum_3m_pct"] is not None]
+        moms = [
+            assets[s]["momentum_3m_pct"]
+            for s in symbols
+            if assets[s]["momentum_3m_pct"] is not None
+        ]
         layer_medians[layer] = round(median(moms), 2) if moms else None
 
     # 传导梯度判定：
     # expanding  = meme/增长层动量接近或超过主流层（资金下沉扩散）
     # neutral    = 部分扩散，梯度不明显
     # contracting= meme 层动量显著弱于主流层（资金收缩回主流）
-    l2, l3, l4 = layer_medians["L2_major"], layer_medians["L3_growth"], layer_medians["L4_meme"]
+    l2, l3, l4 = (  # noqa: F841
+        layer_medians["L2_major"],
+        layer_medians["L3_growth"],
+        layer_medians["L4_meme"],
+    )  # noqa: F841
     if l4 is not None and l2 is not None:
         gap_42 = round(l4 - l2, 2)
         if gap_42 >= -5:

@@ -13,10 +13,10 @@ ftc_similarity — FTC 与知识锚点的相似度计算器
 
 相似度 ∈ [0, 1]
 """
+
 from __future__ import annotations
 
 from difflib import SequenceMatcher
-from typing import Optional
 
 from .ftc_schema import FTC, KnowledgeAlignment
 from .knowledge_anchors import KnowledgeAnchor, get_all_anchors
@@ -37,7 +37,7 @@ def _structural_similarity(ftc: FTC, anchor: KnowledgeAnchor) -> float:
     # 依赖结构匹配: 比较依赖边数占比
     ftc_deps = sum(len(s.depends_on) for s in ftc.steps)
     ftc_total = len(ftc.steps)
-    ftc_dep_ratio = ftc_deps / max(1, ftc_total)
+    ftc_dep_ratio = ftc_deps / max(1, ftc_total)  # noqa: F841
 
     # 锚点没有依赖结构信息，用步骤数比例做粗略匹配
     anchor_total = len(anchor_seq)
@@ -72,10 +72,7 @@ def _semantic_similarity(ftc: FTC, anchor: KnowledgeAnchor) -> float:
         scores.append(gene_matches / gene_total)
 
     # 2c. 关键词匹配: FTC 所有步骤的 description/logic vs 锚点 keywords
-    ftc_text = " ".join(
-        (s.description or "") + " " + (s.logic or "")
-        for s in ftc.steps
-    ).lower()
+    ftc_text = " ".join((s.description or "") + " " + (s.logic or "") for s in ftc.steps).lower()
     keyword_matches = 0
     for kw in anchor.keywords:
         if kw.lower() in ftc_text:
@@ -106,10 +103,12 @@ def align_to_anchors(ftc: FTC, top_k: int = 3) -> list[KnowledgeAlignment]:
     for anchor in all_anchors:
         sim = compute_similarity(ftc, anchor)
         if sim > 0.05:  # 过滤极低相似度
-            alignments.append(KnowledgeAlignment(
-                theory=anchor.name,
-                similarity=sim,
-            ))
+            alignments.append(
+                KnowledgeAlignment(
+                    theory=anchor.name,
+                    similarity=sim,
+                )
+            )
 
     # 按相似度降序
     alignments.sort(key=lambda a: a.similarity, reverse=True)

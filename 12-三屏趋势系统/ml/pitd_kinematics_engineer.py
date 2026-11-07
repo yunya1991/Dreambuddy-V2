@@ -21,9 +21,10 @@
 创建: 2026-07-19
 """
 
+from typing import List
+
 import numpy as np
 import pandas as pd
-from typing import List, Optional
 
 
 class KinematicsEngineer:
@@ -49,12 +50,12 @@ class KinematicsEngineer:
         "kin_acceleration_W",
         "kin_jerk_W",
         # 多周期关系 (6维)
-        "kin_speed_ratio_WD",               # |v_W|/|v_D| 大小周期速度比
-        "kin_accel_ratio_WD",               # |a_W|/|a_D| 大小周期加速度比
-        "kin_velocity_sign_consistency",    # sign(v_W)==sign(v_D) 方向一致性
-        "kin_accel_sign_consistency",       # sign(a_W)==sign(a_D) 加速度方向一致性
-        "kin_jerk_abs_D",                   # |j_D| 日线突变强度
-        "kin_jerk_abs_W",                   # |j_W| 周线突变强度
+        "kin_speed_ratio_WD",  # |v_W|/|v_D| 大小周期速度比
+        "kin_accel_ratio_WD",  # |a_W|/|a_D| 大小周期加速度比
+        "kin_velocity_sign_consistency",  # sign(v_W)==sign(v_D) 方向一致性
+        "kin_accel_sign_consistency",  # sign(a_W)==sign(a_D) 加速度方向一致性
+        "kin_jerk_abs_D",  # |j_D| 日线突变强度
+        "kin_jerk_abs_W",  # |j_W| 周线突变强度
     ]
 
     def __init__(
@@ -131,7 +132,7 @@ class KinematicsEngineer:
         返回:
             DataFrame, index=prices.index, 列为12维运动学特征
         """
-        n = len(prices)
+        n = len(prices)  # noqa: F841
         close = prices["close"].values
         result = pd.DataFrame(index=prices.index, columns=self.FEATURE_NAMES, dtype=float)
 
@@ -227,15 +228,19 @@ class KinematicsEngineer:
         # 趋势加强: |v|增大 → sign(a)==sign(v)
         trend_accel_mask = (np.sign(v_D_full) != 0) & (np.sign(a_D) != 0)
         correct_a_sign = (
-            np.sign(v_D_full[trend_accel_mask]) == np.sign(a_D[trend_accel_mask])
-        ).mean() if trend_accel_mask.sum() > 0 else 0.0
+            (np.sign(v_D_full[trend_accel_mask]) == np.sign(a_D[trend_accel_mask])).mean()
+            if trend_accel_mask.sum() > 0
+            else 0.0
+        )
 
         # 检验3: 周线速度与日线速度方向一致率
         v_W = feats["kin_velocity_W"].values
         both_nonzero = (np.sign(v_D_full) != 0) & (np.sign(v_W) != 0)
         direction_consistency = (
-            np.sign(v_D_full[both_nonzero]) == np.sign(v_W[both_nonzero])
-        ).mean() if both_nonzero.sum() > 0 else 0.0
+            (np.sign(v_D_full[both_nonzero]) == np.sign(v_W[both_nonzero])).mean()
+            if both_nonzero.sum() > 0
+            else 0.0
+        )
 
         # 检验4: jerk在趋势反转点是否有尖峰
         j_D = feats["kin_jerk_D"].values
@@ -269,9 +274,14 @@ class KinematicsEngineer:
             "a_D_range": (float(a_D.min()), float(a_D.max())),
             "j_D_range": (float(j_D.min()), float(j_D.max())),
             "v_W_range": (float(v_W.min()), float(v_W.max())),
-            "a_W_range": (float(feats['kin_acceleration_W'].min()), float(feats['kin_acceleration_W'].max())),
-            "j_W_range": (float(feats['kin_jerk_W'].min()), float(feats['kin_jerk_W'].max())),
-            "verdict": "✅ 物理意义合理" if (
-                correct_v_sign > 0.7 and direction_consistency > 0.5
-            ) else "⚠️ 需检查",
+            "a_W_range": (
+                float(feats["kin_acceleration_W"].min()),
+                float(feats["kin_acceleration_W"].max()),
+            ),
+            "j_W_range": (float(feats["kin_jerk_W"].min()), float(feats["kin_jerk_W"].max())),
+            "verdict": (
+                "✅ 物理意义合理"
+                if (correct_v_sign > 0.7 and direction_consistency > 0.5)
+                else "⚠️ 需检查"
+            ),
         }

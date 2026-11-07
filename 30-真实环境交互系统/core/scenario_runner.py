@@ -35,13 +35,14 @@ steps:
 - screenshot: 截图
 - assert: 自定义断言
 """
+
 from __future__ import annotations
 
 import logging
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import requests  # 用于 _call_dreamos_intent_route（HC-7 FAIL-OPEN）
 import yaml
@@ -56,6 +57,7 @@ logger = logging.getLogger("real_env.scenario_runner")
 @dataclass
 class StepResult:
     """步骤执行结果"""
+
     name: str
     action: str
     passed: bool
@@ -68,6 +70,7 @@ class StepResult:
 @dataclass
 class ScenarioResult:
     """场景执行结果"""
+
     name: str
     description: str
     passed: bool
@@ -81,8 +84,13 @@ class ScenarioResult:
 class ScenarioRunner:
     """场景运行引擎 — 解析并执行测试场景"""
 
-    def __init__(self, config: dict, user_simulator: UserSimulator,
-                 result_verifier: ResultVerifier, pipeline=None):
+    def __init__(
+        self,
+        config: dict,
+        user_simulator: UserSimulator,
+        result_verifier: ResultVerifier,
+        pipeline=None,
+    ):
         self._config = config
         self._simulator = user_simulator
         self._verifier = result_verifier
@@ -125,7 +133,9 @@ class ScenarioRunner:
         name = scenario.get("name", "unnamed")
         description = scenario.get("description", "")
         steps = scenario.get("steps", [])
-        timeout = scenario.get("timeout", self._scenario_cfg.get("default_timeout", 120))
+        timeout = scenario.get(  # noqa: F841
+            "timeout", self._scenario_cfg.get("default_timeout", 120)
+        )  # noqa: F841
         retry_count = scenario.get("retry", self._scenario_cfg.get("retry_count", 1))
 
         logger.info("Running scenario: %s (%d steps)", name, len(steps))
@@ -328,9 +338,7 @@ class ScenarioRunner:
         """等待。"""
         if "selector" in step:
             state = step.get("state", "visible")
-            page.locator(step["selector"]).wait_for(
-                state=state, timeout=step.get("timeout", 10000)
-            )
+            page.locator(step["selector"]).wait_for(state=state, timeout=step.get("timeout", 10000))
         elif "ms" in step:
             time.sleep(step["ms"] / 1000.0)
         elif "seconds" in step:
@@ -392,12 +400,14 @@ class ScenarioRunner:
                 results.append(result)
             except Exception as e:
                 logger.error("Failed to run scenario %s: %s", path, e)
-                results.append(ScenarioResult(
-                    name=path,
-                    description="",
-                    passed=False,
-                    error=str(e),
-                ))
+                results.append(
+                    ScenarioResult(
+                        name=path,
+                        description="",
+                        passed=False,
+                        error=str(e),
+                    )
+                )
         return results
 
     # ------------------------------------------------------------------
@@ -441,6 +451,7 @@ class ScenarioRunner:
         直至出现真实意图值。
         """
         import time
+
         max_wait = 20
         poll_interval = 2
         elapsed = 0
@@ -477,11 +488,13 @@ class ScenarioRunner:
 
         return last_intent
 
-    def _build_intent_sample(self, scenario: Dict, result: ScenarioResult,
-                            user_input: str) -> IntentSample:
+    def _build_intent_sample(
+        self, scenario: Dict, result: ScenarioResult, user_input: str
+    ) -> IntentSample:  # noqa: F821
         """从 YAML scenario 构建 IntentSample（recognizer_output 待后续填充）"""
         import uuid
         from datetime import datetime, timezone
+
         from .intent_sample_pipeline import IntentSample
 
         it = scenario["intent_training"]
@@ -501,7 +514,7 @@ class ScenarioRunner:
 
     def _call_dreamos_intent_route(self, user_input: str) -> dict:
         """调用 DreamOS /intent/route（HC-7 FAIL-OPEN）"""
-        import requests
+
         try:
             resp = requests.post(
                 "http://localhost:8000/api/v1/intent/route",
@@ -598,7 +611,9 @@ class ScenarioRunner:
                 }
             """)
             result["chain_text"] = chain_text or ""
-            result["chain_active"] = "暂无活跃链路" not in result["chain_text"] and bool(result["chain_text"])
+            result["chain_active"] = "暂无活跃链路" not in result["chain_text"] and bool(
+                result["chain_text"]
+            )
 
             # 综合判定：S 层徽章展示即通过（链路追踪非必须，market_query 可能无链路）
             result["passed"] = result["s_layer_visible"]

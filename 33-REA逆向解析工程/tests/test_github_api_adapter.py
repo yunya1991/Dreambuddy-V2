@@ -2,16 +2,15 @@
 
 测试策略：使用 mock 避免真实网络调用，验证 API 解析逻辑和 Evidence 输出。
 """
-import json
+
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from adapters.github_api_adapter import GitHubApiAdapter
 from core.evidence import Evidence
-
 
 MOCK_REPO_RESPONSE = {
     "id": 123456789,
@@ -112,8 +111,7 @@ def test_github_adapter_handles_404():
     assert len(result["evidence"]) > 0
     # 错误应以 Evidence 标注为 unknown 或 observation
     has_error_evidence = any(
-        "404" in str(e.result) or "not found" in str(e.result).lower()
-        for e in result["evidence"]
+        "404" in str(e.result) or "not found" in str(e.result).lower() for e in result["evidence"]
     )
     assert has_error_evidence
 

@@ -14,14 +14,15 @@ Architecture compliance:
     - Pure orchestration: capability invocation only
     - Three systems independent: DreamOS / 14-V15 / Yijing
 """
+
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-from pathlib import Path
-import sys
 import json
 import logging
 import os
+import sys
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ if str(_HL_EXEC_PATH) not in sys.path:
 # 14-V15 capability imports
 try:
     import v15_trader
+
     _V15_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"14-V15 module unavailable: {e}")
@@ -48,16 +50,19 @@ except ImportError as e:
 # HyperliquidClient import
 try:
     from aster_spot import HyperliquidClient
+
     _HL_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"HyperliquidClient unavailable: {e}")
     _HL_AVAILABLE = False
 
 # Hyperliquid adapter for 14-V15 interface compatibility
-from dreamos.capabilities.trading.hyperliquid_adapter import HyperliquidV15Adapter
+from dreamos.capabilities.trading.hyperliquid_adapter import HyperliquidV15Adapter  # noqa: E402
 
 # Coin pool file path
-COIN_POOL_FILE = Path(__file__).resolve().parent.parent.parent / "cli" / "scheduler_data" / "coin_pool.json"
+COIN_POOL_FILE = (
+    Path(__file__).resolve().parent.parent.parent / "cli" / "scheduler_data" / "coin_pool.json"
+)
 
 
 class V15Executor:
@@ -108,7 +113,7 @@ class V15Executor:
                 logger.info(f"HyperliquidClient initialized for agent_id={agent_id}")
             except Exception as e:
                 logger.error(f"Failed to initialize HyperliquidClient: {e}")
-                raise RuntimeError(f"HyperliquidClient initialization failed: {e}")
+                raise RuntimeError(f"HyperliquidClient initialization failed: {e}")  # noqa: B904
 
         # Load coin pool
         self._coin_pool = self._load_coin_pool()
@@ -129,7 +134,9 @@ class V15Executor:
 
             long_symbols = [item["symbol"] for item in pool.get("long_pool", [])]
             short_symbols = [item["symbol"] for item in pool.get("short_pool", [])]
-            logger.info(f"Coin pool loaded: LONG({len(long_symbols)})={long_symbols}, SHORT({len(short_symbols)})={short_symbols}")
+            logger.info(
+                f"Coin pool loaded: LONG({len(long_symbols)})={long_symbols}, SHORT({len(short_symbols)})={short_symbols}"
+            )
 
             return {
                 "long_pool": pool.get("long_pool", []),
@@ -151,7 +158,9 @@ class V15Executor:
         else:
             # Use Hyperliquid adapter for real execution
             if self._hl_adapter is None:
-                raise RuntimeError("HyperliquidClient not initialized (dry_run=False but no adapter)")
+                raise RuntimeError(
+                    "HyperliquidClient not initialized (dry_run=False but no adapter)"
+                )
             return self._hl_adapter
 
     def execute_signal(self, signal: Dict[str, Any]) -> Dict[str, Any]:
@@ -321,31 +330,51 @@ class V15Executor:
         """
         if not _V15_AVAILABLE:
             logger.error("14-V15 module not available, cannot manage positions")
-            return {"managed_count": 0, "closed_count": 0, "addon_count": 0,
-                    "cooldown_active": False, "details": [], "error": "14-V15 unavailable"}
+            return {
+                "managed_count": 0,
+                "closed_count": 0,
+                "addon_count": 0,
+                "cooldown_active": False,
+                "details": [],
+                "error": "14-V15 unavailable",
+            }
 
         try:
             client = self._get_client()
             if not client:
                 logger.error("Trading client unavailable, cannot manage positions")
-                return {"managed_count": 0, "closed_count": 0, "addon_count": 0,
-                        "cooldown_active": False, "details": [], "error": "client unavailable"}
+                return {
+                    "managed_count": 0,
+                    "closed_count": 0,
+                    "addon_count": 0,
+                    "cooldown_active": False,
+                    "details": [],
+                    "error": "client unavailable",
+                }
 
             result = v15_trader.manage_all_positions(client)
-            logger.info(f"V15Executor manage_positions: managed={result.get('managed_count', 0)} "
-                        f"closed={result.get('closed_count', 0)} addon={result.get('addon_count', 0)}")
+            logger.info(
+                f"V15Executor manage_positions: managed={result.get('managed_count', 0)} "
+                f"closed={result.get('closed_count', 0)} addon={result.get('addon_count', 0)}"
+            )
             return result
 
         except Exception as e:
             logger.error(f"V15Executor manage_positions error: {e}")
-            return {"managed_count": 0, "closed_count": 0, "addon_count": 0,
-                    "cooldown_active": False, "details": [], "error": str(e)}
+            return {
+                "managed_count": 0,
+                "closed_count": 0,
+                "addon_count": 0,
+                "cooldown_active": False,
+                "details": [],
+                "error": str(e),
+            }
 
 
 # ---- DreamOS Node Wrapper ----
 
-from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.registry.base import BaseNode  # noqa: E402
+from dreamos.shared.state import NodeResult, NodeStatus, State  # noqa: E402
 
 
 class V15ExecutorNode(BaseNode):

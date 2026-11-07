@@ -11,6 +11,7 @@
   成交量 zscore：
     volume_zscore_252d
 """
+
 from __future__ import annotations
 
 from typing import Optional, Tuple
@@ -50,7 +51,7 @@ class RollingRegimeStats:
                 precomputed.get("probs"),
             )
         # 内部跑 Phase 0（延迟 import 防止循环）
-        from bcrm2.indicators import IndicatorBank
+        from bcrm2.indicators import IndicatorBank  # noqa: I001
         from bcrm2.score_composer import ScoreComposer
         from bcrm2.temporal_smoother import TemporalSmoother
         from bcrm2.regime_mapper import RegimeMapper
@@ -66,9 +67,19 @@ class RollingRegimeStats:
         for i in range(len(df)):
             frame = rm.map_frame(float(L.iloc[i]), float(T.iloc[i]))
             Cs[i] = float(frame["consensus"])
-            probs[i] = [frame["regime_probs"].get(k, 0.0) for k in
-                        ["RANGE_BOUND", "CONSOLIDATION", "ACCUMULATION", "RECOVERY_MILD",
-                         "TREND_UP_MILD", "TREND_UP_STRONG", "FOMO_RALLY", "VOLATILE_DROP"]]
+            probs[i] = [
+                frame["regime_probs"].get(k, 0.0)
+                for k in [
+                    "RANGE_BOUND",
+                    "CONSOLIDATION",
+                    "ACCUMULATION",
+                    "RECOVERY_MILD",
+                    "TREND_UP_MILD",
+                    "TREND_UP_STRONG",
+                    "FOMO_RALLY",
+                    "VOLATILE_DROP",
+                ]
+            ]
         C = pd.Series(Cs, index=df.index)
         return L, T, C, probs
 
@@ -119,4 +130,3 @@ class RollingRegimeStats:
 from bcrm2.feature_registry import FeatureRegistry  # noqa: E402
 
 FeatureRegistry.register(name="rolling_regime_stats", factory=RollingRegimeStats)
-

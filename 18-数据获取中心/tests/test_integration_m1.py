@@ -3,10 +3,10 @@
 1) DataCenter 加载 .env（新行为，先红）
 2) 端到端：fetch macro -> DataRecord -> 去重 -> sqlite 落库（验收）
 """
+
 import os
 
 import pandas as pd
-
 from data_center import DataCenter, DataRecord
 from data_center.storage.sink_sqlite import SqliteSink
 

@@ -8,6 +8,7 @@
   5. 训练状态监控
   6. 双模式互不阻塞
 """
+
 import os
 import sys
 import unittest
@@ -27,7 +28,7 @@ class ResourceQuotaTest(unittest.TestCase):
 
     def test_active_quota_config(self):
         """主动训练资源配额: CPU≤30%, 内存≤2GB, 超时8h。"""
-        from resource_manager import ResourceQuota, ACTIVE_QUOTA
+        from resource_manager import ACTIVE_QUOTA
 
         self.assertEqual(ACTIVE_QUOTA.cpu_percent, 30)
         self.assertEqual(ACTIVE_QUOTA.memory_mb, 2048)
@@ -35,7 +36,7 @@ class ResourceQuotaTest(unittest.TestCase):
 
     def test_passive_quota_config(self):
         """被动训练资源配额: CPU≤50%, 内存≤4GB, 超时30min。"""
-        from resource_manager import ResourceQuota, PASSIVE_QUOTA
+        from resource_manager import PASSIVE_QUOTA
 
         self.assertEqual(PASSIVE_QUOTA.cpu_percent, 50)
         self.assertEqual(PASSIVE_QUOTA.memory_mb, 4096)
@@ -43,7 +44,7 @@ class ResourceQuotaTest(unittest.TestCase):
 
     def test_check_within_quota(self):
         """资源在配额内返回True。"""
-        from resource_manager import ResourceManager, ACTIVE_QUOTA
+        from resource_manager import ACTIVE_QUOTA, ResourceManager
 
         mgr = ResourceManager(ACTIVE_QUOTA)
         # 模拟资源使用: CPU 20%, 内存 1GB
@@ -52,7 +53,7 @@ class ResourceQuotaTest(unittest.TestCase):
 
     def test_check_over_quota(self):
         """资源超配额返回False。"""
-        from resource_manager import ResourceManager, ACTIVE_QUOTA
+        from resource_manager import ACTIVE_QUOTA, ResourceManager
 
         mgr = ResourceManager(ACTIVE_QUOTA)
         # 模拟资源使用: CPU 40%(>30%), 内存 1GB
@@ -64,7 +65,7 @@ class TrainingQueueTest(unittest.TestCase):
 
     def test_enqueue_and_dequeue(self):
         """训练队列: 入队+出队按优先级。"""
-        from training_queue import TrainingQueue, QueuedTask
+        from training_queue import QueuedTask, TrainingQueue
 
         queue = TrainingQueue()
         task1 = QueuedTask(task_id="t1", mode="active", priority=1)
@@ -79,7 +80,7 @@ class TrainingQueueTest(unittest.TestCase):
 
     def test_retry_mechanism(self):
         """失败任务重试: 重试次数+1，超过上限标记为failed。"""
-        from training_queue import TrainingQueue, QueuedTask
+        from training_queue import QueuedTask, TrainingQueue
 
         queue = TrainingQueue(max_retries=3)
         task = QueuedTask(task_id="retry_test", mode="active", priority=1)
@@ -100,7 +101,7 @@ class TrainingQueueTest(unittest.TestCase):
 
     def test_queue_size(self):
         """队列大小正确统计。"""
-        from training_queue import TrainingQueue, QueuedTask
+        from training_queue import QueuedTask, TrainingQueue
 
         queue = TrainingQueue()
         self.assertEqual(queue.size(), 0)

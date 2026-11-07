@@ -233,8 +233,8 @@ def calc_momentum_resistance(df) -> Dict[str, float]:
         }
 
     close = df["close"].values
-    high = df["high"].values
-    low = df["low"].values
+    high = df["high"].values  # noqa: F841
+    low = df["low"].values  # noqa: F841
 
     delta = np.diff(close)
     gain = np.where(delta > 0, delta, 0)
@@ -417,7 +417,7 @@ def calc_fundamental_resistance(fundamental_data: Optional[Dict] = None) -> Dict
         dims = fundamental_data["dimensions"]
         dim_count = 0
         dim_total = 0
-        for dim_name, dim_data in dims.items():
+        for dim_name, dim_data in dims.items():  # noqa: B007
             if dim_data.get("available", False):
                 dim_score = (float(dim_data.get("score", 50)) - 50) / 50
                 dim_total += dim_score

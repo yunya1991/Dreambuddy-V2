@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 import json
 import os
-import re
 import sys
 from pathlib import Path
 from typing import List, Tuple
-
 
 ALLOWED_BRANCH_PREFIX = (
     "feature/",
@@ -60,7 +58,8 @@ def check_rules(event: dict, changed_files: List[str]) -> Tuple[List[str], List[
 
     constraints_changed = any(path.startswith("constraints/") for path in changed_files)
     specs_or_index_changed = any(
-        path.startswith("constraints/workflows-spec/") or path.startswith("constraints/system-index/")
+        path.startswith("constraints/workflows-spec/")
+        or path.startswith("constraints/system-index/")
         for path in changed_files
     )
     if constraints_changed and not specs_or_index_changed:

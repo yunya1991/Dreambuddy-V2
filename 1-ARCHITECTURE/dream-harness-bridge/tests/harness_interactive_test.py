@@ -9,10 +9,11 @@ Harness 前端交互模拟验证器
     python harness_interactive_test.py            # 交互模式
     python harness_interactive_test.py --auto     # 自动测试多个场景
 """
+
 import json
+import os
 import subprocess
 import sys
-import os
 import time
 from datetime import datetime
 
@@ -73,11 +74,13 @@ class HarnessSimulator:
             try:
                 resp = json.loads(line)
                 if resp.get("id") == payload["id"]:
-                    self.logs.append({
-                        "method": method,
-                        "latency_ms": round(latency_ms, 1),
-                        "ok": resp.get("ok", False),
-                    })
+                    self.logs.append(
+                        {
+                            "method": method,
+                            "latency_ms": round(latency_ms, 1),
+                            "ok": resp.get("ok", False),
+                        }
+                    )
                     return resp
             except json.JSONDecodeError:
                 continue
@@ -93,11 +96,14 @@ class HarnessSimulator:
 
         # ═══ S 层: 意图识别 ═══
         print(f"{BOLD}{CYAN}📍 S 层 — 意图识别 (IntentGateway){RESET}")
-        s_resp = self.call("intent_gateway", {
-            "user_input": user_input,
-            "step": self.stats["total_requests"],
-            "agent_id": "harness-frontend-sim",
-        })
+        s_resp = self.call(
+            "intent_gateway",
+            {
+                "user_input": user_input,
+                "step": self.stats["total_requests"],
+                "agent_id": "harness-frontend-sim",
+            },
+        )
         s_result = s_resp["result"]
         self.stats["s_layer_calls"] += 1
         intent = s_result["intent"]
@@ -107,11 +113,14 @@ class HarnessSimulator:
         result["steps"].append({"layer": "S", "intent": intent, "risk": risk})
 
         # G 层投影: intent_gate
-        self.call("session_consumer", {
-            "session_id": self.session_id,
-            "event_type": "intent_gate",
-            "event_data": {"intent": intent, "risk_level": risk, "user_input": user_input},
-        })
+        self.call(
+            "session_consumer",
+            {
+                "session_id": self.session_id,
+                "event_type": "intent_gate",
+                "event_data": {"intent": intent, "risk_level": risk, "user_input": user_input},
+            },
+        )
         self.stats["g_layer_calls"] += 1
 
         # ═══ A 层: 图编排 ═══
@@ -124,11 +133,14 @@ class HarnessSimulator:
             "fundamental": "F",
         }
         chain = chain_map.get(intent, "C")
-        a_resp = self.call("graph_planner", {
-            "intent_type": intent.upper().replace("-", "_"),
-            "recommended_chain": chain,
-            "confidence": 0.7,
-        })
+        a_resp = self.call(
+            "graph_planner",
+            {
+                "intent_type": intent.upper().replace("-", "_"),
+                "recommended_chain": chain,
+                "confidence": 0.7,
+            },
+        )
         a_result = a_resp["result"]
         self.stats["a_layer_calls"] += 1
         nodes = a_result.get("selected_nodes", [])
@@ -136,14 +148,23 @@ class HarnessSimulator:
         print(f"  链路: {GREEN}{a_result.get('planned_chain', chain)}{RESET}")
         print(f"  节点: {', '.join(nodes[:6])}{'...' if len(nodes) > 6 else ''}")
         print(f"  预算: {budget}")
-        result["steps"].append({"layer": "A", "chain": a_result.get("planned_chain"), "nodes": nodes})
+        result["steps"].append(
+            {"layer": "A", "chain": a_result.get("planned_chain"), "nodes": nodes}
+        )
 
         # G 层投影: graph_node
-        self.call("session_consumer", {
-            "session_id": self.session_id,
-            "event_type": "graph_node",
-            "event_data": {"phase": "A_planner", "chain": a_result.get("planned_chain"), "nodes": nodes},
-        })
+        self.call(
+            "session_consumer",
+            {
+                "session_id": self.session_id,
+                "event_type": "graph_node",
+                "event_data": {
+                    "phase": "A_planner",
+                    "chain": a_result.get("planned_chain"),
+                    "nodes": nodes,
+                },
+            },
+        )
         self.stats["g_layer_calls"] += 1
 
         # ═══ C 层: 执行分析 ═══
@@ -173,54 +194,78 @@ class HarnessSimulator:
             ns = ndata.get("status", "?")
             print(f"    {nid}: {nd} (conf={nc:.2f}, status={ns})")
 
-        result["steps"].append({
-            "layer": "C", "direction": direction, "confidence": confidence,
-            "details": details, "exec_stats": exec_stats,
-        })
+        result["steps"].append(
+            {
+                "layer": "C",
+                "direction": direction,
+                "confidence": confidence,
+                "details": details,
+                "exec_stats": exec_stats,
+            }
+        )
 
         # G 层投影: node_result
-        self.call("session_consumer", {
-            "session_id": self.session_id,
-            "event_type": "node_result",
-            "event_data": {"symbol": symbol, "direction": direction, "confidence": confidence},
-        })
+        self.call(
+            "session_consumer",
+            {
+                "session_id": self.session_id,
+                "event_type": "node_result",
+                "event_data": {"symbol": symbol, "direction": direction, "confidence": confidence},
+            },
+        )
         self.stats["g_layer_calls"] += 1
 
         # ═══ C 层 Reflector: 反射决策 ═══
         print(f"\n{BOLD}{CYAN}📍 C 层 — 反射决策 (Reflector){RESET}")
-        r_resp = self.call("reflection", {
-            "mode": "decide",
-            "current_node_id": nodes[-1] if nodes else "C3",
-            "confidence": confidence,
-            "direction": direction,
-            "status": "SUCCESS",
-            "executed_count": len(nodes) if nodes else 3,
-            "max_nodes": len(nodes) if nodes else 5,
-            "budget_remaining_ratio": 0.7,
-            "prev_results": [
-                {"node_id": nid, "direction": nd.get("direction"), "confidence": nd.get("confidence")}
-                for nid, nd in details.items()
-            ],
-        })
+        r_resp = self.call(
+            "reflection",
+            {
+                "mode": "decide",
+                "current_node_id": nodes[-1] if nodes else "C3",
+                "confidence": confidence,
+                "direction": direction,
+                "status": "SUCCESS",
+                "executed_count": len(nodes) if nodes else 3,
+                "max_nodes": len(nodes) if nodes else 5,
+                "budget_remaining_ratio": 0.7,
+                "prev_results": [
+                    {
+                        "node_id": nid,
+                        "direction": nd.get("direction"),
+                        "confidence": nd.get("confidence"),
+                    }
+                    for nid, nd in details.items()
+                ],
+            },
+        )
         r_result = r_resp["result"]["echo"]["params"]
         decision = r_result["decision"]
         self.stats["reflector_calls"] += 1
-        dec_color = GREEN if decision == "CONTINUE" else (YELLOW if decision in ["REDO", "INSERT_BEFORE"] else RED)
+        dec_color = (
+            GREEN
+            if decision == "CONTINUE"
+            else (YELLOW if decision in ["REDO", "INSERT_BEFORE"] else RED)
+        )
         print(f"  反射决策: {dec_color}{decision}{RESET}")
         print(f"  原因: {r_result.get('reason', '')[:80]}")
         result["steps"].append({"layer": "C-Reflector", "decision": decision})
 
         # G 层投影: graph_node (reflector)
-        self.call("session_consumer", {
-            "session_id": self.session_id,
-            "event_type": "graph_node",
-            "event_data": {"phase": "C_reflector", "decision": decision},
-        })
+        self.call(
+            "session_consumer",
+            {
+                "session_id": self.session_id,
+                "event_type": "graph_node",
+                "event_data": {"phase": "C_reflector", "decision": decision},
+            },
+        )
         self.stats["g_layer_calls"] += 1
 
         # ═══ 生成回复 ═══
         print(f"\n{BOLD}{GREEN}🤖 DreamOS 回复:{RESET}")
-        reply = self._generate_reply(user_input, intent, risk, symbol, direction, confidence, details, decision)
+        reply = self._generate_reply(
+            user_input, intent, risk, symbol, direction, confidence, details, decision
+        )
         for line in reply.split("\n"):
             print(f"  {line}")
         result["reply"] = reply
@@ -228,9 +273,15 @@ class HarnessSimulator:
         print(f"\n{CYAN}{'─'*70}{RESET}")
         return result
 
-    def _generate_reply(self, user_input, intent, risk, symbol, direction, confidence, details, decision):
+    def _generate_reply(
+        self, user_input, intent, risk, symbol, direction, confidence, details, decision
+    ):
         """根据各层结果生成自然语言回复"""
-        dir_text = {"LONG": "看多（建议做多）", "SHORT": "看空（建议做空/观望）", "HOLD": "中性（建议观望）"}
+        dir_text = {
+            "LONG": "看多（建议做多）",
+            "SHORT": "看空（建议做空/观望）",
+            "HOLD": "中性（建议观望）",
+        }
         risk_text = {"low": "低风险", "medium": "中等风险", "high": "高风险"}
 
         lines = []
@@ -302,7 +353,7 @@ def run_auto_tests():
     ]
 
     print(f"\n{BOLD}🚀 Harness 前端交互模拟验证{RESET}")
-    print(f"验证 DreamOS + Harness 集成后的 S→A→C→G 全链路交互能力")
+    print("验证 DreamOS + Harness 集成后的 S→A→C→G 全链路交互能力")
     print(f"{'═'*70}")
 
     for scenario in scenarios:
@@ -329,7 +380,7 @@ def run_auto_tests():
                     pass
         print(f"\n{BOLD}G 层投影验证:{RESET}")
         print(f"  g_layer_events.jsonl 中本会话事件数: {len(session_events)}")
-        event_types = set(e["event_type"] for e in session_events)
+        event_types = set(e["event_type"] for e in session_events)  # noqa: C401
         print(f"  事件类型: {', '.join(sorted(event_types))}")
 
 

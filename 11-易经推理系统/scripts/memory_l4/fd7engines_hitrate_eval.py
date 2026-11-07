@@ -19,6 +19,7 @@ Exit codes:
   1 · 样本≥1500 但至少 1 门 FAIL —— 保持红线 False
   2 · 样本不足（<1500）或文件/IO 错误 —— 观察中
 """
+
 from __future__ import annotations
 
 import json
@@ -36,13 +37,13 @@ RUNTIME = REPO / "scripts" / "runtime"
 MIN_RECORDS = 1500  # 7 日历天观察窗口（每 300s 一次 × 1 进程 ≈ 2016 次/周，1500 为保守下限）
 
 # ── 7 门槛常量（Spec §6.3 硬编码）────────────────────────────────
-HIT_RATE_MIN    = 0.60   # G1
-THAW_ACC_MIN    = 0.70   # G2
-SHARPE_MIN      = 1.05   # G3
-IMPORT_FAIL_MAX = 0      # G4
-S_ACC_MIN       = 0.75   # G5
-A_CONS_MIN      = 0.60   # G6
-SCHEMA_PASS_MIN = 0.95   # G7
+HIT_RATE_MIN = 0.60  # G1
+THAW_ACC_MIN = 0.70  # G2
+SHARPE_MIN = 1.05  # G3
+IMPORT_FAIL_MAX = 0  # G4
+S_ACC_MIN = 0.75  # G5
+A_CONS_MIN = 0.60  # G6
+SCHEMA_PASS_MIN = 0.95  # G7
 
 
 # ── 1. JSONL 加载（错行跳过，文件不存在 stderr+空列表） ─────
@@ -61,7 +62,10 @@ def load_records(path: str) -> List[Dict[str, Any]]:
                 try:
                     out.append(json.loads(line))
                 except Exception as e:  # noqa: BLE001 — JSON 错行必须 fail-open
-                    print(f"[WARN] L{i} JSON decode 失败跳过：{type(e).__name__}: {e}", file=sys.stderr)
+                    print(
+                        f"[WARN] L{i} JSON decode 失败跳过：{type(e).__name__}: {e}",
+                        file=sys.stderr,
+                    )
     except (PermissionError, OSError) as e:
         print(f"[ERROR] 读取 JSONL 失败：{type(e).__name__}: {e}", file=sys.stderr)
         return []
@@ -219,13 +223,45 @@ def eval_seven_gates(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     g7_val, g7_pass = g7_schema_pass(records)
 
     gates = {
-        "G1_hit_rate_effective": {"value": round(g1_val, 4), "min": HIT_RATE_MIN,    "pass": g1_pass, "unit": ""},
-        "G2_thaw_accuracy":      {"value": round(g2_val, 4), "min": THAW_ACC_MIN,    "pass": g2_pass, "unit": "", "note": "分母=含_thaw记录数；无_thaw→中性PASS"},
-        "G3_sharpe_annual":      {"value": round(g3_val, 4), "min": SHARPE_MIN,      "pass": g3_pass, "unit": "", "note": "sqrt(252)×mean/std；空/全0→中性PASS"},
-        "G4_IMPORT_FAIL_total":  {"value": g4_val,           "max": IMPORT_FAIL_MAX, "pass": g4_pass, "unit": ""},
-        "G5_S_ACCURACY":         {"value": round(g5_val, 4), "min": S_ACC_MIN,       "pass": g5_pass, "unit": ""},
-        "G6_A_CONSISTENCY":      {"value": round(g6_val, 4), "min": A_CONS_MIN,      "pass": g6_pass, "unit": ""},
-        "G7_SCHEMA_PASS_RATE":   {"value": round(g7_val, 4), "min": SCHEMA_PASS_MIN, "pass": g7_pass, "unit": ""},
+        "G1_hit_rate_effective": {
+            "value": round(g1_val, 4),
+            "min": HIT_RATE_MIN,
+            "pass": g1_pass,
+            "unit": "",
+        },
+        "G2_thaw_accuracy": {
+            "value": round(g2_val, 4),
+            "min": THAW_ACC_MIN,
+            "pass": g2_pass,
+            "unit": "",
+            "note": "分母=含_thaw记录数；无_thaw→中性PASS",
+        },
+        "G3_sharpe_annual": {
+            "value": round(g3_val, 4),
+            "min": SHARPE_MIN,
+            "pass": g3_pass,
+            "unit": "",
+            "note": "sqrt(252)×mean/std；空/全0→中性PASS",
+        },
+        "G4_IMPORT_FAIL_total": {
+            "value": g4_val,
+            "max": IMPORT_FAIL_MAX,
+            "pass": g4_pass,
+            "unit": "",
+        },
+        "G5_S_ACCURACY": {"value": round(g5_val, 4), "min": S_ACC_MIN, "pass": g5_pass, "unit": ""},
+        "G6_A_CONSISTENCY": {
+            "value": round(g6_val, 4),
+            "min": A_CONS_MIN,
+            "pass": g6_pass,
+            "unit": "",
+        },
+        "G7_SCHEMA_PASS_RATE": {
+            "value": round(g7_val, 4),
+            "min": SCHEMA_PASS_MIN,
+            "pass": g7_pass,
+            "unit": "",
+        },
     }
     all_pass = all(g["pass"] for g in gates.values())
 
@@ -261,9 +297,13 @@ def print_report(report: Dict[str, Any]) -> None:
     print("-" * 76)
     print(f"  7 门槛 ALL_PASS = {report['ALL_PASS']}")
     if report["ALL_PASS"] and report["SAMPLE_READY"]:
-        print("  ✦ 允许发起 PR+CR：将 enable_fundamental_7engines_production_injection 默认改为 True")
+        print(
+            "  ✦ 允许发起 PR+CR：将 enable_fundamental_7engines_production_injection 默认改为 True"
+        )
     elif not report["SAMPLE_READY"]:
-        print(f"  ⏳ 样本未达 {MIN_RECORDS}，请继续观察（≥7 日历天）。当前 {report['total_records']}")
+        print(
+            f"  ⏳ 样本未达 {MIN_RECORDS}，请继续观察（≥7 日历天）。当前 {report['total_records']}"
+        )
     else:
         print("  ✗ 门槛未过：保持红线 False，不允许打开正式注入开关。")
     print("=" * 76)
@@ -278,7 +318,9 @@ def main(argv: List[str]) -> int:
     records = load_records(jsonl_path)
     report = eval_seven_gates(records)
     report["generated_at_iso"] = datetime.utcnow().isoformat() + "Z"
-    report["jsonl_path"] = str(Path(jsonl_path).resolve()) if os.path.exists(jsonl_path) else jsonl_path
+    report["jsonl_path"] = (
+        str(Path(jsonl_path).resolve()) if os.path.exists(jsonl_path) else jsonl_path
+    )
 
     # 写报告 JSON（运行时目录；失败忽略不影响退出码）
     try:

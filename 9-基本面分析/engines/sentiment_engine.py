@@ -14,8 +14,7 @@ P1 升级：规则引擎 ← (FAIL-OPEN 3层回退) ← 双FinBERT模型（Prosu
 import math
 import os
 import re
-from typing import Any, Dict, List, Optional, Tuple
-from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
 
 # ===========================================================================
@@ -61,24 +60,99 @@ def chinese_ratio(text: str) -> float:
 
 # 正面关键词
 POSITIVE_KEYWORDS = [
-    "bullish", "rally", "surge", "approval", "inflow", "positive", "adoption",
-    "上涨", "利好", "突破", "机构", "流入", "买入", "看涨", "做多",
-    "approval", "ETF", "批准", "通过", "吸筹", "增持", "创新高"
+    "bullish",
+    "rally",
+    "surge",
+    "approval",
+    "inflow",
+    "positive",
+    "adoption",
+    "上涨",
+    "利好",
+    "突破",
+    "机构",
+    "流入",
+    "买入",
+    "看涨",
+    "做多",
+    "approval",
+    "ETF",
+    "批准",
+    "通过",
+    "吸筹",
+    "增持",
+    "创新高",
 ]
 
 # 负面关键词
 NEGATIVE_KEYWORDS = [
-    "bearish", "crash", "selloff", "ban", "hack", "fraud", "liquidation", "outflow",
-    "reject", "negative", "下跌", "利空", "暴跌", "监管", "清算", "卖出",
-    "看跌", "做空", "爆仓", "减持", "创新低", "被禁", "风险", "抛售"
+    "bearish",
+    "crash",
+    "selloff",
+    "ban",
+    "hack",
+    "fraud",
+    "liquidation",
+    "outflow",
+    "reject",
+    "negative",
+    "下跌",
+    "利空",
+    "暴跌",
+    "监管",
+    "清算",
+    "卖出",
+    "看跌",
+    "做空",
+    "爆仓",
+    "减持",
+    "创新低",
+    "被禁",
+    "风险",
+    "抛售",
 ]
 
 # 分类关键词映射（保留结构；FinBERT 模式下 categories 仍由正则算，零开销结构对齐）
 CATEGORY_KEYWORDS = {
-    "监管政策": ["SEC", "CFTC", "FED", "美联储", "监管", "政策", "法案", "条例", "批准", "禁令", "ETF批准", "ETF通过"],
-    "项目动态": ["发布", "更新", "升级", "合并", "分叉", "空投", "上线", "下架", "合作", "partnership"],
-    "市场数据": ["流入", "流出", "交易量", "持仓", "爆仓", "杠杆", "资金费率", "多空比", "MVRV", "SOPR"],
-    "社区热话": ["病毒式传播", "热点", "FOMO", "社区", "推特", "讨论", "关注", "热度", "meme"]
+    "监管政策": [
+        "SEC",
+        "CFTC",
+        "FED",
+        "美联储",
+        "监管",
+        "政策",
+        "法案",
+        "条例",
+        "批准",
+        "禁令",
+        "ETF批准",
+        "ETF通过",
+    ],
+    "项目动态": [
+        "发布",
+        "更新",
+        "升级",
+        "合并",
+        "分叉",
+        "空投",
+        "上线",
+        "下架",
+        "合作",
+        "partnership",
+    ],
+    "市场数据": [
+        "流入",
+        "流出",
+        "交易量",
+        "持仓",
+        "爆仓",
+        "杠杆",
+        "资金费率",
+        "多空比",
+        "MVRV",
+        "SOPR",
+    ],
+    "社区热话": ["病毒式传播", "热点", "FOMO", "社区", "推特", "讨论", "关注", "热度", "meme"],
 }
 
 
@@ -88,16 +162,37 @@ CATEGORY_KEYWORDS = {
 
 # ProsusAI/finbert 官方三档（+ LABEL_0/1/2 前缀兼容包装版）
 FINBERT_EN_LABEL_MAP: Dict[str, float] = {
-    "positive": +1.0, "POSITIVE": +1.0, "LABEL_1": +1.0, "LABEL_POSITIVE": +1.0,
-    "negative": -1.0, "NEGATIVE": -1.0, "LABEL_2": -1.0, "LABEL_NEGATIVE": -1.0,
-    "neutral":   0.0, "NEUTRAL":   0.0, "LABEL_0":  0.0, "LABEL_NEUTRAL":   0.0,
+    "positive": +1.0,
+    "POSITIVE": +1.0,
+    "LABEL_1": +1.0,
+    "LABEL_POSITIVE": +1.0,
+    "negative": -1.0,
+    "NEGATIVE": -1.0,
+    "LABEL_2": -1.0,
+    "LABEL_NEGATIVE": -1.0,
+    "neutral": 0.0,
+    "NEUTRAL": 0.0,
+    "LABEL_0": 0.0,
+    "LABEL_NEUTRAL": 0.0,
 }
 
 # valuesimplex/FinBERT2（KDD2025 中文金融）— 中英 label 名双兼容
 FINBERT_ZH_LABEL_MAP: Dict[str, float] = {
-    "positive": +1.0, "POSITIVE": +1.0, "利好": +1.0, "POS": +1.0, "看涨": +1.0,
-    "negative": -1.0, "NEGATIVE": -1.0, "利空": -1.0, "NEG": -1.0, "看跌": -1.0,
-    "neutral":   0.0, "NEUTRAL":   0.0, "中性":  0.0, "NEU":  0.0, "持平":  0.0,
+    "positive": +1.0,
+    "POSITIVE": +1.0,
+    "利好": +1.0,
+    "POS": +1.0,
+    "看涨": +1.0,
+    "negative": -1.0,
+    "NEGATIVE": -1.0,
+    "利空": -1.0,
+    "NEG": -1.0,
+    "看跌": -1.0,
+    "neutral": 0.0,
+    "NEUTRAL": 0.0,
+    "中性": 0.0,
+    "NEU": 0.0,
+    "持平": 0.0,
 }
 
 
@@ -111,13 +206,14 @@ class SentimentEngine:
     SCORE_THRESH_POS = 0.2
     SCORE_THRESH_NEG = -0.2
     ZH_RATIO_THRESHOLD = 0.30  # CJK 占比 ≥ 30% → 中文模型
-    MAX_TEXT_LEN = 512         # BERT 512 token 限制
+    MAX_TEXT_LEN = 512  # BERT 512 token 限制
 
     # 英文 FinBERT 本地模型目录（9-基本面分析/models/finbert）：
     # 存在则优先本地加载（离线可用、免联网下载）；env FINBERT_EN_MODEL_PATH 可覆盖
     _FINBERT_EN_LOCAL_DIR: str = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "models", "finbert",
+        "models",
+        "finbert",
     )
 
     # 垃圾文本过滤（保守高置信，避免误杀正经金融新闻；gdelt 实测垃圾率 ~1.4%）：
@@ -129,7 +225,8 @@ class SentimentEngine:
     # 规则2 广告推广优惠码（单词即高置信垃圾）
     _GARBAGE_PROMO = re.compile(
         r"promotional\s+offer|promo\s+code|coupon\s+code|referral\s+code|invite\s+code"
-        r"|bonus\s+code|邀请码|优惠码|注册码", re.IGNORECASE
+        r"|bonus\s+code|邀请码|优惠码|注册码",
+        re.IGNORECASE,
     )
 
     def __init__(self):
@@ -141,15 +238,18 @@ class SentimentEngine:
         }
 
         # --- 环境变量 L0：USE_FINBERT=0 → 全程旧规则 ---
-        self._use_finbert_env_ok: bool = (
-            os.environ.get("USE_FINBERT", "1").strip().lower()
-            not in ("0", "false", "no", "off", "")
+        self._use_finbert_env_ok: bool = os.environ.get("USE_FINBERT", "1").strip().lower() not in (
+            "0",
+            "false",
+            "no",
+            "off",
+            "",
         )
 
         # --- L1：模型懒加载占位（首次 analyze_text 调用时初始化；__init__ 绝不加载） ---
         self._eng_ready: bool = False
-        self._en_pipe: Optional[Any] = None   # ProsusAI/finbert
-        self._zh_pipe: Optional[Any] = None   # valuesimplex/FinBERT2
+        self._en_pipe: Optional[Any] = None  # ProsusAI/finbert
+        self._zh_pipe: Optional[Any] = None  # valuesimplex/FinBERT2
         self._en_label_map: Dict[str, float] = dict(FINBERT_EN_LABEL_MAP)
         self._zh_label_map: Dict[str, float] = dict(FINBERT_ZH_LABEL_MAP)
 
@@ -168,7 +268,12 @@ class SentimentEngine:
     def _analyze_text_rule(self, text: str) -> Dict[str, Any]:
         if not text:
             # 修复：空返回 matches 改为 Dict（类型对齐），其他字段与旧版同值
-            return {"score": 0.0, "sentiment": "neutral", "categories": [], "matches": {"positive": 0, "negative": 0}}
+            return {
+                "score": 0.0,
+                "sentiment": "neutral",
+                "categories": [],
+                "matches": {"positive": 0, "negative": 0},
+            }
 
         positive_matches = self.positive_pattern.findall(text)
         negative_matches = self.negative_pattern.findall(text)

@@ -9,6 +9,7 @@ S 层应识别为 data_insight 意图，结合 9-基本面分析系统的计算�
   - 样本生成: 变化模式 + 问法模板 → (message, intent_type='data_insight')
   - FAIL-OPEN: 引擎目录缺失时使用内置知识库，不阻塞训练
 """
+
 import os
 from typing import List, Optional
 
@@ -16,7 +17,7 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
 _PROJECT_ROOT = os.path.dirname(_34_DIR)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 # 9-基本面分析 引擎目录（存在性检查用，知识对内置保证 FAIL-OPEN）
 _FUNDAMENTAL_ENGINES = os.path.join(_PROJECT_ROOT, "9-基本面分析", "engines")
@@ -66,41 +67,19 @@ class DataInsightCollector(TrainingDataProvider):
 
     def fetch_cases(self, limit: int = 100, since: Optional[str] = None) -> List[TrainingCase]:
         cases: List[TrainingCase] = []
-        n = len(_INSIGHT_KNOWLEDGE)
+        n = len(_INSIGHT_KNOWLEDGE)  # noqa: F841
         for i, (metric, pattern, meaning) in enumerate(_INSIGHT_KNOWLEDGE):
             tpl = _INSIGHT_TEMPLATES[i % len(_INSIGHT_TEMPLATES)]
             message = tpl.format(metric=metric, pattern=pattern)
-            cases.append(TrainingCase(
-                intent="data_insight",
-                actions=[f"insight:{metric}", f"pattern:{pattern}"],
-                outcome_text=message,
-                learned=[f"动态解读: {metric}{pattern} → {meaning}"],
-                layer_tags=["S"],
-                quality="B",
-                confidence=0.6,
-                source="data_insight",
-                metadata={
-                    "metric": metric,
-                    "change_pattern": pattern,
-                    "market_meaning": meaning,
-                    "engine_hint": "9-基本面分析",
-                },
-            ))
-            if len(cases) >= limit:
-                return cases
-        # 知识对不足 limit 时，用第二套问法补充（增强问法多样性）
-        if len(cases) < limit:
-            for i, (metric, pattern, meaning) in enumerate(_INSIGHT_KNOWLEDGE):
-                tpl = _INSIGHT_TEMPLATES[(i + 2) % len(_INSIGHT_TEMPLATES)]
-                message = tpl.format(metric=metric, pattern=pattern)
-                cases.append(TrainingCase(
+            cases.append(
+                TrainingCase(
                     intent="data_insight",
                     actions=[f"insight:{metric}", f"pattern:{pattern}"],
                     outcome_text=message,
                     learned=[f"动态解读: {metric}{pattern} → {meaning}"],
                     layer_tags=["S"],
                     quality="B",
-                    confidence=0.5,
+                    confidence=0.6,
                     source="data_insight",
                     metadata={
                         "metric": metric,
@@ -108,7 +87,33 @@ class DataInsightCollector(TrainingDataProvider):
                         "market_meaning": meaning,
                         "engine_hint": "9-基本面分析",
                     },
-                ))
+                )
+            )
+            if len(cases) >= limit:
+                return cases
+        # 知识对不足 limit 时，用第二套问法补充（增强问法多样性）
+        if len(cases) < limit:
+            for i, (metric, pattern, meaning) in enumerate(_INSIGHT_KNOWLEDGE):
+                tpl = _INSIGHT_TEMPLATES[(i + 2) % len(_INSIGHT_TEMPLATES)]
+                message = tpl.format(metric=metric, pattern=pattern)
+                cases.append(
+                    TrainingCase(
+                        intent="data_insight",
+                        actions=[f"insight:{metric}", f"pattern:{pattern}"],
+                        outcome_text=message,
+                        learned=[f"动态解读: {metric}{pattern} → {meaning}"],
+                        layer_tags=["S"],
+                        quality="B",
+                        confidence=0.5,
+                        source="data_insight",
+                        metadata={
+                            "metric": metric,
+                            "change_pattern": pattern,
+                            "market_meaning": meaning,
+                            "engine_hint": "9-基本面分析",
+                        },
+                    )
+                )
                 if len(cases) >= limit:
                     break
         return cases

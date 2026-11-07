@@ -5,13 +5,13 @@ SPEC 9.2-9.4 五维评估：
 - 冲突强度/话题升华度/文案可转化度（LLM 分 60%）
 - 综合分 = rule×0.4 + llm×0.6 → S/A/B/C 分级
 """
+
 from __future__ import annotations
 
 import json
 
 import pytest
-
-from core.models import Argument, Turn, MarketingMaterial
+from core.models import Argument, MarketingMaterial, Turn
 from core.quality import QualityEvaluator
 
 
@@ -21,8 +21,7 @@ class MockLLMClient:
         self._idx = 0
         self.calls: list[dict] = []
 
-    async def chat(self, system_prompt: str, user_prompt: str,
-                   max_tokens: int = 600) -> str:
+    async def chat(self, system_prompt: str, user_prompt: str, max_tokens: int = 600) -> str:
         self.calls.append({"system": system_prompt, "user": user_prompt})
         if self._idx < len(self._responses):
             resp = self._responses[self._idx]
@@ -34,10 +33,20 @@ class MockLLMClient:
 
 
 def _make_transcript():
-    bull = Argument(thesis="BTC 是数字黄金", arguments=["稀缺性", "机构入场", "抗通胀"],
-                    quote="数字时代的诺克斯堡", confidence=0.85, raw="{}")
-    bear = Argument(thesis="BTC 不是数字黄金", arguments=["波动率太高", "无内在价值", "监管风险"],
-                    quote="泡沫终将破灭", confidence=0.72, raw="{}")
+    bull = Argument(
+        thesis="BTC 是数字黄金",
+        arguments=["稀缺性", "机构入场", "抗通胀"],
+        quote="数字时代的诺克斯堡",
+        confidence=0.85,
+        raw="{}",
+    )
+    bear = Argument(
+        thesis="BTC 不是数字黄金",
+        arguments=["波动率太高", "无内在价值", "监管风险"],
+        quote="泡沫终将破灭",
+        confidence=0.72,
+        raw="{}",
+    )
     return [
         Turn(speaker="bull", round=1, content=bull),
         Turn(speaker="bear", round=1, content=bear),
@@ -54,21 +63,27 @@ def _make_material():
     )
 
 
-VALID_QUALITY_JSON = json.dumps({
-    "conflict_intensity": 8.0,
-    "topic_elevation": 7.5,
-    "copy_convertibility": 8.5,
-    "highlights": ["金句密度高", "双方立场坚定"],
-    "suggestions": [],
-}, ensure_ascii=False)
+VALID_QUALITY_JSON = json.dumps(
+    {
+        "conflict_intensity": 8.0,
+        "topic_elevation": 7.5,
+        "copy_convertibility": 8.5,
+        "highlights": ["金句密度高", "双方立场坚定"],
+        "suggestions": [],
+    },
+    ensure_ascii=False,
+)
 
-LOW_QUALITY_JSON = json.dumps({
-    "conflict_intensity": 3.0,
-    "topic_elevation": 2.5,
-    "copy_convertibility": 3.0,
-    "highlights": [],
-    "suggestions": ["加强立场锁定", "提升金句质量"],
-}, ensure_ascii=False)
+LOW_QUALITY_JSON = json.dumps(
+    {
+        "conflict_intensity": 3.0,
+        "topic_elevation": 2.5,
+        "copy_convertibility": 3.0,
+        "highlights": [],
+        "suggestions": ["加强立场锁定", "提升金句质量"],
+    },
+    ensure_ascii=False,
+)
 
 
 class TestQualityEvaluator:
@@ -79,7 +94,9 @@ class TestQualityEvaluator:
         mock = MockLLMClient([VALID_QUALITY_JSON])
         evaluator = QualityEvaluator(mock)
         score = await evaluator.evaluate(
-            "BTC 是数字黄金吗？", _make_transcript(), _make_material(),
+            "BTC 是数字黄金吗？",
+            _make_transcript(),
+            _make_material(),
         )
 
         assert "金句密度" in score.dimensions
@@ -92,7 +109,9 @@ class TestQualityEvaluator:
         mock = MockLLMClient([VALID_QUALITY_JSON])
         evaluator = QualityEvaluator(mock)
         score = await evaluator.evaluate(
-            "BTC 是数字黄金吗？", _make_transcript(), _make_material(),
+            "BTC 是数字黄金吗？",
+            _make_transcript(),
+            _make_material(),
         )
 
         assert score.dimensions["冲突强度"] == 8.0
@@ -105,7 +124,9 @@ class TestQualityEvaluator:
         mock = MockLLMClient([VALID_QUALITY_JSON])
         evaluator = QualityEvaluator(mock)
         score = await evaluator.evaluate(
-            "BTC 是数字黄金吗？", _make_transcript(), _make_material(),
+            "BTC 是数字黄金吗？",
+            _make_transcript(),
+            _make_material(),
         )
 
         expected_overall = score.rule_score * 0.4 + score.llm_score * 0.6
@@ -117,7 +138,9 @@ class TestQualityEvaluator:
         mock = MockLLMClient([VALID_QUALITY_JSON])
         evaluator = QualityEvaluator(mock)
         score = await evaluator.evaluate(
-            "BTC 是数字黄金吗？", _make_transcript(), _make_material(),
+            "BTC 是数字黄金吗？",
+            _make_transcript(),
+            _make_material(),
         )
 
         assert score.grade in ("S", "A")  # 高分场
@@ -128,7 +151,9 @@ class TestQualityEvaluator:
         mock = MockLLMClient([LOW_QUALITY_JSON])
         evaluator = QualityEvaluator(mock)
         score = await evaluator.evaluate(
-            "BTC 是数字黄金吗？", _make_transcript(), _make_material(),
+            "BTC 是数字黄金吗？",
+            _make_transcript(),
+            _make_material(),
         )
 
         assert score.grade in ("C", "B")
@@ -140,7 +165,9 @@ class TestQualityEvaluator:
         mock = MockLLMClient([RuntimeError("网络错误")])
         evaluator = QualityEvaluator(mock)
         score = await evaluator.evaluate(
-            "BTC 是数字黄金吗？", _make_transcript(), _make_material(),
+            "BTC 是数字黄金吗？",
+            _make_transcript(),
+            _make_material(),
         )
 
         assert score.llm_score >= 0
@@ -151,7 +178,9 @@ class TestQualityEvaluator:
         mock = MockLLMClient(["不是JSON"])
         evaluator = QualityEvaluator(mock)
         score = await evaluator.evaluate(
-            "BTC 是数字黄金吗？", _make_transcript(), _make_material(),
+            "BTC 是数字黄金吗？",
+            _make_transcript(),
+            _make_material(),
         )
 
         assert score.llm_score >= 0
@@ -163,7 +192,9 @@ class TestQualityEvaluator:
         mock = MockLLMClient([VALID_QUALITY_JSON])
         evaluator = QualityEvaluator(mock)
         score = await evaluator.evaluate(
-            "BTC 是数字黄金吗？", _make_transcript(), _make_material(),
+            "BTC 是数字黄金吗？",
+            _make_transcript(),
+            _make_material(),
         )
 
         assert len(score.highlights) >= 1
@@ -174,8 +205,11 @@ class TestQualityEvaluator:
         mock = MockLLMClient([VALID_QUALITY_JSON])
         evaluator = QualityEvaluator(mock)
         material = MarketingMaterial(
-            quotes=[], hashtags=[], highlight_paragraph="",
-            short_copy=[], debate_title="",
+            quotes=[],
+            hashtags=[],
+            highlight_paragraph="",
+            short_copy=[],
+            debate_title="",
         )
         score = await evaluator.evaluate("空话题", [], material)
 

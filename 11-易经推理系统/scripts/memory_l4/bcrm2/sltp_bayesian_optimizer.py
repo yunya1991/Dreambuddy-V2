@@ -13,12 +13,12 @@
   python sltp_bayesian_optimizer.py --symbol BTC --n-iter 30
   python sltp_bayesian_optimizer.py --all --n-iter 20
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import logging
-import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -30,7 +30,9 @@ import pandas as pd
 try:
     from bayes_opt import BayesianOptimization
 except ImportError:
-    raise ImportError("需要安装 bayesian-optimization: pip install bayesian-optimization")
+    raise ImportError(  # noqa: B904
+        "需要安装 bayesian-optimization: pip install bayesian-optimization"
+    )  # noqa: B904
 
 # 路径设置
 _THIS_DIR = Path(__file__).resolve().parent
@@ -39,8 +41,8 @@ _SCRIPTS = _MEMORY_L4.parent
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
-from memory_l4.bcrm2.asset_classifier import classify_asset
-from memory_l4.bcrm2.sl_tp_config import get_sltp_params, SLTPParams
+from memory_l4.bcrm2.asset_classifier import classify_asset  # noqa: E402
+from memory_l4.bcrm2.sl_tp_config import get_sltp_params  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -48,16 +50,17 @@ logger = logging.getLogger(__name__)
 KLINES_DIR = _SCRIPTS / "data" / "klines"
 
 # 回测参数
-FEE_PCT = 0.001       # 单边手续费 0.1%
-LEVERAGE = 1.0        # 回测用无杠杆（关注 SL/TP 本身的效果）
-POSITION_PCT = 0.10   # 每次开仓用 10% 资金
-TRADE_INTERVAL = 24   # 每 24 根 K 线开一次仓（1H = 每天一次）
-MAX_HOLD_BARS = 168   # 最大持仓 168 根 K 线（1H = 7 天）
+FEE_PCT = 0.001  # 单边手续费 0.1%
+LEVERAGE = 1.0  # 回测用无杠杆（关注 SL/TP 本身的效果）
+POSITION_PCT = 0.10  # 每次开仓用 10% 资金
+TRADE_INTERVAL = 24  # 每 24 根 K 线开一次仓（1H = 每天一次）
+MAX_HOLD_BARS = 168  # 最大持仓 168 根 K 线（1H = 7 天）
 
 
 @dataclass
 class BacktestResult:
     """回测结果"""
+
     total_trades: int
     win_rate: float
     avg_rr: float
@@ -79,7 +82,9 @@ def load_klines(symbol: str, timeframe: str = "1H") -> Optional[pd.DataFrame]:
     return df
 
 
-def compute_atr(closes: np.ndarray, high: np.ndarray, low: np.ndarray, period: int = 14) -> np.ndarray:
+def compute_atr(
+    closes: np.ndarray, high: np.ndarray, low: np.ndarray, period: int = 14
+) -> np.ndarray:
     """计算 ATR（百分比形式）"""
     n = len(closes)
     atr_pct = np.zeros(n)
@@ -121,7 +126,7 @@ def run_backtest(
     asset_class, mcap_tier = classify_asset(symbol)
 
     # 从参数表获取基础参数（覆盖 sl_floor, tp_floor, atr_mult）
-    base_params = get_sltp_params(asset_class, mcap_tier, regime)
+    base_params = get_sltp_params(asset_class, mcap_tier, regime)  # noqa: F841
 
     atr_pct = compute_atr(closes, highs, lows, period=14)
 
@@ -139,7 +144,7 @@ def run_backtest(
             i += TRADE_INTERVAL
             continue
         if closes[i] > ma200[i]:
-            direction = 1   # 做多
+            direction = 1  # 做多
         else:
             direction = -1  # 做空
 
@@ -192,14 +197,15 @@ def run_backtest(
         ret -= 2 * FEE_PCT  # 开仓+平仓手续费
         position_ret = ret * POSITION_PCT  # 组合层面收益率
         trades.append(position_ret)
-        equity *= (1 + position_ret)
+        equity *= 1 + position_ret
         equity_curve.append(equity)
 
         i += TRADE_INTERVAL
 
     if not trades:
-        return BacktestResult(0, 0, 0, 0, 0, 0, 0,
-                              {"sl_floor": sl_floor, "tp_floor": tp_floor, "atr_mult": atr_mult})
+        return BacktestResult(
+            0, 0, 0, 0, 0, 0, 0, {"sl_floor": sl_floor, "tp_floor": tp_floor, "atr_mult": atr_mult}
+        )
 
     trades_arr = np.array(trades)
     win_rate = float(np.mean(trades_arr > 0))
@@ -284,15 +290,33 @@ def optimize_params(
     optimizer.maximize(init_points=init_points, n_iter=n_iter)
 
     best = optimizer.max["params"]
-    best_result = run_backtest(df, symbol, best["sl_floor"], best["tp_floor"], best["atr_mult"], regime)
+    best_result = run_backtest(
+        df, symbol, best["sl_floor"], best["tp_floor"], best["atr_mult"], regime
+    )
 
     return best, best_result
 
 
 def optimize_all(n_iter: int = 20) -> Dict[str, Dict]:
     """优化所有有数据的币种"""
-    symbols = ["BTC", "ETH", "SOL", "BNB", "XRP", "LINK", "DOGE", "PEPE",
-               "UNI", "AAVE", "ADA", "AVAX", "NVDA", "AMZN", "AAPL", "XAU"]
+    symbols = [
+        "BTC",
+        "ETH",
+        "SOL",
+        "BNB",
+        "XRP",
+        "LINK",
+        "DOGE",
+        "PEPE",
+        "UNI",
+        "AAVE",
+        "ADA",
+        "AVAX",
+        "NVDA",
+        "AMZN",
+        "AAPL",
+        "XAU",
+    ]
     results = {}
     for sym in symbols:
         path = KLINES_DIR / f"{sym}_1H.csv"
@@ -314,13 +338,17 @@ def optimize_all(n_iter: int = 20) -> Dict[str, Dict]:
                     "trades": best_result.total_trades,
                 },
             }
-            print(f"  sl_floor={best_params['sl_floor']:.4f} "
-                  f"tp_floor={best_params['tp_floor']:.4f} "
-                  f"atr_mult={best_params['atr_mult']:.2f}")
-            print(f"  胜率={best_result.win_rate*100:.1f}% "
-                  f"收益={best_result.total_return*100:.1f}% "
-                  f"回撤={best_result.max_drawdown*100:.1f}% "
-                  f"Calmar={best_result.calmar:.2f}")
+            print(
+                f"  sl_floor={best_params['sl_floor']:.4f} "
+                f"tp_floor={best_params['tp_floor']:.4f} "
+                f"atr_mult={best_params['atr_mult']:.2f}"
+            )
+            print(
+                f"  胜率={best_result.win_rate*100:.1f}% "
+                f"收益={best_result.total_return*100:.1f}% "
+                f"回撤={best_result.max_drawdown*100:.1f}% "
+                f"Calmar={best_result.calmar:.2f}"
+            )
     return results
 
 
@@ -329,10 +357,10 @@ def main():
     parser.add_argument("--symbol", type=str, help="单个币种优化")
     parser.add_argument("--all", action="store_true", help="优化所有币种")
     parser.add_argument("--n-iter", type=int, default=20, help="优化迭代次数")
-    parser.add_argument("--regime", type=str, default="chop",
-                        choices=["bull", "chop", "bear"], help="市场形态")
-    parser.add_argument("--output", type=str, default="sltp_optimized_params.json",
-                        help="输出文件")
+    parser.add_argument(
+        "--regime", type=str, default="chop", choices=["bull", "chop", "bear"], help="市场形态"
+    )
+    parser.add_argument("--output", type=str, default="sltp_optimized_params.json", help="输出文件")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.WARNING)
@@ -340,13 +368,20 @@ def main():
     if args.all:
         results = optimize_all(n_iter=args.n_iter)
     elif args.symbol:
-        best_params, best_result = optimize_params(args.symbol, n_iter=args.n_iter, regime=args.regime)
-        results = {args.symbol: {"params": best_params, "metrics": {
-            "win_rate": round(best_result.win_rate, 4),
-            "total_return": round(best_result.total_return, 4),
-            "max_drawdown": round(best_result.max_drawdown, 4),
-            "calmar": round(best_result.calmar, 4),
-        }}}
+        best_params, best_result = optimize_params(
+            args.symbol, n_iter=args.n_iter, regime=args.regime
+        )
+        results = {
+            args.symbol: {
+                "params": best_params,
+                "metrics": {
+                    "win_rate": round(best_result.win_rate, 4),
+                    "total_return": round(best_result.total_return, 4),
+                    "max_drawdown": round(best_result.max_drawdown, 4),
+                    "calmar": round(best_result.calmar, 4),
+                },
+            }
+        }
     else:
         parser.print_help()
         return

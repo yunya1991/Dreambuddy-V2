@@ -2,19 +2,21 @@
 
 不依赖真实 DreamOS（用 mock route_fn）。
 """
+
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.scenario_runner import ScenarioRunner
+from core.scenario_runner import ScenarioRunner  # noqa: I001
 from core.intent_sample_pipeline import IntentSamplePipeline
 from training.eval_gate import IntentEvalGate
 
 
 def main():
     import tempfile
+
     tmp = Path(tempfile.mkdtemp())
     pipeline = IntentSamplePipeline(storage_path=tmp, bucket_threshold=30)
     config = {"scenarios": {"default_timeout": 10, "retry_count": 0}}
@@ -51,8 +53,10 @@ def main():
     # 跑 eval 回归门
     gate = IntentEvalGate(pipeline, route_fn=mock_route, accuracy_target=0.5, drift_limit=0.5)
     report = gate.run_eval()
-    print(f"EvalReport: accuracy={report.accuracy:.2f} passed={report.passed} "
-          f"zero_token_ratio={report.zero_token_ratio:.2f}")
+    print(
+        f"EvalReport: accuracy={report.accuracy:.2f} passed={report.passed} "
+        f"zero_token_ratio={report.zero_token_ratio:.2f}"
+    )
     assert report.accuracy >= 0.5
     print("✓ 端到端 smoke 验证通过")
 

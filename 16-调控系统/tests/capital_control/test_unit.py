@@ -8,9 +8,7 @@
 """
 
 import sys
-import os
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 # 设置 sys.path
 _PROJECT = Path(__file__).resolve().parents[3]  # dreambuddy-v2
@@ -21,9 +19,8 @@ for _p in (_CORE, _RISK, _RISK_CORE):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-import pytest
-
-from capital_control.types import (
+import pytest  # noqa: E402
+from capital_control.types import (  # noqa: E402
     AccountType,
     CapitalMode,
     CapitalResult,
@@ -33,7 +30,6 @@ from capital_control.types import (
     calc_margin_pressure,
     now_iso,
 )
-
 
 # =========================================================================
 # 数据结构测试
@@ -164,7 +160,9 @@ class TestCalcMarginPressure:
 # =========================================================================
 
 
-def _mock_positions_result(system, equity=0.0, avail=0.0, used=0.0, account_type="unknown", fallback_reason=""):
+def _mock_positions_result(
+    system, equity=0.0, avail=0.0, used=0.0, account_type="unknown", fallback_reason=""
+):
     """构造一个 mock fetch_all_positions 结果"""
     return {
         "systems": {
@@ -186,9 +184,13 @@ class TestOkxLiveRule:
         """动态模式成功查询"""
         from capital_control.capital_rules.okx_live_rule import okx_live_capital_handler
 
-        mock_pos = _mock_positions_result("v15_martin", equity=260.5, avail=180.3, used=80.2, account_type="okx_live")
+        mock_pos = _mock_positions_result(
+            "v15_martin", equity=260.5, avail=180.3, used=80.2, account_type="okx_live"
+        )
         ctx = {"mode": CapitalMode.DYNAMIC, "positions_result": mock_pos}
-        r = okx_live_capital_handler(context=ctx, config={"fallback_static_budget": {"v15_martin": 260.0}})
+        r = okx_live_capital_handler(
+            context=ctx, config={"fallback_static_budget": {"v15_martin": 260.0}}
+        )
         assert r.total_eq == 260.5
         assert r.fallback_used is False
         assert r.account_type == AccountType.OKX_LIVE
@@ -211,7 +213,9 @@ class TestOkxLiveRule:
 
         mock_pos = _mock_positions_result("v15_martin", equity=0.0, account_type="okx_live")
         ctx = {"mode": CapitalMode.DYNAMIC, "positions_result": mock_pos}
-        r = okx_live_capital_handler(context=ctx, config={"fallback_static_budget": {"v15_martin": 260.0}})
+        r = okx_live_capital_handler(
+            context=ctx, config={"fallback_static_budget": {"v15_martin": 260.0}}
+        )
         assert r.total_eq == 260.0
         assert r.fallback_used is True
 
@@ -220,7 +224,9 @@ class TestOkxLiveRule:
         from capital_control.capital_rules.okx_live_rule import okx_live_capital_handler
 
         ctx = {"mode": CapitalMode.DYNAMIC, "positions_result": {"systems": {}}}
-        r = okx_live_capital_handler(context=ctx, config={"fallback_static_budget": {"v15_martin": 260.0}})
+        r = okx_live_capital_handler(
+            context=ctx, config={"fallback_static_budget": {"v15_martin": 260.0}}
+        )
         assert r.total_eq == 260.0
         assert r.fallback_used is True
         assert "system_data_missing" in r.fallback_reason
@@ -230,7 +236,9 @@ class TestOkxSimulatedRule:
     def test_dynamic_success(self):
         from capital_control.capital_rules.okx_simulated_rule import okx_simulated_capital_handler
 
-        mock_pos = _mock_positions_result("yijing_bcrm", equity=150.0, avail=100.0, used=50.0, account_type="okx_simulated")
+        mock_pos = _mock_positions_result(
+            "yijing_bcrm", equity=150.0, avail=100.0, used=50.0, account_type="okx_simulated"
+        )
         ctx = {"mode": CapitalMode.DYNAMIC, "positions_result": mock_pos}
         r = okx_simulated_capital_handler(context=ctx, config={})
         assert r.total_eq == 150.0
@@ -244,9 +252,18 @@ class TestHyperliquidRule:
 
         mock_pos = {
             "systems": {
-                "agent_a": {"equity": 60.0, "extra": {"account_type": "hyperliquid", "avail_balance": 60.0}},
-                "agent_b": {"equity": 80.0, "extra": {"account_type": "hyperliquid", "avail_balance": 80.0}},
-                "agent_c_memory": {"equity": 80.0, "extra": {"account_type": "hyperliquid", "avail_balance": 80.0}},
+                "agent_a": {
+                    "equity": 60.0,
+                    "extra": {"account_type": "hyperliquid", "avail_balance": 60.0},
+                },
+                "agent_b": {
+                    "equity": 80.0,
+                    "extra": {"account_type": "hyperliquid", "avail_balance": 80.0},
+                },
+                "agent_c_memory": {
+                    "equity": 80.0,
+                    "extra": {"account_type": "hyperliquid", "avail_balance": 80.0},
+                },
             }
         }
         ctx = {"mode": CapitalMode.DYNAMIC, "positions_result": mock_pos}
@@ -260,8 +277,14 @@ class TestHyperliquidRule:
     def test_single_target_system(self):
         from capital_control.capital_rules.hyperliquid_rule import hyperliquid_capital_handler
 
-        mock_pos = _mock_positions_result("agent_a", equity=60.0, avail=60.0, account_type="hyperliquid")
-        ctx = {"mode": CapitalMode.DYNAMIC, "positions_result": mock_pos, "target_system": "agent_a"}
+        mock_pos = _mock_positions_result(
+            "agent_a", equity=60.0, avail=60.0, account_type="hyperliquid"
+        )
+        ctx = {
+            "mode": CapitalMode.DYNAMIC,
+            "positions_result": mock_pos,
+            "target_system": "agent_a",
+        }
         results = hyperliquid_capital_handler(context=ctx, config={})
         assert "agent_a" in results
         assert len(results) == 1
@@ -274,7 +297,9 @@ class TestAsterRule:
 
         mock_pos = _mock_positions_result("three_screen", equity=0.0, account_type="aster")
         ctx = {"mode": CapitalMode.DYNAMIC, "positions_result": mock_pos}
-        r = aster_capital_handler(context=ctx, config={"fallback_static_budget": {"three_screen": 200.0}})
+        r = aster_capital_handler(
+            context=ctx, config={"fallback_static_budget": {"three_screen": 200.0}}
+        )
         assert r.total_eq == 200.0
         assert r.fallback_used is True
         assert r.account_type == AccountType.ASTER
@@ -297,7 +322,9 @@ class TestSharedHelper:
     def test_build_result_dynamic_with_equity(self):
         from capital_control.capital_rules._shared import build_result_from_system
 
-        mock_pos = _mock_positions_result("v15_martin", equity=300.0, avail=200.0, used=100.0, account_type="okx_live")
+        mock_pos = _mock_positions_result(
+            "v15_martin", equity=300.0, avail=200.0, used=100.0, account_type="okx_live"
+        )
         r = build_result_from_system(
             system="v15_martin",
             account_type_default=AccountType.OKX_LIVE,

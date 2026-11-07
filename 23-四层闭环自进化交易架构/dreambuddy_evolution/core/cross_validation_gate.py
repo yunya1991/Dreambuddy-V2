@@ -14,6 +14,7 @@
   Q4: 双 None 三级降级模式（默认启用）
   Q5: structural_break 类型加权共识（默认启用）
 """
+
 from __future__ import annotations
 
 import time
@@ -37,11 +38,12 @@ def _get_factor_dimensions() -> list[str]:
     except Exception:  # noqa: BLE001
         return list(DEFAULT_C_DIMENSIONS)
 
+
 # Q5 结构断裂类型权重（融合方案 §10.11.5）
 STRUCTURAL_BREAK_WEIGHTS: dict[str, float] = {
-    "market_form_shift": 1.0,       # Hurst 指数，最具结构性
-    "correlation_break": 0.6,       # Welch's t-test，中等
-    "volatility_regime_shift": 0.4, # Markov-Regression/HMM，较低（易受事件冲击）
+    "market_form_shift": 1.0,  # Hurst 指数，最具结构性
+    "correlation_break": 0.6,  # Welch's t-test，中等
+    "volatility_regime_shift": 0.4,  # Markov-Regression/HMM，较低（易受事件冲击）
 }
 
 
@@ -70,6 +72,7 @@ class CrossValidationGate:
             # enable_attention_aggregator 开关控制：关闭时降级为固定3维度映射
             try:
                 from dreambuddy_evolution.agi_config import get_switch as _gs_aa
+
                 if _gs_aa("enable_attention_aggregator", True):
                     dimensions = _get_factor_dimensions()
                 else:

@@ -20,6 +20,7 @@ SPEC §4.5.3: 不同资产在 FOMC 周期内的差异化方向偏置
 HC: 开关关断时返回 {"bias": "neutral", "confidence": 0.0}
 HC: FAIL-OPEN 异常返回 neutral
 """
+
 from __future__ import annotations
 
 import logging
@@ -33,8 +34,10 @@ logger = logging.getLogger(__name__)
 
 # FOMC 预期阶段集合
 _PRE_EVENT_PHASES = {
-    "expectation_build", "expectation_rise",
-    "expectation_jump", "expectation_digest",
+    "expectation_build",
+    "expectation_rise",
+    "expectation_jump",
+    "expectation_digest",
 }
 
 # BTC 相关性中性阈值

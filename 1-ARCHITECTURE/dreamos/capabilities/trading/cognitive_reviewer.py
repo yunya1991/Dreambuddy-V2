@@ -12,13 +12,14 @@ Integration:
     - Output: Cognitive review with assessment, score, lessons
     - Injection: get_cognitive_context() feeds back into signal generation
 """
+
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-from dataclasses import dataclass, field
+import json
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-import json
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -161,16 +162,14 @@ class CognitiveLoopEntry:
         n = self._n
         p = self.win_rate
         denom = 1 + z * z / n
-        numerator = p + z * z / (2 * n) - z * (
-            p * (1 - p) / n + z * z / (4 * n * n)
-        ) ** 0.5
+        numerator = p + z * z / (2 * n) - z * (p * (1 - p) / n + z * z / (4 * n * n)) ** 0.5
         return max(0.0, numerator / denom)
 
     @property
     def profit_factor(self) -> float:
         """Gross profit / gross loss. >1.0 = profitable system."""
         if self._gross_loss < 1e-9:
-            return float('inf') if self._gross_profit > 1e-9 else 0.0
+            return float("inf") if self._gross_profit > 1e-9 else 0.0
         return self._gross_profit / self._gross_loss
 
     @property
@@ -213,9 +212,7 @@ class CognitiveLoopEntry:
             "win_rate": round(self.win_rate, 4),
             "win_rate_wilson_lower": round(self.win_rate_wilson_lower, 4),
             "profit_factor": (
-                round(self.profit_factor, 4)
-                if self.profit_factor != float('inf')
-                else 999.0
+                round(self.profit_factor, 4) if self.profit_factor != float("inf") else 999.0
             ),
             "kelly_fraction": round(self.kelly_fraction, 4),
             "consecutive_losses": self.consecutive_losses,
@@ -269,7 +266,7 @@ class CognitiveReviewer:
         addon_count = trade_result.get("addon_count", 0)
         hold_hours = trade_result.get("hold_hours", 0.0)
         exit_reason = trade_result.get("exit_reason", "")
-        direction = trade_result.get("direction", "LONG")
+        direction = trade_result.get("direction", "LONG")  # noqa: F841
 
         # Update tracking
         self._review_count += 1
@@ -298,7 +295,7 @@ class CognitiveReviewer:
             "symbol": symbol,
             "assessment": assessment,
             "score": round(score, 4),
-            "lessons": [l.to_dict() for l in lessons],
+            "lessons": [l.to_dict() for l in lessons],  # noqa: E741
             "pnl_usdt": pnl_usdt,
             "pnl_pct": pnl_pct,
             "review_id": f"review-{self._review_count:04d}",
@@ -306,7 +303,10 @@ class CognitiveReviewer:
         }
 
     def extract_lessons(
-        self, trade_result: Dict[str, Any], assessment: str, score: float,
+        self,
+        trade_result: Dict[str, Any],
+        assessment: str,
+        score: float,
     ) -> List[TradeLesson]:
         """Extract cognitive lessons from a trade result.
 
@@ -329,221 +329,251 @@ class CognitiveReviewer:
 
         # Lesson: timeout exit with max addons
         if "timeout" in exit_reason.lower() and addon_count >= 3:
-            lessons.append(TradeLesson(
-                lesson_id=f"lesson-{self._review_count:04d}-timeout",
-                category="exit",
-                description=f"Timeout exit with {addon_count} addons on {symbol}: "
-                           f"consider tighter entry criteria or earlier cut",
-                symbol=symbol,
-                trade_pnl=pnl_usdt,
-                confidence_at_entry=confidence,
-                created_at=now,
-            ))
+            lessons.append(
+                TradeLesson(
+                    lesson_id=f"lesson-{self._review_count:04d}-timeout",
+                    category="exit",
+                    description=f"Timeout exit with {addon_count} addons on {symbol}: "
+                    f"consider tighter entry criteria or earlier cut",
+                    symbol=symbol,
+                    trade_pnl=pnl_usdt,
+                    confidence_at_entry=confidence,
+                    created_at=now,
+                )
+            )
 
         # Lesson: low confidence trade resulted in loss
         if pnl_usdt < 0 and confidence < 0.55:
-            lessons.append(TradeLesson(
-                lesson_id=f"lesson-{self._review_count:04d}-lowconf",
-                category="direction",
-                description=f"Low confidence ({confidence:.2f}) trade on {symbol} "
-                           f"resulted in loss ({pnl_usdt:.2f} USDT): "
-                           f"raise minimum confidence threshold",
-                symbol=symbol,
-                trade_pnl=pnl_usdt,
-                confidence_at_entry=confidence,
-                created_at=now,
-            ))
+            lessons.append(
+                TradeLesson(
+                    lesson_id=f"lesson-{self._review_count:04d}-lowconf",
+                    category="direction",
+                    description=f"Low confidence ({confidence:.2f}) trade on {symbol} "
+                    f"resulted in loss ({pnl_usdt:.2f} USDT): "
+                    f"raise minimum confidence threshold",
+                    symbol=symbol,
+                    trade_pnl=pnl_usdt,
+                    confidence_at_entry=confidence,
+                    created_at=now,
+                )
+            )
 
         # Lesson: high confidence trade won
         # F-2 fix (2026-08-16): 0.70→0.50, 与执行门禁 MIN_CONFIDENCE 对齐,
         # 确保所有过门禁的盈利单都能沉淀正向经验(原0.70高于旧公式天花板0.6,
         # 正向lesson结构性不可达; F-1修复后新天花板0.85, 0.50=执行门禁值)
         if pnl_usdt > 0 and confidence >= 0.50:
-            lessons.append(TradeLesson(
-                lesson_id=f"lesson-{self._review_count:04d}-goodentry",
-                category="direction",
-                description=f"High confidence ({confidence:.2f}) trade on {symbol} "
-                           f"profited ({pnl_usdt:.2f} USDT): "
-                           f"maintain entry criteria quality",
-                symbol=symbol,
-                trade_pnl=pnl_usdt,
-                confidence_at_entry=confidence,
-                created_at=now,
-            ))
+            lessons.append(
+                TradeLesson(
+                    lesson_id=f"lesson-{self._review_count:04d}-goodentry",
+                    category="direction",
+                    description=f"High confidence ({confidence:.2f}) trade on {symbol} "
+                    f"profited ({pnl_usdt:.2f} USDT): "
+                    f"maintain entry criteria quality",
+                    symbol=symbol,
+                    trade_pnl=pnl_usdt,
+                    confidence_at_entry=confidence,
+                    created_at=now,
+                )
+            )
 
         # Lesson: excessive holding time
         if hold_hours > 30 and pnl_usdt < 0:
-            lessons.append(TradeLesson(
-                lesson_id=f"lesson-{self._review_count:04d}-holdtime",
-                category="timing",
-                description=f"Excessive hold time ({hold_hours:.1f}h) on {symbol} "
-                           f"with negative PnL: consider earlier exit signals",
-                symbol=symbol,
-                trade_pnl=pnl_usdt,
-                confidence_at_entry=confidence,
-                created_at=now,
-            ))
+            lessons.append(
+                TradeLesson(
+                    lesson_id=f"lesson-{self._review_count:04d}-holdtime",
+                    category="timing",
+                    description=f"Excessive hold time ({hold_hours:.1f}h) on {symbol} "
+                    f"with negative PnL: consider earlier exit signals",
+                    symbol=symbol,
+                    trade_pnl=pnl_usdt,
+                    confidence_at_entry=confidence,
+                    created_at=now,
+                )
+            )
 
         # Lesson: addon strategy failure
         if addon_count > 0 and pnl_usdt < 0:
-            lessons.append(TradeLesson(
-                lesson_id=f"lesson-{self._review_count:04d}-addon",
-                category="addon",
-                description=f"Addon strategy ({addon_count} addons) on {symbol} "
-                           f"failed with {pnl_usdt:.2f} USDT loss: "
-                           f"review addon entry conditions",
-                symbol=symbol,
-                trade_pnl=pnl_usdt,
-                confidence_at_entry=confidence,
-                created_at=now,
-            ))
+            lessons.append(
+                TradeLesson(
+                    lesson_id=f"lesson-{self._review_count:04d}-addon",
+                    category="addon",
+                    description=f"Addon strategy ({addon_count} addons) on {symbol} "
+                    f"failed with {pnl_usdt:.2f} USDT loss: "
+                    f"review addon entry conditions",
+                    symbol=symbol,
+                    trade_pnl=pnl_usdt,
+                    confidence_at_entry=confidence,
+                    created_at=now,
+                )
+            )
 
         # ── T0-T5 交易认知体系增强规则（10个）──
 
         # T3: 波动率风控 — C5 熔断检测
         pnl_pct = trade_result.get("pnl_pct", 0.0)
         if abs(pnl_pct) >= 0.15:
-            lessons.append(TradeLesson(
-                lesson_id=f"lesson-{self._review_count:04d}-c5vol",
-                category="risk",
-                description=f"C5熔断触发: {symbol} 单次亏损 {pnl_pct:.1%} >= 15%: "
-                           f"立即平仓+反思闭环，禁止补仓摊平",
-                symbol=symbol,
-                trade_pnl=pnl_usdt,
-                confidence_at_entry=confidence,
-                created_at=now,
-            ))
+            lessons.append(
+                TradeLesson(
+                    lesson_id=f"lesson-{self._review_count:04d}-c5vol",
+                    category="risk",
+                    description=f"C5熔断触发: {symbol} 单次亏损 {pnl_pct:.1%} >= 15%: "
+                    f"立即平仓+反思闭环，禁止补仓摊平",
+                    symbol=symbol,
+                    trade_pnl=pnl_usdt,
+                    confidence_at_entry=confidence,
+                    created_at=now,
+                )
+            )
 
         # T3: 连败风控 — 连续3次亏损
         consecutive_losses = trade_result.get("consecutive_losses", 0)
         if consecutive_losses >= 3:
-            lessons.append(TradeLesson(
-                lesson_id=f"lesson-{self._review_count:04d}-c5loss",
-                category="risk",
-                description=f"C5熔断触发: {symbol} 连续{consecutive_losses}次亏损: "
-                           f"降低confidence+触发冷却期，进入反思闭环",
-                symbol=symbol,
-                trade_pnl=pnl_usdt,
-                confidence_at_entry=confidence,
-                created_at=now,
-            ))
+            lessons.append(
+                TradeLesson(
+                    lesson_id=f"lesson-{self._review_count:04d}-c5loss",
+                    category="risk",
+                    description=f"C5熔断触发: {symbol} 连续{consecutive_losses}次亏损: "
+                    f"降低confidence+触发冷却期，进入反思闭环",
+                    symbol=symbol,
+                    trade_pnl=pnl_usdt,
+                    confidence_at_entry=confidence,
+                    created_at=now,
+                )
+            )
 
         # T2: 止损纪律 — 无止损或止损放宽
         stop_loss_set = trade_result.get("stop_loss_set", True)
         stop_loss_widened = trade_result.get("stop_loss_widened", False)
         if not stop_loss_set or stop_loss_widened:
-            lessons.append(TradeLesson(
-                lesson_id=f"lesson-{self._review_count:04d}-sl discipline",
-                category="risk",
-                description=f"止损纪律违规: {symbol} "
-                           f"{'无止损设置' if not stop_loss_set else '止损被放宽'}: "
-                           f"无止损=禁止开仓，止损只能收紧不能放宽",
-                symbol=symbol,
-                trade_pnl=pnl_usdt,
-                confidence_at_entry=confidence,
-                created_at=now,
-            ))
+            lessons.append(
+                TradeLesson(
+                    lesson_id=f"lesson-{self._review_count:04d}-sl discipline",
+                    category="risk",
+                    description=f"止损纪律违规: {symbol} "
+                    f"{'无止损设置' if not stop_loss_set else '止损被放宽'}: "
+                    f"无止损=禁止开仓，止损只能收紧不能放宽",
+                    symbol=symbol,
+                    trade_pnl=pnl_usdt,
+                    confidence_at_entry=confidence,
+                    created_at=now,
+                )
+            )
 
         # T2: 资金管理 — 可用资金不足
         available_pct = trade_result.get("available_balance_pct", 1.0)
         if available_pct < 0.20:
-            lessons.append(TradeLesson(
-                lesson_id=f"lesson-{self._review_count:04d}-capital",
-                category="capital",
-                description=f"资金管理告警: {symbol} 可用资金仅 {available_pct:.0%}: "
-                           f"限制仓位，只允许P1侦察仓(10-15%)",
-                symbol=symbol,
-                trade_pnl=pnl_usdt,
-                confidence_at_entry=confidence,
-                created_at=now,
-            ))
+            lessons.append(
+                TradeLesson(
+                    lesson_id=f"lesson-{self._review_count:04d}-capital",
+                    category="capital",
+                    description=f"资金管理告警: {symbol} 可用资金仅 {available_pct:.0%}: "
+                    f"限制仓位，只允许P1侦察仓(10-15%)",
+                    symbol=symbol,
+                    trade_pnl=pnl_usdt,
+                    confidence_at_entry=confidence,
+                    created_at=now,
+                )
+            )
 
         # T2: 验证前置 — 未通过验证
         validated = trade_result.get("validated", True)
         practice_count = trade_result.get("practice_count", 2)
         if not validated or practice_count < 2:
-            lessons.append(TradeLesson(
-                lesson_id=f"lesson-{self._review_count:04d}-validate",
-                category="validation",
-                description=f"验证前置未通过: {symbol} "
-                           f"实践次数={practice_count}(<2): "
-                           f"只允许P1侦察仓，禁止大仓执行",
-                symbol=symbol,
-                trade_pnl=pnl_usdt,
-                confidence_at_entry=confidence,
-                created_at=now,
-            ))
+            lessons.append(
+                TradeLesson(
+                    lesson_id=f"lesson-{self._review_count:04d}-validate",
+                    category="validation",
+                    description=f"验证前置未通过: {symbol} "
+                    f"实践次数={practice_count}(<2): "
+                    f"只允许P1侦察仓，禁止大仓执行",
+                    symbol=symbol,
+                    trade_pnl=pnl_usdt,
+                    confidence_at_entry=confidence,
+                    created_at=now,
+                )
+            )
 
         # T0+T4: 趋势跟踪 — MA方向不一致
         ma_trend_consistent = trade_result.get("ma_trend_consistent", True)
         if not ma_trend_consistent:
-            lessons.append(TradeLesson(
-                lesson_id=f"lesson-{self._review_count:04d}-trend",
-                category="trend",
-                description=f"趋势不一致: {symbol} MA5/MA10/MA20方向冲突: "
-                           f"降低confidence，T4 Level 1.5告警",
-                symbol=symbol,
-                trade_pnl=pnl_usdt,
-                confidence_at_entry=confidence,
-                created_at=now,
-            ))
+            lessons.append(
+                TradeLesson(
+                    lesson_id=f"lesson-{self._review_count:04d}-trend",
+                    category="trend",
+                    description=f"趋势不一致: {symbol} MA5/MA10/MA20方向冲突: "
+                    f"降低confidence，T4 Level 1.5告警",
+                    symbol=symbol,
+                    trade_pnl=pnl_usdt,
+                    confidence_at_entry=confidence,
+                    created_at=now,
+                )
+            )
 
         # T2+T4: 离场纪律 — 离场层命中
         exit_layer = trade_result.get("exit_layer", 0)
         if exit_layer > 0:
             layer_names = {1: "技术离场", 2: "风险事件", 3: "情报联动", 4: "强制审计"}
-            lessons.append(TradeLesson(
-                lesson_id=f"lesson-{self._review_count:04d}-exit",
-                category="exit",
-                description=f"四层离场链命中: {symbol} Layer{exit_layer}({layer_names.get(exit_layer, '?')}): "
-                           f"立即离场，记录离场原因",
-                symbol=symbol,
-                trade_pnl=pnl_usdt,
-                confidence_at_entry=confidence,
-                created_at=now,
-            ))
+            lessons.append(
+                TradeLesson(
+                    lesson_id=f"lesson-{self._review_count:04d}-exit",
+                    category="exit",
+                    description=f"四层离场链命中: {symbol} Layer{exit_layer}({layer_names.get(exit_layer, '?')}): "
+                    f"立即离场，记录离场原因",
+                    symbol=symbol,
+                    trade_pnl=pnl_usdt,
+                    confidence_at_entry=confidence,
+                    created_at=now,
+                )
+            )
 
         # T5: 纸上谈兵检测 — 无实际执行
         skill_executed = trade_result.get("skill_executed", True)
         if not skill_executed:
-            lessons.append(TradeLesson(
-                lesson_id=f"lesson-{self._review_count:04d}-paper",
-                category="execution",
-                description=f"纸上谈兵检测: {symbol} 仅分析未实际执行: "
-                           f"禁止进入大仓阶段，C8强制试探未满足",
-                symbol=symbol,
-                trade_pnl=pnl_usdt,
-                confidence_at_entry=confidence,
-                created_at=now,
-            ))
+            lessons.append(
+                TradeLesson(
+                    lesson_id=f"lesson-{self._review_count:04d}-paper",
+                    category="execution",
+                    description=f"纸上谈兵检测: {symbol} 仅分析未实际执行: "
+                    f"禁止进入大仓阶段，C8强制试探未满足",
+                    symbol=symbol,
+                    trade_pnl=pnl_usdt,
+                    confidence_at_entry=confidence,
+                    created_at=now,
+                )
+            )
 
         # T1: 情景证伪 — 证伪条件触发
         scenario_invalidated = trade_result.get("scenario_invalidated", False)
         if scenario_invalidated:
-            lessons.append(TradeLesson(
-                lesson_id=f"lesson-{self._review_count:04d}-falsify",
-                category="strategy",
-                description=f"情景证伪: {symbol} S1/S2/S3某情景证伪条件触发: "
-                           f"调整strategy_directive，重新评估方向",
-                symbol=symbol,
-                trade_pnl=pnl_usdt,
-                confidence_at_entry=confidence,
-                created_at=now,
-            ))
+            lessons.append(
+                TradeLesson(
+                    lesson_id=f"lesson-{self._review_count:04d}-falsify",
+                    category="strategy",
+                    description=f"情景证伪: {symbol} S1/S2/S3某情景证伪条件触发: "
+                    f"调整strategy_directive，重新评估方向",
+                    symbol=symbol,
+                    trade_pnl=pnl_usdt,
+                    confidence_at_entry=confidence,
+                    created_at=now,
+                )
+            )
 
         # T5: 回滚机制 — P&L回撤>3%
         pnl_drawdown = trade_result.get("pnl_drawdown", 0.0)
         if pnl_drawdown > 0.03:
-            lessons.append(TradeLesson(
-                lesson_id=f"lesson-{self._review_count:04d}-rollback",
-                category="rollback",
-                description=f"回滚机制触发: {symbol} P&L回撤 {pnl_drawdown:.1%} > 3%: "
-                           f"回滚到上一个稳定状态，进入观察期",
-                symbol=symbol,
-                trade_pnl=pnl_usdt,
-                confidence_at_entry=confidence,
-                created_at=now,
-            ))
+            lessons.append(
+                TradeLesson(
+                    lesson_id=f"lesson-{self._review_count:04d}-rollback",
+                    category="rollback",
+                    description=f"回滚机制触发: {symbol} P&L回撤 {pnl_drawdown:.1%} > 3%: "
+                    f"回滚到上一个稳定状态，进入观察期",
+                    symbol=symbol,
+                    trade_pnl=pnl_usdt,
+                    confidence_at_entry=confidence,
+                    created_at=now,
+                )
+            )
 
         return lessons
 
@@ -566,10 +596,10 @@ class CognitiveReviewer:
         # Filter lessons by symbol if provided
         relevant_lessons = self._lessons
         if symbol:
-            relevant_lessons = [l for l in self._lessons if l.symbol == symbol]
+            relevant_lessons = [l for l in self._lessons if l.symbol == symbol]  # noqa: E741
 
         # Compute win rate
-        winning = sum(1 for l in self._lessons if l.trade_pnl > 0)
+        winning = sum(1 for l in self._lessons if l.trade_pnl > 0)  # noqa: E741
         total = len(self._lessons)
         win_rate = winning / total if total > 0 else 0.0
 
@@ -591,9 +621,9 @@ class CognitiveReviewer:
         recent = self._lessons[-20:] if len(self._lessons) > 20 else self._lessons
 
         # --- Step 1: Beta-Binomial sufficient statistics ---
-        wins = sum(1 for l in recent if l.trade_pnl > 0)
-        losses = sum(1 for l in recent if l.trade_pnl < 0)
-        alpha = 1 + wins   # Beta prior α (uninformative: Beta(1,1))
+        wins = sum(1 for l in recent if l.trade_pnl > 0)  # noqa: E741
+        losses = sum(1 for l in recent if l.trade_pnl < 0)  # noqa: E741
+        alpha = 1 + wins  # Beta prior α (uninformative: Beta(1,1))
         beta_param = 1 + losses  # Beta prior β
         posterior_mean = alpha / (alpha + beta_param)  # E[P(success)]
 
@@ -605,7 +635,7 @@ class CognitiveReviewer:
         now = datetime.now()
 
         forgotten_posteriors = []
-        for l in recent:
+        for l in recent:  # noqa: E741
             try:
                 created = datetime.fromisoformat(l.created_at)
                 age_secs = max(0.0, (now - created).total_seconds())
@@ -631,7 +661,7 @@ class CognitiveReviewer:
 
         # --- Step 3: T3 circuit breaker (consecutive losses ≥3) ---
         consecutive_losses = 0
-        for l in reversed(recent):
+        for l in reversed(recent):  # noqa: E741
             if l.trade_pnl < 0:
                 consecutive_losses += 1
             else:
@@ -650,8 +680,10 @@ class CognitiveReviewer:
             "total_reviews": self._review_count,
             "total_pnl": round(self._total_pnl, 4),
             "win_rate": round(win_rate, 4),
-            "recent_lessons": [l.to_dict() for l in recent],
-            "symbol_lessons": [l.to_dict() for l in relevant_lessons[-5:]] if symbol else [],
+            "recent_lessons": [l.to_dict() for l in recent],  # noqa: E741
+            "symbol_lessons": (
+                [l.to_dict() for l in relevant_lessons[-5:]] if symbol else []  # noqa: E741
+            ),  # noqa: E741
             "confidence_adjustment": round(confidence_adjustment, 4),
             "statistics": self._stats_model.to_dict(),
         }
@@ -677,7 +709,7 @@ class CognitiveReviewer:
         except Exception:
             return 0
 
-        existing_ids = {l.lesson_id for l in self._lessons}
+        existing_ids = {l.lesson_id for l in self._lessons}  # noqa: E741
         loaded = 0
         for ld in data.get("lessons", []):
             if not isinstance(ld, dict):
@@ -685,15 +717,17 @@ class CognitiveReviewer:
             lid = str(ld.get("lesson_id", ""))
             if not lid or lid in existing_ids:
                 continue
-            self._lessons.append(TradeLesson(
-                lesson_id=lid,
-                category=str(ld.get("category", "")),
-                description=str(ld.get("description", "")),
-                symbol=str(ld.get("symbol", "")),
-                trade_pnl=float(ld.get("trade_pnl", 0.0) or 0.0),
-                confidence_at_entry=float(ld.get("confidence_at_entry", 0.5) or 0.5),
-                created_at=str(ld.get("created_at", "")),
-            ))
+            self._lessons.append(
+                TradeLesson(
+                    lesson_id=lid,
+                    category=str(ld.get("category", "")),
+                    description=str(ld.get("description", "")),
+                    symbol=str(ld.get("symbol", "")),
+                    trade_pnl=float(ld.get("trade_pnl", 0.0) or 0.0),
+                    confidence_at_entry=float(ld.get("confidence_at_entry", 0.5) or 0.5),
+                    created_at=str(ld.get("created_at", "")),
+                )
+            )
             existing_ids.add(lid)
             loaded += 1
 
@@ -716,7 +750,7 @@ class CognitiveReviewer:
             return
 
         data = {
-            "lessons": [l.to_dict() for l in self._lessons],
+            "lessons": [l.to_dict() for l in self._lessons],  # noqa: E741
             "total_reviews": self._review_count,
             "total_pnl": self._total_pnl,
             "persisted_at": datetime.utcnow().isoformat() + "Z",
@@ -730,8 +764,12 @@ class CognitiveReviewer:
         )
 
     def _compute_score(
-        self, pnl_pct: float, confidence: float,
-        addon_count: int, hold_hours: float, exit_reason: str,
+        self,
+        pnl_pct: float,
+        confidence: float,
+        addon_count: int,
+        hold_hours: float,
+        exit_reason: str,
     ) -> float:
         """Compute review score from trade metrics.
 
@@ -771,12 +809,7 @@ class CognitiveReviewer:
         else:
             time_score = 0.3
 
-        score = (
-            pnl_score * 0.50 +
-            conf_score * 0.20 +
-            addon_score * 0.15 +
-            time_score * 0.15
-        )
+        score = pnl_score * 0.50 + conf_score * 0.20 + addon_score * 0.15 + time_score * 0.15
 
         return max(0.0, min(1.0, score))
 
@@ -798,8 +831,8 @@ class CognitiveReviewer:
 
 # ---- Task 3: CognitiveReviewerNode ----
 
-from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.registry.base import BaseNode  # noqa: E402
+from dreamos.shared.state import NodeResult, NodeStatus, State  # noqa: E402
 
 
 class CognitiveReviewerNode(BaseNode):

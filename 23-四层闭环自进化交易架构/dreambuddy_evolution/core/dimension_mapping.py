@@ -3,6 +3,7 @@
 C 子维度（C1-C8/news）→ 3 维度（technical/fundamental/macro）。
 独立成模块，避免 `attention_aggregator` 的 torch 依赖影响 CV gate / shadow。
 """
+
 from __future__ import annotations
 
 from typing import Any

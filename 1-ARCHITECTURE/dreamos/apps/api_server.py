@@ -27,7 +27,6 @@ Dreambuddy OS — HTTP API 服务
 
 from __future__ import annotations
 
-import os
 import threading
 from typing import Any, Dict, Optional
 
@@ -50,11 +49,13 @@ def _fetch_live_price(symbol: str) -> float:
     """从 Hyperliquid 拉取实时中间价。失败返回 0。"""
     import json as _json
     import urllib.request
+
     try:
         req = urllib.request.Request(
             "https://api.hyperliquid.xyz/info",
             data=_json.dumps({"type": "allMids"}).encode(),
-            headers={"Content-Type": "application/json"})
+            headers={"Content-Type": "application/json"},
+        )
         with urllib.request.urlopen(req, timeout=8) as resp:
             mids = _json.loads(resp.read().decode())
         return float(mids.get(symbol.upper(), 0))
@@ -71,8 +72,7 @@ def _enrich_market_data(market_data: Dict) -> Dict:
     return market_data
 
 
-def create_app(agent: Optional[TradingAgent] = None,
-               budget_mode: str = "standard") -> Flask:
+def create_app(agent: Optional[TradingAgent] = None, budget_mode: str = "standard") -> Flask:
     """创建 Flask 应用
 
     Args:
@@ -98,11 +98,13 @@ def create_app(agent: Optional[TradingAgent] = None,
     @app.get("/api/v1/health")
     def health():
         """健康检查"""
-        return jsonify({
-            "status": "ok",
-            "service": "dreambuddy-os",
-            "version": "0.1.0",
-        })
+        return jsonify(
+            {
+                "status": "ok",
+                "service": "dreambuddy-os",
+                "version": "0.1.0",
+            }
+        )
 
     @app.get("/api/v1/status")
     def get_status():
@@ -113,21 +115,23 @@ def create_app(agent: Optional[TradingAgent] = None,
     def list_nodes():
         """列出所有已注册节点"""
         nodes = _agent.registry.list_nodes()
-        return jsonify({
-            "total": len(nodes),
-            "nodes": [
-                {
-                    "node_id": n.node_id,
-                    "name": n.name,
-                    "chain": n.chain,
-                    "description": n.description,
-                    "tags": list(n.tags or []),
-                    "estimated_tokens": n.estimated_tokens,
-                    "estimated_latency_ms": n.estimated_latency_ms,
-                }
-                for n in nodes
-            ],
-        })
+        return jsonify(
+            {
+                "total": len(nodes),
+                "nodes": [
+                    {
+                        "node_id": n.node_id,
+                        "name": n.name,
+                        "chain": n.chain,
+                        "description": n.description,
+                        "tags": list(n.tags or []),
+                        "estimated_tokens": n.estimated_tokens,
+                        "estimated_latency_ms": n.estimated_latency_ms,
+                    }
+                    for n in nodes
+                ],
+            }
+        )
 
     @app.post("/api/v1/run")
     def run_analysis():
@@ -196,6 +200,7 @@ def create_app(agent: Optional[TradingAgent] = None,
         market_data = _enrich_market_data(market_data)
 
         from dreamos.shared.utils import gen_cycle_id
+
         async_cycle_id = gen_cycle_id("async")
         # 把异步句柄写入 context，便于结果回溯
         if isinstance(context, dict):
@@ -203,7 +208,9 @@ def create_app(agent: Optional[TradingAgent] = None,
 
         with _async_lock:
             _async_results[async_cycle_id] = {
-                "status": "pending", "result": None, "error": None,
+                "status": "pending",
+                "result": None,
+                "error": None,
             }
             _async_trim_locked()
 
@@ -222,16 +229,22 @@ def create_app(agent: Optional[TradingAgent] = None,
                 )
                 with _async_lock:
                     _async_results[async_cycle_id] = {
-                        "status": "done", "result": result, "error": None,
+                        "status": "done",
+                        "result": result,
+                        "error": None,
                     }
             except Exception as e:  # noqa: BLE001 — 异步任务必须兜底
                 with _async_lock:
                     _async_results[async_cycle_id] = {
-                        "status": "error", "result": None, "error": str(e),
+                        "status": "error",
+                        "result": None,
+                        "error": str(e),
                     }
 
         threading.Thread(
-            target=_worker, name=f"dreamos-async-{async_cycle_id}", daemon=True,
+            target=_worker,
+            name=f"dreamos-async-{async_cycle_id}",
+            daemon=True,
         ).start()
         return jsonify({"cycle_id": async_cycle_id, "status": "accepted"}), 202
 
@@ -272,19 +285,21 @@ def create_app(agent: Optional[TradingAgent] = None,
                 market=market_data,
                 context=context,
             )
-            return jsonify({
-                "intent_type": intent_result.intent_type,
-                "confidence": intent_result.confidence,
-                "recommended_chain": intent_result.recommended_chain,
-                "base_chain": getattr(intent_result, "base_chain", []),
-                "extend_nodes": getattr(intent_result, "extend_nodes", []),
-                "rationale": getattr(intent_result, "rationale", ""),
-                "recognizers_used": getattr(intent_result, "recognizers_used", []),
-                "total_tokens": getattr(intent_result, "total_tokens", 0),
-                "total_latency_ms": getattr(intent_result, "total_latency_ms", 0),
-                "clarify_needed": getattr(intent_result, "clarify_needed", False),
-                "clarify_question": getattr(intent_result, "clarify_question", ""),
-            })
+            return jsonify(
+                {
+                    "intent_type": intent_result.intent_type,
+                    "confidence": intent_result.confidence,
+                    "recommended_chain": intent_result.recommended_chain,
+                    "base_chain": getattr(intent_result, "base_chain", []),
+                    "extend_nodes": getattr(intent_result, "extend_nodes", []),
+                    "rationale": getattr(intent_result, "rationale", ""),
+                    "recognizers_used": getattr(intent_result, "recognizers_used", []),
+                    "total_tokens": getattr(intent_result, "total_tokens", 0),
+                    "total_latency_ms": getattr(intent_result, "total_latency_ms", 0),
+                    "clarify_needed": getattr(intent_result, "clarify_needed", False),
+                    "clarify_question": getattr(intent_result, "clarify_question", ""),
+                }
+            )
         except Exception as e:
             return jsonify({"error": f"意图识别失败: {str(e)}"}), 500
 
@@ -351,10 +366,12 @@ def create_app(agent: Optional[TradingAgent] = None,
             limit = int(request.args.get("limit", 10))
             limit = min(max(limit, 1), 100)
             entries = _agent.history(limit=limit)
-            return jsonify({
-                "total": len(entries),
-                "entries": entries,
-            })
+            return jsonify(
+                {
+                    "total": len(entries),
+                    "entries": entries,
+                }
+            )
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
@@ -398,15 +415,15 @@ def main():
     parser = argparse.ArgumentParser(description="Dreambuddy OS HTTP API Server")
     parser.add_argument("--host", default="0.0.0.0", help="监听地址")
     parser.add_argument("--port", type=int, default=8000, help="监听端口")
-    parser.add_argument("--budget", default="standard",
-                        choices=["lean", "standard", "full"],
-                        help="预算模式")
+    parser.add_argument(
+        "--budget", default="standard", choices=["lean", "standard", "full"], help="预算模式"
+    )
     parser.add_argument("--debug", action="store_true", help="调试模式")
     args = parser.parse_args()
 
     app = create_app(budget_mode=args.budget)
 
-    print(f"🚀 Dreambuddy OS API Server starting...")
+    print("🚀 Dreambuddy OS API Server starting...")
     print(f"   Host: {args.host}:{args.port}")
     print(f"   Budget mode: {args.budget}")
     print(f"   Health: http://localhost:{args.port}/api/v1/health")

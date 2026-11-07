@@ -8,6 +8,7 @@ V15 经典马丁策略回测引擎
 - 所有币种: 根据30天波动率调整止盈和加仓间距
 - 支持多空双向：DirectionGate根据日/周MA200控制方向开关
 """
+
 import copy
 import json
 import os
@@ -23,7 +24,7 @@ import requests
 # DirectionGate 多空方向控制
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 try:
-    from direction_gate import DirectionGate, MarketRegime
+    from direction_gate import DirectionGate, MarketRegime  # noqa: F401
 
     _DIRECTION_GATE_AVAILABLE = True
 except ImportError:
@@ -84,14 +85,22 @@ def _phase_d_make_gateway(
                 from config_loader import get_config
 
                 if not bilstm_model_path:
-                    bilstm_model_path = str(get_config("V15_AI_PHASE_D_BILSTM_MODEL_PATH", "") or "") or None
+                    bilstm_model_path = (
+                        str(get_config("V15_AI_PHASE_D_BILSTM_MODEL_PATH", "") or "") or None
+                    )
                 if not patchtst_model_path:
-                    patchtst_model_path = str(get_config("V15_AI_PHASE_D_PATCHTST_MODEL_PATH", "") or "") or None
+                    patchtst_model_path = (
+                        str(get_config("V15_AI_PHASE_D_PATCHTST_MODEL_PATH", "") or "") or None
+                    )
             except Exception:
                 if not bilstm_model_path:
-                    bilstm_model_path = os.environ.get("V15_AI_PHASE_D_BILSTM_MODEL_PATH", "") or None
+                    bilstm_model_path = (
+                        os.environ.get("V15_AI_PHASE_D_BILSTM_MODEL_PATH", "") or None
+                    )
                 if not patchtst_model_path:
-                    patchtst_model_path = os.environ.get("V15_AI_PHASE_D_PATCHTST_MODEL_PATH", "") or None
+                    patchtst_model_path = (
+                        os.environ.get("V15_AI_PHASE_D_PATCHTST_MODEL_PATH", "") or None
+                    )
         kw = {"enabled": True, "g_d1_bust_threshold": float(g_d1_bust_threshold)}
         if bilstm_model_path:
             kw["bilstm_model_path"] = bilstm_model_path
@@ -109,7 +118,9 @@ def _phase_d_heuristic_p_bust(klines_slice, elder: float, direction: str) -> flo
     lows = []
     for k in klines_slice or []:
         try:
-            closes.append(float(k["c"])); highs.append(float(k.get("h", k["c"]))); lows.append(float(k.get("l", k["c"])))
+            closes.append(float(k["c"]))
+            highs.append(float(k.get("h", k["c"])))
+            lows.append(float(k.get("l", k["c"])))
         except Exception:
             pass
     if len(closes) < 12:
@@ -137,6 +148,7 @@ def _phase_d_heuristic_dd24h(closes_4h, i: int) -> float:
     if len(win) < 12:
         return 0.06
     import math
+
     rets = [(win[k] / win[k - 1] - 1.0) for k in range(1, len(win))]
     var = sum(r * r for r in rets) / max(1, len(rets))
     sigma = math.sqrt(var)
@@ -422,7 +434,7 @@ def prepare_daily_sma_for_4h(
     # 创建日期->MA映射
     daily_ma_dict = {p: {} for p in periods}
     for p in periods:
-        for k, ma in zip(klines_1d, daily_ma_series[p]):
+        for k, ma in zip(klines_1d, daily_ma_series[p]):  # noqa: B905
             if ma is not None:
                 date_str = _timestamp_to_date_str(k["t"])
                 daily_ma_dict[p][date_str] = ma
@@ -454,7 +466,7 @@ def prepare_ma200_for_4h(
 
         # 创建日期->MA200映射
         daily_ma200_dict = {}
-        for k, ma in zip(klines_1d, daily_ma200_series):
+        for k, ma in zip(klines_1d, daily_ma200_series):  # noqa: B905
             if ma is not None:
                 date_str = _timestamp_to_date_str(k["t"])
                 daily_ma200_dict[date_str] = ma
@@ -471,7 +483,7 @@ def prepare_ma200_for_4h(
 
         # 创建周开始日期->MA200映射
         weekly_ma200_dict = {}
-        for k, ma in zip(klines_1w, weekly_ma200_series):
+        for k, ma in zip(klines_1w, weekly_ma200_series):  # noqa: B905
             if ma is not None:
                 week_str = _timestamp_to_week_start_str(k["t"])
                 weekly_ma200_dict[week_str] = ma
@@ -517,7 +529,7 @@ def prepare_ema200_for_4h(
         daily_ema200_series = _calc_ema_series(daily_closes, 200)
 
         daily_ema200_dict = {}
-        for k, ema in zip(klines_1d, daily_ema200_series):
+        for k, ema in zip(klines_1d, daily_ema200_series):  # noqa: B905
             if ema is not None:
                 date_str = _timestamp_to_date_str(k["t"])
                 daily_ema200_dict[date_str] = ema
@@ -532,7 +544,7 @@ def prepare_ema200_for_4h(
         weekly_ema200_series = _calc_ema_series(weekly_closes, 200)
 
         weekly_ema200_dict = {}
-        for k, ema in zip(klines_1w, weekly_ema200_series):
+        for k, ema in zip(klines_1w, weekly_ema200_series):  # noqa: B905
             if ema is not None:
                 week_str = _timestamp_to_week_start_str(k["t"])
                 weekly_ema200_dict[week_str] = ema
@@ -557,7 +569,7 @@ def prepare_ma128_for_4h(klines_4h: List[Dict], klines_1d: List[Dict]) -> List[O
         daily_ma128_series = calc_ma_series(daily_closes, 128)
 
         daily_ma128_dict = {}
-        for k, ma in zip(klines_1d, daily_ma128_series):
+        for k, ma in zip(klines_1d, daily_ma128_series):  # noqa: B905
             if ma is not None:
                 date_str = _timestamp_to_date_str(k["t"])
                 daily_ma128_dict[date_str] = ma
@@ -816,7 +828,7 @@ def calc_atr(klines: List[Dict], period: int = 14) -> Optional[float]:
     trs = []
     for i in range(1, len(klines)):
         h = float(klines[i].get("h", klines[i].get("c", 0)))
-        l = float(klines[i].get("l", klines[i].get("c", 0)))
+        l = float(klines[i].get("l", klines[i].get("c", 0)))  # noqa: E741
         prev_c = float(klines[i - 1].get("c", 0))
         tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
         trs.append(tr)
@@ -1045,7 +1057,9 @@ def calc_sma(prices: List[float], period: int) -> float:
     return sum(prices[-period:]) / period
 
 
-def _calc_ma_series_dup(closes: List[float], period: int) -> List[Optional[float]]:  # noqa: F811 - 旧版本备用，保留向后兼容
+def _calc_ma_series_dup(
+    closes: List[float], period: int
+) -> List[Optional[float]]:  # noqa: F811 - 旧版本备用，保留向后兼容
     """计算简单移动平均线序列"""
     result = [None] * len(closes)
     if len(closes) < period:
@@ -1072,7 +1086,7 @@ def prepare_weekly_ma_for_4h(
         weekly_ma_series = calc_ma_series(weekly_closes, period)
 
         weekly_ma_dict = {}
-        for k, ma in zip(klines_1w, weekly_ma_series):
+        for k, ma in zip(klines_1w, weekly_ma_series):  # noqa: B905
             if ma is not None:
                 week_str = _timestamp_to_week_start_str(k["t"])
                 weekly_ma_dict[week_str] = ma
@@ -1096,7 +1110,7 @@ def prepare_daily_ma_for_4h(
         daily_ma_series = calc_ma_series(daily_closes, period)
 
         daily_ma_dict = {}
-        for k, ma in zip(klines_1d, daily_ma_series):
+        for k, ma in zip(klines_1d, daily_ma_series):  # noqa: B905
             if ma is not None:
                 date_str = _timestamp_to_date_str(k["t"])
                 daily_ma_dict[date_str] = ma
@@ -1767,7 +1781,8 @@ def run_backtest(
     # Phase D: AI 闸门（默认关闭=完全不创建，字节等价基线）
     # v3-B: 传入真实模型路径 + bust_threshold
     _phase_d_gw = _phase_d_make_gateway(
-        bool(phase_d_ai_enabled), baseline_max=int(max_addons),
+        bool(phase_d_ai_enabled),
+        baseline_max=int(max_addons),
         bilstm_model_path=phase_d_bilstm_model_path,
         patchtst_model_path=phase_d_patchtst_model_path,
         g_d1_bust_threshold=phase_d_bust_threshold,
@@ -1779,6 +1794,7 @@ def run_backtest(
     if phase_e_ai_enabled:
         try:
             from phase_e_gateway import PhaseEGateway
+
             _phase_e_gw = PhaseEGateway(
                 enabled=True,
                 ppo_model_path=phase_e_ppo_model_path,
@@ -2003,9 +2019,14 @@ def run_backtest(
                                 if _phase_d_gw is not None:
                                     try:
                                         _dd24h = _phase_d_heuristic_dd24h(closes, i)
-                                        _regime_bt = str(t_res.structure.kind if t_res.structure else "UNCLEAR")
+                                        _regime_bt = str(
+                                            t_res.structure.kind if t_res.structure else "UNCLEAR"
+                                        )
                                         _ns, _np2 = _phase_d_gw.apply_timing_relaxation(
-                                            coin, _raw, timing_size_power, _regime_bt,
+                                            coin,
+                                            _raw,
+                                            timing_size_power,
+                                            _regime_bt,
                                             ctx={"p_bust": 0.0, "p_dd": _dd24h},
                                         )
                                         _raw = _ns
@@ -2063,15 +2084,18 @@ def run_backtest(
                         _pd_dd24h = _phase_d_heuristic_dd24h(closes, i)
                         # heuristic 预估 + 原始特征（真实模型推理用；无权重时 gateway 走 heuristic）
                         _pd_ctx = {
-                            "p_bust": _pd_p_bust, "p_dd": _pd_dd24h, "coin": coin,
-                            "klines_4h": klines[max(0, i - 59): i + 1],
+                            "p_bust": _pd_p_bust,
+                            "p_dd": _pd_dd24h,
+                            "coin": coin,
+                            "klines_4h": klines[max(0, i - 59) : i + 1],
                             "klines_1h": None,  # 回测无 1H 数据 → gateway 内部 4H→1H 确定性展开
-                            "level": 0, "pnl_pct": 0.0,  # 开仓时刻无持仓
+                            "level": 0,
+                            "pnl_pct": 0.0,  # 开仓时刻无持仓
                         }
                         if _phase_d_gw.should_skip_open(_pd_ctx):
                             continue  # G-D1: 高风险爆仓概率 → 跳过此单
                         _eff, _ = _phase_d_gw.compute_effective_max_addons(
-                            coin, _pd_ctx, max_addons, {f"addon{k}_usd": 0 for k in [1,2,3,4]}
+                            coin, _pd_ctx, max_addons, {f"addon{k}_usd": 0 for k in [1, 2, 3, 4]}
                         )
                         _pd_eff_max = int(max(0, min(max_addons, _eff)))
                     except Exception:
@@ -2198,16 +2222,33 @@ def run_backtest(
                         # v3-C: 用真实回测上下文填充 state dict（非硬编码）
                         _recent_trades = trades[-10:] if trades else []
                         _recent_wins = sum(1 for t in _recent_trades if t.get("pnl", 0) > 0)
-                        _recent_10_wr = (_recent_wins / max(1, len(_recent_trades))) if _recent_trades else 0.5
-                        _recent_closes = closes[max(0, i-60):i+1]
-                        _recent_rets = [(_recent_closes[j] / _recent_closes[j-1] - 1) for j in range(1, len(_recent_closes)) if _recent_closes[j-1] > 0] if len(_recent_closes) > 2 else [0.0]
+                        _recent_10_wr = (
+                            (_recent_wins / max(1, len(_recent_trades))) if _recent_trades else 0.5
+                        )
+                        _recent_closes = closes[max(0, i - 60) : i + 1]
+                        _recent_rets = (
+                            [
+                                (_recent_closes[j] / _recent_closes[j - 1] - 1)
+                                for j in range(1, len(_recent_closes))
+                                if _recent_closes[j - 1] > 0
+                            ]
+                            if len(_recent_closes) > 2
+                            else [0.0]
+                        )
                         _vol_z = 0.0
                         if len(_recent_rets) >= 10:
                             import numpy as _np
+
                             _vol_mean = float(_np.mean(_recent_rets))
                             _vol_std = float(_np.std(_recent_rets))
-                            _vol_z = max(-2.5, min(2.5, (_vol_std - _vol_mean) / max(1e-6, _vol_std))) if _vol_std > 1e-6 else 0.0
-                        _deployed = sum(t.get("cost", 0) for t in [position] if t) if position else 0.0
+                            _vol_z = (
+                                max(-2.5, min(2.5, (_vol_std - _vol_mean) / max(1e-6, _vol_std)))
+                                if _vol_std > 1e-6
+                                else 0.0
+                            )
+                        _deployed = (
+                            sum(t.get("cost", 0) for t in [position] if t) if position else 0.0
+                        )
                         _pe_s = {
                             "timing_score": float(timing_mult),
                             "position_level": 0,
@@ -2218,16 +2259,24 @@ def run_backtest(
                             "imr": 0.05,
                             "coin_total_deployed": _deployed,
                         }
-                        _pe_params = _phase_e_gw.apply_param_multipliers(coin, _pe_base_params, _pe_s)
+                        _pe_params = _phase_e_gw.apply_param_multipliers(
+                            coin, _pe_base_params, _pe_s
+                        )
                         addon_pct = _pe_params["addon_pct"] / 100.0
                         tp_pct = _pe_params["tp_pct"] / 100.0
                         # 重新计算 tp_price 和 addon_prices
                         if direction == "LONG":
                             tp_price = current_price * (1 + tp_pct)
-                            addon_prices = [current_price * (1 - addon_pct * j) for j in range(1, _pd_eff_max + 1)]
+                            addon_prices = [
+                                current_price * (1 - addon_pct * j)
+                                for j in range(1, _pd_eff_max + 1)
+                            ]
                         else:
                             tp_price = current_price * (1 - tp_pct)
-                            addon_prices = [current_price * (1 + addon_pct * j) for j in range(1, _pd_eff_max + 1)]
+                            addon_prices = [
+                                current_price * (1 + addon_pct * j)
+                                for j in range(1, _pd_eff_max + 1)
+                            ]
                         # 应用 base_position_mult
                         _pe_action = _pe_params.get("ai_action", {})
                         position_size *= float(_pe_action.get("base_position_mult", 1.0))

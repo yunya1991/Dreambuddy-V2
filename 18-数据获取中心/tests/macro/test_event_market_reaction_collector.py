@@ -2,8 +2,8 @@
 
 覆盖：资产价格快照采集、事件窗口判定、FAIL-OPEN、DataRecord 契约。
 """
-import pytest
 
+import pytest
 from data_center.collectors.macro.event_market_reaction_collector import (
     EventMarketReactionCollector,
 )
@@ -27,12 +27,14 @@ def test_fetch_price_snapshot(mocker):
     ]
 
     c = EventMarketReactionCollector()
-    recs = c.fetch({
-        "symbol": "gold",
-        "event_date": "2026-09-16",
-        "days_before": 1,
-        "days_after": 1,
-    })
+    recs = c.fetch(
+        {
+            "symbol": "gold",
+            "event_date": "2026-09-16",
+            "days_before": 1,
+            "days_after": 1,
+        }
+    )
 
     assert len(recs) == 1
     r = recs[0]

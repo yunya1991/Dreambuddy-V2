@@ -10,6 +10,7 @@ SPEC §4.4 — Dalio 短期债务周期判定
 HC: 开关关断时返回 "neutral"
 HC: FAIL-OPEN 异常返回 "neutral"
 """
+
 from __future__ import annotations
 
 import pytest
@@ -18,6 +19,7 @@ import pytest
 @pytest.fixture
 def enable_debt_cycle(monkeypatch):
     from dreambuddy_evolution.agi_config import set_switch
+
     set_switch("enable_agi_core", True)
     set_switch("enable_contradiction_driven_layer", True)
     set_switch("enable_debt_cycle_phase", True)
@@ -29,11 +31,13 @@ class TestDebtCyclePhase:
 
     def test_module_importable(self):
         from dreambuddy_evolution.engines.debt_cycle_phase import DebtCyclePhase
+
         assert DebtCyclePhase is not None
 
     def test_expansion_when_credit_above_gdp(self, enable_debt_cycle):
         """信贷增速 > GDP增速 → expansion"""
         from dreambuddy_evolution.engines.debt_cycle_phase import DebtCyclePhase
+
         phase = DebtCyclePhase()
         kline_data = {
             "credit_growth": 5.0,
@@ -46,6 +50,7 @@ class TestDebtCyclePhase:
     def test_contraction_when_credit_below_gdp_and_tightening(self, enable_debt_cycle):
         """信贷增速 < GDP增速 + 利率上行 → contraction"""
         from dreambuddy_evolution.engines.debt_cycle_phase import DebtCyclePhase
+
         phase = DebtCyclePhase()
         kline_data = {
             "credit_growth": 1.0,
@@ -58,6 +63,7 @@ class TestDebtCyclePhase:
     def test_neutral_when_credit_below_gdp_but_easing(self, enable_debt_cycle):
         """信贷增速 < GDP增速 但利率下行 → neutral"""
         from dreambuddy_evolution.engines.debt_cycle_phase import DebtCyclePhase
+
         phase = DebtCyclePhase()
         kline_data = {
             "credit_growth": 1.0,
@@ -70,6 +76,7 @@ class TestDebtCyclePhase:
     def test_neutral_when_no_data(self, enable_debt_cycle):
         """无数据 → neutral"""
         from dreambuddy_evolution.engines.debt_cycle_phase import DebtCyclePhase
+
         phase = DebtCyclePhase()
         result = phase.phase({})
         assert result == "neutral"
@@ -78,6 +85,7 @@ class TestDebtCyclePhase:
         """HC: 开关关断时返回 neutral"""
         from dreambuddy_evolution.agi_config import set_switch
         from dreambuddy_evolution.engines.debt_cycle_phase import DebtCyclePhase
+
         set_switch("enable_agi_core", True)
         set_switch("enable_contradiction_driven_layer", False)
         set_switch("enable_debt_cycle_phase", True)
@@ -88,6 +96,7 @@ class TestDebtCyclePhase:
     def test_fail_open_on_exception(self, enable_debt_cycle):
         """HC: 异常时 FAIL-OPEN 返回 neutral"""
         from dreambuddy_evolution.engines.debt_cycle_phase import DebtCyclePhase
+
         phase = DebtCyclePhase()
         result = phase.phase(None)
         assert result == "neutral"
@@ -95,6 +104,7 @@ class TestDebtCyclePhase:
     def test_with_context_output(self, enable_debt_cycle):
         """phase_with_context 输出包含 phase + details"""
         from dreambuddy_evolution.engines.debt_cycle_phase import DebtCyclePhase
+
         phase = DebtCyclePhase()
         kline_data = {
             "credit_growth": 5.0,

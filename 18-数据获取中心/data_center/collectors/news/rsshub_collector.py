@@ -3,6 +3,7 @@
 RSSHub 将各类网站转为 RSS feed，本 collector 把 route 映射成完整 URL 后复用 feedparser 采集逻辑。
 继承 FeedparserCollector，覆写 source 与 URL 组装方式。
 """
+
 from __future__ import annotations
 
 from data_center.collectors.news.feedparser_collector import FeedparserCollector
@@ -18,9 +19,7 @@ class RsshubCollector(FeedparserCollector):
 
     def __init__(self, config: dict | None = None):
         super().__init__(config)
-        self._base_url: str = (
-            self.config.get("base_url") or DEFAULT_BASE_URL
-        ).rstrip("/")
+        self._base_url: str = (self.config.get("base_url") or DEFAULT_BASE_URL).rstrip("/")
 
     def fetch(self, params: dict) -> list[DataRecord]:
         route = params.get("route")

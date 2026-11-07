@@ -28,17 +28,17 @@ v3.0 重大修正:
   python3 bayesian_opt_engine.py --objective calmar --rounds 300
 """
 
-import os
-import sys
-import json
-import re
-import time
 import argparse
+import json
+import os
+import re
 import statistics
-from datetime import datetime, timezone, timedelta
-from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+import sys
+import time
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import List, Optional
 
 import numpy as np
 from scipy.optimize import differential_evolution
@@ -47,24 +47,28 @@ SCRIPTS_DIR = Path(__file__).parent
 PROJECT_DIR = SCRIPTS_DIR.parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from backtest_data_fetcher import (
-    load_or_fetch, dt_to_ts, ts_to_dt,
-    resample_to_weekly, add_technical_indicators, DATA_DIR
+from backtest_data_fetcher import (  # noqa: E402
+    add_technical_indicators,
+    dt_to_ts,
+    load_or_fetch,
+    resample_to_weekly,
+    ts_to_dt,
 )
-from backtest_strategy import (
-    DEFAULT_STRATEGY_PARAMS, Direction, ExitReason, SignalStrength,
-    run_screen2, check_exit_signals, calc_martin_add_on,
-    calc_partial_close, recalc_avg_entry, TP_RATIOS,
-    Position,
+from backtest_engine import BacktestEngine  # noqa: E402
+from backtest_strategy import (  # noqa: E402
+    DEFAULT_STRATEGY_PARAMS,
+    Direction,
+    ExitReason,
+    calc_martin_add_on,
+    check_exit_signals,
+    run_screen2,
 )
-from backtest_engine import BacktestEngine
-
 
 # ==================== 配置 ====================
 
-MAILBOX_OPT_DIR = Path(os.path.expanduser(
-    "~/.workbuddy/skills/boss-secretary/reports/trading/6-trading/optimization"
-))
+MAILBOX_OPT_DIR = Path(
+    os.path.expanduser("~/.workbuddy/skills/boss-secretary/reports/trading/6-trading/optimization")
+)
 BJT = timezone(timedelta(hours=8))
 
 
@@ -72,26 +76,26 @@ BJT = timezone(timedelta(hours=8))
 
 PARAM_NAMES = [
     "strong_score_threshold",  # θ1: 强多头阈值 [55, 75]
-    "weak_score_threshold",    # θ2: 弱多头阈值 [40, 60]
-    "short_score_threshold",   # θ3: 空头阈值 [25, 45]  ★方向灵敏度
-    "level_spacing_k",         # θ4: 加仓间隔系数 [0.3, 1.0]
-    "tp_level_1",              # θ5: TP1 ATR倍数 [1.5, 4.0]
-    "tp_level_2",              # θ6: TP2 ATR倍数 [2.5, 5.0]
-    "tp_level_3",              # θ7: TP3 ATR倍数 [4.0, 8.0]
-    "base_pos_pct",            # θ8: 基础仓位比例% [50, 150]
-    "sl_cooldown_days",        # θ9: 止损冷却天数 [0, 7] ★新增
+    "weak_score_threshold",  # θ2: 弱多头阈值 [40, 60]
+    "short_score_threshold",  # θ3: 空头阈值 [25, 45]  ★方向灵敏度
+    "level_spacing_k",  # θ4: 加仓间隔系数 [0.3, 1.0]
+    "tp_level_1",  # θ5: TP1 ATR倍数 [1.5, 4.0]
+    "tp_level_2",  # θ6: TP2 ATR倍数 [2.5, 5.0]
+    "tp_level_3",  # θ7: TP3 ATR倍数 [4.0, 8.0]
+    "base_pos_pct",  # θ8: 基础仓位比例% [50, 150]
+    "sl_cooldown_days",  # θ9: 止损冷却天数 [0, 7] ★新增
 ]
 
 BOUNDS = [
-    (55.0, 75.0),     # strong_score_threshold
-    (40.0, 60.0),     # weak_score_threshold
-    (25.0, 45.0),     # short_score_threshold
-    (0.3, 1.0),       # level_spacing_k
-    (1.5, 4.0),       # tp_level_1
-    (2.5, 5.0),       # tp_level_2
-    (4.0, 8.0),       # tp_level_3
-    (50.0, 150.0),    # base_pos_pct
-    (0.0, 7.0),       # sl_cooldown_days
+    (55.0, 75.0),  # strong_score_threshold
+    (40.0, 60.0),  # weak_score_threshold
+    (25.0, 45.0),  # short_score_threshold
+    (0.3, 1.0),  # level_spacing_k
+    (1.5, 4.0),  # tp_level_1
+    (2.5, 5.0),  # tp_level_2
+    (4.0, 8.0),  # tp_level_3
+    (50.0, 150.0),  # base_pos_pct
+    (0.0, 7.0),  # sl_cooldown_days
 ]
 
 PARAM_DESCRIPTIONS = {
@@ -113,6 +117,7 @@ FIXED_PARAMS = {
 
 
 # ==================== 回测报告解析 ====================
+
 
 @dataclass
 class BacktestReportInfo:
@@ -183,6 +188,7 @@ def parse_backtest_report(report_path: str) -> Optional[BacktestReportInfo]:
 
 # ==================== 优化引擎 ====================
 
+
 class BayesianOptEngine:
     def __init__(self, config: dict = None):
         self.cfg = {
@@ -231,7 +237,7 @@ class BayesianOptEngine:
 
     def _params_array_to_dict(self, x: np.ndarray) -> dict:
         """将9维参数数组转为策略参数字典"""
-        opt = {name: float(val) for name, val in zip(PARAM_NAMES, x)}
+        opt = {name: float(val) for name, val in zip(PARAM_NAMES, x)}  # noqa: B905
         # 合并固定参数
         opt.update(FIXED_PARAMS)
         return opt
@@ -282,9 +288,12 @@ class BayesianOptEngine:
             else:
                 # v3.0: check_exit_signals 返回3个值
                 should_exit, exit_reason, tp_level = check_exit_signals(
-                    engine.position, candle, screen1,
-                    engine._current_equity(price), engine.peak_equity,
-                    len(engine.trades)
+                    engine.position,
+                    candle,
+                    screen1,
+                    engine._current_equity(price),
+                    engine.peak_equity,
+                    len(engine.trades),
                 )
 
                 if should_exit:
@@ -301,11 +310,14 @@ class BayesianOptEngine:
                             break
                 else:
                     add_info = calc_martin_add_on(
-                        engine.position, candle, engine.cash,
-                        engine.equity, engine.cfg["taker_fee"]
+                        engine.position, candle, engine.cash, engine.equity, engine.cfg["taker_fee"]
                     )
                     if add_info:
-                        dd = (engine.peak_equity - engine._current_equity(price)) / max(engine.peak_equity, 1) * 100
+                        dd = (
+                            (engine.peak_equity - engine._current_equity(price))
+                            / max(engine.peak_equity, 1)
+                            * 100
+                        )
                         if dd < engine.cfg["warn_drawdown"]:
                             engine._add_position(add_info[0], add_info[1], candle)
 
@@ -362,19 +374,25 @@ class BayesianOptEngine:
         if len(engine.equity_curve) > 1:
             returns = []
             for i in range(1, len(engine.equity_curve)):
-                r = (engine.equity_curve[i]["equity"] - engine.equity_curve[i - 1]["equity"]) / max(engine.equity_curve[i - 1]["equity"], 0.01)
+                r = (engine.equity_curve[i]["equity"] - engine.equity_curve[i - 1]["equity"]) / max(
+                    engine.equity_curve[i - 1]["equity"], 0.01
+                )
                 returns.append(r)
             if returns:
                 avg_ret = statistics.mean(returns) * 252
-                std_ret = statistics.stdev(returns) * (252 ** 0.5) if len(returns) > 1 else 0.01
+                std_ret = statistics.stdev(returns) * (252**0.5) if len(returns) > 1 else 0.01
                 sharpe = (avg_ret - 0.02) / std_ret if std_ret > 0 else 0
 
         total_closed = engine.stats["total_trades"]
         win_rate = (engine.stats["win_trades"] / total_closed * 100) if total_closed > 0 else 0
 
         # v3.0: 包含 partial_close 的盈亏统计
-        wins = [t.pnl for t in engine.trades if t.action in ("close", "partial_close") and t.pnl > 0]
-        losses = [t.pnl for t in engine.trades if t.action in ("close", "partial_close") and t.pnl < 0]
+        wins = [
+            t.pnl for t in engine.trades if t.action in ("close", "partial_close") and t.pnl > 0
+        ]
+        losses = [
+            t.pnl for t in engine.trades if t.action in ("close", "partial_close") and t.pnl < 0
+        ]
         avg_win = statistics.mean(wins) if wins else 0
         avg_loss = abs(statistics.mean(losses)) if losses else 1
         profit_factor = avg_win / avg_loss if avg_loss > 0 else 0
@@ -415,20 +433,22 @@ class BayesianOptEngine:
         use_inline_baseline = False
         if report_info and report_info.sharpe_ratio != 0:
             baseline_sharpe = report_info.sharpe_ratio
-            print(f"\n  基准 (回测报告):")
+            print("\n  基准 (回测报告):")
             print(f"    状态: {report_info.status}")
             print(f"    Sharpe: {baseline_sharpe:.4f}")
             print(f"    最大回撤: {report_info.max_drawdown:.2f}%")
             print(f"    胜率: {report_info.win_rate:.2f}%")
         else:
             # 报告无效或baseline=0, 自动跑内联基线
-            use_inline_baseline = True
-            print(f"\n  [基线] 运行默认参数回测 (报告无效, 自动生成基线)...")
+            use_inline_baseline = True  # noqa: F841
+            print("\n  [基线] 运行默认参数回测 (报告无效, 自动生成基线)...")
             baseline_stats = self._run_quick_backtest(DEFAULT_STRATEGY_PARAMS)
             baseline_sharpe = baseline_stats["sharpe_ratio"]
-            print(f"    Sharpe: {baseline_sharpe:.4f} | 回撤: {baseline_stats['max_drawdown']:.2f}% | 收益: {baseline_stats['total_return']:+.2f}%")
+            print(
+                f"    Sharpe: {baseline_sharpe:.4f} | 回撤: {baseline_stats['max_drawdown']:.2f}% | 收益: {baseline_stats['total_return']:+.2f}%"
+            )
 
-        print(f"\n  寻优配置:")
+        print("\n  寻优配置:")
         print(f"    目标函数: {self.cfg['objective']}")
         print(f"    回撤约束: <{self.cfg['max_drawdown_limit']}%")
         print(f"    参数空间: {len(PARAM_NAMES)}维")
@@ -436,7 +456,7 @@ class BayesianOptEngine:
             desc = PARAM_DESCRIPTIONS.get(name, "")
             print(f"    {name}: {BOUNDS[i]} — {desc}")
 
-        print(f"\n  开始 differential_evolution 寻优...")
+        print("\n  开始 differential_evolution 寻优...")
         start_time = time.time()
 
         self._eval_count = 0
@@ -465,8 +485,10 @@ class BayesianOptEngine:
         best_stats = self._run_quick_backtest(best_params)
         best_sharpe = -result.fun if result.fun < 500 else best_stats["sharpe_ratio"]
 
-        print(f"\n  最优结果:")
-        print(f"    Sharpe: {best_sharpe:.4f} (基线: {baseline_sharpe:.4f}, 提升: {(best_sharpe - baseline_sharpe) / max(abs(baseline_sharpe), 0.01) * 100:+.1f}%)")
+        print("\n  最优结果:")
+        print(
+            f"    Sharpe: {best_sharpe:.4f} (基线: {baseline_sharpe:.4f}, 提升: {(best_sharpe - baseline_sharpe) / max(abs(baseline_sharpe), 0.01) * 100:+.1f}%)"
+        )
         print(f"    最大回撤: {best_stats['max_drawdown']:.2f}%")
         print(f"    胜率: {best_stats['win_rate']:.2f}%")
         print(f"    盈亏比: {best_stats['profit_factor']:.4f}")
@@ -487,7 +509,9 @@ class BayesianOptEngine:
             "best_sharpe": best_sharpe,
             "baseline_sharpe": baseline_sharpe,
             "baseline_stats": baseline_stats,
-            "improvement_pct": round((best_sharpe - baseline_sharpe) / max(abs(baseline_sharpe), 0.01) * 100, 2),
+            "improvement_pct": round(
+                (best_sharpe - baseline_sharpe) / max(abs(baseline_sharpe), 0.01) * 100, 2
+            ),
             "sensitivity": sensitivity,
             "confidence_intervals": confidence,
             "decision": decision,
@@ -505,16 +529,22 @@ class BayesianOptEngine:
 
     def _progress_callback(self, xk, convergence):
         pct = min(convergence * 100, 100)
-        print(f"    轮次 {self._eval_count:4d} | 收敛: {pct:.1f}% | "
-              f"可行: {self._feasible_count} | 不可行: {self._infeasible_count}")
+        print(
+            f"    轮次 {self._eval_count:4d} | 收敛: {pct:.1f}% | "
+            f"可行: {self._feasible_count} | 不可行: {self._infeasible_count}"
+        )
 
     def _sensitivity_analysis(self) -> List[dict]:
         if not self._eval_history:
             return []
 
-        feasible = [h for h in self._eval_history if h["max_drawdown"] <= self.cfg["max_drawdown_limit"]]
+        feasible = [
+            h for h in self._eval_history if h["max_drawdown"] <= self.cfg["max_drawdown_limit"]
+        ]
         if len(feasible) < 5:
-            return [{"param": name, "influence": "unknown", "importance": 0.0} for name in PARAM_NAMES]
+            return [
+                {"param": name, "influence": "unknown", "importance": 0.0} for name in PARAM_NAMES
+            ]
 
         results = []
         for name in PARAM_NAMES:
@@ -536,12 +566,14 @@ class BayesianOptEngine:
             else:
                 influence = "极低"
 
-            results.append({
-                "param": name,
-                "description": PARAM_DESCRIPTIONS.get(name, name),
-                "influence": influence,
-                "importance": round(importance, 4),
-            })
+            results.append(
+                {
+                    "param": name,
+                    "description": PARAM_DESCRIPTIONS.get(name, name),
+                    "influence": influence,
+                    "importance": round(importance, 4),
+                }
+            )
 
         results.sort(key=lambda x: x["importance"], reverse=True)
         for rank, r in enumerate(results, 1):
@@ -550,14 +582,22 @@ class BayesianOptEngine:
         return results
 
     def _calc_confidence_intervals(self) -> dict:
-        feasible = [h for h in self._eval_history if h["max_drawdown"] <= self.cfg["max_drawdown_limit"]]
+        feasible = [
+            h for h in self._eval_history if h["max_drawdown"] <= self.cfg["max_drawdown_limit"]
+        ]
 
         if len(feasible) < 5:
-            return {name: {"low": BOUNDS[i][0], "high": BOUNDS[i][1], "median": (BOUNDS[i][0] + BOUNDS[i][1]) / 2}
-                    for i, name in enumerate(PARAM_NAMES)}
+            return {
+                name: {
+                    "low": BOUNDS[i][0],
+                    "high": BOUNDS[i][1],
+                    "median": (BOUNDS[i][0] + BOUNDS[i][1]) / 2,
+                }
+                for i, name in enumerate(PARAM_NAMES)
+            }
 
         result = {}
-        for i, name in enumerate(PARAM_NAMES):
+        for i, name in enumerate(PARAM_NAMES):  # noqa: B007
             values = sorted([h["params"][name] for h in feasible])
             n = len(values)
             result[name] = {
@@ -591,7 +631,11 @@ class BayesianOptEngine:
         low_drawdown = best_stats["max_drawdown"] < 10
 
         if improvement > 30 and best_stats["max_drawdown"] < 15:
-            return {"status": "ADOPT", "reason": f"Sharpe提升{improvement:.1f}%, 回撤{best_stats['max_drawdown']:.1f}%<15%", "risk": "低"}
+            return {
+                "status": "ADOPT",
+                "reason": f"Sharpe提升{improvement:.1f}%, 回撤{best_stats['max_drawdown']:.1f}%<15%",
+                "risk": "低",
+            }
         elif improvement > 0 or abs_improved:
             status = "ADJUST"
             reason_parts = []
@@ -607,12 +651,21 @@ class BayesianOptEngine:
             risk = "中"
             return {"status": status, "reason": reason, "risk": risk}
         elif total_return_positive and low_drawdown:
-            return {"status": "ADJUST", "reason": f"Sharpe未改善但收益{best_stats['total_return']:+.2f}%且回撤{best_stats['max_drawdown']:.1f}%", "risk": "中"}
+            return {
+                "status": "ADJUST",
+                "reason": f"Sharpe未改善但收益{best_stats['total_return']:+.2f}%且回撤{best_stats['max_drawdown']:.1f}%",
+                "risk": "中",
+            }
         else:
-            return {"status": "REJECT", "reason": f"优化无显著改善 (Sharpe变化{improvement:.1f}%)", "risk": "低"}
+            return {
+                "status": "REJECT",
+                "reason": f"优化无显著改善 (Sharpe变化{improvement:.1f}%)",
+                "risk": "低",
+            }
 
 
 # ==================== 报告生成 ====================
+
 
 def generate_optimization_report(opt_result: dict) -> str:
     now_bjt = datetime.now(BJT)
@@ -626,24 +679,24 @@ def generate_optimization_report(opt_result: dict) -> str:
     ci = opt_result["confidence_intervals"]
 
     lines = [
-        f"---",
-        f"type: bayesian_optimization",
-        f"category: optimization",
+        "---",
+        "type: bayesian_optimization",
+        "category: optimization",
         f"date: {iso_time}",
-        f"source: dream-bayesian-opt",
-        f"version: \"3.0\"",
+        "source: dream-bayesian-opt",
+        'version: "3.0"',
         f"optimization_status: {d['status']}",
         f"total_rounds: {opt_result['eval_count']}",
         f"feasible_rounds: {opt_result['feasible_count']}",
         f"infeasible_rounds: {opt_result['infeasible_count']}",
-        f"---",
-        f"",
+        "---",
+        "",
         f"# 贝叶斯参数优化报告 v3.0 {date_str}",
-        f"",
-        f"> 基于 backtest_strategy v3.0 (固定20%止损 + 等额加仓 + 分批止盈)",
-        f"> 参数空间: 9维 (含止损冷却期)",
-        f"",
-        f"## 寻优概况",
+        "",
+        "> 基于 backtest_strategy v3.0 (固定20%止损 + 等额加仓 + 分批止盈)",
+        "> 参数空间: 9维 (含止损冷却期)",
+        "",
+        "## 寻优概况",
         f"- 总评估次数: {opt_result['eval_count']}",
         f"- 可行解: {opt_result['feasible_count']} (max_dd<{opt_result['config']['max_drawdown_limit']}%)",
         f"- 不可行解: {opt_result['infeasible_count']}",
@@ -652,10 +705,10 @@ def generate_optimization_report(opt_result: dict) -> str:
         f"- 预期提升: {opt_result['improvement_pct']:+.1f}%",
         f"- 目标函数: {opt_result['objective']}",
         f"- 耗时: {opt_result['elapsed_seconds']:.1f}秒",
-        f"",
-        f"## 推荐参数变更",
-        f"| 参数 | 默认值 | 推荐值 | 变化 | 置信区间(95%) |",
-        f"|------|--------|--------|------|---------------|",
+        "",
+        "## 推荐参数变更",
+        "| 参数 | 默认值 | 推荐值 | 变化 | 置信区间(95%) |",
+        "|------|--------|--------|------|---------------|",
     ]
 
     for name in PARAM_NAMES:
@@ -664,47 +717,55 @@ def generate_optimization_report(opt_result: dict) -> str:
         change_pct = (recommended - current) / max(abs(current), 0.01) * 100
         ci_info = ci.get(name, {})
         ci_str = f"[{ci_info.get('low', '?')}, {ci_info.get('high', '?')}]"
-        lines.append(f"| {name} | {current:.1f} | {recommended:.1f} | {change_pct:+.1f}% | {ci_str} |")
+        lines.append(
+            f"| {name} | {current:.1f} | {recommended:.1f} | {change_pct:+.1f}% | {ci_str} |"
+        )
 
-    lines.extend([
-        f"| stop_loss_pct | 20.0 | **20.0** | **固定(不可优化)** | N/A |",
-        f"",
-        f"## 最优参数回测指标",
-        f"| 指标 | 数值 |",
-        f"|------|------|",
-        f"| Sharpe比率 | {bs['sharpe_ratio']:.4f} |",
-        f"| 最大回撤 | {bs['max_drawdown']:.2f}% |",
-        f"| 胜率 | {bs['win_rate']:.2f}% |",
-        f"| 盈亏比 | {bs['profit_factor']:.4f} |",
-        f"| 总收益率 | {bs['total_return']:+.2f}% |",
-        f"| 年化收益率 | {bs['annual_return']:+.2f}% |",
-        f"| 交易次数 | {bs['total_trades']} |",
-        f"| 马丁完成 | {bs['martin_complete_trades']}次 |",
-        f"| 加仓次数 | {bs['add_on_count']}次 |",
-        f"| 分批止盈 | {bs['partial_close_count']}次 |",
-        f"| 冷却期跳过 | {bs['sl_cooldown_skip_count']}次 |",
-        f"| 最终权益 | ${bs['final_equity']:.2f} |",
-        f"",
-        f"## 敏感性排名",
-    ])
+    lines.extend(
+        [
+            "| stop_loss_pct | 20.0 | **20.0** | **固定(不可优化)** | N/A |",
+            "",
+            "## 最优参数回测指标",
+            "| 指标 | 数值 |",
+            "|------|------|",
+            f"| Sharpe比率 | {bs['sharpe_ratio']:.4f} |",
+            f"| 最大回撤 | {bs['max_drawdown']:.2f}% |",
+            f"| 胜率 | {bs['win_rate']:.2f}% |",
+            f"| 盈亏比 | {bs['profit_factor']:.4f} |",
+            f"| 总收益率 | {bs['total_return']:+.2f}% |",
+            f"| 年化收益率 | {bs['annual_return']:+.2f}% |",
+            f"| 交易次数 | {bs['total_trades']} |",
+            f"| 马丁完成 | {bs['martin_complete_trades']}次 |",
+            f"| 加仓次数 | {bs['add_on_count']}次 |",
+            f"| 分批止盈 | {bs['partial_close_count']}次 |",
+            f"| 冷却期跳过 | {bs['sl_cooldown_skip_count']}次 |",
+            f"| 最终权益 | ${bs['final_equity']:.2f} |",
+            "",
+            "## 敏感性排名",
+        ]
+    )
 
     for s in sens:
-        lines.append(f"{s['rank']}. **{s['param']}** ({s['influence']}影响, 相关度={s['importance']:.3f}) — {s['description']}")
+        lines.append(
+            f"{s['rank']}. **{s['param']}** ({s['influence']}影响, 相关度={s['importance']:.3f}) — {s['description']}"
+        )
 
-    lines.extend([
-        f"",
-        f"## 决策",
-        f"**{d['status']}** — {d['reason']}",
-        f"风险: {d['risk']}",
-        f"",
-        f"## 推荐参数 (JSON)",
-        f"```json",
-        json.dumps(bp, indent=2, ensure_ascii=False),
-        f"```",
-        f"",
-        f"---",
-        f"_Generated by dream-bayesian-opt v3.0 at {iso_time}_",
-    ])
+    lines.extend(
+        [
+            "",
+            "## 决策",
+            f"**{d['status']}** — {d['reason']}",
+            f"风险: {d['risk']}",
+            "",
+            "## 推荐参数 (JSON)",
+            "```json",
+            json.dumps(bp, indent=2, ensure_ascii=False),
+            "```",
+            "",
+            "---",
+            f"_Generated by dream-bayesian-opt v3.0 at {iso_time}_",
+        ]
+    )
 
     return "\n".join(lines)
 
@@ -738,11 +799,18 @@ def find_backtest_report() -> Optional[str]:
 
 # ==================== 主入口 ====================
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Dream Systematic Trading - 贝叶斯参数优化引擎 v3.0")
+    parser = argparse.ArgumentParser(
+        description="Dream Systematic Trading - 贝叶斯参数优化引擎 v3.0"
+    )
     parser.add_argument("--report", default=None, help="回测报告路径")
-    parser.add_argument("--objective", default="sharpe",
-                        choices=["sharpe", "profit_factor", "calmar"], help="优化目标")
+    parser.add_argument(
+        "--objective",
+        default="sharpe",
+        choices=["sharpe", "profit_factor", "calmar"],
+        help="优化目标",
+    )
     parser.add_argument("--quick", action="store_true", help="快速模式")
     parser.add_argument("--output", default=None, help="报告输出路径")
     args = parser.parse_args()
@@ -753,14 +821,16 @@ def main():
     if report_path:
         report_info = parse_backtest_report(report_path)
         if report_info:
-            print(f"  [报告] {report_info.status} | Sharpe={report_info.sharpe_ratio} | 回撤={report_info.max_drawdown}%")
+            print(
+                f"  [报告] {report_info.status} | Sharpe={report_info.sharpe_ratio} | 回撤={report_info.max_drawdown}%"
+            )
         else:
-            print(f"  [报告] 解析失败!")
+            print("  [报告] 解析失败!")
     else:
-        print(f"  [报告] 未找到回测报告, 使用内联基线")
+        print("  [报告] 未找到回测报告, 使用内联基线")
 
     if report_info and report_info.status == "FAIL":
-        print(f"  回测FAIL, 跳过优化")
+        print("  回测FAIL, 跳过优化")
         return
 
     config = {"objective": args.objective}

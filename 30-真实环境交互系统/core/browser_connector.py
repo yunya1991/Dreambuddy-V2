@@ -11,13 +11,12 @@
 - PLAYWRIGHT_CHROMIUM 是沙箱内的唯一可用方案
 - CONNECT_CDP 连接沙箱外的 Chrome，可复用登录态和真实指纹
 """
+
 from __future__ import annotations
 
 import logging
 import os
-import shutil
 import subprocess
-import tempfile
 import time
 from enum import Enum
 from pathlib import Path
@@ -30,6 +29,7 @@ logger = logging.getLogger("real_env.browser_connector")
 
 class BrowserMode(Enum):
     """浏览器运行模式"""
+
     PLAYWRIGHT_CHROMIUM = "playwright_chromium"  # Playwright 内置 Chromium（沙箱内可用，默认）
     CONNECT_CDP = "connect_cdp"  # 通过 CDP 连接已运行的真实 Chrome
     LAUNCH_HEADED = "launch_headed"  # 启动带界面的真实 Chrome（需沙箱外）
@@ -51,8 +51,9 @@ class BrowserConnector:
     # ------------------------------------------------------------------
     # 公共接口
     # ------------------------------------------------------------------
-    def connect(self, mode: BrowserMode = BrowserMode.PLAYWRIGHT_CHROMIUM,
-                cdp_url: Optional[str] = None) -> Browser:
+    def connect(
+        self, mode: BrowserMode = BrowserMode.PLAYWRIGHT_CHROMIUM, cdp_url: Optional[str] = None
+    ) -> Browser:
         """连接或启动浏览器，返回 Browser 实例。
 
         Args:
@@ -164,7 +165,7 @@ class BrowserConnector:
         - 无法复用用户登录态
         """
         headed = self._browser_cfg.get("headed", False)
-        viewport = self._browser_cfg.get("viewport", {"width": 1440, "height": 900})
+        viewport = self._browser_cfg.get("viewport", {"width": 1440, "height": 900})  # noqa: F841
 
         logger.info("Launching Playwright Chromium (headed=%s)", headed)
 
@@ -199,7 +200,8 @@ class BrowserConnector:
             logger.error(
                 "Failed to connect to Chrome via CDP: %s. "
                 "Please start Chrome with --remote-debugging-port=%s",
-                e, self._browser_cfg.get("cdp_port", 9222),
+                e,
+                self._browser_cfg.get("cdp_port", 9222),
             )
             raise
 
@@ -299,9 +301,7 @@ class BrowserConnector:
                 pass
             time.sleep(0.5)
 
-        raise TimeoutError(
-            f"Chrome CDP port {port} not ready after {timeout}s"
-        )
+        raise TimeoutError(f"Chrome CDP port {port} not ready after {timeout}s")
 
     # ------------------------------------------------------------------
     # 工具方法
@@ -381,7 +381,8 @@ class BrowserConnector:
             except Exception as e:
                 logger.warning(
                     "from_system_chrome failed: %s. "
-                    "Falling back to default Playwright Chromium.", e
+                    "Falling back to default Playwright Chromium.",
+                    e,
                 )
                 bu_browser = self._create_default_bu_browser(Browser, BrowserProfile)
         elif mode_str in ("playwright_chromium", "default"):
@@ -433,6 +434,7 @@ class BrowserConnector:
                         if hasattr(bu, "close"):
                             # 可能是 async
                             import asyncio
+
                             try:
                                 asyncio.get_event_loop().run_until_complete(bu.close())
                             except RuntimeError:

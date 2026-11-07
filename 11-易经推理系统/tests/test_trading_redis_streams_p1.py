@@ -1,7 +1,6 @@
 import importlib.util
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -35,4 +34,3 @@ def test_redis_streams_transport_xadd_encodes_envelope():
     tp.send_envelope(envelope)
     assert stream == "dream.intelligence.a6.L1"
     assert sent["parts"][0] == "XADD"
-

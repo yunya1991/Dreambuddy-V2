@@ -19,13 +19,13 @@
 - 支持降级标记
 """
 
-from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field
-
+from typing import Any, Dict, Optional
 
 # ============================================================
 # 错误码定义
 # ============================================================
+
 
 class ErrorCode:
     """错误码常量"""
@@ -160,6 +160,7 @@ class ErrorCode:
 # 标准化异常基类
 # ============================================================
 
+
 class OSBaseError(Exception):
     """操作系统级异常基类
 
@@ -185,7 +186,7 @@ class OSBaseError(Exception):
         self.cause = cause
         self._retryable = retryable
         self._fallback_allowed = fallback_allowed
-        self.timestamp = __import__('time').time()
+        self.timestamp = __import__("time").time()
 
     @property
     def code_description(self) -> str:
@@ -225,44 +226,56 @@ class OSBaseError(Exception):
 # 具体异常类
 # ============================================================
 
+
 class ModuleError(OSBaseError):
     """模块相关错误"""
-    def __init__(self, message: str, module_id: str, error_code: int = ErrorCode.MODULE_NOT_FOUND, **kwargs):
+
+    def __init__(
+        self, message: str, module_id: str, error_code: int = ErrorCode.MODULE_NOT_FOUND, **kwargs
+    ):
         super().__init__(message, error_code=error_code, module_id=module_id, **kwargs)
 
 
 class NodeError(OSBaseError):
     """节点相关错误"""
-    def __init__(self, message: str, node_id: str, error_code: int = ErrorCode.NODE_NOT_FOUND, **kwargs):
+
+    def __init__(
+        self, message: str, node_id: str, error_code: int = ErrorCode.NODE_NOT_FOUND, **kwargs
+    ):
         super().__init__(message, error_code=error_code, node_id=node_id, **kwargs)
 
 
 class AdapterError(OSBaseError):
     """适配器相关错误"""
+
     def __init__(self, message: str, error_code: int = ErrorCode.ADAPTER_EXECUTION_ERROR, **kwargs):
         super().__init__(message, error_code=error_code, **kwargs)
 
 
 class ExecutionError(OSBaseError):
     """执行相关错误"""
+
     def __init__(self, message: str, error_code: int = ErrorCode.EXECUTION_FAILED, **kwargs):
         super().__init__(message, error_code=error_code, **kwargs)
 
 
 class ValidationError(OSBaseError):
     """校验相关错误"""
+
     def __init__(self, message: str, error_code: int = ErrorCode.VALIDATION_FAILED, **kwargs):
         super().__init__(message, error_code=error_code, **kwargs)
 
 
 class DataError(OSBaseError):
     """数据相关错误"""
+
     def __init__(self, message: str, error_code: int = ErrorCode.DATA_NOT_FOUND, **kwargs):
         super().__init__(message, error_code=error_code, **kwargs)
 
 
 class OrchestrationError(OSBaseError):
     """编排相关错误"""
+
     def __init__(self, message: str, error_code: int = ErrorCode.ORCHESTRATION_ERROR, **kwargs):
         super().__init__(message, error_code=error_code, **kwargs)
 
@@ -270,6 +283,7 @@ class OrchestrationError(OSBaseError):
 # ============================================================
 # 错误包装工具
 # ============================================================
+
 
 def wrap_exception(
     exc: Exception,
@@ -321,12 +335,14 @@ def wrap_exception(
 # 错误结果构建工具
 # ============================================================
 
+
 @dataclass
 class ErrorInfo:
     """标准化错误信息
 
     用于 ModuleResult / NodeExecutionResult 等结果结构中
     """
+
     error_code: int
     message: str
     description: str = ""

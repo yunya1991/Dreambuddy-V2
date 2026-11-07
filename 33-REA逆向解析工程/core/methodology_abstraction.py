@@ -7,6 +7,7 @@ Evidence-First 硬约束：每条方法论模板必须带 Evidence（NFR-1）。
 方法论的 Evidence 标注为 derivation 级（基于多项目观察推导）。
 FAIL-OPEN：空输入返回 level=unknown Evidence（NFR-7）。
 """
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -15,16 +16,17 @@ from typing import Any
 
 from .evidence import Evidence, EvidenceLevel
 
-
 # ---------- 数据结构 ----------
+
 
 @dataclass
 class MethodologyTemplate:
     """方法论模板。"""
+
     methodology_id: str
-    problem_pattern: str              # 问题描述（如 "MVC 架构组织"）
-    solution_pattern: str            # 解法描述
-    applicability: list[str]         # 适用条件
+    problem_pattern: str  # 问题描述（如 "MVC 架构组织"）
+    solution_pattern: str  # 解法描述
+    applicability: list[str]  # 适用条件
     known_gaps: list[str]
     evidence: Evidence = None
     source_projects: list[str] = field(default_factory=list)
@@ -42,6 +44,7 @@ class MethodologyTemplate:
 
 
 # ---------- 抽象器 ----------
+
 
 class MethodologyAbstractor:
     """方法论抽象器。
@@ -76,11 +79,13 @@ class MethodologyAbstractor:
                 ev = p.get("evidence")
                 if ev is None:
                     continue  # NFR-1：无 Evidence 的模式不入聚类
-                clusters[pattern_name].append({
-                    "target": target,
-                    "matched_dirs": p.get("matched_dirs", []),
-                    "evidence": ev,
-                })
+                clusters[pattern_name].append(
+                    {
+                        "target": target,
+                        "matched_dirs": p.get("matched_dirs", []),
+                        "evidence": ev,
+                    }
+                )
             for d in inv.get("decisions", []):
                 # 从决策中提取模式信号（如 "采用 MVC 架构模式" → MVC）
                 decision_text = str(d.get("decision", ""))
@@ -88,12 +93,14 @@ class MethodologyAbstractor:
                 if pattern_name and pattern_name in clusters:
                     ev = d.get("evidence")
                     if ev is not None:
-                        clusters[pattern_name].append({
-                            "target": target,
-                            "matched_dirs": [],
-                            "evidence": ev,
-                            "from_decision": True,
-                        })
+                        clusters[pattern_name].append(
+                            {
+                                "target": target,
+                                "matched_dirs": [],
+                                "evidence": ev,
+                                "from_decision": True,
+                            }
+                        )
 
         # 2. 模板生成：每组 ≥2 个项目 → 蒸馏
         methodologies: list[MethodologyTemplate] = []
@@ -123,7 +130,7 @@ class MethodologyAbstractor:
                 ],
                 observations=[
                     {"project": p, "evidence_id": e.evidence_id, "result": e.result}
-                    for p, e in zip(source_projects, ref_evidences)
+                    for p, e in zip(source_projects, ref_evidences)  # noqa: B905
                 ],
             )
 
@@ -151,19 +158,21 @@ class MethodologyAbstractor:
             all_evidence.append(ev)
 
         if not methodologies:
-            all_evidence.append(Evidence(
-                result="无足够共现项目，无法蒸馏方法论模板",
-                level=EvidenceLevel.UNKNOWN,
-                provenance={
-                    "investigation_count": len(investigations),
-                    "analysis": "methodology_abstraction",
-                },
-                confidence=0.3,
-                known_gaps=[
-                    "每个模式至少需要 2 个项目采用才能聚类",
-                    "可能输入的项目采用的模式过于分散，无可聚类的共性",
-                ],
-            ))
+            all_evidence.append(
+                Evidence(
+                    result="无足够共现项目，无法蒸馏方法论模板",
+                    level=EvidenceLevel.UNKNOWN,
+                    provenance={
+                        "investigation_count": len(investigations),
+                        "analysis": "methodology_abstraction",
+                    },
+                    confidence=0.3,
+                    known_gaps=[
+                        "每个模式至少需要 2 个项目采用才能聚类",
+                        "可能输入的项目采用的模式过于分散，无可聚类的共性",
+                    ],
+                )
+            )
 
         return {
             "methodologies": [m.to_dict() for m in methodologies],
@@ -176,7 +185,15 @@ class MethodologyAbstractor:
     def _extract_pattern_name(decision_text: str) -> str | None:
         """从决策文本中提取模式名（如 'MVC 架构模式' → 'MVC'）。"""
         # 匹配常见模式关键字
-        candidates = ["MVC", "Layered", "Layered-API", "EventDriven", "Pipeline", "Plugin", "Microkernel"]
+        candidates = [
+            "MVC",
+            "Layered",
+            "Layered-API",
+            "EventDriven",
+            "Pipeline",
+            "Plugin",
+            "Microkernel",
+        ]
         for c in candidates:
             if c.lower() in decision_text.lower():
                 return c
@@ -197,6 +214,7 @@ class MethodologyAbstractor:
 
 
 # ---------- 模块级入口 ----------
+
 
 def abstract_methodology(investigations: list[dict[str, Any]]) -> dict[str, Any]:
     """方法论抽象的模块级入口。

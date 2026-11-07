@@ -1,10 +1,11 @@
 """RED 测试：集成测试 — 端到端分析 dreambuddy 自身模块。"""
+
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.python_analyzer import PythonAnalyzer
+from core.python_analyzer import PythonAnalyzer  # noqa: I001
 from core.dependency_graph import DependencyGraph
 from core.call_chain_tracer import CallChainTracer
 from core.git_history import trace_git_history
@@ -83,11 +84,13 @@ def test_e2e_dsh_analyze_full_pipeline():
 
 def test_e2e_dsh_trace_on_real_function():
     """RED: S33_rea_trace 应能追踪 33-REA 中的真实函数。"""
-    result = S33_rea_trace({
-        "target": REA_CORE,
-        "feature": "依赖图构建",
-        "entry": "build",
-    })
+    result = S33_rea_trace(
+        {
+            "target": REA_CORE,
+            "feature": "依赖图构建",
+            "entry": "build",
+        }
+    )
     assert result["ok"] is True
     r = result["result"]
     assert "call_chain" in r or "evidence" in r
@@ -96,9 +99,11 @@ def test_e2e_dsh_trace_on_real_function():
 def test_e2e_dsh_compare_self_vs_self():
     """RED: S33_rea_compare 应能对比 33-REA/core vs 33-REA/tests。"""
     tests_dir = str(Path(__file__).parent.parent / "tests")
-    result = S33_rea_compare({
-        "target_a": REA_CORE,
-        "target_b": tests_dir,
-        "feature": "架构对比",
-    })
+    result = S33_rea_compare(
+        {
+            "target_a": REA_CORE,
+            "target_b": tests_dir,
+            "feature": "架构对比",
+        }
+    )
     assert result["ok"] is True

@@ -15,17 +15,15 @@ F4 链上数据分析节点
 
 from __future__ import annotations
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
-from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
 from dreamos.capabilities.trading.stats_utils import (
-    normalize_tanh,
-    normalize_signed,
     aggregate_signals,
-    z_score,
-    percentile_rank,
+    normalize_signed,
+    normalize_tanh,
 )
+from dreamos.registry.base import BaseNode
+from dreamos.shared.state import NodeResult, State
 
 
 class F4OnchainDataNode(BaseNode):
@@ -53,9 +51,13 @@ class F4OnchainDataNode(BaseNode):
         # 统计标准化：线性归一化到 [-1, 1]，区间 [40, 60]
         whale_norm = normalize_signed(whale_accumulation, 40, 60)
         if whale_norm > 0.5:
-            scores.append(("LONG", 0.25, f"鲸鱼积累({whale_accumulation:.0f}, z={whale_norm:.2f})，大户吸筹"))
+            scores.append(
+                ("LONG", 0.25, f"鲸鱼积累({whale_accumulation:.0f}, z={whale_norm:.2f})，大户吸筹")
+            )
         elif whale_norm < -0.5:
-            scores.append(("SHORT", 0.20, f"鲸鱼抛售({whale_accumulation:.0f}, z={whale_norm:.2f})，大户出货"))
+            scores.append(
+                ("SHORT", 0.20, f"鲸鱼抛售({whale_accumulation:.0f}, z={whale_norm:.2f})，大户出货")
+            )
         if whale_balance_change > 5:
             scores.append(("LONG", 0.15, f"鲸鱼余额增加({whale_balance_change:.1f}%)"))
 
@@ -65,9 +67,13 @@ class F4OnchainDataNode(BaseNode):
         # 统计标准化：线性归一化到 [-1, 1]，区间 [40, 70]（注意：高分=抛压）
         miner_norm = normalize_signed(miner_position, 40, 70)
         if miner_norm < -0.5:
-            scores.append(("LONG", 0.20, f"矿工囤币({miner_position:.0f}, z={miner_norm:.2f})，供给减少"))
+            scores.append(
+                ("LONG", 0.20, f"矿工囤币({miner_position:.0f}, z={miner_norm:.2f})，供给减少")
+            )
         elif miner_norm > 0.5:
-            scores.append(("SHORT", 0.20, f"矿工出货({miner_position:.0f}, z={miner_norm:.2f})，抛压增加"))
+            scores.append(
+                ("SHORT", 0.20, f"矿工出货({miner_position:.0f}, z={miner_norm:.2f})，抛压增加")
+            )
 
         # ── 3. Gas 费用分析 ──────────────────────────────
         gas_price = mkt.get("gas_price_gwei", 30)
@@ -75,9 +81,13 @@ class F4OnchainDataNode(BaseNode):
         # 统计标准化：线性归一化到 [-1, 1]，区间 [10, 80]
         gas_norm = normalize_signed(gas_price, 10, 80)
         if gas_norm > 0.5:
-            scores.append(("LONG", 0.15, f"Gas高涨({gas_price:.0f}Gwei, z={gas_norm:.2f})，链上活动活跃"))
+            scores.append(
+                ("LONG", 0.15, f"Gas高涨({gas_price:.0f}Gwei, z={gas_norm:.2f})，链上活动活跃")
+            )
         elif gas_norm < -0.5:
-            scores.append(("HOLD", 0.10, f"Gas低迷({gas_price:.0f}Gwei, z={gas_norm:.2f})，链上活动冷清"))
+            scores.append(
+                ("HOLD", 0.10, f"Gas低迷({gas_price:.0f}Gwei, z={gas_norm:.2f})，链上活动冷清")
+            )
 
         # ── 4. 链上交易量 ────────────────────────────────
         chain_volume = mkt.get("chain_volume", 0)
@@ -92,9 +102,21 @@ class F4OnchainDataNode(BaseNode):
         # 统计标准化：tanh 归一化，scale=5（单位百分比）
         ebc_norm = normalize_tanh(exchange_balance_change, scale=5)
         if ebc_norm < -0.5:
-            scores.append(("LONG", 0.20, f"交易所余额减少({exchange_balance_change:.1f}%, z={ebc_norm:.2f})，场外积累"))
+            scores.append(
+                (
+                    "LONG",
+                    0.20,
+                    f"交易所余额减少({exchange_balance_change:.1f}%, z={ebc_norm:.2f})，场外积累",
+                )
+            )
         elif ebc_norm > 0.5:
-            scores.append(("SHORT", 0.20, f"交易所余额增加({exchange_balance_change:.1f}%, z={ebc_norm:.2f})，抛压增加"))
+            scores.append(
+                (
+                    "SHORT",
+                    0.20,
+                    f"交易所余额增加({exchange_balance_change:.1f}%, z={ebc_norm:.2f})，抛压增加",
+                )
+            )
 
         # ── 6. 巨鲸转账 ──────────────────────────────────
         whale_transfers = mkt.get("whale_transfers", 0)
@@ -145,7 +167,11 @@ class F4OnchainDataNode(BaseNode):
                 "change": chain_volume_change,
             },
             "exchange_balance_change": exchange_balance_change,
-            "scores": {"long": round(long_score, 3), "short": round(short_score, 3), "hold": round(hold_score, 3)},
+            "scores": {
+                "long": round(long_score, 3),
+                "short": round(short_score, 3),
+                "hold": round(hold_score, 3),
+            },
             "stats": {
                 "z_score": round(stats.z_score, 4),
                 "percentile": round(stats.percentile, 2),

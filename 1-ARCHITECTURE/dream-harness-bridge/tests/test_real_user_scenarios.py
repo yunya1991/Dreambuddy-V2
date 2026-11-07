@@ -22,13 +22,13 @@
   - G层投影完整性
   - 回复结构化质量
 """
+
 import json
+import os
 import subprocess
 import sys
-import os
 import time
 from datetime import datetime
-from pathlib import Path
 
 SERVER = os.path.join(os.path.dirname(__file__), "..", "packages", "python-server", "server.py")
 PYTHON = sys.executable
@@ -48,8 +48,10 @@ QUALITY_SCORES = []
 
 def call(method, params):
     payload = {
-        "schema_version": "1.0.0", "message_type": "request",
-        "method": method, "params": params,
+        "schema_version": "1.0.0",
+        "message_type": "request",
+        "method": method,
+        "params": params,
         "id": f"qa-{method}-{time.time()}",
         "timestamp": datetime.now().isoformat(),
     }
@@ -57,7 +59,9 @@ def call(method, params):
     proc = subprocess.run(
         [PYTHON, SERVER],
         input=json.dumps(payload) + "\n",
-        capture_output=True, text=True, timeout=60,
+        capture_output=True,
+        text=True,
+        timeout=60,
     )
     latency = (time.time() - t0) * 1000
     for line in proc.stdout.strip().split("\n"):
@@ -105,17 +109,20 @@ def run_scenario(qid, question, expected_intent, expected_chain):
 
     # ── 2. A层: 图编排 ──
     print(f"\n  {DIM}▶ A层 图编排...{RESET}")
-    a, t = call("graph_planner", {
-        "intent_type": intent.upper() if intent != "general" else "GENERAL",
-        "recommended_chain": chain or expected_chain,
-        "confidence": 0.7,
-    })
+    a, t = call(
+        "graph_planner",
+        {
+            "intent_type": intent.upper() if intent != "general" else "GENERAL",
+            "recommended_chain": chain or expected_chain,
+            "confidence": 0.7,
+        },
+    )
     nodes = a.get("result", {}).get("selected_nodes", [])
     budget = a.get("result", {}).get("budget", {})
     print(f"    nodes={nodes}, budget={budget} ({t:.0f}ms)")
 
     # 评分: 链路选择
-    chain_ok = (chain == expected_chain or expected_chain in str(nodes))
+    chain_ok = chain == expected_chain or expected_chain in str(nodes)
     score("链路选择", 5 if chain_ok else 3)
 
     # ── 3. C层: 执行 C 链 ──
@@ -138,7 +145,9 @@ def run_scenario(qid, question, expected_intent, expected_chain):
     for node_id in ["C1", "C2", "C3"]:
         d = details.get(node_id, {})
         if d:
-            print(f"      {node_id}: dir={d.get('direction','?')}, conf={d.get('confidence',0):.3f}, status={d.get('status','?')}")
+            print(
+                f"      {node_id}: dir={d.get('direction','?')}, conf={d.get('confidence',0):.3f}, status={d.get('status','?')}"
+            )
 
     # 评分: 分析深度
     has_details = len(details) >= 2
@@ -152,17 +161,20 @@ def run_scenario(qid, question, expected_intent, expected_chain):
 
     # ── 4. Reflector 决策 ──
     print(f"\n  {DIM}▶ Reflector 决策...{RESET}")
-    r, t = call("reflection", {
-        "mode": "decide",
-        "current_node_id": "C3",
-        "confidence": confidence,
-        "direction": direction,
-        "status": "SUCCESS",
-        "executed_count": len(details),
-        "max_nodes": 5,
-        "budget_remaining_ratio": 0.7,
-        "prev_results": [],
-    })
+    r, t = call(
+        "reflection",
+        {
+            "mode": "decide",
+            "current_node_id": "C3",
+            "confidence": confidence,
+            "direction": direction,
+            "status": "SUCCESS",
+            "executed_count": len(details),
+            "max_nodes": 5,
+            "budget_remaining_ratio": 0.7,
+            "prev_results": [],
+        },
+    )
     decision = r.get("result", {}).get("echo", {}).get("params", {}).get("decision", "unknown")
     reason = r.get("result", {}).get("echo", {}).get("params", {}).get("reason", "")
     print(f"    decision={decision}, reason={reason[:60]} ({t:.0f}ms)")
@@ -176,11 +188,14 @@ def run_scenario(qid, question, expected_intent, expected_chain):
     session_id = f"qa-{qid}-{int(time.time())}"
     events_written = 0
     for et in ["intent_gate", "graph_node", "node_result"]:
-        g, _ = call("session_consumer", {
-            "session_id": session_id,
-            "event_type": et,
-            "event_data": {"question": question[:50], "symbol": symbol},
-        })
+        g, _ = call(
+            "session_consumer",
+            {
+                "session_id": session_id,
+                "event_type": et,
+                "event_data": {"question": question[:50], "symbol": symbol},
+            },
+        )
         if g.get("ok") and g.get("result", {}).get("written"):
             events_written += 1
     print(f"    events_written={events_written}/3")
@@ -203,8 +218,19 @@ def run_scenario(qid, question, expected_intent, expected_chain):
     print(f"\n  {DIM}▶ 综合回复...{RESET}")
 
     # 构建结构化回复
-    reply = generate_reply(question, symbol, intent, risk, direction, confidence,
-                           details, decision, reason, artifacts, trades)
+    reply = generate_reply(
+        question,
+        symbol,
+        intent,
+        risk,
+        direction,
+        confidence,
+        details,
+        decision,
+        reason,
+        artifacts,
+        trades,
+    )
 
     print(f"\n  {BOLD}回复:{RESET}")
     for line in reply.split("\n"):
@@ -229,8 +255,19 @@ def run_scenario(qid, question, expected_intent, expected_chain):
     }
 
 
-def generate_reply(question, symbol, intent, risk, direction, confidence,
-                   details, decision, reason, artifacts, trades):
+def generate_reply(
+    question,
+    symbol,
+    intent,
+    risk,
+    direction,
+    confidence,
+    details,
+    decision,
+    reason,
+    artifacts,
+    trades,
+):
     """生成结构化回复（模拟前端展示）"""
     lines = []
 
@@ -239,8 +276,12 @@ def generate_reply(question, symbol, intent, risk, direction, confidence,
     lines.append(f"{'━' * 40}")
 
     # 意图
-    intent_cn = {"market_analysis": "市场分析", "trading": "交易建议",
-                 "risk_assessment": "风险评估", "general": "综合查询"}.get(intent, "综合查询")
+    intent_cn = {
+        "market_analysis": "市场分析",
+        "trading": "交易建议",
+        "risk_assessment": "风险评估",
+        "general": "综合查询",
+    }.get(intent, "综合查询")
     lines.append(f"📋 意图: {intent_cn} | 风险: {risk}")
 
     # 方向
@@ -258,8 +299,13 @@ def generate_reply(question, symbol, intent, risk, direction, confidence,
             lines.append(f"  {n_cn}: {d_cn} (置信度 {d.get('confidence', 0):.1%})")
 
     # 决策
-    dec_cn = {"CONTINUE": "继续执行", "REDO": "需要重做", "JUMP_TO": "跳转收尾",
-              "INSERT_BEFORE": "插入补充", "EARLY_TERMINATE": "提前终止"}.get(decision, decision)
+    dec_cn = {
+        "CONTINUE": "继续执行",
+        "REDO": "需要重做",
+        "JUMP_TO": "跳转收尾",
+        "INSERT_BEFORE": "插入补充",
+        "EARLY_TERMINATE": "提前终止",
+    }.get(decision, decision)
     lines.append(f"\n{'─' * 40}")
     lines.append(f"🤖 反射决策: {dec_cn}")
     if reason:
@@ -321,7 +367,7 @@ def main():
 
     # 按维度统计
     dims = {}
-    for dim, val, mx in QUALITY_SCORES:
+    for dim, val, mx in QUALITY_SCORES:  # noqa: B007
         if dim not in dims:
             dims[dim] = []
         dims[dim].append(val)
@@ -346,7 +392,9 @@ def main():
     print(f"\n  {'场景':<40} {'方向':>6} {'置信度':>8} {'决策':>12}")
     print(f"  {'─' * 70}")
     for r in results:
-        print(f"  Q{r['qid']}: {r['question'][:30]:<32} {r['direction']:>6} {r['confidence']:>7.1%} {r['decision']:>12}")
+        print(
+            f"  Q{r['qid']}: {r['question'][:30]:<32} {r['direction']:>6} {r['confidence']:>7.1%} {r['decision']:>12}"
+        )
 
     # 判定
     print(f"\n{'═' * 70}")

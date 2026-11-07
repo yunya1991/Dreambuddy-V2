@@ -47,68 +47,111 @@ SACG 四层架构:
 __version__ = "2.4.0"
 
 # ── shared 层: 核心抽象 ─────────────────────────────
-from .shared.state import State, NodeResult, NodeStatus, new_state
-from .shared.interfaces import Node, Graph, Edge, Registry, Adapter
-from .shared.errors import ErrorCode, OSError
-from .shared.llm_client import (
-    LLMClient, LLMMessage, LLMResponse,
-    get_default_client, set_default_client, make_messages,
-)
-from .shared.utils import (
-    Timer, timed, gen_cycle_id, gen_session_id,
-    safe_json, safe_get, retry, chunk, dedupe,
-)
+# ── 能力域层 ────────────────────────────────────────
+# ── 横切关注点（占位，P6 实现） ─────────────────────
+from . import apps, budget, capabilities, evolution
+from .adapters.api_adapter import APIAdapter, APINode
+
+# ── adapters 层: 适配器框架 ─────────────────────────
+from .adapters.base import AdapterRegistry, BaseAdapter, get_default_adapter_registry
+from .adapters.function_adapter import FunctionAdapter, FunctionNode
+from .adapters.skill_adapter import SkillAdapter, SkillNode, parse_skill_metadata
+
+# ── core 四层（占位，P1-P4 实现） ───────────────────
+from .core import arrange, compute, graph_store, sense
 
 # ── registry 层: 节点管理 ───────────────────────────
 from .registry.base import BaseNode
+from .registry.decorators import node_metadata, register_node
 from .registry.node_registry import (
-    NodeRegistry, get_default_registry, set_default_registry,
+    NodeRegistry,
+    get_default_registry,
+    set_default_registry,
 )
-from .registry.decorators import register_node, node_metadata
-
-# ── adapters 层: 适配器框架 ─────────────────────────
-from .adapters.base import BaseAdapter, AdapterRegistry, get_default_adapter_registry
-from .adapters.function_adapter import FunctionAdapter, FunctionNode
-from .adapters.skill_adapter import SkillAdapter, SkillNode, parse_skill_metadata
-from .adapters.api_adapter import APIAdapter, APINode
-
-# ── core 四层（占位，P1-P4 实现） ───────────────────
-from .core import sense, arrange, compute, graph_store
-
-# ── 能力域层 ────────────────────────────────────────
-from . import capabilities
-
-# ── 横切关注点（占位，P6 实现） ─────────────────────
-from . import evolution, budget
-from . import apps
+from .shared.errors import ErrorCode, OSError
+from .shared.interfaces import Adapter, Edge, Graph, Node, Registry
+from .shared.llm_client import (
+    LLMClient,
+    LLMMessage,
+    LLMResponse,
+    get_default_client,
+    make_messages,
+    set_default_client,
+)
+from .shared.state import NodeResult, NodeStatus, State, new_state
+from .shared.utils import (
+    Timer,
+    chunk,
+    dedupe,
+    gen_cycle_id,
+    gen_session_id,
+    retry,
+    safe_get,
+    safe_json,
+    timed,
+)
 
 __all__ = [
     # 版本
     "__version__",
     # shared - state
-    "State", "NodeResult", "NodeStatus", "new_state",
+    "State",
+    "NodeResult",
+    "NodeStatus",
+    "new_state",
     # shared - interfaces
-    "Node", "Graph", "Edge", "Registry", "Adapter",
+    "Node",
+    "Graph",
+    "Edge",
+    "Registry",
+    "Adapter",
     # shared - errors
-    "ErrorCode", "OSError",
+    "ErrorCode",
+    "OSError",
     # shared - llm
-    "LLMClient", "LLMMessage", "LLMResponse",
-    "get_default_client", "set_default_client", "make_messages",
+    "LLMClient",
+    "LLMMessage",
+    "LLMResponse",
+    "get_default_client",
+    "set_default_client",
+    "make_messages",
     # shared - utils
-    "Timer", "timed", "gen_cycle_id", "gen_session_id",
-    "safe_json", "safe_get", "retry", "chunk", "dedupe",
+    "Timer",
+    "timed",
+    "gen_cycle_id",
+    "gen_session_id",
+    "safe_json",
+    "safe_get",
+    "retry",
+    "chunk",
+    "dedupe",
     # registry
-    "BaseNode", "NodeRegistry", "register_node", "node_metadata",
-    "get_default_registry", "set_default_registry",
+    "BaseNode",
+    "NodeRegistry",
+    "register_node",
+    "node_metadata",
+    "get_default_registry",
+    "set_default_registry",
     # adapters
-    "BaseAdapter", "AdapterRegistry", "get_default_adapter_registry",
-    "FunctionAdapter", "FunctionNode",
-    "SkillAdapter", "SkillNode", "parse_skill_metadata",
-    "APIAdapter", "APINode",
+    "BaseAdapter",
+    "AdapterRegistry",
+    "get_default_adapter_registry",
+    "FunctionAdapter",
+    "FunctionNode",
+    "SkillAdapter",
+    "SkillNode",
+    "parse_skill_metadata",
+    "APIAdapter",
+    "APINode",
     # core layers
-    "sense", "arrange", "compute", "graph_store",
+    "sense",
+    "arrange",
+    "compute",
+    "graph_store",
     # capability layers
     "capabilities",
     # cross-cutting
-    "evolution", "budget", "apps",
+    "evolution",
+    "budget",
+    "apps",
 ]

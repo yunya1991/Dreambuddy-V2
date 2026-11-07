@@ -10,6 +10,7 @@
   known_gaps          → layer_tags=C (reflection)
   observations        → layer_tags=LLM (learned)
 """
+
 import os
 import sys
 from typing import List, Optional
@@ -22,8 +23,8 @@ for _p in [_THIS_DIR, _34_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_data_provider import TrainingCase
-from interfaces.rea_parser import REAParseResult
+from interfaces.rea_parser import REAParseResult  # noqa: E402
+from interfaces.training_data_provider import TrainingCase  # noqa: E402
 
 
 def rea_to_training_cases(
@@ -50,64 +51,82 @@ def rea_to_training_cases(
 
     # 1. algorithm_patterns → DSH + C 层训练数据
     if rea_result.algorithm_patterns:
-        cases.append(TrainingCase(
-            intent=wrapup_case.get("intent", ""),
-            actions=wrapup_case.get("actions", []),
-            outcome_text=wrapup_case.get("outcome_text", ""),
-            learned=rea_result.algorithm_patterns,
-            layer_tags=["DSH", "C"],
-            quality=_quality_from_evidence_level(rea_result.evidence_level),
-            confidence=rea_result.confidence,
-            source="rea_algorithm",
-            metadata={"rea_field": "algorithm_patterns", "patterns": rea_result.algorithm_patterns},
-        ))
+        cases.append(
+            TrainingCase(
+                intent=wrapup_case.get("intent", ""),
+                actions=wrapup_case.get("actions", []),
+                outcome_text=wrapup_case.get("outcome_text", ""),
+                learned=rea_result.algorithm_patterns,
+                layer_tags=["DSH", "C"],
+                quality=_quality_from_evidence_level(rea_result.evidence_level),
+                confidence=rea_result.confidence,
+                source="rea_algorithm",
+                metadata={
+                    "rea_field": "algorithm_patterns",
+                    "patterns": rea_result.algorithm_patterns,
+                },
+            )
+        )
 
     # 2. call_chain → DSH 层训练数据
     if rea_result.call_chain:
-        cases.append(TrainingCase(
-            intent=wrapup_case.get("intent", ""),
-            actions=rea_result.call_chain,
-            outcome_text=wrapup_case.get("outcome_text", ""),
-            learned=wrapup_case.get("learned", []),
-            layer_tags=["DSH"],
-            quality=_quality_from_evidence_level(rea_result.evidence_level),
-            confidence=rea_result.confidence,
-            source="rea_call_chain",
-            metadata={"rea_field": "call_chain", "chain_length": len(rea_result.call_chain)},
-        ))
+        cases.append(
+            TrainingCase(
+                intent=wrapup_case.get("intent", ""),
+                actions=rea_result.call_chain,
+                outcome_text=wrapup_case.get("outcome_text", ""),
+                learned=wrapup_case.get("learned", []),
+                layer_tags=["DSH"],
+                quality=_quality_from_evidence_level(rea_result.evidence_level),
+                confidence=rea_result.confidence,
+                source="rea_call_chain",
+                metadata={"rea_field": "call_chain", "chain_length": len(rea_result.call_chain)},
+            )
+        )
 
     # 3. dependency_graph → G 层训练数据
     if rea_result.dependency_graph:
-        graph_learned = [
-            f"{node} → {','.join(deps)}"
-            for node, deps in rea_result.dependency_graph.items()
-            if isinstance(deps, (list, dict))
-        ] if isinstance(rea_result.dependency_graph, dict) else []
-        cases.append(TrainingCase(
-            intent=wrapup_case.get("intent", ""),
-            actions=wrapup_case.get("actions", []),
-            outcome_text=wrapup_case.get("outcome_text", ""),
-            learned=graph_learned or ["dependency_graph_available"],
-            layer_tags=["G"],
-            quality=_quality_from_evidence_level(rea_result.evidence_level),
-            confidence=rea_result.confidence,
-            source="rea_dependency_graph",
-            metadata={"rea_field": "dependency_graph", "node_count": len(rea_result.dependency_graph)},
-        ))
+        graph_learned = (
+            [
+                f"{node} → {','.join(deps)}"
+                for node, deps in rea_result.dependency_graph.items()
+                if isinstance(deps, (list, dict))
+            ]
+            if isinstance(rea_result.dependency_graph, dict)
+            else []
+        )
+        cases.append(
+            TrainingCase(
+                intent=wrapup_case.get("intent", ""),
+                actions=wrapup_case.get("actions", []),
+                outcome_text=wrapup_case.get("outcome_text", ""),
+                learned=graph_learned or ["dependency_graph_available"],
+                layer_tags=["G"],
+                quality=_quality_from_evidence_level(rea_result.evidence_level),
+                confidence=rea_result.confidence,
+                source="rea_dependency_graph",
+                metadata={
+                    "rea_field": "dependency_graph",
+                    "node_count": len(rea_result.dependency_graph),
+                },
+            )
+        )
 
     # 4. known_gaps → C 层训练数据（反思材料）
     if rea_result.known_gaps:
-        cases.append(TrainingCase(
-            intent=wrapup_case.get("intent", ""),
-            actions=wrapup_case.get("actions", []),
-            outcome_text=wrapup_case.get("outcome_text", ""),
-            learned=rea_result.known_gaps,
-            layer_tags=["C"],
-            quality="C",  # known_gaps 是待解决项，质量标记为 C
-            confidence=rea_result.confidence,
-            source="rea_known_gaps",
-            metadata={"rea_field": "known_gaps", "gap_count": len(rea_result.known_gaps)},
-        ))
+        cases.append(
+            TrainingCase(
+                intent=wrapup_case.get("intent", ""),
+                actions=wrapup_case.get("actions", []),
+                outcome_text=wrapup_case.get("outcome_text", ""),
+                learned=rea_result.known_gaps,
+                layer_tags=["C"],
+                quality="C",  # known_gaps 是待解决项，质量标记为 C
+                confidence=rea_result.confidence,
+                source="rea_known_gaps",
+                metadata={"rea_field": "known_gaps", "gap_count": len(rea_result.known_gaps)},
+            )
+        )
 
     # 5. observations → LLM 层训练数据（经验提取）
     if rea_result.observations:
@@ -115,17 +134,19 @@ def rea_to_training_cases(
             obs.get("result", str(obs)) if isinstance(obs, dict) else str(obs)
             for obs in rea_result.observations
         ]
-        cases.append(TrainingCase(
-            intent=wrapup_case.get("intent", ""),
-            actions=wrapup_case.get("actions", []),
-            outcome_text=wrapup_case.get("outcome_text", ""),
-            learned=obs_learned,
-            layer_tags=["LLM"],
-            quality=_quality_from_evidence_level(rea_result.evidence_level),
-            confidence=rea_result.confidence,
-            source="rea_observations",
-            metadata={"rea_field": "observations", "obs_count": len(rea_result.observations)},
-        ))
+        cases.append(
+            TrainingCase(
+                intent=wrapup_case.get("intent", ""),
+                actions=wrapup_case.get("actions", []),
+                outcome_text=wrapup_case.get("outcome_text", ""),
+                learned=obs_learned,
+                layer_tags=["LLM"],
+                quality=_quality_from_evidence_level(rea_result.evidence_level),
+                confidence=rea_result.confidence,
+                source="rea_observations",
+                metadata={"rea_field": "observations", "obs_count": len(rea_result.observations)},
+            )
+        )
 
     # 如果 REA 有结果但没有生成任何 case（所有字段都空），降级为文本四元组
     if not cases:

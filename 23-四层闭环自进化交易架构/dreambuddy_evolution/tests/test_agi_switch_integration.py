@@ -2,8 +2,9 @@
 AGI 开关接入测试：验证 5 个开关的开启/关闭行为.
 HC-AGI-07: 所有 AGI 模块必须受开关控制.
 """
-import pytest
-from unittest.mock import MagicMock, patch
+
+from unittest.mock import MagicMock
+
 import numpy as np
 
 
@@ -14,8 +15,9 @@ class TestAGISwitchIntegration:
 
     def test_neural_sde_switch_off_degrades_to_garch(self):
         """关闭 enable_neural_sde → neural_sde_forecast 跳过 torchsde/EM，降级到 GARCH"""
-        from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
         from dreambuddy_evolution.agi_config import set_switch
+        from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         set_switch("enable_neural_sde", False)
         try:
             engine = DeepReasoningEngine()
@@ -30,8 +32,9 @@ class TestAGISwitchIntegration:
 
     def test_neural_sde_switch_on_proceeds_normally(self):
         """开启 enable_neural_sde → 方法正常执行不报错"""
-        from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
         from dreambuddy_evolution.agi_config import set_switch
+        from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         set_switch("enable_neural_sde", True)
         try:
             engine = DeepReasoningEngine()
@@ -46,8 +49,9 @@ class TestAGISwitchIntegration:
 
     def test_timesfm_switch_off_degrades_to_statistical(self):
         """关闭 enable_timesfm_forecast → timesfm_predict 降级为统计预测"""
-        from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
         from dreambuddy_evolution.agi_config import set_switch
+        from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         set_switch("enable_timesfm_forecast", False)
         try:
             engine = DeepReasoningEngine()
@@ -60,8 +64,9 @@ class TestAGISwitchIntegration:
 
     def test_timesfm_switch_on_proceeds_normally(self):
         """开启 enable_timesfm_forecast → 方法正常执行不报错"""
-        from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
         from dreambuddy_evolution.agi_config import set_switch
+        from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         set_switch("enable_timesfm_forecast", True)
         try:
             engine = DeepReasoningEngine()
@@ -76,8 +81,9 @@ class TestAGISwitchIntegration:
 
     def test_causal_engine_switch_off_returns_none(self):
         """关闭 enable_causal_engine → _get_causal_engine() 返回 None"""
-        from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
         from dreambuddy_evolution.agi_config import set_switch
+        from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
+
         set_switch("enable_causal_engine", False)
         try:
             pipeline = EvolutionPipeline()
@@ -87,8 +93,9 @@ class TestAGISwitchIntegration:
 
     def test_causal_engine_switch_on_attempts_init(self):
         """开启 enable_causal_engine → _get_causal_engine() 尝试初始化（非 None 或 False）"""
-        from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
         from dreambuddy_evolution.agi_config import set_switch
+        from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
+
         set_switch("enable_causal_engine", True)
         try:
             pipeline = EvolutionPipeline()
@@ -103,8 +110,9 @@ class TestAGISwitchIntegration:
 
     def test_contradiction_feedback_switch_off_returns_none(self):
         """关闭 enable_contradiction_feedback → _get_contradiction_feedback() 返回 None"""
-        from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
         from dreambuddy_evolution.agi_config import set_switch
+        from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
+
         set_switch("enable_contradiction_feedback", False)
         try:
             pipeline = EvolutionPipeline()
@@ -114,8 +122,9 @@ class TestAGISwitchIntegration:
 
     def test_contradiction_feedback_in_get_feedback(self):
         """开启 enable_contradiction_feedback + 有 L3 样本 → get_feedback() 含 contradiction_feedback 字段"""
-        from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
         from dreambuddy_evolution.agi_config import set_switch
+        from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
+
         set_switch("enable_contradiction_feedback", True)
         try:
             pipeline = EvolutionPipeline()
@@ -132,6 +141,7 @@ class TestAGISwitchIntegration:
     def test_contradiction_feedback_no_samples_returns_none(self):
         """无 L3 样本 → contradiction_feedback 为 None"""
         from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
+
         pipeline = EvolutionPipeline()
         # 清空持久化样本，确保测试隔离（不依赖磁盘历史样本）
         pipeline.shadow_rl._samples.clear()
@@ -143,8 +153,9 @@ class TestAGISwitchIntegration:
 
     def test_shadow_rl_phase3_switch_off_skips_train_policy(self):
         """关闭 enable_shadow_rl_phase3 → record() 不调用 train_policy"""
-        from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
         from dreambuddy_evolution.agi_config import set_switch
+        from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
+
         set_switch("enable_shadow_rl_phase3", False)
         try:
             tracker = ShadowRLTracker(max_samples=10000)
@@ -162,8 +173,9 @@ class TestAGISwitchIntegration:
 
     def test_shadow_rl_phase3_switch_on_calls_train_policy(self):
         """开启 enable_shadow_rl_phase3 + 样本≥MIN_SAMPLES → train_policy 被调用"""
-        from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
         from dreambuddy_evolution.agi_config import set_switch
+        from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
+
         set_switch("enable_shadow_rl_phase3", True)
         try:
             tracker = ShadowRLTracker(max_samples=10000)
@@ -180,8 +192,9 @@ class TestAGISwitchIntegration:
 
     def test_shadow_rl_phase3_train_policy_crash_fail_open(self):
         """train_policy 崩溃 → FAIL-OPEN，不阻塞 record"""
-        from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
         from dreambuddy_evolution.agi_config import set_switch
+        from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
+
         set_switch("enable_shadow_rl_phase3", True)
         try:
             tracker = ShadowRLTracker(max_samples=10000)

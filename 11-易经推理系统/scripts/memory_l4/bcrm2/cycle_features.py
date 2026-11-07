@@ -12,19 +12,19 @@
   构成完整的多周期嵌套时间框架
 """
 
+from datetime import datetime
+from typing import List
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Optional
-from datetime import datetime
-
 
 # BTC减半历史日期 (用于硬时间锚点)
 BTC_HALVING_DATES = [
-    datetime(2012, 11, 28),   # 第1次减半
-    datetime(2016, 7, 9),     # 第2次减半
-    datetime(2020, 5, 11),    # 第3次减半
-    datetime(2024, 4, 20),    # 第4次减半
-    datetime(2028, 4, 1),     # 第5次减半 (预估)
+    datetime(2012, 11, 28),  # 第1次减半
+    datetime(2016, 7, 9),  # 第2次减半
+    datetime(2020, 5, 11),  # 第3次减半
+    datetime(2024, 4, 20),  # 第4次减半
+    datetime(2028, 4, 1),  # 第5次减半 (预估)
 ]
 
 CYCLE_LENGTH_DAYS = 1440  # 约4年 (365*4=1460，取1440方便计算)
@@ -80,11 +80,11 @@ def halving_cycle_features(df: pd.DataFrame) -> pd.DataFrame:
         sine_vals.append(np.sin(2 * np.pi * p))
         cosine_vals.append(np.cos(2 * np.pi * p))
 
-    result['hc_days_since_halving'] = days_since
-    result['hc_days_to_next_halving'] = days_to
-    result['hc_phase'] = phase
-    result['hc_sine'] = sine_vals
-    result['hc_cosine'] = cosine_vals
+    result["hc_days_since_halving"] = days_since
+    result["hc_days_to_next_halving"] = days_to
+    result["hc_phase"] = phase
+    result["hc_sine"] = sine_vals
+    result["hc_cosine"] = cosine_vals
 
     return result
 
@@ -108,38 +108,38 @@ def all_time_high_features(
         windows = [60, 120, 240, 480, 1000]
 
     result = pd.DataFrame(index=df.index)
-    close = df['close'].values
-    high = df['high'].values
-    low = df['low'].values
+    close = df["close"].values
+    high = df["high"].values
+    low = df["low"].values
 
     for w in windows:
         # 滚动最高/最低
-        roll_high = pd.Series(high).rolling(window=w, min_periods=max(10, w//10)).max().values
-        roll_low = pd.Series(low).rolling(window=w, min_periods=max(10, w//10)).min().values
+        roll_high = pd.Series(high).rolling(window=w, min_periods=max(10, w // 10)).max().values
+        roll_low = pd.Series(low).rolling(window=w, min_periods=max(10, w // 10)).min().values
 
         # 距高点跌幅
         ath_dist = (close - roll_high) / np.where(roll_high > 0, roll_high, 1) * 100
-        result[f'ath_dist_{w}'] = ath_dist
+        result[f"ath_dist_{w}"] = ath_dist
 
         # 距低点涨幅
         atl_dist = (close - roll_low) / np.where(roll_low > 0, roll_low, 1) * 100
-        result[f'atl_dist_{w}'] = atl_dist
+        result[f"atl_dist_{w}"] = atl_dist
 
         # 在区间内的位置 (0=最低, 1=最高)
         range_vals = roll_high - roll_low
         position = np.where(range_vals > 0, (close - roll_low) / range_vals, 0.5)
-        result[f'ath_position_{w}'] = position
+        result[f"ath_position_{w}"] = position
 
         # 回撤幅度 (正数代表回撤多少%)
         drawdown = np.where(roll_high > 0, (roll_high - close) / roll_high * 100, 0)
-        result[f'ath_drawdown_{w}'] = drawdown
+        result[f"ath_drawdown_{w}"] = drawdown
 
         # 斐波那契回撤位 proximity
         # 0.382, 0.5, 0.618 回撤位
-        for fib_level, fib_name in [(0.382, 'fib382'), (0.5, 'fib500'), (0.618, 'fib618')]:
+        for fib_level, fib_name in [(0.382, "fib382"), (0.5, "fib500"), (0.618, "fib618")]:
             fib_price = roll_high - (roll_high - roll_low) * fib_level
             dist_from_fib = np.abs(close - fib_price) / np.where(roll_high > 0, roll_high, 1) * 100
-            result[f'ath_{fib_name}_dist_{w}'] = dist_from_fib
+            result[f"ath_{fib_name}_dist_{w}"] = dist_from_fib
 
     return result
 
@@ -164,20 +164,19 @@ def inventory_cycle_phase(df: pd.DataFrame) -> pd.DataFrame:
     """
     result = pd.DataFrame(index=df.index)
 
-    close = df['close'].values
-    volume = df['volume'].values if 'volume' in df.columns else np.ones(len(close))
+    close = df["close"].values
+    volume = df["volume"].values if "volume" in df.columns else np.ones(len(close))
 
     # 价格变化率 (20日动量)
     roc20 = pd.Series(close).pct_change(20).fillna(0).values * 100
     roc60 = pd.Series(close).pct_change(60).fillna(0).values * 100
 
     # 波动率 (20日ATR / 价格)
-    high = df['high'].values
-    low = df['low'].values
-    tr = np.maximum(high - low, np.maximum(
-        np.abs(high - np.roll(close, 1)),
-        np.abs(low - np.roll(close, 1))
-    ))
+    high = df["high"].values
+    low = df["low"].values
+    tr = np.maximum(
+        high - low, np.maximum(np.abs(high - np.roll(close, 1)), np.abs(low - np.roll(close, 1)))
+    )
     tr[0] = high[0] - low[0]
     atr20 = pd.Series(tr).rolling(20, min_periods=5).mean().values
     vol_ratio = atr20 / np.where(close > 0, close, 1) * 100
@@ -190,41 +189,44 @@ def inventory_cycle_phase(df: pd.DataFrame) -> pd.DataFrame:
     # 趋势方向 (MA20 vs MA60)
     ma20 = pd.Series(close).rolling(20, min_periods=5).mean().values
     ma60 = pd.Series(close).rolling(60, min_periods=10).mean().values
-    trend = np.where(ma60 > 0, (ma20 - ma60) / ma60 * 100, 0)
+    trend = np.where(ma60 > 0, (ma20 - ma60) / ma60 * 100, 0)  # noqa: F841
 
     # 四阶段评分
     # 复苏: 价格正 + 波动率低 + 成交量温和增长
-    recovery = np.clip(roc20 * 0.3 + (10 - vol_ratio) * 0.4 + np.clip(vol_change, 0, 50) * 0.3, 0, 100)
+    recovery = np.clip(
+        roc20 * 0.3 + (10 - vol_ratio) * 0.4 + np.clip(vol_change, 0, 50) * 0.3, 0, 100
+    )
 
     # 繁荣: 价格强正 + 波动率中高 + 成交量大增
     expansion = np.clip(roc60 * 0.4 + vol_ratio * 0.2 + np.clip(vol_change, 0, 100) * 0.4, 0, 100)
 
     # 滞胀: 价格走平/微跌 + 波动率高 + 成交量下降
     stagflation = np.clip(
-        (np.abs(roc20) < 5).astype(float) * 30
-        + vol_ratio * 3
-        + np.clip(-vol_change, 0, 50) * 0.8,
-        0, 100
+        (np.abs(roc20) < 5).astype(float) * 30 + vol_ratio * 3 + np.clip(-vol_change, 0, 50) * 0.8,
+        0,
+        100,
     )
 
     # 衰退: 价格负 + 波动率高 + 成交量大
-    contraction = np.clip(-roc20 * 0.3 + vol_ratio * 0.3 + np.clip(vol_change, -50, 50) * 0.2, 0, 100)
+    contraction = np.clip(
+        -roc20 * 0.3 + vol_ratio * 0.3 + np.clip(vol_change, -50, 50) * 0.2, 0, 100
+    )
     contraction = np.where(roc20 < 0, contraction, contraction * 0.3)
 
-    result['ic_recovery_score'] = recovery
-    result['ic_expansion_score'] = expansion
-    result['ic_stagflation_score'] = stagflation
-    result['ic_contraction_score'] = contraction
+    result["ic_recovery_score"] = recovery
+    result["ic_expansion_score"] = expansion
+    result["ic_stagflation_score"] = stagflation
+    result["ic_contraction_score"] = contraction
 
     # 主导阶段 (0=复苏, 1=繁荣, 2=滞胀, 3=衰退)
     scores = np.column_stack([recovery, expansion, stagflation, contraction])
     dominant_phase = np.argmax(scores, axis=1)
-    result['ic_phase'] = dominant_phase
+    result["ic_phase"] = dominant_phase
 
     # 周期位置 (0-1, 用四阶段得分的加权角)
     phase_angle = dominant_phase / 4.0 + (scores[np.arange(len(scores)), dominant_phase] / 200)
-    result['ic_phase_sine'] = np.sin(2 * np.pi * phase_angle)
-    result['ic_phase_cosine'] = np.cos(2 * np.pi * phase_angle)
+    result["ic_phase_sine"] = np.sin(2 * np.pi * phase_angle)
+    result["ic_phase_cosine"] = np.cos(2 * np.pi * phase_angle)
 
     return result
 
@@ -241,30 +243,30 @@ def long_term_trend_features(df: pd.DataFrame) -> pd.DataFrame:
       - golden_death_cross: 金叉/死叉信号 (MA50穿越MA200)
     """
     result = pd.DataFrame(index=df.index)
-    close = df['close'].values
+    close = df["close"].values
 
     for period in [100, 200, 300]:
-        ma = pd.Series(close).rolling(period, min_periods=period//2).mean().values
-        result[f'lt_ma{period}'] = ma
+        ma = pd.Series(close).rolling(period, min_periods=period // 2).mean().values
+        result[f"lt_ma{period}"] = ma
         # 斜率 (10日变化率)
         ma_lag = np.roll(ma, 10)
         slope = np.where(ma_lag > 0, (ma - ma_lag) / ma_lag * 100, 0)
-        result[f'lt_ma{period}_slope'] = slope
+        result[f"lt_ma{period}_slope"] = slope
         # 价格相对位置
-        result[f'lt_price_vs_ma{period}'] = np.where(ma > 0, (close - ma) / ma * 100, 0)
+        result[f"lt_price_vs_ma{period}"] = np.where(ma > 0, (close - ma) / ma * 100, 0)
 
     # MA50 vs MA200 宽度
     ma50 = pd.Series(close).rolling(50, min_periods=25).mean().values
-    ma200 = result['lt_ma200'].values
-    result['lt_ma50_ma200_spread'] = np.where(ma200 > 0, (ma50 - ma200) / ma200 * 100, 0)
+    ma200 = result["lt_ma200"].values
+    result["lt_ma50_ma200_spread"] = np.where(ma200 > 0, (ma50 - ma200) / ma200 * 100, 0)
 
     # 金叉/死叉 (MA50上穿/下穿MA200)
     spread = ma50 - ma200
     spread_prev = np.roll(spread, 1)
     golden_cross = (spread_prev < 0) & (spread > 0)
     death_cross = (spread_prev > 0) & (spread < 0)
-    result['lt_golden_cross'] = golden_cross.astype(int)
-    result['lt_death_cross'] = death_cross.astype(int)
+    result["lt_golden_cross"] = golden_cross.astype(int)
+    result["lt_death_cross"] = death_cross.astype(int)
 
     # 距上次金叉/死叉的bar数
     bars_since_gc = np.zeros(len(close))
@@ -282,8 +284,8 @@ def long_term_trend_features(df: pd.DataFrame) -> pd.DataFrame:
             dc_count += 1
         bars_since_gc[i] = gc_count
         bars_since_dc[i] = dc_count
-    result['lt_bars_since_golden'] = bars_since_gc
-    result['lt_bars_since_death'] = bars_since_dc
+    result["lt_bars_since_golden"] = bars_since_gc
+    result["lt_bars_since_death"] = bars_since_dc
 
     return result
 
@@ -347,7 +349,10 @@ class CycleFeatures:
 
 
 # ===== FeatureRegistry 注册 =====
-from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry, _cycle_sub_key_splitter
+from scripts.memory_l4.bcrm2.feature_registry import (  # noqa: E402
+    FeatureRegistry,
+    _cycle_sub_key_splitter,
+)  # noqa: E402, I001
 
 FeatureRegistry.register(
     name="cycle",

@@ -5,6 +5,7 @@
 
 工程约束：HC-1a（独立模块）/ FAIL-OPEN / 不自动写入
 """
+
 from __future__ import annotations
 
 import json
@@ -40,6 +41,7 @@ def _load_memories() -> list[dict[str, Any]]:
 
 
 # ─────────────────────────────── TF-IDF 相似度 ───────────────────────────────
+
 
 def _tokenize(text: str) -> list[str]:
     """简单分词：按非字母数字分割，转小写，过滤短词。"""
@@ -97,6 +99,7 @@ def _build_tfidf_vectors(memories: list[dict[str, Any]]) -> list[dict[str, float
 
 # ─────────────────────────────── 模式检测 ───────────────────────────────
 
+
 def _detect_duplicate_patterns(memories: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """检测重复错误模式：content 相似度 >= 0.85 且出现 >= 3 次。"""
     if len(memories) < _DUPLICATE_MIN_COUNT:
@@ -123,16 +126,20 @@ def _detect_duplicate_patterns(memories: list[dict[str, Any]]) -> list[dict[str,
             source_ids = [memories[idx].get("memory_id", f"unknown-{idx}") for idx in cluster]
             # 用第一个记忆的 content 作为模式代表
             pattern_content = memories[cluster[0]].get("content", "")[:200]
-            avg_confidence = sum(memories[idx].get("confidence", 0) for idx in cluster) / len(cluster)
-            patterns.append({
-                "pattern_type": "duplicate_error",
-                "pattern": pattern_content,
-                "source_memory_ids": source_ids,
-                "occurrence_count": len(cluster),
-                "avg_confidence": round(avg_confidence, 4),
-                "suggestion": f"合并 {len(cluster)} 条相似记忆，提炼统一解决方案",
-                "confidence": round(avg_confidence, 4),
-            })
+            avg_confidence = sum(memories[idx].get("confidence", 0) for idx in cluster) / len(
+                cluster
+            )
+            patterns.append(
+                {
+                    "pattern_type": "duplicate_error",
+                    "pattern": pattern_content,
+                    "source_memory_ids": source_ids,
+                    "occurrence_count": len(cluster),
+                    "avg_confidence": round(avg_confidence, 4),
+                    "suggestion": f"合并 {len(cluster)} 条相似记忆，提炼统一解决方案",
+                    "confidence": round(avg_confidence, 4),
+                }
+            )
     return patterns
 
 
@@ -153,14 +160,16 @@ def _detect_converging_workflows(memories: list[dict[str, Any]]) -> list[dict[st
     patterns: list[dict[str, Any]] = []
     for tag, ids in tag_groups.items():
         if len(ids) >= _DUPLICATE_MIN_COUNT:
-            patterns.append({
-                "pattern_type": "converging_workflow",
-                "pattern": f"标签 '{tag}' 被 {len(ids)} 条记忆引用",
-                "source_memory_ids": ids,
-                "occurrence_count": len(ids),
-                "suggestion": f"考虑将 '{tag}' 相关经验提炼为 procedural 记忆或 skill",
-                "confidence": 0.5,
-            })
+            patterns.append(
+                {
+                    "pattern_type": "converging_workflow",
+                    "pattern": f"标签 '{tag}' 被 {len(ids)} 条记忆引用",
+                    "source_memory_ids": ids,
+                    "occurrence_count": len(ids),
+                    "suggestion": f"考虑将 '{tag}' 相关经验提炼为 procedural 记忆或 skill",
+                    "confidence": 0.5,
+                }
+            )
     return patterns
 
 
@@ -172,14 +181,16 @@ def _detect_stale_contradictory(memories: list[dict[str, Any]]) -> list[dict[str
         verify = m.get("verify_count", 0)
         if conf < _STALE_CONFIDENCE_THRESHOLD and verify >= _STALE_VERIFY_MIN:
             mid = m.get("memory_id", "unknown")
-            patterns.append({
-                "pattern_type": "stale_or_contradictory",
-                "pattern": m.get("content", "")[:200],
-                "source_memory_ids": [mid],
-                "confidence": conf,
-                "verify_count": verify,
-                "suggestion": f"该记忆置信度({conf})低且验证次数({verify})多，建议审查或归档",
-            })
+            patterns.append(
+                {
+                    "pattern_type": "stale_or_contradictory",
+                    "pattern": m.get("content", "")[:200],
+                    "source_memory_ids": [mid],
+                    "confidence": conf,
+                    "verify_count": verify,
+                    "suggestion": f"该记忆置信度({conf})低且验证次数({verify})多，建议审查或归档",
+                }
+            )
 
     # 矛盾检测：相同 category 下 confidence 差异 > 0.5
     by_category: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -196,20 +207,23 @@ def _detect_stale_contradictory(memories: list[dict[str, Any]]) -> list[dict[str
         highest = sorted_mems[-1]
         diff = highest.get("confidence", 0) - lowest.get("confidence", 0)
         if diff > _CONFLICT_CONFIDENCE_DIFF:
-            patterns.append({
-                "pattern_type": "conflict",
-                "pattern": f"类别 '{cat}' 下记忆置信度差异 {round(diff, 4)}",
-                "source_memory_ids": [
-                    lowest.get("memory_id", "unknown"),
-                    highest.get("memory_id", "unknown"),
-                ],
-                "confidence_diff": round(diff, 4),
-                "suggestion": "同一类别下存在高置信度和低置信度记忆，建议审查矛盾",
-            })
+            patterns.append(
+                {
+                    "pattern_type": "conflict",
+                    "pattern": f"类别 '{cat}' 下记忆置信度差异 {round(diff, 4)}",
+                    "source_memory_ids": [
+                        lowest.get("memory_id", "unknown"),
+                        highest.get("memory_id", "unknown"),
+                    ],
+                    "confidence_diff": round(diff, 4),
+                    "suggestion": "同一类别下存在高置信度和低置信度记忆，建议审查矛盾",
+                }
+            )
     return patterns
 
 
 # ─────────────────────────────── 主入口 ───────────────────────────────
+
 
 def run_dreaming_cycle() -> dict[str, Any]:
     """执行一次梦境扫描，返回候选更新列表。不自动写入，需人工审核。
@@ -259,14 +273,25 @@ def run_dreaming_cycle() -> dict[str, Any]:
 # ───────────────────────── 规则化自动合并 ─────────────────────────
 
 # 自动合并阈值
-_AUTO_MERGE_MIN_OCCURRENCE = 5   # 重复模式出现 >= 5 次才自动合并
+_AUTO_MERGE_MIN_OCCURRENCE = 5  # 重复模式出现 >= 5 次才自动合并
 _AUTO_MERGE_MIN_CONVERGING = 20  # 收敛工作流 >= 20 条才自动提炼
 _AUTO_CONFLICT_DOWNGRADE = True  # 矛盾记忆自动降级低置信度方
 # 泛化标签不触发收敛提取（频率高但信息密度低）
 _GENERIC_TAGS = {
-    "rag", "检索", "硬约束", "FAIL-OPEN", "doc-sync", "1-ARCHITECTURE",
-    "1-TRADING", "6-PRODUCT-BUSINESS", "git-hook", "feature",
-    "solution_path", "dreamos", "认知闭环", "认知系统",
+    "rag",
+    "检索",
+    "硬约束",
+    "FAIL-OPEN",
+    "doc-sync",
+    "1-ARCHITECTURE",
+    "1-TRADING",
+    "6-PRODUCT-BUSINESS",
+    "git-hook",
+    "feature",
+    "solution_path",
+    "dreamos",
+    "认知闭环",
+    "认知系统",
 }
 
 
@@ -287,7 +312,6 @@ def auto_merge_duplicates(dry_run: bool = False) -> dict[str, Any]:
     Returns:
         {"status": "ok", "merged": int, "downgraded": int, "created": int, ...}
     """
-    from pathlib import Path
     import shutil
 
     timestamp = datetime.now(timezone.utc).isoformat()
@@ -295,9 +319,9 @@ def auto_merge_duplicates(dry_run: bool = False) -> dict[str, Any]:
         "status": "ok",
         "timestamp": timestamp,
         "dry_run": dry_run,
-        "merged": 0,       # 合并删除的记忆数
-        "downgraded": 0,   # 矛盾降级的记忆数
-        "created": 0,      # 新创建的提炼记忆数
+        "merged": 0,  # 合并删除的记忆数
+        "downgraded": 0,  # 矛盾降级的记忆数
+        "created": 0,  # 新创建的提炼记忆数
         "details": [],
     }
 
@@ -309,7 +333,7 @@ def auto_merge_duplicates(dry_run: bool = False) -> dict[str, Any]:
             return result
 
         changed = False
-        ids_to_archive: set[str] = set()    # 要归档（删除）的记忆 ID
+        ids_to_archive: set[str] = set()  # 要归档（删除）的记忆 ID
         ids_to_downgrade: set[str] = set()  # 要降级为 D 的记忆 ID
         new_memories: list[dict[str, Any]] = []  # 新创建的记忆
 
@@ -324,16 +348,22 @@ def auto_merge_duplicates(dry_run: bool = False) -> dict[str, Any]:
                     continue
                 best = max(cluster_mems, key=lambda m: m.get("confidence", 0))
                 # 其余标记为归档
-                to_archive = {m.get("memory_id") for m in cluster_mems if m.get("memory_id") != best.get("memory_id")}
+                to_archive = {
+                    m.get("memory_id")
+                    for m in cluster_mems
+                    if m.get("memory_id") != best.get("memory_id")
+                }
                 ids_to_archive.update(to_archive)
                 result["merged"] += len(to_archive)
-                result["details"].append({
-                    "action": "merge_duplicates",
-                    "kept": best.get("memory_id"),
-                    "archived": list(to_archive),
-                    "pattern": p.get("pattern", "")[:80],
-                    "occurrence": p.get("occurrence_count"),
-                })
+                result["details"].append(
+                    {
+                        "action": "merge_duplicates",
+                        "kept": best.get("memory_id"),
+                        "archived": list(to_archive),
+                        "pattern": p.get("pattern", "")[:80],
+                        "occurrence": p.get("occurrence_count"),
+                    }
+                )
                 changed = True
 
         # ── 2. 矛盾记忆自动降级 ──
@@ -356,13 +386,15 @@ def auto_merge_duplicates(dry_run: bool = False) -> dict[str, Any]:
                 if lowest.get("quality_level") != "D":
                     ids_to_downgrade.add(lowest.get("memory_id"))
                     result["downgraded"] += 1
-                    result["details"].append({
-                        "action": "conflict_downgrade",
-                        "downgraded": lowest.get("memory_id"),
-                        "kept_higher": highest.get("memory_id"),
-                        "category": cat,
-                        "confidence_diff": round(diff, 4),
-                    })
+                    result["details"].append(
+                        {
+                            "action": "conflict_downgrade",
+                            "downgraded": lowest.get("memory_id"),
+                            "kept_higher": highest.get("memory_id"),
+                            "category": cat,
+                            "confidence_diff": round(diff, 4),
+                        }
+                    )
                     changed = True
 
         # ── 3. 收敛工作流自动提炼 ──
@@ -407,12 +439,14 @@ def auto_merge_duplicates(dry_run: bool = False) -> dict[str, Any]:
                 }
                 new_memories.append(new_mem)
                 result["created"] += 1
-                result["details"].append({
-                    "action": "converging_extract",
-                    "new_memory_id": new_mem["memory_id"],
-                    "source_count": len(cluster_mems),
-                    "tag": p.get("pattern", "")[:60],
-                })
+                result["details"].append(
+                    {
+                        "action": "converging_extract",
+                        "new_memory_id": new_mem["memory_id"],
+                        "source_count": len(cluster_mems),
+                        "tag": p.get("pattern", "")[:60],
+                    }
+                )
                 changed = True
 
         # ── 写入 ──
@@ -470,7 +504,11 @@ def _archive_merged_memories(memories: list[dict[str, Any]]) -> None:
         archive_file = archive_dir / "merged_memories.jsonl"
         with open(archive_file, "a", encoding="utf-8") as f:
             for m in memories:
-                entry = {**m, "archived_at": datetime.now(timezone.utc).isoformat(), "archive_reason": "dreaming_auto_merge"}
+                entry = {
+                    **m,
+                    "archived_at": datetime.now(timezone.utc).isoformat(),
+                    "archive_reason": "dreaming_auto_merge",
+                }
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     except Exception:
         pass  # FAIL-OPEN
@@ -490,6 +528,7 @@ def _log_merge_audit(report: dict[str, Any]) -> None:
 
 # ─────────────────────────────── CLI ───────────────────────────────
 
+
 def _run_scheduled(interval_hours: float) -> None:
     """定时执行梦境扫描。FAIL-OPEN：异常不退出循环。
 
@@ -497,6 +536,7 @@ def _run_scheduled(interval_hours: float) -> None:
         interval_hours: 扫描间隔（小时），默认 24 小时（每日一次）
     """
     import time
+
     interval_seconds = interval_hours * 3600
     print(f"[dreaming] scheduled mode: every {interval_hours}h ({interval_seconds:.0f}s)")
     while True:
@@ -522,13 +562,20 @@ def main(argv: list[str] | None = None) -> int:
         python dreaming_engine.py --schedule 24  # 定时模式，每 24 小时一次
     """
     import argparse
+
     parser = argparse.ArgumentParser(prog="dreaming_engine", description="Dreaming Engine")
-    parser.add_argument("--schedule", type=float, default=None,
-                        help="定时模式：扫描间隔（小时），默认 None（执行一次）")
-    parser.add_argument("--auto-merge", action="store_true",
-                        help="执行规则化自动合并（重复≥5归档+矛盾降级+收敛≥10提炼）")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="仅模拟，不修改数据")
+    parser.add_argument(
+        "--schedule",
+        type=float,
+        default=None,
+        help="定时模式：扫描间隔（小时），默认 None（执行一次）",
+    )
+    parser.add_argument(
+        "--auto-merge",
+        action="store_true",
+        help="执行规则化自动合并（重复≥5归档+矛盾降级+收敛≥10提炼）",
+    )
+    parser.add_argument("--dry-run", action="store_true", help="仅模拟，不修改数据")
     args = parser.parse_args(argv)
 
     if args.schedule is not None:

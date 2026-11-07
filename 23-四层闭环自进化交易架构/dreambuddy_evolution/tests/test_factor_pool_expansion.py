@@ -15,6 +15,7 @@ SPEC-自进化系统做空能力疏通探讨 §4 路径D：
 
 安全侧 FAIL-OPEN: 异常/缺失 → 因子不满足
 """
+
 import sys
 from pathlib import Path
 
@@ -32,7 +33,8 @@ def _auto_enable_factor_switches():
 
     单因子开关测试类内部会 set_switch 覆盖此 fixture。
     """
-    from dreambuddy_evolution.agi_config import set_switch, get_switch
+    from dreambuddy_evolution.agi_config import get_switch, set_switch
+
     _orig_fr = get_switch("enable_funding_rate_factor")
     _orig_oi = get_switch("enable_oi_price_divergence_factor")
     _orig_lq = get_switch("enable_liquidation_heatmap_factor")
@@ -52,8 +54,8 @@ class TestResultFields:
         """ExpandedFactorResult 包含所有必要字段"""
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
-            ExpandedFactorResult,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(
             funding_rate=0.002,
@@ -77,6 +79,7 @@ class TestFundingRateFactor:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.002, oi_change_pct=0.0, price_change_pct=0.0)
         assert result.funding_rate_satisfied is True
@@ -86,6 +89,7 @@ class TestFundingRateFactor:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.0005, oi_change_pct=0.0, price_change_pct=0.0)
         assert result.funding_rate_satisfied is False
@@ -95,6 +99,7 @@ class TestFundingRateFactor:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.001, oi_change_pct=0.0, price_change_pct=0.0)
         assert result.funding_rate_satisfied is False
@@ -104,6 +109,7 @@ class TestFundingRateFactor:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=-0.0005, oi_change_pct=0.0, price_change_pct=0.0)
         assert result.funding_rate_satisfied is False
@@ -113,6 +119,7 @@ class TestFundingRateFactor:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=None, oi_change_pct=0.0, price_change_pct=0.0)
         assert result.funding_rate_satisfied is False
@@ -123,6 +130,7 @@ class TestFundingRateFactor:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         set_switch("enable_funding_rate_factor", False)
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.002, oi_change_pct=0.0, price_change_pct=0.0)
@@ -137,6 +145,7 @@ class TestOiPriceDivergenceFactor:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.0, oi_change_pct=0.05, price_change_pct=-0.02)
         assert result.oi_price_divergence_satisfied is True
@@ -146,6 +155,7 @@ class TestOiPriceDivergenceFactor:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.0, oi_change_pct=0.05, price_change_pct=0.02)
         assert result.oi_price_divergence_satisfied is False
@@ -155,6 +165,7 @@ class TestOiPriceDivergenceFactor:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.0, oi_change_pct=-0.05, price_change_pct=-0.02)
         assert result.oi_price_divergence_satisfied is False
@@ -164,6 +175,7 @@ class TestOiPriceDivergenceFactor:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.0, oi_change_pct=-0.05, price_change_pct=0.02)
         assert result.oi_price_divergence_satisfied is False
@@ -173,6 +185,7 @@ class TestOiPriceDivergenceFactor:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.0, oi_change_pct=0.0, price_change_pct=-0.02)
         assert result.oi_price_divergence_satisfied is False
@@ -182,6 +195,7 @@ class TestOiPriceDivergenceFactor:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.0, oi_change_pct=0.05, price_change_pct=0.0)
         assert result.oi_price_divergence_satisfied is False
@@ -191,6 +205,7 @@ class TestOiPriceDivergenceFactor:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.0, oi_change_pct=None, price_change_pct=-0.02)
         assert result.oi_price_divergence_satisfied is False
@@ -200,6 +215,7 @@ class TestOiPriceDivergenceFactor:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.0, oi_change_pct=0.05, price_change_pct=None)
         assert result.oi_price_divergence_satisfied is False
@@ -210,6 +226,7 @@ class TestOiPriceDivergenceFactor:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         set_switch("enable_oi_price_divergence_factor", False)
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.0, oi_change_pct=0.05, price_change_pct=-0.02)
@@ -224,6 +241,7 @@ class TestLiquidationHeatmapFactor:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.0, oi_change_pct=0.0, price_change_pct=0.0)
         assert result.liquidation_heatmap_satisfied is False
@@ -234,6 +252,7 @@ class TestLiquidationHeatmapFactor:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         set_switch("enable_liquidation_heatmap_factor", False)
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.0, oi_change_pct=0.0, price_change_pct=0.0)
@@ -248,6 +267,7 @@ class TestNewFactorsCount:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.002, oi_change_pct=0.05, price_change_pct=-0.02)
         # 资金费率 + OI-Price 背离 = 2（清算热力图降级为可选，始终 False）
@@ -258,6 +278,7 @@ class TestNewFactorsCount:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.002, oi_change_pct=-0.05, price_change_pct=0.02)
         assert result.new_factors_satisfied == 1
@@ -267,6 +288,7 @@ class TestNewFactorsCount:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.0005, oi_change_pct=-0.05, price_change_pct=0.02)
         assert result.new_factors_satisfied == 0
@@ -277,6 +299,7 @@ class TestNewFactorsCount:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         set_switch("enable_funding_rate_factor", False)
         set_switch("enable_oi_price_divergence_factor", False)
         set_switch("enable_liquidation_heatmap_factor", False)
@@ -293,6 +316,7 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=float("nan"), oi_change_pct=0.0, price_change_pct=0.0)
         assert result.funding_rate_satisfied is False
@@ -302,6 +326,7 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate=0.0, oi_change_pct=float("inf"), price_change_pct=-0.02)
         assert result.oi_price_divergence_satisfied is False
@@ -311,6 +336,7 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         result = fp.evaluate(funding_rate="not_a_number", oi_change_pct=0.0, price_change_pct=0.0)
         assert result.funding_rate_satisfied is False
@@ -320,8 +346,10 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.factor_pool_expansion import (
             FactorPoolExpansion,
         )
+
         fp = FactorPoolExpansion()
         import dreambuddy_evolution.agi_config as agi_config
+
         original = agi_config.get_switch
 
         def _crash(*a, **kw):

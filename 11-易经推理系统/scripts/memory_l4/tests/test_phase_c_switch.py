@@ -12,20 +12,18 @@
   • polling_trader 的 _init_alpha_blend 方法
   • α=0.0 时 map_global_parameters 输出与无 forecast 参数完全一致
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 # Add bcrm2 to sys.path
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2.parameter_mapper import ParameterMapper
-
+from bcrm2.parameter_mapper import ParameterMapper  # noqa: E402
 
 _SECTOR_BETAS = {
     "defi": (1.0, 0.0, 0.5),
@@ -40,9 +38,11 @@ _SECTOR_BETAS = {
 # 轻量 stub：绕过 PollingTrader.__init__ 的重依赖
 # ================================================================
 
+
 def _make_stub_trader():
     """构造一个只挂载 α blend 集成方法的 stub trader。"""
     from scripts.memory_l4.polling_trader import PollingTrader
+
     trader = object.__new__(PollingTrader)
     trader._log = MagicMock()
     return trader
@@ -52,12 +52,14 @@ def _make_stub_trader():
 # T_C2: 超参开关 + 无偏不变量验证
 # ================================================================
 
+
 class TestAlphaBlendSwitch:
     """验证 Phase C 超参开关和无偏不变量。"""
 
     def test_alpha_blend_enabled_default_false(self):
         """T_C2.1: ALPHA_BLEND_ENABLED 默认值（当前 True，alpha=0 仍字节等价，允许在线 promote）。"""
         from bcrm2.parameter_mapper import ALPHA_BLEND_ENABLED, DEFAULT_ALPHA_BLEND
+
         assert isinstance(ALPHA_BLEND_ENABLED, bool)
         # 关键不变量：DEFAULT_ALPHA_BLEND=0 时，即使开关 True 输出仍完全等价于未启用
         assert DEFAULT_ALPHA_BLEND == 0.0, (
@@ -68,11 +70,13 @@ class TestAlphaBlendSwitch:
     def test_default_alpha_blend_zero(self):
         """T_C2.2: DEFAULT_ALPHA_BLEND 默认为 0.0。"""
         from bcrm2.parameter_mapper import DEFAULT_ALPHA_BLEND
+
         assert DEFAULT_ALPHA_BLEND == 0.0
 
     def test_alpha_blend_max_half(self):
         """T_C2.3: ALPHA_BLEND_MAX = 0.5（硬约束）。"""
         from bcrm2.parameter_mapper import ALPHA_BLEND_MAX
+
         assert ALPHA_BLEND_MAX == 0.5
 
     def test_init_alpha_blend_disabled(self):
@@ -86,9 +90,14 @@ class TestAlphaBlendSwitch:
     def test_init_alpha_blend_enabled(self):
         """T_C2.5: _init_alpha_blend 开关开启时 _alpha_blend=DEFAULT_ALPHA_BLEND。"""
         trader = _make_stub_trader()
-        with patch("scripts.memory_l4.polling_trader.ALPHA_BLEND_ENABLED", True), \
-             patch("scripts.memory_l4.polling_trader.DEFAULT_ALPHA_BLEND", 0.2), \
-             patch.dict("os.environ", {"V15_AI_ROLLOUT_STATE_PATH": "/tmp/__nonexistent_test_alpha_rollout_state.json"}):
+        with (
+            patch("scripts.memory_l4.polling_trader.ALPHA_BLEND_ENABLED", True),
+            patch("scripts.memory_l4.polling_trader.DEFAULT_ALPHA_BLEND", 0.2),
+            patch.dict(
+                "os.environ",
+                {"V15_AI_ROLLOUT_STATE_PATH": "/tmp/__nonexistent_test_alpha_rollout_state.json"},
+            ),
+        ):
             trader._init_alpha_blend()
         assert trader._alpha_blend_enabled is True
         assert trader._alpha_blend == 0.2
@@ -113,6 +122,7 @@ class TestAlphaBlendSwitch:
         r_blend = mapper.map_sector_weights(
             L, T, C, _SECTOR_BETAS, forecast_L=3.0, forecast_T=-2.0, alpha_blend=0.0
         )
+
         # 新结构：{weights, sector_tp_mult, sector_sl_mult}，旧结构: {sector: weight}
         # 兼容两种格式：有 weights 就取 weights，否则直接取 dict
         def _weights(d):

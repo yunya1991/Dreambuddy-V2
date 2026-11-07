@@ -24,6 +24,7 @@ TDD 覆盖:
   - deep_reasoning_engine.py neural_sde_forecast L181-237
   - test_forecast_regime.py (T4 同款风格)
 """
+
 from __future__ import annotations
 
 import sys
@@ -104,11 +105,7 @@ def test_forecast_passes_head_multipliers_to_backend(monkeypatch):
 
     # 至少一个后端收到 head_multipliers，且值一致
     assert captured, "forecast 未调用任何后端"
-    received = [
-        kw["head_multipliers"]
-        for kw in captured.values()
-        if "head_multipliers" in kw
-    ]
+    received = [kw["head_multipliers"] for kw in captured.values() if "head_multipliers" in kw]
     assert received, f"后端未收到 head_multipliers: {captured.keys()}"
     np.testing.assert_allclose(
         np.asarray(received[0], dtype=np.float64).ravel(),
@@ -141,15 +138,17 @@ def test_forecast_euler_maruyama_accepts_head_multipliers():
 
     # 修复前: TypeError (EM 签名无 head_multipliers)
     paths = model.forecast_euler_maruyama(
-        state, horizon=8, n_paths=4, log_sig=log_sig, head_multipliers=head_mult,
+        state,
+        horizon=8,
+        n_paths=4,
+        log_sig=log_sig,
+        head_multipliers=head_mult,
     )
     assert paths.shape == (4, 9)
     assert np.isfinite(paths).all()
 
     # 推理后上下文应被清理
-    assert model._current_head_multipliers is None, (
-        "推理后 _current_head_multipliers 应被清理"
-    )
+    assert model._current_head_multipliers is None, "推理后 _current_head_multipliers 应被清理"
 
 
 # ============================================================================

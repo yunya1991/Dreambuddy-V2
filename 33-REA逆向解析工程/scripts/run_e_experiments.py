@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """实验 E-C2（外部路径注入前后 V 值对比）+ E-A1 静态部分（Spec 增强前后约束质量对比）。"""
+
 import json
 import sys
 
 sys.path.insert(0, ".")
-from core.reflection.replay_simulator import ReplayPool
+from core.reflection.replay_simulator import ReplayPool  # noqa: I001
 from core.reflection.dreaming import DreamingLoop
 from core.reflection.output_scenarios import SpecEnhancer
 
@@ -33,6 +34,7 @@ for tree in pool.list_trees("external"):
     r = loop.sim.replay(tree, strategy, loop.max_rounds)
     r["parallelism"] = 2
     from core.reflection.dreaming import replay_objective
+
     v = replay_objective(r, 10, loop.lam)
     r["v"] = v
     r["v_weighted"] = v * tree.weight
@@ -43,11 +45,13 @@ for tree in pool.list_trees("external"):
 internal = [t for t in per_tree if t.get("provenance") == "internal"]
 external = [t for t in per_tree if t.get("provenance") == "external"]
 
+
 def weighted_avg(rows):
     if not rows:
         return 0.0
     total_w = sum(r.get("tree_weight", 1.0) for r in rows) or 1.0
     return sum(r.get("v_weighted", 0.0) for r in rows) / total_w
+
 
 v_internal_only = weighted_avg(internal)
 v_full_pool = weighted_avg(per_tree)
@@ -78,8 +82,12 @@ enh_gate = enhanced["quality_gate"]
 enh_stats = enhanced["evidence_pack_stats"]
 
 print("==== E-A1 静态 Spec 增强前后约束质量对比 ====")
-print(f"基线(无池): 约束={base_gate['constraint_count']} 证据引用率={base_gate['poe_score']:.2f} 门禁通过={base_gate['passed']} matched_trees={base_stats['matched_trees']}")
-print(f"增强(有池): 约束={enh_gate['constraint_count']} 证据引用率={enh_gate['poe_score']:.2f} 门禁通过={enh_gate['passed']} matched_trees={enh_stats['matched_trees']}")
+print(
+    f"基线(无池): 约束={base_gate['constraint_count']} 证据引用率={base_gate['poe_score']:.2f} 门禁通过={base_gate['passed']} matched_trees={base_stats['matched_trees']}"
+)
+print(
+    f"增强(有池): 约束={enh_gate['constraint_count']} 证据引用率={enh_gate['poe_score']:.2f} 门禁通过={enh_gate['passed']} matched_trees={enh_stats['matched_trees']}"
+)
 
 report = {
     "experiment": "E-C2 + E-A1-static",

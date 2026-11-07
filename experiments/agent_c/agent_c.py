@@ -33,24 +33,28 @@ from __future__ import annotations
 import json
 import os
 import sys
-from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, List
 
 from dotenv import load_dotenv
 
 AB_TRADING_PATH = Path(__file__).parent.parent / "ab-trading"
 sys.path.insert(0, str(AB_TRADING_PATH))
-from execution.aster_spot import HyperliquidClient, scan_opportunities, get_candles, get_funding_rate
+from execution.aster_spot import (  # noqa: E402
+    HyperliquidClient,
+    get_candles,
+    get_funding_rate,
+)
 
 load_dotenv(str(AB_TRADING_PATH / "config" / ".env"))
 
-from dreamos.shared.state import State, new_state
-from dreamos.core.sense.intent_engine import IntentEngine
-from dreamos.core.arrange.graph_planner import GraphPlanner
-from dreamos.core.compute.graph_executor import GraphExecutor
-from dreamos.registry import get_default_registry
-from dreamos.nodes import register_all
+from dreamos.core.arrange.graph_planner import GraphPlanner  # noqa: E402
+from dreamos.core.compute.graph_executor import GraphExecutor  # noqa: E402
+from dreamos.core.sense.intent_engine import IntentEngine  # noqa: E402
+from dreamos.nodes import register_all  # noqa: E402
+from dreamos.registry import get_default_registry  # noqa: E402
+from dreamos.shared.state import State, new_state  # noqa: E402
 
 
 class AgentC:
@@ -81,7 +85,7 @@ class AgentC:
         memory_file = os.path.join(self._data_dir, "memory.json")
         if os.path.exists(memory_file):
             try:
-                with open(memory_file, 'r') as f:
+                with open(memory_file, "r") as f:
                     return json.load(f)
             except Exception:
                 pass
@@ -100,7 +104,7 @@ class AgentC:
 
     def _save_memory(self) -> None:
         memory_file = os.path.join(self._data_dir, "memory.json")
-        with open(memory_file, 'w') as f:
+        with open(memory_file, "w") as f:
             json.dump(self._memory, f, indent=2, default=str)
 
     def fetch_market_data(self, symbol: str) -> Dict[str, Any]:
@@ -126,7 +130,7 @@ class AgentC:
                     return prices[-1] if prices else 0
                 k = 2 / (n + 1)
                 e = prices[-n]
-                for p in prices[-n + 1:]:
+                for p in prices[-n + 1 :]:
                     e = p * k + e * (1 - k)
                 return e
 
@@ -149,7 +153,7 @@ class AgentC:
                 trs = []
                 for i in range(1, min(n + 1, len(raw_candles))):
                     h = float(raw_candles[i].get("h", 0))
-                    l = float(raw_candles[i].get("l", 0))
+                    l = float(raw_candles[i].get("l", 0))  # noqa: E741
                     c_prev = float(raw_candles[i - 1].get("c", 0))
                     trs.append(max(h - l, abs(h - c_prev), abs(l - c_prev)))
                 return sum(trs) / len(trs) if trs else 0
@@ -161,9 +165,15 @@ class AgentC:
             rsi14 = rsi(closes_rev)
             atr14 = atr(candles_1h)
 
-            change_1h = ((closes_1h[0] - closes_1h[1]) / closes_1h[1] * 100) if len(closes_1h) > 1 else 0
-            change_24h = ((closes_1h[0] - closes_1h[23]) / closes_1h[23] * 100) if len(closes_1h) > 23 else 0
-            change_4h = ((closes_4h[0] - closes_4h[3]) / closes_4h[3] * 100) if len(closes_4h) > 3 else 0
+            change_1h = (
+                ((closes_1h[0] - closes_1h[1]) / closes_1h[1] * 100) if len(closes_1h) > 1 else 0
+            )
+            change_24h = (
+                ((closes_1h[0] - closes_1h[23]) / closes_1h[23] * 100) if len(closes_1h) > 23 else 0
+            )
+            change_4h = (
+                ((closes_4h[0] - closes_4h[3]) / closes_4h[3] * 100) if len(closes_4h) > 3 else 0
+            )
 
             avg_vol = sum(vols_1h) / len(vols_1h) if vols_1h else 0
             cur_vol = vols_1h[0] if vols_1h else 0
@@ -229,7 +239,7 @@ class AgentC:
             context=state.config,
             symbol=symbol,
         )
-        state.intent = intent_result.to_dict() if hasattr(intent_result, 'to_dict') else {}
+        state.intent = intent_result.to_dict() if hasattr(intent_result, "to_dict") else {}
 
         plan = self._planner.plan(state)
         graph = self._planner.build_graph(plan)
@@ -246,12 +256,12 @@ class AgentC:
 
         return decision
 
-    def scan_universe(self, universe: List[str],
-                      use_real_data: bool = False,
-                      top_n: int = 3) -> List[Dict[str, Any]]:
+    def scan_universe(
+        self, universe: List[str], use_real_data: bool = False, top_n: int = 3
+    ) -> List[Dict[str, Any]]:
         """多币种扫描"""
         if use_real_data:
-            print(f"\n[Agent C/Scan] 从 Hyperliquid 获取真实市场数据...")
+            print("\n[Agent C/Scan] 从 Hyperliquid 获取真实市场数据...")
             market_data_map = {}
             for symbol in universe:
                 mkt_data = self.fetch_market_data(symbol)
@@ -305,7 +315,9 @@ class AgentC:
 
         try:
             current_price = self._client.get_mid_price(coin)
-            print(f"  [实盘交易] {action} {coin} | 当前价格: ${current_price:.2f} | 仓位: {size_usdt} USDT | 杠杆: {leverage}x")
+            print(
+                f"  [实盘交易] {action} {coin} | 当前价格: ${current_price:.2f} | 仓位: {size_usdt} USDT | 杠杆: {leverage}x"
+            )
 
             if action == "LONG":
                 result = self._client.open_long(coin, size_usdt, leverage, tag="c")
@@ -327,6 +339,7 @@ class AgentC:
                 self._save_memory()
 
                 from execution.onchain_tpsl import ensure_tpsl
+
                 sl = trade_order.get("stop_loss")
                 tp = trade_order.get("take_profit")
                 if sl or tp:
@@ -343,11 +356,10 @@ class AgentC:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
-    def _build_decision(self, symbol: str, state: State,
-                        report: Any) -> Dict[str, Any]:
+    def _build_decision(self, symbol: str, state: State, report: Any) -> Dict[str, Any]:
         """构建最终决策"""
-        final_action = getattr(report, 'final_action', None)
-        final_confidence = getattr(report, 'final_confidence', 0.0)
+        final_action = getattr(report, "final_action", None)
+        final_confidence = getattr(report, "final_confidence", 0.0)
 
         if final_action is None or final_action == "HOLD":
             a5_result = state.get_result("A5")
@@ -360,9 +372,9 @@ class AgentC:
                 final_confidence = 0.5
 
         rationale = []
-        for node_id, result in state.results.items():
-            if hasattr(result, 'outputs') and result.outputs:
-                r = result.outputs.get('rationale', [])
+        for node_id, result in state.results.items():  # noqa: B007
+            if hasattr(result, "outputs") and result.outputs:
+                r = result.outputs.get("rationale", [])
                 if isinstance(r, list):
                     rationale.extend(r)
 
@@ -386,7 +398,7 @@ class AgentC:
             "trade_order": trade_order,
             "exit_plan": exit_plan,
             "rationale": rationale,
-            "state_trace": [t for t in state.trace],
+            "state_trace": [t for t in state.trace],  # noqa: C416
             "cycle_id": state.cycle_id,
             "timestamp": datetime.now().isoformat(),
         }
@@ -395,12 +407,14 @@ class AgentC:
         """更新记忆"""
         self._memory["total_cycles"] = self._memory.get("total_cycles", 0) + 1
 
-        self._memory["recent_decisions"].append({
-            "symbol": decision["symbol"],
-            "action": decision["action"],
-            "confidence": decision["confidence"],
-            "timestamp": decision["timestamp"],
-        })
+        self._memory["recent_decisions"].append(
+            {
+                "symbol": decision["symbol"],
+                "action": decision["action"],
+                "confidence": decision["confidence"],
+                "timestamp": decision["timestamp"],
+            }
+        )
 
         if len(self._memory["recent_decisions"]) > 50:
             self._memory["recent_decisions"] = self._memory["recent_decisions"][-50:]
@@ -435,12 +449,15 @@ class AgentC:
     def get_registered_nodes(self) -> List[Dict[str, Any]]:
         """获取已注册节点"""
         nodes = self._registry.list_nodes()
-        return [{
-            "node_id": n.node_id,
-            "name": getattr(n, "name", ""),
-            "chain": getattr(n, "chain", ""),
-            "description": getattr(n, "description", ""),
-        } for n in nodes]
+        return [
+            {
+                "node_id": n.node_id,
+                "name": getattr(n, "name", ""),
+                "chain": getattr(n, "chain", ""),
+                "description": getattr(n, "description", ""),
+            }
+            for n in nodes
+        ]
 
     def get_account_info(self) -> Dict[str, Any]:
         """获取账户信息"""
@@ -537,11 +554,11 @@ def main():
         print(f"  可用: ${acct.get('avail', 0):.2f} USDC")
         positions = acct.get("positions", {})
         if positions:
-            print(f"  持仓:")
+            print("  持仓:")
             for coin, pos in positions.items():
                 print(f"    {coin}: sz={pos.get('size', 0)} upnl=${pos.get('upnl', 0):.2f}")
         else:
-            print(f"  持仓: 无")
+            print("  持仓: 无")
         return
 
     if args.scan:
@@ -553,8 +570,8 @@ def main():
         print(f"\n=== 最佳交易机会 (Top {len(opportunities)}) ===")
         for i, opp in enumerate(opportunities, 1):
             print(f"\n{i}. {opp['symbol']}: {opp['action']} (置信度: {opp['confidence']:.1%})")
-            if opp['trade_order']:
-                o = opp['trade_order']
+            if opp["trade_order"]:
+                o = opp["trade_order"]
                 print(f"   入场: ${o.get('entry_price', 0):.2f}")
                 print(f"   止损: ${o.get('stop_loss', 0):.2f}")
                 print(f"   止盈: ${o.get('take_profit', 0):.2f}")
@@ -562,7 +579,7 @@ def main():
                 print(f"   R:R: {o.get('rr_ratio', 0)}:1")
 
             if args.execute:
-                print(f"\n   [执行交易]")
+                print("\n   [执行交易]")
                 result = agent.execute_trade(opp, auto_execute=args.auto_execute)
                 if result.get("ok"):
                     print(f"     ✅ {result.get('action_type')} {opp['symbol']}")
@@ -590,13 +607,13 @@ def main():
 
     decision = agent.analyze(args.coin, mkt_data)
 
-    print(f"\n=== 决策结果 ===")
+    print("\n=== 决策结果 ===")
     print(f"动作: {decision['action']}")
     print(f"置信度: {decision['confidence']:.1%}")
 
-    if decision['trade_order']:
-        o = decision['trade_order']
-        print(f"\n交易指令:")
+    if decision["trade_order"]:
+        o = decision["trade_order"]
+        print("\n交易指令:")
         print(f"  方向: {o.get('action')}")
         print(f"  入场价: ${o.get('entry_price', 0):.2f}")
         print(f"  止损价: ${o.get('stop_loss', 0):.2f}")
@@ -605,24 +622,24 @@ def main():
         print(f"  杠杆: {o.get('leverage', 1)}x")
         print(f"  R:R: {o.get('rr_ratio', 0)}:1")
 
-    if decision['exit_plan']:
-        print(f"\n离场计划:")
+    if decision["exit_plan"]:
+        print("\n离场计划:")
         print(f"  决策: {decision['exit_plan'].get('exit_decision')}")
         print(f"  理由: {decision['exit_plan'].get('exit_reason')}")
 
-    print(f"\n=== 推理过程 ===")
-    for line in decision['rationale']:
+    print("\n=== 推理过程 ===")
+    for line in decision["rationale"]:
         print(f"  {line}")
 
     if args.execute and decision["action"] != "HOLD":
-        print(f"\n=== 执行交易 ===")
+        print("\n=== 执行交易 ===")
         result = agent.execute_trade(decision, auto_execute=args.auto_execute)
         if result.get("ok"):
             print(f"✅ {result.get('action_type')} {decision['symbol']}")
             if result.get("action") == "executed":
-                print(f"交易已执行")
+                print("交易已执行")
             else:
-                print(f"(模拟模式)")
+                print("(模拟模式)")
         else:
             print(f"❌ 失败: {result.get('error')}")
 

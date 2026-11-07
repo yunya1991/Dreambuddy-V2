@@ -8,13 +8,13 @@
 - 胜率低于阈值且连续亏损达到 N 笔 → 触发降级
 - FAIL-OPEN：M27 不可用时不阻断信号流程
 """
+
 from __future__ import annotations
 
 import json
 import os
-import urllib.request
 import urllib.error
-from collections import defaultdict
+import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -66,7 +66,9 @@ def _extract_pnl(event: Dict[str, Any]) -> Optional[float]:
     return None
 
 
-def analyze_strategy_performance(strategy_name: str, events: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+def analyze_strategy_performance(
+    strategy_name: str, events: Optional[List[Dict[str, Any]]] = None
+) -> Dict[str, Any]:
     """分析指定策略的近期成交表现。
 
     Returns:
@@ -85,7 +87,8 @@ def analyze_strategy_performance(strategy_name: str, events: Optional[List[Dict[
 
     # 收集该策略的 exit_fill 事件（按时间正序）
     fills = [
-        e for e in events
+        e
+        for e in events
         if e.get("type") == "exit_fill" and str(e.get("strategy_name") or "") == strategy_name
     ]
     # 按 ts 排序（如果有）
@@ -179,7 +182,14 @@ def trigger_rollback(strategy_name: str, reason: str) -> Dict[str, Any]:
                 return {"ok": False, "error": f"http_{resp.status}"}
             data = json.loads(resp.read().decode("utf-8"))
             return {"ok": bool(data.get("ok")), "data": data}
-    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, OSError, ValueError, Exception) as e:
+    except (
+        urllib.error.URLError,
+        urllib.error.HTTPError,
+        json.JSONDecodeError,
+        OSError,
+        ValueError,
+        Exception,
+    ) as e:
         return {"ok": False, "error": str(e)}
 
 

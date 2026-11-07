@@ -15,11 +15,10 @@ H008: 风险扩张检查 - 与历史变更对比，检测风险扩张
 H009: Rollback Plan ID 检查 - 缺少 rollback_plan_id
 """
 
-import re
+import re  # noqa: I001
 import os
 import json
-from typing import Dict, Any, List
-from datetime import datetime, timedelta
+from typing import Dict, Any
 
 
 class HardGateChecker:
@@ -49,7 +48,11 @@ class HardGateChecker:
             {"id": "H006", "name": "环境隔离检查", "checker": self._check_environment_isolation},
             {"id": "H007", "name": "外联控制检查", "checker": self._check_external_publish},
             {"id": "H008", "name": "风险扩张检查", "checker": self._check_risk_expansion},
-            {"id": "H009", "name": "Rollback Plan ID 检查", "checker": self._check_rollback_plan_id}
+            {
+                "id": "H009",
+                "name": "Rollback Plan ID 检查",
+                "checker": self._check_rollback_plan_id,
+            },
         ]
 
         # 密钥模式 (用于 H005)
@@ -59,20 +62,23 @@ class HardGateChecker:
             r'secret["\']?\s*[:=]',
             r'password["\']?\s*[:=]',
             r'密钥["\']?\s*[:=]',
-            r'token_[a-zA-Z0-9]{20,}',
-            r'[a-zA-Z0-9+/]{40,}=*'  # Base64 可能包含密钥
+            r"token_[a-zA-Z0-9]{20,}",
+            r"[a-zA-Z0-9+/]{40,}=*",  # Base64 可能包含密钥
         ]
 
         # 生产环境关键词 (用于 H006)
-        self.production_keywords = [
-            'prod', 'production', 'main', 'master',
-            '实盘', '生产', '正式'
-        ]
+        self.production_keywords = ["prod", "production", "main", "master", "实盘", "生产", "正式"]
 
         # 风险扩张关键词 (用于 H008)
         self.risk_expansion_keywords = [
-            'leverage', '杠杆', 'margin', '保证金',
-            'expand', '扩张', 'increase', '增加'
+            "leverage",
+            "杠杆",
+            "margin",
+            "保证金",
+            "expand",
+            "扩张",
+            "increase",
+            "增加",
         ]
 
     def check(self, change_bundle: Dict[str, Any]) -> Dict[str, Any]:
@@ -98,23 +104,27 @@ class HardGateChecker:
 
             try:
                 result = checker(change_bundle)
-                details.append({
-                    "id": gate_id,
-                    "name": gate_name,
-                    "status": result["status"],
-                    "message": result["message"]
-                })
+                details.append(
+                    {
+                        "id": gate_id,
+                        "name": gate_name,
+                        "status": result["status"],
+                        "message": result["message"],
+                    }
+                )
 
                 status_icon = "✓" if result["status"] == "PASS" else "✗"
                 print(f"    {status_icon} {gate_id}: {gate_name} - {result['status']}")
 
             except Exception as e:
-                details.append({
-                    "id": gate_id,
-                    "name": gate_name,
-                    "status": "FAIL",
-                    "message": f"检查异常: {str(e)}"
-                })
+                details.append(
+                    {
+                        "id": gate_id,
+                        "name": gate_name,
+                        "status": "FAIL",
+                        "message": f"检查异常: {str(e)}",
+                    }
+                )
                 print(f"    ✗ {gate_id}: {gate_name} - FAIL (异常)")
 
         # 统计
@@ -123,11 +133,7 @@ class HardGateChecker:
 
         print(f"  硬门禁检查完成: {summary} (失败: {failed_count}/9)")
 
-        return {
-            "summary": summary,
-            "details": details,
-            "failed_count": failed_count
-        }
+        return {"summary": summary, "details": details, "failed_count": failed_count}
 
     def _check_sst_refs(self, bundle: Dict[str, Any]) -> Dict[str, str]:
         """H001: SSoT 引用检查 - 检查 doc_refs 中的文件是否真实存在"""
@@ -168,17 +174,26 @@ class HardGateChecker:
         artifacts = bundle.get("artifacts", {})
 
         # 检查是否有可复现的字段
-        reproducibility_fields = ["run_command", "script", "data_snapshot_id", "config_version", "strategy_key"]
+        reproducibility_fields = [
+            "run_command",
+            "script",
+            "data_snapshot_id",
+            "config_version",
+            "strategy_key",
+        ]
         found_fields = [field for field in reproducibility_fields if field in artifacts]
 
         if not found_fields:
-            return {"status": "FAIL", "message": "缺少可复现性字段 (run_command/script/data_snapshot_id等)"}
+            return {
+                "status": "FAIL",
+                "message": "缺少可复现性字段 (run_command/script/data_snapshot_id等)",
+            }
 
         # 检查 run_command 或 script 是否可执行 (文件存在)
         if "run_command" in artifacts:
             run_cmd = artifacts["run_command"]
             # 如果是文件路径，检查是否存在
-            if isinstance(run_cmd, str) and (run_cmd.endswith('.py') or run_cmd.endswith('.sh')):
+            if isinstance(run_cmd, str) and (run_cmd.endswith(".py") or run_cmd.endswith(".sh")):
                 if not os.path.exists(os.path.join(self.workspace_dir, run_cmd)):
                     return {"status": "WARN", "message": f"run_command 文件不存在: {run_cmd}"}
 
@@ -258,7 +273,10 @@ class HardGateChecker:
         elif missing_points:
             return {"status": "WARN", "message": f"部分 rollback_points 不存在: {missing_points}"}
 
-        return {"status": "PASS", "message": f"回滚计划可执行 (回滚点: {len(existing_points)}, 触发器: {len(triggers)})"}
+        return {
+            "status": "PASS",
+            "message": f"回滚计划可执行 (回滚点: {len(existing_points)}, 触发器: {len(triggers)})",
+        }
 
     def _check_no_secrets(self, bundle: Dict[str, Any]) -> Dict[str, str]:
         """H005: 密钥不出域检查"""
@@ -294,12 +312,17 @@ class HardGateChecker:
 
         # P0 风险 + 生产关键词 = 需要检查
         if risk_level == "P0" and found_keywords:
-            return {"status": "WARN", "message": f"P0 风险变更包含生产环境关键词: {found_keywords} (需确认环境隔离)"}
+            return {
+                "status": "WARN",
+                "message": f"P0 风险变更包含生产环境关键词: {found_keywords} (需确认环境隔离)",
+            }
 
         # 检查 artifacts 中是否有生产环境路径
         artifacts = bundle.get("artifacts", {})
         for key, value in artifacts.items():
-            if isinstance(value, str) and any(kw in value.lower() for kw in self.production_keywords):
+            if isinstance(value, str) and any(
+                kw in value.lower() for kw in self.production_keywords
+            ):
                 return {"status": "WARN", "message": f"artifacts.{key} 包含生产环境路径: {value}"}
 
         return {"status": "PASS", "message": "环境隔离检查通过"}
@@ -342,13 +365,22 @@ class HardGateChecker:
         # R2/R3 + P0/P1 = 高风险变更
         if change_type in ["R2", "R3"] and risk_level in ["P0", "P1"]:
             if found_keywords:
-                return {"status": "WARN", "message": f"R{change_type} + {risk_level} 变更包含风险扩张关键词: {found_keywords} (需人工审批)"}
+                return {
+                    "status": "WARN",
+                    "message": f"R{change_type} + {risk_level} 变更包含风险扩张关键词: {found_keywords} (需人工审批)",
+                }
             else:
-                return {"status": "WARN", "message": f"R{change_type} + {risk_level} 变更 (建议人工审批)"}
+                return {
+                    "status": "WARN",
+                    "message": f"R{change_type} + {risk_level} 变更 (建议人工审批)",
+                }
 
         # 仅包含风险扩张关键词
         if found_keywords and risk_level in ["P0", "P1"]:
-            return {"status": "WARN", "message": f"变更包含风险扩张关键词: {found_keywords} (风险级别: {risk_level})"}
+            return {
+                "status": "WARN",
+                "message": f"变更包含风险扩张关键词: {found_keywords} (风险级别: {risk_level})",
+            }
 
         return {"status": "PASS", "message": "非风险扩张型变更"}
 
@@ -377,18 +409,15 @@ def test_hard_gate_checker():
             "data_snapshot_id": "snap_20260506",
             "config_version": "v1.2.3",
             "strategy_key": "momentum_v2",
-            "gating_report": {
-                "gate_result": {"decision": "PASS"},
-                "baseline_ref": "baseline_v1.0"
-            }
+            "gating_report": {"gate_result": {"decision": "PASS"}, "baseline_ref": "baseline_v1.0"},
         },
         "rollback_plan": {
             "rollback_plan_id": "rollback_001",
             "rollback_points": ["v1.0"],
-            "triggers": ["P0 指标触发"]
+            "triggers": ["P0 指标触发"],
         },
         "change_type": "R2",
-        "risk_level": "P1"
+        "risk_level": "P1",
     }
 
     print("测试 1: 完整变更包 (期望: PASS)")
@@ -396,12 +425,7 @@ def test_hard_gate_checker():
     print(f"结果: {result_pass['summary']}\n")
 
     # 测试用例 2: 缺失字段
-    bundle_fail = {
-        "doc_refs": [],
-        "artifacts": {},
-        "change_type": "R3",
-        "risk_level": "P0"
-    }
+    bundle_fail = {"doc_refs": [], "artifacts": {}, "change_type": "R3", "risk_level": "P0"}
 
     print("测试 2: 缺失字段 (期望: FAIL)")
     result_fail = checker.check(bundle_fail)

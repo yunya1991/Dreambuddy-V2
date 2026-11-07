@@ -157,6 +157,7 @@ class CapitalControlComponent:
                 okx_live_rule,
                 okx_simulated_rule,
             )
+
             registry.load_defaults()
         self._registry: RuleRegistry = registry
 
@@ -198,8 +199,7 @@ class CapitalControlComponent:
             # 文件损坏时仍使用默认（保证组件可用）
             pass
         cfg["enabled_systems"] = [
-            s for s in cfg.get("enabled_systems") or []
-            if s in _SYSTEM_RULE_MAP
+            s for s in cfg.get("enabled_systems") or [] if s in _SYSTEM_RULE_MAP
         ] or list(_DEFAULT_SYSTEMS)
         return cfg
 
@@ -282,9 +282,7 @@ class CapitalControlComponent:
         reason_parts: List[str] = []
         if pressure == "HIGH" and phase2_enabled and action in blocked_actions:
             allowed = False
-            reason_parts.append(
-                f"high_pressure_{action}_blocked(mult={conf_mult})"
-            )
+            reason_parts.append(f"high_pressure_{action}_blocked(mult={conf_mult})")
         if result.fallback_used:
             reason_parts.append("fallback_to_static_budget")
 
@@ -321,9 +319,7 @@ class CapitalControlComponent:
                 return {
                     "ok": False,
                     "error": f"evaluate_failed: {exc}",
-                    "registry_rules_loaded": len(
-                        self._registry.get_rules(RuleCategory.CAPITAL)
-                    ),
+                    "registry_rules_loaded": len(self._registry.get_rules(RuleCategory.CAPITAL)),
                     "mode": self._mode.value,
                     "config_path": str(self._config_path),
                 }
@@ -408,15 +404,19 @@ class CapitalControlComponent:
                         for s in attached_systems:
                             if s not in by_system:
                                 by_system[s] = self._static_fallback_result(
-                                    s, "hyperliquid_handler_missing_entry",
-                                    static_budgets.get(s, 0.0), account_mapping,
+                                    s,
+                                    "hyperliquid_handler_missing_entry",
+                                    static_budgets.get(s, 0.0),
+                                    account_mapping,
                                 )
                     else:
                         # 单个结果
                         for s in attached_systems:
                             by_system[s] = self._static_fallback_result(
-                                s, "hyperliquid_handler_bad_shape",
-                                static_budgets.get(s, 0.0), account_mapping,
+                                s,
+                                "hyperliquid_handler_bad_shape",
+                                static_budgets.get(s, 0.0),
+                                account_mapping,
                             )
                 else:
                     # 其他 rule：handler 单对单；一对多时循环并在 context 里写 target_system（当前实际 1:1）
@@ -444,20 +444,26 @@ class CapitalControlComponent:
                                 by_system[s] = raw
                             else:
                                 by_system[s] = self._static_fallback_result(
-                                    s, f"handler_bad_return_type:{type(raw).__name__}",
-                                    static_budgets.get(s, 0.0), account_mapping,
+                                    s,
+                                    f"handler_bad_return_type:{type(raw).__name__}",
+                                    static_budgets.get(s, 0.0),
+                                    account_mapping,
                                 )
                         except Exception as inner:
                             by_system[s] = self._static_fallback_result(
-                                s, f"handler_error:{inner}",
-                                static_budgets.get(s, 0.0), account_mapping,
+                                s,
+                                f"handler_error:{inner}",
+                                static_budgets.get(s, 0.0),
+                                account_mapping,
                             )
             except Exception as outer:
                 for s in attached_systems:
                     if s not in by_system:
                         by_system[s] = self._static_fallback_result(
-                            s, f"rule_execution_failed:{outer}",
-                            static_budgets.get(s, 0.0), account_mapping,
+                            s,
+                            f"rule_execution_failed:{outer}",
+                            static_budgets.get(s, 0.0),
+                            account_mapping,
                         )
 
         return self._aggregate(by_system)
@@ -522,9 +528,8 @@ class CapitalControlComponent:
             if pressure == "HIGH":
                 recommendations.setdefault(s, "")
                 recommendations[s] = (
-                    (recommendations[s] + "; " if recommendations[s] else "")
-                    + f"margin_pressure=HIGH({r.used_pct}%)"
-                )
+                    recommendations[s] + "; " if recommendations[s] else ""
+                ) + f"margin_pressure=HIGH({r.used_pct}%)"
             # by_account：同一账户出现多个系统时，取 equity 最大者（Agent A/B/C 同账户 HL）
             account_key = r.account_type.value
             existing = by_account.get(account_key)
@@ -553,9 +558,7 @@ class CapitalControlComponent:
             recommendations=recommendations,
             by_account=by_account,
             extra={
-                "registry_rules_loaded": len(
-                    self._registry.get_rules(RuleCategory.CAPITAL)
-                ),
+                "registry_rules_loaded": len(self._registry.get_rules(RuleCategory.CAPITAL)),
                 "cache_ttl_sec": self._cache_ttl,
             },
         )

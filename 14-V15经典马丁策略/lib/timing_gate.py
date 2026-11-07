@@ -40,10 +40,10 @@ from typing import Any, Dict, List, Optional
 
 try:
     from .direction_gate import (
-        GateResult,
-        MarketRegime,
+        GateResult,  # noqa: F401
+        MarketRegime,  # noqa: F401
         SwingPoint,
-        TradeDirection,
+        TradeDirection,  # noqa: F401
         detect_swing_points,
     )
 except ImportError:

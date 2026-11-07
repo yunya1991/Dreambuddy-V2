@@ -20,13 +20,11 @@
 
 from __future__ import annotations
 
-import io
-import csv
+import logging
 import math
 import time
-import logging
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
@@ -53,7 +51,14 @@ CRYPTO_SECTORS: Dict[str, List[str]] = {
 
 # 主流币 Binance 交易对（用于广度特征：8 大主流币 MA128 同向比例等）
 MAINSTREAM_COINS: List[str] = [
-    "BTC", "ETH", "SOL", "BNB", "XRP", "DOGE", "ADA", "AVAX",
+    "BTC",
+    "ETH",
+    "SOL",
+    "BNB",
+    "XRP",
+    "DOGE",
+    "ADA",
+    "AVAX",
 ]
 
 
@@ -74,13 +79,16 @@ class FreeMarketFeed:
 
     def __init__(self):
         self._session = requests.Session()
-        self._session.headers.update({
-            "User-Agent": "DreamOS-FreeMarketFeed/1.0",
-            "Accept": "application/json",
-        })
+        self._session.headers.update(
+            {
+                "User-Agent": "DreamOS-FreeMarketFeed/1.0",
+                "Accept": "application/json",
+            }
+        )
         # 显式配置代理（与 OKXSimulatedClient._proxy_setup 对齐）
         # DNS 污染环境下 trust_env 默认行为失效，必须显式 proxies
         import os as _os
+
         _https_proxy = _os.environ.get("HTTPS_PROXY") or _os.environ.get("https_proxy")
         _http_proxy = _os.environ.get("HTTP_PROXY") or _os.environ.get("http_proxy")
         _proxies = {}
@@ -91,6 +99,7 @@ class FreeMarketFeed:
         # 环境变量未设置时，探测本地 Clash 默认端口
         if not _proxies:
             import socket as _sock
+
             for _port in (7890, 7891, 14122, 38324):
                 try:
                     with _sock.create_connection(("127.0.0.1", _port), timeout=0.3):
@@ -109,7 +118,9 @@ class FreeMarketFeed:
     # 底层 HTTP 工具
     # ============================================================
 
-    def _get_json(self, url: str, params: Optional[Dict] = None, timeout: int = 15) -> Optional[Any]:
+    def _get_json(
+        self, url: str, params: Optional[Dict] = None, timeout: int = 15
+    ) -> Optional[Any]:
         try:
             r = self._session.get(url, params=params, timeout=timeout)
             r.raise_for_status()
@@ -118,7 +129,9 @@ class FreeMarketFeed:
             logger.debug(f"[FreeMarketFeed] GET JSON 失败 {url}: {e}")
             return None
 
-    def _get_text(self, url: str, params: Optional[Dict] = None, timeout: int = 20) -> Optional[str]:
+    def _get_text(
+        self, url: str, params: Optional[Dict] = None, timeout: int = 20
+    ) -> Optional[str]:
         try:
             r = self._session.get(url, params=params, timeout=timeout)
             r.raise_for_status()
@@ -147,6 +160,7 @@ class FreeMarketFeed:
         返回升序排列（最老在前，最新在后）的 OHLC 列表：
             [{'t': ts秒, 'O': float, 'H': float, 'L': float, 'C': float, 'V': float(btc数量)}, ...]
         """
+
         def _fetch():
             data = self._get_json(
                 "https://api.binance.com/api/v3/klines",
@@ -158,16 +172,19 @@ class FreeMarketFeed:
             rows = []
             for k in data:
                 # [open_time_ms, open, high, low, close, vol, close_time_ms, quote_vol, ...]
-                rows.append({
-                    "t": int(k[0]) // 1000,
-                    "O": float(k[1]),
-                    "H": float(k[2]),
-                    "L": float(k[3]),
-                    "C": float(k[4]),
-                    "V": float(k[5]),
-                    "QV": float(k[7]),  # 成交额（USDT）
-                })
+                rows.append(
+                    {
+                        "t": int(k[0]) // 1000,
+                        "O": float(k[1]),
+                        "H": float(k[2]),
+                        "L": float(k[3]),
+                        "C": float(k[4]),
+                        "V": float(k[5]),
+                        "QV": float(k[7]),  # 成交额（USDT）
+                    }
+                )
             return rows
+
         return self._cached(f"btc_daily_{limit}", _fetch)
 
     # ============================================================
@@ -176,6 +193,7 @@ class FreeMarketFeed:
 
     def fetch_all_binance_tickers(self) -> Dict[str, Dict[str, float]]:
         """全部 USDT 标的 24h ticker（symbol → {'pct': 涨跌幅%, 'vol_usd_24h': 成交额 USD}）"""
+
         def _fetch() -> Dict[str, Dict[str, float]]:
             raw = self._get_json(
                 "https://api.binance.com/api/v3/ticker/24hr",
@@ -197,6 +215,7 @@ class FreeMarketFeed:
                 except (TypeError, ValueError):
                     continue
             return out
+
         return self._cached("binance_tickers_24h", _fetch, ttl=900)
 
     def get_sector_proxy_weights(self) -> Dict[str, Dict[str, Any]]:
@@ -275,6 +294,7 @@ class FreeMarketFeed:
 
         全部数据来自 Binance 免费 kline。
         """
+
         def _ma(values: List[float], n: int) -> Optional[float]:
             if len(values) < n:
                 return None
@@ -300,7 +320,11 @@ class FreeMarketFeed:
             closes = [float(k[4]) for k in kl]
             latest = closes[-1]
             ma20 = _ma(closes, 20)
-            ret_20d = (latest / closes[-lookback_days - 1] - 1) * 100 if closes[-lookback_days - 1] > 0 else 0.0
+            ret_20d = (
+                (latest / closes[-lookback_days - 1] - 1) * 100
+                if closes[-lookback_days - 1] > 0
+                else 0.0
+            )
 
             ok_coins += 1
             if ma20 is not None and latest > ma20:
@@ -339,6 +363,7 @@ class FreeMarketFeed:
 
     def fetch_global_macro(self) -> Dict[str, Any]:
         """BTC 市值占比、Top8 稳定币总市值 + 7d 变化率"""
+
         def _fetch():
             result: Dict[str, Any] = {"_ok": False}
             g = self._get_json("https://api.coingecko.com/api/v3/global", timeout=15)
@@ -350,9 +375,7 @@ class FreeMarketFeed:
                 result["total_market_cap_usd"] = float(
                     d.get("total_market_cap", {}).get("usd", 0) or 0
                 )
-                result["total_volume_24h_usd"] = float(
-                    d.get("total_volume", {}).get("usd", 0) or 0
-                )
+                result["total_volume_24h_usd"] = float(d.get("total_volume", {}).get("usd", 0) or 0)
                 result["_ok"] = True
 
             # Top8 稳定币市值求和（稳定币类别）
@@ -375,26 +398,34 @@ class FreeMarketFeed:
                 for c in sc:
                     mcap = float(c.get("market_cap") or 0)
                     total_mcap += mcap
-                    top8.append({
-                        "id": c["id"],
-                        "symbol": c["symbol"],
-                        "mcap_usd_billion": round(mcap / 1e9, 3),
-                        "change_7d_pct": round(float(c.get("price_change_percentage_7d_in_currency") or 0), 3),
-                        "change_30d_pct": round(float(c.get("price_change_percentage_30d_in_currency") or 0), 3),
-                    })
+                    top8.append(
+                        {
+                            "id": c["id"],
+                            "symbol": c["symbol"],
+                            "mcap_usd_billion": round(mcap / 1e9, 3),
+                            "change_7d_pct": round(
+                                float(c.get("price_change_percentage_7d_in_currency") or 0), 3
+                            ),
+                            "change_30d_pct": round(
+                                float(c.get("price_change_percentage_30d_in_currency") or 0), 3
+                            ),
+                        }
+                    )
                 result["stablecoin_mcap_top8_usd_billion"] = round(total_mcap / 1e9, 3)
                 # 稳定币市值 7d/30d 变化率 ≈ 稳定币「净申赎」（法币入场代理）
                 if total_mcap > 0:
                     # 用 top8 的加权 7d/30d 价格变化率近似市值变化（稳定币 peg≈1，≈ 数量变化）
                     weighted_7d = sum(
-                        (float(c.get("market_cap") or 0) / total_mcap) *
-                        float(c.get("price_change_percentage_7d_in_currency") or 0)
-                        for c in sc if c.get("market_cap")
+                        (float(c.get("market_cap") or 0) / total_mcap)
+                        * float(c.get("price_change_percentage_7d_in_currency") or 0)
+                        for c in sc
+                        if c.get("market_cap")
                     )
                     weighted_30d = sum(
-                        (float(c.get("market_cap") or 0) / total_mcap) *
-                        float(c.get("price_change_percentage_30d_in_currency") or 0)
-                        for c in sc if c.get("market_cap")
+                        (float(c.get("market_cap") or 0) / total_mcap)
+                        * float(c.get("price_change_percentage_30d_in_currency") or 0)
+                        for c in sc
+                        if c.get("market_cap")
                     )
                     result["stablecoin_mcap_change_7d_pct_proxy"] = round(weighted_7d, 4)
                     result["stablecoin_mcap_change_30d_pct_proxy"] = round(weighted_30d, 4)
@@ -402,6 +433,7 @@ class FreeMarketFeed:
                 result["_ok"] = True
 
             return result if result["_ok"] else {"_ok": False, "err": "coingecko_failed"}
+
         return self._cached("cg_global_macro", _fetch, ttl=1800)
 
     # ============================================================
@@ -438,6 +470,7 @@ class FreeMarketFeed:
                 rng = (out["high_30d"] - out["low_30d"]) or 1
                 out["percentile_30d"] = round((out["value"] - out["low_30d"]) / rng, 3)
             return out
+
         return self._cached(f"fear_greed_{limit}", _fetch, ttl=1800)
 
     # ============================================================
@@ -457,6 +490,7 @@ class FreeMarketFeed:
 
         注意：yfinance 有 rate limit，日线训练一天一次完全够用；此处加了进程内缓存避免重复打。
         """
+
         def _fetch() -> List[Dict[str, Any]]:
             try:
                 import yfinance as yf  # lazy import：项目未装时也能跑加密侧数据
@@ -506,16 +540,20 @@ class FreeMarketFeed:
                         if hasattr(ts, "tz_convert"):
                             dt = ts.tz_convert("UTC") if str(ts.tz) != "UTC" else ts
                         else:
-                            dt = datetime.combine(ts.date(), datetime.min.time(), tzinfo=timezone.utc)
-                        rows.append({
-                            "t": int(dt.timestamp()),
-                            "date": dt.strftime("%Y-%m-%d"),
-                            "O": float(opens.iloc[i]) if opens is not None else float(c),
-                            "H": float(highs.iloc[i]) if highs is not None else float(c),
-                            "L": float(lows.iloc[i]) if lows is not None else float(c),
-                            "C": float(c),
-                            "V": float(vols.iloc[i]) if vols is not None else 0.0,
-                        })
+                            dt = datetime.combine(
+                                ts.date(), datetime.min.time(), tzinfo=timezone.utc
+                            )
+                        rows.append(
+                            {
+                                "t": int(dt.timestamp()),
+                                "date": dt.strftime("%Y-%m-%d"),
+                                "O": float(opens.iloc[i]) if opens is not None else float(c),
+                                "H": float(highs.iloc[i]) if highs is not None else float(c),
+                                "L": float(lows.iloc[i]) if lows is not None else float(c),
+                                "C": float(c),
+                                "V": float(vols.iloc[i]) if vols is not None else 0.0,
+                            }
+                        )
                     except (TypeError, ValueError):
                         continue
 
@@ -524,6 +562,7 @@ class FreeMarketFeed:
             except Exception as e:
                 logger.debug(f"[FreeMarketFeed] yfinance 取 {ticker} 失败: {e}")
                 return []
+
         return self._cached(f"yf_{ticker.lower()}_{limit}", _fetch, ttl=3600)
 
     # ============================================================
@@ -554,6 +593,7 @@ class FreeMarketFeed:
         BTC（Binance）是 UTC 00:00 日K；美股 ETF (yfinance) 是 America/New_York 收盘日K。
         两边时区不一致会导致时间戳对不上，但 YYYY-MM-DD 日期本身是对齐的（加密 7*24h 但美股收市时对应的 UTC 日期一致）。
         """
+
         def _ymd(row: Dict) -> Optional[str]:
             # 优先用已解析好的 date 字段；否则从时间戳转回 UTC 日期字符串
             d = row.get("date")
@@ -638,7 +678,9 @@ class FreeMarketFeed:
         result["btc_equity_coupled"] = bool(avg_equity is not None and avg_equity > 0.4)
         # 避险 = 正黄金+正美债+弱美股（或都正但黄金>美股）
         if corr_gld is not None and corr_tlt is not None and avg_equity is not None:
-            result["btc_safe_haven"] = bool(corr_gld > 0.2 and corr_tlt > 0.0 and corr_gld > avg_equity)
+            result["btc_safe_haven"] = bool(
+                corr_gld > 0.2 and corr_tlt > 0.0 and corr_gld > avg_equity
+            )
         else:
             result["btc_safe_haven"] = None
 
@@ -695,7 +737,8 @@ class FreeMarketFeed:
             }
         # 三只 ETF 平均超额收益 → 宏观机构参与度代理
         excesses = [
-            v["excess_vs_btc_20d_pct"] for v in out["funds"].values()
+            v["excess_vs_btc_20d_pct"]
+            for v in out["funds"].values()
             if v["excess_vs_btc_20d_pct"] is not None
         ]
         if excesses:
@@ -707,9 +750,9 @@ class FreeMarketFeed:
     #    全部公共无 key 接口，spec §6 市场广度 / §8 宏观组特征
     # ============================================================
 
-    def fetch_binance_futures_derivatives(self, symbol: str = "BTCUSDT",
-                                          period: str = "1h",
-                                          limit: int = 30) -> Dict[str, Any]:
+    def fetch_binance_futures_derivatives(
+        self, symbol: str = "BTCUSDT", period: str = "1h", limit: int = 30
+    ) -> Dict[str, Any]:
         """Binance Futures 免费衍生品数据（零 key、公开接口）
 
         采集 5 大类数据：
@@ -721,6 +764,7 @@ class FreeMarketFeed:
 
         period: 5m/15m/30m/1h/2h/4h/6h/12h/1d
         """
+
         def _fetch() -> Dict[str, Any]:
             base_fapi = "https://fapi.binance.com"
             result: Dict[str, Any] = {"_ok": False, "symbol": symbol, "period": period}
@@ -737,11 +781,17 @@ class FreeMarketFeed:
                 oi_rows = []
                 for r in oih:
                     try:
-                        oi_rows.append({
-                            "time_s": int(float(r.get("timestamp", 0)) // 1000) if r.get("timestamp") else None,
-                            "oi_contracts_sum": float(r.get("sumOpenInterest") or 0),
-                            "oi_usd_notional_sum": float(r.get("sumOpenInterestValue") or 0),
-                        })
+                        oi_rows.append(
+                            {
+                                "time_s": (
+                                    int(float(r.get("timestamp", 0)) // 1000)
+                                    if r.get("timestamp")
+                                    else None
+                                ),
+                                "oi_contracts_sum": float(r.get("sumOpenInterest") or 0),
+                                "oi_usd_notional_sum": float(r.get("sumOpenInterestValue") or 0),
+                            }
+                        )
                     except (TypeError, ValueError):
                         continue
                 if oi_rows:
@@ -767,15 +817,19 @@ class FreeMarketFeed:
             if fr:
                 fr_list = []
                 for r in fr:
-                    fr_list.append({
-                        "funding_time_s": int(r.get("fundingTime", 0)) // 1000,
-                        "rate_pct": round(float(r.get("fundingRate") or 0) * 100, 5),  # 转 %
-                        "mark_price": float(r.get("markPrice") or 0),
-                    })
+                    fr_list.append(
+                        {
+                            "funding_time_s": int(r.get("fundingTime", 0)) // 1000,
+                            "rate_pct": round(float(r.get("fundingRate") or 0) * 100, 5),  # 转 %
+                            "mark_price": float(r.get("markPrice") or 0),
+                        }
+                    )
                 result["funding_rate_history"] = fr_list
                 if fr_list:
                     latest_fr = fr_list[-1]
-                    avg7 = sum(x["rate_pct"] for x in fr_list[-min(7, len(fr_list)):]) / min(7, len(fr_list))
+                    avg7 = sum(x["rate_pct"] for x in fr_list[-min(7, len(fr_list)) :]) / min(
+                        7, len(fr_list)
+                    )
                     avg30 = sum(x["rate_pct"] for x in fr_list) / len(fr_list)
                     result["funding_rate_latest"] = latest_fr
                     result["funding_rate_avg7_pct"] = round(avg7, 5)
@@ -791,19 +845,29 @@ class FreeMarketFeed:
             if tls:
                 ls_list = []
                 for r in tls:
-                    ls_list.append({
-                        "time_s": int(float(r.get("timestamp", 0)) // 1000) if r.get("timestamp") else None,
-                        "buy_sell_ratio": round(float(r.get("buySellRatio") or 0), 4),
-                        "buy_vol": float(r.get("buyVol") or 0),
-                        "sell_vol": float(r.get("sellVol") or 0),
-                    })
+                    ls_list.append(
+                        {
+                            "time_s": (
+                                int(float(r.get("timestamp", 0)) // 1000)
+                                if r.get("timestamp")
+                                else None
+                            ),
+                            "buy_sell_ratio": round(float(r.get("buySellRatio") or 0), 4),
+                            "buy_vol": float(r.get("buyVol") or 0),
+                            "sell_vol": float(r.get("sellVol") or 0),
+                        }
+                    )
                 result["taker_ls_ratio_history"] = ls_list
                 if ls_list:
                     latest = ls_list[-1]
-                    avg7 = sum(x["buy_sell_ratio"] for x in ls_list[-min(7, len(ls_list)):]) / min(7, len(ls_list))
+                    avg7 = sum(x["buy_sell_ratio"] for x in ls_list[-min(7, len(ls_list)) :]) / min(
+                        7, len(ls_list)
+                    )
                     result["taker_ls_ratio_latest"] = latest
                     result["taker_ls_ratio_avg7"] = round(avg7, 4)
-                    result["taker_pressure_bullish"] = bool(latest["buy_sell_ratio"] > 1.05)  # 主动买 > 卖 5%
+                    result["taker_pressure_bullish"] = bool(
+                        latest["buy_sell_ratio"] > 1.05
+                    )  # 主动买 > 卖 5%
 
             # --- 4) 全账户多空比 ---
             gals = self._get_json(
@@ -813,12 +877,20 @@ class FreeMarketFeed:
             if gals:
                 ar_list = []
                 for r in gals:
-                    ar_list.append({
-                        "time_s": int(float(r.get("timestamp", 0)) // 1000) if r.get("timestamp") else None,
-                        "long_short_account_ratio": round(float(r.get("longShortRatio") or 0), 4),
-                        "long_account_pct": round(float(r.get("longAccount") or 0) * 100, 2),
-                        "short_account_pct": round(float(r.get("shortAccount") or 0) * 100, 2),
-                    })
+                    ar_list.append(
+                        {
+                            "time_s": (
+                                int(float(r.get("timestamp", 0)) // 1000)
+                                if r.get("timestamp")
+                                else None
+                            ),
+                            "long_short_account_ratio": round(
+                                float(r.get("longShortRatio") or 0), 4
+                            ),
+                            "long_account_pct": round(float(r.get("longAccount") or 0) * 100, 2),
+                            "short_account_pct": round(float(r.get("shortAccount") or 0) * 100, 2),
+                        }
+                    )
                 result["global_ls_account_ratio_history"] = ar_list
                 if ar_list:
                     result["global_ls_account_ratio_latest"] = ar_list[-1]
@@ -831,28 +903,42 @@ class FreeMarketFeed:
             if ttls:
                 tp_list = []
                 for r in ttls:
-                    tp_list.append({
-                        "time_s": int(float(r.get("timestamp", 0)) // 1000) if r.get("timestamp") else None,
-                        "long_short_position_ratio": round(float(r.get("longShortRatio") or 0), 4),
-                        "long_position_pct": round(float(r.get("longAccount") or 0) * 100, 2),
-                        "short_position_pct": round(float(r.get("shortAccount") or 0) * 100, 2),
-                    })
+                    tp_list.append(
+                        {
+                            "time_s": (
+                                int(float(r.get("timestamp", 0)) // 1000)
+                                if r.get("timestamp")
+                                else None
+                            ),
+                            "long_short_position_ratio": round(
+                                float(r.get("longShortRatio") or 0), 4
+                            ),
+                            "long_position_pct": round(float(r.get("longAccount") or 0) * 100, 2),
+                            "short_position_pct": round(float(r.get("shortAccount") or 0) * 100, 2),
+                        }
+                    )
                 result["top_trader_position_ratio_history"] = tp_list
                 if tp_list:
                     result["top_trader_position_ratio_latest"] = tp_list[-1]
-                    t7_avg = sum(x["long_short_position_ratio"] for x in tp_list[-min(7, len(tp_list)):]) / min(7, len(tp_list))
+                    t7_avg = sum(
+                        x["long_short_position_ratio"] for x in tp_list[-min(7, len(tp_list)) :]
+                    ) / min(7, len(tp_list))
                     result["top_trader_position_ratio_avg7"] = round(t7_avg, 4)
 
             has_any = any(k for k in result.keys() if k not in _META_KEYS)
             result["_ok"] = has_any
             return result
+
         cache_key = f"bif_{symbol.lower()}_{period}_{limit}"
         return self._cached(cache_key, _fetch, ttl=900)
 
-    def fetch_okx_public_derivatives(self, inst_id: str = "BTC-USDT-SWAP",
-                                     ccy: str = "BTC",
-                                     period_bar: str = "1H",
-                                     limit: int = 30) -> Dict[str, Any]:
+    def fetch_okx_public_derivatives(
+        self,
+        inst_id: str = "BTC-USDT-SWAP",
+        ccy: str = "BTC",
+        period_bar: str = "1H",
+        limit: int = 30,
+    ) -> Dict[str, Any]:
         """OKX V5 公共接口免费衍生品数据（零 key、公开 REST，Binance 的双备份）
 
         采集 4 大类数据：
@@ -863,6 +949,7 @@ class FreeMarketFeed:
 
         period_bar: 1H/4H/8H/12H/1D
         """
+
         def _fetch() -> Dict[str, Any]:
             base = "https://www.okx.com"
             result: Dict[str, Any] = {"_ok": False, "inst_id": inst_id, "ccy": ccy}
@@ -878,12 +965,14 @@ class FreeMarketFeed:
                 for r in oih["data"]:
                     # OKX 格式: [ts, oi, oi_usd, vol, vol_ccy] （具体字段根据版本）
                     # 文档: ts, openInterest, openInterestUsd, volume, volumeCcy
-                    oi_list.append({
-                        "time_s": int(float(r[0])) // 1000 if len(r) > 0 and r[0] else None,
-                        "oi_ccy": float(r[1]) if len(r) > 1 else 0.0,
-                        "oi_usd": float(r[2]) if len(r) > 2 else 0.0,
-                        "vol_ccy": float(r[3]) if len(r) > 3 else 0.0,
-                    })
+                    oi_list.append(
+                        {
+                            "time_s": int(float(r[0])) // 1000 if len(r) > 0 and r[0] else None,
+                            "oi_ccy": float(r[1]) if len(r) > 1 else 0.0,
+                            "oi_usd": float(r[2]) if len(r) > 2 else 0.0,
+                            "vol_ccy": float(r[3]) if len(r) > 3 else 0.0,
+                        }
+                    )
                 result["oi_history_usd"] = oi_list
                 if oi_list:
                     result["oi_latest_usd"] = oi_list[-1]["oi_usd"]
@@ -901,17 +990,21 @@ class FreeMarketFeed:
             if frh and frh.get("code") == "0" and frh.get("data"):
                 fr_list = []
                 for r in frh["data"]:
-                    fr_list.append({
-                        "time_s": int(r.get("fundingTime", 0)) // 1000,
-                        "rate_pct": round(float(r.get("fundingRate") or 0) * 100, 5),
-                        "method": r.get("method"),
-                    })
+                    fr_list.append(
+                        {
+                            "time_s": int(r.get("fundingTime", 0)) // 1000,
+                            "rate_pct": round(float(r.get("fundingRate") or 0) * 100, 5),
+                            "method": r.get("method"),
+                        }
+                    )
                 # OKX 历史返回是新→旧，反转为升序
                 fr_list.reverse()
                 result["funding_rate_history"] = fr_list
                 if fr_list:
                     latest_fr = fr_list[-1]
-                    avg7 = sum(x["rate_pct"] for x in fr_list[-min(7, len(fr_list)):]) / min(7, len(fr_list))
+                    avg7 = sum(x["rate_pct"] for x in fr_list[-min(7, len(fr_list)) :]) / min(
+                        7, len(fr_list)
+                    )
                     result["funding_rate_latest"] = latest_fr
                     result["funding_rate_avg7_pct"] = round(avg7, 5)
 
@@ -937,15 +1030,18 @@ class FreeMarketFeed:
             if tv and tv.get("code") == "0" and tv.get("data"):
                 tv_list = []
                 for r in tv["data"]:
-                    tv_list.append({
-                        "time_s": int(float(r[0])) // 1000 if len(r) > 0 and r[0] else None,
-                        "taker_buy_vol_usd": float(r[1]) if len(r) > 1 else 0.0,
-                        "taker_sell_vol_usd": float(r[2]) if len(r) > 2 else 0.0,
-                        "taker_buy_sell_ratio": (
-                            round(float(r[1]) / float(r[2]), 4)
-                            if len(r) > 2 and float(r[2]) > 0 else None
-                        ),
-                    })
+                    tv_list.append(
+                        {
+                            "time_s": int(float(r[0])) // 1000 if len(r) > 0 and r[0] else None,
+                            "taker_buy_vol_usd": float(r[1]) if len(r) > 1 else 0.0,
+                            "taker_sell_vol_usd": float(r[2]) if len(r) > 2 else 0.0,
+                            "taker_buy_sell_ratio": (
+                                round(float(r[1]) / float(r[2]), 4)
+                                if len(r) > 2 and float(r[2]) > 0
+                                else None
+                            ),
+                        }
+                    )
                 result["taker_volume_history"] = tv_list
                 if tv_list:
                     result["taker_ls_ratio_latest"] = tv_list[-1]
@@ -953,6 +1049,7 @@ class FreeMarketFeed:
             has_any = any(k for k in result.keys() if k not in _META_KEYS)
             result["_ok"] = has_any
             return result
+
         cache_key = f"okx_{ccy.lower()}_{inst_id.lower()}_{period_bar}_{limit}"
         return self._cached(cache_key, _fetch, ttl=900)
 
@@ -967,7 +1064,9 @@ class FreeMarketFeed:
           - _sources_ok：哪些来源成功
         """
         bi = self.fetch_binance_futures_derivatives("BTCUSDT", period="4h", limit=30)
-        okx = self.fetch_okx_public_derivatives("BTC-USDT-SWAP", ccy="BTC", period_bar="4H", limit=30)
+        okx = self.fetch_okx_public_derivatives(
+            "BTC-USDT-SWAP", ccy="BTC", period_bar="4H", limit=30
+        )
 
         snap: Dict[str, Any] = {
             "_sources_ok": {
@@ -1003,20 +1102,20 @@ class FreeMarketFeed:
             snap["funding_rate_avg7_pct"] = okx.get("funding_rate_avg7_pct")
 
         if okx.get("funding_rate_settlement"):
-            snap["funding_rate_next_predicted_pct"] = (
-                okx["funding_rate_settlement"]["next_rate_pct"]
-            )
+            snap["funding_rate_next_predicted_pct"] = okx["funding_rate_settlement"][
+                "next_rate_pct"
+            ]
 
         # --- 主动买卖比（Taker L/S）：Binance + OKX 对比 ---
         sources_ls = []
         if bi.get("taker_ls_ratio_latest"):
             sources_ls.append(bi["taker_ls_ratio_latest"]["buy_sell_ratio"])
-        if okx.get("taker_ls_ratio_latest") and okx["taker_ls_ratio_latest"].get("taker_buy_sell_ratio"):
+        if okx.get("taker_ls_ratio_latest") and okx["taker_ls_ratio_latest"].get(
+            "taker_buy_sell_ratio"
+        ):
             sources_ls.append(okx["taker_ls_ratio_latest"]["taker_buy_sell_ratio"])
         if sources_ls:
-            snap["taker_buy_sell_ratio_consensus"] = round(
-                sum(sources_ls) / len(sources_ls), 4
-            )
+            snap["taker_buy_sell_ratio_consensus"] = round(sum(sources_ls) / len(sources_ls), 4)
             snap["taker_pressure_bullish"] = bool(snap["taker_buy_sell_ratio_consensus"] > 1.05)
             snap["taker_pressure_bearish"] = bool(snap["taker_buy_sell_ratio_consensus"] < 0.95)
 
@@ -1065,12 +1164,18 @@ class FreeMarketFeed:
         """
         # 默认 12 个高流动性币种（BTC/ETH + 5 板块 Top2）
         DEFAULT_SYMBOLS = [
-            "BTCUSDT", "ETHUSDT",
-            "UNIUSDT", "AAVEUSDT",      # DEFI Top2
-            "FETUSDT", "RNDRUSDT",      # AI_WEB3 Top2
-            "ONDOUSDT", "POLYXUSDT",    # RWA Top2
-            "DOGEUSDT", "WIFUSDT",      # MEME Top2
-            "SOLUSDT", "ARBUSDT",       # L2 Top2
+            "BTCUSDT",
+            "ETHUSDT",
+            "UNIUSDT",
+            "AAVEUSDT",  # DEFI Top2
+            "FETUSDT",
+            "RNDRUSDT",  # AI_WEB3 Top2
+            "ONDOUSDT",
+            "POLYXUSDT",  # RWA Top2
+            "DOGEUSDT",
+            "WIFUSDT",  # MEME Top2
+            "SOLUSDT",
+            "ARBUSDT",  # L2 Top2
         ]
         syms = symbols or DEFAULT_SYMBOLS
 
@@ -1090,9 +1195,12 @@ class FreeMarketFeed:
                 try:
                     raw = self._get_json(
                         f"{base_fapi}/fapi/v1/allForceOrders",
-                        params={"symbol": sym, "limit": "500",
-                                "startTime": str(start_s * 1000),
-                                "endTime": str(end_s * 1000)},
+                        params={
+                            "symbol": sym,
+                            "limit": "500",
+                            "startTime": str(start_s * 1000),
+                            "endTime": str(end_s * 1000),
+                        },
                     )
                 except Exception:
                     raw = None
@@ -1100,10 +1208,16 @@ class FreeMarketFeed:
                     any_api_reached = True
                 else:
                     continue
-                rows = [r for r in raw if isinstance(r, dict) and
-                        (str(r.get("origType", "")).startswith("FORCE_LIQUIDATION") or
-                         r.get("closePosition") is True or
-                         r.get("reduceOnly") is True)]
+                rows = [
+                    r
+                    for r in raw
+                    if isinstance(r, dict)
+                    and (
+                        str(r.get("origType", "")).startswith("FORCE_LIQUIDATION")
+                        or r.get("closePosition") is True
+                        or r.get("reduceOnly") is True
+                    )
+                ]
                 if not rows:
                     continue
                 symbols_with_liq += 1
@@ -1136,18 +1250,20 @@ class FreeMarketFeed:
                 # 低波动无爆仓是合法状态：返回零值 + CALM
                 # _ok=True 前提是 API 确实可达（any_api_reached == True 或有币种有爆仓）
                 zero_ok = bool(any_api_reached or symbols_with_liq > 0)
-                result.update({
-                    "total_liq_usd_24h": 0.0,
-                    "long_liq_usd_24h": 0.0,
-                    "short_liq_usd_24h": 0.0,
-                    "long_short_liq_ratio": None,
-                    "per_hour_buckets": [],
-                    "max_1h_liq_usd": 0.0,
-                    "cascade_hours": 0,
-                    "panic_score_0_to_1": 0.0,
-                    "panic_level": "CALM",
-                    "_api_reached": any_api_reached,
-                })
+                result.update(
+                    {
+                        "total_liq_usd_24h": 0.0,
+                        "long_liq_usd_24h": 0.0,
+                        "short_liq_usd_24h": 0.0,
+                        "long_short_liq_ratio": None,
+                        "per_hour_buckets": [],
+                        "max_1h_liq_usd": 0.0,
+                        "cascade_hours": 0,
+                        "panic_score_0_to_1": 0.0,
+                        "panic_level": "CALM",
+                        "_api_reached": any_api_reached,
+                    }
+                )
                 result["_ok"] = zero_ok
                 return result
             else:
@@ -1159,16 +1275,22 @@ class FreeMarketFeed:
                     hour_ts_s = bk * bucket_s
                     total_long += b["long_usd"]
                     total_short += b["short_usd"]
-                    bucket_rows.append({
-                        "hour_ts_s": hour_ts_s,
-                        "hour_utc": datetime.fromtimestamp(hour_ts_s, tz=timezone.utc).strftime("%Y-%m-%d %H:00"),
-                        "long_usd": round(b["long_usd"], 2),
-                        "short_usd": round(b["short_usd"], 2),
-                        "total_usd": round(b["long_usd"] + b["short_usd"], 2),
-                    })
+                    bucket_rows.append(
+                        {
+                            "hour_ts_s": hour_ts_s,
+                            "hour_utc": datetime.fromtimestamp(hour_ts_s, tz=timezone.utc).strftime(
+                                "%Y-%m-%d %H:00"
+                            ),
+                            "long_usd": round(b["long_usd"], 2),
+                            "short_usd": round(b["short_usd"], 2),
+                            "total_usd": round(b["long_usd"] + b["short_usd"], 2),
+                        }
+                    )
                 total_all = total_long + total_short
-                ls_ratio = round(total_long / total_short, 4) if total_short > 1e-6 else (
-                    10.0 if total_long > 0 else None
+                ls_ratio = (
+                    round(total_long / total_short, 4)
+                    if total_short > 1e-6
+                    else (10.0 if total_long > 0 else None)
                 )
                 max_1h = max((b["total_usd"] for b in bucket_rows), default=0.0)
 
@@ -1189,14 +1311,18 @@ class FreeMarketFeed:
                 # 参考 OKX 公开研究：BTC 合约单币种 24h 爆仓 ≥ $1 亿属于典型 panic
                 # 这里多币种合计，阈值调高到 $3 亿；log10 压缩
                 import math
+
                 THRESH_B = 3e8  # $300M
                 if total_all <= 0:
                     pscore = 0.0
                 else:
-                    pscore = min(1.0, max(0.0,
-                        (math.log10(max(total_all, 1e6)) - 6.0) /
-                        (math.log10(THRESH_B) - 6.0)
-                    ))
+                    pscore = min(
+                        1.0,
+                        max(
+                            0.0,
+                            (math.log10(max(total_all, 1e6)) - 6.0) / (math.log10(THRESH_B) - 6.0),
+                        ),
+                    )
                 # cascade 加成：3+ 级联连爆 → 分数 × 1.25，5+ → × 1.5，上限 1
                 if cascade >= 5:
                     pscore = min(1.0, pscore * 1.5)
@@ -1214,23 +1340,26 @@ class FreeMarketFeed:
                 else:
                     plevel = "CALM"
 
-                result.update({
-                    "total_liq_usd_24h": round(total_all, 2),
-                    "long_liq_usd_24h": round(total_long, 2),
-                    "short_liq_usd_24h": round(total_short, 2),
-                    "long_short_liq_ratio": ls_ratio,
-                    "per_hour_buckets": bucket_rows,
-                    "max_1h_liq_usd": round(max_1h, 2),
-                    "cascade_hours": cascade,
-                    "panic_score_0_to_1": round(pscore, 4),
-                    "panic_level": plevel,
-                })
+                result.update(
+                    {
+                        "total_liq_usd_24h": round(total_all, 2),
+                        "long_liq_usd_24h": round(total_long, 2),
+                        "short_liq_usd_24h": round(total_short, 2),
+                        "long_short_liq_ratio": ls_ratio,
+                        "per_hour_buckets": bucket_rows,
+                        "max_1h_liq_usd": round(max_1h, 2),
+                        "cascade_hours": cascade,
+                        "panic_score_0_to_1": round(pscore, 4),
+                        "panic_level": plevel,
+                    }
+                )
 
             has_data = any(k for k in result.keys() if k not in _META_KEYS)
             if has_data:
                 result["_api_reached"] = any_api_reached or symbols_with_liq > 0
             result["_ok"] = has_data
             return result
+
         cache_key = f"biliq_{len(syms)}syms_{lookback_hours}h_{per_bucket_hours}b"
         return self._cached(cache_key, _fetch, ttl=300)  # 爆仓更实时，5 分钟缓存
 
@@ -1267,8 +1396,7 @@ class FreeMarketFeed:
             for uly in ULYS:
                 raw = self._get_json(
                     f"{base}/api/v5/public/liquidation-orders",
-                    params={"instType": inst_type, "uly": uly,
-                            "limit": "100", "state": "filled"},
+                    params={"instType": inst_type, "uly": uly, "limit": "100", "state": "filled"},
                 )
                 if raw and raw.get("code") == "0":
                     any_api_reached = True
@@ -1303,19 +1431,21 @@ class FreeMarketFeed:
 
             if not buckets:
                 zero_ok = any_api_reached
-                result.update({
-                    "total_liq_usd_24h": 0.0,
-                    "long_liq_usd_24h": 0.0,
-                    "short_liq_usd_24h": 0.0,
-                    "long_short_liq_ratio": None,
-                    "per_hour_buckets": [],
-                    "max_1h_liq_usd": 0.0,
-                    "cascade_hours": 0,
-                    "panic_score_0_to_1": 0.0,
-                    "panic_level": "CALM",
-                    "_api_reached": any_api_reached,
-                    "_ok": zero_ok,
-                })
+                result.update(
+                    {
+                        "total_liq_usd_24h": 0.0,
+                        "long_liq_usd_24h": 0.0,
+                        "short_liq_usd_24h": 0.0,
+                        "long_short_liq_ratio": None,
+                        "per_hour_buckets": [],
+                        "max_1h_liq_usd": 0.0,
+                        "cascade_hours": 0,
+                        "panic_score_0_to_1": 0.0,
+                        "panic_level": "CALM",
+                        "_api_reached": any_api_reached,
+                        "_ok": zero_ok,
+                    }
+                )
                 return result
             else:
                 bucket_rows = []
@@ -1323,14 +1453,19 @@ class FreeMarketFeed:
                 for bk in sorted(buckets.keys()):
                     b = buckets[bk]
                     hts = bk * bucket_s
-                    tl += b["long_usd"]; ts_ += b["short_usd"]
-                    bucket_rows.append({
-                        "hour_ts_s": hts,
-                        "hour_utc": datetime.fromtimestamp(hts, tz=timezone.utc).strftime("%Y-%m-%d %H:00"),
-                        "long_usd": round(b["long_usd"], 2),
-                        "short_usd": round(b["short_usd"], 2),
-                        "total_usd": round(b["long_usd"] + b["short_usd"], 2),
-                    })
+                    tl += b["long_usd"]
+                    ts_ += b["short_usd"]
+                    bucket_rows.append(
+                        {
+                            "hour_ts_s": hts,
+                            "hour_utc": datetime.fromtimestamp(hts, tz=timezone.utc).strftime(
+                                "%Y-%m-%d %H:00"
+                            ),
+                            "long_usd": round(b["long_usd"], 2),
+                            "short_usd": round(b["short_usd"], 2),
+                            "total_usd": round(b["long_usd"] + b["short_usd"], 2),
+                        }
+                    )
                 total_all = tl + ts_
                 ls_ratio = round(tl / ts_, 4) if ts_ > 1e-6 else (10.0 if tl > 0 else None)
                 max_1h = max((b["total_usd"] for b in bucket_rows), default=0.0)
@@ -1338,38 +1473,58 @@ class FreeMarketFeed:
                 cascade, cur_run = 0, 1
                 for i in range(1, len(totals_s)):
                     if totals_s[i] > totals_s[i - 1]:
-                        cur_run += 1; cascade = max(cascade, cur_run)
+                        cur_run += 1
+                        cascade = max(cascade, cur_run)
                     else:
                         cur_run = 1
                 if cascade < 3:
                     cascade = 0
                 import math
+
                 THRESH_B = 3e8
-                pscore = 0.0 if total_all <= 0 else min(1.0, max(0.0,
-                    (math.log10(max(total_all, 1e6)) - 6.0) /
-                    (math.log10(THRESH_B) - 6.0)))
-                if cascade >= 5: pscore = min(1.0, pscore * 1.5)
-                elif cascade >= 3: pscore = min(1.0, pscore * 1.25)
-                if pscore >= 0.80: plevel = "EXTREME_PANIC"
-                elif pscore >= 0.55: plevel = "PANIC"
-                elif pscore >= 0.30: plevel = "TENSE"
-                elif pscore >= 0.10: plevel = "MILD"
-                else: plevel = "CALM"
-                result.update({
-                    "total_liq_usd_24h": round(total_all, 2),
-                    "long_liq_usd_24h": round(tl, 2),
-                    "short_liq_usd_24h": round(ts_, 2),
-                    "long_short_liq_ratio": ls_ratio,
-                    "per_hour_buckets": bucket_rows,
-                    "max_1h_liq_usd": round(max_1h, 2),
-                    "cascade_hours": cascade,
-                    "panic_score_0_to_1": round(pscore, 4),
-                    "panic_level": plevel,
-                    "_api_reached": any_api_reached,
-                })
+                pscore = (
+                    0.0
+                    if total_all <= 0
+                    else min(
+                        1.0,
+                        max(
+                            0.0,
+                            (math.log10(max(total_all, 1e6)) - 6.0) / (math.log10(THRESH_B) - 6.0),
+                        ),
+                    )
+                )
+                if cascade >= 5:
+                    pscore = min(1.0, pscore * 1.5)
+                elif cascade >= 3:
+                    pscore = min(1.0, pscore * 1.25)
+                if pscore >= 0.80:
+                    plevel = "EXTREME_PANIC"
+                elif pscore >= 0.55:
+                    plevel = "PANIC"
+                elif pscore >= 0.30:
+                    plevel = "TENSE"
+                elif pscore >= 0.10:
+                    plevel = "MILD"
+                else:
+                    plevel = "CALM"
+                result.update(
+                    {
+                        "total_liq_usd_24h": round(total_all, 2),
+                        "long_liq_usd_24h": round(tl, 2),
+                        "short_liq_usd_24h": round(ts_, 2),
+                        "long_short_liq_ratio": ls_ratio,
+                        "per_hour_buckets": bucket_rows,
+                        "max_1h_liq_usd": round(max_1h, 2),
+                        "cascade_hours": cascade,
+                        "panic_score_0_to_1": round(pscore, 4),
+                        "panic_level": plevel,
+                        "_api_reached": any_api_reached,
+                    }
+                )
 
             result["_ok"] = bool(any(k for k in result.keys() if k not in _META_KEYS))
             return result
+
         cache_key = f"okxliq_{inst_type.lower()}_{len(ULYS)}_{lookback_hours}h"
         return self._cached(cache_key, _fetch, ttl=300)
 
@@ -1436,11 +1591,16 @@ class FreeMarketFeed:
             score += 0.08
 
         pscore = min(1.0, score)
-        if pscore >= 0.80: plevel = "EXTREME_PANIC"
-        elif pscore >= 0.55: plevel = "PANIC"
-        elif pscore >= 0.30: plevel = "TENSE"
-        elif pscore >= 0.10: plevel = "MILD"
-        else: plevel = "CALM"
+        if pscore >= 0.80:
+            plevel = "EXTREME_PANIC"
+        elif pscore >= 0.55:
+            plevel = "PANIC"
+        elif pscore >= 0.30:
+            plevel = "TENSE"
+        elif pscore >= 0.10:
+            plevel = "MILD"
+        else:
+            plevel = "CALM"
         result["proxy_panic_score_0_to_1"] = round(pscore, 4)
         result["proxy_panic_level"] = plevel
 
@@ -1484,9 +1644,16 @@ class FreeMarketFeed:
         pri = bi if bi.get("_ok") else (okx if okx.get("_ok") else None)
         if pri is not None:
             snap["_data_provenance"] = "real_liquidation_api"
-            for k in ("total_liq_usd_24h", "long_liq_usd_24h", "short_liq_usd_24h",
-                      "long_short_liq_ratio", "panic_score_0_to_1", "panic_level",
-                      "cascade_hours", "max_1h_liq_usd"):
+            for k in (
+                "total_liq_usd_24h",
+                "long_liq_usd_24h",
+                "short_liq_usd_24h",
+                "long_short_liq_ratio",
+                "panic_score_0_to_1",
+                "panic_level",
+                "cascade_hours",
+                "max_1h_liq_usd",
+            ):
                 if k in pri:
                     snap[k] = pri[k]
 
@@ -1528,8 +1695,9 @@ class FreeMarketFeed:
     #     ATM IV / 25Δ Put-Call Skew / Crypto VIX 代理
     # ============================================================
 
-    def fetch_okx_options_iv_snapshot(self, inst_families: Optional[List[str]] = None
-                                      ) -> Dict[str, Any]:
+    def fetch_okx_options_iv_snapshot(
+        self, inst_families: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
         """OKX 免费期权隐含波动率快照（/api/v5/public/opt-summary）
 
         形态预测器的波动率分层 + REVERSAL / FOMO_RALLY 信号核心特征：
@@ -1545,8 +1713,12 @@ class FreeMarketFeed:
         def _fetch() -> Dict[str, Any]:
             base = "https://www.okx.com"
             result: Dict[str, Any] = {"_ok": False, "_families_queried": list(fams)}
-            _META_KEYS = {"_ok", "_families_queried", "crypto_vix_proxy_pct",
-                          "btc_eth_atm_iv_average_pct"}
+            _META_KEYS = {
+                "_ok",
+                "_families_queried",
+                "crypto_vix_proxy_pct",
+                "btc_eth_atm_iv_average_pct",
+            }
             by_fam: Dict[str, Dict[str, Any]] = {}
 
             for fam in fams:
@@ -1568,30 +1740,43 @@ class FreeMarketFeed:
                         ts_ms = r.get("ts")
                         if ts_ms:
                             ts_s = int(float(ts_ms)) // 1000
+
                         # volLv 是综合 IV；bid/ask vol 也可取 mid
                         def _mid(bid, ask):
-                            b = float(bid or 0); a = float(ask or 0)
+                            b = float(bid or 0)
+                            a = float(ask or 0)
                             return (b + a) / 2.0 if (b > 0 and a > 0) else 0.0
+
                         call_mid_iv = _mid(r.get("callBidVol"), r.get("callAskVol"))
-                        put_mid_iv  = _mid(r.get("putBidVol"),  r.get("putAskVol"))
-                        composite   = float(r.get("volLv") or 0)
-                        records.append({
-                            "delta": delta,
-                            "level": level,
-                            "call_mid_iv_pct": round(call_mid_iv * 100, 3) if call_mid_iv > 0 else round(composite * 100, 3),
-                            "put_mid_iv_pct":  round(put_mid_iv  * 100, 3) if put_mid_iv  > 0 else round(composite * 100, 3),
-                            "composite_iv_pct": round(composite * 100, 3),
-                        })
+                        put_mid_iv = _mid(r.get("putBidVol"), r.get("putAskVol"))
+                        composite = float(r.get("volLv") or 0)
+                        records.append(
+                            {
+                                "delta": delta,
+                                "level": level,
+                                "call_mid_iv_pct": (
+                                    round(call_mid_iv * 100, 3)
+                                    if call_mid_iv > 0
+                                    else round(composite * 100, 3)
+                                ),
+                                "put_mid_iv_pct": (
+                                    round(put_mid_iv * 100, 3)
+                                    if put_mid_iv > 0
+                                    else round(composite * 100, 3)
+                                ),
+                                "composite_iv_pct": round(composite * 100, 3),
+                            }
+                        )
                     except (TypeError, ValueError):
                         continue
                 if not records:
                     continue
 
                 # --- ATM：|delta| 最接近 0.50，优先选 level=0 ---
-                atm = min(records, key=lambda x: (
-                    0 if x["level"] == 0 else 1,
-                    abs(abs(x["delta"]) - 0.50)
-                ))
+                atm = min(
+                    records,
+                    key=lambda x: (0 if x["level"] == 0 else 1, abs(abs(x["delta"]) - 0.50)),
+                )
                 atm_iv_pct = (atm["call_mid_iv_pct"] + atm["put_mid_iv_pct"]) / 2.0
                 if atm_iv_pct <= 0:
                     atm_iv_pct = atm["composite_iv_pct"]
@@ -1599,15 +1784,27 @@ class FreeMarketFeed:
                 # --- 25Δ Put / Call：|delta| 最接近 0.25 ---
                 c25 = min(records, key=lambda x: abs(x["delta"] - 0.25))
                 p25 = min(records, key=lambda x: abs(x["delta"] - (-0.25)))
-                call25_iv = c25["call_mid_iv_pct"] if c25["call_mid_iv_pct"] > 0 else c25["composite_iv_pct"]
-                put25_iv  = p25["put_mid_iv_pct"]  if p25["put_mid_iv_pct"]  > 0 else p25["composite_iv_pct"]
+                call25_iv = (
+                    c25["call_mid_iv_pct"]
+                    if c25["call_mid_iv_pct"] > 0
+                    else c25["composite_iv_pct"]
+                )
+                put25_iv = (
+                    p25["put_mid_iv_pct"] if p25["put_mid_iv_pct"] > 0 else p25["composite_iv_pct"]
+                )
                 pc_skew_25d_pct = round(put25_iv - call25_iv, 3)
 
                 # --- 10Δ（极虚值尾部） Put-Call Skew：黑天鹅定价 ---
                 c10 = min(records, key=lambda x: abs(x["delta"] - 0.10))
                 p10 = min(records, key=lambda x: abs(x["delta"] - (-0.10)))
-                c10iv = c10["call_mid_iv_pct"] if c10["call_mid_iv_pct"] > 0 else c10["composite_iv_pct"]
-                p10iv = p10["put_mid_iv_pct"]  if p10["put_mid_iv_pct"]  > 0 else p10["composite_iv_pct"]
+                c10iv = (
+                    c10["call_mid_iv_pct"]
+                    if c10["call_mid_iv_pct"] > 0
+                    else c10["composite_iv_pct"]
+                )
+                p10iv = (
+                    p10["put_mid_iv_pct"] if p10["put_mid_iv_pct"] > 0 else p10["composite_iv_pct"]
+                )
                 tail_skew_10d_pct = round(p10iv - c10iv, 3)
 
                 by_fam[fam] = {
@@ -1646,13 +1843,14 @@ class FreeMarketFeed:
                     result["crypto_vix_proxy_pct"] = btc
                 # regime hint（仅期权侧）
                 hints = []
-                for fam, d in by_fam.items():
+                for fam, d in by_fam.items():  # noqa: B007
                     interp = d.get("interpretation", {})
                     if interp.get("regime_hint"):
                         hints.append(interp["regime_hint"])
                 if hints:
                     # 简单投票：多数胜出
                     from collections import Counter
+
                     vc = Counter(hints)
                     result["regime_hint_majority"] = vc.most_common(1)[0][0]
 
@@ -1662,13 +1860,14 @@ class FreeMarketFeed:
             else:
                 result["_provenance"] = "okx_public_opt_summary_api"
             return result
+
         cache_key = f"okxiv_{'_'.join(sorted(fams)).lower()}"
         return self._cached(cache_key, _fetch, ttl=600)  # 期权 IV 变化慢，10 分钟缓存
 
     @staticmethod
-    def _interpret_option_skew(atm_iv_pct: float,
-                               skew25_pct: float,
-                               skew10_pct: float) -> Dict[str, Any]:
+    def _interpret_option_skew(
+        atm_iv_pct: float, skew25_pct: float, skew10_pct: float
+    ) -> Dict[str, Any]:
         """把 ATM IV + PC Skew 翻译成形态预测器可消费的标签
 
         传统金融经验法则：
@@ -1677,31 +1876,48 @@ class FreeMarketFeed:
           - ATM IV 水平: <40% = 低波平静，40~70% = 正常波动，70~100% = 高波动，>100% = 极端
         """
         # IV 水平
-        if atm_iv_pct >= 100: iv_level = "EXTREME"
-        elif atm_iv_pct >= 70: iv_level = "HIGH"
-        elif atm_iv_pct >= 40: iv_level = "NORMAL"
-        else: iv_level = "LOW"
+        if atm_iv_pct >= 100:
+            iv_level = "EXTREME"
+        elif atm_iv_pct >= 70:
+            iv_level = "HIGH"
+        elif atm_iv_pct >= 40:
+            iv_level = "NORMAL"
+        else:
+            iv_level = "LOW"
 
         # 25Δ 偏度情绪
-        if skew25_pct >= 3.0: skew_sentiment = "FEAR_TAIL_PROTECTION"
-        elif skew25_pct >= 1.0: skew_sentiment = "CAUTIOUS"
-        elif skew25_pct >= -1.0: skew_sentiment = "NEUTRAL"
-        elif skew25_pct >= -2.5: skew_sentiment = "GREEDY_CALL_BUYING"
-        else: skew_sentiment = "FOMO_RALLY_CALL_BINGE"
+        if skew25_pct >= 3.0:
+            skew_sentiment = "FEAR_TAIL_PROTECTION"
+        elif skew25_pct >= 1.0:
+            skew_sentiment = "CAUTIOUS"
+        elif skew25_pct >= -1.0:
+            skew_sentiment = "NEUTRAL"
+        elif skew25_pct >= -2.5:
+            skew_sentiment = "GREEDY_CALL_BUYING"
+        else:
+            skew_sentiment = "FOMO_RALLY_CALL_BINGE"
 
         # 10Δ 尾部偏度（是否有人为黑天鹅付高价）
         tail_risk_premium = skew10_pct - skew25_pct  # 尾部额外溢价（10Δ 比 25Δ 更斜多少）
-        if tail_risk_premium >= 3.0: tail_risk = "EXTREME_BLACK_SWAN_HEDGE"
-        elif tail_risk_premium >= 1.0: tail_risk = "MODERATE_TAIL_HEDGE"
-        elif tail_risk_premium >= -1.0: tail_risk = "FLAT"
-        else: tail_risk = "UPSIDE_TAIL_BET_FOMO"
+        if tail_risk_premium >= 3.0:
+            tail_risk = "EXTREME_BLACK_SWAN_HEDGE"
+        elif tail_risk_premium >= 1.0:
+            tail_risk = "MODERATE_TAIL_HEDGE"
+        elif tail_risk_premium >= -1.0:
+            tail_risk = "FLAT"
+        else:
+            tail_risk = "UPSIDE_TAIL_BET_FOMO"
 
         # 形态软标签建议（结合 IV + Skew）
         if iv_level in ("HIGH", "EXTREME") and skew_sentiment in (
-            "FEAR_TAIL_PROTECTION", "CAUTIOUS"):
+            "FEAR_TAIL_PROTECTION",
+            "CAUTIOUS",
+        ):
             regime = "VOLATILE_DROP"
         elif iv_level in ("HIGH", "EXTREME") and skew_sentiment in (
-            "GREEDY_CALL_BUYING", "FOMO_RALLY_CALL_BINGE"):
+            "GREEDY_CALL_BUYING",
+            "FOMO_RALLY_CALL_BINGE",
+        ):
             regime = "FOMO_RALLY"
         elif iv_level == "EXTREME":
             regime = "REVERSAL"
@@ -1728,6 +1944,7 @@ class FreeMarketFeed:
 
     def collect_global(self) -> Dict[str, Any]:
         """一次调用，形态预测器所需所有免费全局 / 板块 / 美股 / 情绪数据"""
+
         def _compute():
             started = time.time()
             sources: Dict[str, str] = {}
@@ -1739,8 +1956,13 @@ class FreeMarketFeed:
                 latest = daily[-1]
                 snapshot["btc_latest"] = {
                     "t": latest["t"],
-                    "date_utc": datetime.fromtimestamp(latest["t"], tz=timezone.utc).strftime("%Y-%m-%d"),
-                    "O": latest["O"], "H": latest["H"], "L": latest["L"], "C": latest["C"],
+                    "date_utc": datetime.fromtimestamp(latest["t"], tz=timezone.utc).strftime(
+                        "%Y-%m-%d"
+                    ),
+                    "O": latest["O"],
+                    "H": latest["H"],
+                    "L": latest["L"],
+                    "C": latest["C"],
                     "vol_btc": latest["V"],
                     "vol_usdt_qv": latest.get("QV"),
                 }
@@ -1822,7 +2044,9 @@ class FreeMarketFeed:
             provenance = liq.get("_data_provenance") or "none"
             if provenance == "proxy_fallback":
                 lp.append("proxy_via_binance_derivatives")  # 用 OI/Taker/FR/Top LS 推导
-            sources["liquidation_panic"] = "+".join(lp) if lp else ("none: data_provenance=" + provenance)
+            sources["liquidation_panic"] = (
+                "+".join(lp) if lp else ("none: data_provenance=" + provenance)
+            )
             # 提取顶层便捷消费字段（形态预测器不用再下钻 dict）
             if liq.get("panic_score_0_to_1") is not None:
                 snapshot["liq_panic_score_0_to_1"] = liq["panic_score_0_to_1"]
@@ -1837,7 +2061,9 @@ class FreeMarketFeed:
             opts = self.fetch_okx_options_iv_snapshot()
             snapshot["options_iv"] = opts
             so_opts = opts.get("_ok", False)
-            sources["options_iv"] = "okx_public_opt_summary_free" if so_opts else "okx_unreachable_or_no_options"
+            sources["options_iv"] = (
+                "okx_public_opt_summary_free" if so_opts else "okx_unreachable_or_no_options"
+            )
             # 顶层便捷消费字段（无论是否成功都注入 = None，让下游消费不用 dict.get 判断 key 是否存在）
             snapshot["crypto_vix_proxy_pct"] = opts.get("crypto_vix_proxy_pct")
             snapshot["options_regime_hint"] = opts.get("regime_hint_majority")
@@ -1869,6 +2095,7 @@ class FreeMarketFeed:
             snapshot["_latency_ms"] = int((time.time() - started) * 1000)
             snapshot["_feature_count"] = len([k for k in snapshot.keys() if not k.startswith("_")])
             return snapshot
+
         return self._cached("global_snapshot", _compute, ttl=self.CACHE_TTL)
 
     def clear_cache(self, key: Optional[str] = None) -> None:

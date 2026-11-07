@@ -2,6 +2,7 @@
 dreambuddy_dal.protocols.risk_repo — RiskRepository Protocol（风控域）
 对齐 SCHEMA_DESIGN.md §6 rs_state + rs_cases；其中 rs_state 为单行 id=1 + 乐观锁 version
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

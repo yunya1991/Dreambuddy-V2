@@ -24,6 +24,7 @@ Spec §4.1-4.3 三张核心表 + dotplot 缓存表：
   T15. test_context_manager              — with 语法 + 自动 close
   T16. test_trajectory_snapshot_refreshed — 写入后 90d 快照同步更新
 """
+
 from __future__ import annotations
 
 import sys
@@ -45,8 +46,9 @@ from bcrm2.storage import EvolutionStorageSQLite, RegimeStateFrame  # noqa: E402
 # ====================================================================
 # 辅助：构造测试 frame
 # ====================================================================
-def _make_frame(t: str, price: float = 50000.0,
-                level: float = 1.0, trend: float = 0.5) -> RegimeStateFrame:
+def _make_frame(
+    t: str, price: float = 50000.0, level: float = 1.0, trend: float = 0.5
+) -> RegimeStateFrame:
     """构造一个简单的 RegimeStateFrame。"""
     return RegimeStateFrame(
         t=t,
@@ -56,21 +58,32 @@ def _make_frame(t: str, price: float = 50000.0,
         level_smooth=level * 0.9,
         trend_smooth=trend * 0.9,
         regime_probs={
-            "TREND_UP_STRONG": 0.5, "TREND_UP_MILD": 0.2,
-            "RANGE_BOUND": 0.1, "CONSOLIDATION": 0.05,
-            "REVERSAL": 0.05, "VOLATILE_DROP": 0.03,
-            "FOMO_RALLY": 0.04, "DISTRIBUTION": 0.03,
+            "TREND_UP_STRONG": 0.5,
+            "TREND_UP_MILD": 0.2,
+            "RANGE_BOUND": 0.1,
+            "CONSOLIDATION": 0.05,
+            "REVERSAL": 0.05,
+            "VOLATILE_DROP": 0.03,
+            "FOMO_RALLY": 0.04,
+            "DISTRIBUTION": 0.03,
         },
         top3=[["TREND_UP_STRONG", 0.5], ["TREND_UP_MILD", 0.2], ["RANGE_BOUND", 0.1]],
         consensus=0.65,
         hmm_state=2,
         bocpd_cp_prob=0.0,
         indicators={
-            "ma200_above_3d": 1.0, "ma50_above": 1.0, "ma20_vs_ma50_order": 1.0,
-            "cycle_position_365d": 0.5, "ma_alignment_score": 0.6,
-            "ma200_slope_signed": 0.5, "dow_hhhl_score": 1.33,
-            "log_ret_90d": 1.0, "log_ret_30d": 0.5, "ma_slope_wavg": 0.4,
-            "volume_trend_conf": 0.5, "vol_60d_pct": 0.6,
+            "ma200_above_3d": 1.0,
+            "ma50_above": 1.0,
+            "ma20_vs_ma50_order": 1.0,
+            "cycle_position_365d": 0.5,
+            "ma_alignment_score": 0.6,
+            "ma200_slope_signed": 0.5,
+            "dow_hhhl_score": 1.33,
+            "log_ret_90d": 1.0,
+            "log_ret_30d": 0.5,
+            "ma_slope_wavg": 0.4,
+            "volume_trend_conf": 0.5,
+            "vol_60d_pct": 0.6,
         },
     )
 
@@ -78,6 +91,7 @@ def _make_frame(t: str, price: float = 50000.0,
 def _make_n_frames(n: int, start_date: str = "2026-01-01") -> list:
     """构造 n 个 frame，日期从 start_date 开始递增。"""
     from datetime import datetime, timedelta
+
     base = datetime.strptime(start_date, "%Y-%m-%d")
     frames = []
     for i in range(n):
@@ -94,9 +108,12 @@ def test_init_creates_schema(tmp_path):
     db_path = tmp_path / "evolution.db"
     storage = EvolutionStorageSQLite(db_path)
     cur = storage._conn.cursor()
-    tables = [r[0] for r in cur.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-    ).fetchall()]
+    tables = [
+        r[0]
+        for r in cur.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+        ).fetchall()
+    ]
     storage.close()
     assert "regime_state_daily" in tables
     assert "regime_trajectory_90d" in tables
@@ -336,8 +353,12 @@ def test_list_weights_history(tmp_path):
     for i, ws in enumerate(["2026-08-04", "2026-08-11", "2026-08-18"]):
         storage.save_weekly_weights(
             ws,
-            {"level_weights": {}, "trend_weights": {}, "regime_centers": {},
-             "max_daily_delta": 0.5},
+            {
+                "level_weights": {},
+                "trend_weights": {},
+                "regime_centers": {},
+                "max_daily_delta": 0.5,
+            },
             objective=0.5 + i * 0.1,
             comment=f"week_{i}",
         )
@@ -380,6 +401,7 @@ def test_trajectory_snapshot_refreshed(tmp_path):
     ).fetchone()
     assert row is not None
     import json
+
     traj = json.loads(row["trajectory"])
     assert len(traj) == 1
     assert traj[0]["t"] == "2026-01-01"

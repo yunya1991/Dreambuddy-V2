@@ -2,6 +2,7 @@
 
 ccxt 薄封装，fetch_ticker -> DataRecord(category=chain)。
 """
+
 from data_center.collectors.chain.ccxt_collector import CcxtCollector
 from data_center.core.contract import DataRecord
 
@@ -12,8 +13,13 @@ def test_fetch_ticker(mocker):
     mock_ccxt = mocker.patch(CCXT_MOD)
     mock_exchange = mock_ccxt.binance.return_value
     mock_exchange.fetch_ticker.return_value = {
-        "symbol": "BTC/USDT", "last": 60000.0, "bid": 59999.0, "ask": 60001.0,
-        "high": 61000.0, "low": 59000.0, "volume": 123.4,
+        "symbol": "BTC/USDT",
+        "last": 60000.0,
+        "bid": 59999.0,
+        "ask": 60001.0,
+        "high": 61000.0,
+        "low": 59000.0,
+        "volume": 123.4,
     }
     c = CcxtCollector()
     recs = c.fetch({"symbol": "BTC/USDT", "exchange": "binance", "kind": "ticker"})

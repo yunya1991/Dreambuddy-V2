@@ -30,92 +30,92 @@ agi_config — AGI 升级模块统一开关配置（HC-AGI-07）
   enable_causal_historical_samples  A2 双源历史样本（默认 False，Shadow 验证后放量）
   enable_shadow_auto_activation     Shadow 自动放量门禁总开关（默认 True，治理设施）
 """
+
 from __future__ import annotations
 
 import os
-from typing import Any, Dict
-
+from typing import Dict
 
 # 默认配置（HC-AGI-07 覆盖：用户决策 2026-09-11 全部开启进入实盘验证）
 AGI_SWITCHES: Dict[str, bool] = {
-    "enable_agi_core": True,              # AGI 总开关
-    "enable_shadow_rl_phase3": True,      # Shadow RL Phase3 训练
-    "enable_signature_engine": True,      # 签名方法引擎
-    "enable_path_integral": True,         # 路径积分最小阻力路径
-    "enable_neural_sde": True,            # Neural SDE 动态建模
-    "enable_timesfm_forecast": True,      # TimesFM 时序预测
-    "enable_deep_reasoning": True,        # 深度学习推理引擎
-    "enable_causal_engine": True,         # 因果推断引擎
-    "enable_counterfactual": True,        # 反事实评估器
+    "enable_agi_core": True,  # AGI 总开关
+    "enable_shadow_rl_phase3": True,  # Shadow RL Phase3 训练
+    "enable_signature_engine": True,  # 签名方法引擎
+    "enable_path_integral": True,  # 路径积分最小阻力路径
+    "enable_neural_sde": True,  # Neural SDE 动态建模
+    "enable_timesfm_forecast": True,  # TimesFM 时序预测
+    "enable_deep_reasoning": True,  # 深度学习推理引擎
+    "enable_causal_engine": True,  # 因果推断引擎
+    "enable_counterfactual": True,  # 反事实评估器
     "enable_strategy_synthesizer": True,  # 深度学习策略生成器
-    "enable_transfer_learning": True,     # 跨资产迁移
-    "enable_meta_cognition": True,        # 元认知门禁
-    "enable_uncertainty_quant": True,     # Conformal Prediction 不确定性量化
-    "enable_pattern_detection": True,     # 头肩顶等形态检测
-    "enable_btc_regime_classifier": True, # BTC-美股相关性 regime 分类
-    "enable_three_factor_short": True,    # 三因子共振做空
-    "enable_three_factor_long": True,     # 三因子共振做多
-    "enable_hjb_solver": True,           # HJB PDE 最优路径求解器
-    "enable_variational_opt": True,      # 变分法路径优化器
+    "enable_transfer_learning": True,  # 跨资产迁移
+    "enable_meta_cognition": True,  # 元认知门禁
+    "enable_uncertainty_quant": True,  # Conformal Prediction 不确定性量化
+    "enable_pattern_detection": True,  # 头肩顶等形态检测
+    "enable_btc_regime_classifier": True,  # BTC-美股相关性 regime 分类
+    "enable_three_factor_short": True,  # 三因子共振做空
+    "enable_three_factor_long": True,  # 三因子共振做多
+    "enable_hjb_solver": True,  # HJB PDE 最优路径求解器
+    "enable_variational_opt": True,  # 变分法路径优化器
     "enable_contradiction_identifier": True,  # 主要矛盾识别器 (Phase 3.1)
-    "enable_trend_continuation": True,        # 趋势延续性评分 (Phase 3.2)
-    "enable_contradiction_feedback": True,     # 验证回流闭环 (Phase 3.5)
+    "enable_trend_continuation": True,  # 趋势延续性评分 (Phase 3.2)
+    "enable_contradiction_feedback": True,  # 验证回流闭环 (Phase 3.5)
     # Phase 2 三范式跃迁（shadow 验证通过，2026-10-05 上线）
-    "enable_deep_policy": True,               # 深度策略网络 (MLPPolicy+A2C，替代 SimplePolicy)
-    "enable_evolution_engine": True,          # 真正进化引擎 (种群+结构变异+ensemble，替代 gmax)
-    "enable_signature_features": True,        # 签名特征提取 (路径签名→17维输入)
+    "enable_deep_policy": True,  # 深度策略网络 (MLPPolicy+A2C，替代 SimplePolicy)
+    "enable_evolution_engine": True,  # 真正进化引擎 (种群+结构变异+ensemble，替代 gmax)
+    "enable_signature_features": True,  # 签名特征提取 (路径签名→17维输入)
     # --- 阻力场升级开关 (SPEC-矛盾论实现断裂修复) ---
-    "enable_microstructure_resistance": True,   # 6 组件微观阻力向量 (W1 已启用)
-    "enable_rv_contradiction_modulation": True,   # RV 层矛盾调制 (W3 已启用)
-    "enable_hjb_dominant": True,                # HJB 权重 70% 增强模式 (W2 已启用)
+    "enable_microstructure_resistance": True,  # 6 组件微观阻力向量 (W1 已启用)
+    "enable_rv_contradiction_modulation": True,  # RV 层矛盾调制 (W3 已启用)
+    "enable_hjb_dominant": True,  # HJB 权重 70% 增强模式 (W2 已启用)
     # --- Phase 1 外生力量度量 ---
-    "enable_exogenous_strength": True,            # 外生力量度量器（19-DAL 真实数据已接入）
+    "enable_exogenous_strength": True,  # 外生力量度量器（19-DAL 真实数据已接入）
     # --- Phase 2 因果传导 + 质变检测 ---
-    "enable_granger_causality": True,             # Granger 因果检验
-    "enable_structural_break_detection": True,    # 质变检测
-    "enable_contradiction_shift_detection": True, # 矛盾转化检测
+    "enable_granger_causality": True,  # Granger 因果检验
+    "enable_structural_break_detection": True,  # 质变检测
+    "enable_contradiction_shift_detection": True,  # 矛盾转化检测
     # --- Phase 3 弹性约束 + 反身性 ---
-    "enable_elastic_constraint": True,            # 弹性约束
-    "enable_reflexivity_monitor": True,           # 反身性监测
+    "enable_elastic_constraint": True,  # 弹性约束
+    "enable_reflexivity_monitor": True,  # 反身性监测
     # --- 事件驱动策略系统 (29 号子系统) ---
     # SPEC-事件驱动策略P0盲区修复-非农CPI加息预期.md 第 750/752 行明确标注"已有"
-    "enable_contradiction_driven_layer": True,     # 主要矛盾驱动层总开关 (P1-2 双层门控第一层)
+    "enable_contradiction_driven_layer": True,  # 主要矛盾驱动层总开关 (P1-2 双层门控第一层)
     "enable_primary_contradiction_detector": False,  # B-04: 事件主矛盾检测器（生产默认关，shadow 用 force）
-    "enable_event_contradiction_shadow": False,      # B-04: 事件主矛盾 shadow 诊断
-    "enable_w6_monitor": False,                       # B-05: W6 样本链路状态监控（只读）
-    "enable_self_vote_shadow": False,                # B-08: 自票上限/独立证据 shadow 诊断
-    "enable_self_vote_cap": False,                    # B-08: 自票上限实际生效（默认关，shadow 通过后再开）
-    "enable_event_dominance": True,                # 事件主导控制开关 (P1-2 双层门控第二层)
-    "enable_auto_weight_adjustment": True,          # 自进化权重自动调整 (基因创新闭环)
+    "enable_event_contradiction_shadow": False,  # B-04: 事件主矛盾 shadow 诊断
+    "enable_w6_monitor": False,  # B-05: W6 样本链路状态监控（只读）
+    "enable_self_vote_shadow": False,  # B-08: 自票上限/独立证据 shadow 诊断
+    "enable_self_vote_cap": False,  # B-08: 自票上限实际生效（默认关，shadow 通过后再开）
+    "enable_event_dominance": True,  # 事件主导控制开关 (P1-2 双层门控第二层)
+    "enable_auto_weight_adjustment": True,  # 自进化权重自动调整 (基因创新闭环)
     # --- 交叉验证层 (矛盾Transformer §5.1) ---
     # 2026-10-07 激活: 5框架对比(F1夏普7.77)+消融实验(Q5贡献+0.22)验证通过
-    "enable_cross_validation_gate": True,            # 交叉验证层总开关 (已激活)
-    "enable_dimension_force_v2": True,             # 维度力量评估 v2.0 (T4 影子期: 只记录日志不参与决策)
-    "enable_d2_oi_liq": False,                      # B-06: D2 叠加 OI/清算（默认 shadow；覆盖率达标后再开）
-    "enable_cd_shadow": False,                      # B-01: C→D 影子映射（只附加 shadow 字段，不改变裁决）
-    "enable_dominance_shadow": False,               # B-02: 成对支配 shadow（不改变 argmax 生产选择）
-    "enable_attention_a_dim": False,                # B-03: CV gate 使用 attention A_dim（默认关闭，先用 shadow）
-    "enable_a_dim_c_to_3": False,                   # B-03: 将 identifier C 维度映射到 3 维后再入 gate（修复口径，默认关闭）
-    "enable_granger_pipeline": True,                 # Granger 因果链 (从价格序列派生3维度因子)
-    "enable_attention_aggregator": True,             # Attention 聚合 (A_dim从primary_contradiction获取)
-    "enable_head_multipliers_adjustment": True,      # head_multipliers 调整 (跨轮传递到NeuralSDE.forecast)
+    "enable_cross_validation_gate": True,  # 交叉验证层总开关 (已激活)
+    "enable_dimension_force_v2": True,  # 维度力量评估 v2.0 (T4 影子期: 只记录日志不参与决策)
+    "enable_d2_oi_liq": False,  # B-06: D2 叠加 OI/清算（默认 shadow；覆盖率达标后再开）
+    "enable_cd_shadow": False,  # B-01: C→D 影子映射（只附加 shadow 字段，不改变裁决）
+    "enable_dominance_shadow": False,  # B-02: 成对支配 shadow（不改变 argmax 生产选择）
+    "enable_attention_a_dim": False,  # B-03: CV gate 使用 attention A_dim（默认关闭，先用 shadow）
+    "enable_a_dim_c_to_3": False,  # B-03: 将 identifier C 维度映射到 3 维后再入 gate（修复口径，默认关闭）
+    "enable_granger_pipeline": True,  # Granger 因果链 (从价格序列派生3维度因子)
+    "enable_attention_aggregator": True,  # Attention 聚合 (A_dim从primary_contradiction获取)
+    "enable_head_multipliers_adjustment": True,  # head_multipliers 调整 (跨轮传递到NeuralSDE.forecast)
     # --- 基因创新治理 (版本控制+审核门禁) ---
-    "enable_gene_innovation": True,                  # 质变事件触发基因创新 (FTCEvolutionBridge)
-    "enable_gene_version_snapshot": True,            # 新基因写入前自动快照 (可回滚)
-    "enable_gene_audit_gate": True,                  # 三级审核门禁 (Schema+统计+相对提升)
+    "enable_gene_innovation": True,  # 质变事件触发基因创新 (FTCEvolutionBridge)
+    "enable_gene_version_snapshot": True,  # 新基因写入前自动快照 (可回滚)
+    "enable_gene_audit_gate": True,  # 三级审核门禁 (Schema+统计+相对提升)
     # --- 做空能力疏通路径 (SPEC-自进化系统做空能力疏通探讨) ---
     # 每条路径独立开关，默认 False（影子模式验证通过后才开启）
-    "enable_dynamic_short_blacklist": False,         # 路径A: 滚动胜率驱动动态做空黑名单
-    "enable_layered_short_exemption": False,         # 路径B: 三因子分层豁免 (预留)
-    "enable_direction_state_short_expansion": False, # 路径C: direction_state 解锁扩展 (预留)
+    "enable_dynamic_short_blacklist": False,  # 路径A: 滚动胜率驱动动态做空黑名单
+    "enable_layered_short_exemption": False,  # 路径B: 三因子分层豁免 (预留)
+    "enable_direction_state_short_expansion": False,  # 路径C: direction_state 解锁扩展 (预留)
     # --- 路径D: 因子池扩展 (SPEC §4 路径D) ---
-    "enable_funding_rate_factor": False,             # 路径D-1: 资金费率因子
-    "enable_oi_price_divergence_factor": False,       # 路径D-2: OI-Price 背离因子
-    "enable_liquidation_heatmap_factor": False,       # 路径D-3: 清算热力图因子 (需 POC)
+    "enable_funding_rate_factor": False,  # 路径D-1: 资金费率因子
+    "enable_oi_price_divergence_factor": False,  # 路径D-2: OI-Price 背离因子
+    "enable_liquidation_heatmap_factor": False,  # 路径D-3: 清算热力图因子 (需 POC)
     # --- A2: ATE 历史样本接入（HC-AGI-07 默认关；Shadow 验证后开启）---
     "enable_causal_historical_samples": False,  # 源A/源B 双源历史样本 → estimate_ate 真实可估计
     # --- Shadow 自动放量门禁（治理设施；默认 True，本身不改交易行为）---
-    "enable_shadow_auto_activation": True,      # Shadow 验证 ≥7 天且出现态A → 自动放量目标开关
+    "enable_shadow_auto_activation": True,  # Shadow 验证 ≥7 天且出现态A → 自动放量目标开关
     # --- Phase 3 P0-4 FAIL-OPEN 登记制 (SPEC-自进化系统逆向解析改进 v0.3) ---
     # safe_call 异常登记开关; False=仅 try/except 不登记 (L3 降级);
     # True=登记到 ring buffer (L2). 2026-10-13 激活: 让降级可观测.

@@ -4,20 +4,21 @@
 基于 LLM + 成熟策略模板，从用户意图生成可执行的 Freqtrade 策略代码。
 生成后自动进行语法检查和 lookahead 未来函数检测。
 """
+
 from __future__ import annotations
 
 import ast
 import re
 import uuid
 from pathlib import Path
-from typing import Optional
 
 from .llm_client import call_llm
 from .template import STRATEGY_TEMPLATE, get_template_fields
 
-
 # 策略输出目录（与 10-经典指标系统 共享策略目录）
-_STRATEGY_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "10-经典指标系统" / "user_data" / "strategies"
+_STRATEGY_OUTPUT_DIR = (
+    Path(__file__).resolve().parents[2] / "10-经典指标系统" / "user_data" / "strategies"
+)
 
 # 未来函数模式（lookahead bias）
 _LOOKAHEAD_PATTERNS = [
@@ -92,7 +93,7 @@ def extract_code(llm_output: str) -> str:
         # 从 import 开始截取
         import_match = re.search(r"(^# pragma|^import |^from )", llm_output, re.MULTILINE)
         if import_match:
-            return llm_output[import_match.start():].strip()
+            return llm_output[import_match.start() :].strip()
 
     return llm_output.strip()
 
@@ -112,13 +113,15 @@ def check_lookahead(code: str) -> list[dict]:
     for pattern, desc in _LOOKAHEAD_PATTERNS:
         matches = re.finditer(pattern, code)
         for m in matches:
-            line_num = code[:m.start()].count("\n") + 1
-            issues.append({
-                "line": line_num,
-                "pattern": m.group(),
-                "description": desc,
-                "severity": "high",
-            })
+            line_num = code[: m.start()].count("\n") + 1
+            issues.append(
+                {
+                    "line": line_num,
+                    "pattern": m.group(),
+                    "description": desc,
+                    "severity": "high",
+                }
+            )
     return issues
 
 

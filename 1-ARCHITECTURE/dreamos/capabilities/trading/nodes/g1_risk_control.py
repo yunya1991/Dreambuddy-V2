@@ -15,10 +15,10 @@ G1 风控节点
 
 from __future__ import annotations
 
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 
 class G1RiskControlNode(BaseNode):
@@ -62,15 +62,15 @@ class G1RiskControlNode(BaseNode):
 
         if drawdown > max_drawdown_pct:
             risk_warnings.append(f"最大回撤超限({drawdown:.1f}% > {max_drawdown_pct}%)")
-            scores.append(("HOLD", 0.30, f"回撤超限，停止开新仓"))
+            scores.append(("HOLD", 0.30, "回撤超限，停止开新仓"))
         elif drawdown > max_drawdown_pct * 0.7:
             risk_warnings.append(f"回撤接近阈值({drawdown:.1f}%)")
-            scores.append(("HOLD", 0.15, f"回撤偏高，谨慎操作"))
+            scores.append(("HOLD", 0.15, "回撤偏高，谨慎操作"))
 
         # ── 2. 日亏损限制 ────────────────────────────────
         if daily_pnl_pct < -max_daily_loss_pct:
             risk_warnings.append(f"日亏损超限({daily_pnl_pct:.1f}% > -{max_daily_loss_pct}%)")
-            scores.append(("HOLD", 0.30, f"日亏损超限，停止交易"))
+            scores.append(("HOLD", 0.30, "日亏损超限，停止交易"))
         elif daily_pnl_pct < -max_daily_loss_pct * 0.7:
             scores.append(("HOLD", 0.10, f"日亏损偏高({daily_pnl_pct:.1f}%)"))
 
@@ -80,18 +80,18 @@ class G1RiskControlNode(BaseNode):
 
         if position_pct > max_position_pct:
             risk_warnings.append(f"持仓集中度过高({position_pct:.1f}% > {max_position_pct}%)")
-            scores.append(("REDUCE", 0.20, f"持仓集中，建议减仓"))
+            scores.append(("REDUCE", 0.20, "持仓集中，建议减仓"))
 
         # ── 4. 杠杆限制 ──────────────────────────────────
         if leverage > max_leverage:
             risk_warnings.append(f"杠杆超限({leverage}x > {max_leverage}x)")
-            scores.append(("HOLD", 0.25, f"杠杆过高，降低杠杆"))
+            scores.append(("HOLD", 0.25, "杠杆过高，降低杠杆"))
 
         # ── 5. 流动性检查 ────────────────────────────────
         volume_24h = mkt.get("volume_24h", 0)
         if volume_24h < 1000000:
             risk_warnings.append(f"流动性不足(24h量={volume_24h:.0f})")
-            scores.append(("HOLD", 0.15, f"流动性不足，谨慎交易"))
+            scores.append(("HOLD", 0.15, "流动性不足，谨慎交易"))
 
         # ── 6. 风险预算管理 ──────────────────────────────
         risk_budget_remaining = max(0, max_drawdown_pct - drawdown)

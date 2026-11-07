@@ -5,18 +5,21 @@ TDD RED → GREEN 循环：
   1. 测试失败（常量不存在/快照未实现）
   2. 写最小代码让其通过
 """
+
 from __future__ import annotations
 
 import os
 import sys
 import tempfile
 import unittest
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 # tests/ → 11-易经推理系统/ → scripts/memory_l4/force_vector
-_FORCE_VEC_DIR = os.path.normpath(os.path.join(_THIS_DIR, "..", "scripts", "memory_l4", "force_vector"))
+_FORCE_VEC_DIR = os.path.normpath(
+    os.path.join(_THIS_DIR, "..", "scripts", "memory_l4", "force_vector")
+)
 if _FORCE_VEC_DIR not in sys.path:
     sys.path.insert(0, _FORCE_VEC_DIR)
 
@@ -31,15 +34,16 @@ class TestBDSMCoins(unittest.TestCase):
     def test_bdsm_coins_exists_and_contains_exact_10_coins(self) -> None:
         """RED: 先跑这个，import 失败证明常量没定义。BTC 于 L1 代理信号就绪后纳入；2026-09-06 新增 ZEC/ARB。"""
         from coin_fundamental_ranker import BDSM_COINS  # noqa: WPS433
+
         expected = {"UNI", "PUMP", "HYPE", "AAVE", "SOL", "CRCL", "ETH", "BTC", "ZEC", "ARB"}
-        self.assertEqual(BDSM_COINS, expected,
-                         f"BDSM_COINS 应为 {expected}，实际 {BDSM_COINS}")
+        self.assertEqual(BDSM_COINS, expected, f"BDSM_COINS 应为 {expected}，实际 {BDSM_COINS}")
         # 附加约束：SKY 不在权威池
         self.assertNotIn("SKY", BDSM_COINS, "SKY 已从 BDSM 权威池移除，不应再包含")
 
     def test_bdsm_coins_is_frozenset(self) -> None:
         """外部不应能直接修改常量。"""
         from coin_fundamental_ranker import BDSM_COINS  # noqa: WPS433
+
         self.assertIsInstance(BDSM_COINS, frozenset)
 
 
@@ -58,6 +62,7 @@ class TestBDSMSnapshotWriter(unittest.TestCase):
         except (ModuleNotFoundError, ImportError) as exc:
             self.fail(f"bdsm_snapshot_writer.neutral_snapshot 未实现: {exc}")
         from bdsm_snapshot_writer import neutral_snapshot  # noqa: WPS433 F811
+
         snap = neutral_snapshot(reason="unittest")
         # 顶层字段
         self.assertEqual(snap["version"], "1.0")
@@ -65,6 +70,7 @@ class TestBDSMSnapshotWriter(unittest.TestCase):
         self.assertEqual(snap["neutral_fallback_reason"], "unittest")
         # 7 币均需有 entry，字段全部为中性值
         from coin_fundamental_ranker import BDSM_COINS  # noqa: WPS433
+
         for coin in BDSM_COINS:
             self.assertIn(coin, snap["coins"], f"{coin} 缺失中性条目")
             entry = snap["coins"][coin]
@@ -80,9 +86,9 @@ class TestBDSMSnapshotWriter(unittest.TestCase):
     def test_write_snapshot_creates_json_file_with_7_coins(self) -> None:
         """RED: write_snapshot 写入 bdsm_snapshot_{YYYYMMDD}.json 并可读取。
 
-        即使 compute_all 有真实/失败的差异，只要 8 币 entry 齐全 + 结构完整
-       （available / score / rank / direction_constraint / cap_multiplier / exit_action
-        六个字段存在）即视为通过 — FAIL-OPEN 会兜底为中性。
+         即使 compute_all 有真实/失败的差异，只要 8 币 entry 齐全 + 结构完整
+        （available / score / rank / direction_constraint / cap_multiplier / exit_action
+         六个字段存在）即视为通过 — FAIL-OPEN 会兜底为中性。
         """
         import json
 
@@ -100,11 +106,15 @@ class TestBDSMSnapshotWriter(unittest.TestCase):
                 self.assertIn(coin, data["coins"], f"{coin} 缺 entry")
                 entry = data["coins"][coin]
                 for required_key in (
-                    "available", "data_quality", "score", "rank",
-                    "direction_constraint", "cap_multiplier", "exit_action",
+                    "available",
+                    "data_quality",
+                    "score",
+                    "rank",
+                    "direction_constraint",
+                    "cap_multiplier",
+                    "exit_action",
                 ):
-                    self.assertIn(required_key, entry,
-                                  f"{coin} 缺失必需字段 {required_key}")
+                    self.assertIn(required_key, entry, f"{coin} 缺失必需字段 {required_key}")
 
     def test_cap_multiplier_formula(self) -> None:
         """RED: _compute_cap 实现三段乘法，夹到 [0,1]。
@@ -112,12 +122,18 @@ class TestBDSMSnapshotWriter(unittest.TestCase):
         A 级 + score=0.4 + sufficient = 0.8*0.8*1.0 = 0.64
         """
         from bdsm_snapshot_writer import _compute_cap_multiplier  # noqa: WPS433
-        self.assertAlmostEqual(_compute_cap_multiplier(rank="A", score=0.4, data_quality="sufficient"), 0.64)
-        self.assertEqual(_compute_cap_multiplier(rank="C", score=-0.5, data_quality="insufficient"), 0.0)
+
+        self.assertAlmostEqual(
+            _compute_cap_multiplier(rank="A", score=0.4, data_quality="sufficient"), 0.64
+        )
+        self.assertEqual(
+            _compute_cap_multiplier(rank="C", score=-0.5, data_quality="insufficient"), 0.0
+        )
 
     def test_direction_constraint_formula(self) -> None:
         """RED: _compute_direction — score>0.3 → LONG_ONLY，score<-0.3 → SHORT_ONLY。"""
         from bdsm_snapshot_writer import _compute_direction  # noqa: WPS433
+
         self.assertEqual(_compute_direction(score=0.5, data_quality="sufficient"), "LONG_ONLY")
         self.assertEqual(_compute_direction(score=-0.5, data_quality="sufficient"), "SHORT_ONLY")
         self.assertEqual(_compute_direction(score=0.0, data_quality="sufficient"), "NEUTRAL")
@@ -134,7 +150,7 @@ class BDSMPoolIsolationTests(unittest.TestCase):
         #   · force_vector.* / trading_utils → 走 memory_l4 前缀
         # 模块级 test 会预先插入 _FORCE_VEC_DIR，这里要把 base_11 强制置顶避免 scripts 被其他目录包遮蔽
         _THIS_DIR = Path(__file__).resolve().parent
-        _BASE_11 = str(_THIS_DIR.parent)        # .../11-易经推理系统
+        _BASE_11 = str(_THIS_DIR.parent)  # .../11-易经推理系统
         _MEM_L4 = os.path.join(_BASE_11, "scripts", "memory_l4")
         for p in (_MEM_L4, _BASE_11):
             if p in sys.path:
@@ -145,6 +161,7 @@ class BDSMPoolIsolationTests(unittest.TestCase):
     def test_bdsm10_coins_exact_without_sky(self) -> None:
         """BDSM_COINS = 10 币精确集合（BTC+ZEC+ARB 纳入，无 SKY，SKY 走纯 BCRM）。"""
         from force_vector.coin_fundamental_ranker import BDSM_COINS  # noqa: WPS433
+
         expected = {"UNI", "PUMP", "HYPE", "AAVE", "SOL", "CRCL", "ETH", "BTC", "ZEC", "ARB"}
         self.assertEqual(BDSM_COINS, expected)
         self.assertNotIn("SKY", BDSM_COINS)
@@ -152,13 +169,19 @@ class BDSMPoolIsolationTests(unittest.TestCase):
     def test_count_subpool_mock_bcrm5_vs_bdsm3(self) -> None:
         """构造 8 个 TradeRecord（5×bcrm 3×bdsm）→ 各自子池计数，边界正确。"""
         from trading_utils import TradeRecord  # noqa: WPS433
+
         bcrm_coins = ["BTC", "NVDA", "XAU", "GOOGL", "COIN"]
         bdsm_coins = ["UNI", "PUMP", "SOL"]
         recs = [
             TradeRecord(
-                trade_id=f"t{i}", coin=c, inst_id=f"{c}-SWAP",
-                direction="long", entry_price=1.0, confidence=0.7,
-                hexagram="x", source_tag=("bcrm" if c in bcrm_coins else "bdsm"),
+                trade_id=f"t{i}",
+                coin=c,
+                inst_id=f"{c}-SWAP",
+                direction="long",
+                entry_price=1.0,
+                confidence=0.7,
+                hexagram="x",
+                source_tag=("bcrm" if c in bcrm_coins else "bdsm"),
             )
             for i, c in enumerate(bcrm_coins + bdsm_coins)
         ]
@@ -171,9 +194,16 @@ class BDSMPoolIsolationTests(unittest.TestCase):
         """老仓位 source_tag 空 → 按币回溯分类（BDSM_COINS → bdsm）。"""
         from force_vector.coin_fundamental_ranker import BDSM_COINS  # noqa: WPS433
         from trading_utils import TradeRecord  # noqa: WPS433
-        uni_legacy = TradeRecord(trade_id="old", coin="UNI", inst_id="UNI-SWAP",
-                                 direction="long", entry_price=10.0,
-                                 confidence=0.5, hexagram="乾为天")
+
+        uni_legacy = TradeRecord(
+            trade_id="old",
+            coin="UNI",
+            inst_id="UNI-SWAP",
+            direction="long",
+            entry_price=10.0,
+            confidence=0.5,
+            hexagram="乾为天",
+        )
         self.assertEqual(uni_legacy.source_tag, "")  # 兼容默认
         tag = "bdsm" if uni_legacy.coin in BDSM_COINS else "bcrm"
         self.assertEqual(tag, "bdsm")
@@ -189,12 +219,19 @@ class BDSMDataQuality7SignalTests(unittest.TestCase):
     def _recompute_dq(self, sub_signals: dict, confidence: float) -> str:
         """复刻 bdsm_snapshot_writer._build_coin_entry 里的 data_quality 7 信号规则。"""
         total_signals = (
-            "revenue_stability", "mc_fees_mean_reversion", "tvl_growth_momentum",
-            "revenue_quality", "supply_shrinkage_intensity",
-            "value_capture_delta", "revenue_sustainability",
+            "revenue_stability",
+            "mc_fees_mean_reversion",
+            "tvl_growth_momentum",
+            "revenue_quality",
+            "supply_shrinkage_intensity",
+            "value_capture_delta",
+            "revenue_sustainability",
         )
-        covered = sum(1 for k in total_signals
-                      if sub_signals.get(k) is not None and abs(float(sub_signals.get(k, 0))) > 1e-9)
+        covered = sum(
+            1
+            for k in total_signals
+            if sub_signals.get(k) is not None and abs(float(sub_signals.get(k, 0))) > 1e-9
+        )
         ratio = covered / len(total_signals)
         if ratio >= 5 / 7 and confidence >= 0.70:
             return "sufficient"
@@ -206,25 +243,43 @@ class BDSMDataQuality7SignalTests(unittest.TestCase):
 
     def test_bdsm_three_signals_only_partial(self) -> None:
         """Artemis 四信号全 0，仅 E5+E6+E7 非零 (3/7=0.428≥3/7) + conf=0.43 → partial。"""
-        sub = {"supply_shrinkage_intensity": 0.56,
-               "value_capture_delta": 0.69,
-               "revenue_sustainability": -0.08}  # 3/7
+        sub = {
+            "supply_shrinkage_intensity": 0.56,
+            "value_capture_delta": 0.69,
+            "revenue_sustainability": -0.08,
+        }  # 3/7
         dq = self._recompute_dq(sub, confidence=0.43)
         self.assertEqual(dq, "partial")  # 真实快照 PUMP 预期（冒烟测试已验证）
 
     def test_all_zero_insufficient(self) -> None:
         """7 信号全 0（ETH 原生数据缺）→ insufficient。"""
-        sub: dict = {k: 0.0 for k in
-                     ("revenue_stability", "mc_fees_mean_reversion", "tvl_growth_momentum",
-                      "revenue_quality", "supply_shrinkage_intensity",
-                      "value_capture_delta", "revenue_sustainability")}
+        sub: dict = dict.fromkeys(
+            (
+                "revenue_stability",
+                "mc_fees_mean_reversion",
+                "tvl_growth_momentum",
+                "revenue_quality",
+                "supply_shrinkage_intensity",
+                "value_capture_delta",
+                "revenue_sustainability",
+            ),
+            0.0,
+        )
         self.assertEqual(self._recompute_dq(sub, confidence=0.0), "insufficient")
 
     def test_6_signals_sufficient(self) -> None:
         """6/7 覆盖 + conf≥0.70 → sufficient。"""
-        sub = {k: 0.5 for k in
-               ("revenue_stability", "mc_fees_mean_reversion", "tvl_growth_momentum",
-                "supply_shrinkage_intensity", "value_capture_delta", "revenue_sustainability")}
+        sub = dict.fromkeys(
+            (
+                "revenue_stability",
+                "mc_fees_mean_reversion",
+                "tvl_growth_momentum",
+                "supply_shrinkage_intensity",
+                "value_capture_delta",
+                "revenue_sustainability",
+            ),
+            0.5,
+        )
         self.assertEqual(self._recompute_dq(sub, confidence=0.72), "sufficient")
 
 
@@ -239,18 +294,26 @@ class BDSMExitTriggerTests(unittest.TestCase):
             if p not in sys.path:
                 sys.path.insert(0, p)
 
-    def _make_entry(self, phase: str, score: float, rank: str,
-                    phase_conf: float = 0.8, dq: str = "partial") -> dict:
+    def _make_entry(
+        self, phase: str, score: float, rank: str, phase_conf: float = 0.8, dq: str = "partial"
+    ) -> dict:
         from force_vector.bdsm_snapshot_writer import (  # noqa: WPS433
             _compute_cap_multiplier,
             _compute_direction,
         )
+
         return {
-            "available": True, "phase": phase, "score": score, "rank": rank,
-            "phase_confidence": phase_conf, "data_quality": dq,
+            "available": True,
+            "phase": phase,
+            "score": score,
+            "rank": rank,
+            "phase_confidence": phase_conf,
+            "data_quality": dq,
             "direction_constraint": _compute_direction(score, dq),
             "cap_multiplier": _compute_cap_multiplier(rank, score, dq),
-            "e5": 0.0, "e6": 0.0, "e7": 0.0,
+            "e5": 0.0,
+            "e6": 0.0,
+            "e7": 0.0,
             "valuation_percentile": 50.0,
             "bds_score": 0.0,
         }
@@ -261,6 +324,7 @@ class BDSMExitTriggerTests(unittest.TestCase):
             _detect_exit_action,
             neutral_snapshot,
         )
+
         today = self._make_entry("P2_REVENUE_EXPANSION", score=0.45, rank="A")
         today["e7"] = 0.0  # E7 今日归零
         yesterday = neutral_snapshot("yesterday")
@@ -277,6 +341,7 @@ class BDSMExitTriggerTests(unittest.TestCase):
             _detect_exit_action,
             neutral_snapshot,
         )
+
         today = self._make_entry("P3_VALUATION_RECOVERY", score=0.55, rank="A")
         today["valuation_percentile"] = 87.0
         today["bds_score"] = 0.4
@@ -295,6 +360,7 @@ class BDSMExitTriggerTests(unittest.TestCase):
             _detect_exit_action,
             neutral_snapshot,
         )
+
         today = self._make_entry("P1_EXPECTATION", score=0.1, rank="B")
         today["bds_score"] = -0.2
         hist = neutral_snapshot("hist")
@@ -309,12 +375,16 @@ class BDSMExitTriggerTests(unittest.TestCase):
             _detect_exit_action,
             neutral_snapshot,
         )
+
         today = self._make_entry("P2_REVENUE_EXPANSION", score=0.2, rank="C")
         d1 = neutral_snapshot("d1")
         d1["coins"]["UNI"] = self._make_entry("P2_REVENUE_EXPANSION", score=0.5, rank="A")
         d2 = neutral_snapshot("d2")
         d2["coins"]["UNI"] = self._make_entry("P2_REVENUE_EXPANSION", score=0.45, rank="A")
-        history = {"D-2": d2, "D-1": d1}  # sorted keys: D-1 = y, D-2 = by → tby empty, len(rank_series)=2
+        history = {
+            "D-2": d2,
+            "D-1": d1,
+        }  # sorted keys: D-1 = y, D-2 = by → tby empty, len(rank_series)=2
         # 凑足 3 条让 _rank_tumbling len ≥ 3: tby, y, today — 再加 D-3
         d3 = neutral_snapshot("d3")
         d3["coins"]["UNI"] = self._make_entry("P2_REVENUE_EXPANSION", score=0.6, rank="A")
@@ -350,6 +420,7 @@ class BDSMSnapshotFailOpenTests(unittest.TestCase):
             BDSM_COINS,
             load_today_snapshot,
         )
+
         snap = load_today_snapshot(out_dir=self._tmpdir.name)
         self.assertEqual(snap["version"], "1.0")
         self.assertTrue(snap["neutral_fallback_reason"])  # 非空说明兜底
@@ -369,13 +440,15 @@ class BDSMSnapshotFailOpenTests(unittest.TestCase):
             BDSM_COINS,
             load_today_snapshot,
         )
+
         bad_file = Path(self._tmpdir.name) / f"bdsm_snapshot_{date.today().strftime('%Y%m%d')}.json"
-        bad_file.write_text('{"schema_version":"1.0","generated_at":"2026-09-02T00:00:00"}', encoding="utf-8")
+        bad_file.write_text(
+            '{"schema_version":"1.0","generated_at":"2026-09-02T00:00:00"}', encoding="utf-8"
+        )
         snap = load_today_snapshot(out_dir=self._tmpdir.name)
         self.assertTrue(snap["neutral_fallback_reason"])
         self.assertEqual(set(snap["coins"].keys()), BDSM_COINS)
         self.assertTrue(all(e["data_quality"] == "insufficient" for e in snap["coins"].values()))
-
 
 
 class BDSPPhase2CouplingTests(unittest.TestCase):
@@ -387,7 +460,7 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
 
     def setUp(self) -> None:
         _THIS_DIR = Path(__file__).resolve().parent
-        _BASE_11 = str(_THIS_DIR.parent)        # .../11-易经推理系统
+        _BASE_11 = str(_THIS_DIR.parent)  # .../11-易经推理系统
         _MEM_L4 = os.path.join(_BASE_11, "scripts", "memory_l4")
         for p in (_MEM_L4, _BASE_11):
             if p in sys.path:
@@ -399,7 +472,9 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
     def test_gap1_long_only_drops_short_open_and_returns_none(self) -> None:
         """BDSM 方向= LONG_ONLY + bcrm 开 short → DROP，返回 (False, drop_reason)."""
         from unittest.mock import MagicMock, patch
+
         from scripts.memory_l4.polling_trader import PollingTrader
+
         with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
             t = PollingTrader.__new__(PollingTrader)
         t._log = MagicMock()
@@ -408,9 +483,14 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
         snap = {
             "version": "1.0",
             "coins": {
-                "UNI": {"available": True, "direction_constraint": "LONG_ONLY",
-                        "cap_multiplier": 1.0, "exit_action": "NONE",
-                        "data_quality": "sufficient", "confidence": 0.75},
+                "UNI": {
+                    "available": True,
+                    "direction_constraint": "LONG_ONLY",
+                    "cap_multiplier": 1.0,
+                    "exit_action": "NONE",
+                    "data_quality": "sufficient",
+                    "confidence": 0.75,
+                },
             },
         }
         t._bdsm_snapshot_cache = {"ts": float("inf"), "snapshot": snap}  # TTL 不失效
@@ -422,14 +502,25 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
     def test_gap1_neutral_or_non_bdsm_not_dropped(self) -> None:
         """FAIL-OPEN: NEUTRAL 快照 或 非 BDSM 币 BTC → 不拦截。"""
         from unittest.mock import MagicMock, patch
+
         from scripts.memory_l4.polling_trader import PollingTrader
+
         with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
             t = PollingTrader.__new__(PollingTrader)
         t._log = MagicMock()
         t.BDSM_COINS = frozenset({"UNI", "PUMP", "HYPE", "AAVE", "SOL", "CRCL", "ETH"})
         # NEUTRAL 快照
-        snap_neutral = {"version": "1.0", "coins": {"UNI": {
-            "available": False, "direction_constraint": "NEUTRAL", "cap_multiplier": 1.0, "exit_action": "NONE"}}}
+        snap_neutral = {
+            "version": "1.0",
+            "coins": {
+                "UNI": {
+                    "available": False,
+                    "direction_constraint": "NEUTRAL",
+                    "cap_multiplier": 1.0,
+                    "exit_action": "NONE",
+                }
+            },
+        }
         t._bdsm_snapshot_cache = {"ts": float("inf"), "snapshot": snap_neutral}
 
         # BTC 非 BDSM → 无方向约束
@@ -449,16 +540,28 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
         ★ data_quality 门控：仅 sufficient 时 cap 生效（旧测试用 partial 已改为 sufficient）。
         """
         from unittest.mock import MagicMock, patch
+
         from scripts.memory_l4.polling_trader import PollingTrader
+
         with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
             t = PollingTrader.__new__(PollingTrader)
         t._log = MagicMock()
         t.BDSM_COINS = frozenset({"UNI"})
-        t._bdsm_snapshot_cache = {"ts": float("inf"), "snapshot": {
-            "version": "1.0", "coins": {
-                "UNI": {"available": True, "data_quality": "sufficient",
-                        "direction_constraint": "NEUTRAL", "cap_multiplier": 0.175,
-                        "exit_action": "NONE"}}}}
+        t._bdsm_snapshot_cache = {
+            "ts": float("inf"),
+            "snapshot": {
+                "version": "1.0",
+                "coins": {
+                    "UNI": {
+                        "available": True,
+                        "data_quality": "sufficient",
+                        "direction_constraint": "NEUTRAL",
+                        "cap_multiplier": 0.175,
+                        "exit_action": "NONE",
+                    }
+                },
+            },
+        }
         actual, cap_used, info_tag = t._apply_bdsm_cap_multiplier("UNI", 1000.0)
         self.assertAlmostEqual(actual, 175.0, delta=1e-6)
         self.assertAlmostEqual(cap_used, 0.175, delta=1e-6)
@@ -469,8 +572,10 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
 
         ★ 空快照 data_quality="" → 降级 cap=1.0 放行（tag 为 insufficient_pass）。
         """
-        from unittest.mock import MagicMock, patch
+        from unittest.mock import patch
+
         from scripts.memory_l4.polling_trader import PollingTrader
+
         with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
             t = PollingTrader.__new__(PollingTrader)
         t.BDSM_COINS = frozenset({"UNI"})
@@ -491,15 +596,28 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
         ★ data_quality 门控：仅 sufficient 时 cap=0 才拦截（旧测试用 insufficient
         已改为 sufficient，因 insufficient 现在降级为 cap=1.0 放行）。
         """
-        from unittest.mock import MagicMock, patch
+        from unittest.mock import patch
+
         from scripts.memory_l4.polling_trader import PollingTrader
+
         with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
             t = PollingTrader.__new__(PollingTrader)
         t.BDSM_COINS = frozenset({"ETH"})
-        t._bdsm_snapshot_cache = {"ts": float("inf"), "snapshot": {"version": "1.0", "coins": {
-            "ETH": {"available": False, "data_quality": "sufficient",
-                    "direction_constraint": "NEUTRAL", "cap_multiplier": 0.0,
-                    "exit_action": "NONE"}}}}
+        t._bdsm_snapshot_cache = {
+            "ts": float("inf"),
+            "snapshot": {
+                "version": "1.0",
+                "coins": {
+                    "ETH": {
+                        "available": False,
+                        "data_quality": "sufficient",
+                        "direction_constraint": "NEUTRAL",
+                        "cap_multiplier": 0.0,
+                        "exit_action": "NONE",
+                    }
+                },
+            },
+        }
         actual, cap, tag = t._apply_bdsm_cap_multiplier("ETH", 3000.0)
         self.assertAlmostEqual(actual, 0.0, delta=1e-6)
         self.assertAlmostEqual(cap, 0.0, delta=1e-6)
@@ -514,18 +632,34 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
         ARB 实证：连续9天 insufficient+cap=0 → BCRM2.0 做空信号被 cap_zero_blocked 拦截。
         """
         from unittest.mock import MagicMock, patch
+
         from scripts.memory_l4.polling_trader import PollingTrader
+
         with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
             t = PollingTrader.__new__(PollingTrader)
         t._log = MagicMock()
         t.BDSM_COINS = frozenset({"ARB"})
-        t._bdsm_snapshot_cache = {"ts": float("inf"), "snapshot": {
-            "version": "1.0", "coins": {
-                "ARB": {"data_quality": "insufficient", "cap_multiplier": 0.0,
-                        "direction_constraint": "NEUTRAL", "confidence": 0.0}}}}
+        t._bdsm_snapshot_cache = {
+            "ts": float("inf"),
+            "snapshot": {
+                "version": "1.0",
+                "coins": {
+                    "ARB": {
+                        "data_quality": "insufficient",
+                        "cap_multiplier": 0.0,
+                        "direction_constraint": "NEUTRAL",
+                        "confidence": 0.0,
+                    }
+                },
+            },
+        }
         actual, cap, tag = t._apply_bdsm_cap_multiplier("ARB", 1000.0)
-        self.assertAlmostEqual(actual, 1000.0, delta=1e-6,
-                               msg=f"insufficient 应降级 cap=1.0 放行，实际 actual={actual} cap={cap} tag={tag}")
+        self.assertAlmostEqual(
+            actual,
+            1000.0,
+            delta=1e-6,
+            msg=f"insufficient 应降级 cap=1.0 放行，实际 actual={actual} cap={cap} tag={tag}",
+        )
         self.assertAlmostEqual(cap, 1.0, delta=1e-6)
         self.assertIn("insufficient", tag)
 
@@ -535,36 +669,68 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
         ZEC 实证：partial+cap=0.448 → 仓位被缩放，但信号不足时不应干预。
         """
         from unittest.mock import MagicMock, patch
+
         from scripts.memory_l4.polling_trader import PollingTrader
+
         with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
             t = PollingTrader.__new__(PollingTrader)
         t._log = MagicMock()
         t.BDSM_COINS = frozenset({"ZEC"})
-        t._bdsm_snapshot_cache = {"ts": float("inf"), "snapshot": {
-            "version": "1.0", "coins": {
-                "ZEC": {"data_quality": "partial", "cap_multiplier": 0.448,
-                        "direction_constraint": "LONG_ONLY", "confidence": 0.5}}}}
+        t._bdsm_snapshot_cache = {
+            "ts": float("inf"),
+            "snapshot": {
+                "version": "1.0",
+                "coins": {
+                    "ZEC": {
+                        "data_quality": "partial",
+                        "cap_multiplier": 0.448,
+                        "direction_constraint": "LONG_ONLY",
+                        "confidence": 0.5,
+                    }
+                },
+            },
+        }
         actual, cap, tag = t._apply_bdsm_cap_multiplier("ZEC", 1000.0)
-        self.assertAlmostEqual(actual, 1000.0, delta=1e-6,
-                               msg=f"partial 应降级 cap=1.0 放行，实际 actual={actual} cap={cap} tag={tag}")
+        self.assertAlmostEqual(
+            actual,
+            1000.0,
+            delta=1e-6,
+            msg=f"partial 应降级 cap=1.0 放行，实际 actual={actual} cap={cap} tag={tag}",
+        )
         self.assertAlmostEqual(cap, 1.0, delta=1e-6)
         self.assertIn("insufficient", tag)
 
     def test_gap2_sufficient_cap_applies_normally(self) -> None:
         """data_quality=sufficient → cap_multiplier 正常生效（门控不影响高置信度场景）。"""
         from unittest.mock import MagicMock, patch
+
         from scripts.memory_l4.polling_trader import PollingTrader
+
         with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
             t = PollingTrader.__new__(PollingTrader)
         t._log = MagicMock()
         t.BDSM_COINS = frozenset({"SOL"})
-        t._bdsm_snapshot_cache = {"ts": float("inf"), "snapshot": {
-            "version": "1.0", "coins": {
-                "SOL": {"data_quality": "sufficient", "cap_multiplier": 0.25,
-                        "direction_constraint": "LONG_BLOCKED", "confidence": 0.875}}}}
+        t._bdsm_snapshot_cache = {
+            "ts": float("inf"),
+            "snapshot": {
+                "version": "1.0",
+                "coins": {
+                    "SOL": {
+                        "data_quality": "sufficient",
+                        "cap_multiplier": 0.25,
+                        "direction_constraint": "LONG_BLOCKED",
+                        "confidence": 0.875,
+                    }
+                },
+            },
+        }
         actual, cap, tag = t._apply_bdsm_cap_multiplier("SOL", 1000.0)
-        self.assertAlmostEqual(actual, 250.0, delta=1e-6,
-                               msg=f"sufficient 时 cap=0.25 应正常生效，实际 actual={actual} cap={cap} tag={tag}")
+        self.assertAlmostEqual(
+            actual,
+            250.0,
+            delta=1e-6,
+            msg=f"sufficient 时 cap=0.25 应正常生效，实际 actual={actual} cap={cap} tag={tag}",
+        )
         self.assertAlmostEqual(cap, 0.25, delta=1e-6)
         self.assertEqual(tag, "bdsm_cap_applied")
 
@@ -572,20 +738,45 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
     def test_gap3_close_all_calls_okx_full_close_and_handle_close(self) -> None:
         """BDSM CLOSE_ALL → 走 market_close_long/short 全平 + handle_close_position 落盘。"""
         from unittest.mock import MagicMock, patch
+
         from scripts.memory_l4.polling_trader import PollingTrader
+
         with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
             t = PollingTrader.__new__(PollingTrader)
         t._log = MagicMock()
         t.BDSM_COINS = frozenset({"UNI"})
-        t._bdsm_snapshot_cache = {"ts": float("inf"), "snapshot": {"version": "1.0", "coins": {
-            "UNI": {"available": True, "exit_action": "CLOSE_ALL", "exit_triggers": ["B5_rank_tumbling"],
-                    "direction_constraint": "NEUTRAL", "cap_multiplier": 1.0}}}}
+        t._bdsm_snapshot_cache = {
+            "ts": float("inf"),
+            "snapshot": {
+                "version": "1.0",
+                "coins": {
+                    "UNI": {
+                        "available": True,
+                        "exit_action": "CLOSE_ALL",
+                        "exit_triggers": ["B5_rank_tumbling"],
+                        "direction_constraint": "NEUTRAL",
+                        "cap_multiplier": 1.0,
+                    }
+                },
+            },
+        }
         t.position_tracker = MagicMock()
-        t.position_tracker.all_open_positions = MagicMock(return_value=[])  # yijing exit 的持仓不用它
+        t.position_tracker.all_open_positions = MagicMock(
+            return_value=[]
+        )  # yijing exit 的持仓不用它
         # 模拟 _bdsm_check_exit_actions 作用到 UNI 持仓 → OKX client close_long 调用
-        pos_info = {"inst_id": "UNI-USDT-SWAP", "coin": "UNI", "pos_side": "long", "pos": 10,
-                    "avg_px": 10.0, "mark_px": 11.0, "upl": 10.0, "upl_ratio": 0.10,
-                    "open_time_sec": 0, "source_tag": "bdsm"}
+        pos_info = {
+            "inst_id": "UNI-USDT-SWAP",
+            "coin": "UNI",
+            "pos_side": "long",
+            "pos": 10,
+            "avg_px": 10.0,
+            "mark_px": 11.0,
+            "upl": 10.0,
+            "upl_ratio": 0.10,
+            "open_time_sec": 0,
+            "source_tag": "bdsm",
+        }
 
         t.okx_client = MagicMock()
         t.okx_client.market_close_long = MagicMock(return_value={"ok": True, "dry_run": False})
@@ -594,24 +785,40 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
 
         t._bdsm_check_exit_actions()  # 缺口 3 新增方法
         t.okx_client.market_close_long.assert_called_once_with(
-            "UNI-USDT-SWAP", reason="bdsm_exit:CLOSE_ALL(B5_rank_tumbling,exit)")
+            "UNI-USDT-SWAP", reason="bdsm_exit:CLOSE_ALL(B5_rank_tumbling,exit)"
+        )
         t._handle_close_position.assert_called_once()
-        self.assertEqual(t._handle_close_position.call_args.kwargs.get("exit_reason", ""),
-                         "bdsm_exit:CLOSE_ALL(B5_rank_tumbling,exit)")
+        self.assertEqual(
+            t._handle_close_position.call_args.kwargs.get("exit_reason", ""),
+            "bdsm_exit:CLOSE_ALL(B5_rank_tumbling,exit)",
+        )
 
     def test_gap3_no_bdsm_coin_or_none_no_action(self) -> None:
         """FAIL-OPEN：非 BDSM 币 / exit=NONE → 不调用 OKX 任何平仓/减仓接口。"""
         from unittest.mock import MagicMock, patch
+
         from scripts.memory_l4.polling_trader import PollingTrader
+
         with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
             t = PollingTrader.__new__(PollingTrader)
         t._log = MagicMock()
         t.BDSM_COINS = frozenset({"UNI"})
         # NONE 快照
-        t._bdsm_snapshot_cache = {"ts": float("inf"), "snapshot": {"version": "1.0", "coins": {
-            "UNI": {"available": True, "exit_action": "NONE", "exit_triggers": [],
-                    "direction_constraint": "NEUTRAL", "cap_multiplier": 1.0},
-        }}}
+        t._bdsm_snapshot_cache = {
+            "ts": float("inf"),
+            "snapshot": {
+                "version": "1.0",
+                "coins": {
+                    "UNI": {
+                        "available": True,
+                        "exit_action": "NONE",
+                        "exit_triggers": [],
+                        "direction_constraint": "NEUTRAL",
+                        "cap_multiplier": 1.0,
+                    },
+                },
+            },
+        }
         t.okx_client = MagicMock()
         t.position_tracker = MagicMock(all_open_positions=MagicMock(return_value=[]))
         t._get_coin_position_info = MagicMock()
@@ -639,9 +846,14 @@ class BDSMBrotherPackageEnvTests(unittest.TestCase):
 
     def _run_as_sibling_module(self, module_stmt: str):
         """用 `python3 -m scripts.memory_l4...` 兄弟子包环境跑一段代码，返回 stdout。"""
-        import subprocess, tempfile, os, textwrap
+        import os
+        import subprocess
+        import textwrap
+
         script = os.path.join(
-            self._SIBLING_CWD, "scripts", "memory_l4",
+            self._SIBLING_CWD,
+            "scripts",
+            "memory_l4",
             "_ut_bug_cd_probe.py",
         )
         # 临时脚本（与真实 daemon sys.path/__package__ 等价）
@@ -649,16 +861,19 @@ class BDSMBrotherPackageEnvTests(unittest.TestCase):
             f.write(textwrap.dedent(module_stmt))
         try:
             r = subprocess.run(
-                ["/opt/anaconda3/bin/python3",
-                 "-u", "-m", "scripts.memory_l4._ut_bug_cd_probe"],
+                ["/opt/anaconda3/bin/python3", "-u", "-m", "scripts.memory_l4._ut_bug_cd_probe"],
                 cwd=self._SIBLING_CWD,
-                capture_output=True, text=True, timeout=60,
+                capture_output=True,
+                text=True,
+                timeout=60,
                 env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
             )
             return r.returncode, r.stdout, r.stderr
         finally:
-            try: os.remove(script)
-            except FileNotFoundError: pass
+            try:
+                os.remove(script)
+            except FileNotFoundError:
+                pass
 
     # ------------------------------------------------------------------ RED1
     def test_brother_subpkg_does_not_error_models_missing(self):
@@ -677,8 +892,9 @@ class BDSMBrotherPackageEnvTests(unittest.TestCase):
         """
         rc, out, err = self._run_as_sibling_module(stmt)
         self.assertEqual(rc, 0, f"subprocess rc={rc} stderr={err[-500:]}")
-        last = [l for l in out.splitlines() if l.strip()][-1]
+        last = [l for l in out.splitlines() if l.strip()][-1]  # noqa: E741
         import json
+
         data = json.loads(last)
         self.assertTrue(data.get("ok"), f"兄弟子包 BDSM_COINS 失败: {data}")
         self.assertEqual(data.get("len"), 10, f"10币 预期，实际={data.get('coins')}")
@@ -708,8 +924,9 @@ class BDSMBrotherPackageEnvTests(unittest.TestCase):
         """
         rc, out, err = self._run_as_sibling_module(stmt)
         self.assertEqual(rc, 0, f"subprocess rc={rc} stderr={err[-500:]}")
-        last = [l for l in out.splitlines() if l.strip()][-1]
+        last = [l for l in out.splitlines() if l.strip()][-1]  # noqa: E741
         import json
+
         data = json.loads(last)
         self.assertTrue(data.get("ok"), f"兄弟子包 快照读 失败: {data}")
         self.assertIsNotNone(data.get("default_dir"), "DEFAULT_BDSM_DIR 导出别名丢失")
@@ -717,11 +934,10 @@ class BDSMBrotherPackageEnvTests(unittest.TestCase):
         # BUG-D 回归核心意图：cap_mult 非 1.0 中性兜底（随市场动态变化，不硬编码具体值）
         for c in ("UNI", "PUMP", "HYPE", "AAVE", "SOL", "CRCL", "ETH"):
             got = data.get("coins", {}).get(c)
-            self.assertIsNotNone(
-                got, f"快照缺 币={c} (兄弟子包 读到中性/None)")
+            self.assertIsNotNone(got, f"快照缺 币={c} (兄弟子包 读到中性/None)")
             self.assertNotEqual(
-                got, 1.0,
-                f"币={c} cap_mult=1.0 → BUG-D 回归：中性兜底未修复（实际={got}）")
+                got, 1.0, f"币={c} cap_mult=1.0 → BUG-D 回归：中性兜底未修复（实际={got}）"
+            )
 
 
 # ============================================================================
@@ -734,7 +950,7 @@ class OKXSetLeverageTests(unittest.TestCase):
 
     def setUp(self) -> None:
         _THIS_DIR = Path(__file__).resolve().parent
-        _BASE_11 = str(_THIS_DIR.parent)        # .../11-易经推理系统
+        _BASE_11 = str(_THIS_DIR.parent)  # .../11-易经推理系统
         _MEM_L4 = os.path.join(_BASE_11, "scripts", "memory_l4")
         for p in (_MEM_L4, _BASE_11):
             if p in sys.path:
@@ -745,31 +961,44 @@ class OKXSetLeverageTests(unittest.TestCase):
     def test_set_leverage_calls_okx_rest_endpoint(self):
         """T1 RED: set_leverage 必须 POST /api/v5/account/set-leverage
         body 包含 instId / lever / mgnMode 三键，认证签名；dry_run=True 也 必须 打。"""
-        from unittest.mock import MagicMock, patch, PropertyMock
+        from unittest.mock import patch
+
         sys.path.insert(0, os.path.normpath(os.path.join(_THIS_DIR, "..")))
         from scripts.memory_l4.okx_simulated import OKXSimulatedClient
+
         cfg = {
-            "api_key": "tdd_key", "secret_key": "tdd_secret", "passphrase": "tdd_pp",
+            "api_key": "tdd_key",
+            "secret_key": "tdd_secret",
+            "passphrase": "tdd_pp",
             "base_url": "https://www.okx.com",
-            "default_leverage": 5, "td_mode": "isolated",
-            "default_inst_id": "UNI-USDT-SWAP", "simulated": False, "dry_run": True,
+            "default_leverage": 5,
+            "td_mode": "isolated",
+            "default_inst_id": "UNI-USDT-SWAP",
+            "simulated": False,
+            "dry_run": True,
         }
         # 用 patch.object 绕过 _proxy_setup（不打网络）
         with patch.object(OKXSimulatedClient, "_proxy_setup", lambda self: None):
             cli = OKXSimulatedClient(config=cfg)
         captured = {}
+
         def fake_post(path, body, auth=True):
             captured["path"] = path
             captured["body"] = body
             captured["auth"] = auth
             return {"code": "0", "msg": "", "data": [{"lever": "5"}]}
+
         cli._post = fake_post
         # RED 断言：方法存在；参数正确；返回 ok
-        self.assertTrue(hasattr(cli, "set_leverage"),
-                        "FAIL-RED: OKXSimulatedClient 无 set_leverage 方法")
+        self.assertTrue(
+            hasattr(cli, "set_leverage"), "FAIL-RED: OKXSimulatedClient 无 set_leverage 方法"
+        )
         res = cli.set_leverage("UNI-USDT-SWAP", lever=5.0, mgn_mode="isolated")
-        self.assertEqual(captured.get("path"), "/api/v5/account/set-leverage",
-                         f"FAIL-RED: 未走 /api/v5/account/set-leverage 端点，实际={captured.get('path')}")
+        self.assertEqual(
+            captured.get("path"),
+            "/api/v5/account/set-leverage",
+            f"FAIL-RED: 未走 /api/v5/account/set-leverage 端点，实际={captured.get('path')}",
+        )
         self.assertEqual(captured.get("auth"), True, "FAIL-RED: set_leverage 必须 auth=True 签名")
         body = captured.get("body", {})
         self.assertEqual(body.get("instId"), "UNI-USDT-SWAP")
@@ -783,8 +1012,10 @@ class OKXSetLeverageTests(unittest.TestCase):
         sys.path.insert(0, os.path.normpath(os.path.join(_THIS_DIR, "..")))
         import types
         from unittest.mock import MagicMock
+
         # 轻量 trader：只 填 _open_position 用到 的 必备 attrs + 让 _execute_trade 不 参与
         from scripts.memory_l4.polling_trader import PollingTrader
+
         t = object.__new__(PollingTrader)
         t._log = MagicMock()
         t.shadow_mode = False
@@ -793,46 +1024,89 @@ class OKXSetLeverageTests(unittest.TestCase):
         t._capital_ctrl_last_result = None
         t._capital_ctrl_last_ts = 0.0
         t._CAPITAL_CTRL_MIN_INTERVAL = 300.0
+
         # 把会读的复杂 helper 全 替换 成 安全 lambda，避免 链式 缺 attrs
-        def _fetch_capital_advice(self, force=False): return None
-        def _apply_capital_control_to_position(self, coin, position_usdt, available_equity, *a, **kw):
+        def _fetch_capital_advice(self, force=False):
+            return None
+
+        def _apply_capital_control_to_position(
+            self, coin, position_usdt, available_equity, *a, **kw
+        ):
             return (float(position_usdt), "chain_probe noop")
+
         t._fetch_capital_advice = types.MethodType(_fetch_capital_advice, t)
-        t._apply_capital_control_to_position = types.MethodType(_apply_capital_control_to_position, t)
+        t._apply_capital_control_to_position = types.MethodType(
+            _apply_capital_control_to_position, t
+        )
         # perf_tracker：get_balance 失败（我的 mock 没配置）时，走 perf_tracker.current_equity
         t.perf_tracker = MagicMock()
         t.perf_tracker.current_equity = 2070.0
         # 让 get_balance 返回 False ok，避免 td_mode == isolated 分支 覆盖 available_equity
         t.okx_client = MagicMock()
-        t.okx_client.cfg = {"default_leverage": 5.0, "td_mode": "cross", "default_inst_id": "UNI-USDT-SWAP"}
+        t.okx_client.cfg = {
+            "default_leverage": 5.0,
+            "td_mode": "cross",
+            "default_inst_id": "UNI-USDT-SWAP",
+        }
         t.okx_client.get_balance.return_value = {"ok": False}
-        t.okx_client.get_available_balance.return_value = {"ok": True, "total_eq": 2070.0, "assets": {"USDT": {"avail": 1800.0, "eq": 2070.0}}}
+        t.okx_client.get_available_balance.return_value = {
+            "ok": True,
+            "total_eq": 2070.0,
+            "assets": {"USDT": {"avail": 1800.0, "eq": 2070.0}},
+        }
         t.okx_client.get_positions.return_value = {"ok": True, "positions": []}
         t.okx_client._usdt_to_sz.return_value = 12.31
         t.risk_manager = MagicMock()
-        t.risk_manager.calc_position_size = MagicMock(return_value={
-            "position_usdt": 100.0, "margin_usdt": 20.0, "position_pct": 0.01,
-            "confidence_factor": 1.13, "volatility_factor": 1.0,
-            "kelly_factor": 1.0, "consecutive_loss_factor": 1.0,
-            "hexagram_factor": 1.0, "vol_regime_factor": 1.0,
-            "p2_base_multiplier": 1.0, "leverage": 5, "reason": "tdd_set_lev",
-        })
-        t.position_tracker = MagicMock(); t.position_tracker.all_open_positions.return_value = []
+        t.risk_manager.calc_position_size = MagicMock(
+            return_value={
+                "position_usdt": 100.0,
+                "margin_usdt": 20.0,
+                "position_pct": 0.01,
+                "confidence_factor": 1.13,
+                "volatility_factor": 1.0,
+                "kelly_factor": 1.0,
+                "consecutive_loss_factor": 1.0,
+                "hexagram_factor": 1.0,
+                "vol_regime_factor": 1.0,
+                "p2_base_multiplier": 1.0,
+                "leverage": 5,
+                "reason": "tdd_set_lev",
+            }
+        )
+        t.position_tracker = MagicMock()
+        t.position_tracker.all_open_positions.return_value = []
+
         def _apply_bdsm_cap(self, coin, position_usdt, *a, **kw):
             return (float(position_usdt), 1.0, "noop_cap")
+
         t._apply_bdsm_cap_multiplier = types.MethodType(_apply_bdsm_cap, t)
+
         def _apply_fuses(self, coin, position_usdt, direction, inf, *a, **kw):
             return (float(position_usdt), [], False, None)
+
         t._apply_portfolio_risk_fuses = types.MethodType(_apply_fuses, t)
         t._compute_p2_dynamic_sizing_factors = lambda hex, lookback=30, min_samples=5: {
-            "kelly_factor": 1.0, "consecutive_loss_factor": 1.0, "hexagram_factor": 1.0,
-            "vol_regime_factor": 1.0, "vol_regime_class": "NORMAL",
-            "vol_adaptive_sl_mult": 1.0, "vol_adaptive_tp_mult": 1.0,
-            "win_rate": 0.0, "avg_win": 0.0, "avg_loss": 0.0,
-            "win_streak": 0, "loss_streak": 0, "p2_base_multiplier": 1.0,
+            "kelly_factor": 1.0,
+            "consecutive_loss_factor": 1.0,
+            "hexagram_factor": 1.0,
+            "vol_regime_factor": 1.0,
+            "vol_regime_class": "NORMAL",
+            "vol_adaptive_sl_mult": 1.0,
+            "vol_adaptive_tp_mult": 1.0,
+            "win_rate": 0.0,
+            "avg_win": 0.0,
+            "avg_loss": 0.0,
+            "win_streak": 0,
+            "loss_streak": 0,
+            "p2_base_multiplier": 1.0,
             "hexagram_class": "neutral",
         }
-        t._get_regime_pred_multipliers = lambda *a, **kw: {"position_mult":1,"tp_mult":1,"sl_mult":1,"threshold_mult":1}
+        t._get_regime_pred_multipliers = lambda *a, **kw: {
+            "position_mult": 1,
+            "tp_mult": 1,
+            "sl_mult": 1,
+            "threshold_mult": 1,
+        }
         t._get_current_price = lambda coin, *a, **kw: 8.1234
         t._get_base_sl_roi = lambda *a, **kw: 0.0644
         t._get_base_tp_roi = lambda *a, **kw: 0.1079
@@ -840,7 +1114,11 @@ class OKXSetLeverageTests(unittest.TestCase):
         t._enforce_tp_price_floor = lambda new_tp, entry, side, **kw: (new_tp, False, 0.1079, {})
         t._parse_bearish_score_from_reason = lambda r: "NONE"
         t._parse_regime_from_reason = lambda r: "TRENDING_UP"
-        t._check_hexagram_consistency = lambda *a, **kw: {"confidence_multiplier":1.0,"reason":"tdd","raise_a_floor_to":0.0}
+        t._check_hexagram_consistency = lambda *a, **kw: {
+            "confidence_multiplier": 1.0,
+            "reason": "tdd",
+            "raise_a_floor_to": 0.0,
+        }
         t._compute_long_position_multiplier = lambda self, s: 1.0
         t._compute_short_position_multiplier = lambda self, s: 1.0
         t._reload_enable_inject_if_stale = lambda self: None
@@ -851,11 +1129,16 @@ class OKXSetLeverageTests(unittest.TestCase):
         t.BDSM_COINS = frozenset(["UNI"])
         # 核心：okx_client 已在上面 定义。这里 补 call_order + set_leverage/market_open_long side_effect
         call_order = []
+
         # 重 设 覆盖 掉 上面 的 MagicMock()（保留 get_balance/get_available_balance/get_positions/_usdt_to_sz 预设）
         def _set_lev_side_effect(*a, **kw):
-            call_order.append("set_leverage"); return {"ok": True}
+            call_order.append("set_leverage")
+            return {"ok": True}
+
         def _mol_side_effect(*a, **kw):
-            call_order.append("market_open_long"); return {"ok": True, "ordId": "tdd-123", "clOrdId": "x", "avgPx": 8.12, "sz": 12.31}
+            call_order.append("market_open_long")
+            return {"ok": True, "ordId": "tdd-123", "clOrdId": "x", "avgPx": 8.12, "sz": 12.31}
+
         t.okx_client.set_leverage.side_effect = _set_lev_side_effect
         t.okx_client.market_open_long.side_effect = _mol_side_effect
         t.okx_client.set_take_profit = MagicMock(return_value={"ok": True})
@@ -870,37 +1153,74 @@ class OKXSetLeverageTests(unittest.TestCase):
         t.EXIT_CONFIRM_REQUIRED = False
         # 构造 最简 inference dict（覆盖 _open_position 关键字段）
         inference = {
-            "coin": "UNI", "inst_id": "UNI-USDT-SWAP",
-            "confidence": 0.88, "direction": "UP", "fail_closed": False,
-            "is_ranging": False, "trend_strength": 0.8,
-            "kline_data": [], "price": 8.1234, "volatility": 0.02,
-            "stop_loss_px": 7.60, "take_profit_px": 9.00,
-            "hexagram": "风雷益", "score_consensus": 0.8, "gate_base_threshold": 0.4,
-            "regime_pred": "TRENDING_UP", "asset_class": "crypto_usdt",
-            "snapshot": {"price":8.1234,"volatility":0.02,"is_ranging":False,"regime":"TRENDING_UP"},
-            "market_snapshot": {"price":8.1234,"volatility":0.02,"is_ranging":False,"regime":"TRENDING_UP"},
+            "coin": "UNI",
+            "inst_id": "UNI-USDT-SWAP",
+            "confidence": 0.88,
+            "direction": "UP",
+            "fail_closed": False,
+            "is_ranging": False,
+            "trend_strength": 0.8,
+            "kline_data": [],
+            "price": 8.1234,
+            "volatility": 0.02,
+            "stop_loss_px": 7.60,
+            "take_profit_px": 9.00,
+            "hexagram": "风雷益",
+            "score_consensus": 0.8,
+            "gate_base_threshold": 0.4,
+            "regime_pred": "TRENDING_UP",
+            "asset_class": "crypto_usdt",
+            "snapshot": {
+                "price": 8.1234,
+                "volatility": 0.02,
+                "is_ranging": False,
+                "regime": "TRENDING_UP",
+            },
+            "market_snapshot": {
+                "price": 8.1234,
+                "volatility": 0.02,
+                "is_ranging": False,
+                "regime": "TRENDING_UP",
+            },
             "_regime_pred": "TRENDING_UP",
-            "consensus_breakdown": {"s_p":0.8,"s_e":0.8,"s_b":0.8},
+            "consensus_breakdown": {"s_p": 0.8, "s_e": 0.8, "s_b": 0.8},
         }
         # 调用 _open_position
         t._open_position(inference, is_reverse=False, is_trial=False)
         # RED 断言 A：set_leverage 被 调 1 次，参数 (inst_id, lever=5, mgn_mode=isolated)
-        self.assertEqual(t.okx_client.set_leverage.call_count, 1,
-                         f"FAIL-RED: set_leverage 调用次数={t.okx_client.set_leverage.call_count} 不是 1")
+        self.assertEqual(
+            t.okx_client.set_leverage.call_count,
+            1,
+            f"FAIL-RED: set_leverage 调用次数={t.okx_client.set_leverage.call_count} 不是 1",
+        )
         lev_args = t.okx_client.set_leverage.call_args
-        self.assertEqual(lev_args.kwargs.get("inst_id") or lev_args.args[0] if lev_args.args else lev_args.kwargs.get("inst_id"),
-                         "UNI-USDT-SWAP", f"FAIL-RED: set_leverage inst_id 不对 args={lev_args}")
+        self.assertEqual(
+            (
+                lev_args.kwargs.get("inst_id") or lev_args.args[0]
+                if lev_args.args
+                else lev_args.kwargs.get("inst_id")
+            ),
+            "UNI-USDT-SWAP",
+            f"FAIL-RED: set_leverage inst_id 不对 args={lev_args}",
+        )
         # RED 断言 B：顺序必须 set_leverage 先 于 market_open_long
-        self.assertEqual(call_order, ["set_leverage", "market_open_long"],
-                         f"FAIL-RED: 调用 顺序 错。预期 set_leverage → market_open_long，实际={call_order}")
+        self.assertEqual(
+            call_order,
+            ["set_leverage", "market_open_long"],
+            f"FAIL-RED: 调用 顺序 错。预期 set_leverage → market_open_long，实际={call_order}",
+        )
         # RED 断言 C：market_open_long 调 1 次
-        self.assertEqual(t.okx_client.market_open_long.call_count, 1,
-                         f"FAIL-RED: market_open_long 调用 次数={t.okx_client.market_open_long.call_count}")
+        self.assertEqual(
+            t.okx_client.market_open_long.call_count,
+            1,
+            f"FAIL-RED: market_open_long 调用 次数={t.okx_client.market_open_long.call_count}",
+        )
 
 
 # ═══════════════════════════════════════════════════════════════════════
 # P0-A1 Phase 0 有效字段写入（cvs/trend_stop/value_exit 非 neutral）
 # ═══════════════════════════════════════════════════════════════════════
+
 
 class TestPhase0RealFieldWriteback(unittest.TestCase):
     """P0-A1: _build_coin_entry / write_snapshot 必须写回 Phase 0 真实值（非 neutral 默认）。
@@ -911,9 +1231,12 @@ class TestPhase0RealFieldWriteback(unittest.TestCase):
 
     def test_build_coin_entry_contains_nonzero_phase0_fields(self) -> None:
         """对合成的真实K线构造 entry → ts_score/cvs/trend_stop/value_exit 必须非 neutral 默认。"""
-        import json
-        from bdsm_snapshot_writer import _build_coin_entry, _neutral_coin_entry
-        from bdsm_snapshot_writer import _compute_cvs, _compute_value_exit, _compute_trend_stop
+
+        from bdsm_snapshot_writer import (
+            _compute_cvs,
+            _compute_value_exit,
+            _neutral_coin_entry,
+        )
 
         # 用合成K线验证 Phase 0 写回逻辑在真实 snapshot 里会触发
         # 先造一条 neutral，再用合成 downtrend 数据跑 4 个 Phase 0 函数
@@ -923,8 +1246,11 @@ class TestPhase0RealFieldWriteback(unittest.TestCase):
         self.assertEqual(entry["trend_stop"]["action"], "none")
         self.assertEqual(entry["value_exit"]["pf_percentile"], 50.0)
         # 还需要顶层 alias（实盘 _apply_bdsm_scaling 读 coin_entry.get("ts_score")）
-        self.assertIn("ts_score", entry,
-                      f"实盘 _apply_bdsm_scaling 直接读 ts_score 顶层字段，当前缺失；keys={sorted(entry.keys())}")
+        self.assertIn(
+            "ts_score",
+            entry,
+            f"实盘 _apply_bdsm_scaling 直接读 ts_score 顶层字段，当前缺失；keys={sorted(entry.keys())}",
+        )
 
         # 模拟 downtrend 超卖场景：TS(0.6) + BDS(0.4) → CVS>0 → 非零
         ts, _ = 0.6, 0.0
@@ -944,15 +1270,23 @@ class TestPhase0RealFieldWriteback(unittest.TestCase):
     def test_write_snapshot_fill_phase0_fields_if_klines(self) -> None:
         """write_snapshot 生成的 entry 含 technical_assessment/cvs/trend_stop/value_exit 四个 v1.3 字段结构完整。"""
         import json
+
         from bdsm_snapshot_writer import write_snapshot
+
         with __import__("tempfile").TemporaryDirectory() as tmpdir:
             path = write_snapshot(out_dir=tmpdir, dry_run_read_coin_data_from_db=False)
             with open(path) as f:
                 data = json.load(f)
             for coin, entry in data["coins"].items():
                 # 结构完整性（即使 FAIL-OPEN 中性也要有字段）
-                for required in ("technical_assessment", "cvs", "cvs_ratio",
-                                 "scaling_plan", "trend_stop", "value_exit"):
+                for required in (
+                    "technical_assessment",
+                    "cvs",
+                    "cvs_ratio",
+                    "scaling_plan",
+                    "trend_stop",
+                    "value_exit",
+                ):
                     self.assertIn(required, entry, f"{coin} 缺 {required}")
                 self.assertIsInstance(entry["cvs"], (int, float))
                 self.assertIn("action", entry["trend_stop"])

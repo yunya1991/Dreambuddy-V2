@@ -6,9 +6,13 @@ SPEC v2.0-rc3 第 6.7 节：
 - v2 出错时自动 fallback 到 v1
 - 连续 3 次异常 → 切回 v1 + 告警
 """
+
 from __future__ import annotations
-import json, os, sys, unittest
-from unittest.mock import MagicMock, patch
+
+import json
+import os
+import sys
+import unittest
 
 SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
 if SERVER_DIR not in sys.path:
@@ -17,12 +21,14 @@ if SERVER_DIR not in sys.path:
 
 def _mock_llm(prompt, *args, **kwargs):
     """返回有效 JSON 的 mock LLM。"""
-    return json.dumps({
-        "thesis": "测试论点",
-        "arguments": ["论据1"],
-        "quote": "金句",
-        "confidence": 0.75,
-    })
+    return json.dumps(
+        {
+            "thesis": "测试论点",
+            "arguments": ["论据1"],
+            "quote": "金句",
+            "confidence": 0.75,
+        }
+    )
 
 
 class TestDebateV1Default(unittest.TestCase):
@@ -30,7 +36,8 @@ class TestDebateV1Default(unittest.TestCase):
 
     def test_v1_uses_llm_debate(self):
         """v1 模式使用 _llm_based_debate。"""
-        from c_drive_agent import CDriveAgent, CDriveAction
+        from c_drive_agent import CDriveAgent
+
         agent = CDriveAgent(llm_fn=_mock_llm)
         # 默认 debate_engine_version = "v1"
         self.assertEqual(agent._debate_engine_version, "v1")
@@ -50,6 +57,7 @@ class TestDebateV2Mode(unittest.TestCase):
     def test_v2_returns_expected_format(self):
         """v2 模式返回 v1 兼容格式。"""
         from c_drive_agent import CDriveAgent
+
         agent = CDriveAgent(
             llm_fn=_mock_llm,
             config={"debate_engine": "v2"},
@@ -68,8 +76,9 @@ class TestDebateV2Mode(unittest.TestCase):
     def test_v2_failure_fallback_to_v1(self):
         """v2 异常时 fallback 到 v1。"""
         from c_drive_agent import CDriveAgent
+
         # v2 会因 DebateEngine 异常而 fallback
-        bad_llm = lambda p, *a, **kw: (_ for _ in ()).throw(Exception("LLM error"))
+        bad_llm = lambda p, *a, **kw: (_ for _ in ()).throw(Exception("LLM error"))  # noqa: E731
         agent = CDriveAgent(
             llm_fn=bad_llm,
             config={"debate_engine": "v2"},
@@ -86,7 +95,8 @@ class TestDebateV2Mode(unittest.TestCase):
     def test_v2_consecutive_errors_rollback(self):
         """连续 3 次异常后切回 v1。"""
         from c_drive_agent import CDriveAgent
-        bad_llm = lambda p, *a, **kw: (_ for _ in ()).throw(Exception("error"))
+
+        bad_llm = lambda p, *a, **kw: (_ for _ in ()).throw(Exception("error"))  # noqa: E731
         agent = CDriveAgent(
             llm_fn=bad_llm,
             config={"debate_engine": "v2"},
@@ -104,6 +114,7 @@ class TestDebateV2Mode(unittest.TestCase):
     def test_v2_success_resets_error_count(self):
         """v2 成功时重置错误计数。"""
         from c_drive_agent import CDriveAgent
+
         agent = CDriveAgent(
             llm_fn=_mock_llm,
             config={"debate_engine": "v2"},

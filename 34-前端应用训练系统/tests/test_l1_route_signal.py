@@ -8,6 +8,7 @@
 
 FAIL-OPEN: 认知不可用/召回空/执行异常均不抛出，安全降级。
 """
+
 import json
 import os
 import sys
@@ -16,7 +17,10 @@ import pytest
 
 _SCRIPTS_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "..", "..", "3.1-FRONTEND", "scripts",
+    "..",
+    "..",
+    "3.1-FRONTEND",
+    "scripts",
 )
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
@@ -41,12 +45,22 @@ class FakeL0:
             raise AssertionError(f"unexpected scope: {scope}")
         self.recalls.append(params or {})
         if self._degraded:
-            return {"ok": False, "data": [], "source": "cognitive-loop-entry",
-                    "timestamp": "", "degraded": True,
-                    "meta": {"reason": "cognitive_unavailable"}}
-        return {"ok": True, "data": self._memories or [],
-                "source": "cognitive-loop-entry", "timestamp": "",
-                "degraded": False, "meta": {}}
+            return {
+                "ok": False,
+                "data": [],
+                "source": "cognitive-loop-entry",
+                "timestamp": "",
+                "degraded": True,
+                "meta": {"reason": "cognitive_unavailable"},
+            }
+        return {
+            "ok": True,
+            "data": self._memories or [],
+            "source": "cognitive-loop-entry",
+            "timestamp": "",
+            "degraded": False,
+            "meta": {},
+        }
 
     def settle(self, result, ctx):
         pass
@@ -59,30 +73,41 @@ class TestModuleImport:
         assert callable(lrs.extract_json)
         # 十意图执行器全部注册
         assert len(lrs.EXECUTORS) == 10
-        for name in ("data_query", "data_insight", "contradiction_insight",
-                     "path_insight", "technical_analysis", "fundamental_valuation",
-                     "asset_class_trend", "event_analysis", "risk_control",
-                     "price_query"):
+        for name in (
+            "data_query",
+            "data_insight",
+            "contradiction_insight",
+            "path_insight",
+            "technical_analysis",
+            "fundamental_valuation",
+            "asset_class_trend",
+            "event_analysis",
+            "risk_control",
+            "price_query",
+        ):
             assert callable(lrs.EXECUTORS[name])
 
 
 class TestDetectIntent:
     """后端意图识别对齐 TS L1_INTENT_REGISTRY v3（8 fallbackPattern + 2 通用意图）。"""
 
-    @pytest.mark.parametrize("message,expected", [
-        ("BTC现在什么价", "price_query"),
-        ("ETH最新价格多少", "price_query"),
-        ("各维度和资金面有矛盾吗", "contradiction_insight"),
-        ("综合看最小阻力路径往哪走", "path_insight"),
-        ("BTC技术面和卦象", "technical_analysis"),
-        ("ETH估值百分位高不高", "fundamental_valuation"),
-        ("美股和加密的跨资产趋势对比", "asset_class_trend"),
-        ("这次FOMC事件分析", "event_analysis"),
-        ("当前持仓风控和止损位", "risk_control"),
-        ("查一下最新CPI", "data_query"),
-        ("defillama TVL 查询", "data_query"),
-        ("CPI超预期意味着什么", "event_analysis"),  # 与 TS fallback 顺序一致：event 先命中
-    ])
+    @pytest.mark.parametrize(
+        "message,expected",
+        [
+            ("BTC现在什么价", "price_query"),
+            ("ETH最新价格多少", "price_query"),
+            ("各维度和资金面有矛盾吗", "contradiction_insight"),
+            ("综合看最小阻力路径往哪走", "path_insight"),
+            ("BTC技术面和卦象", "technical_analysis"),
+            ("ETH估值百分位高不高", "fundamental_valuation"),
+            ("美股和加密的跨资产趋势对比", "asset_class_trend"),
+            ("这次FOMC事件分析", "event_analysis"),
+            ("当前持仓风控和止损位", "risk_control"),
+            ("查一下最新CPI", "data_query"),
+            ("defillama TVL 查询", "data_query"),
+            ("CPI超预期意味着什么", "event_analysis"),  # 与 TS fallback 顺序一致：event 先命中
+        ],
+    )
     def test_detect_hits(self, message, expected):
         assert lrs.detect_intent(message) == expected
 
@@ -103,8 +128,11 @@ class TestRouteQueryL1Direct:
 
         def _fake_price(message):
             called["yes"] = message
-            return {"success": True, "answer": "BTC 63000 USDT",
-                    "data": {"symbol": "BTC", "last": "63000"}}
+            return {
+                "success": True,
+                "answer": "BTC 63000 USDT",
+                "data": {"symbol": "BTC", "last": "63000"},
+            }
 
         monkeypatch.setitem(lrs.EXECUTORS, "price_query", _fake_price)
 
@@ -118,8 +146,14 @@ class TestRouteQueryL1Direct:
         assert sig["decision"] == "L1_DIRECT"
         assert sig["route_confidence"] >= 0.7
         assert set(sig.keys()) == {
-            "route_confidence", "decision", "match_score", "case_density",
-            "prediction_error", "fast_path", "degraded", "reasons",
+            "route_confidence",
+            "decision",
+            "match_score",
+            "case_density",
+            "prediction_error",
+            "fast_path",
+            "degraded",
+            "reasons",
         }
         # recall context 带意图先验
         assert "price_query" in fake_l0.recalls[0]["context"]
@@ -228,13 +262,21 @@ class TestExtractJson:
 
 class TestMain:
     def test_main_prints_single_json(self, monkeypatch, capsys):
-        payload = {"success": True, "intent": "price_query", "handled": False,
-                   "answer": "", "data": None, "degraded": True,
-                   "route_signal": {"route_confidence": 0.0,
-                                    "decision": "L2_HANDOFF"}}
+        payload = {
+            "success": True,
+            "intent": "price_query",
+            "handled": False,
+            "answer": "",
+            "data": None,
+            "degraded": True,
+            "route_signal": {"route_confidence": 0.0, "decision": "L2_HANDOFF"},
+        }
         monkeypatch.setattr(lrs, "route_query", lambda message, intent="": payload)
-        monkeypatch.setattr(sys, "argv", ["l1_route_signal.py",
-                                          json.dumps({"message": "BTC", "intent": "price_query"})])
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            ["l1_route_signal.py", json.dumps({"message": "BTC", "intent": "price_query"})],
+        )
         lrs.main()
         printed = capsys.readouterr().out.strip().splitlines()
         parsed = json.loads(printed[-1])

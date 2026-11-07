@@ -52,12 +52,14 @@ def generate(query: str, retrieved_chunks: List[Dict]) -> Dict:
         context_parts.append(
             f"[{idx}] 来源: {source} | 标题: {heading} | 相关度: {score}\n{content}"
         )
-        citations.append({
-            "index": idx,
-            "source_file": source,
-            "heading": heading,
-            "score": score,
-        })
+        citations.append(
+            {
+                "index": idx,
+                "source_file": source,
+                "heading": heading,
+                "score": score,
+            }
+        )
 
     context = "\n\n".join(context_parts)
 
@@ -72,10 +74,7 @@ def generate(query: str, retrieved_chunks: List[Dict]) -> Dict:
     )
 
     # 置信度：检索结果平均得分
-    scores = [
-        c.get("final_score", c.get("score", 0))
-        for c in retrieved_chunks
-    ]
+    scores = [c.get("final_score", c.get("score", 0)) for c in retrieved_chunks]
     try:
         confidence = round(sum(scores) / len(scores), 4)
     except (TypeError, ZeroDivisionError):

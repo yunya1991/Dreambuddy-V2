@@ -12,11 +12,10 @@ AI Trading Compliance Engine v2.0
 """
 
 import json
-import os
 import sys
 from datetime import datetime
-from typing import Dict, Any, List, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # 添加 scripts 目录到 sys.path
 SCRIPT_DIR = Path(__file__).parent
@@ -30,11 +29,11 @@ except ImportError:
     ValidationError = None
 
 try:
-    from r_level_classifier import RLevelClassifier
-    from hard_gate_checker import HardGateChecker
-    from rollback_validator import RollbackValidator
-    from risk_direction_checker import RiskDirectionChecker
     from audit_trail import AuditTrailManager
+    from hard_gate_checker import HardGateChecker
+    from r_level_classifier import RLevelClassifier
+    from risk_direction_checker import RiskDirectionChecker
+    from rollback_validator import RollbackValidator
 except ImportError:
     # Phase 1: 检查器尚未实现，使用占位符
     RLevelClassifier = None
@@ -95,9 +94,9 @@ class ComplianceEngine:
         bundle_schema_path = self.schema_dir / "change_bundle_schema.json"
         if bundle_schema_path.exists():
             try:
-                with open(bundle_schema_path, 'r', encoding='utf-8') as f:
+                with open(bundle_schema_path, "r", encoding="utf-8") as f:
                     self.change_bundle_schema = json.load(f)
-                print(f"  ✓ 加载 change_bundle schema")
+                print("  ✓ 加载 change_bundle schema")
             except Exception as e:
                 print(f"  ✗ 加载 change_bundle schema 失败: {e}")
 
@@ -105,9 +104,9 @@ class ComplianceEngine:
         receipt_schema_path = self.schema_dir / "compliance_receipt_schema.json"
         if receipt_schema_path.exists():
             try:
-                with open(receipt_schema_path, 'r', encoding='utf-8') as f:
+                with open(receipt_schema_path, "r", encoding="utf-8") as f:
                     self.receipt_schema = json.load(f)
-                print(f"  ✓ 加载 compliance_receipt schema")
+                print("  ✓ 加载 compliance_receipt schema")
             except Exception as e:
                 print(f"  ✗ 加载 compliance_receipt schema 失败: {e}")
 
@@ -146,21 +145,12 @@ class ComplianceEngine:
             print(f"  风险方向: {risk_direction['summary']}")
 
             # Step 6: 生成决策
-            decision = self._make_decision(
-                hard_gate_result,
-                rollback_result,
-                risk_direction
-            )
+            decision = self._make_decision(hard_gate_result, rollback_result, risk_direction)
             print(f"  决策: {decision}")
 
             # Step 7: 生成合规回执
             receipt = self._generate_receipt(
-                change_bundle,
-                r_level,
-                decision,
-                hard_gate_result,
-                rollback_result,
-                risk_direction
+                change_bundle, r_level, decision, hard_gate_result, rollback_result, risk_direction
             )
 
             # Step 7.5: 验证合规回执 (新增)
@@ -170,10 +160,12 @@ class ComplianceEngine:
             # Step 8: 写入审计轨迹
             if self.audit:
                 self.audit.record(receipt)
-                print(f"  审计记录已写入")
+                print("  审计记录已写入")
 
             end_time = datetime.now()
-            print(f"[{end_time.isoformat()}] 合规审查完成，耗时: {(end_time - start_time).total_seconds():.2f}s")
+            print(
+                f"[{end_time.isoformat()}] 合规审查完成，耗时: {(end_time - start_time).total_seconds():.2f}s"
+            )
 
             return receipt
 
@@ -183,27 +175,19 @@ class ComplianceEngine:
                 "error": str(e),
                 "change_classification": {
                     "change_type": change_bundle.get("change_type", "unknown"),
-                    "risk_level": change_bundle.get("risk_level", "unknown")
+                    "risk_level": change_bundle.get("risk_level", "unknown"),
                 },
                 "hard_constraints_checked": {},
-                "blockers": [
-                    {
-                        "id": "E001",
-                        "title": f"合规审查异常: {str(e)}",
-                        "evidence": ""
-                    }
-                ],
+                "blockers": [{"id": "E001", "title": f"合规审查异常: {str(e)}", "evidence": ""}],
                 "warnings": [],
                 "required_actions": [],
-                "rollout_requirements": {
-                    "mode": "disabled"
-                },
+                "rollout_requirements": {"mode": "disabled"},
                 "audit_fields": {
                     "doc_refs": [],
                     "trace_id": change_bundle.get("trace_id"),
                     "artifacts": [],
-                    "approver_roles": []
-                }
+                    "approver_roles": [],
+                },
             }
 
             # 写入审计轨迹
@@ -225,7 +209,9 @@ class ComplianceEngine:
                 jsonschema.validate(instance=change_bundle, schema=self.change_bundle_schema)
                 print("  ✓ 输入验证通过 (JSON Schema)")
             except ValidationError as e:
-                raise ValueError(f"change_bundle 不符合 Schema: {e.message} (路径: {list(e.path)})")
+                raise ValueError(  # noqa: B904
+                    f"change_bundle 不符合 Schema: {e.message} (路径: {list(e.path)})"
+                )  # noqa: B904
         else:
             # 降级到基本检查
             if not isinstance(change_bundle, dict):
@@ -263,7 +249,9 @@ class ComplianceEngine:
             jsonschema.validate(instance=receipt, schema=self.receipt_schema)
             print("  ✓ 合规回执验证通过 (JSON Schema)")
         except ValidationError as e:
-            raise ValueError(f"合规回执不符合 Schema: {e.message} (路径: {list(e.path)})")
+            raise ValueError(  # noqa: B904
+                f"合规回执不符合 Schema: {e.message} (路径: {list(e.path)})"
+            )  # noqa: B904
 
     def _classify_change(self, change_bundle: Dict[str, Any]) -> str:
         """
@@ -291,11 +279,7 @@ class ComplianceEngine:
         else:
             # Phase 1: 返回占位符
             print("  ⚠️ 硬门禁检查器尚未实现，跳过检查")
-            return {
-                "summary": "SKIPPED",
-                "details": [],
-                "note": "硬门禁检查器尚未实现"
-            }
+            return {"summary": "SKIPPED", "details": [], "note": "硬门禁检查器尚未实现"}
 
     def _validate_rollback(self, change_bundle: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -309,11 +293,7 @@ class ComplianceEngine:
         else:
             # Phase 1: 返回占位符
             print("  ⚠️ 回滚验证器尚未实现，跳过验证")
-            return {
-                "summary": "SKIPPED",
-                "details": [],
-                "note": "回滚验证器尚未实现"
-            }
+            return {"summary": "SKIPPED", "details": [], "note": "回滚验证器尚未实现"}
 
     def _evaluate_risk_direction(self, change_bundle: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -330,14 +310,14 @@ class ComplianceEngine:
             return {
                 "summary": "TIGHTEN_ONLY",
                 "details": [],
-                "note": "风险方向检查器尚未实现，默认收紧型"
+                "note": "风险方向检查器尚未实现，默认收紧型",
             }
 
     def _make_decision(
         self,
         hard_gate_result: Dict[str, Any],
         rollback_result: Dict[str, Any],
-        risk_direction: Dict[str, Any]
+        risk_direction: Dict[str, Any],
     ) -> str:
         """
         根据检查结果生成决策
@@ -354,8 +334,9 @@ class ComplianceEngine:
             return "fail"
 
         # 风险扩张 + 无审批 → warn (需要审批)
-        if (risk_direction.get("summary") == "RISK_EXPANSION" and
-            not risk_direction.get("has_approval", False)):
+        if risk_direction.get("summary") == "RISK_EXPANSION" and not risk_direction.get(
+            "has_approval", False
+        ):
             return "warn"
 
         # 所有检查通过 → pass
@@ -368,7 +349,7 @@ class ComplianceEngine:
         decision: str,
         hard_gate_result: Dict[str, Any],
         rollback_result: Dict[str, Any],
-        risk_direction: Dict[str, Any]
+        risk_direction: Dict[str, Any],
     ) -> Dict[str, Any]:
         """
         生成合规回执
@@ -381,47 +362,32 @@ class ComplianceEngine:
             "change_type": r_level,
             "risk_level": change_bundle.get("risk_level"),
             "environment": self._detect_environment(change_bundle),
-            "tighten_only": risk_direction.get("summary") == "TIGHTEN_ONLY"
+            "tighten_only": risk_direction.get("summary") == "TIGHTEN_ONLY",
         }
 
         # 构建 hard_constraints_checked
-        hard_constraints = self._build_hard_constraints(
-            change_bundle,
-            hard_gate_result
-        )
+        hard_constraints = self._build_hard_constraints(change_bundle, hard_gate_result)
 
         # 构建 blockers
-        blockers = self._build_blockers(
-            hard_gate_result,
-            rollback_result
-        )
+        blockers = self._build_blockers(hard_gate_result, rollback_result)
 
         # 构建 warnings
-        warnings = self._build_warnings(
-            risk_direction,
-            change_bundle
-        )
+        warnings = self._build_warnings(risk_direction, change_bundle)
 
         # 构建 required_actions
         required_actions = self._build_required_actions(
-            hard_gate_result,
-            rollback_result,
-            risk_direction
+            hard_gate_result, rollback_result, risk_direction
         )
 
         # 构建 rollout_requirements
-        rollout_requirements = self._build_rollout_requirements(
-            r_level,
-            decision,
-            risk_direction
-        )
+        rollout_requirements = self._build_rollout_requirements(r_level, decision, risk_direction)
 
         # 构建 audit_fields
         audit_fields = {
             "doc_refs": change_bundle.get("doc_refs", []),
             "trace_id": change_bundle.get("trace_id"),
             "artifacts": self._extract_artifacts(change_bundle),
-            "approver_roles": self._determine_approvers(r_level, decision)
+            "approver_roles": self._determine_approvers(r_level, decision),
         }
 
         # 组装合规回执
@@ -433,7 +399,7 @@ class ComplianceEngine:
             "warnings": warnings,
             "required_actions": required_actions,
             "rollout_requirements": rollout_requirements,
-            "audit_fields": audit_fields
+            "audit_fields": audit_fields,
         }
 
         return receipt
@@ -444,9 +410,7 @@ class ComplianceEngine:
         return "Explore"  # 占位符
 
     def _build_hard_constraints(
-        self,
-        change_bundle: Dict[str, Any],
-        hard_gate_result: Dict[str, Any]
+        self, change_bundle: Dict[str, Any], hard_gate_result: Dict[str, Any]
     ) -> Dict[str, bool]:
         """构建 hard_constraints_checked"""
         # TODO: Phase 2 - 实现详细检查
@@ -457,13 +421,11 @@ class ComplianceEngine:
             "baseline_ref_present": True,
             "rollback_defined": True,
             "audit_replayable": True,
-            "external_publish_outbox_only": True
+            "external_publish_outbox_only": True,
         }
 
     def _build_blockers(
-        self,
-        hard_gate_result: Dict[str, Any],
-        rollback_result: Dict[str, Any]
+        self, hard_gate_result: Dict[str, Any], rollback_result: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """构建 blockers"""
         blockers = []
@@ -472,39 +434,39 @@ class ComplianceEngine:
         if hard_gate_result.get("summary") == "FAIL":
             for detail in hard_gate_result.get("details", []):
                 if detail.get("status") == "FAIL":
-                    blockers.append({
-                        "id": detail.get("id", "BLOCKER"),
-                        "title": detail.get("title", "未知阻断"),
-                        "evidence": detail.get("evidence", "")
-                    })
+                    blockers.append(
+                        {
+                            "id": detail.get("id", "BLOCKER"),
+                            "title": detail.get("title", "未知阻断"),
+                            "evidence": detail.get("evidence", ""),
+                        }
+                    )
 
         # 从回滚验证结果提取
         if rollback_result.get("summary") == "FAIL":
             for detail in rollback_result.get("details", []):
                 if detail.get("status") == "FAIL":
-                    blockers.append({
-                        "id": detail.get("id", "ROLLBACK_BLOCKER"),
-                        "title": detail.get("title", "回滚验证失败"),
-                        "evidence": detail.get("evidence", "")
-                    })
+                    blockers.append(
+                        {
+                            "id": detail.get("id", "ROLLBACK_BLOCKER"),
+                            "title": detail.get("title", "回滚验证失败"),
+                            "evidence": detail.get("evidence", ""),
+                        }
+                    )
 
         return blockers
 
     def _build_warnings(
-        self,
-        risk_direction: Dict[str, Any],
-        change_bundle: Dict[str, Any]
+        self, risk_direction: Dict[str, Any], change_bundle: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """构建 warnings"""
         warnings = []
 
         # 风险扩张警告
         if risk_direction.get("summary") == "RISK_EXPANSION":
-            warnings.append({
-                "id": "W001",
-                "title": "风险扩张型变更",
-                "reason": "需要人工审批 + Canary 发布"
-            })
+            warnings.append(
+                {"id": "W001", "title": "风险扩张型变更", "reason": "需要人工审批 + Canary 发布"}
+            )
 
         return warnings
 
@@ -512,7 +474,7 @@ class ComplianceEngine:
         self,
         hard_gate_result: Dict[str, Any],
         rollback_result: Dict[str, Any],
-        risk_direction: Dict[str, Any]
+        risk_direction: Dict[str, Any],
     ) -> List[Dict[str, Any]]:
         """构建 required_actions"""
         actions = []
@@ -521,19 +483,18 @@ class ComplianceEngine:
         if hard_gate_result.get("summary") == "FAIL":
             for detail in hard_gate_result.get("details", []):
                 if detail.get("status") == "FAIL":
-                    actions.append({
-                        "id": f"ACTION_{detail.get('id', 'UNKNOWN')}",
-                        "title": f"修复: {detail.get('title', '未知问题')}",
-                        "how": detail.get("how_to_fix", "请查看硬门禁检查报告")
-                    })
+                    actions.append(
+                        {
+                            "id": f"ACTION_{detail.get('id', 'UNKNOWN')}",
+                            "title": f"修复: {detail.get('title', '未知问题')}",
+                            "how": detail.get("how_to_fix", "请查看硬门禁检查报告"),
+                        }
+                    )
 
         return actions
 
     def _build_rollout_requirements(
-        self,
-        r_level: str,
-        decision: str,
-        risk_direction: Dict[str, Any]
+        self, r_level: str, decision: str, risk_direction: Dict[str, Any]
     ) -> Dict[str, Any]:
         """构建 rollout_requirements"""
         # R0/R1: 可以 full 发布
@@ -550,8 +511,9 @@ class ComplianceEngine:
             "mode": mode,
             "must_monitor": ["reject_rate", "max_drawdown", "order_fail_rate"],
             "auto_rollback_triggers": ["Hard-Reject", "P0/P1 指标触发"],
-            "second_approval_required": (r_level == "R3" or
-                                        risk_direction.get("summary") == "RISK_EXPANSION")
+            "second_approval_required": (
+                r_level == "R3" or risk_direction.get("summary") == "RISK_EXPANSION"
+            ),
         }
 
     def _extract_artifacts(self, change_bundle: Dict[str, Any]) -> List[str]:
@@ -592,7 +554,7 @@ def main():
     bundle_path = sys.argv[1]
 
     # 读取变更包
-    with open(bundle_path, 'r', encoding='utf-8') as f:
+    with open(bundle_path, "r", encoding="utf-8") as f:
         change_bundle = json.load(f)
 
     # 创建引擎
@@ -602,14 +564,14 @@ def main():
     receipt = engine.process(change_bundle)
 
     # 输出合规回执
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("合规回执:")
     print(json.dumps(receipt, indent=2, ensure_ascii=False))
-    print("="*60)
+    print("=" * 60)
 
     # 保存到文件
     output_path = Path(bundle_path).stem + "_receipt.json"
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(receipt, f, indent=2, ensure_ascii=False)
     print(f"\n合规回执已保存到: {output_path}")
 

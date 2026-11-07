@@ -7,10 +7,11 @@ V1-C3: C 层 C2/C3 节点真实 DreamOS 节点集成测试
   2. c3_volatility 调用真实 C3VolatilityNode 返回 volatility_level/squeeze
   3. 不同市场数据输入产生不同方向决策
 """
+
 import json
+import os
 import subprocess
 import sys
-import os
 
 SERVER = os.path.join(os.path.dirname(__file__), "..", "packages", "python-server", "server.py")
 PYTHON = sys.executable
@@ -95,7 +96,9 @@ result = resp["result"]
 assert_in("C2 返回 LONG 方向", result["direction"], ["LONG", "SHORT", "HOLD"])
 assert_eq("C2 强势上涨 → LONG", result["direction"], "LONG")
 assert 0 <= result["confidence"] <= 1, "confidence 应在 0-1"
-print(f"    confidence={result['confidence']}, momentum_score={result['outputs']['momentum_score']}")
+print(
+    f"    confidence={result['confidence']}, momentum_score={result['outputs']['momentum_score']}"
+)
 
 # 强势下跌场景
 bear_mkt = {
@@ -132,8 +135,11 @@ div_mkt = {
 }
 resp = call("c2_momentum", {"symbol": "BTC", "market_data": div_mkt})
 result = resp["result"]
-assert_in("C2 背离检测", result["outputs"]["divergence"],
-          ["none", "bullish_divergence", "bearish_divergence"])
+assert_in(
+    "C2 背离检测",
+    result["outputs"]["divergence"],
+    ["none", "bullish_divergence", "bearish_divergence"],
+)
 print(f"    divergence={result['outputs']['divergence']}")
 
 # phase 标记

@@ -16,6 +16,7 @@
 用法: /home/luke/venv-trading/bin/python3 gen_trade_cases.py
 边界: 描述性记录与统计，不产生交易信号（SPEC §9.10.3）
 """
+
 import argparse
 import json
 import os
@@ -26,7 +27,9 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _SYS_DIR = os.path.dirname(_THIS_DIR)
 _REPO = os.path.dirname(_SYS_DIR)
 
-TRADES_PATH = os.path.join(_REPO, "11-易经推理系统", ".workbuddy", "memory_l4", "stats", "all_trades.jsonl")
+TRADES_PATH = os.path.join(
+    _REPO, "11-易经推理系统", ".workbuddy", "memory_l4", "stats", "all_trades.jsonl"
+)
 ATOMIC_PATH = os.path.join(_SYS_DIR, "atomic_events.jsonl")
 EVENT_LINES_PATH = os.path.join(_SYS_DIR, "event_lines.json")
 OUT_PATH = os.path.join(_SYS_DIR, "trade_cases.jsonl")
@@ -88,13 +91,15 @@ def load_freq_signals():
     try:
         with open(EVENT_LINES_PATH, "r", encoding="utf-8") as f:
             d = json.load(f)
-        for l in d.get("lines", []):
-            signals.append({
-                "topic": l.get("topic"),
-                "time_end": l.get("time_end", ""),
-                "quantity_signal": l.get("quantity_signal", ""),
-                "sentiment_trend": l.get("sentiment_trend", ""),
-            })
+        for l in d.get("lines", []):  # noqa: E741
+            signals.append(
+                {
+                    "topic": l.get("topic"),
+                    "time_end": l.get("time_end", ""),
+                    "quantity_signal": l.get("quantity_signal", ""),
+                    "sentiment_trend": l.get("sentiment_trend", ""),
+                }
+            )
     except Exception:
         pass
     return signals
@@ -162,10 +167,15 @@ def build_snapshot(entry_dt, dims, freq_signals):
 
     return {
         "window_hours": SNAPSHOT_WINDOW_H,
-        "volume": {"surge": sum(1 for ev in vol_in if any(r.startswith("volume_surge") for r in ev["reasons"])),
-                   "shrink": sum(1 for ev in vol_in if any(r.startswith("volume_shrink") for r in ev["reasons"]))},
-        "sentiment": {"extreme_state": ext_state,
-                      "events_in_window": len(ext_in)},
+        "volume": {
+            "surge": sum(
+                1 for ev in vol_in if any(r.startswith("volume_surge") for r in ev["reasons"])
+            ),
+            "shrink": sum(
+                1 for ev in vol_in if any(r.startswith("volume_shrink") for r in ev["reasons"])
+            ),
+        },
+        "sentiment": {"extreme_state": ext_state, "events_in_window": len(ext_in)},
         "time": {"consolidation": consol, "halving_cycle": cycle_info},
         "space": {"fib_touches": dict(fib)},
         "freq": freq,
@@ -175,9 +185,15 @@ def build_snapshot(entry_dt, dims, freq_signals):
 def quality_grade(trade, snapshot):
     """质量分级：A 快照+关键字段完整 / B 部分缺失 / C 关键字段缺失。"""
     critical_ok = all(trade.get(k) not in (None, "", []) for k in ("direction", "pnl"))
-    ctx_ok = bool(trade.get("contradiction_list")) and trade.get("hexagram") not in (None, "", "已存在持仓")
-    snap_ok = snapshot is not None and (snapshot["sentiment"]["extreme_state"] is not None
-                                        or snapshot["volume"]["surge"] + snapshot["volume"]["shrink"] > 0)
+    ctx_ok = bool(trade.get("contradiction_list")) and trade.get("hexagram") not in (
+        None,
+        "",
+        "已存在持仓",
+    )
+    snap_ok = snapshot is not None and (
+        snapshot["sentiment"]["extreme_state"] is not None
+        or snapshot["volume"]["surge"] + snapshot["volume"]["shrink"] > 0
+    )
     if critical_ok and ctx_ok and snap_ok:
         return "A"
     if critical_ok:
@@ -237,14 +253,18 @@ def build_case(trade, dims, freq_signals):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--live", action="store_true", help="增量模式：只处理新交易（阶段3实时接入）")
+    parser.add_argument(
+        "--live", action="store_true", help="增量模式：只处理新交易（阶段3实时接入）"
+    )
     parser.add_argument("--rebuild", action="store_true", help="全量重建（默认）")
     args = parser.parse_args()
 
     dims = load_atomic_events()
     freq_signals = load_freq_signals()
-    print(f"[OK] 原子事件加载: 量维 {len(dims['volume'])} / 情维 {len(dims['extreme'])} / "
-          f"时维 {len(dims['time'])} / 空维 {len(dims['space'])} / 周期 {len(dims['cycle'])}")
+    print(
+        f"[OK] 原子事件加载: 量维 {len(dims['volume'])} / 情维 {len(dims['extreme'])} / "
+        f"时维 {len(dims['time'])} / 空维 {len(dims['space'])} / 周期 {len(dims['cycle'])}"
+    )
 
     state = _load_state()
     processed = set(state.get("processed_trade_ids", []))

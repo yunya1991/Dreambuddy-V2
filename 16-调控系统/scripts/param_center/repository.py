@@ -12,6 +12,7 @@
   _underlying_get_sltp_params 是 sl_tp_config.get_sltp_params 的薄包装，
   设计为模块级函数便于测试 patch（不直接 patch 第三方 sl_tp_config）。
 """
+
 from __future__ import annotations
 
 import logging
@@ -26,16 +27,18 @@ logger = logging.getLogger(__name__)
 # 路径设置：让 repository 能导入 memory_l4.bcrm2.sl_tp_config
 # ============================================================================
 _THIS = Path(__file__).resolve()
-_SCRIPTS_16 = _THIS.parent.parent                  # .../16-调控系统/scripts
-_PROJECT_ROOT = _SCRIPTS_16.parent.parent          # dreambuddy-v2
+_SCRIPTS_16 = _THIS.parent.parent  # .../16-调控系统/scripts
+_PROJECT_ROOT = _SCRIPTS_16.parent.parent  # dreambuddy-v2
 _YIJING_SCRIPTS = _PROJECT_ROOT / "11-易经推理系统" / "scripts"
 if str(_YIJING_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_YIJING_SCRIPTS))
 
 from memory_l4.bcrm2.asset_classifier import classify_asset  # noqa: E402
 from memory_l4.bcrm2.sl_tp_config import (  # noqa: E402
-    SLTPParams,
     _DEFAULT_PARAMS,
+    SLTPParams,
+)
+from memory_l4.bcrm2.sl_tp_config import (  # noqa: E402
     get_sltp_params as _sl_config_get,
 )
 
@@ -96,6 +99,7 @@ class ParamRepository:
             if not _AGGREGATED_CACHE_FILE.exists():
                 return
             import json
+
             data = json.loads(_AGGREGATED_CACHE_FILE.read_text(encoding="utf-8"))
             now = time.time()
             loaded = 0
@@ -128,6 +132,7 @@ class ParamRepository:
         """将聚合缓存持久化到 JSON 文件（供 polling_trader 进程读取）。"""
         try:
             import json
+
             data = {}
             for (symbol_up, regime), (params, ts, conf) in self._aggregated_cache.items():
                 data[f"{symbol_up}|{regime}"] = {
@@ -141,9 +146,7 @@ class ParamRepository:
                     "conf": conf,
                 }
             _AGGREGATED_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
-            _AGGREGATED_CACHE_FILE.write_text(
-                json.dumps(data, indent=2), encoding="utf-8"
-            )
+            _AGGREGATED_CACHE_FILE.write_text(json.dumps(data, indent=2), encoding="utf-8")
         except Exception as exc:
             logger.warning("保存聚合缓存失败: %s", exc)
 
@@ -199,14 +202,13 @@ class ParamRepository:
         # 2. 查询底层（带 FAIL-OPEN）
         try:
             asset_class, market_cap_tier = classify_asset(symbol_up)
-            params = _underlying_get_sltp_params(
-                asset_class, market_cap_tier, regime
-            )
+            params = _underlying_get_sltp_params(asset_class, market_cap_tier, regime)
         except Exception as exc:
             logger.warning(
-                "FAIL-OPEN: 参数查询异常 symbol=%s regime=%s err=%s, "
-                "返回 _DEFAULT_PARAMS",
-                symbol_up, regime, exc,
+                "FAIL-OPEN: 参数查询异常 symbol=%s regime=%s err=%s, " "返回 _DEFAULT_PARAMS",
+                symbol_up,
+                regime,
+                exc,
             )
             params = _DEFAULT_PARAMS
 

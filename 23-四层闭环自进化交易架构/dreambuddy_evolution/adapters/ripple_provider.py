@@ -14,10 +14,11 @@ R3: 板块大盘币宽扩散（强度≥0.005，不强制放量）
 
 FAIL-OPEN: 任一币种获取失败 → 跳过该币种，不影响其他
 """
+
 from __future__ import annotations
 
-import time
 import logging
+import time
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -40,11 +41,11 @@ _R3_SECTOR: dict[str, list[str]] = {
 _DEFAULT_SECTOR = ["BTC", "ETH", "SOL", "BNB", "XRP"]
 
 # R2 紧确认参数
-_R2_MIN_STRENGTH = 0.01   # 趋势强度 ≥ 1%
+_R2_MIN_STRENGTH = 0.01  # 趋势强度 ≥ 1%
 _R2_REQUIRE_VOLUME = True  # 必须放量确认
 
 # R3 宽扩散参数
-_R3_MIN_STRENGTH = 0.005   # 趋势强度 ≥ 0.5%
+_R3_MIN_STRENGTH = 0.005  # 趋势强度 ≥ 0.5%
 _R3_REQUIRE_VOLUME = False  # 不强制放量（板块扩散看广度）
 
 # K线获取参数
@@ -62,9 +63,7 @@ class RippleDataProvider:
         self._kline_cache: dict[str, tuple[list, float]] = {}  # inst_id -> (candles, ts)
         self._cache_ttl = cache_ttl
 
-    def get_ripple_hits(
-        self, symbol: str, ess_direction: str
-    ) -> dict[str, dict[str, float]]:
+    def get_ripple_hits(self, symbol: str, ess_direction: str) -> dict[str, dict[str, float]]:
         """
         计算 R2 和 R3 的 hits/candidates。
 
@@ -90,12 +89,14 @@ class RippleDataProvider:
         r3_coins = _R3_SECTOR.get(symbol.upper(), _DEFAULT_SECTOR)
 
         r2_hits, r2_cands = self._count_direction_match(
-            r2_coins, ess_dir,
+            r2_coins,
+            ess_dir,
             min_strength=_R2_MIN_STRENGTH,
             require_volume=_R2_REQUIRE_VOLUME,
         )
         r3_hits, r3_cands = self._count_direction_match(
-            r3_coins, ess_dir,
+            r3_coins,
+            ess_dir,
             min_strength=_R3_MIN_STRENGTH,
             require_volume=_R3_REQUIRE_VOLUME,
         )
@@ -143,9 +144,7 @@ class RippleDataProvider:
         return hits, candidates
 
     @staticmethod
-    def _is_confirmed(
-        signal: dict, min_strength: float, require_volume: bool
-    ) -> bool:
+    def _is_confirmed(signal: dict, min_strength: float, require_volume: bool) -> bool:
         """质量过滤：趋势强度达标 + 成交量确认（可选）"""
         strength = float(signal.get("strength", 0))
         if strength < min_strength:

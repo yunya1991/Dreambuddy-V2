@@ -19,42 +19,35 @@ Dream OS 多场景模拟压力测试
 
 from __future__ import annotations
 
-import os
-import sys
 import json
-import time
-import random
 import logging
-from typing import Dict, Any, List, Tuple, Optional
-from datetime import datetime
+import random
+import sys
+import time
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
 root_dir = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root_dir))
 
-from dreamos.registry import get_default_registry
-from dreamos.capabilities.trading.nodes import register_all
-from dreamos.core.compute.graph_executor import GraphExecutor
-from dreamos.core.arrange.execution_graph import SequentialGraph
-from dreamos.core.sense.scenario_classifier import ScenarioClassifier
-from dreamos.core.memory.orchestration_memory import OrchestrationMemory
-from dreamos.shared.state import new_state
-
+from dreamos.capabilities.trading.nodes import register_all  # noqa: E402
+from dreamos.core.arrange.execution_graph import SequentialGraph  # noqa: E402
+from dreamos.core.compute.graph_executor import GraphExecutor  # noqa: E402
+from dreamos.core.memory.orchestration_memory import OrchestrationMemory  # noqa: E402
+from dreamos.core.sense.scenario_classifier import ScenarioClassifier  # noqa: E402
+from dreamos.registry import get_default_registry  # noqa: E402
+from dreamos.shared.state import new_state  # noqa: E402
 
 # ── 36 场景枚举 ──────────────────────────────────────────────
 TRENDS = ["BULL", "BEAR", "NEUTRAL"]
 VOLATILITIES = ["LOW", "NORMAL", "HIGH", "EXTREME"]
 MOMENTUMS = ["ACCELERATING", "DECELERATING", "EXHAUSTION"]
 
-ALL_36_SCENARIOS = [
-    f"{t}_{v}_{m}"
-    for t in TRENDS
-    for v in VOLATILITIES
-    for m in MOMENTUMS
-]
+ALL_36_SCENARIOS = [f"{t}_{v}_{m}" for t in TRENDS for v in VOLATILITIES for m in MOMENTUMS]
 
 SYMBOLS = ["BTC", "ETH", "SOL", "AVAX", "LINK", "ARB", "OP", "DOT"]
 
@@ -69,16 +62,22 @@ def generate_market_data_for_scenario(scenario_id: str, symbol: str = "BTC") -> 
     trend, vol, mom = parts[0], parts[1], "_".join(parts[2:])
 
     base_price = {
-        "BTC": 65000, "ETH": 3500, "SOL": 150, "AVAX": 40,
-        "LINK": 18, "ARB": 1.2, "OP": 2.5, "DOT": 8,
+        "BTC": 65000,
+        "ETH": 3500,
+        "SOL": 150,
+        "AVAX": 40,
+        "LINK": 18,
+        "ARB": 1.2,
+        "OP": 2.5,
+        "DOT": 8,
     }.get(symbol, 100)
 
     # ── 波动率映射 ──
     atr_pct_map = {
-        "LOW": 0.005,      # 0.5%
-        "NORMAL": 0.015,    # 1.5%
-        "HIGH": 0.03,       # 3%
-        "EXTREME": 0.06,    # 6%
+        "LOW": 0.005,  # 0.5%
+        "NORMAL": 0.015,  # 1.5%
+        "HIGH": 0.03,  # 3%
+        "EXTREME": 0.06,  # 6%
     }
     atr_pct = atr_pct_map[vol]
 
@@ -288,10 +287,10 @@ class MultiScenarioStressTest:
         print(f"\n  总场景数: {len(ALL_36_SCENARIOS)}")
         print(f"  记忆表命中(L0/L1/L2): {l0_l2_count} ({coverage:.1f}%)")
         print(f"  默认降级(L3): {fallback_counts.get('L3', 0)}")
-        print(f"\n  降级层级分布:")
+        print("\n  降级层级分布:")
         for level, count in sorted(fallback_counts.items()):
             print(f"    {level}: {count}个场景")
-        print(f"\n  编排模式分布:")
+        print("\n  编排模式分布:")
         for pattern, count in sorted(pattern_counts.items(), key=lambda x: -x[1]):
             print(f"    {pattern}: {count}个场景")
 
@@ -402,13 +401,13 @@ class MultiScenarioStressTest:
         print(f"\n  总图数: {total}")
         print(f"  编排-执行一致: {match_count} ({match_rate:.1f}%)")
         print(f"  不一致: {len(mismatches)}")
-        print(f"\n  延迟分布:")
+        print("\n  延迟分布:")
         print(f"    平均: {avg_latency:.1f}ms")
         print(f"    P50:  {p50:.1f}ms")
         print(f"    P95:  {p95:.1f}ms")
         print(f"    P99:  {p99:.1f}ms")
 
-        print(f"\n  节点成功率:")
+        print("\n  节点成功率:")
         for nid, stats in sorted(node_stats.items(), key=lambda x: -x[1]["total"]):
             rate = stats["success"] / stats["total"] * 100 if stats["total"] > 0 else 0
             print(f"    {nid}: {stats['success']}/{stats['total']} ({rate:.1f}%)")
@@ -435,29 +434,125 @@ class MultiScenarioStressTest:
         print("=" * 60)
 
         edge_cases = {
-            "zero_atr": {"atr_pct": 0.0, "rsi14": 50, "change_24h": 0, "change_4h": 0, "change_1h": 0,
-                         "price": 65000, "ema20": 65000, "ema50": 65000, "ema200": 65000},
-            "extreme_high_atr": {"atr_pct": 0.20, "rsi14": 99, "change_24h": 50, "change_4h": 20, "change_1h": 5,
-                                 "price": 65000, "ema20": 40000, "ema50": 30000, "ema200": 20000},
-            "rsi_0": {"atr_pct": 0.02, "rsi14": 0.1, "change_24h": -20, "change_4h": -8, "change_1h": -2,
-                      "price": 30000, "ema20": 40000, "ema50": 50000, "ema200": 60000},
-            "rsi_100": {"atr_pct": 0.02, "rsi14": 99.9, "change_24h": 20, "change_4h": 8, "change_1h": 2,
-                        "price": 80000, "ema20": 70000, "ema50": 60000, "ema200": 50000},
-            "price_crash": {"atr_pct": 0.15, "rsi14": 10, "change_24h": -30, "change_4h": -15, "change_1h": -5,
-                            "price": 20000, "ema20": 35000, "ema50": 45000, "ema200": 55000},
-            "price_rally": {"atr_pct": 0.12, "rsi14": 95, "change_24h": 25, "change_4h": 10, "change_1h": 3,
-                            "price": 100000, "ema20": 75000, "ema50": 60000, "ema200": 45000},
-            "cross_ema": {"atr_pct": 0.01, "rsi14": 48, "change_24h": 0.5, "change_4h": 0.2, "change_1h": 0.05,
-                          "price": 50000, "ema20": 50100, "ema50": 49900, "ema200": 50000},
-            "empty_freqtrade": {"atr_pct": 0.015, "rsi14": 50, "change_24h": 1, "change_4h": 0.3, "change_1h": 0.05,
-                                "price": 50000, "ema20": 49500, "ema50": 48000, "ema200": 45000,
-                                "freqtrade_signal": None},
-            "zero_strategy_freqtrade": {"atr_pct": 0.015, "rsi14": 50, "change_24h": 1, "change_4h": 0.3, "change_1h": 0.05,
-                                        "price": 50000, "ema20": 49500, "ema50": 48000, "ema200": 45000,
-                                        "freqtrade_signal": {"direction": "HOLD", "confidence": 0, "strategy_count": 0, "long_votes": 0, "short_votes": 0}},
-            "degraded_fundamentals": {"atr_pct": 0.015, "rsi14": 50, "change_24h": 1, "change_4h": 0.3, "change_1h": 0.05,
-                                      "price": 50000, "ema20": 49500, "ema50": 48000, "ema200": 45000,
-                                      "_f_chain_degraded": True},
+            "zero_atr": {
+                "atr_pct": 0.0,
+                "rsi14": 50,
+                "change_24h": 0,
+                "change_4h": 0,
+                "change_1h": 0,
+                "price": 65000,
+                "ema20": 65000,
+                "ema50": 65000,
+                "ema200": 65000,
+            },
+            "extreme_high_atr": {
+                "atr_pct": 0.20,
+                "rsi14": 99,
+                "change_24h": 50,
+                "change_4h": 20,
+                "change_1h": 5,
+                "price": 65000,
+                "ema20": 40000,
+                "ema50": 30000,
+                "ema200": 20000,
+            },
+            "rsi_0": {
+                "atr_pct": 0.02,
+                "rsi14": 0.1,
+                "change_24h": -20,
+                "change_4h": -8,
+                "change_1h": -2,
+                "price": 30000,
+                "ema20": 40000,
+                "ema50": 50000,
+                "ema200": 60000,
+            },
+            "rsi_100": {
+                "atr_pct": 0.02,
+                "rsi14": 99.9,
+                "change_24h": 20,
+                "change_4h": 8,
+                "change_1h": 2,
+                "price": 80000,
+                "ema20": 70000,
+                "ema50": 60000,
+                "ema200": 50000,
+            },
+            "price_crash": {
+                "atr_pct": 0.15,
+                "rsi14": 10,
+                "change_24h": -30,
+                "change_4h": -15,
+                "change_1h": -5,
+                "price": 20000,
+                "ema20": 35000,
+                "ema50": 45000,
+                "ema200": 55000,
+            },
+            "price_rally": {
+                "atr_pct": 0.12,
+                "rsi14": 95,
+                "change_24h": 25,
+                "change_4h": 10,
+                "change_1h": 3,
+                "price": 100000,
+                "ema20": 75000,
+                "ema50": 60000,
+                "ema200": 45000,
+            },
+            "cross_ema": {
+                "atr_pct": 0.01,
+                "rsi14": 48,
+                "change_24h": 0.5,
+                "change_4h": 0.2,
+                "change_1h": 0.05,
+                "price": 50000,
+                "ema20": 50100,
+                "ema50": 49900,
+                "ema200": 50000,
+            },
+            "empty_freqtrade": {
+                "atr_pct": 0.015,
+                "rsi14": 50,
+                "change_24h": 1,
+                "change_4h": 0.3,
+                "change_1h": 0.05,
+                "price": 50000,
+                "ema20": 49500,
+                "ema50": 48000,
+                "ema200": 45000,
+                "freqtrade_signal": None,
+            },
+            "zero_strategy_freqtrade": {
+                "atr_pct": 0.015,
+                "rsi14": 50,
+                "change_24h": 1,
+                "change_4h": 0.3,
+                "change_1h": 0.05,
+                "price": 50000,
+                "ema20": 49500,
+                "ema50": 48000,
+                "ema200": 45000,
+                "freqtrade_signal": {
+                    "direction": "HOLD",
+                    "confidence": 0,
+                    "strategy_count": 0,
+                    "long_votes": 0,
+                    "short_votes": 0,
+                },
+            },
+            "degraded_fundamentals": {
+                "atr_pct": 0.015,
+                "rsi14": 50,
+                "change_24h": 1,
+                "change_4h": 0.3,
+                "change_1h": 0.05,
+                "price": 50000,
+                "ema20": 49500,
+                "ema50": 48000,
+                "ema200": 45000,
+                "_f_chain_degraded": True,
+            },
         }
 
         results = {}
@@ -492,9 +587,9 @@ class MultiScenarioStressTest:
                 confidences = []
                 for nid in choice.nodes:
                     result = state.get_result(nid)
-                    if result and hasattr(result, 'direction'):
+                    if result and hasattr(result, "direction"):
                         directions.append(result.direction)
-                        confidences.append(getattr(result, 'confidence', 0))
+                        confidences.append(getattr(result, "confidence", 0))
 
                 results[name] = {
                     "success": True,
@@ -504,10 +599,14 @@ class MultiScenarioStressTest:
                     "executed_nodes": report.executed_nodes,
                     "latency_ms": round(latency_ms, 2),
                     "directions": directions,
-                    "avg_confidence": round(sum(confidences) / len(confidences), 3) if confidences else 0,
+                    "avg_confidence": (
+                        round(sum(confidences) / len(confidences), 3) if confidences else 0
+                    ),
                     "error": None,
                 }
-                print(f"    ✅ 成功 | 场景={classified.scenario_id} | 节点={report.executed_nodes} | 延迟={latency_ms:.1f}ms")
+                print(
+                    f"    ✅ 成功 | 场景={classified.scenario_id} | 节点={report.executed_nodes} | 延迟={latency_ms:.1f}ms"
+                )
             except Exception as e:
                 results[name] = {
                     "success": False,
@@ -562,9 +661,9 @@ class MultiScenarioStressTest:
                 all_confidences = []
                 for nid in choice.nodes:
                     result = state.get_result(nid)
-                    if result and hasattr(result, 'direction'):
+                    if result and hasattr(result, "direction"):
                         all_directions.append(result.direction)
-                        all_confidences.append(getattr(result, 'confidence', 0))
+                        all_confidences.append(getattr(result, "confidence", 0))
 
                 result_item = {
                     "round": i,
@@ -588,13 +687,15 @@ class MultiScenarioStressTest:
                     self.stats["direction_distribution"][d] += 1
 
             except Exception as e:
-                results.append({
-                    "round": i,
-                    "scenario": scenario_id,
-                    "symbol": symbol,
-                    "success": False,
-                    "error": str(e),
-                })
+                results.append(
+                    {
+                        "round": i,
+                        "scenario": scenario_id,
+                        "symbol": symbol,
+                        "success": False,
+                        "error": str(e),
+                    }
+                )
                 self.stats["errors"].append({"round": i, "error": str(e)})
 
             if (i + 1) % (rounds // 10) == 0:
@@ -630,8 +731,8 @@ class MultiScenarioStressTest:
             "tps": round(tps, 2),
             "scenario_coverage": len(scenario_coverage),
             "avg_latency_ms": round(avg_latency, 2),
-            "p95_latency_ms": round(latencies[int(len(latencies)*0.95)], 2) if latencies else 0,
-            "p99_latency_ms": round(latencies[int(len(latencies)*0.99)], 2) if latencies else 0,
+            "p95_latency_ms": round(latencies[int(len(latencies) * 0.95)], 2) if latencies else 0,
+            "p99_latency_ms": round(latencies[int(len(latencies) * 0.99)], 2) if latencies else 0,
         }
 
     def run_all(self) -> Dict[str, Any]:
@@ -716,7 +817,11 @@ class MultiScenarioStressTest:
         }
         overall = sum(scores[k] * weights[k] for k in weights)
 
-        grade = "A" if overall >= 90 else "B" if overall >= 80 else "C" if overall >= 70 else "D" if overall >= 60 else "F"
+        grade = (
+            "A"
+            if overall >= 90
+            else "B" if overall >= 80 else "C" if overall >= 70 else "D" if overall >= 60 else "F"
+        )
 
         return {
             "scores": {k: round(v, 2) for k, v in scores.items()},
@@ -733,9 +838,11 @@ def print_summary_report(report: Dict):
     print("=" * 70)
 
     overall = report.get("overall_summary", {})
-    print(f"\n  综合评分: {overall.get('overall_score', 'N/A')} / 100  (等级: {overall.get('grade', 'N/A')})")
+    print(
+        f"\n  综合评分: {overall.get('overall_score', 'N/A')} / 100  (等级: {overall.get('grade', 'N/A')})"
+    )
 
-    print(f"\n  分项得分:")
+    print("\n  分项得分:")
     for name, score in overall.get("scores", {}).items():
         bar = "█" * int(score // 5) + "░" * (20 - int(score // 5))
         print(f"    {name:30s} {bar} {score:5.1f}%")
@@ -758,7 +865,9 @@ def print_summary_report(report: Dict):
     gc = report.get("graph_consistency", {})
     print(f"\n  【图编排一致性】{gc.get('consistency_rate_pct', 'N/A')}%")
     lat = gc.get("latency", {})
-    print(f"    延迟: avg={lat.get('avg_ms', 0)}ms P95={lat.get('p95_ms', 0)}ms P99={lat.get('p99_ms', 0)}ms")
+    print(
+        f"    延迟: avg={lat.get('avg_ms', 0)}ms P95={lat.get('p95_ms', 0)}ms P99={lat.get('p99_ms', 0)}ms"
+    )
 
     # 边缘场景
     ec = report.get("edge_cases", {})
@@ -771,7 +880,7 @@ def print_summary_report(report: Dict):
 
     # 全链路压力
     fp = report.get("full_pipeline_stress", {})
-    print(f"\n  【全链路压测】")
+    print("\n  【全链路压测】")
     print(f"    成功率: {fp.get('success_rate_pct', 'N/A')}%")
     print(f"    吞吐量: {fp.get('tps', 'N/A')} TPS")
     print(f"    场景覆盖: {fp.get('scenario_coverage', 'N/A')}/36")
@@ -785,9 +894,9 @@ def main():
     print("\n" + "=" * 70)
     print("🎯 Dream OS 多场景模拟压力测试套件")
     print("=" * 70)
-    print(f"  36 种市场场景 (3趋势 × 4波动率 × 3动量)")
+    print("  36 种市场场景 (3趋势 × 4波动率 × 3动量)")
     print(f"  {len(SYMBOLS)} 种交易币种")
-    print(f"  5 类测试（分类/记忆/一致性/边缘/全链路）")
+    print("  5 类测试（分类/记忆/一致性/边缘/全链路）")
     print("=" * 70)
 
     tester = MultiScenarioStressTest(rounds_per_scenario=3)

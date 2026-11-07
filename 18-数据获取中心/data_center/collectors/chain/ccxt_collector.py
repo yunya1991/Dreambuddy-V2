@@ -2,6 +2,7 @@
 
 用 ccxt 库薄封装（100+ 交易所统一 API），fetch_ticker -> DataRecord(category=chain)。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -23,7 +24,7 @@ class CcxtCollector(BaseCollector):
     category = "chain"
 
     def fetch(self, params: dict) -> list[DataRecord]:
-        symbol = params["symbol"]            # 如 "BTC/USDT"
+        symbol = params["symbol"]  # 如 "BTC/USDT"
         exchange_id = params.get("exchange", "binance")
         kind = params.get("kind", "ticker")
 
@@ -38,10 +39,14 @@ class CcxtCollector(BaseCollector):
                 sub_category=symbol,
                 timestamp=datetime.now(timezone.utc).astimezone().isoformat(),
                 metrics={
-                    "symbol": symbol, "exchange": exchange_id,
-                    "last": _num(ticker, "last"), "bid": _num(ticker, "bid"),
-                    "ask": _num(ticker, "ask"), "high": _num(ticker, "high"),
-                    "low": _num(ticker, "low"), "volume": _num(ticker, "volume"),
+                    "symbol": symbol,
+                    "exchange": exchange_id,
+                    "last": _num(ticker, "last"),
+                    "bid": _num(ticker, "bid"),
+                    "ask": _num(ticker, "ask"),
+                    "high": _num(ticker, "high"),
+                    "low": _num(ticker, "low"),
+                    "volume": _num(ticker, "volume"),
                 },
                 events=[],
                 timeseries=[],

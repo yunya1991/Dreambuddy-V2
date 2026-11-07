@@ -1,9 +1,9 @@
 """test_ess_provider.py — ESSDirectionProvider 单元测试
 覆盖: 基因库加载+ESS排序, top1 direction提取, n_samples=0降级, 库缓存, 空library FO
 """
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations  # noqa: I001
+
 
 from dreambuddy_evolution.adapters.ess_provider import ESSDirectionProvider
 
@@ -14,6 +14,7 @@ class TestESSDirectionProvider:
         """从真实 gene_data 库加载 ESS 排序"""
         import sys
         from pathlib import Path
+
         # tests/ → dreambuddy_evolution/ → 23-四层闭环自进化交易架构/
         evo_pkg = Path(__file__).resolve().parents[1]  # dreambuddy_evolution/
         evo_root = evo_pkg.parent  # 23-四层闭环自进化交易架构/
@@ -43,6 +44,7 @@ class TestESSDirectionProvider:
         """6h 缓存：第二次调用不重新计算"""
         import sys
         from pathlib import Path
+
         evo_pkg = Path(__file__).resolve().parents[1]
         evo_root = evo_pkg.parent
         if str(evo_root) not in sys.path:
@@ -61,6 +63,7 @@ class TestESSDirectionProvider:
         """手动失效缓存"""
         import sys
         from pathlib import Path
+
         evo_pkg = Path(__file__).resolve().parents[1]
         evo_root = evo_pkg.parent
         if str(evo_root) not in sys.path:
@@ -78,6 +81,7 @@ class TestESSDirectionProvider:
         """min_sample 过高 → 过滤掉所有组合 → 空结果"""
         import sys
         from pathlib import Path
+
         evo_pkg = Path(__file__).resolve().parents[1]
         evo_root = evo_pkg.parent
         if str(evo_root) not in sys.path:

@@ -8,12 +8,11 @@
 
 TDD RED → GREEN 流程
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
-
-import pytest
 
 REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
@@ -24,6 +23,7 @@ if str(REPO) not in sys.path:
 # 缺口A: ExitStrategyParams 参数基因扩展 4→12
 # ============================================================================
 
+
 class TestExitStrategyParamsExpansion:
     """ExitStrategyParams 从 4 参数扩展到 12 参数"""
 
@@ -32,6 +32,7 @@ class TestExitStrategyParamsExpansion:
         from dreambuddy_evolution.engines.exit_engine.exit_strategy_params import (
             ExitStrategyParams,
         )
+
         p = ExitStrategyParams()
         assert hasattr(p, "trailing_retrace_pct")
         assert hasattr(p, "sl_tighten_factor")
@@ -43,6 +44,7 @@ class TestExitStrategyParamsExpansion:
         from dreambuddy_evolution.engines.exit_engine.exit_strategy_params import (
             ExitStrategyParams,
         )
+
         p = ExitStrategyParams(trailing_arm_pct=0.04)
         assert p.trailing_arm_pct == 0.04
 
@@ -51,6 +53,7 @@ class TestExitStrategyParamsExpansion:
         from dreambuddy_evolution.engines.exit_engine.exit_strategy_params import (
             ExitStrategyParams,
         )
+
         p = ExitStrategyParams(break_even_arm_pct=0.02)
         assert p.break_even_arm_pct == 0.02
 
@@ -59,6 +62,7 @@ class TestExitStrategyParamsExpansion:
         from dreambuddy_evolution.engines.exit_engine.exit_strategy_params import (
             ExitStrategyParams,
         )
+
         p = ExitStrategyParams(partial_tp_r1=1.0)
         assert p.partial_tp_r1 == 1.0
 
@@ -67,6 +71,7 @@ class TestExitStrategyParamsExpansion:
         from dreambuddy_evolution.engines.exit_engine.exit_strategy_params import (
             ExitStrategyParams,
         )
+
         p = ExitStrategyParams(partial_tp_pct1=0.5)
         assert p.partial_tp_pct1 == 0.5
 
@@ -75,6 +80,7 @@ class TestExitStrategyParamsExpansion:
         from dreambuddy_evolution.engines.exit_engine.exit_strategy_params import (
             ExitStrategyParams,
         )
+
         p = ExitStrategyParams(tp_decay_base_pct=0.06)
         assert p.tp_decay_base_pct == 0.06
 
@@ -83,6 +89,7 @@ class TestExitStrategyParamsExpansion:
         from dreambuddy_evolution.engines.exit_engine.exit_strategy_params import (
             ExitStrategyParams,
         )
+
         p = ExitStrategyParams(tp_decay_floor_pct=0.015)
         assert p.tp_decay_floor_pct == 0.015
 
@@ -91,6 +98,7 @@ class TestExitStrategyParamsExpansion:
         from dreambuddy_evolution.engines.exit_engine.exit_strategy_params import (
             ExitStrategyParams,
         )
+
         p = ExitStrategyParams(tp_decay_grace_hours=12)
         assert p.tp_decay_grace_hours == 12
 
@@ -99,6 +107,7 @@ class TestExitStrategyParamsExpansion:
         from dreambuddy_evolution.engines.exit_engine.exit_strategy_params import (
             ExitStrategyParams,
         )
+
         p = ExitStrategyParams(soft_vote_cooldown_sec=14400)
         assert p.soft_vote_cooldown_sec == 14400
 
@@ -107,12 +116,13 @@ class TestExitStrategyParamsExpansion:
         from dreambuddy_evolution.engines.exit_engine.exit_strategy_params import (
             ExitStrategyParams,
         )
+
         p = ExitStrategyParams()
         gene = p.to_gene_json()
         params = gene["parameters"]
         assert len(params) == 12
         # 验证新参数都有 range
-        for key, val in params.items():
+        for key, val in params.items():  # noqa: B007
             assert "value" in val
             assert "range" in val
             assert "low" in val["range"]
@@ -123,6 +133,7 @@ class TestExitStrategyParamsExpansion:
         from dreambuddy_evolution.engines.exit_engine.exit_strategy_params import (
             ExitStrategyParams,
         )
+
         p = ExitStrategyParams()
         # trailing_arm_pct 默认 standard=0.04
         assert p.trailing_arm_pct == 0.04
@@ -138,6 +149,7 @@ class TestExitStrategyParamsExpansion:
 # 缺口B: ExitModuleFacade 子系统独立验证接口
 # ============================================================================
 
+
 class TestExitModuleFacade:
     """ExitModuleFacade 暴露 decide(context) 供子系统独立验证离场模块能力"""
 
@@ -148,12 +160,13 @@ class TestExitModuleFacade:
     def test_facade_decide_method_exists(self):
         """ExitModuleFacade.decide() 方法存在"""
         from dreambuddy_evolution.engines.exit_engine.facade import ExitModuleFacade
+
         assert hasattr(ExitModuleFacade, "decide")
 
     def test_facade_decide_returns_exit_decision(self):
         """decide() 返回 ExitDecision"""
-        from dreambuddy_evolution.engines.exit_engine.facade import ExitModuleFacade
         from dreambuddy_evolution.engines.exit_engine.exit_decision import ExitDecision
+        from dreambuddy_evolution.engines.exit_engine.facade import ExitModuleFacade
 
         facade = ExitModuleFacade()
         ctx = {
@@ -224,8 +237,8 @@ class TestExitModuleFacade:
 
     def test_facade_fail_open_on_crash(self):
         """facade 异常时 FAIL-OPEN 返回 hold ExitDecision"""
-        from dreambuddy_evolution.engines.exit_engine.facade import ExitModuleFacade
         from dreambuddy_evolution.engines.exit_engine.exit_decision import ExitDecision
+        from dreambuddy_evolution.engines.exit_engine.facade import ExitModuleFacade
 
         facade = ExitModuleFacade()
         # 传入空 context 触发异常
@@ -235,10 +248,10 @@ class TestExitModuleFacade:
 
     def test_facade_get_params_returns_strategy_params(self):
         """get_params() 返回当前 ExitStrategyParams"""
-        from dreambuddy_evolution.engines.exit_engine.facade import ExitModuleFacade
         from dreambuddy_evolution.engines.exit_engine.exit_strategy_params import (
             ExitStrategyParams,
         )
+        from dreambuddy_evolution.engines.exit_engine.facade import ExitModuleFacade
 
         facade = ExitModuleFacade()
         params = facade.get_params()
@@ -260,6 +273,7 @@ class TestExitModuleFacade:
 # 缺口D: 回测闭环扩展
 # ============================================================================
 
+
 class TestBacktestLoopClosure:
     """回测脚本支持 exit_engine 完整规则回测（不限于软投票）"""
 
@@ -274,6 +288,7 @@ class TestBacktestLoopClosure:
         from dreambuddy_evolution.scripts.exit_backtest_runner import (
             ExitBacktestRunner,
         )
+
         assert hasattr(ExitBacktestRunner, "run")
 
     def test_backtest_runner_run_single_trade(self):
@@ -290,7 +305,12 @@ class TestBacktestLoopClosure:
             "entry_price": 10000.0,
             "entry_ts": 0,
             "klines": [
-                {"ts": i * 3600, "close": 10000 + i * 30, "high": 10050 + i * 30, "low": 9950 + i * 30}
+                {
+                    "ts": i * 3600,
+                    "close": 10000 + i * 30,
+                    "high": 10050 + i * 30,
+                    "low": 9950 + i * 30,
+                }
                 for i in range(30)
             ],
             "initial_sl_px": 9600.0,
@@ -317,7 +337,12 @@ class TestBacktestLoopClosure:
             "entry_price": 10000.0,
             "entry_ts": 0,
             "klines": [
-                {"ts": i * 3600, "close": 10000 + i * 20, "high": 10050 + i * 20, "low": 9950 + i * 20}
+                {
+                    "ts": i * 3600,
+                    "close": 10000 + i * 20,
+                    "high": 10050 + i * 20,
+                    "low": 9950 + i * 20,
+                }
                 for i in range(30)
             ],
             "initial_sl_px": 9600.0,
@@ -349,7 +374,12 @@ class TestBacktestLoopClosure:
                 "entry_price": 10000.0,
                 "entry_ts": 0,
                 "klines": [
-                    {"ts": i * 3600, "close": 10000 + i * 30, "high": 10050 + i * 30, "low": 9950 + i * 30}
+                    {
+                        "ts": i * 3600,
+                        "close": 10000 + i * 30,
+                        "high": 10050 + i * 30,
+                        "low": 9950 + i * 30,
+                    }
                     for i in range(30)
                 ],
                 "initial_sl_px": 9600.0,
@@ -363,7 +393,12 @@ class TestBacktestLoopClosure:
                 "entry_price": 3000.0,
                 "entry_ts": 0,
                 "klines": [
-                    {"ts": i * 3600, "close": 3000 + i * 5, "high": 3050 + i * 5, "low": 2950 + i * 5}
+                    {
+                        "ts": i * 3600,
+                        "close": 3000 + i * 5,
+                        "high": 3050 + i * 5,
+                        "low": 2950 + i * 5,
+                    }
                     for i in range(30)
                 ],
                 "initial_sl_px": 2850.0,

@@ -1,4 +1,5 @@
 """JsonLegacyRiskRepository（P0 内存实现：单行 RiskState id=1 + RiskCases 列表）"""
+
 from __future__ import annotations
 
 from datetime import datetime

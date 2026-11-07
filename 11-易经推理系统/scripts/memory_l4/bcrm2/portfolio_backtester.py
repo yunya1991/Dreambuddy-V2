@@ -15,19 +15,20 @@ BCRM理论映射:
   5. 组合夏普比率: 按各币种权重加权计算
 """
 
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass, field
-from pathlib import Path
 
-from .walk_forward_backtester import WalkForwardBacktester, BacktestResult, Trade, generate_report
-from .market_cap import MarketCapClassifier, MARKET_CAP_LARGE, MARKET_CAP_MID, MARKET_CAP_SMALL
+from .market_cap import MARKET_CAP_LARGE, MARKET_CAP_MID, MARKET_CAP_SMALL, MarketCapClassifier
+from .walk_forward_backtester import BacktestResult, WalkForwardBacktester
 
 
 @dataclass
 class PortfolioResult:
     """组合回测结果"""
+
     # 各币种的独立回测结果
     symbol_results: Dict[str, BacktestResult] = field(default_factory=dict)
 
@@ -66,9 +67,9 @@ class PortfolioBacktester:
         symbols: List[str],
         n_folds: int = 5,
         # 资金分配参数
-        large_cap_weight: float = 0.40,   # 大市值资金权重
-        mid_cap_weight: float = 0.35,     # 中市值资金权重
-        small_cap_weight: float = 0.25,   # 小市值资金权重
+        large_cap_weight: float = 0.40,  # 大市值资金权重
+        mid_cap_weight: float = 0.35,  # 中市值资金权重
+        small_cap_weight: float = 0.25,  # 小市值资金权重
         # 组合层风控参数
         max_concurrent_positions: int = 4,  # 最大并发持仓数
         max_portfolio_drawdown: float = 0.20,  # 组合最大回撤限制 (20%)
@@ -106,16 +107,19 @@ class PortfolioBacktester:
         mcap = self.mcap_classifier.classify(symbol, df)
         if mcap == MARKET_CAP_LARGE:
             # 大市值内部均分
-            large_symbols = [s for s in self.symbols
-                           if self.mcap_classifier.classify(s) == MARKET_CAP_LARGE]
+            large_symbols = [
+                s for s in self.symbols if self.mcap_classifier.classify(s) == MARKET_CAP_LARGE
+            ]
             return self.large_cap_weight / max(len(large_symbols), 1)
         elif mcap == MARKET_CAP_MID:
-            mid_symbols = [s for s in self.symbols
-                         if self.mcap_classifier.classify(s) == MARKET_CAP_MID]
+            mid_symbols = [
+                s for s in self.symbols if self.mcap_classifier.classify(s) == MARKET_CAP_MID
+            ]
             return self.mid_cap_weight / max(len(mid_symbols), 1)
         else:
-            small_symbols = [s for s in self.symbols
-                           if self.mcap_classifier.classify(s) == MARKET_CAP_SMALL]
+            small_symbols = [
+                s for s in self.symbols if self.mcap_classifier.classify(s) == MARKET_CAP_SMALL
+            ]
             return self.small_cap_weight / max(len(small_symbols), 1)
 
     def run(
@@ -180,7 +184,9 @@ class PortfolioBacktester:
             )
 
             bt_result = backtester.run(
-                df, ref_df=symbol_ref, verbose=False,
+                df,
+                ref_df=symbol_ref,
+                verbose=False,
                 enable_pivot=enable_pivot,
                 enable_rsi=enable_rsi,
                 enable_wdh=enable_wdh,
@@ -191,9 +197,11 @@ class PortfolioBacktester:
             result.symbol_results[symbol] = bt_result
 
             if verbose:
-                print(f"  {symbol}: 胜率{bt_result.overall_win_rate*100:.1f}%, "
-                      f"夏普{bt_result.sharpe_ratio:.2f}, "
-                      f"交易{bt_result.total_trades}笔")
+                print(
+                    f"  {symbol}: 胜率{bt_result.overall_win_rate*100:.1f}%, "
+                    f"夏普{bt_result.sharpe_ratio:.2f}, "
+                    f"交易{bt_result.total_trades}笔"
+                )
 
         # 3. 构建组合时间线
         result.timeline_trades = self._build_timeline(
@@ -223,25 +231,37 @@ class PortfolioBacktester:
             df = data_dict.get(symbol)
 
             for trade in bt_result.all_trades:
-                entry_time = df.index[trade.entry_bar] if df is not None and trade.entry_bar < len(df) else None
-                exit_time = df.index[trade.exit_bar] if df is not None and trade.exit_bar < len(df) else None
+                entry_time = (
+                    df.index[trade.entry_bar]
+                    if df is not None and trade.entry_bar < len(df)
+                    else None
+                )
+                exit_time = (
+                    df.index[trade.exit_bar]
+                    if df is not None and trade.exit_bar < len(df)
+                    else None
+                )
 
-                timeline.append({
-                    "symbol": symbol,
-                    "entry_time": entry_time,
-                    "exit_time": exit_time,
-                    "direction": trade.direction,
-                    "pnl_pct": trade.pnl_pct,
-                    "weighted_pnl": trade.pnl_pct * weight,  # 加权收益
-                    "weight": weight,
-                    "hold_bars": trade.hold_bars,
-                    "exit_reason": trade.exit_reason,
-                    "confidence": trade.confidence,
-                    "position_factor": trade.position_factor,
-                })
+                timeline.append(
+                    {
+                        "symbol": symbol,
+                        "entry_time": entry_time,
+                        "exit_time": exit_time,
+                        "direction": trade.direction,
+                        "pnl_pct": trade.pnl_pct,
+                        "weighted_pnl": trade.pnl_pct * weight,  # 加权收益
+                        "weight": weight,
+                        "hold_bars": trade.hold_bars,
+                        "exit_reason": trade.exit_reason,
+                        "confidence": trade.confidence,
+                        "position_factor": trade.position_factor,
+                    }
+                )
 
         # 按入场时间排序
-        timeline.sort(key=lambda x: x["entry_time"] if x["entry_time"] is not None else pd.Timestamp.min)
+        timeline.sort(
+            key=lambda x: x["entry_time"] if x["entry_time"] is not None else pd.Timestamp.min
+        )
 
         return timeline
 
@@ -269,7 +289,7 @@ class PortfolioBacktester:
         if losses:
             result.portfolio_profit_factor = sum(profits) / abs(sum(losses))
         else:
-            result.portfolio_profit_factor = float('inf') if profits else 0
+            result.portfolio_profit_factor = float("inf") if profits else 0
 
         # 组合夏普比率（P0修正：用日收益序列年化，sqrt(252)）
         if result.timeline_trades:
@@ -307,8 +327,10 @@ class PortfolioBacktester:
 
         # 各币种表现
         lines.append("  【各币种独立表现】")
-        lines.append(f"  {'币种':<8} {'交易数':<8} {'胜率':<8} {'总收益':<10} "
-                      f"{'最大回撤':<10} {'夏普':<8} {'权重':<8}")
+        lines.append(
+            f"  {'币种':<8} {'交易数':<8} {'胜率':<8} {'总收益':<10} "
+            f"{'最大回撤':<10} {'夏普':<8} {'权重':<8}"
+        )
         lines.append(f"  {'-'*8} {'-'*8} {'-'*8} {'-'*10} {'-'*10} {'-'*8} {'-'*8}")
 
         for symbol, bt_result in result.symbol_results.items():

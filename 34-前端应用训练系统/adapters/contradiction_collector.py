@@ -9,6 +9,7 @@
   - 数据来源: evolution_pipeline.log 的 [Contradiction] 与 [T5-DimForce] 行
   - FAIL-OPEN: 日志缺失/解析失败返回空列表
 """
+
 import os
 import re
 from typing import List, Optional
@@ -17,17 +18,25 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
 _PROJECT_ROOT = os.path.dirname(_34_DIR)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 _LOG_PATH = os.path.join(
-    _PROJECT_ROOT, "23-四层闭环自进化交易架构",
-    "dreambuddy_evolution", "logs", "evolution_pipeline.log",
+    _PROJECT_ROOT,
+    "23-四层闭环自进化交易架构",
+    "dreambuddy_evolution",
+    "logs",
+    "evolution_pipeline.log",
 )
 
 # 维度中文名
 _DIM_DESC = {
-    "C1": "资金面", "C2": "情绪面", "C3": "技术面", "C4": "宏观",
-    "C6": "时序", "C7": "隐性", "C8": "衍生维度",
+    "C1": "资金面",
+    "C2": "情绪面",
+    "C3": "技术面",
+    "C4": "宏观",
+    "C6": "时序",
+    "C7": "隐性",
+    "C8": "衍生维度",
 }
 
 _DIR_DESC = {"long": "看多", "short": "看空", "neutral": "中性"}
@@ -88,25 +97,38 @@ class ContradictionCollector(TrainingDataProvider):
                 dir1, s1 = dims[d1]
                 dir2, s2 = dims[d2]
                 conflict = "矛盾" if dir1 != dir2 else "一致"
-                cases.append(TrainingCase(
-                    intent="contradiction_insight",
-                    actions=[f"contradiction:{d1}", f"contradiction:{d2}"],
-                    outcome_text=message,
-                    learned=[f"矛盾分析: {n1}({dir1},{s1:.2f}) vs {n2}({dir2},{s2:.2f}) → {conflict}"],
-                    layer_tags=["S"],
-                    quality="B",
-                    confidence=0.6,
-                    source="contradiction_insight",
-                    metadata={
-                        "dim1": d1, "dir1": dir1, "strength1": s1,
-                        "dim2": d2, "dir2": dir2, "strength2": s2,
-                        "conflict": conflict,
-                        "engine_hint": "23-自进化系统/矛盾系统",
-                    },
-                ))
+                cases.append(
+                    TrainingCase(
+                        intent="contradiction_insight",
+                        actions=[f"contradiction:{d1}", f"contradiction:{d2}"],
+                        outcome_text=message,
+                        learned=[
+                            f"矛盾分析: {n1}({dir1},{s1:.2f}) vs {n2}({dir2},{s2:.2f}) → {conflict}"
+                        ],
+                        layer_tags=["S"],
+                        quality="B",
+                        confidence=0.6,
+                        source="contradiction_insight",
+                        metadata={
+                            "dim1": d1,
+                            "dir1": dir1,
+                            "strength1": s1,
+                            "dim2": d2,
+                            "dir2": dir2,
+                            "strength2": s2,
+                            "conflict": conflict,
+                            "engine_hint": "23-自进化系统/矛盾系统",
+                        },
+                    )
+                )
         # 补充整体矛盾状态问法（模板 × 维度对组合，保证样本量达标）
         if len(cases) < limit:
-            pairs = [("资金面", "技术面"), ("宏观", "情绪面"), ("资金面", "宏观"), ("技术面", "情绪面")]
+            pairs = [
+                ("资金面", "技术面"),
+                ("宏观", "情绪面"),
+                ("资金面", "宏观"),
+                ("技术面", "情绪面"),
+            ]
             round_i = 0
             while len(cases) < limit and round_i < 4:
                 for d1, d2 in pairs:
@@ -114,16 +136,21 @@ class ContradictionCollector(TrainingDataProvider):
                         break
                     tpl = _TEMPLATES[(len(cases) + round_i) % len(_TEMPLATES)]
                     message = tpl.format(d1=d1, d2=d2)
-                    cases.append(TrainingCase(
-                        intent="contradiction_insight",
-                        actions=["contradiction:all"],
-                        outcome_text=message,
-                        learned=[f"矛盾分析: {d1}与{d2}矛盾状态 ({len(dims)} 个维度在跟踪)"],
-                        layer_tags=["S"],
-                        quality="B",
-                        confidence=0.5,
-                        source="contradiction_insight",
-                        metadata={"dims": {d: dims[d][0] for d in dims}, "engine_hint": "23-自进化系统/矛盾系统"},
-                    ))
+                    cases.append(
+                        TrainingCase(
+                            intent="contradiction_insight",
+                            actions=["contradiction:all"],
+                            outcome_text=message,
+                            learned=[f"矛盾分析: {d1}与{d2}矛盾状态 ({len(dims)} 个维度在跟踪)"],
+                            layer_tags=["S"],
+                            quality="B",
+                            confidence=0.5,
+                            source="contradiction_insight",
+                            metadata={
+                                "dims": {d: dims[d][0] for d in dims},
+                                "engine_hint": "23-自进化系统/矛盾系统",
+                            },
+                        )
+                    )
                 round_i += 1
         return cases

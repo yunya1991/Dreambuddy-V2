@@ -2,12 +2,13 @@
 
 覆盖路线图 §5.2 六盾 (DS1-DS6) + §5.1.2 五维动作 clamp + §3.3/§3.4 边界铁律。
 """
-import pytest
-from dataclasses import dataclass
-from typing import Dict, Any, Tuple
 
+from typing import Any, Dict
+
+import pytest
 
 # ── 辅助：构造测试用 allocation / base_params / s_state ──
+
 
 def _baseline_alloc() -> Dict[str, Any]:
     return {
@@ -24,8 +25,8 @@ def _baseline_alloc() -> Dict[str, Any]:
 
 def _baseline_params() -> Dict[str, Any]:
     return {
-        "addon_pct": 8.0,   # 百分数
-        "tp_pct": 4.0,      # 百分数
+        "addon_pct": 8.0,  # 百分数
+        "tp_pct": 4.0,  # 百分数
     }
 
 
@@ -75,6 +76,7 @@ class TestPhaseEGatewayDisabled:
 
     def test_disabled_apply_size_multipliers_returns_baseline(self):
         from phase_e_gateway import PhaseEGateway
+
         gw = PhaseEGateway(enabled=False)
         alloc = _baseline_alloc()
         result = gw.apply_size_multipliers(alloc, _baseline_state())
@@ -84,6 +86,7 @@ class TestPhaseEGatewayDisabled:
 
     def test_disabled_apply_param_multipliers_returns_baseline(self):
         from phase_e_gateway import PhaseEGateway
+
         gw = PhaseEGateway(enabled=False)
         params = _baseline_params()
         result = gw.apply_param_multipliers("BTC", params, _baseline_state())
@@ -92,6 +95,7 @@ class TestPhaseEGatewayDisabled:
 
     def test_disabled_get_action_returns_neutral(self):
         from phase_e_gateway import PhaseEGateway
+
         gw = PhaseEGateway(enabled=False)
         action = gw.get_action(_baseline_state())
         # 禁用时返回全 1.0 倍率 + max_addons_delta=0（=基线）
@@ -107,14 +111,15 @@ class TestPhaseEGatewayActionClamp:
 
     def test_action_clamp_within_bounds(self):
         from phase_e_gateway import PhaseEGateway
+
         gw = PhaseEGateway(enabled=True, k_bound=1.0)
         # 注入 mock action（越界值），验证 clamp
         gw._mock_action = {
-            "addon_pct_mult": 0.50,    # 下界 0.80
-            "addon_size_mult": 0.30,   # 下界 0.60
-            "tp_pct_mult": 0.50,       # 下界 0.80
-            "base_position_mult": 0.50, # 下界 0.70
-            "max_addons_delta": 1,     # 禁止 +1
+            "addon_pct_mult": 0.50,  # 下界 0.80
+            "addon_size_mult": 0.30,  # 下界 0.60
+            "tp_pct_mult": 0.50,  # 下界 0.80
+            "base_position_mult": 0.50,  # 下界 0.70
+            "max_addons_delta": 1,  # 禁止 +1
         }
         action = gw.get_action(_baseline_state())
         assert action["addon_pct_mult"] == pytest.approx(0.80)
@@ -125,13 +130,14 @@ class TestPhaseEGatewayActionClamp:
 
     def test_action_clamp_upper_bounds(self):
         from phase_e_gateway import PhaseEGateway
+
         gw = PhaseEGateway(enabled=True, k_bound=1.0)
         gw._mock_action = {
-            "addon_pct_mult": 2.00,    # 上界 1.30
-            "addon_size_mult": 3.00,   # 上界 1.50
-            "tp_pct_mult": 2.00,       # 上界 1.30
-            "base_position_mult": 2.00, # 上界 1.20
-            "max_addons_delta": 1,     # 禁止 +1
+            "addon_pct_mult": 2.00,  # 上界 1.30
+            "addon_size_mult": 3.00,  # 上界 1.50
+            "tp_pct_mult": 2.00,  # 上界 1.30
+            "base_position_mult": 2.00,  # 上界 1.20
+            "max_addons_delta": 1,  # 禁止 +1
         }
         action = gw.get_action(_baseline_state())
         assert action["addon_pct_mult"] == pytest.approx(1.30)
@@ -143,6 +149,7 @@ class TestPhaseEGatewayActionClamp:
     def test_k_bound_shrinks_bounds(self):
         """K_bound=0.80 时边界收紧（LOWER 更靠近 1.0，UPPER 更靠近 1.0）。"""
         from phase_e_gateway import PhaseEGateway
+
         gw = PhaseEGateway(enabled=True, k_bound=0.80)
         gw._mock_action = {
             "addon_pct_mult": 0.70,
@@ -163,6 +170,7 @@ class TestDeterministicShield:
     def test_ds1_margin_safety_rejects_size_up(self):
         """DS1: 保证金率不足时拒绝放大加仓。"""
         from phase_e_gateway import PhaseEGateway
+
         gw = PhaseEGateway(enabled=True)
         gw._mock_action = {
             "addon_pct_mult": 1.0,
@@ -183,6 +191,7 @@ class TestDeterministicShield:
     def test_ds2_per_coin_budget_rejects_size_up(self):
         """DS2: 单币种投入超预算 10% 时拒绝放大。"""
         from phase_e_gateway import PhaseEGateway
+
         gw = PhaseEGateway(enabled=True)
         gw._mock_action = {
             "addon_pct_mult": 1.0,
@@ -203,6 +212,7 @@ class TestDeterministicShield:
     def test_ds3_tp_absolute_clamp(self):
         """DS3: TP < 1.5% 或 > 12% 时 clamp 到边界。"""
         from phase_e_gateway import PhaseEGateway
+
         gw = PhaseEGateway(enabled=True, k_bound=1.0)
         gw._mock_action = {
             "addon_pct_mult": 1.0,
@@ -221,6 +231,7 @@ class TestDeterministicShield:
     def test_ds4_addon_pct_absolute_clamp(self):
         """DS4: addon_pct < 3% 或 > 25% 时 clamp 到边界。"""
         from phase_e_gateway import PhaseEGateway
+
         gw = PhaseEGateway(enabled=True, k_bound=1.0)
         gw._mock_action = {
             "addon_pct_mult": 0.80,  # 会被 clamp 到 0.80（LOWER），然后盾检查绝对值
@@ -239,6 +250,7 @@ class TestDeterministicShield:
     def test_ds5_extreme_vol_rejects_amplify(self):
         """DS5: 极端波动 (vol_zscore > 2.5) 时禁止所有 *_mult > 1.0。"""
         from phase_e_gateway import PhaseEGateway
+
         gw = PhaseEGateway(enabled=True)
         gw._mock_action = {
             "addon_pct_mult": 1.20,
@@ -260,6 +272,7 @@ class TestDeterministicShield:
     def test_ds6_consecutive_loss_rejects_expand(self):
         """DS6: 连亏熔断 (win_rate < 0.20, count >= 10) 时只允许缩档。"""
         from phase_e_gateway import PhaseEGateway
+
         gw = PhaseEGateway(enabled=True)
         gw._mock_action = {
             "addon_pct_mult": 1.0,
@@ -283,6 +296,7 @@ class TestApplySizeMultipliers:
     def test_apply_multipliers_total_clamp(self):
         """§3.3 铁壳：各档总和 ≤ 原预算 × 1.10。"""
         from phase_e_gateway import PhaseEGateway
+
         gw = PhaseEGateway(enabled=True)
         gw._mock_action = {
             "addon_pct_mult": 1.0,
@@ -298,6 +312,7 @@ class TestApplySizeMultipliers:
     def test_apply_multipliers_max_addons_delta(self):
         """max_addons_delta=-1 → 最深档清零。"""
         from phase_e_gateway import PhaseEGateway
+
         gw = PhaseEGateway(enabled=True)
         gw._mock_action = {
             "addon_pct_mult": 1.0,
@@ -316,6 +331,7 @@ class TestApplyParamMultipliers:
 
     def test_apply_param_multipliers_normal(self):
         from phase_e_gateway import PhaseEGateway
+
         gw = PhaseEGateway(enabled=True)
         gw._mock_action = {
             "addon_pct_mult": 1.10,
@@ -331,6 +347,7 @@ class TestApplyParamMultipliers:
     def test_apply_param_multipliers_ds_clamp(self):
         """addon_pct 被盾 clamp 到 ≥ 3%。"""
         from phase_e_gateway import PhaseEGateway
+
         gw = PhaseEGateway(enabled=True)
         gw._mock_action = {
             "addon_pct_mult": 0.30,  # 8% × 0.30 = 2.4% < 3%

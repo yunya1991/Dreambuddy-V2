@@ -10,11 +10,9 @@
     python3 ml/ai_backtest_comparison.py --symbol BTC --days 500
 """
 
-import sys
+import sys  # noqa: I001
 import os
-import json
 import argparse
-from datetime import timedelta
 
 import numpy as np
 import pandas as pd
@@ -40,13 +38,22 @@ class PureRuleStrategy(BaseStrategy):
         n = len(prices)
         positions = np.zeros(n)
 
-        weekly = prices.resample('W').agg({
-            'open': 'first', 'high': 'max', 'low': 'min',
-            'close': 'last', 'volume': 'sum',
-        }).dropna()
+        weekly = (
+            prices.resample("W")
+            .agg(
+                {
+                    "open": "first",
+                    "high": "max",
+                    "low": "min",
+                    "close": "last",
+                    "volume": "sum",
+                }
+            )
+            .dropna()
+        )
 
         for i in range(self.lookback, n):
-            daily_slice = prices.iloc[:i + 1]
+            daily_slice = prices.iloc[: i + 1]
             last_date = prices.index[i]
             weekly_slice = weekly[weekly.index <= last_date]
 
@@ -76,7 +83,7 @@ class PureRuleStrategy(BaseStrategy):
 def _generate_price_data(n_days: int = 500, seed: int = 42) -> pd.DataFrame:
     """生成模拟价格数据（带趋势+噪声+周期）"""
     np.random.seed(seed)
-    dates = pd.date_range('2023-01-01', periods=n_days, freq='D')
+    dates = pd.date_range("2023-01-01", periods=n_days, freq="D")
 
     t = np.arange(n_days)
 
@@ -100,56 +107,67 @@ def _generate_price_data(n_days: int = 500, seed: int = 42) -> pd.DataFrame:
     # 价格
     close = 100 * np.exp(np.cumsum(log_ret))
 
-    prices = pd.DataFrame({
-        'open': close * (1 + np.random.randn(n_days) * 0.003),
-        'high': close * (1 + np.abs(np.random.randn(n_days) * 0.01)),
-        'low': close * (1 - np.abs(np.random.randn(n_days) * 0.01)),
-        'close': close,
-        'volume': np.random.rand(n_days) * 1000 + 100,
-    }, index=dates)
+    prices = pd.DataFrame(
+        {
+            "open": close * (1 + np.random.randn(n_days) * 0.003),
+            "high": close * (1 + np.abs(np.random.randn(n_days) * 0.01)),
+            "low": close * (1 - np.abs(np.random.randn(n_days) * 0.01)),
+            "close": close,
+            "volume": np.random.rand(n_days) * 1000 + 100,
+        },
+        index=dates,
+    )
 
     # 确保 high >= max(open, close), low <= min(open, close)
-    prices['high'] = prices[['high', 'open', 'close']].max(axis=1)
-    prices['low'] = prices[['low', 'open', 'close']].min(axis=1)
+    prices["high"] = prices[["high", "open", "close"]].max(axis=1)
+    prices["low"] = prices[["low", "open", "close"]].min(axis=1)
 
     return prices
 
 
 def _generate_mock_fundamental_data(dates: pd.DatetimeIndex) -> dict:
     """生成模拟基本面历史数据"""
-    n = len(dates)
+    n = len(dates)  # noqa: F841
 
     # 模拟 screen1 周更新（每周一更新）
     screen1_history = []
     for i, dt in enumerate(dates):
         if dt.weekday() == 0:  # 周一
-            week_idx = i // 7
+            week_idx = i // 7  # noqa: F841
             cycle_phase = np.sin(2 * np.pi * i / 180)
 
             screen1_data = {
-                'direction': 'BULL' if cycle_phase > 0 else 'BEAR',
-                'confidence': 'MODERATE',
-                'total_score': 50 + 40 * cycle_phase,
-                'max_score': 100,
-                'ach': {
-                    'h1': {'probability': 0.5 + 0.2 * cycle_phase},
-                    'h2': {'probability': 0.3},
-                    'h3': {'probability': 0.2 - 0.2 * cycle_phase},
+                "direction": "BULL" if cycle_phase > 0 else "BEAR",
+                "confidence": "MODERATE",
+                "total_score": 50 + 40 * cycle_phase,
+                "max_score": 100,
+                "ach": {
+                    "h1": {"probability": 0.5 + 0.2 * cycle_phase},
+                    "h2": {"probability": 0.3},
+                    "h3": {"probability": 0.2 - 0.2 * cycle_phase},
                 },
-                'dimensions': {
+                "dimensions": {
                     dim: {
-                        'weight': w,
-                        'anchor': 'BULL' if cycle_phase > 0.2 else ('BEAR' if cycle_phase < -0.2 else 'NEUTRAL'),
-                        'score': 50 + 40 * cycle_phase + np.random.randn() * 5,
-                        'max_score': 100,
+                        "weight": w,
+                        "anchor": (
+                            "BULL"
+                            if cycle_phase > 0.2
+                            else ("BEAR" if cycle_phase < -0.2 else "NEUTRAL")
+                        ),
+                        "score": 50 + 40 * cycle_phase + np.random.randn() * 5,
+                        "max_score": 100,
                     }
                     for dim, w in [
-                        ('technical', 40), ('cycle', 15), ('miner', 15),
-                        ('onchain', 15), ('macro', 10), ('cross_market', 5)
+                        ("technical", 40),
+                        ("cycle", 15),
+                        ("miner", 15),
+                        ("onchain", 15),
+                        ("macro", 10),
+                        ("cross_market", 5),
                     ]
-                }
+                },
             }
-            screen1_history.append({'date': str(dt.date()), 'data': screen1_data})
+            screen1_history.append({"date": str(dt.date()), "data": screen1_data})
 
     # 模拟 9-基本面 日更新
     fund9_history = []
@@ -158,29 +176,36 @@ def _generate_mock_fundamental_data(dates: pd.DatetimeIndex) -> dict:
         noise = np.random.randn() * 0.1
 
         fund9_data = {
-            'resistance_3d': {
-                'direction_score': cycle_phase + noise,
-                'velocity': 0.05 * np.cos(2 * np.pi * i / 180),
-                'acceleration': -0.01 * np.sin(2 * np.pi * i / 180),
-                'confidence': 0.5 + 0.3 * abs(cycle_phase),
+            "resistance_3d": {
+                "direction_score": cycle_phase + noise,
+                "velocity": 0.05 * np.cos(2 * np.pi * i / 180),
+                "acceleration": -0.01 * np.sin(2 * np.pi * i / 180),
+                "confidence": 0.5 + 0.3 * abs(cycle_phase),
             },
-            'metrics': {
-                'core': {
+            "metrics": {
+                "core": {
                     mod: 50 + 30 * (cycle_phase + np.random.randn() * 0.2)
                     for mod in [
-                        'flow', 'valuation', 'onchain', 'macro',
-                        'news', 'sentiment', 'breadth', 'intermarket',
-                        'narrative', 'calendar'
+                        "flow",
+                        "valuation",
+                        "onchain",
+                        "macro",
+                        "news",
+                        "sentiment",
+                        "breadth",
+                        "intermarket",
+                        "narrative",
+                        "calendar",
                     ]
                 }
             },
-            'signals': []
+            "signals": [],
         }
-        fund9_history.append({'date': str(dt.date()), 'data': fund9_data})
+        fund9_history.append({"date": str(dt.date()), "data": fund9_data})
 
     return {
-        'screen1_history': screen1_history,
-        'fundamental_9_history': fund9_history,
+        "screen1_history": screen1_history,
+        "fundamental_9_history": fund9_history,
     }
 
 
@@ -210,13 +235,14 @@ def run_comparison(n_days: int = 500):
     try:
         rule_strategy = PureRuleStrategy()
         rule_signals = rule_strategy.generate_signals(prices)
-        rule_result = engine.run(prices['close'], rule_signals)
-        results['纯规则引擎'] = rule_result
-        ret = rule_result['metrics'].get('total_return_pct', 0)
+        rule_result = engine.run(prices["close"], rule_signals)
+        results["纯规则引擎"] = rule_result
+        ret = rule_result["metrics"].get("total_return_pct", 0)
         print(f"✓ 收益: {ret:.1f}%")
     except Exception as e:
         print(f"✗ {e}")
         import traceback
+
         traceback.print_exc()
 
     # 策略 2: AI 增强（纯技术面）
@@ -231,13 +257,14 @@ def run_comparison(n_days: int = 500):
             feature_engineer=LeastResistanceFeatureEngineer(enable_fundamental=False),
         )
         ai_tech_signals = ai_tech_strategy.generate_signals(prices)
-        ai_tech_result = engine.run(prices['close'], ai_tech_signals)
-        results['AI增强(技术面)'] = ai_tech_result
-        ret = ai_tech_result['metrics'].get('total_return_pct', 0)
+        ai_tech_result = engine.run(prices["close"], ai_tech_signals)
+        results["AI增强(技术面)"] = ai_tech_result
+        ret = ai_tech_result["metrics"].get("total_return_pct", 0)
         print(f"✓ 收益: {ret:.1f}%")
     except Exception as e:
         print(f"✗ {e}")
         import traceback
+
         traceback.print_exc()
 
     # 策略 3: AI 增强（技术面 + 基本面）
@@ -253,13 +280,14 @@ def run_comparison(n_days: int = 500):
             fundamental_data=fundamental_data,
         )
         ai_fund_signals = ai_fund_strategy.generate_signals(prices)
-        ai_fund_result = engine.run(prices['close'], ai_fund_signals)
-        results['AI增强(技术+基本面)'] = ai_fund_result
-        ret = ai_fund_result['metrics'].get('total_return_pct', 0)
+        ai_fund_result = engine.run(prices["close"], ai_fund_signals)
+        results["AI增强(技术+基本面)"] = ai_fund_result
+        ret = ai_fund_result["metrics"].get("total_return_pct", 0)
         print(f"✓ 收益: {ret:.1f}%")
     except Exception as e:
         print(f"✗ {e}")
         import traceback
+
         traceback.print_exc()
 
     # 策略 4: AI v2 多任务 + 动态权重
@@ -278,13 +306,14 @@ def run_comparison(n_days: int = 500):
             fundamental_data=fundamental_data,
         )
         ai_v2_signals = ai_v2_strategy.generate_signals(prices)
-        ai_v2_result = engine.run(prices['close'], ai_v2_signals)
-        results['AI v2(多任务+动态权重)'] = ai_v2_result
-        ret = ai_v2_result['metrics'].get('total_return_pct', 0)
+        ai_v2_result = engine.run(prices["close"], ai_v2_signals)
+        results["AI v2(多任务+动态权重)"] = ai_v2_result
+        ret = ai_v2_result["metrics"].get("total_return_pct", 0)
         print(f"✓ 收益: {ret:.1f}%")
     except Exception as e:
         print(f"✗ {e}")
         import traceback
+
         traceback.print_exc()
 
     # 策略 5: AI v2 + 特征筛选
@@ -304,13 +333,14 @@ def run_comparison(n_days: int = 500):
             fundamental_data=fundamental_data,
         )
         ai_v2_full_signals = ai_v2_full_strategy.generate_signals(prices)
-        ai_v2_full_result = engine.run(prices['close'], ai_v2_full_signals)
-        results['AI v2(全功能+特征筛选)'] = ai_v2_full_result
-        ret = ai_v2_full_result['metrics'].get('total_return_pct', 0)
+        ai_v2_full_result = engine.run(prices["close"], ai_v2_full_signals)
+        results["AI v2(全功能+特征筛选)"] = ai_v2_full_result
+        ret = ai_v2_full_result["metrics"].get("total_return_pct", 0)
         print(f"✓ 收益: {ret:.1f}%")
     except Exception as e:
         print(f"✗ {e}")
         import traceback
+
         traceback.print_exc()
 
     # 对比结果
@@ -319,12 +349,12 @@ def run_comparison(n_days: int = 500):
     print("=" * 60)
 
     metrics_order = [
-        ('total_return_pct', '总收益率', '%'),
-        ('annualized_return', '年化收益', '%'),
-        ('sharpe_ratio', '夏普比率', ''),
-        ('max_drawdown_pct', '最大回撤', '%'),
-        ('win_rate_pct', '胜率', '%'),
-        ('total_trades', '交易次数', ''),
+        ("total_return_pct", "总收益率", "%"),
+        ("annualized_return", "年化收益", "%"),
+        ("sharpe_ratio", "夏普比率", ""),
+        ("max_drawdown_pct", "最大回撤", "%"),
+        ("win_rate_pct", "胜率", "%"),
+        ("total_trades", "交易次数", ""),
     ]
 
     strategy_names = list(results.keys())
@@ -337,10 +367,10 @@ def run_comparison(n_days: int = 500):
     for m_key, m_name, m_suffix in metrics_order:
         row = f"{m_name:<12}"
         for name in strategy_names:
-            val = results[name]['metrics'].get(m_key, 0)
-            if m_suffix == '%':
+            val = results[name]["metrics"].get(m_key, 0)
+            if m_suffix == "%":
                 row += f"{val:>18.2f}%"
-            elif m_key == 'total_trades':
+            elif m_key == "total_trades":
                 row += f"{val:>20d}"
             else:
                 row += f"{val:>20.3f}"
@@ -392,24 +422,36 @@ def run_param_sweep(n_days: int = 600, seed: int = 42):
             fundamental_data=fundamental_data,
         )
         if strategy.dynamic_fusion:
-            strategy.dynamic_fusion.base_rule_weight = overrides.get("fusion_base_rule_weight", 0.55)
-            strategy.dynamic_fusion.trend_sensitivity = overrides.get("fusion_trend_sensitivity", 0.25)
+            strategy.dynamic_fusion.base_rule_weight = overrides.get(
+                "fusion_base_rule_weight", 0.55
+            )
+            strategy.dynamic_fusion.trend_sensitivity = overrides.get(
+                "fusion_trend_sensitivity", 0.25
+            )
             strategy.dynamic_fusion.vol_sensitivity = overrides.get("fusion_vol_sensitivity", 0.25)
-            strategy.dynamic_fusion.volume_sensitivity = overrides.get("fusion_volume_sensitivity", 0.2)
-            strategy.dynamic_fusion.duration_sensitivity = overrides.get("fusion_duration_sensitivity", 0.25)
+            strategy.dynamic_fusion.volume_sensitivity = overrides.get(
+                "fusion_volume_sensitivity", 0.2
+            )
+            strategy.dynamic_fusion.duration_sensitivity = overrides.get(
+                "fusion_duration_sensitivity", 0.25
+            )
 
         signals = strategy.generate_signals(prices)
         result = BacktestEngine(initial_capital=10000).run(prices["close"], signals)
         m = result["metrics"]
         results.append((desc, m))
-        print(f"  {desc:12s} 收益: {m['total_return_pct']:7.2f}%  夏普: {m['sharpe_ratio']:6.3f}  交易: {m['total_trades']:3d}")
+        print(
+            f"  {desc:12s} 收益: {m['total_return_pct']:7.2f}%  夏普: {m['sharpe_ratio']:6.3f}  交易: {m['total_trades']:3d}"
+        )
 
     print(f"\n{'=' * 60}")
     print("  排名 (按收益)")
     print(f"{'=' * 60}")
     results.sort(key=lambda x: -x[1]["total_return_pct"])
     for i, (desc, m) in enumerate(results[:10], 1):
-        print(f"{i}. {desc:12s} 收益: {m['total_return_pct']:7.2f}%  夏普: {m['sharpe_ratio']:6.3f}  交易: {m['total_trades']:3d}")
+        print(
+            f"{i}. {desc:12s} 收益: {m['total_return_pct']:7.2f}%  夏普: {m['sharpe_ratio']:6.3f}  交易: {m['total_trades']:3d}"
+        )
 
 
 def main():

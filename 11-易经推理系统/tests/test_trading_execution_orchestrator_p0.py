@@ -1,7 +1,6 @@
 import importlib.util
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -46,7 +45,10 @@ def test_execution_orchestrator_runs_a1_to_a9_and_emits_messages(tmp_path: Path)
     assert all("header" in m and "payload" in m for m in out["messages"])
     assert all("constraint_version" in s for s in out["stage_outputs"].values())
     # Verify A9 -> A7 governance transition message exists
-    a9_to_a7 = [m for m in out["messages"] if m["header"]["source"] == "A9" and m["header"]["target"] == "A7"]
+    a9_to_a7 = [
+        m
+        for m in out["messages"]
+        if m["header"]["source"] == "A9" and m["header"]["target"] == "A7"
+    ]
     assert len(a9_to_a7) == 1
     assert a9_to_a7[0]["header"]["loop_type"] == "governance"
-

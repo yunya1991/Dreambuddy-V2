@@ -10,6 +10,7 @@ Usage:
   python 49-交易框架协议/scripts/m0_paper_baseline.py --mode shadow
   python 49-交易框架协议/scripts/m0_paper_baseline.py --compare <baseline.json>
 """
+
 from __future__ import annotations
 
 import argparse
@@ -29,7 +30,9 @@ if str(EVOLUTION_ROOT) not in sys.path:
     sys.path.insert(0, str(EVOLUTION_ROOT))
 
 BASELINE_VERSION = "m0-paper-baseline-v1"
-DEFAULT_OUT = REPO_ROOT / "49-交易框架协议" / "runtime" / "baselines" / "m0_paper_baseline_latest.json"
+DEFAULT_OUT = (
+    REPO_ROOT / "49-交易框架协议" / "runtime" / "baselines" / "m0_paper_baseline_latest.json"
+)
 
 
 def _market_data(seed: int = 42, n: int = 200) -> dict[str, Any]:
@@ -52,21 +55,51 @@ def _market_data(seed: int = 42, n: int = 200) -> dict[str, Any]:
 
 def _synthetic_paths() -> list[dict[str, Any]]:
     paths = [
-        {"path_id": "bcrm_technical", "source": "bcrm", "direction": "long",
-         "confidence": 0.78, "expected_return": 0.16, "resistance": 0.22,
-         "continuation_score": 0.60},
-        {"path_id": "bdsm_fundamental_long", "source": "bdsm", "direction": "long",
-         "confidence": 0.62, "expected_return": 0.12, "resistance": 0.35,
-         "continuation_score": 0.55},
-        {"path_id": "strategic_macro_short", "source": "strategic", "direction": "short",
-         "confidence": 0.55, "expected_return": 0.10, "resistance": 0.40,
-         "continuation_score": 0.50},
-        {"path_id": "l2_gene_0", "source": "l2_gene", "direction": "long",
-         "confidence": 0.72, "expected_return": 0.18, "resistance": 0.30,
-         "continuation_score": 0.65},
-        {"path_id": "synthesized_new_gene", "source": "synthesized", "direction": "long",
-         "confidence": 0.68, "expected_return": 0.14, "resistance": 0.28,
-         "continuation_score": 0.58},
+        {
+            "path_id": "bcrm_technical",
+            "source": "bcrm",
+            "direction": "long",
+            "confidence": 0.78,
+            "expected_return": 0.16,
+            "resistance": 0.22,
+            "continuation_score": 0.60,
+        },
+        {
+            "path_id": "bdsm_fundamental_long",
+            "source": "bdsm",
+            "direction": "long",
+            "confidence": 0.62,
+            "expected_return": 0.12,
+            "resistance": 0.35,
+            "continuation_score": 0.55,
+        },
+        {
+            "path_id": "strategic_macro_short",
+            "source": "strategic",
+            "direction": "short",
+            "confidence": 0.55,
+            "expected_return": 0.10,
+            "resistance": 0.40,
+            "continuation_score": 0.50,
+        },
+        {
+            "path_id": "l2_gene_0",
+            "source": "l2_gene",
+            "direction": "long",
+            "confidence": 0.72,
+            "expected_return": 0.18,
+            "resistance": 0.30,
+            "continuation_score": 0.65,
+        },
+        {
+            "path_id": "synthesized_new_gene",
+            "source": "synthesized",
+            "direction": "long",
+            "confidence": 0.68,
+            "expected_return": 0.14,
+            "resistance": 0.28,
+            "continuation_score": 0.58,
+        },
     ]
     for path in paths:
         path["score"] = round(
@@ -153,16 +186,13 @@ def _shadow_baseline(
 
     cd_shadow = attach_shadow(dict(primary), enabled=True)["dimension_shadow"]
     dominance = resolve(
-        paths, primary_contradiction=primary,
+        paths,
+        primary_contradiction=primary,
         production_path_id=production_path["path_id"],
     )
-    attention = compute_a_dim_shadow(
-        primary, attn_weights=_attention_weights()
-    )
+    attention = compute_a_dim_shadow(primary, attn_weights=_attention_weights())
     event = compute_event_contradiction_shadow(_event_data(), enabled=True)
-    self_vote = compute_self_vote_shadow(
-        paths, primary_contradiction=primary, enabled=True
-    )
+    self_vote = compute_self_vote_shadow(paths, primary_contradiction=primary, enabled=True)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         learner = ContradictionWeightLearner(
@@ -196,8 +226,15 @@ def _shadow_baseline(
 
 def _pipeline_sections(result: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
     production_keys = (
-        "action", "tier", "position_mult", "regime", "d_star", "ri", "l4_v",
-        "primary_contradiction", "cross_validation",
+        "action",
+        "tier",
+        "position_mult",
+        "regime",
+        "d_star",
+        "ri",
+        "l4_v",
+        "primary_contradiction",
+        "cross_validation",
     )
     production = {key: result.get(key) for key in production_keys}
     primary = production.get("primary_contradiction")
@@ -302,9 +339,7 @@ def _compare(baseline_path: Path, current: dict[str, Any], include_shadow: bool)
         return 0
     print(f"DIFF: {len(all_diffs)} change(s) vs {baseline_path}")
     for diff in all_diffs[:50]:
-        print(
-            f"  {diff['path']}: {diff.get('before')!r} -> {diff.get('after')!r}"
-        )
+        print(f"  {diff['path']}: {diff.get('before')!r} -> {diff.get('after')!r}")
     if len(all_diffs) > 50:
         print(f"  ... {len(all_diffs) - 50} more")
     return 1
@@ -325,9 +360,7 @@ def main() -> int:
         return _compare(args.compare, baseline, args.include_shadow)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(
-        json.dumps(baseline, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    args.out.write_text(json.dumps(baseline, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Baseline written: {args.out}")
     print(
         f"mode={baseline['mode']} symbol={baseline['symbol']} "

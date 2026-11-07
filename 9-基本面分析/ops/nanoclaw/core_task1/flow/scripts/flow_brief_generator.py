@@ -12,12 +12,10 @@
 """
 
 import json
-import os
-from datetime import datetime, timezone, timedelta
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
-from dataclasses import dataclass
-
 
 # =============================================================================
 # 配置
@@ -35,6 +33,7 @@ OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
 @dataclass
 class FlowSignal:
     """资金流信号数据"""
+
     timestamp: str
     composite: float
     bias: str  # bullish/bearish/neutral
@@ -64,10 +63,14 @@ class FlowBriefGenerator:
 
     def load_latest_regime(self) -> Optional[Dict]:
         """加载最新 Regime 记录"""
-        outputs_regime = sorted(self.outputs_dir.glob("flow_regime_*.json"), key=lambda x: x.stat().st_mtime, reverse=True)
+        outputs_regime = sorted(
+            self.outputs_dir.glob("flow_regime_*.json"),
+            key=lambda x: x.stat().st_mtime,
+            reverse=True,
+        )
         for file_path in outputs_regime:
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     return json.load(f)
             except Exception:
                 continue
@@ -76,10 +79,14 @@ class FlowBriefGenerator:
     def load_regime_history(self, limit: int = 20) -> List[Dict]:
         """加载最近 N 条 Regime 记录"""
         records: List[Dict] = []
-        files = sorted(self.outputs_dir.glob("flow_regime_*.json"), key=lambda x: x.stat().st_mtime, reverse=True)
+        files = sorted(
+            self.outputs_dir.glob("flow_regime_*.json"),
+            key=lambda x: x.stat().st_mtime,
+            reverse=True,
+        )
         for file_path in files[: max(1, int(limit))]:
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     records.append(json.load(f))
             except Exception:
                 continue
@@ -88,7 +95,11 @@ class FlowBriefGenerator:
     def load_latest_btc_price(self) -> Optional[float]:
         try:
             import urllib.request
-            req = urllib.request.Request("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT", headers={"User-Agent": "Mozilla/5.0"})
+
+            req = urllib.request.Request(
+                "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT",
+                headers={"User-Agent": "Mozilla/5.0"},
+            )
             with urllib.request.urlopen(req, timeout=4) as resp:
                 obj = json.loads(resp.read().decode("utf-8", errors="replace"))
             if isinstance(obj, dict):
@@ -97,7 +108,11 @@ class FlowBriefGenerator:
         except Exception:
             try:
                 import urllib.request
-                req = urllib.request.Request("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd", headers={"User-Agent": "Mozilla/5.0"})
+
+                req = urllib.request.Request(
+                    "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd",
+                    headers={"User-Agent": "Mozilla/5.0"},
+                )
                 with urllib.request.urlopen(req, timeout=5) as resp:
                     obj = json.loads(resp.read().decode("utf-8", errors="replace"))
                 if isinstance(obj, dict):
@@ -142,7 +157,11 @@ class FlowBriefGenerator:
                         candidates.append(q)
         if not candidates:
             try:
-                for pat in ("**/*BTC*USDT*-5m*.json", "**/*BTC*USDT*-1h*.json", "**/*BTC*USDT*-1d*.json"):
+                for pat in (
+                    "**/*BTC*USDT*-5m*.json",
+                    "**/*BTC*USDT*-1h*.json",
+                    "**/*BTC*USDT*-1d*.json",
+                ):
                     for q in data_root.glob(pat):
                         if q.is_file():
                             candidates.append(q)
@@ -183,14 +202,14 @@ class FlowBriefGenerator:
 
         for file_path in news_files:
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     lines = f.readlines()
                     if lines:
                         latest = json.loads(lines[-1])
                         return {
-                            'sentiment': latest.get('weighted_sentiment', 0),
-                            'event_count': latest.get('event_count', 0),
-                            'timestamp': latest.get('timestamp', '')
+                            "sentiment": latest.get("weighted_sentiment", 0),
+                            "event_count": latest.get("event_count", 0),
+                            "timestamp": latest.get("timestamp", ""),
                         }
             except Exception:
                 continue
@@ -202,8 +221,8 @@ class FlowBriefGenerator:
         if len(history) < 2:
             return "stable"
 
-        recent_composite = history[0].get('composite', 0) if history else 0
-        prev_composite = history[1].get('composite', 0) if len(history) > 1 else 0
+        recent_composite = history[0].get("composite", 0) if history else 0
+        prev_composite = history[1].get("composite", 0) if len(history) > 1 else 0
 
         diff = recent_composite - prev_composite
         if abs(diff) < 0.05:
@@ -224,25 +243,25 @@ class FlowBriefGenerator:
 
     def parse_flow_signal(self, record: Dict) -> FlowSignal:
         """解析 Regime 记录为 FlowSignal"""
-        layer_signals = record.get('layer_signals', {})
-        diagnostics = record.get('diagnostics', {})
-        regime_out = record.get('regime_output', {}) or {}
+        layer_signals = record.get("layer_signals", {})
+        diagnostics = record.get("diagnostics", {})
+        regime_out = record.get("regime_output", {}) or {}
 
-        composite = record.get('composite', 0)
-        confidence = record.get('confidence', 0.5)
+        composite = record.get("composite", 0)
+        confidence = record.get("confidence", 0.5)
 
         return FlowSignal(
-            timestamp=record.get('timestamp', ''),
+            timestamp=record.get("timestamp", ""),
             composite=composite,
-            bias=regime_out.get('bias', record.get('bias', 'neutral')),
+            bias=regime_out.get("bias", record.get("bias", "neutral")),
             confidence=confidence,
-            filter_status=regime_out.get('filter', record.get('filter', 'enable')),
-            exogenous_signal=layer_signals.get('exogenous', 0),
-            leverage_signal=layer_signals.get('leverage', 0),
-            onchain_signal=layer_signals.get('onchain', 0),
-            data_freshness=diagnostics.get('data_freshness', {}),
+            filter_status=regime_out.get("filter", record.get("filter", "enable")),
+            exogenous_signal=layer_signals.get("exogenous", 0),
+            leverage_signal=layer_signals.get("leverage", 0),
+            onchain_signal=layer_signals.get("onchain", 0),
+            data_freshness=diagnostics.get("data_freshness", {}),
             regime_strength=self.determine_regime_strength(confidence, composite),
-            signal_change="stable"  # 后续通过历史数据更新
+            signal_change="stable",  # 后续通过历史数据更新
         )
 
     def calculate_position_recommendation(self, signal: FlowSignal) -> Dict:
@@ -254,7 +273,7 @@ class FlowBriefGenerator:
         # 默认配置
         base_position = 0.5  # 基础仓位 50%
         target_position = 0.8  # 目标仓位 80%
-        min_position = 0.1   # 最小仓位 10%
+        min_position = 0.1  # 最小仓位 10%
 
         action = "HOLD"
         position_change = "→"
@@ -300,10 +319,10 @@ class FlowBriefGenerator:
             reasoning.append("中性信号，维持基础仓位")
 
         return {
-            'action': action,
-            'position': position,
-            'position_change': position_change,
-            'reasoning': reasoning
+            "action": action,
+            "position": position,
+            "position_change": position_change,
+            "reasoning": reasoning,
         }
 
     def generate_fused_signal(self, flow_signal: FlowSignal, news_data: Dict = None) -> Dict:
@@ -321,7 +340,7 @@ class FlowBriefGenerator:
         # 新闻信号
         news_normalized = 0
         if news_data:
-            news_normalized = news_data.get('sentiment', 0) * 2 - 1  # 标准化到 -1~1
+            news_normalized = news_data.get("sentiment", 0) * 2 - 1  # 标准化到 -1~1
 
         # 融合
         fused = flow_weight * flow_normalized + news_weight * news_normalized
@@ -334,15 +353,17 @@ class FlowBriefGenerator:
         else:
             fused_bias = "neutral"
 
-        fused_confidence = (flow_signal.confidence * flow_weight +
-                          (news_data.get('confidence', 0.5) if news_data else 0.5) * news_weight)
+        fused_confidence = (
+            flow_signal.confidence * flow_weight
+            + (news_data.get("confidence", 0.5) if news_data else 0.5) * news_weight
+        )
 
         return {
-            'fused_signal': round(fused, 4),
-            'fused_bias': fused_bias,
-            'fused_confidence': round(fused_confidence, 4),
-            'flow_weight': flow_weight,
-            'news_weight': news_weight
+            "fused_signal": round(fused, 4),
+            "fused_bias": fused_bias,
+            "fused_confidence": round(fused_confidence, 4),
+            "flow_weight": flow_weight,
+            "news_weight": news_weight,
         }
 
     def generate_brief(self, news_data: Dict = None) -> str:
@@ -419,7 +440,7 @@ class FlowBriefGenerator:
 ### 仓位逻辑
 """
 
-        for reason in position_rec['reasoning']:
+        for reason in position_rec["reasoning"]:
             md += f"- {reason}\n"
 
         # 融合信号（如有新闻数据）
@@ -429,7 +450,7 @@ class FlowBriefGenerator:
                 flow_normalized = -abs(signal.composite)
             elif signal.bias == "bullish":
                 flow_normalized = abs(signal.composite)
-            news_normalized = (news_data.get('sentiment', 0) * 2 - 1)
+            news_normalized = news_data.get("sentiment", 0) * 2 - 1
             md += f"""
 ---
 
@@ -461,15 +482,17 @@ fused_signal = {fused['flow_weight']:.1f} × flow_signal + {fused['news_weight']
 """
 
         for i, record in enumerate(regime_history[:10]):
-            ts = record.get('timestamp', '')[:16] if record.get('timestamp') else 'N/A'
-            ro = record.get('regime_output', {}) or {}
-            bias = ro.get('bias', record.get('bias', 'neutral'))
-            composite = record.get('composite', 0)
-            confidence = record.get('confidence', 0)
+            ts = record.get("timestamp", "")[:16] if record.get("timestamp") else "N/A"
+            ro = record.get("regime_output", {}) or {}
+            bias = ro.get("bias", record.get("bias", "neutral"))
+            composite = record.get("composite", 0)
+            confidence = record.get("confidence", 0)
 
             # 计算与前一条的趋势
             if i < len(regime_history) - 1:
-                prev = regime_history[i + 1].get('composite', 0) if i + 1 < len(regime_history) else 0
+                prev = (
+                    regime_history[i + 1].get("composite", 0) if i + 1 < len(regime_history) else 0
+                )
                 if composite > prev + 0.05:
                     trend = "📈"
                 elif composite < prev - 0.05:
@@ -493,7 +516,7 @@ fused_signal = {fused['flow_weight']:.1f} × flow_signal + {fused['news_weight']
             now_dt = datetime.now(timezone.utc)
             for layer, ts_str in signal.data_freshness.items():
                 try:
-                    layer_dt = datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
+                    layer_dt = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
                     age_minutes = (now_dt - layer_dt).total_seconds() / 60
                     status = "✅" if age_minutes < 60 else "⚠️" if age_minutes < 120 else "❌"
                     md += f"- **{layer.capitalize()}**: {ts_str} ({age_minutes:.0f} 分钟前) {status}\n"
@@ -624,7 +647,7 @@ fused_signal = {fused['flow_weight']:.1f} × flow_signal + {fused['news_weight']
             output_path = self.outputs_dir / f"flow_brief_{ts}.md"
 
         self.outputs_dir.mkdir(parents=True, exist_ok=True)
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(md_content)
 
         return output_path
@@ -634,13 +657,14 @@ fused_signal = {fused['flow_weight']:.1f} × flow_signal + {fused['news_weight']
 # 命令行入口
 # =============================================================================
 
+
 def main():
     """主函数"""
     import argparse
 
-    parser = argparse.ArgumentParser(description='生成资金流分析简报')
-    parser.add_argument('--output', '-o', type=str, default=None, help='输出文件路径')
-    parser.add_argument('--with-news', action='store_true', help='尝试加载新闻分析数据进行融合')
+    parser = argparse.ArgumentParser(description="生成资金流分析简报")
+    parser.add_argument("--output", "-o", type=str, default=None, help="输出文件路径")
+    parser.add_argument("--with-news", action="store_true", help="尝试加载新闻分析数据进行融合")
     args = parser.parse_args()
 
     print("=" * 60)

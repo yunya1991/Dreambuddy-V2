@@ -5,14 +5,14 @@ A7 实践论闸门：置信度 ≥ 65% 才允许开仓
 SKILL.md 调用路径: experiments/ab-trading/core/nodes/a4_gate
 """
 
-from typing import Dict, Any
-
+from typing import Any, Dict
 
 GATE_THRESHOLD = 0.65  # 默认门禁门槛
 
 
-def execute(mkt: Dict, memory: Dict, data: Dict,
-            threshold: float = GATE_THRESHOLD) -> Dict[str, Any]:
+def execute(
+    mkt: Dict, memory: Dict, data: Dict, threshold: float = GATE_THRESHOLD
+) -> Dict[str, Any]:
     """
     执行 A4/A7 门禁检查
 
@@ -65,11 +65,13 @@ def execute(mkt: Dict, memory: Dict, data: Dict,
     intent_confidence = data.get("intent_confidence", 0.0)
     if intent_confidence > 0:
         gap = abs(confidence - intent_confidence)
-        reasoning.append(f"[A8 知行合一] 意图={intent_confidence:.0%} vs 执行={confidence:.0%} | Gap={gap:+.0%}")
+        reasoning.append(
+            f"[A8 知行合一] 意图={intent_confidence:.0%} vs 执行={confidence:.0%} | Gap={gap:+.0%}"
+        )
         if gap > 0.25:
             reasoning.append(f"⚠️ 知行偏差大({gap:.0%})，建议反思")
         elif gap <= 0.10:
-            reasoning.append(f"✅ 知行基本一致")
+            reasoning.append("✅ 知行基本一致")
 
     return {
         "node": "A4_门禁",

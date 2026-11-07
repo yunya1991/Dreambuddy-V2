@@ -15,7 +15,8 @@ PathLibrary — 传统/加密成熟最优路径知识库
   5. 自进化（高分路径权重提升，低分路径衰减）
   6. 探索（系统可生成新路径，经实践验证后入库）
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import json
 import math
@@ -24,8 +25,9 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .ftc_schema import FTC, FTCStep, KnowledgeAlignment, gen_ftc_id, gen_step_id
+    from .ftc_schema import FTC, FTCStep, KnowledgeAlignment, gen_ftc_id, gen_step_id  # noqa: F401
     from .ftc_similarity import align_to_anchors, get_track_by_similarity
+
     _FTC_AVAILABLE = True
 except ImportError:
     _FTC_AVAILABLE = False
@@ -41,7 +43,7 @@ REFERENCE_PATHS: dict[str, dict[str, Any]] = {
         "origin": "加密社区 · 板块轮动理论",
         "description": "竞品组内资金从弱势币流向强势币，跟随强势方",
         "trigger": {
-            "capital_rotation_abs": 0.15,   # |轮动信号| > 0.15
+            "capital_rotation_abs": 0.15,  # |轮动信号| > 0.15
             "regime_in": ("trend_up", "trend_down"),  # 趋势市有效
         },
         "data_required": ["close", "vol_5", "vol_20", "competitor_scores"],
@@ -56,8 +58,8 @@ REFERENCE_PATHS: dict[str, dict[str, Any]] = {
         "description": "价格突破近期高点且放量，趋势延续概率高",
         "trigger": {
             "price_above_ma20": True,
-            "vol_ratio_min": 1.3,       # 放量确认
-            "adx_min": 20,              # 趋势强度
+            "vol_ratio_min": 1.3,  # 放量确认
+            "adx_min": 20,  # 趋势强度
         },
         "data_required": ["close", "high", "vol_5", "vol_20", "adx"],
         "logic": "close > MA20 且 vol_5/vol_20 > 1.3 且 ADX > 20 → 做多",
@@ -70,8 +72,8 @@ REFERENCE_PATHS: dict[str, dict[str, Any]] = {
         "origin": "传统金融 · 统计套利 (Ornstein-Uhlenbeck)",
         "description": "价格偏离均值过远时回归，震荡市有效",
         "trigger": {
-            "regime_eq": "ranging",       # 仅震荡市
-            "z_score_abs": 2.0,          # 偏离均值2个标准差
+            "regime_eq": "ranging",  # 仅震荡市
+            "z_score_abs": 2.0,  # 偏离均值2个标准差
         },
         "data_required": ["close", "ma20", "std20"],
         "logic": "z_score > 2 → 做空；z_score < -2 → 做多（回归方向）",
@@ -84,7 +86,7 @@ REFERENCE_PATHS: dict[str, dict[str, Any]] = {
         "origin": "加密社区 · 衍生品分析",
         "description": "价格下跌但 OI 上升 → 空头建仓，可能继续下跌；反之亦然",
         "trigger": {
-            "oi_change_pct_abs": 0.05,    # OI 变化 > 5%
+            "oi_change_pct_abs": 0.05,  # OI 变化 > 5%
             "price_direction": "opposite",  # 价格与 OI 反向
         },
         "data_required": ["close", "oi_change_pct"],
@@ -98,7 +100,7 @@ REFERENCE_PATHS: dict[str, dict[str, Any]] = {
         "origin": "加密社区 · 永续合约机制",
         "description": "资金费率极端时反向下单（高费率做空，低费率做多）",
         "trigger": {
-            "funding_rate_abs": 0.001,    # |费率| > 0.1%
+            "funding_rate_abs": 0.001,  # |费率| > 0.1%
         },
         "data_required": ["funding_rate"],
         "logic": "funding > 0.1% → 做空赚费率；< -0.1% → 做多赚费率",
@@ -111,7 +113,7 @@ REFERENCE_PATHS: dict[str, dict[str, Any]] = {
         "origin": "传统金融 · 量价分析",
         "description": "成交量突然放大（5倍以上）预示重大行情启动",
         "trigger": {
-            "vol_ratio_min": 3.0,         # 量比 > 3
+            "vol_ratio_min": 3.0,  # 量比 > 3
         },
         "data_required": ["vol_5", "vol_20"],
         "logic": "vol_5/vol_20 > 3 → 跟随价格方向（突破前兆）",
@@ -330,7 +332,15 @@ REFERENCE_PATHS: dict[str, dict[str, Any]] = {
             "adx_min": 20,
             "price_above_ma20": True,
         },
-        "data_required": ["close", "vol_ratio", "capital_rotation", "capital_flow", "adx", "sentiment", "narrative"],
+        "data_required": [
+            "close",
+            "vol_ratio",
+            "capital_rotation",
+            "capital_flow",
+            "adx",
+            "sentiment",
+            "narrative",
+        ],
         "logic": "注意力(量比+情绪) ∩ 资金流入(轮动+资金流) ∩ 突破(MA20+ADX) → 高置信做多",
         "direction": "long",
         "initial_score": 0.7,  # 三因素共振，初始评分最高
@@ -373,8 +383,7 @@ class PathLibrary:
     def get_paths(self) -> dict[str, dict[str, Any]]:
         """获取所有路径及其当前评分"""
         return {
-            name: {k: v for k, v in p.items() if k != "trigger"}
-            for name, p in self._paths.items()
+            name: {k: v for k, v in p.items() if k != "trigger"} for name, p in self._paths.items()
         }
 
     def get_path(self, name: str) -> dict[str, Any] | None:
@@ -407,8 +416,12 @@ class PathLibrary:
         """
         path = self._paths.get(path_name)
         if path is None:
-            return {"triggered": False, "direction": "neutral",
-                    "confidence": 0.0, "reason": "path_not_found"}
+            return {
+                "triggered": False,
+                "direction": "neutral",
+                "confidence": 0.0,
+                "reason": "path_not_found",
+            }
 
         try:
             trigger = path["trigger"]
@@ -419,7 +432,10 @@ class PathLibrary:
             if path_name == "capital_rotation":
                 rotation = kline_data.get("capital_rotation", 0.0)
                 regime = kline_data.get("regime", "ranging")
-                if abs(rotation) >= trigger["capital_rotation_abs"] and regime in trigger["regime_in"]:
+                if (
+                    abs(rotation) >= trigger["capital_rotation_abs"]
+                    and regime in trigger["regime_in"]
+                ):
                     direction = "long" if rotation > 0 else "short"
                     confidence = min(1.0, abs(rotation))
                     reason = f"rotation={rotation:+.3f} regime={regime}"
@@ -433,7 +449,11 @@ class PathLibrary:
                 if close and len(close) >= 20:
                     ma20 = sum(close[-20:]) / 20
                     price_above = close[-1] > ma20
-                    if price_above and vol_ratio >= trigger["vol_ratio_min"] and adx >= trigger["adx_min"]:
+                    if (
+                        price_above
+                        and vol_ratio >= trigger["vol_ratio_min"]
+                        and adx >= trigger["adx_min"]
+                    ):
                         direction = "long"
                         confidence = min(1.0, (vol_ratio - 1.0) * 0.5 + (adx - 20) / 100)
                         reason = f"price>MA20 vol_ratio={vol_ratio:.2f} adx={adx:.1f}"
@@ -489,7 +509,9 @@ class PathLibrary:
                 vol_ratio = kline_data.get("vol_ratio", 1.0)
                 if vol_ratio >= trigger["vol_ratio_min"]:
                     close = kline_data.get("close", [])
-                    direction = "long" if (close and len(close) >= 2 and close[-1] > close[-2]) else "short"
+                    direction = (
+                        "long" if (close and len(close) >= 2 and close[-1] > close[-2]) else "short"
+                    )
                     confidence = min(1.0, vol_ratio / 5.0)
                     reason = f"vol_ratio={vol_ratio:.2f} (surge)"
                 else:
@@ -503,11 +525,11 @@ class PathLibrary:
                     if regime == "trend_up":
                         direction = "long"
                         confidence = 0.6
-                        reason = f"regime=trend_up follow momentum"
+                        reason = "regime=trend_up follow momentum"
                     elif regime == "trend_down":
                         direction = "short"
                         confidence = 0.6
-                        reason = f"regime=trend_down follow momentum"
+                        reason = "regime=trend_down follow momentum"
                     else:
                         z = (close[-1] - ma20) / max(self._std(close[-20:]), 1e-9)
                         direction = "short" if z > 0 else "long"
@@ -554,7 +576,9 @@ class PathLibrary:
                 inflow = cap_flow > 0 or rotation > 0
                 if regime == "trend_up" and vol_ratio >= trigger["vol_ratio_min"] and inflow:
                     direction = "long"
-                    confidence = min(1.0, (vol_ratio - 1.0) * 0.3 + abs(cap_flow) * 0.3 + rotation * 0.3)
+                    confidence = min(
+                        1.0, (vol_ratio - 1.0) * 0.3 + abs(cap_flow) * 0.3 + rotation * 0.3
+                    )
                     reason = f"regime={regime} vol={vol_ratio:.2f} flow_inflow={inflow}"
                 else:
                     reason = f"regime={regime} vol={vol_ratio:.2f} inflow={inflow}"
@@ -586,7 +610,11 @@ class PathLibrary:
                 symbol = kline_data.get("symbol", "")
                 vol_ratio = kline_data.get("vol_ratio", 1.0)
                 rotation = kline_data.get("capital_rotation", 0.0)
-                if symbol in trigger["symbol_in"] and vol_ratio >= trigger["vol_ratio_min"] and rotation > 0:
+                if (
+                    symbol in trigger["symbol_in"]
+                    and vol_ratio >= trigger["vol_ratio_min"]
+                    and rotation > 0
+                ):
                     direction = "long"
                     confidence = min(1.0, (vol_ratio - 1.0) * 0.4 + rotation * 0.4)
                     reason = f"{symbol} L1/L2 vol={vol_ratio:.2f} rot_in={rotation:+.3f}"
@@ -618,7 +646,11 @@ class PathLibrary:
                 symbol = kline_data.get("symbol", "")
                 vol_ratio = kline_data.get("vol_ratio", 1.0)
                 cap_flow = kline_data.get("capital_flow", 0.0)
-                if symbol in trigger["symbol_in"] and vol_ratio >= trigger["vol_ratio_min"] and cap_flow > 0:
+                if (
+                    symbol in trigger["symbol_in"]
+                    and vol_ratio >= trigger["vol_ratio_min"]
+                    and cap_flow > 0
+                ):
                     direction = "long"
                     confidence = min(1.0, (vol_ratio - 1.0) * 0.4 + cap_flow * 0.3)
                     reason = f"{symbol} ETF_related vol={vol_ratio:.2f} flow={cap_flow:+.3f}"
@@ -643,17 +675,24 @@ class PathLibrary:
                 cap_flow = kline_data.get("capital_flow", 0.0)
                 adx = kline_data.get("adx", 0)
                 close = kline_data.get("close", [])
-                sentiment = kline_data.get("sentiment") or kline_data.get("news_sentiment_score") or 0.0
+                sentiment = (
+                    kline_data.get("sentiment") or kline_data.get("news_sentiment_score") or 0.0
+                )
                 narrative = kline_data.get("narrative") or 0.0
 
                 # 因素1: 市场注意力（放量 + 情绪/叙事热度）
                 attention_vol = vol_ratio >= trigger["vol_ratio_min"]
                 attention_sent = sentiment > 0 or narrative > 0
                 attention_ok = attention_vol and attention_sent
-                attention_score = min(1.0, (vol_ratio - 1.0) * 0.4 + max(sentiment, narrative) * 0.3)
+                attention_score = min(
+                    1.0, (vol_ratio - 1.0) * 0.4 + max(sentiment, narrative) * 0.3
+                )
 
                 # 因素2: 资金持续流入（轮动 + 资金流）
-                capital_ok = rotation >= trigger["capital_rotation_min"] and cap_flow >= trigger["capital_flow_min"]
+                capital_ok = (
+                    rotation >= trigger["capital_rotation_min"]
+                    and cap_flow >= trigger["capital_flow_min"]
+                )
                 capital_score = min(1.0, rotation * 0.5 + cap_flow * 0.3)
 
                 # 因素3: 技术突破确认（MA20 + 放量 + ADX）
@@ -661,25 +700,38 @@ class PathLibrary:
                 if close and len(close) >= 20:
                     ma20 = sum(close[-20:]) / 20
                     price_above = close[-1] > ma20
-                breakout_ok = price_above and vol_ratio >= trigger["vol_ratio_min"] and adx >= trigger["adx_min"]
-                breakout_score = min(1.0, (1 if price_above else 0) * 0.3 + (vol_ratio - 1.0) * 0.3 + (adx - 20) / 100)
+                breakout_ok = (
+                    price_above
+                    and vol_ratio >= trigger["vol_ratio_min"]
+                    and adx >= trigger["adx_min"]
+                )
+                breakout_score = min(
+                    1.0,
+                    (1 if price_above else 0) * 0.3 + (vol_ratio - 1.0) * 0.3 + (adx - 20) / 100,
+                )
 
                 if attention_ok and capital_ok and breakout_ok:
                     # 三因素全部满足 → 高置信做多
                     direction = "long"
                     # 置信度 = 三因素得分加权平均（三因素共振，置信度上限更高）
-                    confidence = min(0.95, (attention_score * 0.3 + capital_score * 0.35 + breakout_score * 0.35))
-                    reason = (f"TRIPLE_OK attn={attention_score:.2f}(vol={vol_ratio:.2f},sent={sentiment:.2f}) "
-                              f"cap={capital_score:.2f}(rot={rotation:+.3f},flow={cap_flow:+.3f}) "
-                              f"brk={breakout_score:.2f}(ma20={price_above},adx={adx:.1f})")
+                    confidence = min(
+                        0.95, (attention_score * 0.3 + capital_score * 0.35 + breakout_score * 0.35)
+                    )
+                    reason = (
+                        f"TRIPLE_OK attn={attention_score:.2f}(vol={vol_ratio:.2f},sent={sentiment:.2f}) "
+                        f"cap={capital_score:.2f}(rot={rotation:+.3f},flow={cap_flow:+.3f}) "
+                        f"brk={breakout_score:.2f}(ma20={price_above},adx={adx:.1f})"
+                    )
                 elif attention_ok and capital_ok and not breakout_ok:
                     # 注意力+资金到位但未突破 → 低置信等待
                     direction = "long"
                     confidence = min(0.3, (attention_score + capital_score) / 2 * 0.3)
                     reason = f"attn+cap OK, breakout pending (ma20={price_above} adx={adx:.1f})"
                 else:
-                    reason = (f"attn_ok={attention_ok} cap_ok={capital_ok} brk_ok={breakout_ok} | "
-                              f"vol={vol_ratio:.2f} rot={rotation:+.3f} flow={cap_flow:+.3f} adx={adx:.1f} ma20={price_above}")
+                    reason = (
+                        f"attn_ok={attention_ok} cap_ok={capital_ok} brk_ok={breakout_ok} | "
+                        f"vol={vol_ratio:.2f} rot={rotation:+.3f} flow={cap_flow:+.3f} adx={adx:.1f} ma20={price_above}"
+                    )
 
             else:
                 reason = "unknown_path"
@@ -692,8 +744,12 @@ class PathLibrary:
             }
         except Exception as e:
             logger.debug("[FO] evaluate_path %s: %s", path_name, e)
-            return {"triggered": False, "direction": "neutral",
-                    "confidence": 0.0, "reason": f"error: {e}"}
+            return {
+                "triggered": False,
+                "direction": "neutral",
+                "confidence": 0.0,
+                "reason": f"error: {e}",
+            }
 
     def evaluate_all(self, kline_data: dict[str, Any]) -> list[dict[str, Any]]:
         """评估所有路径，返回触发的路径列表（按置信度排序）"""
@@ -743,12 +799,17 @@ class PathLibrary:
         path["win_rate"] = wins / path["n_trades"]
 
         from datetime import datetime
+
         path["last_updated"] = datetime.now().isoformat()
 
         logger.debug(
             "[PathLibrary] %s score %.3f→%.3f (pnl=%+.2f%% n=%d win=%.0f%%)",
-            path_name, old_score, path["score"], pnl_pct * 100,
-            path["n_trades"], path["win_rate"] * 100,
+            path_name,
+            old_score,
+            path["score"],
+            pnl_pct * 100,
+            path["n_trades"],
+            path["win_rate"] * 100,
         )
 
         if self._persist_path:
@@ -864,7 +925,9 @@ class PathLibrary:
                 type="condition",
                 description=f"{trig_key} = {trig_val}",
                 gene_ref=self._map_trigger_to_gene(trig_key),
-                data_required=[d for d in data_required if d in self._trigger_data_map.get(trig_key, [])],
+                data_required=[
+                    d for d in data_required if d in self._trigger_data_map.get(trig_key, [])
+                ],
                 threshold=trig_val if isinstance(trig_val, (int, float)) else None,
                 depends_on=[prev_step_id] if prev_step_id else [],
             )
@@ -876,7 +939,20 @@ class PathLibrary:
         if causal_chain:
             for chain_step in causal_chain:
                 # 跳过纯 condition 描述的 step（已在上面处理）
-                if any(kw in chain_step for kw in ("成交量", "vol", "放量", "价格", "站上", "突破", "资金", "轮动", "流入")):
+                if any(
+                    kw in chain_step
+                    for kw in (
+                        "成交量",
+                        "vol",
+                        "放量",
+                        "价格",
+                        "站上",
+                        "突破",
+                        "资金",
+                        "轮动",
+                        "流入",
+                    )
+                ):
                     # 这是条件描述，作为 inference 的因果解释
                     pass
                 inf_step = FTCStep(

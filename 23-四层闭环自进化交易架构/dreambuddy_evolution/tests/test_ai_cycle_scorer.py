@@ -9,6 +9,7 @@ SPEC §0.5.2 — AI 周期评分
 HC: 开关关断时返回 0.5（中性）
 HC: FAIL-OPEN 异常返回 0.5
 """
+
 from __future__ import annotations
 
 import pytest
@@ -17,6 +18,7 @@ import pytest
 @pytest.fixture
 def enable_ai_cycle(monkeypatch):
     from dreambuddy_evolution.agi_config import set_switch
+
     set_switch("enable_agi_core", True)
     set_switch("enable_contradiction_driven_layer", True)
     set_switch("enable_ai_cycle_scorer", True)
@@ -28,11 +30,13 @@ class TestAiCycleScorer:
 
     def test_module_importable(self):
         from dreambuddy_evolution.engines.ai_cycle_scorer import AiCycleScorer
+
         assert AiCycleScorer is not None
 
     def test_high_score_when_semiconductor_boom(self, enable_ai_cycle):
         """半导体景气度高 → 高分"""
         from dreambuddy_evolution.engines.ai_cycle_scorer import AiCycleScorer
+
         scorer = AiCycleScorer()
         kline_data = {
             "sox_change_30d": 15.0,  # SOX 30天涨幅 15%
@@ -45,6 +49,7 @@ class TestAiCycleScorer:
     def test_low_score_when_semiconductor_weak(self, enable_ai_cycle):
         """半导体景气度低 → 低分"""
         from dreambuddy_evolution.engines.ai_cycle_scorer import AiCycleScorer
+
         scorer = AiCycleScorer()
         kline_data = {
             "sox_change_30d": -10.0,
@@ -57,6 +62,7 @@ class TestAiCycleScorer:
     def test_medium_score_when_mixed(self, enable_ai_cycle):
         """混合信号 → 中等分数"""
         from dreambuddy_evolution.engines.ai_cycle_scorer import AiCycleScorer
+
         scorer = AiCycleScorer()
         kline_data = {
             "sox_change_30d": 3.0,
@@ -69,6 +75,7 @@ class TestAiCycleScorer:
     def test_neutral_when_no_data(self, enable_ai_cycle):
         """无数据 → 0.5 中性"""
         from dreambuddy_evolution.engines.ai_cycle_scorer import AiCycleScorer
+
         scorer = AiCycleScorer()
         result = scorer.score({})
         assert result == 0.5
@@ -77,6 +84,7 @@ class TestAiCycleScorer:
         """HC: 开关关断时返回 0.5"""
         from dreambuddy_evolution.agi_config import set_switch
         from dreambuddy_evolution.engines.ai_cycle_scorer import AiCycleScorer
+
         set_switch("enable_agi_core", True)
         set_switch("enable_contradiction_driven_layer", False)
         set_switch("enable_ai_cycle_scorer", True)
@@ -87,6 +95,7 @@ class TestAiCycleScorer:
     def test_fail_open_on_exception(self, enable_ai_cycle):
         """HC: 异常时 FAIL-OPEN 返回 0.5"""
         from dreambuddy_evolution.engines.ai_cycle_scorer import AiCycleScorer
+
         scorer = AiCycleScorer()
         result = scorer.score(None)
         assert result == 0.5
@@ -94,25 +103,31 @@ class TestAiCycleScorer:
     def test_score_range_0_to_1(self, enable_ai_cycle):
         """评分在 0.0-1.0 范围内"""
         from dreambuddy_evolution.engines.ai_cycle_scorer import AiCycleScorer
+
         scorer = AiCycleScorer()
         # 极端高
-        result = scorer.score({
-            "sox_change_30d": 50.0,
-            "semiconductor_capex_yoy": 50.0,
-            "hbm_demand_index": 1.0,
-        })
+        result = scorer.score(
+            {
+                "sox_change_30d": 50.0,
+                "semiconductor_capex_yoy": 50.0,
+                "hbm_demand_index": 1.0,
+            }
+        )
         assert 0.0 <= result <= 1.0
         # 极端低
-        result = scorer.score({
-            "sox_change_30d": -50.0,
-            "semiconductor_capex_yoy": -50.0,
-            "hbm_demand_index": 0.0,
-        })
+        result = scorer.score(
+            {
+                "sox_change_30d": -50.0,
+                "semiconductor_capex_yoy": -50.0,
+                "hbm_demand_index": 0.0,
+            }
+        )
         assert 0.0 <= result <= 1.0
 
     def test_above_0_7_indicates_hedge(self, enable_ai_cycle):
         """>0.7 时半导体可对冲利率压力"""
         from dreambuddy_evolution.engines.ai_cycle_scorer import AiCycleScorer
+
         scorer = AiCycleScorer()
         kline_data = {
             "sox_change_30d": 20.0,

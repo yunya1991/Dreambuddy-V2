@@ -7,10 +7,10 @@ P0 步骤9: 跑 15 币种回测 + 保存基线快照
 
 非 OKX 可获取的标的（股票/商品）会自动跳过并记录。
 """
-import sys
-import os
+
 import json
 import subprocess
+import sys
 import traceback
 from datetime import datetime
 from pathlib import Path
@@ -22,18 +22,30 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 YIJING_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(YIJING_ROOT))
 
-from scripts.memory_l4.bcrm2.data_fetcher import get_klines
-from scripts.memory_l4.bcrm2.walk_forward_backtester import WalkForwardBacktester
-
+from scripts.memory_l4.bcrm2.data_fetcher import get_klines  # noqa: E402
+from scripts.memory_l4.bcrm2.walk_forward_backtester import WalkForwardBacktester  # noqa: E402
 
 # ============================================================
 # 配置（与 configs/baseline_config.json 对齐）
 # ============================================================
 COINS = [
-    "UNI", "PUMP", "MU", "SKHYNIX", "HYPE",
-    "ETH", "BTC", "SOL", "ZEC", "ARB",
-    "XAUT", "XAG",
-    "GOOGL", "NVDA", "AMZN", "OKB", "BNB",
+    "UNI",
+    "PUMP",
+    "MU",
+    "SKHYNIX",
+    "HYPE",
+    "ETH",
+    "BTC",
+    "SOL",
+    "ZEC",
+    "ARB",
+    "XAUT",
+    "XAG",
+    "GOOGL",
+    "NVDA",
+    "AMZN",
+    "OKB",
+    "BNB",
 ]
 
 TIMEFRAME = "1H"
@@ -51,10 +63,14 @@ FEATURE_SELECTION = True
 def get_git_commit() -> str:
     """获取当前 git commit hash"""
     try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "HEAD"],
-            cwd=str(PROJECT_ROOT),
-        ).decode().strip()
+        return (
+            subprocess.check_output(
+                ["git", "rev-parse", "HEAD"],
+                cwd=str(PROJECT_ROOT),
+            )
+            .decode()
+            .strip()
+        )
     except Exception:
         return "unknown"
 
@@ -62,18 +78,19 @@ def get_git_commit() -> str:
 def get_feature_modules():
     """获取 FeatureRegistry 已注册模块列表"""
     try:
-        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
         # 触发所有模块注册
         import scripts.memory_l4.bcrm2.bagua_feature_engine  # noqa
         import scripts.memory_l4.bcrm2.classic_experience_features  # noqa
+        import scripts.memory_l4.bcrm2.cross_asset_features  # noqa
+        import scripts.memory_l4.bcrm2.cycle_features  # noqa
         import scripts.memory_l4.bcrm2.fibonacci_features  # noqa
+        import scripts.memory_l4.bcrm2.market_cap  # noqa
+        import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa
         import scripts.memory_l4.bcrm2.pivot_point_features  # noqa
         import scripts.memory_l4.bcrm2.rsi_sentiment_features  # noqa
         import scripts.memory_l4.bcrm2.wdh_features  # noqa
-        import scripts.memory_l4.bcrm2.cycle_features  # noqa
-        import scripts.memory_l4.bcrm2.market_cap  # noqa
-        import scripts.memory_l4.bcrm2.cross_asset_features  # noqa
-        import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa
+        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+
         return FeatureRegistry.list_modules()
     except Exception as e:
         print(f"[WARN] 获取 FeatureRegistry 模块列表失败: {e}")
@@ -131,11 +148,13 @@ def run_single_coin(symbol: str, ref_df, verbose: bool = True):
             "long_count": result.long_stats.get("count", 0),
             "short_count": result.short_stats.get("count", 0),
         }
-        print(f"  交易数={metrics['total_trades']} "
-              f"胜率={metrics['win_rate']:.1%} "
-              f"收益={metrics['total_return_pct']:+.2f}% "
-              f"夏普={metrics['sharpe_ratio']:.2f} "
-              f"回撤={metrics['max_drawdown_pct']:.2f}%")
+        print(
+            f"  交易数={metrics['total_trades']} "
+            f"胜率={metrics['win_rate']:.1%} "
+            f"收益={metrics['total_return_pct']:+.2f}% "
+            f"夏普={metrics['sharpe_ratio']:.2f} "
+            f"回撤={metrics['max_drawdown_pct']:.2f}%"
+        )
         return metrics
 
     except Exception as e:
@@ -230,9 +249,11 @@ def main():
     print(f"  基线快照已保存: {output}")
     print(f"  成功回测 {len(per_coin)} 币种, 跳过 {len(skipped)} 币种: {skipped}")
     if summary:
-        print(f"  汇总: 平均胜率={summary['avg_win_rate']:.1%} "
-              f"平均收益={summary['avg_return_pct']:+.2f}% "
-              f"平均夏普={summary['avg_sharpe_ratio']:.2f}")
+        print(
+            f"  汇总: 平均胜率={summary['avg_win_rate']:.1%} "
+            f"平均收益={summary['avg_return_pct']:+.2f}% "
+            f"平均夏普={summary['avg_sharpe_ratio']:.2f}"
+        )
     print(f"{'='*70}")
 
 

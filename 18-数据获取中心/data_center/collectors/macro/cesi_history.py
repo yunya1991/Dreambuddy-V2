@@ -9,6 +9,7 @@ SPEC-事件驱动策略P0盲区修复 §3.1.3 — CESI 标准化：Surprise=(Act
 
 FAIL-OPEN：所有异常被捕获，返回空列表或不追加（不抛异常）。
 """
+
 from __future__ import annotations
 
 import json
@@ -67,9 +68,7 @@ def get_surprise_history(indicator: str, path: Path | None = None) -> list[float
     return list(history.get(indicator, []))
 
 
-def append_surprise(
-    indicator: str, surprise: float, path: Path | None = None
-) -> None:
+def append_surprise(indicator: str, surprise: float, path: Path | None = None) -> None:
     """追加新 surprise 值，保持窗口大小 12（FIFO）。
 
     Args:
@@ -87,9 +86,7 @@ def append_surprise(
     _save_history(history, path)
 
 
-def compute_cesi(
-    actual: float, forecast: float, history: list[float]
-) -> float | None:
+def compute_cesi(actual: float, forecast: float, history: list[float]) -> float | None:
     """计算 CESI = (actual - forecast) / σ_history。
 
     Args:

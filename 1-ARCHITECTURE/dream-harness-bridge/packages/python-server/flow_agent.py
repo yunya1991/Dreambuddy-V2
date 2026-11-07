@@ -5,6 +5,7 @@
 输出: SubagentOutput (summary + signals + charts)
 图表: sankey(资金流向) + bar(柱状)
 """
+
 from __future__ import annotations
 
 import traceback
@@ -32,7 +33,9 @@ class FlowAgent:
         # D3: 填充 reasoning_chain + evidence_refs + artifact_uri
         reasoning_chain = " | ".join(rationale) if rationale else ""
         evidence_refs = [f"indicator:{k}" for k in indicators.keys()]
-        artifact_uri = f"artifact://flow/{hash(str(indicators)) % 100000:05d}" if indicators else None
+        artifact_uri = (
+            f"artifact://flow/{hash(str(indicators)) % 100000:05d}" if indicators else None
+        )
 
         return SubagentOutput(
             module="flow",
@@ -80,8 +83,9 @@ class FlowAgent:
 
         return signals
 
-    def _generate_summary(self, signals: List[Signal], rationale: List[str],
-                          direction: str, confidence: float) -> str:
+    def _generate_summary(
+        self, signals: List[Signal], rationale: List[str], direction: str, confidence: float
+    ) -> str:
         if self._llm_fn is not None:
             try:
                 prompt = (
@@ -94,8 +98,7 @@ class FlowAgent:
                 pass
         long_count = sum(1 for s in signals if s.direction == "long")
         short_count = sum(1 for s in signals if s.direction == "short")
-        return (f"资金流{direction}({confidence:.0%}), "
-                f"多信号{long_count}/空信号{short_count}")
+        return f"资金流{direction}({confidence:.0%}), " f"多信号{long_count}/空信号{short_count}"
 
     def _generate_charts(self, indicators: Dict[str, Any]) -> List[ChartSpec]:
         charts: List[ChartSpec] = []
@@ -113,35 +116,47 @@ class FlowAgent:
                 {"name": "流出市场"},
             ],
             "links": [
-                {"source": "ETF", "target": "流入市场" if etf >= 0 else "流出市场",
-                 "value": abs(etf)},
-                {"source": "基金", "target": "流入市场" if fund >= 0 else "流出市场",
-                 "value": abs(fund)},
-                {"source": "稳定币", "target": "流入市场",
-                 "value": stable / 1e9 if stable > 0 else 0},
+                {
+                    "source": "ETF",
+                    "target": "流入市场" if etf >= 0 else "流出市场",
+                    "value": abs(etf),
+                },
+                {
+                    "source": "基金",
+                    "target": "流入市场" if fund >= 0 else "流出市场",
+                    "value": abs(fund),
+                },
+                {
+                    "source": "稳定币",
+                    "target": "流入市场",
+                    "value": stable / 1e9 if stable > 0 else 0,
+                },
             ],
         }
-        charts.append(ChartSpec(
-            type="sankey",
-            title="资金流向图",
-            data=sankey_data,
-        ))
+        charts.append(
+            ChartSpec(
+                type="sankey",
+                title="资金流向图",
+                data=sankey_data,
+            )
+        )
 
         # 柱状图: 资金指标对比
         bar_data = [
             {"name": "ETF流入", "value": etf},
             {"name": "资金净流", "value": fund},
         ]
-        charts.append(ChartSpec(
-            type="bar",
-            title="资金指标对比",
-            data=bar_data,
-            config={
-                "xAxis": {"type": "category",
-                          "data": ["ETF流入", "资金净流"]},
-                "yAxis": {"type": "value", "name": "M USD"},
-            },
-        ))
+        charts.append(
+            ChartSpec(
+                type="bar",
+                title="资金指标对比",
+                data=bar_data,
+                config={
+                    "xAxis": {"type": "category", "data": ["ETF流入", "资金净流"]},
+                    "yAxis": {"type": "value", "name": "M USD"},
+                },
+            )
+        )
 
         return charts
 
@@ -150,6 +165,7 @@ def handle_flow_agent(params: dict) -> dict:
     """IPC handler: flow-agent"""
     try:
         from subagent_registry import get_handler_llm_fn
+
         agent = FlowAgent(llm_fn=get_handler_llm_fn())
         output = agent.execute(params.get("node_output", {}))
         return {"ok": True, "output": output.to_dict()}

@@ -7,7 +7,8 @@ SPEC-41-文件索引系统 v0.6 §2.3（v0.5 闭环 C4）
 行为: 全量 mtime+hash 对账，修复惰性校验遗漏（重命名/删除），输出对账差异
 部署: crontab 每小时执行（0 * * * *）
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 import argparse
 import json
 import sys
@@ -20,7 +21,9 @@ from api.search_api import SearchAPI  # noqa: E402
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="41-文件索引系统定时对账")
-    parser.add_argument("--root", default=str(Path(__file__).resolve().parent.parent), help="索引根目录")
+    parser.add_argument(
+        "--root", default=str(Path(__file__).resolve().parent.parent), help="索引根目录"
+    )
     args = parser.parse_args()
     api = SearchAPI(root=args.root)
     # 对账 = 增量更新（mtime+hash 双重校验，修复重命名/删除遗漏）
@@ -35,10 +38,11 @@ def main() -> int:
     # 文档变更 → 41 自动重索引（上方 update）→ 0 号 INDEX.md 对账闭环（本维度差异供 0 号消费）
     try:
         doc_root = api.root / "0-系统文档管理"
-        fs_docs = sorted(
-            str(p.relative_to(api.root))
-            for p in doc_root.rglob("*.md")
-        ) if doc_root.is_dir() else []
+        fs_docs = (
+            sorted(str(p.relative_to(api.root)) for p in doc_root.rglob("*.md"))
+            if doc_root.is_dir()
+            else []
+        )
         _files = api.list_files(root="0-系统文档管理", limit=10000)["files"]
         # 对账口径统一：仅对比 .md 文档（41 索引含 .py 等工具脚本，非文档同步范围）
         indexed_docs = sorted(
@@ -61,18 +65,17 @@ def main() -> int:
     try:
         snap_path = "/tmp/fis_wiki_snapshot.json"
         wiki_root = api.root / "2-KNOWLEDGE" / "wiki"
-        current = {
-            str(p.relative_to(api.root)): int(p.stat().st_mtime)
-            for p in wiki_root.rglob("*.md")
-        } if wiki_root.is_dir() else {}
+        current = (
+            {str(p.relative_to(api.root)): int(p.stat().st_mtime) for p in wiki_root.rglob("*.md")}
+            if wiki_root.is_dir()
+            else {}
+        )
         prev = {}
         try:
             prev = json.loads(open(snap_path, encoding="utf-8").read())
         except Exception:
             prev = {}
-        changed = sorted(
-            k for k, v in current.items() if prev.get(k) != v
-        )
+        changed = sorted(k for k, v in current.items() if prev.get(k) != v)
         report["wiki_lint_sync"] = {
             "wiki_pages": len(current),
             "changed": changed,

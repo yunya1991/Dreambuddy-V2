@@ -10,6 +10,7 @@
     from param_center.api import get_sltp_params
     params = get_sltp_params("BTC", market_regime="chop")
 """
+
 from __future__ import annotations
 
 import sys as _sys
@@ -17,19 +18,24 @@ from pathlib import Path as _Path
 
 # 路径设置：让包内模块能导入 11-易经推理系统/scripts 下的依赖
 _THIS = _Path(__file__).resolve()
-_SCRIPTS_16 = _THIS.parent.parent                  # .../16-调控系统/scripts
-_PROJECT_ROOT = _SCRIPTS_16.parent.parent          # dreambuddy-v2
+_SCRIPTS_16 = _THIS.parent.parent  # .../16-调控系统/scripts
+_PROJECT_ROOT = _SCRIPTS_16.parent.parent  # dreambuddy-v2
 _YIJING_SCRIPTS = _PROJECT_ROOT / "11-易经推理系统" / "scripts"
 for _p in [_YIJING_SCRIPTS, _SCRIPTS_16]:
     _sp = str(_p)
     if _sp not in _sys.path:
         _sys.path.insert(0, _sp)
 
-from .api import get_sltp_params
-from .repository import ParamRepository, get_repository
-from .aggregator import StatAggregator, AlgoObservation, ParamProposal, trigger_recompute
-from .verifier import BayesianVerifier, VerificationResult
-from .shadow_integration import ParamCenterShadowLogger, get_shadow_logger
+from .aggregator import (  # noqa: E402
+    AlgoObservation,
+    ParamProposal,
+    StatAggregator,
+    trigger_recompute,
+)  # noqa: E402, I001
+from .api import get_sltp_params  # noqa: E402
+from .repository import ParamRepository, get_repository  # noqa: E402
+from .shadow_integration import ParamCenterShadowLogger, get_shadow_logger  # noqa: E402
+from .verifier import BayesianVerifier, VerificationResult  # noqa: E402
 
 __all__ = [
     "get_sltp_params",

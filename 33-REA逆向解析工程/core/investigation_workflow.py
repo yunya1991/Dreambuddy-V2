@@ -9,7 +9,7 @@
 每阶段输出独立 Evidence，标注阶段汇总后形成最终调查报告。
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import os
 from typing import Any
@@ -30,8 +30,16 @@ except ImportError:
 
 # 常见入口函数名（按优先级排序）
 _ENTRY_CANDIDATES = [
-    "main", "__main__", "run", "start", "execute", "handle",
-    "app", "create_app", "cli", "entry_point",
+    "main",
+    "__main__",
+    "run",
+    "start",
+    "execute",
+    "handle",
+    "app",
+    "create_app",
+    "cli",
+    "entry_point",
 ]
 
 # Python 文件扩展名
@@ -123,7 +131,9 @@ class InvestigationWorkflow:
     # Phase 1: 定位 (Locate)
     # ------------------------------------------------------------------
     def _phase_locate(
-        self, target: str, entry: str | None,
+        self,
+        target: str,
+        entry: str | None,
     ) -> dict[str, Any]:
         """定位阶段：检测目标类型、识别模块和入口点。"""
         phase: dict[str, Any] = {
@@ -138,13 +148,15 @@ class InvestigationWorkflow:
 
         if not os.path.exists(target):
             phase["valid"] = False
-            phase["evidence"].append(Evidence(
-                result=f"目标不存在: {target}",
-                provenance={"target": target, "phase": "locate"},
-                confidence=1.0,
-                known_gaps=["无法定位不存在的目标"],
-                level="unknown",
-            ))
+            phase["evidence"].append(
+                Evidence(
+                    result=f"目标不存在: {target}",
+                    provenance={"target": target, "phase": "locate"},
+                    confidence=1.0,
+                    known_gaps=["无法定位不存在的目标"],
+                    level="unknown",
+                )
+            )
             phase["summary"] = f"目标不存在: {target}"
             return phase
 
@@ -166,16 +178,19 @@ class InvestigationWorkflow:
                 phase["modules"] = [os.path.basename(target)]
                 phase["evidence"].extend(analyze_result.evidence)
                 phase["entry_points"] = self._detect_entry_points_single(
-                    analyze_result, entry,
+                    analyze_result,
+                    entry,
                 )
             else:
-                phase["evidence"].append(Evidence(
-                    result=f"不支持的语言: {ext}",
-                    provenance={"target": target, "phase": "locate"},
-                    confidence=1.0,
-                    known_gaps=["该语言类型暂不支持分析"],
-                    level="unknown",
-                ))
+                phase["evidence"].append(
+                    Evidence(
+                        result=f"不支持的语言: {ext}",
+                        provenance={"target": target, "phase": "locate"},
+                        confidence=1.0,
+                        known_gaps=["该语言类型暂不支持分析"],
+                        level="unknown",
+                    )
+                )
         elif os.path.isdir(target):
             phase["target_type"] = "directory"
             # 检测目录主要语言
@@ -189,17 +204,21 @@ class InvestigationWorkflow:
 
             # 分析入口文件
             phase["entry_points"] = self._detect_entry_points_dir(
-                target, phase["language"], entry,
+                target,
+                phase["language"],
+                entry,
             )
         else:
             phase["valid"] = False
-            phase["evidence"].append(Evidence(
-                result=f"目标类型无法识别: {target}",
-                provenance={"target": target, "phase": "locate"},
-                confidence=1.0,
-                known_gaps=["目标既不是文件也不是目录"],
-                level="unknown",
-            ))
+            phase["evidence"].append(
+                Evidence(
+                    result=f"目标类型无法识别: {target}",
+                    provenance={"target": target, "phase": "locate"},
+                    confidence=1.0,
+                    known_gaps=["目标既不是文件也不是目录"],
+                    level="unknown",
+                )
+            )
 
         phase["summary"] = (
             f"定位: {phase['language']} {phase['target_type']} | "
@@ -208,13 +227,15 @@ class InvestigationWorkflow:
         )
 
         if not phase["evidence"]:
-            phase["evidence"].append(Evidence(
-                result="定位阶段完成",
-                provenance={"target": target, "phase": "locate"},
-                confidence=0.9,
-                known_gaps=["入口点可能需要人工确认"],
-                level="observation",
-            ))
+            phase["evidence"].append(
+                Evidence(
+                    result="定位阶段完成",
+                    provenance={"target": target, "phase": "locate"},
+                    confidence=0.9,
+                    known_gaps=["入口点可能需要人工确认"],
+                    level="observation",
+                )
+            )
 
         return phase
 
@@ -239,16 +260,18 @@ class InvestigationWorkflow:
 
         # TS/JS 目录暂不支持调用链追踪（CallChainTracer 仅支持 Python）
         if locate.get("language") == "typescript":
-            phase["evidence"].append(Evidence(
-                result="TS/JS 调用链追踪暂不支持",
-                provenance={"target": target, "phase": "trace"},
-                confidence=1.0,
-                known_gaps=[
-                    "CallChainTracer 当前仅支持 Python AST",
-                    "TS/JS 调用链需集成 babel 或 SWC 解析器",
-                ],
-                level="unknown",
-            ))
+            phase["evidence"].append(
+                Evidence(
+                    result="TS/JS 调用链追踪暂不支持",
+                    provenance={"target": target, "phase": "trace"},
+                    confidence=1.0,
+                    known_gaps=[
+                        "CallChainTracer 当前仅支持 Python AST",
+                        "TS/JS 调用链需集成 babel 或 SWC 解析器",
+                    ],
+                    level="unknown",
+                )
+            )
             phase["summary"] = "追踪: TS/JS 调用链暂不支持"
             return phase
 
@@ -256,13 +279,15 @@ class InvestigationWorkflow:
         # 确定追踪目标
         trace_target = target
         if os.path.isfile(target) and not target.endswith(".py"):
-            phase["evidence"].append(Evidence(
-                result="非 Python 文件，调用链追踪跳过",
-                provenance={"target": target, "phase": "trace"},
-                confidence=1.0,
-                known_gaps=["CallChainTracer 仅支持 Python AST"],
-                level="observation",
-            ))
+            phase["evidence"].append(
+                Evidence(
+                    result="非 Python 文件，调用链追踪跳过",
+                    provenance={"target": target, "phase": "trace"},
+                    confidence=1.0,
+                    known_gaps=["CallChainTracer 仅支持 Python AST"],
+                    level="observation",
+                )
+            )
             phase["summary"] = "追踪: 非 Python 目标，跳过"
             return phase
 
@@ -281,9 +306,8 @@ class InvestigationWorkflow:
         n_funcs = len(phase["all_functions"])
         n_calls = sum(len(v) for v in phase["callers"].values())
 
-        phase["summary"] = (
-            f"追踪: {n_funcs} 函数, {n_calls} 调用关系"
-            + (f", 入口链={entry}" if entry else "")
+        phase["summary"] = f"追踪: {n_funcs} 函数, {n_calls} 调用关系" + (
+            f", 入口链={entry}" if entry else ""
         )
 
         return phase
@@ -308,13 +332,15 @@ class InvestigationWorkflow:
 
         # 仅支持 Python 文件
         if locate.get("language") != "python":
-            phase["evidence"].append(Evidence(
-                result="非 Python 目标，算法还原跳过",
-                provenance={"target": target, "phase": "reduce"},
-                confidence=1.0,
-                known_gaps=["AlgorithmReducer 仅支持 Python AST"],
-                level="observation",
-            ))
+            phase["evidence"].append(
+                Evidence(
+                    result="非 Python 目标，算法还原跳过",
+                    provenance={"target": target, "phase": "reduce"},
+                    confidence=1.0,
+                    known_gaps=["AlgorithmReducer 仅支持 Python AST"],
+                    level="observation",
+                )
+            )
             phase["summary"] = "还原: 非 Python 目标，跳过"
             return phase
 
@@ -343,19 +369,18 @@ class InvestigationWorkflow:
         phase["patterns"] = all_patterns
         phase["pseudo_code"] = all_pseudo
 
-        phase["summary"] = (
-            f"还原: {len(all_functions)} 函数分析, "
-            f"{len(all_patterns)} 模式识别"
-        )
+        phase["summary"] = f"还原: {len(all_functions)} 函数分析, " f"{len(all_patterns)} 模式识别"
 
         if not all_functions:
-            phase["evidence"].append(Evidence(
-                result="未识别到算法模式",
-                provenance={"target": target, "phase": "reduce"},
-                confidence=0.8,
-                known_gaps=["可能全是简单函数调用，无复杂算法"],
-                level="observation",
-            ))
+            phase["evidence"].append(
+                Evidence(
+                    result="未识别到算法模式",
+                    provenance={"target": target, "phase": "reduce"},
+                    confidence=0.8,
+                    known_gaps=["可能全是简单函数调用，无复杂算法"],
+                    level="observation",
+                )
+            )
 
         return phase
 
@@ -388,9 +413,7 @@ class InvestigationWorkflow:
             level_counts[level] = level_counts.get(level, 0) + 1
 
         # P3-2: 补充架构债务维度 Evidence（供 ArchitectureReverseDeriver 消费）
-        arch_evidence = self._collect_architecture_debt_evidence(
-            target, phases, unique_gaps
-        )
+        arch_evidence = self._collect_architecture_debt_evidence(target, phases, unique_gaps)
         unique_evidence = _dedupe_evidence(unique_evidence + arch_evidence)
         for ev in arch_evidence:
             unique_gaps.extend(ev.known_gaps)
@@ -409,16 +432,12 @@ class InvestigationWorkflow:
             f"定位({len(locate.get('modules', []))}模块/"
             f"{len(locate.get('entry_points', []))}入口)"
         )
-        summary_parts.append(
-            f"追踪({len(trace.get('all_functions', []))}函数)"
-        )
+        summary_parts.append(f"追踪({len(trace.get('all_functions', []))}函数)")
         summary_parts.append(
             f"还原({len(reduce.get('functions', []))}函数/"
             f"{len(reduce.get('patterns', []))}模式)"
         )
-        summary_parts.append(
-            f"证据({len(unique_evidence)}条/{len(unique_gaps)}局限)"
-        )
+        summary_parts.append(f"证据({len(unique_evidence)}条/{len(unique_gaps)}局限)")
 
         summary = " | ".join(summary_parts)
 
@@ -462,18 +481,22 @@ class InvestigationWorkflow:
                             max_lines = lines
                             max_file = os.path.relpath(fp, target)
                 if max_file:
-                    evidence.append(reverse_evidence(
-                        result=f"文件 {max_file}: {max_lines} 行",
-                        provenance={"target": target, "analysis": "line_count"},
-                        confidence=1.0,
-                    ))
+                    evidence.append(
+                        reverse_evidence(
+                            result=f"文件 {max_file}: {max_lines} 行",
+                            provenance={"target": target, "analysis": "line_count"},
+                            confidence=1.0,
+                        )
+                    )
         except Exception as e:
-            evidence.append(reverse_evidence(
-                result="文件行数统计失败",
-                provenance={"target": target, "analysis": "line_count"},
-                confidence=0.0,
-                known_gaps=[f"line_count fail: {e}"],
-            ))
+            evidence.append(
+                reverse_evidence(
+                    result="文件行数统计失败",
+                    provenance={"target": target, "analysis": "line_count"},
+                    confidence=0.0,
+                    known_gaps=[f"line_count fail: {e}"],
+                )
+            )
 
         # 2. 出度（从 dependency_graph evidence 估算：边数/节点数 = 平均出度）
         try:
@@ -486,44 +509,55 @@ class InvestigationWorkflow:
             if dep_ev is not None:
                 res = str(getattr(dep_ev, "result", ""))
                 import re as _re
+
                 m = _re.search(r"(\d+)\s*节点.*?(\d+)\s*边", res)
                 if m:
                     nodes, edges = int(m.group(1)), int(m.group(2))
                     avg_out = edges / nodes if nodes > 0 else 0
-                    evidence.append(reverse_evidence(
-                        result=f"出度: {avg_out:.1f}",
-                        provenance={"target": target, "analysis": "out_degree"},
-                        confidence=0.8,
-                    ))
+                    evidence.append(
+                        reverse_evidence(
+                            result=f"出度: {avg_out:.1f}",
+                            provenance={"target": target, "analysis": "out_degree"},
+                            confidence=0.8,
+                        )
+                    )
         except Exception:
             pass
 
         # 3. 豁口数（known_gaps 数量）
         gap_count = len(known_gaps)
-        evidence.append(reverse_evidence(
-            result=f"豁口: {gap_count} 项",
-            provenance={"target": target, "analysis": "known_gap_audit"},
-            confidence=1.0,
-        ))
+        evidence.append(
+            reverse_evidence(
+                result=f"豁口: {gap_count} 项",
+                provenance={"target": target, "analysis": "known_gap_audit"},
+                confidence=1.0,
+            )
+        )
 
         # 4. git 演化（feat/refactor 提交计数）
         try:
             import subprocess
+
             git_dir = target if os.path.isdir(target) else os.path.dirname(target)
             log = subprocess.run(
                 ["git", "log", "--oneline", "-n", "200", "--", target],
-                capture_output=True, text=True, cwd=git_dir, timeout=10,
+                capture_output=True,
+                text=True,
+                cwd=git_dir,
+                timeout=10,
             )
             if log.returncode == 0:
-                feat = sum(1 for l in log.stdout.splitlines()
-                           if "feat" in l.lower())
-                ref = sum(1 for l in log.stdout.splitlines()
-                          if "refactor" in l.lower())
-                evidence.append(reverse_evidence(
-                    result=f"演化: {feat} feat / {ref} refactor",
-                    provenance={"target": target, "analysis": "git_history"},
-                    confidence=0.9,
-                ))
+                feat = sum(1 for l in log.stdout.splitlines() if "feat" in l.lower())  # noqa: E741
+                ref = sum(
+                    1 for l in log.stdout.splitlines() if "refactor" in l.lower()  # noqa: E741
+                )  # noqa: E741
+                evidence.append(
+                    reverse_evidence(
+                        result=f"演化: {feat} feat / {ref} refactor",
+                        provenance={"target": target, "analysis": "git_history"},
+                        confidence=0.9,
+                    )
+                )
         except Exception:
             pass
 
@@ -543,7 +577,7 @@ class InvestigationWorkflow:
         """检测目录的主要编程语言。"""
         py_count = 0
         ts_count = 0
-        for root, _, files in os.walk(target):
+        for root, _, files in os.walk(target):  # noqa: B007
             for f in files:
                 if f.endswith(".py"):
                     py_count += 1
@@ -566,9 +600,7 @@ class InvestigationWorkflow:
 
         functions = analyze_result.raw.get("functions", [])
         func_names = [f["name"] for f in functions]
-        entry_points = [
-            name for name in _ENTRY_CANDIDATES if name in func_names
-        ]
+        entry_points = [name for name in _ENTRY_CANDIDATES if name in func_names]
         return entry_points if entry_points else func_names[:3]
 
     @staticmethod
@@ -593,7 +625,8 @@ class InvestigationWorkflow:
         for root, _, files in os.walk(target):
             if "__main__.py" in files:
                 rel = os.path.relpath(
-                    os.path.join(root, "__main__.py"), target,
+                    os.path.join(root, "__main__.py"),
+                    target,
                 )
                 entry_points.append(rel)
 

@@ -22,7 +22,7 @@ import logging
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger("dynamic_orchestrator")
 
@@ -40,17 +40,19 @@ if str(_PROJECT_ROOT) not in sys.path:
 # 数据类型
 # ============================================================
 
+
 @dataclass
 class SubsystemRecommendation:
     """单个场景的子系统推荐"""
+
     scenario_id: str
     recommended_nodes: List[str] = field(default_factory=list)
-    l4_best: Optional[str] = None        # L4 粗筛最优子系统
-    l4_confidence: float = 0.0           # L4 置信度
-    bt_effective: bool = False           # 回测精调是否有效
-    bt_score: float = 0.0                # 回测有效性评分
-    final_confidence: float = 0.0        # 最终置信度
-    source: str = ""                     # "l4+bt" / "l4_only" / "bt_only" / "default"
+    l4_best: Optional[str] = None  # L4 粗筛最优子系统
+    l4_confidence: float = 0.0  # L4 置信度
+    bt_effective: bool = False  # 回测精调是否有效
+    bt_score: float = 0.0  # 回测有效性评分
+    final_confidence: float = 0.0  # 最终置信度
+    source: str = ""  # "l4+bt" / "l4_only" / "bt_only" / "default"
 
     def to_dict(self) -> dict:
         return {
@@ -68,6 +70,7 @@ class SubsystemRecommendation:
 # ============================================================
 # 动态编排器
 # ============================================================
+
 
 class DynamicOrchestrator:
     """动态编排器 — L4 粗筛 + 回测精调两级优化
@@ -95,7 +98,11 @@ class DynamicOrchestrator:
         **{s: ["C_S3_TREND"] for s in STANDARD_SCENARIOS if s.startswith("BULL")},
         **{s: ["C_S3_TREND"] for s in STANDARD_SCENARIOS if s.startswith("BEAR")},
         # 震荡场景 → 马丁
-        **{s: ["C_MARTIN_V15"] for s in STANDARD_SCENARIOS if s.startswith("NEUTRAL") and "EXHAUSTION" not in s},
+        **{
+            s: ["C_MARTIN_V15"]
+            for s in STANDARD_SCENARIOS
+            if s.startswith("NEUTRAL") and "EXHAUSTION" not in s
+        },
         # 衰竭场景 → 易经
         **{s: ["A_YJ_INFER"] for s in STANDARD_SCENARIOS if "EXHAUSTION" in s},
     }
@@ -105,18 +112,20 @@ class DynamicOrchestrator:
             self.l4_adapter = l4_adapter
         else:
             from dreamos.capabilities.trading.evaluators.l4_stats_adapter import L4StatsAdapter
+
             self.l4_adapter = L4StatsAdapter()
 
         if fine_tuner is not None:
             self.fine_tuner = fine_tuner
         else:
-            from dreamos.capabilities.trading.evaluators.backtest_fine_tuner import BacktestFineTuner
+
             self.fine_tuner = fine_tuner  # 延迟初始化
 
         self._recommendations: Optional[Dict[str, SubsystemRecommendation]] = None
 
-    def optimize(self, run_backtest: bool = True,
-                 symbols: str = "BTC", interval: str = "1h") -> Dict[str, SubsystemRecommendation]:
+    def optimize(
+        self, run_backtest: bool = True, symbols: str = "BTC", interval: str = "1h"
+    ) -> Dict[str, SubsystemRecommendation]:
         """执行两级优化
 
         Args:
@@ -131,13 +140,13 @@ class DynamicOrchestrator:
 
         # ── Level 1: L4 粗筛 ──────────────────
         logger.info("Level 1: L4 粗筛...")
-        l4_stats = self.l4_adapter.get_stats()
+        l4_stats = self.l4_adapter.get_stats()  # noqa: F841
 
         # 为每个场景获取 L4 推荐
         l4_recommendations: Dict[str, Tuple[Optional[str], float]] = {}
         for scenario_id in self.STANDARD_SCENARIOS:
             best = self.l4_adapter.get_best_subsystem(scenario_id)
-            weights = self.l4_adapter.get_subsystem_weights(scenario_id)
+            weights = self.l4_adapter.get_subsystem_weights(scenario_id)  # noqa: F841
             # L4 置信度：基于最优子系统的样本量
             stats = self.l4_adapter.get_stats_for_scenario(scenario_id)
             if best and best in stats:
@@ -146,18 +155,25 @@ class DynamicOrchestrator:
                 l4_conf = 0.0
             l4_recommendations[scenario_id] = (best, l4_conf)
 
-        logger.info(f"L4 粗筛完成：{sum(1 for b, c in l4_recommendations.values() if b and c > 0)} 个场景有有效推荐")
+        logger.info(
+            f"L4 粗筛完成：{sum(1 for b, c in l4_recommendations.values() if b and c > 0)} 个场景有有效推荐"
+        )
 
         # ── Level 2: 回测精调 ──────────────────
         bt_comparisons = {}
         if run_backtest:
             logger.info("Level 2: 回测精调...")
             if self.fine_tuner is None:
-                from dreamos.capabilities.trading.evaluators.backtest_fine_tuner import BacktestFineTuner
+                from dreamos.capabilities.trading.evaluators.backtest_fine_tuner import (
+                    BacktestFineTuner,
+                )
+
                 self.fine_tuner = BacktestFineTuner(symbols=symbols, interval=interval)
 
             bt_comparisons = self.fine_tuner.fine_tune()
-            logger.info(f"回测精调完成：{sum(1 for c in bt_comparisons.values() if c.subsystem_effective)} 个场景有效")
+            logger.info(
+                f"回测精调完成：{sum(1 for c in bt_comparisons.values() if c.subsystem_effective)} 个场景有效"
+            )
         else:
             logger.info("跳过回测精调（run_backtest=False）")
 
@@ -175,9 +191,9 @@ class DynamicOrchestrator:
         logger.info(f"动态编排完成：{len(recommendations)} 个场景已优化")
         return recommendations
 
-    def _merge_results(self, scenario_id: str,
-                       l4_result: Tuple[Optional[str], float],
-                       bt_comp) -> SubsystemRecommendation:
+    def _merge_results(
+        self, scenario_id: str, l4_result: Tuple[Optional[str], float], bt_comp
+    ) -> SubsystemRecommendation:
         """整合 L4 粗筛和回测精调结果
 
         整合策略：
@@ -259,14 +275,16 @@ class DynamicOrchestrator:
         chain_spec = STANDARD_CHAINS[chain_id]
 
         # 备份原映射
-        if not hasattr(chain_spec, '_original_scenario_nodes'):
+        if not hasattr(chain_spec, "_original_scenario_nodes"):
             chain_spec._original_scenario_nodes = dict(chain_spec.scenario_nodes)
 
         # 合并：以静态映射为基础，动态映射覆盖（保留静态映射中的 EXTREME 等场景）
         merged = dict(chain_spec._original_scenario_nodes)
         merged.update(mapping)
         chain_spec.scenario_nodes = merged
-        logger.info(f"ChainSpec[{chain_id}].scenario_nodes 已更新：{len(merged)} 个场景（静态{len(chain_spec._original_scenario_nodes)} + 动态{len(mapping)}）")
+        logger.info(
+            f"ChainSpec[{chain_id}].scenario_nodes 已更新：{len(merged)} 个场景（静态{len(chain_spec._original_scenario_nodes)} + 动态{len(mapping)}）"
+        )
         return len(merged)
 
     def restore_chain_spec(self, chain_id: str = "A") -> None:
@@ -277,7 +295,7 @@ class DynamicOrchestrator:
             return
 
         chain_spec = STANDARD_CHAINS[chain_id]
-        if hasattr(chain_spec, '_original_scenario_nodes'):
+        if hasattr(chain_spec, "_original_scenario_nodes"):
             chain_spec.scenario_nodes = chain_spec._original_scenario_nodes
             logger.info(f"ChainSpec[{chain_id}].scenario_nodes 已恢复原始映射")
 
@@ -290,6 +308,7 @@ class DynamicOrchestrator:
             reports_dir = Path(__file__).parent.parent / "reports"
             reports_dir.mkdir(parents=True, exist_ok=True)
             from datetime import datetime
+
             ts = datetime.now().strftime("%Y%m%d_%H%M%S")
             path = str(reports_dir / f"dynamic_orchestration_{ts}.json")
 
@@ -302,8 +321,9 @@ class DynamicOrchestrator:
 
         for sid, rec in self._recommendations.items():
             report["recommendations"][sid] = rec.to_dict()
-            report["source_distribution"][rec.source] = \
+            report["source_distribution"][rec.source] = (
                 report["source_distribution"].get(rec.source, 0) + 1
+            )
 
         with open(path, "w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
@@ -324,6 +344,7 @@ class DynamicOrchestrator:
             是否成功加载
         """
         from datetime import datetime, timedelta
+
         reports_dir = Path(__file__).parent.parent / "reports"
 
         if not reports_dir.exists():
@@ -390,16 +411,19 @@ class DynamicOrchestrator:
         for rec in self._recommendations.values():
             source_counts[rec.source] = source_counts.get(rec.source, 0) + 1
 
-        lines.append(f"\n来源分布:")
+        lines.append("\n来源分布:")
         for source, count in sorted(source_counts.items()):
             lines.append(f"  {source}: {count} 个场景")
 
         # 展示有变化的场景
-        changed = [r for r in self._recommendations.values()
-                    if r.source in ("l4+bt", "l4_only", "bt_only")]
+        changed = [
+            r for r in self._recommendations.values() if r.source in ("l4+bt", "l4_only", "bt_only")
+        ]
         if changed:
             lines.append(f"\n动态调整的场景 ({len(changed)} 个):")
-            lines.append(f"{'场景':<35} {'推荐节点':<20} {'L4最优':<15} {'L4置信':>8} {'BT有效':>8} {'来源':<10}")
+            lines.append(
+                f"{'场景':<35} {'推荐节点':<20} {'L4最优':<15} {'L4置信':>8} {'BT有效':>8} {'来源':<10}"
+            )
             lines.append("-" * 100)
             for rec in sorted(changed, key=lambda r: r.final_confidence, reverse=True):
                 nodes_str = ",".join(rec.recommended_nodes)

@@ -5,19 +5,18 @@
 
 对应 Spec §3bis.3 大周期边界推导 + §3bis.9 T_CB1。
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
-
-import pytest
 
 # Add bcrm2 to sys.path
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2 import morph_cycle_predictor as mcp
-from bcrm2.morph_cycle_predictor import MorphCyclePredictor
+from bcrm2 import morph_cycle_predictor as mcp  # noqa: E402
+from bcrm2.morph_cycle_predictor import MorphCyclePredictor  # noqa: E402
 
 
 # ================================================================
@@ -35,6 +34,7 @@ def _make_predictor() -> MorphCyclePredictor:
 # T_CB1: 边界插值正确性
 # ================================================================
 
+
 class TestInterpCycleBoundsBasic:
     """验证 _interp_cycle_bounds 在两锚点间正确插值。"""
 
@@ -51,9 +51,15 @@ class TestInterpCycleBoundsBasic:
         exp_hi = 1.6 * (1 - alpha) + 2.8 * alpha
         exp_mean = 1.2 * (1 - alpha) + 2.2 * alpha
 
-        assert abs(result["level_lo"] - exp_lo) < 0.01, f"level_lo: {result['level_lo']} vs {exp_lo}"
-        assert abs(result["level_hi"] - exp_hi) < 0.01, f"level_hi: {result['level_hi']} vs {exp_hi}"
-        assert abs(result["level_mean"] - exp_mean) < 0.01, f"level_mean: {result['level_mean']} vs {exp_mean}"
+        assert (
+            abs(result["level_lo"] - exp_lo) < 0.01
+        ), f"level_lo: {result['level_lo']} vs {exp_lo}"
+        assert (
+            abs(result["level_hi"] - exp_hi) < 0.01
+        ), f"level_hi: {result['level_hi']} vs {exp_hi}"
+        assert (
+            abs(result["level_mean"] - exp_mean) < 0.01
+        ), f"level_mean: {result['level_mean']} vs {exp_mean}"
 
     def test_between_anchors_phase_hint_nearest(self):
         """t_rel=200 距离 180 更近，phase_hint 取 '主升浪加速' 对应的 '上升'。"""
@@ -141,8 +147,9 @@ class TestLabelToPhaseHintMapping:
             label = rng["label"]
             assert label in mapping, f"label '{label}' 缺少 phase_hint 映射"
             phase = mapping[label]
-            assert phase in mcp.CYCLE_BOUNDS_DECAY_BY_PHASE, \
-                f"phase_hint '{phase}' 不在 DECAY_BY_PHASE 表中"
+            assert (
+                phase in mcp.CYCLE_BOUNDS_DECAY_BY_PHASE
+            ), f"phase_hint '{phase}' 不在 DECAY_BY_PHASE 表中"
 
     def test_phase_hint_mapping_values(self):
         """验证关键映射：极端狂热顶→顶点，恐慌底→底点，减半复苏→蓄力。"""

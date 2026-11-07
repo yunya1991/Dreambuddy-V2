@@ -11,9 +11,10 @@ V15 经典马丁策略压力测试
 注：资金规模场景强制使用 fixed 模式（V15_CAPITAL_MODE=fixed），
     否则 dynamic 模式会读取 OKX 实盘余额，无法验证 100/200/500U 这些固定预算场景。
 """
+
 import importlib
-import json, os, sys, time
-from datetime import datetime, timezone
+import os
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -21,8 +22,9 @@ BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
 sys.path.insert(0, str(BASE_DIR / "core"))
 
-from config_loader import load_config, get_config_float, get_config_int, get_config_list
-import capital_manager as _cm
+import capital_manager as _cm  # noqa: E402
+from config_loader import get_config_float, load_config  # noqa: E402
+
 calculate_capital_allocation = _cm.calculate_capital_allocation
 get_signal_trigger_status = _cm.get_signal_trigger_status
 
@@ -45,6 +47,7 @@ def _reload_capital_for_stress(total_budget: Optional[str] = None, mode: str = "
 
 class MockOKXClient:
     """模拟OKX客户端，用于压力测试"""
+
     def __init__(self, balance=100, positions=None):
         self._balance = balance
         self._positions = positions or {}
@@ -74,13 +77,15 @@ class MockOKXClient:
         if pos:
             return {
                 "ok": True,
-                "data": [{
-                    "pos_sz": pos["sz"],
-                    "avg_entry_px": pos["entry_price"],
-                    "mark_px": self._prices.get(inst_id, pos["entry_price"]),
-                    "margin": pos["margin"],
-                    "unrealized_pnl": pos.get("unrealized_pnl", 0),
-                }],
+                "data": [
+                    {
+                        "pos_sz": pos["sz"],
+                        "avg_entry_px": pos["entry_price"],
+                        "mark_px": self._prices.get(inst_id, pos["entry_price"]),
+                        "margin": pos["margin"],
+                        "unrealized_pnl": pos.get("unrealized_pnl", 0),
+                    }
+                ],
             }
         return {"ok": True, "data": []}
 
@@ -109,24 +114,28 @@ def run_stress_test():
         except Exception as e:
             tests.append({"name": name, "result": False, "error": str(e)})
             print(f"[❌ ERROR] {name}: {e}")
-            all_pass = False
+            all_pass = False  # noqa: F841
             return False
 
     # 场景1: 全币种决策信号触发测试
     print("\n--- 场景1: 全币种决策信号触发测试 ---")
+
     def test_all_coins_decisions():
         from v15_signal import v15_decision
+
         coins = ["BTC", "ETH", "SOL", "ARB", "OP", "UNI", "HYPE", "OKB"]
         results = []
         for coin in coins:
             try:
                 decision = v15_decision(f"{coin}-USDT")
-                results.append({
-                    "coin": coin,
-                    "action": decision.get("action"),
-                    "confidence": decision.get("confidence", 0),
-                    "position": decision.get("position"),
-                })
+                results.append(
+                    {
+                        "coin": coin,
+                        "action": decision.get("action"),
+                        "confidence": decision.get("confidence", 0),
+                        "position": decision.get("position"),
+                    }
+                )
             except Exception as e:
                 results.append({"coin": coin, "error": str(e)})
 
@@ -144,6 +153,7 @@ def run_stress_test():
 
     # 场景2: 资金规模100U测试
     print("\n--- 场景2: 资金规模测试 (100U) ---")
+
     def test_capital_100u():
         original_budget = get_config_float("TOTAL_BUDGET", 100)
         _reload_capital_for_stress(total_budget="100", mode="fixed")
@@ -195,6 +205,7 @@ def run_stress_test():
 
     # 场景4: 资金规模500U测试 - 验证资金充足时控制不开新仓
     print("\n--- 场景4: 资金充足时控制策略 (500U) ---")
+
     def test_capital_500u():
         original_budget = get_config_float("TOTAL_BUDGET", 100)
         _reload_capital_for_stress(total_budget="500", mode="fixed")
@@ -222,6 +233,7 @@ def run_stress_test():
 
     # 场景5: 多持仓场景测试
     print("\n--- 场景5: 多持仓场景测试 ---")
+
     def test_multi_positions():
         original_budget = get_config_float("TOTAL_BUDGET", 100)
         _reload_capital_for_stress(total_budget="200", mode="fixed")
@@ -246,6 +258,7 @@ def run_stress_test():
 
     # 场景6: 信号触发状态测试
     print("\n--- 场景6: 信号触发状态测试 ---")
+
     def test_signal_trigger():
         trigger = get_signal_trigger_status()
         coins = trigger.get("coins", {})
@@ -269,6 +282,7 @@ def run_stress_test():
 
     # 场景7: 加仓资金预留测试
     print("\n--- 场景7: 加仓资金预留验证 ---")
+
     def test_addon_reserve():
         alloc = calculate_capital_allocation()
         cost = alloc["single_position_cost"]
@@ -290,9 +304,10 @@ def run_stress_test():
 
     # 场景8: API响应时间测试
     print("\n--- 场景8: API响应时间测试 ---")
+
     def test_api_response_time():
         import subprocess
-        
+
         apis = [
             "/api/v15-ct/decision?coin=BTC",
             "/api/v15-ct/decisions",
@@ -306,8 +321,20 @@ def run_stress_test():
         for api in apis:
             try:
                 result = subprocess.run(
-                    ["curl", "-s", "--max-time", "30", f"http://localhost:8765{api}", "-o", "/dev/null", "-w", "%{time_total}"],
-                    capture_output=True, text=True, timeout=35
+                    [
+                        "curl",
+                        "-s",
+                        "--max-time",
+                        "30",
+                        f"http://localhost:8765{api}",
+                        "-o",
+                        "/dev/null",
+                        "-w",
+                        "%{time_total}",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=35,
                 )
                 if result.returncode == 0:
                     elapsed = float(result.stdout.strip())

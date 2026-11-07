@@ -1,6 +1,6 @@
 """异常体系测试 — 对齐 TECHNICAL_DESIGN.md §8.1。"""
-import pytest
 
+import pytest
 from data_center.core import errors as E
 
 ALL_EXC = [

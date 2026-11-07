@@ -11,7 +11,6 @@ import urllib.request
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
-
 DEFAULT_API_URL = "https://markdown.new/"
 
 
@@ -54,10 +53,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--deliver-md",
         action="store_true",
-        help=(
-            "Write output into a .md file and wrap content in pseudo-XML "
-            "<url>...</url> tags"
-        ),
+        help=("Write output into a .md file and wrap content in pseudo-XML " "<url>...</url> tags"),
     )
     return parser
 

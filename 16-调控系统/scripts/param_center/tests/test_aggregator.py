@@ -11,6 +11,7 @@
 运行：
   python -m pytest 16-调控系统/scripts/param_center/tests/test_aggregator.py -v
 """
+
 from __future__ import annotations
 
 import sys
@@ -32,9 +33,9 @@ for p in [_YIJING_SCRIPTS, _SCRIPTS_16, _PARAM_CENTER]:
 
 # 导入被测对象（实现尚未编写 → RED）
 from param_center.aggregator import (  # noqa: E402
-    StatAggregator,
     AlgoObservation,
     ParamProposal,
+    StatAggregator,
 )
 
 
@@ -96,16 +97,14 @@ def test_aggregate_kl_divergence_weighting():
     # algo_close 与 prior 接近，algo_far 与 prior 差异大
     obs_list = [
         _make_obs("algo_close", 0.045, 0.13, 4.2, conf=0.8),  # 接近 prior
-        _make_obs("algo_far", 0.08, 0.24, 5.5, conf=0.8),     # 远离 prior
+        _make_obs("algo_far", 0.08, 0.24, 5.5, conf=0.8),  # 远离 prior
     ]
     agg = StatAggregator()
     proposal = agg.aggregate(obs_list, prior=prior)
 
     w_close = proposal.weights["algo_close"]
     w_far = proposal.weights["algo_far"]
-    assert w_far > w_close, (
-        f"KL散度大的算法权重应更高: far={w_far}, close={w_close}"
-    )
+    assert w_far > w_close, f"KL散度大的算法权重应更高: far={w_far}, close={w_close}"
 
 
 # ============================================================================
@@ -116,12 +115,12 @@ def test_aggregate_with_empty_observations():
     proposal = agg.aggregate([])
 
     # 应回退到默认参数 SL=3%, TP=12%
-    assert proposal.params["sl_floor"] == 0.03, (
-        f"空输入应回退默认 SL=3%, 实际 {proposal.params['sl_floor']}"
-    )
-    assert proposal.params["tp_floor"] == 0.12, (
-        f"空输入应回退默认 TP=12%, 实际 {proposal.params['tp_floor']}"
-    )
+    assert (
+        proposal.params["sl_floor"] == 0.03
+    ), f"空输入应回退默认 SL=3%, 实际 {proposal.params['sl_floor']}"
+    assert (
+        proposal.params["tp_floor"] == 0.12
+    ), f"空输入应回退默认 TP=12%, 实际 {proposal.params['tp_floor']}"
     assert proposal.confidence == 0.0, "空输入置信度应为 0"
 
 
@@ -133,9 +132,9 @@ def test_aggregate_single_observation():
     agg = StatAggregator()
     proposal = agg.aggregate(obs_list)
 
-    assert abs(proposal.weights["solo"] - 1.0) < 1e-6, (
-        f"单算法权重应为 1.0，实际 {proposal.weights['solo']}"
-    )
+    assert (
+        abs(proposal.weights["solo"] - 1.0) < 1e-6
+    ), f"单算法权重应为 1.0，实际 {proposal.weights['solo']}"
     assert proposal.confidence == pytest.approx(0.9, abs=1e-6)
 
 
@@ -154,9 +153,9 @@ def test_aggregate_confidence_propagation():
     w_a = proposal.weights["a"]
     w_b = proposal.weights["b"]
     expected_conf = w_a * 0.6 + w_b * 0.9
-    assert abs(proposal.confidence - expected_conf) < 1e-6, (
-        f"置信度应={expected_conf}, 实际={proposal.confidence}"
-    )
+    assert (
+        abs(proposal.confidence - expected_conf) < 1e-6
+    ), f"置信度应={expected_conf}, 实际={proposal.confidence}"
 
 
 if __name__ == "__main__":

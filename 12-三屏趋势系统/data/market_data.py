@@ -12,8 +12,8 @@
 @deprecated: 已废弃，请迁移到 from data_center.compat import fetch_candles, resample_candles
 """
 
-import subprocess
 import os
+import subprocess
 import time
 import warnings
 
@@ -22,14 +22,15 @@ warnings.warn(
     DeprecationWarning,
     stacklevel=2,
 )
-from typing import List, Dict, Optional
 import json
+from typing import Dict, List
 
 
 def _get_okx_client():
     """获取 OKX 客户端（从全局注册的适配器）"""
     try:
         from dreamllm.services.registry import get_adapter
+
         adapter = get_adapter("okx")
         if adapter and hasattr(adapter, "get_kline"):
             return adapter
@@ -46,7 +47,10 @@ def _run_okx(args: list) -> dict:
     try:
         r = subprocess.run(
             ["okx"] + args + ["--profile", "screen_trade"],
-            capture_output=True, text=True, timeout=30, env=env,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env=env,
         )
         if r.returncode == 0 and r.stdout.strip():
             return {"ok": True, "data": json.loads(r.stdout)}
@@ -74,14 +78,16 @@ def fetch_candles(inst_id: str, bar: str, limit: int) -> List[Dict]:
             if r.get("ok"):
                 candles = []
                 for c in r.get("candles", []):
-                    candles.append({
-                        "ts": int(c["ts"]),
-                        "o": float(c["o"]),
-                        "h": float(c["h"]),
-                        "l": float(c["l"]),
-                        "c": float(c["c"]),
-                        "vol": float(c.get("vol", 0)),
-                    })
+                    candles.append(
+                        {
+                            "ts": int(c["ts"]),
+                            "o": float(c["o"]),
+                            "h": float(c["h"]),
+                            "l": float(c["l"]),
+                            "c": float(c["c"]),
+                            "vol": float(c.get("vol", 0)),
+                        }
+                    )
                 return list(reversed(candles))
         except Exception:
             pass
@@ -92,14 +98,16 @@ def fetch_candles(inst_id: str, bar: str, limit: int) -> List[Dict]:
     raw = r["data"]
     candles = []
     for c in raw:
-        candles.append({
-            "ts": int(c[0]),
-            "o": float(c[1]),
-            "h": float(c[2]),
-            "l": float(c[3]),
-            "c": float(c[4]),
-            "vol": float(c[5]),
-        })
+        candles.append(
+            {
+                "ts": int(c[0]),
+                "o": float(c[1]),
+                "h": float(c[2]),
+                "l": float(c[3]),
+                "c": float(c[4]),
+                "vol": float(c[5]),
+            }
+        )
     return list(reversed(candles))
 
 
@@ -168,14 +176,16 @@ def fetch_historical_candles(
                     if ts in seen_ts:
                         continue
                     seen_ts.add(ts)
-                    new_candles.append({
-                        "ts": ts,
-                        "o": float(c[1]),
-                        "h": float(c[2]),
-                        "l": float(c[3]),
-                        "c": float(c[4]),
-                        "vol": float(c[5]),
-                    })
+                    new_candles.append(
+                        {
+                            "ts": ts,
+                            "o": float(c[1]),
+                            "h": float(c[2]),
+                            "l": float(c[3]),
+                            "c": float(c[4]),
+                            "vol": float(c[5]),
+                        }
+                    )
 
                 if not new_candles:
                     print(f"  [INFO] 第 {page+1} 页无新数据，停止")
@@ -199,7 +209,7 @@ def fetch_historical_candles(
         pass
 
     if not all_candles:
-        print(f"  [WARN] 通过SDK未获取到数据，尝试CLI回退方案")
+        print("  [WARN] 通过SDK未获取到数据，尝试CLI回退方案")
         all_candles = fetch_candles(inst_id, bar, min(days, 1000))
 
     all_candles.sort(key=lambda x: x["ts"])
@@ -207,6 +217,7 @@ def fetch_historical_candles(
     print(f"  完成: 共获取 {len(all_candles)} 条数据")
     if all_candles:
         import datetime
+
         start_dt = datetime.datetime.fromtimestamp(all_candles[0]["ts"] / 1000)
         end_dt = datetime.datetime.fromtimestamp(all_candles[-1]["ts"] / 1000)
         print(f"  时间范围: {start_dt.strftime('%Y-%m-%d')} ~ {end_dt.strftime('%Y-%m-%d')}")
@@ -289,16 +300,18 @@ def resample_candles(candles: List[Dict], target_tf: str) -> List[Dict]:
     result = []
 
     for i in range(0, len(candles), n):
-        group = candles[i:i + n]
+        group = candles[i : i + n]
         if len(group) < n:
             continue
-        result.append({
-            "ts": group[0]["ts"],
-            "o": group[0]["o"],
-            "h": max(c["h"] for c in group),
-            "l": min(c["l"] for c in group),
-            "c": group[-1]["c"],
-            "vol": sum(c["vol"] for c in group),
-        })
+        result.append(
+            {
+                "ts": group[0]["ts"],
+                "o": group[0]["o"],
+                "h": max(c["h"] for c in group),
+                "l": min(c["l"] for c in group),
+                "c": group[-1]["c"],
+                "vol": sum(c["vol"] for c in group),
+            }
+        )
 
     return result

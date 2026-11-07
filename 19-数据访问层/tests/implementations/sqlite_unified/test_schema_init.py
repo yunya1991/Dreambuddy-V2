@@ -5,6 +5,7 @@ TDD RED: schema_init.py — 21 表 Schema + 幂等 + _add_column_if_missing
 - ADR-19-005: CREATE TABLE = 最终目标 Schema
 - Experience 1040063: _add_column_if_missing 4 入口契约
 """
+
 import sqlite3
 from pathlib import Path
 
@@ -16,20 +17,33 @@ from dreambuddy_dal.connection import get_sqlite_connection
 # 对齐 SCHEMA_DESIGN.md §2.1~§8.4：实际 21 张（kg_* 4 张含 FTS5 虚拟表 kg_terms_fts）
 EXPECTED_21_TABLES = {
     # ma_* 元数据 3 张
-    "ma_schema_version", "ma_migration_audit", "ma_integrity_log",
+    "ma_schema_version",
+    "ma_migration_audit",
+    "ma_integrity_log",
     # tr_* 交易 3 张
-    "tr_trades", "tr_daily_stats", "tr_daily_stats_overrides",
+    "tr_trades",
+    "tr_daily_stats",
+    "tr_daily_stats_overrides",
     # po_* 持仓 2 张
-    "po_positions", "po_price_refresh_log",
+    "po_positions",
+    "po_price_refresh_log",
     # mm_* 宏观 6 张
-    "mm_fear_greed", "mm_funding_rate", "mm_open_interest",
-    "mm_liquidation", "mm_long_short_ratio", "mm_taker_volume",
+    "mm_fear_greed",
+    "mm_funding_rate",
+    "mm_open_interest",
+    "mm_liquidation",
+    "mm_long_short_ratio",
+    "mm_taker_volume",
     # rs_* 风控 2 张
-    "rs_state", "rs_cases",
+    "rs_state",
+    "rs_cases",
     # cv_* 配置 1 张
     "cv_config_versions",
     # kg_* 知识图谱 4 张（§8.4 kg_terms_fts = FTS5 虚拟表）
-    "kg_entities", "kg_entity_aliases", "kg_triples", "kg_terms_fts",
+    "kg_entities",
+    "kg_entity_aliases",
+    "kg_triples",
+    "kg_terms_fts",
 }
 assert len(EXPECTED_21_TABLES) == 21, f"设计应为 21 表，当前 {len(EXPECTED_21_TABLES)}"
 
@@ -38,64 +52,64 @@ assert len(EXPECTED_21_TABLES) == 21, f"设计应为 21 表，当前 {len(EXPECT
 # ⚠️ 注意：列名完全对齐 ADR-19-004 + schema_init.py 最终列清单（SCHEMA_DESIGN §2 中 entry_time → 统一改为 entry_ts 命名）
 EXPECTED_COLUMNS = {
     "tr_trades": [
-        ("trade_id", "TEXT", 1),       # PK=1
+        ("trade_id", "TEXT", 1),  # PK=1
         ("symbol", "TEXT", 0),
-        ("direction", "TEXT", 0),      # enum value
-        ("entry_price", "TEXT", 0),    # Decimal→TEXT（ADR-19-004）
-        ("quantity", "TEXT", 0),       # Decimal→TEXT
-        ("entry_ts", "TEXT", 0),       # ISO8601（统一命名 entry_ts，与 unified_models 一致）
-        ("exit_ts", "TEXT", 0),        # NULL = 持仓中
+        ("direction", "TEXT", 0),  # enum value
+        ("entry_price", "TEXT", 0),  # Decimal→TEXT（ADR-19-004）
+        ("quantity", "TEXT", 0),  # Decimal→TEXT
+        ("entry_ts", "TEXT", 0),  # ISO8601（统一命名 entry_ts，与 unified_models 一致）
+        ("exit_ts", "TEXT", 0),  # NULL = 持仓中
         ("status", "TEXT", 0),
         ("exit_reason", "TEXT", 0),
-        ("realized_pnl", "TEXT", 0),   # Decimal→TEXT
+        ("realized_pnl", "TEXT", 0),  # Decimal→TEXT
         ("strategy_source", "TEXT", 0),
         ("sub_system", "TEXT", 0),
         ("war_state", "TEXT", 0),
-        ("is_trial", "INTEGER", 0),    # BOOL (0/1)
+        ("is_trial", "INTEGER", 0),  # BOOL (0/1)
         ("trial_status", "TEXT", 0),
         ("trial_eval_result", "TEXT", 0),
         ("risk_level_cn", "TEXT", 0),
     ],
     "po_positions": [
-        ("inst_id", "TEXT", 1),        # PK
-        ("trade_id", "TEXT", 0),       # FK→tr_trades
+        ("inst_id", "TEXT", 1),  # PK
+        ("trade_id", "TEXT", 0),  # FK→tr_trades
         ("symbol", "TEXT", 0),
         ("direction", "TEXT", 0),
-        ("entry_price", "TEXT", 0),    # Decimal→TEXT（对齐 entry_price 命名，不用 avg_ 前缀）
-        ("quantity", "TEXT", 0),       # Decimal→TEXT
+        ("entry_price", "TEXT", 0),  # Decimal→TEXT（对齐 entry_price 命名，不用 avg_ 前缀）
+        ("quantity", "TEXT", 0),  # Decimal→TEXT
         ("mark_price", "TEXT", 0),
         ("opened_at", "TEXT", 0),
-        ("unrealized_pnl", "TEXT", 0), # Decimal→TEXT
+        ("unrealized_pnl", "TEXT", 0),  # Decimal→TEXT
         ("is_trial", "INTEGER", 0),
         ("sub_system", "TEXT", 0),
-        ("version", "INTEGER", 0),     # 乐观锁
+        ("version", "INTEGER", 0),  # 乐观锁
     ],
     "rs_state": [
-        ("id", "INTEGER", 1),          # CHECK id=1
+        ("id", "INTEGER", 1),  # CHECK id=1
         ("total_risk_exposure", "TEXT", 0),
         ("open_positions_count", "INTEGER", 0),
         ("daily_realized_pnl", "TEXT", 0),
-        ("daily_pnl", "REAL", 0),      # REAL 允许（日内聚合）
+        ("daily_pnl", "REAL", 0),  # REAL 允许（日内聚合）
         ("circuit_breaker_active", "INTEGER", 0),
         ("kill_switch_active", "INTEGER", 0),
         ("version", "INTEGER", 0),
     ],
     "cv_config_versions": [
-        ("version", "TEXT", 1),        # PK SemVer 字符串
+        ("version", "TEXT", 1),  # PK SemVer 字符串
         ("config_family", "TEXT", 0),
-        ("is_active", "INTEGER", 0),   # BOOLEAN：全局唯一 1 由触发器保证
+        ("is_active", "INTEGER", 0),  # BOOLEAN：全局唯一 1 由触发器保证
         ("released_at", "TEXT", 0),
-        ("payload_json", "TEXT", 0),   # 替代 SCHEMA_DESIGN 旧名 payload → payload_json
+        ("payload_json", "TEXT", 0),  # 替代 SCHEMA_DESIGN 旧名 payload → payload_json
         ("created_by", "TEXT", 0),
         ("notes", "TEXT", 0),
         ("archived", "INTEGER", 0),
     ],
     "kg_triples": [
-        ("id", "INTEGER", 1),          # AUTOINCREMENT PK
+        ("id", "INTEGER", 1),  # AUTOINCREMENT PK
         ("subject", "TEXT", 0),
         ("predicate", "TEXT", 0),
         ("object", "TEXT", 0),
-        ("confidence", "REAL", 0),     # 0~1 置信度 REAL 业界允许
+        ("confidence", "REAL", 0),  # 0~1 置信度 REAL 业界允许
         ("valid_from", "TEXT", 0),
         ("valid_to", "TEXT", 0),
     ],
@@ -104,7 +118,7 @@ EXPECTED_COLUMNS = {
 
 # --- T3: 2 个关键业务触发器（不变量触发器，不可缺） ---
 EXPECTED_TRIGGERS = {
-    "trg_rs_state_update",      # rs_state UPDATE 自动 version+1 + WHERE id=1 单例
+    "trg_rs_state_update",  # rs_state UPDATE 自动 version+1 + WHERE id=1 单例
     "trg_cv_version_uniq_active",  # cv_config_versions 唯一 is_active=1（取消旧激活）
 }
 
@@ -140,10 +154,7 @@ def _get_tables(conn: sqlite3.Connection) -> set[str]:
     # 过滤 FTS5 虚拟表自动生成的 4 shadow 表（_config / _data / _docsize / _idx）
     # 这些是 FTS 内部表，业务 Schema 不把它们当作独立表
     fts_shadow_suffixes = ("_config", "_data", "_docsize", "_idx")
-    return {
-        t for t in tables
-        if not any(t.endswith(s) for s in fts_shadow_suffixes)
-    }
+    return {t for t in tables if not any(t.endswith(s) for s in fts_shadow_suffixes)}
 
 
 def _get_indexes(conn: sqlite3.Connection) -> set[str]:
@@ -154,9 +165,7 @@ def _get_indexes(conn: sqlite3.Connection) -> set[str]:
 
 
 def _get_triggers(conn: sqlite3.Connection) -> set[str]:
-    rows = conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='trigger'"
-    ).fetchall()
+    rows = conn.execute("SELECT name FROM sqlite_master WHERE type='trigger'").fetchall()
     return {r[0] for r in rows}
 
 
@@ -206,9 +215,9 @@ def test_core_tables_column_types_and_pk_flags(fresh_sqlite: Path, table, expect
         if expected_type:
             # Decimal→TEXT / BOOL→INTEGER 在 SQLite 中 type affinity 宽松，
             # 只要前缀类型一致即通过（不强制精确匹配 COLLATE 等）
-            assert actual_type.startswith(expected_type) or expected_type.startswith(actual_type), (
-                f"[{table}] 列 {col_name} 类型不匹配: 期望 {expected_type}, 实际 {actual_type}"
-            )
+            assert actual_type.startswith(expected_type) or expected_type.startswith(
+                actual_type
+            ), f"[{table}] 列 {col_name} 类型不匹配: 期望 {expected_type}, 实际 {actual_type}"
 
 
 # ============================================================
@@ -279,7 +288,9 @@ def test_add_column_if_missing_restores_column_with_data_preserved(fresh_sqlite:
         )
         # 2) 模拟旧库缺列：ALTER TABLE DROP（SQLite 无 DROP COLUMN 支持旧版，所以用其他方法：
         #    直接在另一张测试表上测 helper 的补列能力更可靠）
-        conn.execute("CREATE TABLE IF NOT EXISTS _test_helper_table (id INTEGER PRIMARY KEY, a TEXT)")
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS _test_helper_table (id INTEGER PRIMARY KEY, a TEXT)"
+        )
         conn.execute("INSERT INTO _test_helper_table (id, a) VALUES (1, 'hello')")
         # 3) 补列 b INTEGER DEFAULT 0
         _add_column_if_missing(conn, "_test_helper_table", "b", "b INTEGER DEFAULT 0")

@@ -9,6 +9,7 @@
 用法:
   python scripts/run_active_training_live.py [--limit 100] [--frontend-url http://localhost:3001]
 """
+
 import argparse
 import json
 import os
@@ -27,9 +28,9 @@ for _p in [_THIS_DIR, _34_DIR, _ADAPTERS_DIR, _CORE_DIR, _SCRIPTS_ROOT]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from core.decision_deriver import derive_expected_decision_with_cdrive
-from core.debate_integration import enrich_case_with_debate
-from core.outcome_pattern_deriver import resolve_layer_tags
+from core.debate_integration import enrich_case_with_debate  # noqa: E402
+from core.decision_deriver import derive_expected_decision_with_cdrive  # noqa: E402
+from core.outcome_pattern_deriver import resolve_layer_tags  # noqa: E402
 
 
 def _curl_get(url: str, timeout: int = 10) -> dict:
@@ -41,7 +42,9 @@ def _curl_get(url: str, timeout: int = 10) -> dict:
 def _curl_post(url: str, body: dict, timeout: int = 10) -> dict:
     data = json.dumps(body).encode("utf-8")
     req = urllib.request.Request(
-        url, data=data, method="POST",
+        url,
+        data=data,
+        method="POST",
         headers={"Content-Type": "application/json"},
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -89,6 +92,7 @@ def collect_from_all_providers(limit: int) -> dict:
     # 1. TDR
     try:
         from tdr_data_provider import TDRTrainingDataProvider
+
         provider = TDRTrainingDataProvider()
         cases = provider.fetch_cases(limit=limit)
         sources["TDR"] = cases
@@ -100,6 +104,7 @@ def collect_from_all_providers(limit: int) -> dict:
     # 2. Cognitive Memory
     try:
         from cognitive_memory_collector import CognitiveMemoryCollector
+
         provider = CognitiveMemoryCollector()
         cases = provider.fetch_cases(limit=limit)
         sources["Cognitive"] = cases
@@ -111,6 +116,7 @@ def collect_from_all_providers(limit: int) -> dict:
     # 3. Skill System
     try:
         from skill_system_collector import SkillSystemCollector
+
         provider = SkillSystemCollector()
         cases = provider.fetch_cases(limit=limit)
         sources["Skill"] = cases
@@ -122,6 +128,7 @@ def collect_from_all_providers(limit: int) -> dict:
     # 4. Doc Knowledge
     try:
         from doc_knowledge_collector import DocKnowledgeCollector
+
         provider = DocKnowledgeCollector()
         cases = provider.fetch_cases(limit=limit)
         sources["Doc"] = cases
@@ -133,6 +140,7 @@ def collect_from_all_providers(limit: int) -> dict:
     # 5. REA Batch
     try:
         from rea_batch_collector import REABatchCollector
+
         provider = REABatchCollector()
         cases = provider.fetch_cases(limit=limit)
         sources["REA"] = cases
@@ -160,7 +168,7 @@ def _summarize_tags(cases) -> str:
 def feed_to_training_layers(base_url: str, sources: dict) -> dict:
     """将采集到的案例喂给 5 层训练循环，返回分发统计。"""
     print(f"\n{'='*60}")
-    print(f"  阶段 2: 喂给训练循环 (POST /api/training/[layer])")
+    print("  阶段 2: 喂给训练循环 (POST /api/training/[layer])")
     print(f"{'='*60}")
 
     layers = ["S", "DSH", "C", "G", "LLM"]
@@ -176,11 +184,13 @@ def feed_to_training_layers(base_url: str, sources: dict) -> dict:
                 stats[layer]["fed"] += 1
                 training_data = _convert_case_to_training_data(case, layer)
                 if len(stats[layer]["samples"]) < 2:
-                    stats[layer]["samples"].append({
-                        "source": source_name,
-                        "intent": getattr(case, "intent", "")[:60],
-                        "data": training_data,
-                    })
+                    stats[layer]["samples"].append(
+                        {
+                            "source": source_name,
+                            "intent": getattr(case, "intent", "")[:60],
+                            "data": training_data,
+                        }
+                    )
                 try:
                     resp = _curl_post(
                         f"{base_url}/api/training/{layer.lower()}",
@@ -208,6 +218,7 @@ def _convert_case_to_training_data(case, layer: str) -> dict:
     P1 修复: 从 quality/confidence 派生 outcome + 归一化 prompt_pattern。
     """
     from core.outcome_pattern_deriver import derive_outcome, normalize_prompt_pattern
+
     outcome = derive_outcome(case)
     prompt_pattern = normalize_prompt_pattern(case)
 
@@ -250,7 +261,7 @@ def _convert_case_to_training_data(case, layer: str) -> dict:
 def trigger_training_if_full(base_url: str, before_status: dict) -> dict:
     """检查各层桶是否满，满了则触发训练。"""
     print(f"\n{'='*60}")
-    print(f"  阶段 3: 检查桶满 + 触发训练")
+    print("  阶段 3: 检查桶满 + 触发训练")
     print(f"{'='*60}")
 
     results = {}
@@ -262,10 +273,12 @@ def trigger_training_if_full(base_url: str, before_status: dict) -> dict:
         delta = after_count - before_count
         should_train = after.get("shouldTrain", False)
 
-        print(f"  {layer:4s} | {before_count:>4} → {after_count:>4} (Δ=+{delta}) | 阈值={threshold} | shouldTrain={should_train}")
+        print(
+            f"  {layer:4s} | {before_count:>4} → {after_count:>4} (Δ=+{delta}) | 阈值={threshold} | shouldTrain={should_train}"
+        )
 
         if should_train or after_count >= threshold:
-            print(f"       → 桶满！触发 train()...", end=" ")
+            print("       → 桶满！触发 train()...", end=" ")
             try:
                 resp = _curl_post(
                     f"{base_url}/api/training/{layer.lower()}",
@@ -273,7 +286,9 @@ def trigger_training_if_full(base_url: str, before_status: dict) -> dict:
                 )
                 data = resp.get("data", {})
                 trained = data.get("trained", False)
-                print(f"trained={trained} | metrics={json.dumps({k:v for k,v in data.items() if k not in ('trained',)}, ensure_ascii=False)[:100]}")
+                print(
+                    f"trained={trained} | metrics={json.dumps({k:v for k,v in data.items() if k not in ('trained',)}, ensure_ascii=False)[:100]}"
+                )
                 results[layer] = {"trained": trained, "data": data}
             except Exception as e:
                 print(f"失败: {e}")
@@ -292,9 +307,9 @@ def main():
 
     base_url = args.frontend_url.rstrip("/")
 
-    print(f"╔══════════════════════════════════════════════════════════════╗")
-    print(f"║  主动训练实时运行 — 意图识别 + DreamOS + DSH + 子节点能力      ║")
-    print(f"╚══════════════════════════════════════════════════════════════╝")
+    print("╔══════════════════════════════════════════════════════════════╗")
+    print("║  主动训练实时运行 — 意图识别 + DreamOS + DSH + 子节点能力      ║")
+    print("╚══════════════════════════════════════════════════════════════╝")
     print(f"  前端服务: {base_url}")
     print(f"  采集上限: {args.limit}/数据源")
     print(f"  时间: {time.strftime('%Y-%m-%d %H:%M:%S')}")
@@ -317,7 +332,7 @@ def main():
 
     # 5. 汇总报告
     print(f"\n{'='*60}")
-    print(f"  汇总报告")
+    print("  汇总报告")
     print(f"{'='*60}")
     total_fed = sum(s["fed"] for s in feed_stats.values())
     total_added = sum(s["added"] for s in feed_stats.values())
@@ -326,24 +341,28 @@ def main():
     print(f"  总喂入: {total_fed} | 总成功: {total_added}")
     print(f"  触发训练: {total_trained} 层")
 
-    print(f"\n  各层详情:")
+    print("\n  各层详情:")
     for layer in ["S", "DSH", "C", "G", "LLM"]:
         s = feed_stats[layer]
         bc_before = before_status.get(layer, {}).get("bucketCount", 0)
         bc_after = after_status.get(layer, {}).get("bucketCount", 0)
         tr = train_results.get(layer, {})
         trained_tag = "✅ TRAINED" if tr.get("trained") else f"桶={bc_after}"
-        print(f"    {layer:4s} | 喂入={s['fed']:>3} 成功={s['added']:>3} | 桶 {bc_before}→{bc_after} | {trained_tag}")
+        print(
+            f"    {layer:4s} | 喂入={s['fed']:>3} 成功={s['added']:>3} | 桶 {bc_before}→{bc_after} | {trained_tag}"
+        )
         if s["samples"]:
             for sample in s["samples"][:1]:
                 if "error" in sample:
                     print(f"          样本错误: {sample['error']}")
                 else:
-                    print(f"          样本来源: {sample.get('source', '?')} | intent: {sample.get('intent', '?')[:40]}")
+                    print(
+                        f"          样本来源: {sample.get('source', '?')} | intent: {sample.get('intent', '?')[:40]}"
+                    )
 
     # 6. 系统联动验证
     print(f"\n{'='*60}")
-    print(f"  系统联动验证")
+    print("  系统联动验证")
     print(f"{'='*60}")
     s_fed = feed_stats["S"]["added"]
     dsh_fed = feed_stats["DSH"]["added"]

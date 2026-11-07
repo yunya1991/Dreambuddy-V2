@@ -21,12 +21,11 @@ import sys
 from datetime import datetime
 from typing import Dict, List, Optional
 
-
 # ── 注册表路径 ──────────────────────────────────────────────────────────────
 
+
 def _registry_path() -> str:
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        "model_registry.json")
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "model_registry.json")
 
 
 def load_registry() -> Dict:
@@ -39,110 +38,105 @@ def load_registry() -> Dict:
 # 新增任务类型：在此表追加一行，无需改其他逻辑
 
 TASK_THRESHOLDS: Dict[str, Dict] = {
-
     # ── 纯代码，不需要模型 ───────────────────────────────────────────────────
     "gate_check": {
         "_code_only": True,
         "description": "门禁轮询，annotation 新鲜度检查",
         "skill": None,
     },
-
     # ── 数据采集层（低智能要求）───────────────────────────────────────────────
     "data_collection": {
-        "reasoning_depth":    1,
-        "chinese_finance":    1,
-        "structured_output":  2,
+        "reasoning_depth": 1,
+        "chinese_finance": 1,
+        "structured_output": 2,
         "instruction_follow": 2,
         "description": "Tavily 搜索 + 结构化数据提取",
         "skill": None,
     },
-
     # ── 单维度 annotation 更新（中等要求）───────────────────────────────────
     "dim_annotation_cycle": {
-        "reasoning_depth":    3,
-        "chinese_finance":    4,
-        "structured_output":  4,
+        "reasoning_depth": 3,
+        "chinese_finance": 4,
+        "structured_output": 4,
         "instruction_follow": 4,
         "description": "B 减半/库存周期 annotation 更新",
         "skill": "/screen1-halving-cycle",
     },
     "dim_annotation_miner": {
-        "reasoning_depth":    3,
-        "chinese_finance":    4,
-        "structured_output":  4,
+        "reasoning_depth": 3,
+        "chinese_finance": 4,
+        "structured_output": 4,
         "instruction_follow": 4,
         "description": "C 矿工经济 annotation 更新",
         "skill": "/screen1-miner-economics",
     },
     "dim_annotation_onchain": {
-        "reasoning_depth":    3,
-        "chinese_finance":    4,
-        "structured_output":  4,
+        "reasoning_depth": 3,
+        "chinese_finance": 4,
+        "structured_output": 4,
         "instruction_follow": 4,
         "description": "D 链上估值 annotation 更新",
         "skill": "/screen1-onchain-valuation",
     },
     "dim_annotation_macro": {
-        "reasoning_depth":    3,
-        "chinese_finance":    4,
-        "structured_output":  4,
+        "reasoning_depth": 3,
+        "chinese_finance": 4,
+        "structured_output": 4,
         "instruction_follow": 4,
         "description": "E 宏观金融 annotation 更新（依赖链起点）",
         "skill": "/screen1-macro-finance",
     },
     "dim_annotation_cross_market": {
-        "reasoning_depth":    3,
-        "chinese_finance":    4,
-        "structured_output":  4,
+        "reasoning_depth": 3,
+        "chinese_finance": 4,
+        "structured_output": 4,
         "instruction_follow": 4,
         "description": "F 跨市场周期 annotation 更新（依赖 E 完成）",
         "skill": "/screen1-cross-market",
         "depends_on": ["dim_annotation_macro"],
     },
-
     # ── A 系列合成层（最高要求，动态选最强可用模型）────────────────────────────
     "synthesis_a1": {
-        "reasoning_depth":    5,
-        "chinese_finance":    4,
-        "structured_output":  3,
+        "reasoning_depth": 5,
+        "chinese_finance": 4,
+        "structured_output": 3,
         "instruction_follow": 5,
         "description": "A1 矛盾论深度研究（dream-strategy-research）",
         "skill": "/dream-strategy-research",
         "prefer_highest": True,
     },
     "synthesis_a2": {
-        "reasoning_depth":    5,
-        "chinese_finance":    4,
-        "structured_output":  3,
+        "reasoning_depth": 5,
+        "chinese_finance": 4,
+        "structured_output": 3,
         "instruction_follow": 5,
         "description": "A2 第一性原理分析（dream-first-principles）",
         "skill": "/dream-first-principles",
         "prefer_highest": True,
     },
     "synthesis_a3": {
-        "reasoning_depth":    5,
-        "chinese_finance":    4,
-        "structured_output":  4,
+        "reasoning_depth": 5,
+        "chinese_finance": 4,
+        "structured_output": 4,
         "instruction_follow": 5,
         "description": "A3 沙盘推演+贝叶斯校准（dream-tactical-validator）",
         "skill": "/dream-tactical-validator",
         "prefer_highest": True,
     },
     "synthesis_cross_asset": {
-        "reasoning_depth":    4,
-        "chinese_finance":    5,
-        "structured_output":  5,
+        "reasoning_depth": 4,
+        "chinese_finance": 5,
+        "structured_output": 5,
         "instruction_follow": 5,
         "description": "跨资产配置输出（screen1-cross-asset）",
         "skill": "/screen1-cross-asset",
         "prefer_highest": True,
     },
-
     # ── 写入层（极低要求）─────────────────────────────────────────────────────
     "json_write": {
-        "reasoning_depth":    1,
-        "chinese_finance":    1,
-        "structured_output":  5,
+        "reasoning_depth": 1,
+        "chinese_finance": 1,
+        "structured_output": 5,
         "instruction_follow": 3,
         "description": "格式化输出并写入 annotation JSON 文件",
         "skill": None,
@@ -154,6 +148,7 @@ _SCORE_DIMS = {"reasoning_depth", "chinese_finance", "structured_output", "instr
 
 
 # ── 核心调度函数 ──────────────────────────────────────────────────────────────
+
 
 def dispatch(task_type: str, registry: Optional[Dict] = None) -> str:
     """
@@ -193,8 +188,7 @@ def dispatch(task_type: str, registry: Optional[Dict] = None) -> str:
     if prefer_highest:
         # 选 reasoning_depth 最高，同分取 cost_tier 最低
         return min(
-            candidates,
-            key=lambda x: (-x[1]["scores"].get("reasoning_depth", 0), x[1]["cost_tier"])
+            candidates, key=lambda x: (-x[1]["scores"].get("reasoning_depth", 0), x[1]["cost_tier"])
         )[0]
     else:
         # 省钱优先
@@ -205,12 +199,12 @@ def get_task_info(task_type: str) -> Dict:
     """返回任务元信息（description / skill / depends_on）."""
     t = TASK_THRESHOLDS.get(task_type, {})
     return {
-        "task_type":   task_type,
+        "task_type": task_type,
         "description": t.get("description", ""),
-        "skill":       t.get("skill"),
-        "depends_on":  t.get("depends_on", []),
+        "skill": t.get("skill"),
+        "depends_on": t.get("depends_on", []),
         "prefer_highest": t.get("prefer_highest", False),
-        "code_only":   t.get("_code_only", False),
+        "code_only": t.get("_code_only", False),
     }
 
 
@@ -235,7 +229,7 @@ def dispatch_screen1_plan(registry: Optional[Dict] = None) -> List[Dict]:
         "dim_annotation_miner",
         "dim_annotation_onchain",
         "dim_annotation_macro",
-        "dim_annotation_cross_market",   # 依赖 macro 完成
+        "dim_annotation_cross_market",  # 依赖 macro 完成
         "synthesis_a1",
         "synthesis_a2",
         "synthesis_a3",
@@ -245,15 +239,17 @@ def dispatch_screen1_plan(registry: Optional[Dict] = None) -> List[Dict]:
     plan = []
     for i, tt in enumerate(screen1_tasks, start=1):
         model = dispatch(tt, registry)
-        info  = get_task_info(tt)
-        plan.append({
-            "step":       i,
-            "task_type":  tt,
-            "model":      model,
-            "skill":      info["skill"],
-            "description": info["description"],
-            "depends_on": info["depends_on"],
-        })
+        info = get_task_info(tt)
+        plan.append(
+            {
+                "step": i,
+                "task_type": tt,
+                "model": model,
+                "skill": info["skill"],
+                "description": info["description"],
+                "depends_on": info["depends_on"],
+            }
+        )
     return plan
 
 
@@ -276,13 +272,14 @@ def update_process_d_score(model_name: str, accuracy: float) -> None:
     if model_name not in reg["models"]:
         raise ValueError(f"模型 {model_name!r} 不在注册表中")
     reg["models"][model_name]["process_d_accuracy"] = round(accuracy, 4)
-    reg["models"][model_name]["last_evaluated"]     = datetime.now().strftime("%Y-%m-%d")
+    reg["models"][model_name]["last_evaluated"] = datetime.now().strftime("%Y-%m-%d")
     reg["updated"] = datetime.now().strftime("%Y-%m-%d")
     with open(_registry_path(), "w", encoding="utf-8") as f:
         json.dump(reg, f, ensure_ascii=False, indent=2)
 
 
 # ── 格式化报告 ─────────────────────────────────────────────────────────────
+
 
 def format_dispatch_plan(plan: List[Dict]) -> str:
     lines = [
@@ -307,6 +304,7 @@ def format_dispatch_plan(plan: List[Dict]) -> str:
 if __name__ == "__main__":
     if sys.platform == "win32":
         import io
+
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
     reg = load_registry()
@@ -316,8 +314,10 @@ if __name__ == "__main__":
     print("可用模型:")
     for name, meta in reg["models"].items():
         status = "✅" if meta["available"] else "—"
-        print(f"  {status} {name:20s}  cost_tier={meta['cost_tier']}  "
-              f"reasoning={meta['scores']['reasoning_depth']}")
+        print(
+            f"  {status} {name:20s}  cost_tier={meta['cost_tier']}  "
+            f"reasoning={meta['scores']['reasoning_depth']}"
+        )
 
     plan = dispatch_screen1_plan(reg)
     print()

@@ -9,8 +9,8 @@
 5. 策略推荐（基于历史案例的策略适配）
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any
+from dataclasses import dataclass, field  # noqa: I001
+from typing import Dict, List, Optional, Any
 
 from scripts.memory_l4.kg_store import Entity, KGStore, Triple
 
@@ -18,6 +18,7 @@ from scripts.memory_l4.kg_store import Entity, KGStore, Triple
 @dataclass
 class KGQueryResult:
     """知识图谱查询结果。"""
+
     triples: List[Triple]
     entities: List[Entity]
     paths: List[List[Triple]] = field(default_factory=list)
@@ -67,9 +68,9 @@ class KGQueryEngine:
             return self.kg.list_entities_by_type(entity_type)
         rows = self.kg.db.execute("SELECT * FROM entities").fetchall()
         import json
+
         return [
-            Entity(name=r[0], type=r[1], properties=json.loads(r[2]) if r[2] else {})
-            for r in rows
+            Entity(name=r[0], type=r[1], properties=json.loads(r[2]) if r[2] else {}) for r in rows
         ]
 
     def search(self, query: str, limit: int = 20) -> KGQueryResult:
@@ -226,13 +227,15 @@ class KGQueryEngine:
         results = []
         for strategy, pnls in strategies.items():
             win_rate = sum(1 for p in pnls if p > 0) / len(pnls)
-            results.append({
-                "strategy": strategy,
-                "total_cases": len(pnls),
-                "win_rate": round(win_rate, 3),
-                "avg_pnl": round(sum(pnls) / len(pnls), 4),
-                "regime": regime,
-            })
+            results.append(
+                {
+                    "strategy": strategy,
+                    "total_cases": len(pnls),
+                    "win_rate": round(win_rate, 3),
+                    "avg_pnl": round(sum(pnls) / len(pnls), 4),
+                    "regime": regime,
+                }
+            )
 
         results.sort(key=lambda x: x["win_rate"], reverse=True)
         return results
@@ -307,17 +310,19 @@ class KGQueryEngine:
             for strategy, data in strategies.items():
                 win_rate = data["profit"] / data["total"] if data["total"] > 0 else 0.0
                 avg_pnl = sum(data["pnls"]) / len(data["pnls"]) if data["pnls"] else 0.0
-                recommendations.append({
-                    "strategy": strategy,
-                    "total_cases": data["total"],
-                    "win_rate": round(win_rate, 3),
-                    "avg_pnl": round(avg_pnl, 4),
-                    "conditions": {
-                        "inst_id": inst_id,
-                        "regime": regime,
-                        "hexagram": hexagram,
-                    },
-                })
+                recommendations.append(
+                    {
+                        "strategy": strategy,
+                        "total_cases": data["total"],
+                        "win_rate": round(win_rate, 3),
+                        "avg_pnl": round(avg_pnl, 4),
+                        "conditions": {
+                            "inst_id": inst_id,
+                            "regime": regime,
+                            "hexagram": hexagram,
+                        },
+                    }
+                )
 
             recommendations.sort(key=lambda x: x["win_rate"], reverse=True)
             return recommendations
@@ -372,7 +377,15 @@ class KGQueryEngine:
         stats = self.kg.get_stats()
 
         # 获取各类型实体数量
-        entity_types = ["Instrument", "Strategy", "Regime", "Hexagram", "TradeCase", "Distill", "Constraint"]
+        entity_types = [
+            "Instrument",
+            "Strategy",
+            "Regime",
+            "Hexagram",
+            "TradeCase",
+            "Distill",
+            "Constraint",
+        ]
         entity_counts = {}
         for etype in entity_types:
             ents = self.kg.list_entities_by_type(etype)
@@ -400,9 +413,11 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(description="交易知识图谱查询引擎")
-    parser.add_argument("--mode", default="summary", choices=[
-        "summary", "search", "neighbors", "strategy", "recommend", "regime"
-    ])
+    parser.add_argument(
+        "--mode",
+        default="summary",
+        choices=["summary", "search", "neighbors", "strategy", "recommend", "regime"],
+    )
     parser.add_argument("--query", default="", help="搜索查询")
     parser.add_argument("--entity", default="", help="实体名称")
     parser.add_argument("--regime", default="", help="市态")
@@ -414,6 +429,7 @@ def main() -> None:
     if args.mode == "summary":
         summary = engine.get_knowledge_summary()
         import json
+
         print(json.dumps(summary, ensure_ascii=False, indent=2))
 
     elif args.mode == "search":
@@ -440,6 +456,7 @@ def main() -> None:
             return
         eff = engine.infer_strategy_effectiveness(args.strategy)
         import json
+
         print(json.dumps(eff, ensure_ascii=False, indent=2))
 
     elif args.mode == "recommend":
@@ -449,7 +466,9 @@ def main() -> None:
         )
         print(f"策略推荐 ({len(result)} 条):")
         for r in result[:5]:
-            print(f"  {r['strategy']}: 胜率={r['win_rate']:.1%}, 平均收益={r['avg_pnl']:.2%}, 案例数={r['total_cases']}")
+            print(
+                f"  {r['strategy']}: 胜率={r['win_rate']:.1%}, 平均收益={r['avg_pnl']:.2%}, 案例数={r['total_cases']}"
+            )
 
     elif args.mode == "regime":
         if not args.regime:

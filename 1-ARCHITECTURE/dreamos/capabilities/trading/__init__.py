@@ -22,37 +22,56 @@ Dream OS — 交易能力域 (Trading Capability Domain)
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from dreamos.registry import NodeRegistry
-
 
 # 交易能力域元数据
 CAPABILITY_ID = "trading"
 CAPABILITY_NAME = "交易能力域"
-CAPABILITY_DESCRIPTION = "通过交易赚钱的完整能力实现，包含矛盾分析、技术扫描、策略制定、风控门禁、执行离场等22个交易节点"
+CAPABILITY_DESCRIPTION = (
+    "通过交易赚钱的完整能力实现，包含矛盾分析、技术扫描、策略制定、风控门禁、执行离场等22个交易节点"
+)
 CAPABILITY_VERSION = "2.2.0"
 
 # 交易能力域支持的意图类型
 SUPPORTED_INTENTS = [
-    "TREND_FOLLOWING",      # 趋势跟随
-    "MEAN_REVERSION",       # 均值回归
-    "BREAKOUT",             # 突破交易
-    "MOMENTUM",             # 动量交易
-    "ARBITRAGE",            # 套利
-    "SCALPING",             # 剥头皮
-    "SWING_TRADING",        # 波段交易
-    "POSITION_TRADING",     # 仓位交易
-    "MARKET_ANALYSIS",      # 市场分析
-    "RISK_MANAGEMENT",      # 风险管理
+    "TREND_FOLLOWING",  # 趋势跟随
+    "MEAN_REVERSION",  # 均值回归
+    "BREAKOUT",  # 突破交易
+    "MOMENTUM",  # 动量交易
+    "ARBITRAGE",  # 套利
+    "SCALPING",  # 剥头皮
+    "SWING_TRADING",  # 波段交易
+    "POSITION_TRADING",  # 仓位交易
+    "MARKET_ANALYSIS",  # 市场分析
+    "RISK_MANAGEMENT",  # 风险管理
     "PORTFOLIO_REBALANCE",  # 组合再平衡
 ]
 
 # 交易能力域标签（用于意图匹配）
 CAPABILITY_TAGS = [
-    "trading", "trade", "交易", "做多", "做空", "买入", "卖出",
-    "btc", "eth", "sol", "crypto", "合约", "杠杆", "止损", "止盈",
-    "趋势", "突破", "反转", "动量", "波动率", "技术指标",
+    "trading",
+    "trade",
+    "交易",
+    "做多",
+    "做空",
+    "买入",
+    "卖出",
+    "btc",
+    "eth",
+    "sol",
+    "crypto",
+    "合约",
+    "杠杆",
+    "止损",
+    "止盈",
+    "趋势",
+    "突破",
+    "反转",
+    "动量",
+    "波动率",
+    "技术指标",
 ]
 
 
@@ -89,6 +108,7 @@ class TradingCapability:
             注册的节点数量
         """
         from dreamos.capabilities.trading.nodes import register_all
+
         count = register_all(registry=registry)
         self._nodes_registered = True
         return count
@@ -161,9 +181,11 @@ class TradingCapability:
         }
 
     def __repr__(self) -> str:
-        return (f"<TradingCapability id={self.capability_id} "
-                f"version={self.version} "
-                f"registered={self._nodes_registered}>")
+        return (
+            f"<TradingCapability id={self.capability_id} "
+            f"version={self.version} "
+            f"registered={self._nodes_registered}>"
+        )
 
 
 # 便捷函数
@@ -173,22 +195,30 @@ def get_trading_capability() -> TradingCapability:
 
 
 # ── Phase 1: A-series coin selection layer ──────────────────────
-from dreamos.capabilities.trading.coin_selector import CoinSelector, CoinSelectorNode
-
-# ── Phase 2: B-series Yijing signal generator ────────────────────
-from dreamos.capabilities.trading.yijing_signal_generator import YijingSignalGenerator, YijingSignalGeneratorNode
-
-# ── Phase 3: C-series V15 Martin executor ────────────────────────
-from dreamos.capabilities.trading.v15_executor import V15Executor, V15ExecutorNode
-
-# ── Phase 4: D-series signal router ──────────────────────────────
-from dreamos.capabilities.trading.signal_router import SignalRouter, SignalRouterNode
-
 # ── Phase 5: E-series cognitive reviewer ────────────────────────
-from dreamos.capabilities.trading.cognitive_reviewer import CognitiveReviewer, CognitiveReviewerNode
+from dreamos.capabilities.trading.cognitive_reviewer import (  # noqa: E402
+    CognitiveReviewer,
+    CognitiveReviewerNode,
+)  # noqa: E402, I001
+from dreamos.capabilities.trading.coin_selector import CoinSelector, CoinSelectorNode  # noqa: E402
 
 # ── Phase 6: F-series orchestrator v2 ───────────────────────────
-from dreamos.capabilities.trading.orchestrator_v2 import OrchestratorV2, OrchestratorV2Node
+from dreamos.capabilities.trading.orchestrator_v2 import (  # noqa: E402
+    OrchestratorV2,
+    OrchestratorV2Node,
+)  # noqa: E402
+
+# ── Phase 4: D-series signal router ──────────────────────────────
+from dreamos.capabilities.trading.signal_router import SignalRouter, SignalRouterNode  # noqa: E402
+
+# ── Phase 3: C-series V15 Martin executor ────────────────────────
+from dreamos.capabilities.trading.v15_executor import V15Executor, V15ExecutorNode  # noqa: E402
+
+# ── Phase 2: B-series Yijing signal generator ────────────────────
+from dreamos.capabilities.trading.yijing_signal_generator import (  # noqa: E402
+    YijingSignalGenerator,
+    YijingSignalGeneratorNode,
+)
 
 __all__ = [
     "TradingCapability",

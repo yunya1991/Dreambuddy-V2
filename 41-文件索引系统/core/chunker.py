@@ -11,7 +11,9 @@ SPEC-41-文件索引系统 v0.6 §2.2（v0.5 闭环 A2，三级兜底策略）
 禁止固定 token 长度机械切分（中信建投 15 万文档规模验证经验，SPEC §7.7）。
 位置: 41-文件索引系统/core/chunker.py
 """
+
 from __future__ import annotations
+
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,11 +25,11 @@ _HEADING_RE = re.compile(r"^ {0,3}(#{1,6})\s+(.+)$")
 # 代码定义行（函数/类/导出，SPEC §2.2）
 _CODE_DEF_RE = re.compile(
     r"^\s*"
-    r"(?:def\s+\w+"                      # Python def
-    r"|class\s+\w+"                      # Python/JS class
-    r"|function\s+\w+"                   # JS function
-    r"|export\s+"                        # JS export
-    r"|const\s+\w+\s*=\s*\("           # const xxx = (
+    r"(?:def\s+\w+"  # Python def
+    r"|class\s+\w+"  # Python/JS class
+    r"|function\s+\w+"  # JS function
+    r"|export\s+"  # JS export
+    r"|const\s+\w+\s*=\s*\("  # const xxx = (
     r")"
 )
 
@@ -35,18 +37,19 @@ _CODE_DEF_RE = re.compile(
 CODE_EXTS = {".py", ".ts", ".tsx", ".js", ".jsx", ".go", ".rs", ".sh", ".java", ".c", ".cpp"}
 
 # 窗口参数（SPEC §2.2）
-WINDOW_LINES = 256      # 兜底窗口行数
-WINDOW_OVERLAP = 16    # 窗口重叠行数
-MAX_CODE_CHUNK = 512   # 代码单块上限，超过二次切分
+WINDOW_LINES = 256  # 兜底窗口行数
+WINDOW_OVERLAP = 16  # 窗口重叠行数
+MAX_CODE_CHUNK = 512  # 代码单块上限，超过二次切分
 
 
 @dataclass(frozen=True)
 class Chunk:
     """语义分块结果（chunks 表行，boundary_kind 对齐 SPEC §4.1）。"""
-    heading: str                 # 所属标题（可空串）
-    position: int                # 块序号（从 0 起）
-    boundary_kind: str          # heading / paragraph / window / code
-    content: str                 # 块原文
+
+    heading: str  # 所属标题（可空串）
+    position: int  # 块序号（从 0 起）
+    boundary_kind: str  # heading / paragraph / window / code
+    content: str  # 块原文
 
 
 class Chunker:
@@ -64,7 +67,7 @@ class Chunker:
         if path.suffix.lower() in CODE_EXTS:
             return self._chunk_code(text)
         lines = text.splitlines()
-        if any(_HEADING_RE.match(l) for l in lines):
+        if any(_HEADING_RE.match(l) for l in lines):  # noqa: E741
             return self._chunk_by_heading(text)
         if self._has_paragraphs(text):
             return self._chunk_by_paragraph(text)
@@ -80,12 +83,14 @@ class Chunker:
         def flush() -> None:
             content = "\n".join(buf).strip()
             if content:
-                chunks.append(Chunk(
-                    heading=current_heading,
-                    position=len(chunks),
-                    boundary_kind="heading",
-                    content=content,
-                ))
+                chunks.append(
+                    Chunk(
+                        heading=current_heading,
+                        position=len(chunks),
+                        boundary_kind="heading",
+                        content=content,
+                    )
+                )
             buf.clear()
 
         for line in text.splitlines():
@@ -123,12 +128,14 @@ class Chunker:
         start = 0
         while start < len(lines):
             end = min(start + WINDOW_LINES, len(lines))
-            chunks.append(Chunk(
-                heading="",
-                position=len(chunks),
-                boundary_kind="window",
-                content="\n".join(lines[start:end]),
-            ))
+            chunks.append(
+                Chunk(
+                    heading="",
+                    position=len(chunks),
+                    boundary_kind="window",
+                    content="\n".join(lines[start:end]),
+                )
+            )
             if end >= len(lines):
                 break
             start = end - WINDOW_OVERLAP  # 窗口重叠 16 行，保证跨窗口语义连续
@@ -146,19 +153,23 @@ class Chunker:
             if content.strip():
                 if len(buf) > MAX_CODE_CHUNK:  # 超 512 行二次切分
                     for w in self._chunk_by_window(buf):
-                        chunks.append(Chunk(
+                        chunks.append(
+                            Chunk(
+                                heading="",
+                                position=len(chunks),
+                                boundary_kind="code",
+                                content=w.content,
+                            )
+                        )
+                else:
+                    chunks.append(
+                        Chunk(
                             heading="",
                             position=len(chunks),
                             boundary_kind="code",
-                            content=w.content,
-                        ))
-                else:
-                    chunks.append(Chunk(
-                        heading="",
-                        position=len(chunks),
-                        boundary_kind="code",
-                        content=content,
-                    ))
+                            content=content,
+                        )
+                    )
             buf.clear()
 
         for line in lines:

@@ -4,17 +4,19 @@
 detect_top1_shift 三个方法，以及 FAIL-OPEN 中性默认。
 对应 Spec §三 Step 4-B（PCA 共振定强度）。
 """
-import pytest
+
 import sys
 from pathlib import Path
+
+import pytest
 
 # 将 memory_l4 加入 sys.path（force_vector 包所在目录）
 _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.models import PCAResonance
-from force_vector.pca_resonance_analyzer import PCAResonanceAnalyzer
+from force_vector.models import PCAResonance  # noqa: E402
+from force_vector.pca_resonance_analyzer import PCAResonanceAnalyzer  # noqa: E402
 
 
 class TestComputeResonance:
@@ -27,7 +29,11 @@ class TestComputeResonance:
         """
         analyzer = PCAResonanceAnalyzer()
         powers = {
-            "dao": 0.5, "tian": 0.3, "di": 0.4, "jiang": 0.35, "fa": 0.1,
+            "dao": 0.5,
+            "tian": 0.3,
+            "di": 0.4,
+            "jiang": 0.35,
+            "fa": 0.1,
         }
         result = analyzer.compute_resonance(powers, dominant_dim="dao")
         assert isinstance(result, PCAResonance)
@@ -43,7 +49,11 @@ class TestComputeResonance:
         """五维同向（全负）→ sign_alignment=1.0 → strength_coefficient=1.3。"""
         analyzer = PCAResonanceAnalyzer()
         powers = {
-            "dao": -0.5, "tian": -0.3, "di": -0.4, "jiang": -0.35, "fa": -0.1,
+            "dao": -0.5,
+            "tian": -0.3,
+            "di": -0.4,
+            "jiang": -0.35,
+            "fa": -0.1,
         }
         result = analyzer.compute_resonance(powers, dominant_dim="dao")
         assert result.sign_alignment == pytest.approx(1.0, abs=1e-6)
@@ -54,7 +64,11 @@ class TestComputeResonance:
         """其他四维中3个同向 → sign_alignment=0.75 → 强共振 → ×1.2。"""
         analyzer = PCAResonanceAnalyzer()
         powers = {
-            "dao": 0.5, "tian": 0.3, "di": 0.4, "jiang": 0.35, "fa": -0.1,
+            "dao": 0.5,
+            "tian": 0.3,
+            "di": 0.4,
+            "jiang": 0.35,
+            "fa": -0.1,
         }
         result = analyzer.compute_resonance(powers, dominant_dim="dao")
         assert result.sign_alignment == pytest.approx(0.75, abs=1e-6)
@@ -65,7 +79,11 @@ class TestComputeResonance:
         """多数反向（4 维中 3 个反向）→ 冲突 → strength_coefficient<=0.5。"""
         analyzer = PCAResonanceAnalyzer()
         powers = {
-            "dao": 0.5, "tian": -0.3, "di": -0.4, "jiang": -0.35, "fa": 0.1,
+            "dao": 0.5,
+            "tian": -0.3,
+            "di": -0.4,
+            "jiang": -0.35,
+            "fa": 0.1,
         }
         result = analyzer.compute_resonance(powers, dominant_dim="dao")
         # 主导 dao 为正；其余 4 维 3 负 1 正 → sign_alignment=0.25
@@ -77,7 +95,11 @@ class TestComputeResonance:
         """其他四维全部与主导反向 → sign_alignment=0.0 → 全冲突 → ×0.3。"""
         analyzer = PCAResonanceAnalyzer()
         powers = {
-            "dao": 0.5, "tian": -0.3, "di": -0.4, "jiang": -0.35, "fa": -0.1,
+            "dao": 0.5,
+            "tian": -0.3,
+            "di": -0.4,
+            "jiang": -0.35,
+            "fa": -0.1,
         }
         result = analyzer.compute_resonance(powers, dominant_dim="dao")
         assert result.sign_alignment == pytest.approx(0.0, abs=1e-6)
@@ -91,7 +113,11 @@ class TestComputeResonance:
         """
         analyzer = PCAResonanceAnalyzer()
         powers = {
-            "dao": 0.5, "tian": 0.3, "di": 0.4, "jiang": -0.35, "fa": -0.1,
+            "dao": 0.5,
+            "tian": 0.3,
+            "di": 0.4,
+            "jiang": -0.35,
+            "fa": -0.1,
         }
         result = analyzer.compute_resonance(powers, dominant_dim="dao")
         # 主导 dao 正；其余 2 正(tian,di) 2 负(jiang,fa) → sign_alignment=0.5
@@ -140,8 +166,8 @@ class TestTop1Shift:
     def test_top1_switched(self):
         """top-1 特征切换（rank=1 从 idx0 变 idx1）→ True。"""
         analyzer = PCAResonanceAnalyzer()
-        ranks_t_prev = [1, 2, 3, 4, 5]   # feature 0 是 top-1
-        ranks_t = [2, 1, 3, 4, 5]        # feature 1 变为 top-1
+        ranks_t_prev = [1, 2, 3, 4, 5]  # feature 0 是 top-1
+        ranks_t = [2, 1, 3, 4, 5]  # feature 1 变为 top-1
         assert analyzer.detect_top1_shift(ranks_t, ranks_t_prev) is True
 
     def test_top1_unchanged_when_only_lower_ranks_shuffle(self):

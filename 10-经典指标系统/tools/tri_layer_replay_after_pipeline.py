@@ -14,7 +14,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 
-def _http_get_json(base_url: str, path: str, params: Optional[Dict[str, Any]] = None, timeout: float = 1800.0) -> Dict[str, Any]:
+def _http_get_json(
+    base_url: str, path: str, params: Optional[Dict[str, Any]] = None, timeout: float = 1800.0
+) -> Dict[str, Any]:
     q = ""
     if isinstance(params, dict) and params:
         q = "?" + urllib.parse.urlencode({k: v for k, v in params.items() if v is not None})
@@ -25,7 +27,9 @@ def _http_get_json(base_url: str, path: str, params: Optional[Dict[str, Any]] = 
     return json.loads(body) if body.strip() else {}
 
 
-def _http_post_json(base_url: str, path: str, payload: Dict[str, Any], timeout: float = 7200.0) -> Dict[str, Any]:
+def _http_post_json(
+    base_url: str, path: str, payload: Dict[str, Any], timeout: float = 7200.0
+) -> Dict[str, Any]:
     url = f"{base_url.rstrip('/')}{path}"
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(url=url, data=data, method="POST")
@@ -42,7 +46,9 @@ def _repo_rel_config_path(p: str) -> Path:
     return Path(os.getcwd()) / str(p)
 
 
-def _prepare_autodownload_config(config_path: str, trace_id: str, enabled: bool) -> Tuple[str, Optional[Path]]:
+def _prepare_autodownload_config(
+    config_path: str, trace_id: str, enabled: bool
+) -> Tuple[str, Optional[Path]]:
     if not bool(enabled):
         return str(config_path), None
     src = _repo_rel_config_path(config_path)
@@ -72,7 +78,7 @@ def _pick_new_zip(base_url: str, before_names: set, wait_sec: int) -> str:
     while time.time() <= deadline:
         try:
             after_list = _http_get_json(base_url, "/backtest/results", params={"limit": 200})
-            for x in (after_list.get("results") or []):
+            for x in after_list.get("results") or []:
                 if not isinstance(x, dict):
                     continue
                 name = str(x.get("name") or "").strip()
@@ -99,10 +105,16 @@ def _is_addon_tag(tag: Any) -> bool:
     return ("addon" in t) or ("add_on" in t) or ("scale_in" in t)
 
 
-def _extract_zip_trades(zip_path: Path, strategy: Optional[str]) -> Tuple[str, List[Dict[str, Any]]]:
+def _extract_zip_trades(
+    zip_path: Path, strategy: Optional[str]
+) -> Tuple[str, List[Dict[str, Any]]]:
     with zipfile.ZipFile(str(zip_path), "r") as zf:
         names = zf.namelist()
-        mains = [n for n in names if n.endswith(".json") and ("_config" not in n) and ("_Strategy" not in n)]
+        mains = [
+            n
+            for n in names
+            if n.endswith(".json") and ("_config" not in n) and ("_Strategy" not in n)
+        ]
         if not mains:
             raise RuntimeError("backtest_main_json_not_found")
         main = json.loads(zf.read(mains[0]))
@@ -234,10 +246,14 @@ def _metrics(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
 def _delta(before: Dict[str, Any], after: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "open_total": int(after.get("open_total", 0)) - int(before.get("open_total", 0)),
-        "filled_open_total": int(after.get("filled_open_total", 0)) - int(before.get("filled_open_total", 0)),
-        "net_bias_count": float(after.get("net_bias_count", 0.0)) - float(before.get("net_bias_count", 0.0)),
-        "net_bias_notional": float(after.get("net_bias_notional", 0.0)) - float(before.get("net_bias_notional", 0.0)),
-        "addon_pass_rate": float(after.get("addon_pass_rate", 0.0)) - float(before.get("addon_pass_rate", 0.0)),
+        "filled_open_total": int(after.get("filled_open_total", 0))
+        - int(before.get("filled_open_total", 0)),
+        "net_bias_count": float(after.get("net_bias_count", 0.0))
+        - float(before.get("net_bias_count", 0.0)),
+        "net_bias_notional": float(after.get("net_bias_notional", 0.0))
+        - float(before.get("net_bias_notional", 0.0)),
+        "addon_pass_rate": float(after.get("addon_pass_rate", 0.0))
+        - float(before.get("addon_pass_rate", 0.0)),
     }
 
 
@@ -267,7 +283,13 @@ def main() -> int:
     temp_cfg_path: Optional[Path] = None
     if not zip_name:
         before_list = _http_get_json(args.base_url, "/backtest/results", params={"limit": 200})
-        before_names = set([str((x or {}).get("name") or "") for x in (before_list.get("results") or []) if isinstance(x, dict)])
+        before_names = set(  # noqa: C403
+            [
+                str((x or {}).get("name") or "")
+                for x in (before_list.get("results") or [])
+                if isinstance(x, dict)
+            ]
+        )
         cfg_path_eff, temp_cfg_path = _prepare_autodownload_config(
             config_path=str(args.config),
             trace_id=str(args.trace_id),
@@ -282,7 +304,12 @@ def main() -> int:
         if str(args.strategy).strip():
             payload["strategy"] = str(args.strategy).strip()
         try:
-            bt = _http_post_json(args.base_url, "/automation/backtest/run", payload=payload, timeout=max(120.0, float(args.timeout_sec) + 120.0))
+            bt = _http_post_json(
+                args.base_url,
+                "/automation/backtest/run",
+                payload=payload,
+                timeout=max(120.0, float(args.timeout_sec) + 120.0),
+            )
         except TimeoutError:
             bt = {"ok": False, "error": "client_timeout_waiting_backtest_response"}
         except urllib.error.URLError as e:
@@ -290,12 +317,14 @@ def main() -> int:
         if bool(bt.get("ok", False)):
             zip_name = str(bt.get("result_zip") or "").strip()
         else:
-            zip_name = _pick_new_zip(args.base_url, before_names, int(max(30, args.wait_new_zip_sec)))
+            zip_name = _pick_new_zip(
+                args.base_url, before_names, int(max(30, args.wait_new_zip_sec))
+            )
             if not zip_name:
                 raise RuntimeError(f"backtest_failed:{bt.get('error')}")
         if not zip_name:
             after_list = _http_get_json(args.base_url, "/backtest/results", params={"limit": 200})
-            for x in (after_list.get("results") or []):
+            for x in after_list.get("results") or []:
                 if not isinstance(x, dict):
                     continue
                 name = str(x.get("name") or "").strip()
@@ -305,21 +334,36 @@ def main() -> int:
     if not zip_name:
         raise RuntimeError("result_zip_not_found")
 
-    rv_payload: Dict[str, Any] = {"trace_id": str(args.trace_id), "zip": zip_name, "n_slices": int(max(1, args.folds))}
+    rv_payload: Dict[str, Any] = {
+        "trace_id": str(args.trace_id),
+        "zip": zip_name,
+        "n_slices": int(max(1, args.folds)),
+    }
     if str(args.strategy).strip():
         rv_payload["strategy"] = str(args.strategy).strip()
-    rolling = _http_post_json(args.base_url, "/evaluation/rolling_verify", payload=rv_payload, timeout=1800.0)
+    rolling = _http_post_json(
+        args.base_url, "/evaluation/rolling_verify", payload=rv_payload, timeout=1800.0
+    )
 
-    mc_payload: Dict[str, Any] = {"trace_id": str(args.trace_id), "zip": zip_name, "n_bootstrap": int(max(1, args.monte_runs)), "n_shuffle": 0}
+    mc_payload: Dict[str, Any] = {
+        "trace_id": str(args.trace_id),
+        "zip": zip_name,
+        "n_bootstrap": int(max(1, args.monte_runs)),
+        "n_shuffle": 0,
+    }
     if str(args.strategy).strip():
         mc_payload["strategy"] = str(args.strategy).strip()
-    monte = _http_post_json(args.base_url, "/evaluation/monte_carlo", payload=mc_payload, timeout=1800.0)
+    monte = _http_post_json(
+        args.base_url, "/evaluation/monte_carlo", payload=mc_payload, timeout=1800.0
+    )
 
     zip_path = Path("user_data/backtest_results") / zip_name
     if not zip_path.exists():
         raise RuntimeError(f"zip_not_found:{zip_path}")
 
-    strategy_name, trades = _extract_zip_trades(zip_path=zip_path, strategy=(str(args.strategy).strip() or None))
+    strategy_name, trades = _extract_zip_trades(
+        zip_path=zip_path, strategy=(str(args.strategy).strip() or None)
+    )
     after_rows: List[Dict[str, Any]] = []
     for tr in trades:
         if not isinstance(tr, dict):

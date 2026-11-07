@@ -66,18 +66,16 @@ class FSampleStrategy(IStrategy):
         dataframe["mfi"] = ta.MFI(dataframe)
 
         # Bollinger Bands
-        bollinger = qtpylib.bollinger_bands(
-            qtpylib.typical_price(dataframe), window=20, stds=2
-        )
+        bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
         dataframe["bb_lowerband"] = bollinger["lower"]
         dataframe["bb_middleband"] = bollinger["mid"]
         dataframe["bb_upperband"] = bollinger["upper"]
         dataframe["bb_percent"] = (dataframe["close"] - dataframe["bb_lowerband"]) / (
             dataframe["bb_upperband"] - dataframe["bb_lowerband"]
         )
-        dataframe["bb_width"] = (
-            dataframe["bb_upperband"] - dataframe["bb_lowerband"]
-        ) / dataframe["bb_middleband"]
+        dataframe["bb_width"] = (dataframe["bb_upperband"] - dataframe["bb_lowerband"]) / dataframe[
+            "bb_middleband"
+        ]
 
         # Parabolic SAR
         dataframe["sar"] = ta.SAR(dataframe)
@@ -101,12 +99,8 @@ class FSampleStrategy(IStrategy):
                 # Signal: RSI crosses above 30
                 (qtpylib.crossed_above(dataframe["rsi"], 30))
                 & (dataframe["tema"] <= dataframe["bb_middleband"])
-                & (  # Guard: tema below BB middle
-                    dataframe["tema"] > dataframe["tema"].shift(1)
-                )
-                & (  # Guard: tema is raising
-                    dataframe["volume"] > 0
-                )  # Make sure Volume is not 0
+                & (dataframe["tema"] > dataframe["tema"].shift(1))  # Guard: tema below BB middle
+                & (dataframe["volume"] > 0)  # Guard: tema is raising  # Make sure Volume is not 0
             ),
             "enter_long",
         ] = 1
@@ -116,12 +110,8 @@ class FSampleStrategy(IStrategy):
                 # Signal: RSI crosses above 70
                 (qtpylib.crossed_above(dataframe["rsi"], 70))
                 & (dataframe["tema"] > dataframe["bb_middleband"])
-                & (  # Guard: tema above BB middle
-                    dataframe["tema"] < dataframe["tema"].shift(1)
-                )
-                & (  # Guard: tema is falling
-                    dataframe["volume"] > 0
-                )  # Make sure Volume is not 0
+                & (dataframe["tema"] < dataframe["tema"].shift(1))  # Guard: tema above BB middle
+                & (dataframe["volume"] > 0)  # Guard: tema is falling  # Make sure Volume is not 0
             ),
             "enter_short",
         ] = 1
@@ -134,12 +124,8 @@ class FSampleStrategy(IStrategy):
                 # Signal: RSI crosses above 70
                 (qtpylib.crossed_above(dataframe["rsi"], 70))
                 & (dataframe["tema"] > dataframe["bb_middleband"])
-                & (  # Guard: tema above BB middle
-                    dataframe["tema"] < dataframe["tema"].shift(1)
-                )
-                & (  # Guard: tema is falling
-                    dataframe["volume"] > 0
-                )  # Make sure Volume is not 0
+                & (dataframe["tema"] < dataframe["tema"].shift(1))  # Guard: tema above BB middle
+                & (dataframe["volume"] > 0)  # Guard: tema is falling  # Make sure Volume is not 0
             ),
             "exit_long",
         ] = 1
@@ -152,9 +138,7 @@ class FSampleStrategy(IStrategy):
                 # Guard: tema below BB middle
                 (dataframe["tema"] <= dataframe["bb_middleband"])
                 & (dataframe["tema"] > dataframe["tema"].shift(1))
-                & (  # Guard: tema is raising
-                    dataframe["volume"] > 0
-                )  # Make sure Volume is not 0
+                & (dataframe["volume"] > 0)  # Guard: tema is raising  # Make sure Volume is not 0
             ),
             "exit_short",
         ] = 1

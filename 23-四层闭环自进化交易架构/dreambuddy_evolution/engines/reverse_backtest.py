@@ -11,13 +11,13 @@ P3: 模拟交易场景，对比启用/不启用逆向推导（因子权重调整
 
 预期: 启用逆向推导后，噪声维度 C1 权重降低，决策更依赖 C2/C3，胜率提升。
 """
+
 from __future__ import annotations
 
 import logging
 from typing import Any
 
 import numpy as np
-
 from reverse_deriver import ReverseDeriver
 
 logger = logging.getLogger(__name__)
@@ -32,8 +32,7 @@ class ReverseDerivationBacktest:
         self._rng = rng or np.random.RandomState(0)
         self._deriver = ReverseDeriver()
 
-    def run(self, enable_reverse: bool, n_trades: int = 200,
-            warmup: int = 20) -> dict[str, Any]:
+    def run(self, enable_reverse: bool, n_trades: int = 200, warmup: int = 20) -> dict[str, Any]:
         """运行回测.
 
         Args:
@@ -44,7 +43,7 @@ class ReverseDerivationBacktest:
         Returns:
             {win_rate, total_trades, wins, losses, final_weights}
         """
-        weights = {d: 1.0 for d in self.DIMS}
+        weights = dict.fromkeys(self.DIMS, 1.0)
         wins = 0
         losses = 0
 
@@ -57,7 +56,8 @@ class ReverseDerivationBacktest:
             for dim in self.DIMS:
                 acc = 0.40 if dim == "C1" else 0.70  # C1 噪声，C2/C3 准确
                 predictions[dim] = (
-                    real_direction if self._rng.rand() < acc
+                    real_direction
+                    if self._rng.rand() < acc
                     else ("short" if real_direction == "long" else "long")
                 )
 

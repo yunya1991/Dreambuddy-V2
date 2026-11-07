@@ -24,13 +24,14 @@ BTC 4阶段路径：
   T-L7：§19认知函数 → 价格信号更新认知
   T-L8：全联动BTC 4阶段路径模拟（6机制同时工作）
 """
+
 from __future__ import annotations
 
-import pytest
-import numpy as np
-from pathlib import Path
 import sys
-from unittest.mock import patch, MagicMock
+from pathlib import Path
+from unittest.mock import patch
+
+import numpy as np
 
 # portfolio_risk_fuses 在 11-易经推理系统 下
 _PRF_PATH = str(Path(__file__).resolve().parents[3] / "11-易经推理系统" / "scripts" / "memory_l4")
@@ -47,8 +48,10 @@ class TestSixMechanismIntegration:
         数据流：ExogenousStrengthEvaluator.get_primary_contradiction()
                → ElasticConstraintResolver.resolve(primary, secondary, primary_tf, secondary_tf)
         """
-        from dreambuddy_evolution.core.exogenous_strength_evaluator import ExogenousStrengthEvaluator
         from dreambuddy_evolution.core.elastic_constraint_resolver import ElasticConstraintResolver
+        from dreambuddy_evolution.core.exogenous_strength_evaluator import (
+            ExogenousStrengthEvaluator,
+        )
 
         # §15 层级primary判定
         evaluator = ExogenousStrengthEvaluator()
@@ -57,7 +60,7 @@ class TestSixMechanismIntegration:
             "fundamental": {"short": 0.5, "medium": 0.5, "long": 0.5},
             "macro": {"short": 0.8, "medium": 0.5, "long": 0.5},  # short bull
         }
-        with patch.object(evaluator, 'evaluate', return_value=mock_evals):
+        with patch.object(evaluator, "evaluate", return_value=mock_evals):
             primary = evaluator.get_primary_contradiction({})
 
         assert primary is not None
@@ -67,7 +70,8 @@ class TestSixMechanismIntegration:
         resolver = ElasticConstraintResolver()
         secondary = {"direction": "bull", "strength": 0.6, "timeframe": "short"}
         result = resolver.resolve(
-            primary, secondary,
+            primary,
+            secondary,
             primary_tf=primary["timeframe"],  # "long"
             secondary_tf=secondary["timeframe"],  # "short"
         )
@@ -84,8 +88,7 @@ class TestSixMechanismIntegration:
         primary = {"direction": "bear", "strength": 0.55, "timeframe": "long"}
         secondary = {"direction": "bull", "strength": 0.45, "timeframe": "short"}
 
-        result = resolver.resolve(primary, secondary,
-                                   primary_tf="long", secondary_tf="short")
+        result = resolver.resolve(primary, secondary, primary_tf="long", secondary_tf="short")
 
         # position_mult 应在 [floor, 1.0] 范围
         assert 0.1 <= result["position_mult"] <= 1.0
@@ -103,13 +106,17 @@ class TestSixMechanismIntegration:
         solver = HJBPathSolver()
 
         # 阶段2：支撑反弹 → primary从bear切换到bull
-        result_base = solver.solve(
-            start_price=100.0, horizon=20, volatility=0.02,
+        result_base = solver.solve(  # noqa: F841
+            start_price=100.0,
+            horizon=20,
+            volatility=0.02,
             primary_contradiction={"direction": "bear", "strength": 0.6},
         )
 
         result_shift = solver.solve(
-            start_price=100.0, horizon=20, volatility=0.02,
+            start_price=100.0,
+            horizon=20,
+            volatility=0.02,
             primary_contradiction={"direction": "bear", "strength": 0.6},
             shift_points=[(10, {"direction": "bull", "strength": 0.7})],
         )
@@ -131,12 +138,20 @@ class TestSixMechanismIntegration:
 
         # 基线转移概率
         probs_base = solver._transition_probabilities(
-            32, grid, drift=0.0, volatility=0.02, dt=1.0,
+            32,
+            grid,
+            drift=0.0,
+            volatility=0.02,
+            dt=1.0,
         )
 
         # 反身性燃料偏移
         probs_fuel = solver._transition_probabilities(
-            32, grid, drift=0.0, volatility=0.02, dt=1.0,
+            32,
+            grid,
+            drift=0.0,
+            volatility=0.02,
+            dt=1.0,
             reflexivity_fuel={"type": "leverage", "intensity": 0.5},
         )
 
@@ -156,7 +171,9 @@ class TestSixMechanismIntegration:
 
         # 三机制同时作用
         result = solver.solve(
-            start_price=100.0, horizon=20, volatility=0.02,
+            start_price=100.0,
+            horizon=20,
+            volatility=0.02,
             r_vector={"long": 1.0, "short": -1.0, "wait": 0.0},
             primary_contradiction={"direction": "bear", "strength": 0.6},
             reflexivity_fuel={"type": "leverage", "intensity": 0.8},
@@ -199,15 +216,19 @@ class TestSixMechanismIntegration:
         monitor = ReflexivityMonitor()
 
         # 阶段1：价格下跌→利空信号
-        result_bear = monitor.adjust_cognition([
-            {"type": "price", "signal": 0.3, "weight": 1.0},  # 利空
-        ])
+        result_bear = monitor.adjust_cognition(
+            [
+                {"type": "price", "signal": 0.3, "weight": 1.0},  # 利空
+            ]
+        )
         assert result_bear["cognition"] < 0.5, "利空信号应使认知下降"
 
         # 阶段2：价格反弹→利多信号
-        result_bull = monitor.adjust_cognition([
-            {"type": "price", "signal": 0.7, "weight": 1.0},  # 利多
-        ])
+        result_bull = monitor.adjust_cognition(
+            [
+                {"type": "price", "signal": 0.7, "weight": 1.0},  # 利多
+            ]
+        )
         # 认知应从阶段1的低位上升
         assert result_bull["cognition"] > result_bear["cognition"]
 
@@ -219,11 +240,14 @@ class TestSixMechanismIntegration:
         阶段3：重新主导 → §18质变切换primary回bear
         阶段4：恐慌级联 → §16 G-05触发 → §19认知继续下降
         """
-        from dreambuddy_evolution.core.exogenous_strength_evaluator import ExogenousStrengthEvaluator
+        from portfolio_risk_fuses import PortfolioRiskFuses
+
         from dreambuddy_evolution.core.elastic_constraint_resolver import ElasticConstraintResolver
+        from dreambuddy_evolution.core.exogenous_strength_evaluator import (
+            ExogenousStrengthEvaluator,
+        )
         from dreambuddy_evolution.core.hjb_solver import HJBPathSolver
         from dreambuddy_evolution.core.reflexivity_monitor import ReflexivityMonitor
-        from portfolio_risk_fuses import PortfolioRiskFuses
 
         # === 初始化6个机制 ===
         evaluator = ExogenousStrengthEvaluator()
@@ -239,7 +263,7 @@ class TestSixMechanismIntegration:
             "fundamental": {"short": 0.5, "medium": 0.5, "long": 0.3},  # long bear
             "macro": {"short": 0.5, "medium": 0.5, "long": 0.5},
         }
-        with patch.object(evaluator, 'evaluate', return_value=mock_evals_stage1):
+        with patch.object(evaluator, "evaluate", return_value=mock_evals_stage1):
             primary_stage1 = evaluator.get_primary_contradiction({})
 
         assert primary_stage1 is not None
@@ -247,17 +271,21 @@ class TestSixMechanismIntegration:
         assert primary_stage1["direction"] == "bear"
 
         # §19 认知函数：价格下跌→利空
-        cog_stage1 = monitor.adjust_cognition([
-            {"type": "price", "signal": 0.3, "weight": 1.0},
-        ])
+        cog_stage1 = monitor.adjust_cognition(
+            [
+                {"type": "price", "signal": 0.3, "weight": 1.0},
+            ]
+        )
         assert cog_stage1["cognition"] < 0.5
 
         # === 阶段2：支撑反弹 ===
         # §20 弹性约束：long bear 约束 short bull
         secondary_stage2 = {"direction": "bull", "strength": 0.6, "timeframe": "short"}
         elastic_stage2 = resolver.resolve(
-            primary_stage1, secondary_stage2,
-            primary_tf="long", secondary_tf="short",
+            primary_stage1,
+            secondary_stage2,
+            primary_tf="long",
+            secondary_tf="short",
         )
         assert elastic_stage2["constraint_active"] is True
         # 力量接近 → 层级驱动 → long约束short → T_max增大
@@ -265,7 +293,9 @@ class TestSixMechanismIntegration:
 
         # §18 质变驱动 + §14 HJB燃料偏移 + §15 primary
         hjb_stage2 = solver.solve(
-            start_price=100.0, horizon=20, volatility=0.02,
+            start_price=100.0,
+            horizon=20,
+            volatility=0.02,
             r_vector={"long": 1.0, "short": -1.0, "wait": 0.0},
             primary_contradiction=primary_stage1,
             reflexivity_fuel={"type": "leverage", "intensity": 0.5},
@@ -275,14 +305,18 @@ class TestSixMechanismIntegration:
         assert np.all(np.isfinite(hjb_stage2["value_function"]))
 
         # §19 认知函数：价格反弹→利多
-        cog_stage2 = monitor.adjust_cognition([
-            {"type": "price", "signal": 0.7, "weight": 1.0},
-        ])
+        cog_stage2 = monitor.adjust_cognition(
+            [
+                {"type": "price", "signal": 0.7, "weight": 1.0},
+            ]
+        )
         assert cog_stage2["cognition"] > cog_stage1["cognition"]
 
         # === 阶段3：重新主导（质变切换primary回bear）===
         hjb_stage3 = solver.solve(
-            start_price=95.0, horizon=20, volatility=0.03,  # 波动率增大
+            start_price=95.0,
+            horizon=20,
+            volatility=0.03,  # 波动率增大
             r_vector={"long": 1.0, "short": -1.0, "wait": 0.0},
             primary_contradiction={"direction": "bull", "strength": 0.7},  # 反弹中
             shift_points=[(5, {"direction": "bear", "strength": 0.8})],  # 切回bear
@@ -294,28 +328,30 @@ class TestSixMechanismIntegration:
         # §16 G-05 4判据全满足
         ctx_stage4 = {
             "total_unrealized_pnl_pct": -8.0,
-            "primary_dim_jumped": True,      # ① primary维度跳变
-            "mechanism_active": True,         # ② 机制性强制（杠杆清算）
-            "no_bounce_at_key": True,         # ③ 关键位无反弹
-            "no_intervener": True,           # ④ 干预者缺席
+            "primary_dim_jumped": True,  # ① primary维度跳变
+            "mechanism_active": True,  # ② 机制性强制（杠杆清算）
+            "no_bounce_at_key": True,  # ③ 关键位无反弹
+            "no_intervener": True,  # ④ 干预者缺席
         }
         g05_result = fuses.tick_and_check(ctx_stage4)
         assert g05_result.emergency_shutdown is True
         assert "g05_cascade" in g05_result.reason
 
         # §19 认知函数：恐慌下跌→利空
-        cog_stage4 = monitor.adjust_cognition([
-            {"type": "price", "signal": 0.1, "weight": 1.0},  # 恐慌
-        ])
+        cog_stage4 = monitor.adjust_cognition(
+            [
+                {"type": "price", "signal": 0.1, "weight": 1.0},  # 恐慌
+            ]
+        )
         assert cog_stage4["cognition"] < cog_stage2["cognition"]
 
         # === 全联动验证 ===
         # 6个机制全部产出有效结果
-        assert primary_stage1 is not None       # §15
-        assert elastic_stage2["t_max"] > 0      # §20
-        assert hjb_stage2["backend"] == "hjb"    # §14+§18
+        assert primary_stage1 is not None  # §15
+        assert elastic_stage2["t_max"] > 0  # §20
+        assert hjb_stage2["backend"] == "hjb"  # §14+§18
         assert g05_result.emergency_shutdown is True  # §16
-        assert cog_stage4["cognition"] < 0.5     # §19
+        assert cog_stage4["cognition"] < 0.5  # §19
 
 
 class TestFullDataFlowClosure:
@@ -323,8 +359,10 @@ class TestFullDataFlowClosure:
 
     def test_data_flow_no_break_15_to_20(self):
         """§15→§20 数据流：primary.timeframe → resolve(primary_tf)."""
-        from dreambuddy_evolution.core.exogenous_strength_evaluator import ExogenousStrengthEvaluator
         from dreambuddy_evolution.core.elastic_constraint_resolver import ElasticConstraintResolver
+        from dreambuddy_evolution.core.exogenous_strength_evaluator import (
+            ExogenousStrengthEvaluator,
+        )
 
         evaluator = ExogenousStrengthEvaluator()
         mock_evals = {
@@ -332,13 +370,14 @@ class TestFullDataFlowClosure:
             "fundamental": {"short": 0.5, "medium": 0.5, "long": 0.5},
             "macro": {"short": 0.5, "medium": 0.5, "long": 0.5},
         }
-        with patch.object(evaluator, 'evaluate', return_value=mock_evals):
+        with patch.object(evaluator, "evaluate", return_value=mock_evals):
             primary = evaluator.get_primary_contradiction({})
 
         resolver = ElasticConstraintResolver()
         # primary 的 timeframe 被传入 resolve
         result = resolver.resolve(
-            primary, {"direction": "bull", "strength": 0.5, "timeframe": "short"},
+            primary,
+            {"direction": "bull", "strength": 0.5, "timeframe": "short"},
             primary_tf=primary["timeframe"],
             secondary_tf="short",
         )
@@ -350,7 +389,9 @@ class TestFullDataFlowClosure:
 
         solver = HJBPathSolver()
         result = solver.solve(
-            start_price=100.0, horizon=20, volatility=0.02,
+            start_price=100.0,
+            horizon=20,
+            volatility=0.02,
             primary_contradiction={"direction": "bear", "strength": 0.6},
             reflexivity_fuel={"type": "leverage", "intensity": 0.5},
             shift_points=[(10, {"direction": "bull", "strength": 0.7})],
@@ -365,7 +406,7 @@ class TestFullDataFlowClosure:
         # primary_dim_jumped 来自 ContradictionShiftAccumulator.detect_shift()
         ctx = {
             "total_unrealized_pnl_pct": -5.0,
-            "primary_dim_jumped": True,   # §15层级primary维度跳变
+            "primary_dim_jumped": True,  # §15层级primary维度跳变
             "mechanism_active": True,
             "no_bounce_at_key": True,
             "no_intervener": True,
@@ -375,14 +416,16 @@ class TestFullDataFlowClosure:
 
     def test_data_flow_no_break_19_cognition_to_14_fuel(self):
         """§19→§14 数据流：认知状态 → 反身性λ → HJB燃料."""
-        from dreambuddy_evolution.core.reflexivity_monitor import ReflexivityMonitor
         from dreambuddy_evolution.core.hjb_solver import HJBPathSolver
+        from dreambuddy_evolution.core.reflexivity_monitor import ReflexivityMonitor
 
         monitor = ReflexivityMonitor()
         # §19 认知更新
-        cog = monitor.adjust_cognition([
-            {"type": "price", "signal": 0.3, "weight": 1.0},
-        ])
+        cog = monitor.adjust_cognition(
+            [
+                {"type": "price", "signal": 0.3, "weight": 1.0},
+            ]
+        )
 
         # 认知影响反身性λ → 构造燃料
         # （实盘中 cognition → λ → fuel 的连接通过 pipeline 完成）
@@ -390,21 +433,25 @@ class TestFullDataFlowClosure:
 
         solver = HJBPathSolver()
         result = solver.solve(
-            start_price=100.0, horizon=20, volatility=0.02,
+            start_price=100.0,
+            horizon=20,
+            volatility=0.02,
             reflexivity_fuel=fuel,
         )
         assert result["backend"] == "hjb"  # 无断裂
 
     def test_failopen_all_mechanisms_degrade_gracefully(self):
         """FAIL-OPEN：所有机制异常时优雅降级."""
-        from dreambuddy_evolution.core.hjb_solver import HJBPathSolver
         from dreambuddy_evolution.core.elastic_constraint_resolver import ElasticConstraintResolver
+        from dreambuddy_evolution.core.hjb_solver import HJBPathSolver
         from dreambuddy_evolution.core.reflexivity_monitor import ReflexivityMonitor
 
         # HJB：所有参数异常
         solver = HJBPathSolver()
         result = solver.solve(
-            start_price=100.0, horizon=20, volatility=0.02,
+            start_price=100.0,
+            horizon=20,
+            volatility=0.02,
             primary_contradiction=None,
             reflexivity_fuel={"type": "unknown", "intensity": 999},
             shift_points="invalid_format",

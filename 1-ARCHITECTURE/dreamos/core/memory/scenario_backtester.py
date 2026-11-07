@@ -15,12 +15,12 @@
 from __future__ import annotations
 
 import json
-import os
-import sys
 import logging
 import math
-from typing import Dict, Any, List, Optional, Tuple
+import os
+import sys
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +29,8 @@ _dreamos_root = Path(__file__).parent.parent.parent.parent
 if str(_dreamos_root) not in sys.path:
     sys.path.insert(0, str(_dreamos_root))
 
-from dreamos.core.sense.scenario_classifier import ScenarioClassifier, ScenarioResult
-from dreamos.core.memory.orchestration_memory import OrchestrationMemory
-from dreamos.shared.state import State, NodeResult, new_state
+from dreamos.core.sense.scenario_classifier import ScenarioClassifier  # noqa: E402
+from dreamos.shared.state import new_state  # noqa: E402
 
 
 class ScenarioBacktester:
@@ -48,11 +47,11 @@ class ScenarioBacktester:
     # 5种编排模式（来自 stress_test.py 第90-96行）
     # 注意: 所有 pattern 必须包含 A4→A5→A9 执行节点, 否则无法生成 trade_order
     GRAPH_PATTERNS = {
-        "c_chain":     ["C1", "C2", "C3", "A2", "A4", "A5", "A9"],
-        "c_f_chain":   ["C1", "C2", "F1", "F3", "A2", "A4", "A5", "A9"],
-        "full_chain":  ["C1", "C2", "F2", "G1", "A2", "A4", "A5", "A9"],
-        "f_chain":     ["F1", "F2", "F3", "F4", "A2", "A4", "A5", "A9"],
-        "c_g_chain":   ["C1", "C3", "G1", "A2", "A4", "A5", "A9"],
+        "c_chain": ["C1", "C2", "C3", "A2", "A4", "A5", "A9"],
+        "c_f_chain": ["C1", "C2", "F1", "F3", "A2", "A4", "A5", "A9"],
+        "full_chain": ["C1", "C2", "F2", "G1", "A2", "A4", "A5", "A9"],
+        "f_chain": ["F1", "F2", "F3", "F4", "A2", "A4", "A5", "A9"],
+        "c_g_chain": ["C1", "C3", "G1", "A2", "A4", "A5", "A9"],
     }
 
     def __init__(self, data_dir: Optional[str] = None):
@@ -66,8 +65,9 @@ class ScenarioBacktester:
     def _get_registry(self):
         """延迟初始化节点注册表"""
         if self._registry is None:
-            from dreamos.registry import get_default_registry
             from dreamos.capabilities.trading.nodes import register_all
+            from dreamos.registry import get_default_registry
+
             self._registry = get_default_registry()
             register_all(self._registry)
         return self._registry
@@ -88,7 +88,9 @@ class ScenarioBacktester:
             {scenario_id: {pattern: {score, sharpe, return, max_dd, win_rate, sample_count}}}
         """
         data_files = self._load_data_files()
-        logger.info(f"回测启动: {len(data_files)} 数据文件, 窗口={window_size}, 步长={step}, 持有={hold_periods}")
+        logger.info(
+            f"回测启动: {len(data_files)} 数据文件, 窗口={window_size}, 步长={step}, 持有={hold_periods}"
+        )
 
         # {scenario_id: {pattern: [trade_results]}}
         all_trades: Dict[str, Dict[str, List[float]]] = {}
@@ -100,11 +102,13 @@ class ScenarioBacktester:
                 # 5m 数据用更大窗口（288根≈1天）和步长，覆盖更多趋势场景
                 is_5m = symbol.endswith("_5m")
                 f_window = window_size * 12 if is_5m else window_size  # 5m: 288, 1h: 24
-                f_step = step * 6 if is_5m else step                  # 5m: 36,  1h: 6
+                f_step = step * 6 if is_5m else step  # 5m: 36,  1h: 6
                 f_hold = hold_periods * 12 if is_5m else hold_periods  # 5m: 144, 1h: 12
 
                 if len(klines) < f_window + f_hold:
-                    logger.warning(f"{symbol}: 数据不足 ({len(klines)} < {f_window + f_hold})，跳过")
+                    logger.warning(
+                        f"{symbol}: 数据不足 ({len(klines)} < {f_window + f_hold})，跳过"
+                    )
                     continue
 
                 file_trades = self._backtest_file(klines, symbol, f_window, f_step, f_hold)
@@ -118,7 +122,9 @@ class ScenarioBacktester:
                             all_trades[sid][pattern] = []
                         all_trades[sid][pattern].extend(trades)
 
-                logger.info(f"{symbol}: {len(file_trades)} 场景, 窗口数≈{(len(klines)-f_window-f_hold)//f_step + 1}")
+                logger.info(
+                    f"{symbol}: {len(file_trades)} 场景, 窗口数≈{(len(klines)-f_window-f_hold)//f_step + 1}"
+                )
             except Exception as e:
                 logger.error(f"回测 {file_path} 失败: {e}")
                 continue
@@ -154,13 +160,49 @@ class ScenarioBacktester:
             hl_files = sorted([f for f in os.listdir(hl_dir) if f.endswith(".json")])
             # 主流币 + 高波动币种（覆盖 BULL/BEAR + EXTREME 场景）
             main_coins = [
-                "BTC", "ETH", "SOL", "AVAX", "LINK", "ARB", "DOGE", "ADA",
-                "BNB", "XRP", "DOT", "NEAR", "APT", "SUI", "TIA", "SEI",
-                "WLD", "ENA", "PEPE", "FET", "LTC", "BCH", "TRX",
+                "BTC",
+                "ETH",
+                "SOL",
+                "AVAX",
+                "LINK",
+                "ARB",
+                "DOGE",
+                "ADA",
+                "BNB",
+                "XRP",
+                "DOT",
+                "NEAR",
+                "APT",
+                "SUI",
+                "TIA",
+                "SEI",
+                "WLD",
+                "ENA",
+                "PEPE",
+                "FET",
+                "LTC",
+                "BCH",
+                "TRX",
                 # 高波动小币种（覆盖 EXTREME 场景）
-                "FARTCOIN", "POPCAT", "WIF", "BONK", "MEME", "TRUMP", "HYPE",
-                "GRASS", "GOAT", "VIRTUAL", "PUMP", "ZRO", "INIT", "BERA",
-                "KAITO", "LAYER", "MORPHO", "PENDLE", "RESOLV",
+                "FARTCOIN",
+                "POPCAT",
+                "WIF",
+                "BONK",
+                "MEME",
+                "TRUMP",
+                "HYPE",
+                "GRASS",
+                "GOAT",
+                "VIRTUAL",
+                "PUMP",
+                "ZRO",
+                "INIT",
+                "BERA",
+                "KAITO",
+                "LAYER",
+                "MORPHO",
+                "PENDLE",
+                "RESOLV",
             ]
             added = set()
             for fname in hl_files:
@@ -191,8 +233,9 @@ class ScenarioBacktester:
     # 回测核心
     # ============================================================
 
-    def _backtest_file(self, klines: list, symbol: str,
-                       window_size: int, step: int, hold_periods: int) -> Dict[str, Dict[str, List[float]]]:
+    def _backtest_file(
+        self, klines: list, symbol: str, window_size: int, step: int, hold_periods: int
+    ) -> Dict[str, Dict[str, List[float]]]:
         """回测单个数据文件
 
         Returns:
@@ -201,8 +244,8 @@ class ScenarioBacktester:
         result: Dict[str, Dict[str, List[float]]] = {}
 
         for i in range(0, len(klines) - window_size - hold_periods, step):
-            window = klines[i:i + window_size]
-            future = klines[i + window_size:i + window_size + hold_periods]
+            window = klines[i : i + window_size]
+            future = klines[i + window_size : i + window_size + hold_periods]
 
             # 构造market_data
             market_data = self._build_market_data(window, symbol)
@@ -279,12 +322,17 @@ class ScenarioBacktester:
             "macd": macd_val,
             "macd_signal": macd_signal,
             "macd_hist": macd_hist,
-            "vol_ratio": volumes[-1] / (sum(volumes[-20:]) / 20) if len(volumes) >= 20 and sum(volumes[-20:]) > 0 else 1.0,
+            "vol_ratio": (
+                volumes[-1] / (sum(volumes[-20:]) / 20)
+                if len(volumes) >= 20 and sum(volumes[-20:]) > 0
+                else 1.0
+            ),
             "vol_20d_avg": vol_20d_avg,
         }
 
-    def _simulate_trade(self, node_ids: List[str], market_data: Dict[str, Any],
-                        future: list, symbol: str) -> Optional[float]:
+    def _simulate_trade(
+        self, node_ids: List[str], market_data: Dict[str, Any], future: list, symbol: str
+    ) -> Optional[float]:
         """模拟单笔交易
 
         1. 用窗口数据跑编排链获取方向+置信度
@@ -318,7 +366,7 @@ class ScenarioBacktester:
                     direction = result.direction
                     confidence = max(confidence, result.confidence)
                 # 将结果存入state供后续节点使用
-                if hasattr(state, 'results') and result:
+                if hasattr(state, "results") and result:
                     state.results[node_id] = result
             except Exception as e:
                 logger.debug(f"回测中节点 {node_id} 执行失败: {e}")
@@ -349,9 +397,15 @@ class ScenarioBacktester:
     # 评分计算
     # ============================================================
 
-    def quick_compare(self, scenario_id: str, pattern_a: str, nodes_a: List[str],
-                      pattern_b: str, nodes_b: List[str],
-                      max_samples: int = 30) -> Dict[str, Any]:
+    def quick_compare(
+        self,
+        scenario_id: str,
+        pattern_a: str,
+        nodes_a: List[str],
+        pattern_b: str,
+        nodes_b: List[str],
+        max_samples: int = 30,
+    ) -> Dict[str, Any]:
         """快速对比两种编排模式在指定场景下的得分
 
         用于沙箱验证：从历史数据中筛选属于该场景的窗口，
@@ -377,8 +431,14 @@ class ScenarioBacktester:
         """
         data_files = self._load_data_files()
         if not data_files:
-            return {"scenario_id": scenario_id, "samples": 0, "winner": None,
-                    "score_diff": 0, pattern_a: {}, pattern_b: {}}
+            return {
+                "scenario_id": scenario_id,
+                "samples": 0,
+                "winner": None,
+                "score_diff": 0,
+                pattern_a: {},
+                pattern_b: {},
+            }
 
         trades_a: List[float] = []
         trades_b: List[float] = []
@@ -400,8 +460,8 @@ class ScenarioBacktester:
                 for i in range(0, len(klines) - window_size - hold, step):
                     if matched >= max_samples:
                         break
-                    window = klines[i:i + window_size]
-                    future = klines[i + window_size:i + window_size + hold]
+                    window = klines[i : i + window_size]
+                    future = klines[i + window_size : i + window_size + hold]
 
                     market_data = self._build_market_data(window, symbol)
                     if market_data is None:
@@ -553,7 +613,9 @@ class ScenarioBacktester:
             return 0
         return (new - old) / old * 100
 
-    def _atr_pct(self, highs: List[float], lows: List[float], closes: List[float], period: int) -> float:
+    def _atr_pct(
+        self, highs: List[float], lows: List[float], closes: List[float], period: int
+    ) -> float:
         """ATR占价格的百分比"""
         if len(closes) < period + 1:
             period = len(closes) - 1
@@ -563,7 +625,7 @@ class ScenarioBacktester:
         trs = []
         for i in range(-period, 0):
             h = highs[i]
-            l = lows[i]
+            l = lows[i]  # noqa: E741
             pc = closes[i - 1]
             tr = max(h - l, abs(h - pc), abs(l - pc))
             trs.append(tr)
@@ -604,8 +666,8 @@ class ScenarioBacktester:
         # signal = EMA(macd_line, 9)，简化处理
         macd_values = []
         for i in range(-9, 0):
-            e12 = self._ema(closes[:i+12] if i+12 < 0 else closes[:12], 12)
-            e26 = self._ema(closes[:i+26] if i+26 < 0 else closes[:26], 26)
+            e12 = self._ema(closes[: i + 12] if i + 12 < 0 else closes[:12], 12)
+            e26 = self._ema(closes[: i + 26] if i + 26 < 0 else closes[:26], 26)
             macd_values.append(e12 - e26)
 
         if macd_values:

@@ -11,12 +11,12 @@
   T8  Gateway 热切换: 在内存里造 bilstm.pt / patchtst.pt 假 state_dict 文件，
       调 hot_swap_models(bilstm_path, patchtst_path) strict=True 成功 → path 更新 + 原缓存失效
 """
+
 from __future__ import annotations
 
 import json
-import os
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest  # type: ignore
@@ -27,17 +27,14 @@ if str(_V15_ROOT) not in sys.path:
     sys.path.insert(0, str(_V15_ROOT))
 
 from incremental_trainer import (  # noqa: E402
-    ModelVersionManager,
     IncrementalTrainer,
-    IncrementalTrainerState,
-    DEFAULT_WINDOW_DAYS,
-    DEFAULT_MIN_NEW_TRADES,
+    ModelVersionManager,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def mgr(tmp_path):
@@ -58,13 +55,15 @@ def _fake_pt_file(path, size=8):
 # T1-T4: ModelVersionManager
 # ---------------------------------------------------------------------------
 
+
 def test_t1_register_first_vs_second_version(mgr, tmp_path):
     base = mgr.base_dir
     # v1 首版本也注册为 shadow（必须通过 AB 评估才能晋升 live）
     v1_b = _fake_pt_file(base / "v1" / "bilstm.pt")
     v1_p = _fake_pt_file(base / "v1" / "patchtst.pt")
-    v1 = mgr.register_version(v1_b, v1_p, {"bilstm": {"best_val_loss": 0.12}},
-                              sample_count=500, coins=["BTC", "ETH"])
+    v1 = mgr.register_version(
+        v1_b, v1_p, {"bilstm": {"best_val_loss": 0.12}}, sample_count=500, coins=["BTC", "ETH"]
+    )
     assert v1 == "v1"
     assert mgr.state.current_live_version is None  # 首版本是 shadow，不是 live
     assert mgr.state.current_shadow_version == "v1"
@@ -72,8 +71,9 @@ def test_t1_register_first_vs_second_version(mgr, tmp_path):
     # v2 也是 shadow
     v2_b = _fake_pt_file(base / "v2" / "bilstm.pt")
     v2_p = _fake_pt_file(base / "v2" / "patchtst.pt")
-    v2 = mgr.register_version(v2_b, v2_p, {"bilstm": {"best_val_loss": 0.09}},
-                              sample_count=620, coins=["BTC"])
+    v2 = mgr.register_version(
+        v2_b, v2_p, {"bilstm": {"best_val_loss": 0.09}}, sample_count=620, coins=["BTC"]
+    )
     assert v2 == "v2"
     assert mgr.state.current_shadow_version == "v2"
     assert mgr.get_shadow_paths() == (v2_b, v2_p)
@@ -82,9 +82,12 @@ def test_t1_register_first_vs_second_version(mgr, tmp_path):
 def test_t2_promote_shadow_demotes_old_live(mgr):
     base = mgr.base_dir
     # 先注册 v1 live + v2 shadow
-    v1_b = _fake_pt_file(base / "v1" / "bilstm.pt"); v1_p = _fake_pt_file(base / "v1" / "patchtst.pt")
-    v2_b = _fake_pt_file(base / "v2" / "bilstm.pt"); v2_p = _fake_pt_file(base / "v2" / "patchtst.pt")
-    mgr.register_version(v1_b, v1_p, {}); mgr.register_version(v2_b, v2_p, {})
+    v1_b = _fake_pt_file(base / "v1" / "bilstm.pt")
+    v1_p = _fake_pt_file(base / "v1" / "patchtst.pt")
+    v2_b = _fake_pt_file(base / "v2" / "bilstm.pt")
+    v2_p = _fake_pt_file(base / "v2" / "patchtst.pt")
+    mgr.register_version(v1_b, v1_p, {})
+    mgr.register_version(v2_b, v2_p, {})
     # promote v2
     ok = mgr.promote_shadow("v2")
     assert ok is True
@@ -102,12 +105,16 @@ def test_t2_promote_shadow_demotes_old_live(mgr):
 def test_t3_rollback_live(mgr):
     base = mgr.base_dir
     # 先 v1 live
-    v1_b = _fake_pt_file(base / "v1" / "bilstm.pt"); v1_p = _fake_pt_file(base / "v1" / "patchtst.pt")
+    v1_b = _fake_pt_file(base / "v1" / "bilstm.pt")
+    v1_p = _fake_pt_file(base / "v1" / "patchtst.pt")
     mgr.register_version(v1_b, v1_p, {})
     # 手动再 promote v2 —— 先造 v2 shadow
-    v2_b = _fake_pt_file(base / "v2" / "bilstm.pt"); v2_p = _fake_pt_file(base / "v2" / "patchtst.pt")
+    v2_b = _fake_pt_file(base / "v2" / "bilstm.pt")
+    v2_p = _fake_pt_file(base / "v2" / "patchtst.pt")
     mgr.register_version(v2_b, v2_p, {})
-    mgr.promote_shadow("v2")  # v2 promoted, v1->shadow promoted_at保留吗？看实现promoted_at只有新live写
+    mgr.promote_shadow(
+        "v2"
+    )  # v2 promoted, v1->shadow promoted_at保留吗？看实现promoted_at只有新live写
     # 回滚 → 候选是 status=shadow 且 promoted_at 的。但 v1 没经过重新被 demote 写 promoted_at=None 吗？看 rollback_live 实现里 demote current live 清 promoted_at，候选 shadow 要求有 promoted_at 且不是当前 live。
     # 手动把 v1 的 promoted_at 设置一下（模拟它曾经 live 过）
     for v in mgr.state.versions:
@@ -130,7 +137,8 @@ def test_t4_disable_and_archive(mgr):
     state_f = base.parent / "inc_state_max2.json"
     mgr2 = ModelVersionManager(base_dir=str(base), state_file=str(state_f), max_versions=2)
     for i in range(3):
-        b = _fake_pt_file(base / f"m{i}" / "bilstm.pt"); p = _fake_pt_file(base / f"m{i}" / "patchtst.pt")
+        b = _fake_pt_file(base / f"m{i}" / "bilstm.pt")
+        p = _fake_pt_file(base / f"m{i}" / "patchtst.pt")
         mgr2.register_version(b, p, {"i": i})
     # 现在版本数 > max_versions，但 live/shadow 不会被 archive。只有非 live/shadow 会被 archive
     # 3 个版本：v1=live (first promoted), v2=shadow, v3=shadow (max 2 shadow slots actually only last shadow tracks; last register sets shadow to latest v3 但 v2 还是 shadow)
@@ -145,6 +153,7 @@ def test_t4_disable_and_archive(mgr):
 # ---------------------------------------------------------------------------
 # T5: check_new_trades
 # ---------------------------------------------------------------------------
+
 
 def test_t5_check_new_trades_various(tmp_path, monkeypatch):
     model_dir = tmp_path / "models"
@@ -174,8 +183,13 @@ def test_t5_check_new_trades_various(tmp_path, monkeypatch):
     good = tmp_path / "good.json"
     trades = []
     for i in range(7):
-        trades.append({"coin": "BTC", "pnl_usdt": 0.1 * i,
-                       "timestamp": (datetime.utcnow() - timedelta(hours=i)).isoformat() + "Z"})
+        trades.append(
+            {
+                "coin": "BTC",
+                "pnl_usdt": 0.1 * i,
+                "timestamp": (datetime.utcnow() - timedelta(hours=i)).isoformat() + "Z",
+            }
+        )
     good.write_text(json.dumps(trades), encoding="utf-8")
     it.trade_history_file = good
     it._last_trade_count = 2
@@ -189,10 +203,13 @@ def test_t5_check_new_trades_various(tmp_path, monkeypatch):
 # T6: auto_retrain_if_needed skip vs retrain (mocked _run_training)
 # ---------------------------------------------------------------------------
 
+
 def test_t6_auto_retrain_threshold(tmp_path):
-    model_dir = tmp_path / "models"; state_f = tmp_path / "inc.json"
-    it = IncrementalTrainer(model_base_dir=str(model_dir), state_file=str(state_f),
-                            min_new_trades=3)
+    model_dir = tmp_path / "models"
+    state_f = tmp_path / "inc.json"
+    it = IncrementalTrainer(
+        model_base_dir=str(model_dir), state_file=str(state_f), min_new_trades=3
+    )
 
     # < 3 new trades → skip
     hist = tmp_path / "hist.json"
@@ -204,25 +221,34 @@ def test_t6_auto_retrain_threshold(tmp_path):
 
     # ≥3 new → retrain: new=4，mock _run_training 返回 success
     it._last_trade_count = 0
-    hist.write_text(json.dumps([{"coin": "BTC", "pnl_usdt": i * 0.1} for i in range(4)]), encoding="utf-8")
+    hist.write_text(
+        json.dumps([{"coin": "BTC", "pnl_usdt": i * 0.1} for i in range(4)]), encoding="utf-8"
+    )
     ok_ret = {
         "success": True,
         "bilstm": {"best_val_loss": 0.05, "best_precision": 0.95, "best_recall": 0.92},
         "patchtst": {"best_val_loss": 0.01, "best_val_mae": 0.03},
     }
     import types
-    out_dir_dummy = model_dir / "v1"
-    it.collect_recent_data = lambda **kw: {"samples": 300, "coins": ["SYNTH"],  # type: ignore[method-assign]
-                                           "window_days": 30, "cutoff": ""}
+
+    out_dir_dummy = model_dir / "v1"  # noqa: F841
+    it.collect_recent_data = lambda **kw: {
+        "samples": 300,
+        "coins": ["SYNTH"],  # type: ignore[method-assign]
+        "window_days": 30,
+        "cutoff": "",
+    }
     it._run_training = types.MethodType(lambda self, out_dir, collection: ok_ret, it)  # type: ignore[method-assign]
     r = it.auto_retrain_if_needed()
-    assert r["action"] == "retrained", f"应为 retrained 但={r['action']} reason={r.get('retrain_result')}"
+    assert (
+        r["action"] == "retrained"
+    ), f"应为 retrained 但={r['action']} reason={r.get('retrain_result')}"
     rc = r["retrain_result"]
     assert rc["version"] == "v1"
     assert rc["status"] == "success"
     # bilstm/patchtst 文件已 register 到 out_dir
-    v1_b = Path(model_dir / "v1" / "bilstm.pt")
-    v1_p = Path(model_dir / "v1" / "patchtst.pt")
+    v1_b = Path(model_dir / "v1" / "bilstm.pt")  # noqa: F841
+    v1_p = Path(model_dir / "v1" / "patchtst.pt")  # noqa: F841
     # 注意：register_version 只记录路径，不保证真实文件存在（_run_training正常会保存，但我们mock只返回报告）— 这里验证路径写到 state 里就行
     info = it.version_mgr.get_version_info()
     # 首版本注册为 shadow（不再直接 live），需通过 AB 评估才能晋升
@@ -234,17 +260,23 @@ def test_t6_auto_retrain_threshold(tmp_path):
 # T7: evaluate_and_promote 三种转移
 # ---------------------------------------------------------------------------
 
-def test_t7_evaluate_and_promote_transitions(tmp_path):
-    model_dir = tmp_path / "models"; state_f = tmp_path / "inc.json"
 
-    from ab_shadow_comparator import ABShadowComparator, STATE_SHADOW, STATE_LIVE, STATE_DISABLED
+def test_t7_evaluate_and_promote_transitions(tmp_path):
+    model_dir = tmp_path / "models"
+    state_f = tmp_path / "inc.json"
+
+    from ab_shadow_comparator import STATE_SHADOW, ABShadowComparator
+
     comp = ABShadowComparator(state_file=str(tmp_path / "ab.json"))
 
-    it = IncrementalTrainer(model_base_dir=str(model_dir), state_file=str(state_f),
-                            ab_comparator=comp)
+    it = IncrementalTrainer(
+        model_base_dir=str(model_dir), state_file=str(state_f), ab_comparator=comp
+    )
     # 注册 v1 和 v2（都是 shadow），手动 promote v1 为 live 作为初始状态
-    v1_b = _fake_pt_file(model_dir / "v1" / "bilstm.pt"); v1_p = _fake_pt_file(model_dir / "v1" / "patchtst.pt")
-    v2_b = _fake_pt_file(model_dir / "v2" / "bilstm.pt"); v2_p = _fake_pt_file(model_dir / "v2" / "patchtst.pt")
+    v1_b = _fake_pt_file(model_dir / "v1" / "bilstm.pt")
+    v1_p = _fake_pt_file(model_dir / "v1" / "patchtst.pt")
+    v2_b = _fake_pt_file(model_dir / "v2" / "bilstm.pt")
+    v2_p = _fake_pt_file(model_dir / "v2" / "patchtst.pt")
     it.version_mgr.register_version(v1_b, v1_p, {"i": 1})
     it.version_mgr.register_version(v2_b, v2_p, {"i": 2})
     # 手动 promote v1 为 live（模拟首次 AB 评估通过后的状态）
@@ -252,16 +284,30 @@ def test_t7_evaluate_and_promote_transitions(tmp_path):
 
     # 手动造 comparator 数据：SHADOW → DISABLED。v2(AI) 显著差于基线 → SHADOW→DISABLED
     comp.force_state(STATE_SHADOW)
-    import random; random.seed(3)
+    import random
+
+    random.seed(3)
     for i in range(25):
         base_usdt = 0.2 + (i % 5 - 2) * 0.05
         ai_usdt = 0.0  # AI 极差（0 vs 基线 0.2 赚）
-        comp.record_decision(symbol="BTC", baseline_action="OPEN", ai_action="OPEN",
-                             baseline_confidence=0.9, ai_confidence=0.8,
-                             baseline_pnl=base_usdt, ai_predicted_pnl=ai_usdt,
-                             position_ref=ABShadowComparator.build_position_ref("BTC", datetime.utcnow() - timedelta(hours=i)))
-        comp.backfill_trade_result(symbol="BTC", entry_timestamp=datetime.utcnow() - timedelta(hours=i),
-                                   baseline_pnl_usdt=base_usdt, baseline_pnl_pct=0.02)
+        comp.record_decision(
+            symbol="BTC",
+            baseline_action="OPEN",
+            ai_action="OPEN",
+            baseline_confidence=0.9,
+            ai_confidence=0.8,
+            baseline_pnl=base_usdt,
+            ai_predicted_pnl=ai_usdt,
+            position_ref=ABShadowComparator.build_position_ref(
+                "BTC", datetime.utcnow() - timedelta(hours=i)
+            ),
+        )
+        comp.backfill_trade_result(
+            symbol="BTC",
+            entry_timestamp=datetime.utcnow() - timedelta(hours=i),
+            baseline_pnl_usdt=base_usdt,
+            baseline_pnl_pct=0.02,
+        )
         # 修正上一步：record_decision 时 baseline_pnl=base_usdt（这与 AB 约定“占位0” 冲突，但 backfill 只会在 pnl_backfilled=False 时回填 —— 而我们已经给了 baseline_pnl=base_usdt，但 pnl_backfilled=False，backfill 依然会覆盖。这没问题）
     ev = it.evaluate_and_promote()
     # 只要 transition 属于 SHADOW→DISABLED 或 keep_collecting，逻辑正确
@@ -276,16 +322,18 @@ def test_t7_evaluate_and_promote_transitions(tmp_path):
 # T8: hot_swap_models strict 成功
 # ---------------------------------------------------------------------------
 
+
 def _make_fake_bilstm_file(path: Path):
     """生成一个能被 ai_trainers.phase_d_models.BiLSTMAttentionBust 加载的 state_dict 文件。
     用与训练保存相同的 dict 结构: {"meta": {...}, "state_dict": OrderedDict(...)}。
     """
     import sys as _s
+
     ai_dir = str(_V15_ROOT / "ai_trainers")
     if ai_dir not in _s.path:
         _s.path.insert(0, ai_dir)
     import torch
-    from phase_d_models import BiLSTMAttentionBust, PatchTSTForDrawdown
+    from phase_d_models import BiLSTMAttentionBust
 
     m1 = BiLSTMAttentionBust(ohlcv_len=60, n_channels=5, n_scalar=7, hidden=48, n_layers=2)
     payload = {
@@ -299,15 +347,27 @@ def _make_fake_bilstm_file(path: Path):
 
 def _make_fake_patchtst_file(path: Path):
     import sys as _s
+
     ai_dir = str(_V15_ROOT / "ai_trainers")
     if ai_dir not in _s.path:
         _s.path.insert(0, ai_dir)
     import torch
     from phase_d_models import PatchTSTForDrawdown
-    m2 = PatchTSTForDrawdown(c_in=5, seq_len=120, patch_len=12, stride=6, d_model=32, n_layers=2, n_heads=4, d_ff=64)
+
+    m2 = PatchTSTForDrawdown(
+        c_in=5, seq_len=120, patch_len=12, stride=6, d_model=32, n_layers=2, n_heads=4, d_ff=64
+    )
     payload = {
-        "meta": {"c_in": 5, "seq_len": 120, "patch_len": 12, "stride": 6,
-                 "d_model": 32, "n_layers": 2, "n_heads": 4, "d_ff": 64},
+        "meta": {
+            "c_in": 5,
+            "seq_len": 120,
+            "patch_len": 12,
+            "stride": 6,
+            "d_model": 32,
+            "n_layers": 2,
+            "n_heads": 4,
+            "d_ff": 64,
+        },
         "state_dict": m2.state_dict(),
     }
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -319,7 +379,7 @@ def test_t8_gateway_hot_swap_models(tmp_path):
     # 构造 2 套模型文件: old (v1) → new (v2)，验证 hot_swap 后 gateway.path 更新
     sys.path.insert(0, str(_V15_ROOT))
     sys.path.insert(0, str(_V15_ROOT / "lib"))
-    from lib.phase_d_gateway import PhaseDGateway, _invalidate_model_cache, _MODEL_CACHE
+    from lib.phase_d_gateway import PhaseDGateway
 
     v1b = _make_fake_bilstm_file(tmp_path / "v1" / "bilstm.pt")
     v1p = _make_fake_patchtst_file(tmp_path / "v1" / "patchtst.pt")
@@ -338,8 +398,9 @@ def test_t8_gateway_hot_swap_models(tmp_path):
     assert ok2 is False
     assert g.bilstm_model_path == v2b, "strict 失败不应污染路径"
     # 不存在 non-strict → 跳过，返回 reason 包含 skipped
-    ok3, reason3 = g.hot_swap_models(bilstm_model_path="/tmp/DOES_NOT_EXIST_XYZ.pt",
-                                     patchtst_model_path=v2p, strict=False)
+    ok3, reason3 = g.hot_swap_models(
+        bilstm_model_path="/tmp/DOES_NOT_EXIST_XYZ.pt", patchtst_model_path=v2p, strict=False
+    )
     assert ok3 is True  # 因为 patchtst 成功了
     assert "跳过" in reason3 or "skip" in reason3.lower() or g.patchtst_model_path == v2p
 
@@ -352,15 +413,19 @@ def test_t8_gateway_hot_swap_models(tmp_path):
 # T9: 首版本 bootstrap — shadow → 自动晋升 + 动态基线初始化
 # ---------------------------------------------------------------------------
 
+
 def test_t9_first_version_bootstrap(tmp_path):
     """首版本注册为 shadow，无动态基线时回测通过 → 自动晋升 live + 初始化动态基线。"""
-    model_dir = tmp_path / "models"; state_f = tmp_path / "inc.json"
+    model_dir = tmp_path / "models"
+    state_f = tmp_path / "inc.json"
 
     from ab_shadow_comparator import ABShadowComparator
+
     comp = ABShadowComparator(state_file=str(tmp_path / "ab.json"))
 
-    it = IncrementalTrainer(model_base_dir=str(model_dir), state_file=str(state_f),
-                            ab_comparator=comp)
+    it = IncrementalTrainer(
+        model_base_dir=str(model_dir), state_file=str(state_f), ab_comparator=comp
+    )
 
     # 注册 v1（自动 shadow）
     v1_b = _fake_pt_file(model_dir / "v1" / "bilstm.pt")
@@ -372,50 +437,62 @@ def test_t9_first_version_bootstrap(tmp_path):
     assert comp.state.dynamic_baseline_version is None
 
     # mock _backtest_model 返回合理指标
-    it._backtest_model = lambda bilstm, patchtst, label='': {
-        'total_pnl': 1.2, 'total_trades': 10, 'win_trades': 6,
-        'win_rate': 0.6, 'max_drawdown': 0.08, 'label': label,
+    it._backtest_model = lambda bilstm, patchtst, label="": {
+        "total_pnl": 1.2,
+        "total_trades": 10,
+        "win_trades": 6,
+        "win_rate": 0.6,
+        "max_drawdown": 0.08,
+        "label": label,
     }
 
     # evaluate_and_promote — 首版本 bootstrap
     result = it.evaluate_and_promote()
 
-    assert result['action'] == 'promoted'
-    assert result['new_status'] == 'live'
-    assert result['version'] == 'v1'
-    assert result['transition'] == 'BOOTSTRAP_FIRST_VERSION'
-    assert result['version_comparison']['should_promote'] is True
+    assert result["action"] == "promoted"
+    assert result["new_status"] == "live"
+    assert result["version"] == "v1"
+    assert result["transition"] == "BOOTSTRAP_FIRST_VERSION"
+    assert result["version_comparison"]["should_promote"] is True
 
     # 验证版本管理器状态
-    assert it.version_mgr.state.current_live_version == 'v1'
+    assert it.version_mgr.state.current_live_version == "v1"
     assert it.version_mgr.state.current_shadow_version is None
 
     # 验证动态基线已初始化
-    assert comp.state.dynamic_baseline_version == 'v1'
-    assert comp.state.dynamic_baseline_metrics['total_pnl'] == 1.2
+    assert comp.state.dynamic_baseline_version == "v1"
+    assert comp.state.dynamic_baseline_metrics["total_pnl"] == 1.2
 
 
 # ---------------------------------------------------------------------------
 # T10: 后续版本劣于动态基线 → 不上线
 # ---------------------------------------------------------------------------
 
+
 def test_t10_inferior_version_rejected(tmp_path):
     """v2 回测劣于动态基线 v1 → disabled_inferior，v1 继续服务。"""
-    model_dir = tmp_path / "models"; state_f = tmp_path / "inc.json"
+    model_dir = tmp_path / "models"
+    state_f = tmp_path / "inc.json"
 
     from ab_shadow_comparator import ABShadowComparator
+
     comp = ABShadowComparator(state_file=str(tmp_path / "ab.json"))
 
-    it = IncrementalTrainer(model_base_dir=str(model_dir), state_file=str(state_f),
-                            ab_comparator=comp)
+    it = IncrementalTrainer(
+        model_base_dir=str(model_dir), state_file=str(state_f), ab_comparator=comp
+    )
 
     # 注册 v1 并 bootstrap 晋升
     v1_b = _fake_pt_file(model_dir / "v1" / "bilstm.pt")
     v1_p = _fake_pt_file(model_dir / "v1" / "patchtst.pt")
     it.version_mgr.register_version(v1_b, v1_p, {"i": 1})
-    it._backtest_model = lambda bilstm, patchtst, label='': {
-        'total_pnl': 2.0, 'total_trades': 10, 'win_trades': 7,
-        'win_rate': 0.70, 'max_drawdown': 0.05, 'label': label,
+    it._backtest_model = lambda bilstm, patchtst, label="": {
+        "total_pnl": 2.0,
+        "total_trades": 10,
+        "win_trades": 7,
+        "win_rate": 0.70,
+        "max_drawdown": 0.05,
+        "label": label,
     }
     it.evaluate_and_promote()  # v1 bootstrap → live + 动态基线
 
@@ -423,46 +500,58 @@ def test_t10_inferior_version_rejected(tmp_path):
     v2_b = _fake_pt_file(model_dir / "v2" / "bilstm.pt")
     v2_p = _fake_pt_file(model_dir / "v2" / "patchtst.pt")
     it.version_mgr.register_version(v2_b, v2_p, {"i": 2})
-    assert it.version_mgr.state.current_shadow_version == 'v2'
+    assert it.version_mgr.state.current_shadow_version == "v2"
 
     # v2 回测指标全面劣于 v1
-    it._backtest_model = lambda bilstm, patchtst, label='': {
-        'total_pnl': 0.5, 'total_trades': 10, 'win_trades': 3,
-        'win_rate': 0.30, 'max_drawdown': 0.15, 'label': label,
+    it._backtest_model = lambda bilstm, patchtst, label="": {
+        "total_pnl": 0.5,
+        "total_trades": 10,
+        "win_trades": 3,
+        "win_rate": 0.30,
+        "max_drawdown": 0.15,
+        "label": label,
     }
     result = it.evaluate_and_promote()
 
-    assert result['action'] == 'disabled_inferior'
-    assert result['new_status'] == 'disabled'
-    assert result['version'] == 'v2'
-    assert result['version_comparison']['should_promote'] is False
+    assert result["action"] == "disabled_inferior"
+    assert result["new_status"] == "disabled"
+    assert result["version"] == "v2"
+    assert result["version_comparison"]["should_promote"] is False
 
     # v1 仍是 live，动态基线未变
-    assert it.version_mgr.state.current_live_version == 'v1'
-    assert comp.state.dynamic_baseline_version == 'v1'
+    assert it.version_mgr.state.current_live_version == "v1"
+    assert comp.state.dynamic_baseline_version == "v1"
 
 
 # ---------------------------------------------------------------------------
 # T11: 后续版本优于动态基线 → 晋升 + 更新动态基线
 # ---------------------------------------------------------------------------
 
+
 def test_t11_superior_version_promoted(tmp_path):
     """v2 回测优于动态基线 v1 → promoted，动态基线更新为 v2。"""
-    model_dir = tmp_path / "models"; state_f = tmp_path / "inc.json"
+    model_dir = tmp_path / "models"
+    state_f = tmp_path / "inc.json"
 
     from ab_shadow_comparator import ABShadowComparator
+
     comp = ABShadowComparator(state_file=str(tmp_path / "ab.json"))
 
-    it = IncrementalTrainer(model_base_dir=str(model_dir), state_file=str(state_f),
-                            ab_comparator=comp)
+    it = IncrementalTrainer(
+        model_base_dir=str(model_dir), state_file=str(state_f), ab_comparator=comp
+    )
 
     # v1 bootstrap
     v1_b = _fake_pt_file(model_dir / "v1" / "bilstm.pt")
     v1_p = _fake_pt_file(model_dir / "v1" / "patchtst.pt")
     it.version_mgr.register_version(v1_b, v1_p, {"i": 1})
-    it._backtest_model = lambda bilstm, patchtst, label='': {
-        'total_pnl': 1.0, 'total_trades': 10, 'win_trades': 6,
-        'win_rate': 0.60, 'max_drawdown': 0.10, 'label': label,
+    it._backtest_model = lambda bilstm, patchtst, label="": {
+        "total_pnl": 1.0,
+        "total_trades": 10,
+        "win_trades": 6,
+        "win_rate": 0.60,
+        "max_drawdown": 0.10,
+        "label": label,
     }
     it.evaluate_and_promote()  # v1 → live + 动态基线
 
@@ -471,9 +560,13 @@ def test_t11_superior_version_promoted(tmp_path):
     v2_p = _fake_pt_file(model_dir / "v2" / "patchtst.pt")
     it.version_mgr.register_version(v2_b, v2_p, {"i": 2})
 
-    it._backtest_model = lambda bilstm, patchtst, label='': {
-        'total_pnl': 1.8, 'total_trades': 12, 'win_trades': 9,
-        'win_rate': 0.75, 'max_drawdown': 0.06, 'label': label,
+    it._backtest_model = lambda bilstm, patchtst, label="": {
+        "total_pnl": 1.8,
+        "total_trades": 12,
+        "win_trades": 9,
+        "win_rate": 0.75,
+        "max_drawdown": 0.06,
+        "label": label,
     }
     result = it.evaluate_and_promote()
 
@@ -481,6 +574,6 @@ def test_t11_superior_version_promoted(tmp_path):
     # 但首版本已有动态基线，v2 优于动态基线 → 期望 promoted（但需 transition=SHADOW→LIVE）
     # 实际：transition=None → 不走 SHADOW→LIVE 分支 → keep_collecting
     # 这是正确的：AB 状态机需要有足够样本才 transition
-    assert result['action'] in ('keep_collecting', 'promoted')
-    assert result['version_comparison']['should_promote'] is True
-    assert result['version_comparison']['score'] == 3  # 3/3 全优于 v1
+    assert result["action"] in ("keep_collecting", "promoted")
+    assert result["version_comparison"]["should_promote"] is True
+    assert result["version_comparison"]["score"] == 3  # 3/3 全优于 v1

@@ -12,14 +12,12 @@ Dreambuddy OS — 适配器基类
     - FunctionAdapter   将本地函数包装为 Node
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from abc import ABC
 from typing import Any, Dict, Optional
 
 from dreamos.shared.interfaces import Adapter, Node
-from dreamos.shared.state import State, NodeResult, NodeStatus
-from ..registry.base import BaseNode
 
 
 class BaseAdapter(Adapter, ABC):
@@ -43,6 +41,7 @@ class BaseAdapter(Adapter, ABC):
 # ============================================================
 # 适配器管理器 — 多适配器分发
 # ============================================================
+
 
 class AdapterRegistry:
     """适配器注册表 — 管理多个 Adapter，自动分发
@@ -105,9 +104,10 @@ def get_default_adapter_registry() -> AdapterRegistry:
     global _default_adapter_registry
     if _default_adapter_registry is None:
         _default_adapter_registry = AdapterRegistry()
+        from .api_adapter import APIAdapter
         from .function_adapter import FunctionAdapter
         from .skill_adapter import SkillAdapter
-        from .api_adapter import APIAdapter
+
         _default_adapter_registry.register(FunctionAdapter())
         _default_adapter_registry.register(SkillAdapter())
         _default_adapter_registry.register(APIAdapter())

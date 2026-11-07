@@ -23,10 +23,12 @@ SPEC §8.1 测试用例：
   - 龙头 7d +15%，广度 0.8 → catalyst = 0.6
   - 龙头 7d -10%，广度 0.3 → catalyst = -0.15
 """
-import pytest
+
 import sys
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 
 # 将 force_vector 加入 sys.path
 _L4_DIR = Path(__file__).resolve().parent.parent
@@ -40,12 +42,14 @@ def _import_follow_up_catalyst():
         compute_catalyst_score,
         compute_follow_up_catalyst,
     )
+
     return compute_catalyst_score, compute_follow_up_catalyst
 
 
 # ---------------------------------------------------------------------------
 # 纯函数测试：compute_catalyst_score
 # ---------------------------------------------------------------------------
+
 
 class TestCatalystScoreImport:
     """RED: 模块与符号必须可导入。"""
@@ -55,6 +59,7 @@ class TestCatalystScoreImport:
             compute_catalyst_score,
             compute_follow_up_catalyst,
         )
+
         assert callable(compute_catalyst_score)
         assert callable(compute_follow_up_catalyst)
 
@@ -125,21 +130,26 @@ class TestComputeCatalystScore:
 # 主函数测试：compute_follow_up_catalyst（集成）
 # ---------------------------------------------------------------------------
 
+
 class TestComputeFollowUpCatalyst:
     """主函数：从 DB 获取龙头动量 + 赛道广度 + 合成 catalyst。"""
 
     def test_returns_dict_with_required_keys(self):
         """返回 dict 包含 leader_momentum, sector_breadth, catalyst, leader, timestamp。"""
         _, compute_fn = _import_follow_up_catalyst()
-        with patch(
-            "force_vector.follow_up_catalyst._fetch_leader_7d_momentum",
-            return_value=0.75,
-        ), patch(
-            "force_vector.follow_up_catalyst._compute_sector_breadth",
-            return_value=0.8,
-        ), patch(
-            "force_vector.follow_up_catalyst._identify_sector_leader",
-            return_value=("UNI", {"UNI": 15_000_000_000}),
+        with (
+            patch(
+                "force_vector.follow_up_catalyst._fetch_leader_7d_momentum",
+                return_value=0.75,
+            ),
+            patch(
+                "force_vector.follow_up_catalyst._compute_sector_breadth",
+                return_value=0.8,
+            ),
+            patch(
+                "force_vector.follow_up_catalyst._identify_sector_leader",
+                return_value=("UNI", {"UNI": 15_000_000_000}),
+            ),
         ):
             result = compute_fn("DEX", "/fake/db.db")
         required_keys = {"leader_momentum", "sector_breadth", "catalyst", "leader", "timestamp"}
@@ -150,15 +160,19 @@ class TestComputeFollowUpCatalyst:
     def test_positive_catalyst_scenario(self):
         """龙头强势 + 赛道广度好 → catalyst > 0.3。"""
         _, compute_fn = _import_follow_up_catalyst()
-        with patch(
-            "force_vector.follow_up_catalyst._fetch_leader_7d_momentum",
-            return_value=0.75,
-        ), patch(
-            "force_vector.follow_up_catalyst._compute_sector_breadth",
-            return_value=0.8,
-        ), patch(
-            "force_vector.follow_up_catalyst._identify_sector_leader",
-            return_value=("UNI", {"UNI": 15_000_000_000}),
+        with (
+            patch(
+                "force_vector.follow_up_catalyst._fetch_leader_7d_momentum",
+                return_value=0.75,
+            ),
+            patch(
+                "force_vector.follow_up_catalyst._compute_sector_breadth",
+                return_value=0.8,
+            ),
+            patch(
+                "force_vector.follow_up_catalyst._identify_sector_leader",
+                return_value=("UNI", {"UNI": 15_000_000_000}),
+            ),
         ):
             result = compute_fn("DEX", "/fake/db.db")
         assert result["catalyst"] > 0.3
@@ -168,15 +182,19 @@ class TestComputeFollowUpCatalyst:
     def test_negative_catalyst_scenario(self):
         """龙头弱势 + 赛道广度差 → catalyst < -0.3。"""
         _, compute_fn = _import_follow_up_catalyst()
-        with patch(
-            "force_vector.follow_up_catalyst._fetch_leader_7d_momentum",
-            return_value=-0.5,
-        ), patch(
-            "force_vector.follow_up_catalyst._compute_sector_breadth",
-            return_value=0.9,  # 广度好但龙头弱 → catalyst = -0.45 < -0.3
-        ), patch(
-            "force_vector.follow_up_catalyst._identify_sector_leader",
-            return_value=("UNI", {"UNI": 15_000_000_000}),
+        with (
+            patch(
+                "force_vector.follow_up_catalyst._fetch_leader_7d_momentum",
+                return_value=-0.5,
+            ),
+            patch(
+                "force_vector.follow_up_catalyst._compute_sector_breadth",
+                return_value=0.9,  # 广度好但龙头弱 → catalyst = -0.45 < -0.3
+            ),
+            patch(
+                "force_vector.follow_up_catalyst._identify_sector_leader",
+                return_value=("UNI", {"UNI": 15_000_000_000}),
+            ),
         ):
             result = compute_fn("DEX", "/fake/db.db")
         assert result["catalyst"] < -0.3
@@ -203,15 +221,19 @@ class TestComputeFollowUpCatalyst:
     def test_fail_open_leader_momentum_zero(self):
         """龙头动量数据缺失 → momentum=0 → catalyst=0。"""
         _, compute_fn = _import_follow_up_catalyst()
-        with patch(
-            "force_vector.follow_up_catalyst._fetch_leader_7d_momentum",
-            return_value=0.0,
-        ), patch(
-            "force_vector.follow_up_catalyst._compute_sector_breadth",
-            return_value=0.8,
-        ), patch(
-            "force_vector.follow_up_catalyst._identify_sector_leader",
-            return_value=("UNI", {"UNI": 15_000_000_000}),
+        with (
+            patch(
+                "force_vector.follow_up_catalyst._fetch_leader_7d_momentum",
+                return_value=0.0,
+            ),
+            patch(
+                "force_vector.follow_up_catalyst._compute_sector_breadth",
+                return_value=0.8,
+            ),
+            patch(
+                "force_vector.follow_up_catalyst._identify_sector_leader",
+                return_value=("UNI", {"UNI": 15_000_000_000}),
+            ),
         ):
             result = compute_fn("DEX", "/fake/db.db")
         assert result["catalyst"] == 0.0
@@ -219,15 +241,19 @@ class TestComputeFollowUpCatalyst:
     def test_timestamp_is_iso_string(self):
         """timestamp 是非空 ISO 字符串。"""
         _, compute_fn = _import_follow_up_catalyst()
-        with patch(
-            "force_vector.follow_up_catalyst._fetch_leader_7d_momentum",
-            return_value=0.75,
-        ), patch(
-            "force_vector.follow_up_catalyst._compute_sector_breadth",
-            return_value=0.8,
-        ), patch(
-            "force_vector.follow_up_catalyst._identify_sector_leader",
-            return_value=("UNI", {"UNI": 15_000_000_000}),
+        with (
+            patch(
+                "force_vector.follow_up_catalyst._fetch_leader_7d_momentum",
+                return_value=0.75,
+            ),
+            patch(
+                "force_vector.follow_up_catalyst._compute_sector_breadth",
+                return_value=0.8,
+            ),
+            patch(
+                "force_vector.follow_up_catalyst._identify_sector_leader",
+                return_value=("UNI", {"UNI": 15_000_000_000}),
+            ),
         ):
             result = compute_fn("DEX", "/fake/db.db")
         assert isinstance(result["timestamp"], str)
@@ -238,12 +264,14 @@ class TestComputeFollowUpCatalyst:
 # 赛道广度测试：_compute_sector_breadth
 # ---------------------------------------------------------------------------
 
+
 class TestComputeSectorBreadth:
     """赛道内 7d 上涨币占比 [0, 1]。"""
 
     def test_partial_breadth(self):
         """3 币，2 上涨 → breadth = 2/3。"""
         from force_vector.follow_up_catalyst import _compute_sector_breadth
+
         with patch(
             "force_vector.follow_up_catalyst._fetch_coin_7d_returns",
             return_value={"UNI": 0.05, "CRV": -0.02, "1INCH": 0.01},
@@ -254,6 +282,7 @@ class TestComputeSectorBreadth:
     def test_all_up_breadth_one(self):
         """所有币上涨 → breadth = 1.0。"""
         from force_vector.follow_up_catalyst import _compute_sector_breadth
+
         with patch(
             "force_vector.follow_up_catalyst._fetch_coin_7d_returns",
             return_value={"UNI": 0.10, "CRV": 0.05, "1INCH": 0.01},
@@ -264,6 +293,7 @@ class TestComputeSectorBreadth:
     def test_all_down_breadth_zero(self):
         """所有币下跌 → breadth = 0.0。"""
         from force_vector.follow_up_catalyst import _compute_sector_breadth
+
         with patch(
             "force_vector.follow_up_catalyst._fetch_coin_7d_returns",
             return_value={"UNI": -0.10, "CRV": -0.05, "1INCH": -0.01},
@@ -274,6 +304,7 @@ class TestComputeSectorBreadth:
     def test_zero_return_counts_as_up(self):
         """收益率为 0（持平）→ 计为上涨（>= 0）。"""
         from force_vector.follow_up_catalyst import _compute_sector_breadth
+
         with patch(
             "force_vector.follow_up_catalyst._fetch_coin_7d_returns",
             return_value={"UNI": 0.0, "CRV": -0.01, "1INCH": 0.0},
@@ -285,6 +316,7 @@ class TestComputeSectorBreadth:
     def test_empty_returns_zero(self):
         """无数据 → breadth = 0.0（FAIL-OPEN）。"""
         from force_vector.follow_up_catalyst import _compute_sector_breadth
+
         with patch(
             "force_vector.follow_up_catalyst._fetch_coin_7d_returns",
             return_value={},

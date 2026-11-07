@@ -1,6 +1,6 @@
+import os
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
-import os
 
 
 def _load_embedded_service():

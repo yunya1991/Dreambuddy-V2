@@ -14,6 +14,7 @@ TDD：P3-2 integrity.py（PRAGMA integrity_check + ma_integrity_log 审计）
   3. 结果写入 ma_integrity_log 表（category='integrity_check'）
   4. 返回 IntegrityResult dataclass
 """
+
 from __future__ import annotations
 
 import tempfile
@@ -41,6 +42,7 @@ def test_integrity_check_healthy_db(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.integrity import (
         run_integrity_check,
     )
+
     result = run_integrity_check(db_path)
     assert result.ok is True
     assert result.errors == []
@@ -54,11 +56,10 @@ def test_integrity_check_writes_log(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.integrity import (
         run_integrity_check,
     )
+
     run_integrity_check(db_path)
     with get_sqlite_connection(db_path) as conn:
-        row = conn.execute(
-            "SELECT COUNT(*) FROM ma_integrity_log"
-        ).fetchone()
+        row = conn.execute("SELECT COUNT(*) FROM ma_integrity_log").fetchone()
     assert row[0] >= 1
 
 
@@ -69,12 +70,11 @@ def test_integrity_check_accumulates_log(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.integrity import (
         run_integrity_check,
     )
+
     run_integrity_check(db_path)
     run_integrity_check(db_path)
     with get_sqlite_connection(db_path) as conn:
-        row = conn.execute(
-            "SELECT COUNT(*) FROM ma_integrity_log"
-        ).fetchone()
+        row = conn.execute("SELECT COUNT(*) FROM ma_integrity_log").fetchone()
     assert row[0] >= 2
 
 
@@ -85,6 +85,7 @@ def test_integrity_result_has_timestamp(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.integrity import (
         run_integrity_check,
     )
+
     result = run_integrity_check(db_path)
     assert result.checked_at is not None
     assert len(result.checked_at) > 0

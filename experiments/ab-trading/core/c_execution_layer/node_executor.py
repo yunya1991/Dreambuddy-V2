@@ -12,19 +12,20 @@ C层 - 节点执行器
 """
 
 import time
-from typing import Dict, List, Optional, Any, Callable
+from typing import Any, Callable, Dict, Optional
 
-from ..shared.interfaces import NodeExecutorInterface, NodeExecutionStatus
+from ..shared.interfaces import NodeExecutionStatus, NodeExecutorInterface
 from .types import (
     ExecutionContext,
-    NodeExecutionResult as CNodeExecutionResult,
-    NodeStatus,
 )
-
+from .types import (
+    NodeExecutionResult as CNodeExecutionResult,
+)
 
 # ============================================================
 # C层：节点执行器 - 核心实现
 # ============================================================
+
 
 class NodeExecutor(NodeExecutorInterface):
     """节点执行器
@@ -47,6 +48,7 @@ class NodeExecutor(NodeExecutorInterface):
         if self._module_registry is None:
             try:
                 from ..modules.module_registry import get_module_registry
+
                 self._module_registry = get_module_registry()
             except Exception:
                 self._module_registry = None
@@ -57,6 +59,7 @@ class NodeExecutor(NodeExecutorInterface):
         if self._skill_loader is None:
             try:
                 from ..modules.skill_loader import SkillLoader
+
                 self._skill_loader = SkillLoader()
             except Exception:
                 self._skill_loader = None
@@ -243,7 +246,7 @@ class NodeExecutor(NodeExecutorInterface):
                 else:
                     result.mark_failed(
                         module_result.errors[0] if module_result.errors else "Unknown error",
-                        "ADAPTER_ERROR"
+                        "ADAPTER_ERROR",
                     )
                     result.metadata = module_result.metadata
             else:
@@ -281,7 +284,11 @@ class NodeExecutor(NodeExecutorInterface):
                     "module_name": module_info.name,
                 }
                 result.mark_completed(output)
-                result.confidence = module_info.historical_accuracy / 100.0 if module_info.historical_accuracy else 0.7
+                result.confidence = (
+                    module_info.historical_accuracy / 100.0
+                    if module_info.historical_accuracy
+                    else 0.7
+                )
                 return result
 
         # 如果没有任何实现，返回失败
@@ -326,6 +333,7 @@ class NodeExecutor(NodeExecutorInterface):
 # ============================================================
 # C层：节点执行器 - 简化版（用于测试）
 # ============================================================
+
 
 class SimpleNodeExecutor(NodeExecutorInterface):
     """简化版节点执行器

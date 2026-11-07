@@ -7,40 +7,47 @@ cognitive_adapter.recall() 检索历史经验，结果提炼为 suggestions。
   - HC-3: 认知系统调用 FAIL-OPEN（MCP 不可用/异常 → 不阻塞）
   - recall 结果作为 suggestions 注入决策，不改变 action 本身
 """
+
 from __future__ import annotations
 
-from pathlib import Path
 import sys
+from pathlib import Path
 
 BASE = Path(__file__).parent.parent.parent  # 1-ARCHITECTURE/
 sys.path.insert(0, str(BASE))
 
-from dreamos.shared.state import State, NodeResult, NodeStatus, new_state
-from dreamos.shared.interfaces import Node
-from dreamos.core.compute.reflector import Reflector
-from dreamos.core.compute.types import ReflectAction
-
+from dreamos.core.compute.reflector import Reflector  # noqa: E402
+from dreamos.core.compute.types import ReflectAction  # noqa: E402
+from dreamos.shared.state import NodeResult, NodeStatus, new_state  # noqa: E402
 
 # ── 测试桩 ──────────────────────────────────────────
 
+
 class _FakeGraph:
     """最小 Graph 桩：满足 Reflector.decide 调用需求"""
+
     def all_nodes(self):
         return []
+
     def get_node(self, node_id):
         return None
+
     def get_next(self, current_id, state):
         return None
+
     def topological_order(self):
         return []
+
     def get_entry(self):
         return None
+
     def insert_before(self, before_id, new_node):
         return False
 
 
 class MockCognitiveAdapter:
     """模拟 CognitiveLoopAdapter，记录 recall 调用"""
+
     def __init__(self, memories=None, raise_exc=False):
         self._memories = memories or []
         self._raise = raise_exc
@@ -59,8 +66,7 @@ class MockCognitiveAdapter:
         return self._memories
 
 
-def _make_result(node_id="C1", confidence=0.8, direction="LONG",
-                 status=NodeStatus.SUCCESS):
+def _make_result(node_id="C1", confidence=0.8, direction="LONG", status=NodeStatus.SUCCESS):
     return NodeResult(
         node_id=node_id,
         status=status,
@@ -70,6 +76,7 @@ def _make_result(node_id="C1", confidence=0.8, direction="LONG",
 
 
 # ── 测试用例 ────────────────────────────────────────
+
 
 def test_reflector_accepts_cognitive_adapter():
     """Reflector 可通过 cognitive_adapter 参数注入认知适配器"""
@@ -109,8 +116,9 @@ def test_reflector_recall_context_contains_node_id():
         executed_count=1,
         max_nodes=5,
     )
-    assert "F1" in (adapter.recall_context or ""), \
-        f"recall context 应含节点ID, got: {adapter.recall_context!r}"
+    assert "F1" in (
+        adapter.recall_context or ""
+    ), f"recall context 应含节点ID, got: {adapter.recall_context!r}"
 
 
 def test_reflector_recall_results_in_suggestions():
@@ -134,8 +142,9 @@ def test_reflector_recall_results_in_suggestions():
     )
     # recall 结果应出现在 suggestions 中（提炼为可读提示）
     joined = " ".join(decision.suggestions)
-    assert "REDO" in joined or "RSI" in joined or "反弹" in joined or "重试" in joined, \
-        f"suggestions 应含 recall 提炼, got: {decision.suggestions}"
+    assert (
+        "REDO" in joined or "RSI" in joined or "反弹" in joined or "重试" in joined
+    ), f"suggestions 应含 recall 提炼, got: {decision.suggestions}"
 
 
 def test_reflector_no_adapter_fails_open():
@@ -175,9 +184,7 @@ def test_reflector_adapter_exception_fails_open():
 
 def test_reflector_recall_preserves_continue_action():
     """recall 注入 suggestions 不改变原有 CONTINUE 决策逻辑"""
-    adapter = MockCognitiveAdapter(memories=[
-        {"content": "经验A", "score": 0.5}
-    ])
+    adapter = MockCognitiveAdapter(memories=[{"content": "经验A", "score": 0.5}])
     r = Reflector(cognitive_adapter=adapter)
     state = new_state(cycle_id="t6")
     state.update("C1", _make_result("C1", confidence=0.85, direction="LONG"))
@@ -197,4 +204,5 @@ def test_reflector_recall_preserves_continue_action():
 
 if __name__ == "__main__":
     import pytest
+
     sys.exit(pytest.main([__file__, "-v"]))

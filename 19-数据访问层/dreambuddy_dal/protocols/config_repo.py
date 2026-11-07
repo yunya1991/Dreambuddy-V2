@@ -2,6 +2,7 @@
 dreambuddy_dal.protocols.config_repo — ConfigRepository Protocol（配置域）
 对齐 SCHEMA_DESIGN.md §7 cv_config_versions（全局单版本激活 + 时间线版本管理）
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -41,9 +42,7 @@ class ConfigRepository(ABC):
         ...
 
     @abstractmethod
-    def get_specific_version(
-        self, config_name: str, version: int
-    ) -> Optional[Dict]:
+    def get_specific_version(self, config_name: str, version: int) -> Optional[Dict]:
         """查指定历史版本（用于复盘 / 回滚前比对）"""
         ...
 

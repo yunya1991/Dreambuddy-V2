@@ -81,7 +81,7 @@ def _build_features(data: Dict[str, List[float]]) -> Dict[str, List[float]]:
     tr: List[float] = []
     for i in range(n):
         h = float(hi[i])
-        l = float(lo[i])
+        l = float(lo[i])  # noqa: E741
         pc = float(cl[i - 1]) if i > 0 else float(cl[i])
         tr.append(max(abs(h - l), abs(h - pc), abs(l - pc)))
     atr = _rolling_mean(tr, 14)
@@ -93,7 +93,7 @@ def _build_features(data: Dict[str, List[float]]) -> Dict[str, List[float]]:
         dn = float(lo[i - 1] - lo[i])
         plus_dm.append(up if (up > dn and up > 0) else 0.0)
         minus_dm.append(dn if (dn > up and dn > 0) else 0.0)
-    tr14 = _rolling_mean(tr, 14)
+    tr14 = _rolling_mean(tr, 14)  # noqa: F841
     plus14 = _rolling_mean(plus_dm, 14)
     minus14 = _rolling_mean(minus_dm, 14)
     dx: List[float] = []
@@ -167,7 +167,7 @@ def _run_backtest(
         for i in range(ent + 1, end):
             c = float(data["close"][i])
             h = float(data["high"][i])
-            l = float(data["low"][i])
+            l = float(data["low"][i])  # noqa: E741
             pnl = (c - entry) / entry * side
             hi = (h - entry) / entry * side
             lo = (l - entry) / entry * side
@@ -184,7 +184,11 @@ def _run_backtest(
             tp = max(float(cfg["tp_min_pct"]), atr_pct * tp_mult)
             if (not armed) and inst_max >= tp:
                 armed = True
-            if armed and mfe >= float(cfg["trail_arm_pct"]) and dd >= float(cfg["trail_retrace_pct"]):
+            if (
+                armed
+                and mfe >= float(cfg["trail_arm_pct"])
+                and dd >= float(cfg["trail_retrace_pct"])
+            ):
                 trade_ret = max(pnl, 0.0)
                 break
         if trade_ret is None:
@@ -202,7 +206,7 @@ def _run_backtest(
             gp += x
             wins += 1
         elif x < 0.0:
-            gl += (-x)
+            gl += -x
     pf = float(gp / gl) if gl > 1e-12 else 9.99
     eq = 0.0
     peak = 0.0
@@ -266,13 +270,21 @@ def _search(
         if m is None:
             continue
         rows.append({"cfg": cfg, "metrics": m})
-    rows.sort(key=lambda x: float(((x.get("metrics") or {}).get("score") if isinstance(x.get("metrics"), dict) else 0.0) or 0.0), reverse=True)
+    rows.sort(
+        key=lambda x: float(
+            ((x.get("metrics") or {}).get("score") if isinstance(x.get("metrics"), dict) else 0.0)
+            or 0.0
+        ),
+        reverse=True,
+    )
     return rows
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--pair-file", default="user_data/data/hyperliquid/futures/BTC_USDT-5m-futures.json")
+    ap.add_argument(
+        "--pair-file", default="user_data/data/hyperliquid/futures/BTC_USDT-5m-futures.json"
+    )
     ap.add_argument("--adx-threshold", type=float, default=22.0)
     ap.add_argument("--topk", type=int, default=5)
     args = ap.parse_args()
@@ -281,8 +293,16 @@ def main() -> None:
     sig, entries = _entry_indices(data)
     trend_rows = _search(data, sig, entries, "trend", float(args.adx_threshold))
     chop_rows = _search(data, sig, entries, "chop", float(args.adx_threshold))
-    trend_n = sum(1 for i in entries if _regime_by_adx(float(data["adx"][i]), float(args.adx_threshold)) == "trend")
-    chop_n = sum(1 for i in entries if _regime_by_adx(float(data["adx"][i]), float(args.adx_threshold)) == "chop")
+    trend_n = sum(
+        1
+        for i in entries
+        if _regime_by_adx(float(data["adx"][i]), float(args.adx_threshold)) == "trend"
+    )
+    chop_n = sum(
+        1
+        for i in entries
+        if _regime_by_adx(float(data["adx"][i]), float(args.adx_threshold)) == "chop"
+    )
     out = {
         "ok": True,
         "pair_file": str(pair_file),

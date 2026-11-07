@@ -15,26 +15,43 @@
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
 from ._constants import (
-    GUA_BINARY, BINARY_TO_GUA,
-    GUA_QIAN, GUA_KUN, GUA_ZHEN, GUA_XUN,
-    GUA_KAN, GUA_LI, GUA_GEN, GUA_DUI,
-    DIR_UP, DIR_DOWN, DIR_FLAT, DIR_TRANSITIONING, DIR_UNKNOWN,
-    YAO_PROB_ADJUSTMENT_FACTOR, YAO_PROB_MAX,
-    YAO_PROB_REVERSAL_BONUS, YAO_PROB_REVERSAL_MAX,
-    PHASE_BOUNDARY_LOW, PHASE_BOUNDARY_MID_LOW,
-    PHASE_BOUNDARY_MID, PHASE_BOUNDARY_MID_HIGH,
+    BINARY_TO_GUA,
+    DIR_DOWN,
+    DIR_FLAT,
+    DIR_TRANSITIONING,
+    DIR_UNKNOWN,
+    DIR_UP,
+    GUA_BINARY,
+    GUA_GEN,
+    GUA_KAN,
+    GUA_KUN,
+    GUA_QIAN,
+    GUA_ZHEN,
+    PHASE_BOUNDARY_LOW,
+    PHASE_BOUNDARY_MID,
+    PHASE_BOUNDARY_MID_HIGH,
+    PHASE_BOUNDARY_MID_LOW,
+    YAO_PROB_ADJUSTMENT_FACTOR,
+    YAO_PROB_MAX,
+    YAO_PROB_REVERSAL_BONUS,
+    YAO_PROB_REVERSAL_MAX,
 )
 from .sixty_four_guas import (
-    SIXTY_FOUR_GUAS, HexagramKnowledge, YaoResult,
-    get_hexagram_knowledge, build_hexagram_by_guas,
+    SIXTY_FOUR_GUAS,
+    HexagramKnowledge,
+    YaoResult,
+    build_hexagram_by_guas,
+    get_hexagram_knowledge,
 )
 
 
 @dataclass
 class YijingResult:
     """易经推理结果。"""
+
     # 本卦
     hexagram_name: str = ""
     hexagram_name_cn: str = ""
@@ -62,8 +79,8 @@ class YijingResult:
     risk_level: str = "medium"
 
     # 阶段定位
-    current_phase: str = ""       # 当前爻位对应的阶段
-    development_stage: str = ""   # 发展阶段判断
+    current_phase: str = ""  # 当前爻位对应的阶段
+    development_stage: str = ""  # 发展阶段判断
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -91,9 +108,13 @@ class YijingResult:
 def _dummy_hex_knowledge() -> HexagramKnowledge:
     """创建默认 HexagramKnowledge（用于 force 模式无卦象时）。"""
     return HexagramKnowledge(
-        name="", name_cn="",
-        inner_gua="", outer_gua="",
-        gua_ci="", tuan_zhuan="", xiang_zhuan="",
+        name="",
+        name_cn="",
+        inner_gua="",
+        outer_gua="",
+        gua_ci="",
+        tuan_zhuan="",
+        xiang_zhuan="",
         yao_ci=[],
         direction_hint=DIR_FLAT,
         confidence_base=0.5,
@@ -119,9 +140,11 @@ class YijingEngine:
     6. 卦辞+爻辞+变卦 → 综合推理结论
     """
 
-    def __init__(self,
-                 inner_thresholds: tuple = (0.35, 0.55, 0.65),
-                 outer_thresholds: tuple = (0.35, 0.55, 0.65)):
+    def __init__(
+        self,
+        inner_thresholds: tuple = (0.35, 0.55, 0.65),
+        outer_thresholds: tuple = (0.35, 0.55, 0.65),
+    ):
         """
         Args:
             inner_thresholds: 内卦三爻阈值（低/中/高），控制卦象分布
@@ -131,20 +154,22 @@ class YijingEngine:
         self.outer_thresholds = outer_thresholds
         self._hexagram_cache: Dict[str, HexagramKnowledge] = {}
 
-    def infer(self,
-              supply_demand_score: float,
-              technical_score: float,
-              capital_flow_score: float,
-              sentiment_score: float,
-              trend_strength: float = 0.5,
-              volatility: float = 0.5,
-              volume_ratio: float = 1.0,
-              price_position: float = 0.5,
-              ma5: float = None,
-              ma10: float = None,
-              ma20: float = None,
-              momentum_direction: str = None,
-              close_price: float = None) -> YijingResult:
+    def infer(
+        self,
+        supply_demand_score: float,
+        technical_score: float,
+        capital_flow_score: float,
+        sentiment_score: float,
+        trend_strength: float = 0.5,
+        volatility: float = 0.5,
+        volume_ratio: float = 1.0,
+        price_position: float = 0.5,
+        ma5: float = None,
+        ma10: float = None,
+        ma20: float = None,
+        momentum_direction: str = None,
+        close_price: float = None,
+    ) -> YijingResult:
         """
         从市场指标推理卦象。
 
@@ -164,12 +189,10 @@ class YijingEngine:
             YijingResult
         """
         # Step 1: 四维 → 内卦（下卦，代表内在本质）
-        inner_gua = self._compute_inner_gua(
-            supply_demand_score, technical_score)
+        inner_gua = self._compute_inner_gua(supply_demand_score, technical_score)
 
         # Step 2: 四维 → 外卦（上卦，代表外在环境）
-        outer_gua = self._compute_outer_gua(
-            capital_flow_score, sentiment_score)
+        outer_gua = self._compute_outer_gua(capital_flow_score, sentiment_score)
 
         # Step 3: 重卦 → 六十四卦
         hex_name = build_hexagram_by_guas(inner_gua, outer_gua)
@@ -182,11 +205,11 @@ class YijingEngine:
 
         # Step 4: 计算动爻（基于趋势强度、波动率、量比等）
         changing_yaos = self._compute_changing_yaos(
-            trend_strength, volatility, volume_ratio, price_position)
+            trend_strength, volatility, volume_ratio, price_position
+        )
 
         # Step 5: 计算变卦
-        changed_hex = self._compute_changed_hexagram(
-            inner_gua, outer_gua, changing_yaos)
+        changed_hex = self._compute_changed_hexagram(inner_gua, outer_gua, changing_yaos)
 
         # Step 6: 生成六爻结果
         yaos = []
@@ -200,24 +223,38 @@ class YijingEngine:
         # Step 7: 综合推理结论
         # 先计算方向（置信度计算依赖方向）
         direction = self._compute_direction(
-            hex_knowledge, changed_hex, changing_yaos,
-            supply_demand_score, technical_score,
-            capital_flow_score, sentiment_score,
-            price_position, ma5, ma10, ma20,
-            momentum_direction, close_price)
+            hex_knowledge,
+            changed_hex,
+            changing_yaos,
+            supply_demand_score,
+            technical_score,
+            capital_flow_score,
+            sentiment_score,
+            price_position,
+            ma5,
+            ma10,
+            ma20,
+            momentum_direction,
+            close_price,
+        )
 
         confidence = self._compute_confidence(
-            hex_knowledge, changing_yaos, trend_strength,
-            supply_demand_score, technical_score,
-            capital_flow_score, sentiment_score,
-            direction)
+            hex_knowledge,
+            changing_yaos,
+            trend_strength,
+            supply_demand_score,
+            technical_score,
+            capital_flow_score,
+            sentiment_score,
+            direction,
+        )
 
         overall_meaning = self._generate_overall_meaning(
-            hex_knowledge, changed_hex, changing_yaos, price_position)
+            hex_knowledge, changed_hex, changing_yaos, price_position
+        )
 
         current_phase = self._determine_phase(price_position)
-        dev_stage = self._determine_development_stage(
-            hex_knowledge, price_position, changing_yaos)
+        dev_stage = self._determine_development_stage(hex_knowledge, price_position, changing_yaos)
 
         return YijingResult(
             hexagram_name=hex_name,
@@ -243,15 +280,18 @@ class YijingEngine:
     # ============================================================
     # 符号解释层：从力学结果翻译卦象
     # ============================================================
-    def interpret_force(self, force_result,
-                        supply_demand_score: float = 0.5,
-                        technical_score: float = 0.5,
-                        capital_flow_score: float = 0.5,
-                        sentiment_score: float = 0.5,
-                        volatility: float = 0.5,
-                        volume_ratio: float = 1.0,
-                        price_position: float = 0.5,
-                        trend_strength: float = 0.5) -> YijingResult:
+    def interpret_force(
+        self,
+        force_result,
+        supply_demand_score: float = 0.5,
+        technical_score: float = 0.5,
+        capital_flow_score: float = 0.5,
+        sentiment_score: float = 0.5,
+        volatility: float = 0.5,
+        volume_ratio: float = 1.0,
+        price_position: float = 0.5,
+        trend_strength: float = 0.5,
+    ) -> YijingResult:
         """
         符号解释层 — 从力学结果翻译卦象。
 
@@ -304,8 +344,7 @@ class YijingEngine:
         )
 
         # --- 变卦 ---
-        changed_hex = self._compute_changed_hexagram(
-            inner_gua, outer_gua, changing_yaos)
+        changed_hex = self._compute_changed_hexagram(inner_gua, outer_gua, changing_yaos)
 
         # --- 卦象知识 ---
         hex_name = self._build_hexagram_name(inner_gua, outer_gua)
@@ -322,18 +361,22 @@ class YijingEngine:
             confidence = confidence * 0.8 + gua_support * 0.2
 
         # --- 整体含义 ---
-        overall_meaning = self._force_to_meaning(
-            force_result, hex_knowledge, changed_hex)
+        overall_meaning = self._force_to_meaning(force_result, hex_knowledge, changed_hex)
 
         # --- 阶段 ---
         current_phase = self._determine_phase(price_position)
         dev_stage = self._determine_development_stage(
             hex_knowledge if hex_knowledge else _dummy_hex_knowledge(),
-            price_position, changing_yaos)
+            price_position,
+            changing_yaos,
+        )
 
         # --- 风险等级 ---
-        risk_level = "高" if force_result.reversal_warning else (
-            "中" if force_result.trend_strength > 0.6 else "低")
+        risk_level = (
+            "高"
+            if force_result.reversal_warning
+            else ("中" if force_result.trend_strength > 0.6 else "低")
+        )
 
         return YijingResult(
             hexagram_name=hex_name,
@@ -356,11 +399,9 @@ class YijingEngine:
             development_stage=dev_stage,
         )
 
-    def _poles_to_inner_gua(self,
-                             volume_ratio: float,
-                             capital_flow_score: float,
-                             surface_force,
-                             core_force) -> str:
+    def _poles_to_inner_gua(
+        self, volume_ratio: float, capital_flow_score: float, surface_force, core_force
+    ) -> str:
         """
         从表里两极推导内卦。
 
@@ -387,11 +428,9 @@ class YijingEngine:
         binary = yao_low | (yao_mid << 1) | (yao_high << 2)
         return BINARY_TO_GUA.get(binary, GUA_KUN)
 
-    def _poles_to_outer_gua(self,
-                             trend_strength: float,
-                             price_position: float,
-                             time_force,
-                             space_force) -> str:
+    def _poles_to_outer_gua(
+        self, trend_strength: float, price_position: float, time_force, space_force
+    ) -> str:
         """
         从时空两极推导外卦。
 
@@ -403,7 +442,8 @@ class YijingEngine:
         3 bit → 8 卦。
         """
         from ._constants import (
-            BAGUA_POLE_SPACE_HIGH, BAGUA_POLE_SPACE_LOW,
+            BAGUA_POLE_SPACE_HIGH,
+            BAGUA_POLE_SPACE_LOW,
         )
 
         # 下爻：时之起始/终结
@@ -428,23 +468,29 @@ class YijingEngine:
         binary = yao_low | (yao_mid << 1) | (yao_high << 2)
         return BINARY_TO_GUA.get(binary, GUA_KUN)
 
-    def _force_to_changing_yaos(self, acceleration: float,
-                                  reversal_warning: bool,
-                                  reversal_strength: float,
-                                  price_position: float) -> list:
+    def _force_to_changing_yaos(
+        self,
+        acceleration: float,
+        reversal_warning: bool,
+        reversal_strength: float,
+        price_position: float,
+    ) -> list:
         """
         从加速度推导动爻。
 
         加速度大 → 变化剧烈 → 动爻多
         转折预警 → 动爻反映转折
         """
-        from ._constants import YAO_PROB_OLD_YIN, YAO_PROB_OLD_YANG
         import random as _random
+
+        from ._constants import YAO_PROB_OLD_YANG, YAO_PROB_OLD_YIN
 
         # 加速度绝对值决定动爻数量倾向
         acc_mag = abs(acceleration)
         base_prob = YAO_PROB_OLD_YIN + YAO_PROB_OLD_YANG  # 0.375
-        adjusted_prob = max(0.1, min(YAO_PROB_MAX, base_prob + acc_mag * YAO_PROB_ADJUSTMENT_FACTOR))
+        adjusted_prob = max(
+            0.1, min(YAO_PROB_MAX, base_prob + acc_mag * YAO_PROB_ADJUSTMENT_FACTOR)
+        )
 
         # 转折预警增加动爻概率
         if reversal_warning:
@@ -488,9 +534,13 @@ class YijingEngine:
         parts = []
 
         # 力学描述
-        direction_cn = {"UP": "上行", "DOWN": "下行",
-                        "FLAT": "震荡", "TRANSITIONING": "转折中",
-                        "UNKNOWN": "未知"}.get(force_result.direction, "未知")
+        direction_cn = {
+            "UP": "上行",
+            "DOWN": "下行",
+            "FLAT": "震荡",
+            "TRANSITIONING": "转折中",
+            "UNKNOWN": "未知",
+        }.get(force_result.direction, "未知")
         parts.append(f"力学判定：{direction_cn}，趋势强度 {force_result.trend_strength:.2f}")
 
         # 合力描述
@@ -553,12 +603,14 @@ class YijingEngine:
         binary = yao4 | (yao5 << 1) | (yao6 << 2)
         return BINARY_TO_GUA.get(binary, GUA_KUN)
 
-    def _compute_changing_yaos(self,
-                               trend_strength: float,
-                               volatility: float,
-                               volume_ratio: float,
-                               price_position: float,
-                               seed: int = None) -> List[int]:
+    def _compute_changing_yaos(
+        self,
+        trend_strength: float,
+        volatility: float,
+        volume_ratio: float,
+        price_position: float,
+        seed: int = None,
+    ) -> List[int]:
         """
         计算动爻。
 
@@ -573,16 +625,26 @@ class YijingEngine:
 
         返回动爻索引列表（0-5，初爻到上爻）
         """
-        from ._constants import (
-            YAO_PROB_OLD_YIN, YAO_PROB_SHAO_YANG,
-            YAO_PROB_SHAO_YIN, YAO_PROB_OLD_YANG,
-        )
         import random as _random
 
+        from ._constants import (
+            YAO_PROB_OLD_YANG,
+            YAO_PROB_OLD_YIN,
+        )
+
         # 使用 seed 确保可复现（seeded PRNG，P0 决议#7）
-        rng = _random.Random(seed) if seed is not None else _random.Random(
-            int(trend_strength * 1000 + volatility * 100 +
-                volume_ratio * 10 + price_position * 10000))
+        rng = (
+            _random.Random(seed)
+            if seed is not None
+            else _random.Random(
+                int(
+                    trend_strength * 1000
+                    + volatility * 100
+                    + volume_ratio * 10
+                    + price_position * 10000
+                )
+            )
+        )
 
         # 传统基准变爻概率：老阴 1/16 + 老阳 5/16 = 6/16 = 0.375
         base_changing_prob = YAO_PROB_OLD_YIN + YAO_PROB_OLD_YANG
@@ -592,8 +654,8 @@ class YijingEngine:
         # 趋势极强 → 变爻概率减少（趋势明确）
         # 量比异常 → 变爻概率增加
         modulation = 0.0
-        modulation += (volatility - 0.5) * 0.3       # 波动率调制
-        modulation += (volume_ratio - 1.0) * 0.1      # 量比调制
+        modulation += (volatility - 0.5) * 0.3  # 波动率调制
+        modulation += (volume_ratio - 1.0) * 0.1  # 量比调制
         modulation -= max(0, trend_strength - 0.7) * 0.2  # 强趋势减少变化
 
         # 调制后的变爻概率（边界约束 0.1 ~ 0.6）
@@ -640,10 +702,9 @@ class YijingEngine:
 
         return sorted(set(changing_yaos))
 
-    def _compute_changed_hexagram(self,
-                                  inner_gua: str,
-                                  outer_gua: str,
-                                  changing_yaos: List[int]) -> Dict[str, str]:
+    def _compute_changed_hexagram(
+        self, inner_gua: str, outer_gua: str, changing_yaos: List[int]
+    ) -> Dict[str, str]:
         """
         计算变卦。
 
@@ -659,7 +720,7 @@ class YijingEngine:
 
         # 反转动爻
         for yao in changing_yaos:
-            full_bin ^= (1 << yao)
+            full_bin ^= 1 << yao
 
         # 分解为新的内外卦
         new_inner_bin = full_bin & 0b111
@@ -684,15 +745,17 @@ class YijingEngine:
             "outer_gua": new_outer,
         }
 
-    def _compute_confidence(self,
-                            hex_knowledge: HexagramKnowledge,
-                            changing_yaos: List[int],
-                            trend_strength: float,
-                            sd_score: float = 0.5,
-                            tech_score: float = 0.5,
-                            cf_score: float = 0.5,
-                            sent_score: float = 0.5,
-                            direction: str = None) -> float:
+    def _compute_confidence(
+        self,
+        hex_knowledge: HexagramKnowledge,
+        changing_yaos: List[int],
+        trend_strength: float,
+        sd_score: float = 0.5,
+        tech_score: float = 0.5,
+        cf_score: float = 0.5,
+        sent_score: float = 0.5,
+        direction: str = None,
+    ) -> float:
         """
         计算置信度 — 融合多维一致性。
 
@@ -747,24 +810,27 @@ class YijingEngine:
         else:
             deviation_factor = 0.8 + 0.2 * deviation
 
-        confidence = (base * yao_factor * trend_factor *
-                      consistency_factor * dir_factor * deviation_factor)
+        confidence = (
+            base * yao_factor * trend_factor * consistency_factor * dir_factor * deviation_factor
+        )
         return max(0.0, min(1.0, confidence))
 
-    def _compute_direction(self,
-                           hex_knowledge: HexagramKnowledge,
-                           changed_hex: Dict,
-                           changing_yaos: List[int],
-                           sd_score: float = 0.5,
-                           tech_score: float = 0.5,
-                           cf_score: float = 0.5,
-                           sent_score: float = 0.5,
-                           price_position: float = 0.5,
-                           ma5: float = None,
-                           ma10: float = None,
-                           ma20: float = None,
-                           momentum_direction: str = None,
-                           close_price: float = None) -> str:
+    def _compute_direction(
+        self,
+        hex_knowledge: HexagramKnowledge,
+        changed_hex: Dict,
+        changing_yaos: List[int],
+        sd_score: float = 0.5,
+        tech_score: float = 0.5,
+        cf_score: float = 0.5,
+        sent_score: float = 0.5,
+        price_position: float = 0.5,
+        ma5: float = None,
+        ma10: float = None,
+        ma20: float = None,
+        momentum_direction: str = None,
+        close_price: float = None,
+    ) -> str:
         """
         综合方向推理 — 融合卦象与市场数据。
 
@@ -812,8 +878,7 @@ class YijingEngine:
 
         # 4. 变卦方向
         if changing_yaos and changed_hex:
-            changed_knowledge = get_hexagram_knowledge(
-                changed_hex.get("name", ""))
+            changed_knowledge = get_hexagram_knowledge(changed_hex.get("name", ""))
             if changed_knowledge:
                 changed_dir = changed_knowledge.direction_hint
                 if changed_dir in [DIR_UP, DIR_DOWN]:
@@ -853,11 +918,13 @@ class YijingEngine:
         else:
             return DIR_FLAT
 
-    def _generate_overall_meaning(self,
-                                  hex_knowledge: HexagramKnowledge,
-                                  changed_hex: Dict,
-                                  changing_yaos: List[int],
-                                  price_position: float) -> str:
+    def _generate_overall_meaning(
+        self,
+        hex_knowledge: HexagramKnowledge,
+        changed_hex: Dict,
+        changing_yaos: List[int],
+        price_position: float,
+    ) -> str:
         """生成整体含义描述。"""
         parts = []
 
@@ -902,10 +969,9 @@ class YijingEngine:
         else:
             return "上爻阶段（亢龙有悔）"
 
-    def _determine_development_stage(self,
-                                     hex_knowledge: HexagramKnowledge,
-                                     price_position: float,
-                                     changing_yaos: List[int]) -> str:
+    def _determine_development_stage(
+        self, hex_knowledge: HexagramKnowledge, price_position: float, changing_yaos: List[int]
+    ) -> str:
         """
         判断发展阶段。
 

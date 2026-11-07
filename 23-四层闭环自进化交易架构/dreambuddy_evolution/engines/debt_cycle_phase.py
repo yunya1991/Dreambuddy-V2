@@ -17,6 +17,7 @@ SPEC §4.4: 基于信贷增速 vs GDP增速判定债务周期阶段
 HC: 开关关断时返回 "neutral"
 HC: FAIL-OPEN 异常返回 "neutral"
 """
+
 from __future__ import annotations
 
 import logging
@@ -60,7 +61,9 @@ class DebtCyclePhase:
         Returns:
             dict: {phase, credit_growth, gdp_growth, monetary_cycle, reason}
         """
-        if not is_enabled("enable_contradiction_driven_layer") or not is_enabled("enable_debt_cycle_phase"):
+        if not is_enabled("enable_contradiction_driven_layer") or not is_enabled(
+            "enable_debt_cycle_phase"
+        ):
             return {"phase": "neutral", "reason": "开关关断"}
 
         try:

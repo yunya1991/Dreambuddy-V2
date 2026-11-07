@@ -15,6 +15,7 @@
       --jsonl runtime/coin_fundamental_shadow.backfilled.jsonl \
       [--window-days 30] [--out-path report.json] [--dry-run] [--min-samples 30]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -24,17 +25,15 @@ import os
 import sys
 import tempfile
 from collections import Counter
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _L4_DIR = os.path.normpath(os.path.join(_THIS_DIR, ".."))
 if _L4_DIR not in sys.path:
     sys.path.insert(0, _L4_DIR)
 
-from force_vector.coin_fundamental_ranker import SHADOW_JSONL_PATH
-
+from force_vector.coin_fundamental_ranker import SHADOW_JSONL_PATH  # noqa: E402
 
 DEFAULT_MIN_SAMPLES = 30
 DEFAULT_WINDOW_DAYS = 30
@@ -48,8 +47,8 @@ DEFAULT_REPORT_PATH = os.path.join(_RUNTIME_DIR, "coin_fundamental_perf_report.j
 # 工具：Spearman / 命中率 / Sharpe
 # ===========================================================================
 
-def _spearman_ic(scores: List[float], rets: List[float],
-                 min_samples: int = 3) -> Optional[float]:
+
+def _spearman_ic(scores: List[float], rets: List[float], min_samples: int = 3) -> Optional[float]:
     """Spearman rank 相关系数；样本不足或异常返回 None。
 
     单元测试默认 min_samples=3（保证低门槛），30 样本门槛由
@@ -63,7 +62,7 @@ def _spearman_ic(scores: List[float], rets: List[float],
         return None
     try:
         n = len(scores)
-        idx = list(range(n))
+        idx = list(range(n))  # noqa: F841
         r_x = _rankdata([float(s) for s in scores])
         r_y = _rankdata([float(r) for r in rets])
         mean_x = sum(r_x) / n
@@ -95,9 +94,9 @@ def _rankdata(values: List[float]) -> List[float]:
     return ranks
 
 
-def _hit_rate(scores: List[float], rets: List[float],
-              min_samples: int = 2,
-              score_zero_eps: float = 1e-9) -> Optional[float]:
+def _hit_rate(
+    scores: List[float], rets: List[float], min_samples: int = 2, score_zero_eps: float = 1e-9
+) -> Optional[float]:
     """命中率 = mean(sign(score) == sign(ret))，剔除 score=0 样本。
 
     单元测试默认 min_samples=2；30 样本门槛由 compute_metrics 显式传入。
@@ -107,7 +106,7 @@ def _hit_rate(scores: List[float], rets: List[float],
     if len(scores) != len(rets):
         return None
     pairs = []
-    for s, r in zip(scores, rets):
+    for s, r in zip(scores, rets):  # noqa: B905
         try:
             sf = float(s)
             rf = float(r)
@@ -122,9 +121,9 @@ def _hit_rate(scores: List[float], rets: List[float],
     return hits / len(pairs)
 
 
-def _sc_sharpe(ranks: List[str], rets: List[float],
-               holding_days: int = 7,
-               min_samples: int = 3) -> Optional[float]:
+def _sc_sharpe(
+    ranks: List[str], rets: List[float], holding_days: int = 7, min_samples: int = 3
+) -> Optional[float]:
     """S-C 组合 Sharpe：S=+1（做多收益），C=-1（做空收益 = -ret），A/B=0。
 
     年化：Sharpe = mean(pnl) / std(pnl) * sqrt(365 / holding_days)
@@ -135,7 +134,7 @@ def _sc_sharpe(ranks: List[str], rets: List[float],
     if len(ranks) != len(rets):
         return None
     pnls = []
-    for rk, ret in zip(ranks, rets):
+    for rk, ret in zip(ranks, rets):  # noqa: B905
         sign = 0
         if rk == "S":
             sign = +1
@@ -165,6 +164,7 @@ def _sc_sharpe(ranks: List[str], rets: List[float],
 # ===========================================================================
 # Backfilled JSONL 读取 + 滚动窗口过滤
 # ===========================================================================
+
 
 def _parse_ts(ts) -> Optional[datetime]:
     if not ts or not isinstance(ts, str):
@@ -239,9 +239,9 @@ def _extract_window_samples(records: List[Dict], w: int):
     return scores, rets, ranks
 
 
-def compute_metrics(jsonl_path: str,
-                    window_days: int = DEFAULT_WINDOW_DAYS,
-                    min_samples: int = DEFAULT_MIN_SAMPLES) -> Dict[str, Any]:
+def compute_metrics(
+    jsonl_path: str, window_days: int = DEFAULT_WINDOW_DAYS, min_samples: int = DEFAULT_MIN_SAMPLES
+) -> Dict[str, Any]:
     """主计算：读 backfilled JSONL，计算聚合指标并返回 report dict。"""
     records = _load_records(jsonl_path, window_days)
 
@@ -282,6 +282,7 @@ def compute_metrics(jsonl_path: str,
 # 报告原子落地
 # ===========================================================================
 
+
 def write_report(report: Dict[str, Any], out_path: str = DEFAULT_REPORT_PATH) -> str:
     """原子写 JSON 报告（temp → rename），返回最终路径。"""
     dirp = os.path.dirname(os.path.abspath(out_path)) or "."
@@ -303,26 +304,30 @@ def write_report(report: Dict[str, Any], out_path: str = DEFAULT_REPORT_PATH) ->
 
 def _print_summary(report: Dict[str, Any]) -> None:
     print("=" * 60)
-    print(f"CoinFundamental Performance Report")
+    print("CoinFundamental Performance Report")
     print(f"  generated_at     : {report.get('generated_at')}")
     print(f"  window_days      : {report.get('window_days')}")
     print(f"  min_samples_thr  : {report.get('min_samples_threshold')}")
     print("-" * 60)
-    print(f"  window        samples       IC   hit_rate   S-C_Sharpe")
+    print("  window        samples       IC   hit_rate   S-C_Sharpe")
     for w in (7, 14, 30):
         k = f"{w}d"
         n = report["sample_sizes"].get(k, 0)
         ic = report["ic"].get(k)
         hr = report["hit_rate"].get(k)
         sh = report["s_c_sharpe"].get(k)
+
         def fmt(v, w_=7):
             if v is None:
                 return "insuff".ljust(w_)
             return f"{float(v):+.4f}".ljust(w_)
+
         print(f"  {k:7s}  {n:>7d}   {fmt(ic)}  {fmt(hr)}   {fmt(sh, 9)}")
     print("-" * 60)
     rc = report.get("rank_counts", {})
-    print(f"  rank_counts: S={rc.get('S',0)}  A={rc.get('A',0)}  B={rc.get('B',0)}  C={rc.get('C',0)}")
+    print(
+        f"  rank_counts: S={rc.get('S',0)}  A={rc.get('A',0)}  B={rc.get('B',0)}  C={rc.get('C',0)}"
+    )
     print("=" * 60)
 
 
@@ -330,19 +335,32 @@ def _print_summary(report: Dict[str, Any]) -> None:
 # CLI
 # ===========================================================================
 
+
 def _parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     # backfilled 默认路径 = shadow 同名 + .backfilled.jsonl
     base, ext = os.path.splitext(SHADOW_JSONL_PATH)
     default_bf = f"{base}.backfilled{ext or '.jsonl'}"
     p = argparse.ArgumentParser(description="D2: 统计 CoinFundamental Shadow IC/命中率/S-C Sharpe")
-    p.add_argument("--jsonl-path", default=default_bf,
-                   help=f"Backfilled JSONL (default: {default_bf})")
-    p.add_argument("--window-days", type=int, default=DEFAULT_WINDOW_DAYS,
-                   help=f"滚动窗口天数 (default: {DEFAULT_WINDOW_DAYS})")
-    p.add_argument("--min-samples", type=int, default=DEFAULT_MIN_SAMPLES,
-                   help=f"样本不足阈值 (default: {DEFAULT_MIN_SAMPLES})")
-    p.add_argument("--out-path", default=DEFAULT_REPORT_PATH,
-                   help=f"JSON 报告输出路径 (default: {DEFAULT_REPORT_PATH})")
+    p.add_argument(
+        "--jsonl-path", default=default_bf, help=f"Backfilled JSONL (default: {default_bf})"
+    )
+    p.add_argument(
+        "--window-days",
+        type=int,
+        default=DEFAULT_WINDOW_DAYS,
+        help=f"滚动窗口天数 (default: {DEFAULT_WINDOW_DAYS})",
+    )
+    p.add_argument(
+        "--min-samples",
+        type=int,
+        default=DEFAULT_MIN_SAMPLES,
+        help=f"样本不足阈值 (default: {DEFAULT_MIN_SAMPLES})",
+    )
+    p.add_argument(
+        "--out-path",
+        default=DEFAULT_REPORT_PATH,
+        help=f"JSON 报告输出路径 (default: {DEFAULT_REPORT_PATH})",
+    )
     p.add_argument("--dry-run", action="store_true", help="只打印不写报告")
     return p.parse_args(argv)
 

@@ -28,16 +28,14 @@ B2 安全网（评审修复）:
   - 评审修复 B2: C 级先只降权不归档，90 天 grace period，人工审核闸门
   - 认知科学记忆 VM-1791716947623: 记忆强度(非年龄)是预测误差驱动更新的边界条件
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import json
-import math
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
-from pathlib import Path
 from typing import Any, Dict, List, Optional
-
 
 # ============================================================
 # 默认参数
@@ -56,25 +54,26 @@ QUALITY_DIFFICULTY = {
 QUALITY_STABILITY = {
     "S": 365.0,  # S 级：1年稳定性
     "A": 180.0,  # A 级：半年
-    "B": 60.0,   # B 级：2月
-    "C": 15.0,   # C 级：15天
-    "D": 5.0,    # D 级：5天
+    "B": 60.0,  # B 级：2月
+    "C": 15.0,  # C 级：15天
+    "D": 5.0,  # D 级：5天
 }
 
 DEFAULT_GRACE_PERIOD_DAYS = 90  # B2 安全网：90 天 grace period
-DEMOTION_FACTOR = 0.8           # 降权因子
-REVIEW_THRESHOLD = 0.4          # R < 此值加入审核队列
-DEMOTE_THRESHOLD = 0.7          # R < 此值降权
+DEMOTION_FACTOR = 0.8  # 降权因子
+REVIEW_THRESHOLD = 0.4  # R < 此值加入审核队列
+DEMOTE_THRESHOLD = 0.7  # R < 此值降权
 
 
 @dataclass
 class ForgettingReport:
     """遗忘调度报告。"""
+
     total_scanned: int = 0
-    skipped_grace: int = 0      # grace period 内跳过
-    skipped_quality: int = 0    # B 级以上跳过
-    demoted_count: int = 0      # 降权数
-    archived_count: int = 0     # 归档数（B2: 始终 0）
+    skipped_grace: int = 0  # grace period 内跳过
+    skipped_quality: int = 0  # B 级以上跳过
+    demoted_count: int = 0  # 降权数
+    archived_count: int = 0  # 归档数（B2: 始终 0）
     review_queue: List[Dict[str, Any]] = field(default_factory=list)
     demoted_ids: List[str] = field(default_factory=list)
 
@@ -211,15 +210,17 @@ class FSRSForgettingScheduler:
 
                 # R <= review_threshold: 加入审核队列
                 if r <= self.review_threshold:
-                    report.review_queue.append({
-                        "memory_id": mid,
-                        "retrievability": round(r, 4),
-                        "days_since_verify": round(days_since, 1),
-                        "quality_level": ql,
-                        "verify_count": vc,
-                        "current_confidence": confidence,
-                        "reason": f"R={r:.3f} <= {self.review_threshold}（幂律遗忘严重）",
-                    })
+                    report.review_queue.append(
+                        {
+                            "memory_id": mid,
+                            "retrievability": round(r, 4),
+                            "days_since_verify": round(days_since, 1),
+                            "quality_level": ql,
+                            "verify_count": vc,
+                            "current_confidence": confidence,
+                            "reason": f"R={r:.3f} <= {self.review_threshold}（幂律遗忘严重）",
+                        }
+                    )
                     # 不自动归档（B2 安全网）
                     # 但降权（dry_run 也统计，只是不实际修改）
                     report.demoted_ids.append(mid)

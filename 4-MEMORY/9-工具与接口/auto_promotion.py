@@ -21,6 +21,7 @@
 - 最短驻留时间防止频繁切换
 - 状态推进单点写入（evaluate 是唯一修改 state 的入口）
 """
+
 from __future__ import annotations
 
 import time
@@ -31,6 +32,7 @@ from typing import Any, Dict, List, Optional
 @dataclass
 class AutoPromotionConfig:
     """自动晋升配置。"""
+
     # 晋升阈值（进入 live 模式）
     min_samples: int = 50
     promote_auc_threshold: float = 0.70
@@ -42,7 +44,7 @@ class AutoPromotionConfig:
     demote_psi_threshold: float = 0.20
     # 最短驻留时间（秒）
     min_shadow_dwell_seconds: float = 300.0  # shadow 至少 5 分钟
-    min_live_dwell_seconds: float = 600.0    # live 至少 10 分钟
+    min_live_dwell_seconds: float = 600.0  # live 至少 10 分钟
     # 是否启用自动晋升
     enabled: bool = True
 
@@ -50,6 +52,7 @@ class AutoPromotionConfig:
 @dataclass
 class PromotionDecision:
     """一次 evaluate 的决策结果。"""
+
     promoted: bool = False
     demoted: bool = False
     reason: str = ""  # 不晋升/不降级的原因
@@ -182,13 +185,15 @@ class AutoPromotionManager:
         old_state = self._state
         self._state = new_state
         self._state_entered_at = time.time()
-        self._event_log.append({
-            "event": "promoted" if new_state == self.STATE_LIVE else "demoted",
-            "from": old_state,
-            "to": new_state,
-            "reason": reason,
-            "ts": time.time(),
-        })
+        self._event_log.append(
+            {
+                "event": "promoted" if new_state == self.STATE_LIVE else "demoted",
+                "from": old_state,
+                "to": new_state,
+                "reason": reason,
+                "ts": time.time(),
+            }
+        )
 
     def force_live(self) -> None:
         """强制切换到 live 模式（手动覆盖）。"""

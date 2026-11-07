@@ -8,12 +8,11 @@ Bug背景: FIX-A的15%绝对兜底对马丁策略太紧——加仓间距8%×vol
 - swing_low是趋势翻转最后防线
 - 取max(fib_0.786, swing_low×1.02)作为SL候选
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
-
-import pytest
 
 _HERE = Path(__file__).resolve().parent
 _V15_ROOT = _HERE.parent
@@ -48,7 +47,9 @@ class TestFibonacciFallbackSL:
         # SL应该在swing_low上方(0.786回撤位附近)
         assert sl_price > 850.0, f"SL应大于swing_low $850, 实际=${sl_price}"
         assert sl_price < 984.0, f"SL应小于current_price $984, 实际=${sl_price}"
-        assert "0.786" in sl_type or "fib" in sl_type.lower(), f"stop_type应含0.786/fib, 实际: {sl_type}"
+        assert (
+            "0.786" in sl_type or "fib" in sl_type.lower()
+        ), f"stop_type应含0.786/fib, 实际: {sl_type}"
         # 验证计算: 0.786回撤位 ≈ 882.1
         assert abs(sl_price - 882.1) < 3.0, f"SL应在$882.1附近, 实际=${sl_price}"
 
@@ -84,9 +85,9 @@ class TestFibonacciFallbackSL:
         assert sl_price < 984.0
         # 确认不是15%固定值
         expected_15pct = 984.0 * 0.85  # = 836.4
-        assert abs(sl_price - expected_15pct) > 5.0, (
-            f"SL不应等于15%兜底价${expected_15pct}, 实际=${sl_price}"
-        )
+        assert (
+            abs(sl_price - expected_15pct) > 5.0
+        ), f"SL不应等于15%兜底价${expected_15pct}, 实际=${sl_price}"
 
     def test_insufficient_swings_returns_none(self):
         """数据不足无法检测swing时返回None（交给下层vol×2.5兜底）。"""

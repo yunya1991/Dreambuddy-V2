@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """诊断ARB/OP/UNI的exit_reason分布 — 验证ATR无变化是否因非止盈出场"""
+
 import sys
-from pathlib import Path
 from collections import Counter
+from pathlib import Path
 
 BASE_DIR = Path(__file__).parent
 sys.path.insert(0, str(BASE_DIR / "core"))
 
-from v15_backtest import run_backtest, fetch_klines
+from v15_backtest import fetch_klines, run_backtest  # noqa: E402
 
 coins = ["BTC", "ETH", "SOL", "ARB", "OP", "UNI"]
 limit = 1500
@@ -51,4 +52,4 @@ for coin in coins:
 
     # 如果止盈占比低，说明ATR影响有限
     if tp_pct < 30:
-        print(f"  ⚠️  止盈占比<30%，ATR调整TP对结果影响有限 — 解释了ON/OFF无变化")
+        print("  ⚠️  止盈占比<30%，ATR调整TP对结果影响有限 — 解释了ON/OFF无变化")

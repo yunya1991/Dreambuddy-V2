@@ -13,29 +13,28 @@
 这是操作系统的"记忆"功能，为动态链融合的"执行反思进化"提供数据支撑。
 """
 
-import time
 import re
-from typing import Dict, List, Optional, Any, Tuple
+import time
 from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
 
+from .manager import GraphStorageManager
 from .types import (
-    BlueprintGraph,
     ArchitectureGraph,
+    BlueprintGraph,
     ChronicleGraph,
-    CompressionResult,
-    NodeId,
     _gen_id,
 )
-from .manager import GraphStorageManager
-
 
 # ============================================================
 # 历史记录类型
 # ============================================================
 
+
 @dataclass
 class HistoryRecord:
     """历史执行记录"""
+
     execution_id: str = ""
     blueprint_id: str = ""
     architecture_id: str = ""
@@ -86,6 +85,7 @@ class HistoryRecord:
 @dataclass
 class SimilarTaskMatch:
     """相似任务匹配结果"""
+
     record: HistoryRecord
     similarity: float = 0.0
     match_reason: str = ""
@@ -98,6 +98,7 @@ class SimilarTaskMatch:
 @dataclass
 class ExecutionPattern:
     """执行模式（从历史中发现的重复模式）"""
+
     pattern_id: str = field(default_factory=lambda: _gen_id("pat"))
     name: str = ""
     description: str = ""
@@ -129,6 +130,7 @@ class ExecutionPattern:
 # ============================================================
 # 历史检索器
 # ============================================================
+
 
 class HistoryRetriever:
     """历史检索器
@@ -205,7 +207,7 @@ class HistoryRetriever:
 
         # 限制数量
         if len(self._history_index) > self.max_history:
-            self._history_index = self._history_index[:self.max_history]
+            self._history_index = self._history_index[: self.max_history]
 
         return record
 
@@ -236,7 +238,7 @@ class HistoryRetriever:
         if tags:
             records = [r for r in records if any(t in r.tags for t in tags)]
 
-        return records[offset:offset + limit]
+        return records[offset : offset + limit]
 
     def get_history(self, execution_id: str) -> Optional[HistoryRecord]:
         """获取单条历史记录"""
@@ -274,7 +276,7 @@ class HistoryRetriever:
             相似任务匹配列表
         """
         query_lower = query.lower()
-        query_keywords = set(re.findall(r'\w+', query_lower))
+        query_keywords = set(re.findall(r"\w+", query_lower))
 
         matches = []
 
@@ -287,13 +289,13 @@ class HistoryRetriever:
             title_lower = record.blueprint_name.lower()
             desc_lower = record.description.lower()
             summary_lower = record.result_summary.lower()
-            tags_lower = ' '.join(record.tags).lower()
+            tags_lower = " ".join(record.tags).lower()
 
             # 合并所有文本
             all_text = f"{title_lower} {desc_lower} {summary_lower} {tags_lower}"
 
             # 关键词匹配
-            text_keywords = set(re.findall(r'\w+', all_text))
+            text_keywords = set(re.findall(r"\w+", all_text))
             if not query_keywords or not text_keywords:
                 similarity = 0.0
             else:
@@ -410,7 +412,7 @@ class HistoryRetriever:
                 continue
 
             seq = tuple(chron.sequence)
-            seq_key = '|'.join(seq)
+            seq_key = "|".join(seq)
 
             if seq_key not in pattern_counts:
                 pattern_counts[seq_key] = {
@@ -428,7 +430,7 @@ class HistoryRetriever:
 
         # 筛选高频模式
         patterns = []
-        for seq_key, data in pattern_counts.items():
+        for seq_key, data in pattern_counts.items():  # noqa: B007
             if data["count"] >= min_frequency:
                 count = data["count"]
                 pattern = ExecutionPattern(
@@ -464,11 +466,15 @@ class HistoryRetriever:
 
         return {
             "total_records": len(self._history_index),
-            "success_rate": success_count / len(self._history_index) if self._history_index else 0.0,
+            "success_rate": (
+                success_count / len(self._history_index) if self._history_index else 0.0
+            ),
             "total_tokens": total_tokens,
             "avg_tokens": total_tokens / len(self._history_index) if self._history_index else 0,
             "total_duration_ms": total_duration,
-            "avg_duration_ms": total_duration / len(self._history_index) if self._history_index else 0,
+            "avg_duration_ms": (
+                total_duration / len(self._history_index) if self._history_index else 0
+            ),
             "compressed_count": compressed_count,
             "patterns_count": len(self._patterns),
             "max_history": self.max_history,

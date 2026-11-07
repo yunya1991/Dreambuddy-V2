@@ -6,11 +6,12 @@
 用法：
     python backfill_historical_data.py
 """
+
 from __future__ import annotations
 
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -25,21 +26,21 @@ if str(_DC) not in sys.path:
 
 # 加载 .env
 from dotenv import load_dotenv  # noqa: E402
+
 load_dotenv(_DC / "config" / ".env")
 
-from fredapi import Fred  # noqa: E402
-from data_center.collectors._base import BaseCollector  # noqa: E402
 from data_center.core.contract import DataRecord, validate_record  # noqa: E402
 from data_center.storage.sink_sqlite import SqliteSink  # noqa: E402
+from fredapi import Fred  # noqa: E402
 
 FRED_SERIES = (
-    "FEDFUNDS",     # 联邦基金利率（日度）
-    "CPIAUCSL",     # CPI（月度）
-    "INDPRO",       # 工业产出（月度）
-    "M2SL",         # M2（月度）
-    "WALCL",        # 联储总资产（周度）
-    "T10Y2YM",      # 10Y-2Y利差（日度）
-    "PPIACO",       # PPI（月度）
+    "FEDFUNDS",  # 联邦基金利率（日度）
+    "CPIAUCSL",  # CPI（月度）
+    "INDPRO",  # 工业产出（月度）
+    "M2SL",  # M2（月度）
+    "WALCL",  # 联储总资产（周度）
+    "T10Y2YM",  # 10Y-2Y利差（日度）
+    "PPIACO",  # PPI（月度）
 )
 
 YOY_SERIES = {"CPIAUCSL", "INDPRO", "M2SL", "PPIACO"}
@@ -67,7 +68,8 @@ def _fred_records(series_id: str, series: pd.Series) -> list[DataRecord]:
                 year_ago_val = float(series.iloc[pos])
                 if year_ago_val != 0:
                     metrics["yoy_pct"] = round(
-                        (float(val) - year_ago_val) / abs(year_ago_val) * 100, 4)
+                        (float(val) - year_ago_val) / abs(year_ago_val) * 100, 4
+                    )
             except Exception:
                 pass
         rec = DataRecord(
@@ -144,6 +146,7 @@ def main() -> None:
 
     # ── yfinance ──
     import yfinance as yf
+
     for symbol in YF_SYMBOLS:
         try:
             print(f"[YF] fetching {symbol} ...")

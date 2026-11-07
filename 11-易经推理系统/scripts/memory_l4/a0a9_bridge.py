@@ -7,16 +7,16 @@ v0.2 新增模块 — Phase 1 (P0)
 """
 
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
-import sys
 from typing import Any, Dict, List, Optional
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import memory_l4_cases_dir, workspace_root
+from scripts.memory_l4.paths import memory_l4_cases_dir, workspace_root  # noqa: E402
 
 # ── A0-A9 阶段到 thinking_stage 的字段映射 ──
 
@@ -147,7 +147,9 @@ def build_thinking_stage(stage_id: str, stage_data: Dict[str, Any]) -> Dict[str,
     if "contradiction" in field_map:
         thinking_stage["contradiction"] = str(raw.get(field_map["contradiction"], ""))
     if "contradiction_analysis" in field_map:
-        thinking_stage["contradiction_analysis"] = str(raw.get(field_map["contradiction_analysis"], ""))
+        thinking_stage["contradiction_analysis"] = str(
+            raw.get(field_map["contradiction_analysis"], "")
+        )
     if "hypothesis" in field_map:
         thinking_stage["hypothesis"] = str(raw.get(field_map["hypothesis"], ""))
     if "test_result" in field_map:
@@ -158,7 +160,9 @@ def build_thinking_stage(stage_id: str, stage_data: Dict[str, Any]) -> Dict[str,
     return thinking_stage
 
 
-def build_thinking_chain_from_stages(stage_outputs: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
+def build_thinking_chain_from_stages(
+    stage_outputs: Dict[str, Dict[str, Any]],
+) -> List[Dict[str, Any]]:
     """将多个阶段产出转换为完整的 thinking_chain。
 
     Args:
@@ -278,13 +282,15 @@ def query_memory_for_stage(
             if regime and case_regime and regime != case_regime:
                 continue
 
-        results.append({
-            "case_id": case.get("case_id"),
-            "inst_id": case.get("inst_id"),
-            "stage_data": target_stage,
-            "quadrant": case.get("quadrant"),
-            "review": case.get("review"),
-        })
+        results.append(
+            {
+                "case_id": case.get("case_id"),
+                "inst_id": case.get("inst_id"),
+                "stage_data": target_stage,
+                "quadrant": case.get("quadrant"),
+                "review": case.get("review"),
+            }
+        )
 
         if len(results) >= top_k * 2:  # 先多取，后续可按相似度排序
             break

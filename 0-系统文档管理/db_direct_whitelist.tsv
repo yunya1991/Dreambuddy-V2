@@ -94,3 +94,13 @@ experiments/ab-trading/core/modules/data_center_adapter.py	sqlite3	2
 run_hourly_sacg_execution.py	sqlite3	4
 # 【档一】case_bank_server：独立 DB（solution_case_bank.db，物理隔离）服务本体
 scripts/case_bank_server.py	sqlite3	1
+# 【档三】2026-11-07 存量登记：48/34/23/19 新增脚本与测试脚手架（只减不增，后续按 C5 批次收编 Store port）
+19-数据访问层/scripts/data_agent_reward.py	sqlite3	1
+23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_d2_oi_liq.py	sqlite3	1
+34-前端应用训练系统/core/dsh_frontend_bridge.py	sqlite3	2
+48-涌现架构/experiments/replay/replay_decisions.py	sqlite3	1
+48-涌现架构/metrics/emergence_metrics.py	sqlite3	1
+48-涌现架构/registry/gap_backfill_verify.py	sqlite3	1
+48-涌现架构/registry/run_human_baseline.py	sqlite3	1
+48-涌现架构/tests/test_e6_l1_acceptance.py	sqlite3	1
+48-涌现架构/tests/test_gap_backfill_verify.py	sqlite3	1

@@ -9,6 +9,7 @@ True the caller is asserting ENABLE_TEE=False — the resulting
 ``place_order`` call is byte-identical to the legacy
 ``client.place_order(...)`` baseline (no max_slippage_bps kwarg).
 """
+
 from __future__ import annotations
 
 import time
@@ -29,10 +30,9 @@ class DirectMarket(ExecutionAlgorithm):
         kill_switch_cb: Callable[..., Any],
         audit_cb: Callable[..., Any],
     ) -> AlgoRunResult:
-        audit_cb("DM_START", {"inst_id": parent_req.get("inst_id"),
-                              "sz": parent_req.get("sz")})
+        audit_cb("DM_START", {"inst_id": parent_req.get("inst_id"), "sz": parent_req.get("sz")})
 
-        kwargs = dict(
+        kwargs = dict(  # noqa: C408
             inst_id=parent_req["inst_id"],
             side=parent_req["side"],
             ord_type="market",
@@ -54,24 +54,29 @@ class DirectMarket(ExecutionAlgorithm):
         if not placed.get("ok"):
             audit_cb("DM_PLACE_FAIL", {"raw": placed})
             return AlgoRunResult(
-                child_orders=[], final_vwap=None,
-                final_slippage_bps=None, remaining_sz=float(parent_req["sz"]),
+                child_orders=[],
+                final_vwap=None,
+                final_slippage_bps=None,
+                remaining_sz=float(parent_req["sz"]),
                 kvs={"error": placed.get("error") or "place_order not ok"},
             )
 
         ord_id = placed.get("ord_id")
-        audit_cb("DM_PLACED", {"ord_id": ord_id,
-                                "placed": _safe_raw_stub(placed)})
+        audit_cb("DM_PLACED", {"ord_id": ord_id, "placed": _safe_raw_stub(placed)})
 
         # Wait briefly for filled state. Paper/backtest fills are instant;
         # live waits up to 5s then reports whatever partial state we have.
         total_fill, avg_px, last_state = self._wait_fill(
-            client, parent_req["inst_id"], ord_id,
+            client,
+            parent_req["inst_id"],
+            ord_id,
             timeout_sec=algo_params.get("direct_wait_sec", 5.0),
             poll_sec=0.2,
         )
-        audit_cb("DM_SETTLED", {"ord_id": ord_id, "state": last_state,
-                                 "filled_sz": total_fill, "avg_px": avg_px})
+        audit_cb(
+            "DM_SETTLED",
+            {"ord_id": ord_id, "state": last_state, "filled_sz": total_fill, "avg_px": avg_px},
+        )
 
         remaining = max(0.0, float(parent_req["sz"]) - float(total_fill))
         decision = float(parent_req.get("decision_px") or 0.0)
@@ -82,19 +87,21 @@ class DirectMarket(ExecutionAlgorithm):
             if kill_switch_cb:
                 fired, reason = kill_switch_cb(slip_bps, {"algo": "dm"})
                 if fired:
-                    audit_cb("DM_KILL_SWITCH", {"reason": reason,
-                                                 "slip": slip_bps})
+                    audit_cb("DM_KILL_SWITCH", {"reason": reason, "slip": slip_bps})
 
         return AlgoRunResult(
-            child_orders=[{
-                "ord_id": ord_id, "ord_type": "market",
-                "px_submitted": None,
-                "sz_submitted": float(parent_req["sz"]),
-                "px_filled": vwap,
-                "sz_filled": float(total_fill),
-                "slippage_bps": slip_bps if slip_bps is not None else 0.0,
-                "ts_submitted_ms": int(time.time() * 1000),
-            }],
+            child_orders=[
+                {
+                    "ord_id": ord_id,
+                    "ord_type": "market",
+                    "px_submitted": None,
+                    "sz_submitted": float(parent_req["sz"]),
+                    "px_filled": vwap,
+                    "sz_filled": float(total_fill),
+                    "slippage_bps": slip_bps if slip_bps is not None else 0.0,
+                    "ts_submitted_ms": int(time.time() * 1000),
+                }
+            ],
             final_vwap=vwap,
             final_slippage_bps=slip_bps,
             remaining_sz=float(remaining),
@@ -103,8 +110,7 @@ class DirectMarket(ExecutionAlgorithm):
 
     # ── helpers ────────────────────────────────────────────────────────
     @staticmethod
-    def _wait_fill(client: Any, inst_id: str, ord_id: str,
-                   timeout_sec: float, poll_sec: float):
+    def _wait_fill(client: Any, inst_id: str, ord_id: str, timeout_sec: float, poll_sec: float):
         deadline = time.time() + max(0.0, float(timeout_sec))
         last: Dict[str, Any] = {"state": "unknown"}
         filled = 0.0
@@ -144,5 +150,8 @@ class DirectMarket(ExecutionAlgorithm):
 
 
 def _safe_raw_stub(placed: Dict[str, Any]) -> Dict[str, Any]:
-    return {"ok": placed.get("ok"), "ord_id": placed.get("ord_id"),
-            "dry_run": placed.get("dry_run")}
+    return {
+        "ok": placed.get("ok"),
+        "ord_id": placed.get("ord_id"),
+        "dry_run": placed.get("dry_run"),
+    }

@@ -11,17 +11,19 @@ V4 + 波浪智能融合策略
 
 对比：纯V4、纯波浪、简单分仓融合、智能融合、买入持有
 """
+
+import argparse
+import json
 import os
 import sys
-import json
 import time
-import argparse
+
 import numpy as np
 import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
-sys.path.insert(0, '.')
+sys.path.insert(0, ".")
 
 
 def load_coin_data(symbol: str) -> pd.DataFrame:
@@ -45,7 +47,7 @@ def compute_v4_position(prices, symbol="BTC"):
 
     from ml.halving_top_exit_strategy import HalvingTopExitStrategy
 
-    is_btc = (symbol == "BTC")
+    is_btc = symbol == "BTC"
     strategy = HalvingTopExitStrategy(
         symbol=symbol,
         is_btc=is_btc,
@@ -53,7 +55,9 @@ def compute_v4_position(prices, symbol="BTC"):
     )
 
     position_series = strategy.generate_signals(prices)
-    position_arr = position_series.values if hasattr(position_series, 'values') else np.array(position_series)
+    position_arr = (
+        position_series.values if hasattr(position_series, "values") else np.array(position_series)
+    )
 
     abs_position = np.abs(position_arr)
     direction_arr = np.sign(position_arr)
@@ -97,9 +101,11 @@ def generate_wave_signals(prices, zigzag_threshold=0.05):
     return np.array(signals), np.array(confs)
 
 
-def compute_wave_position_from_signals(prices, wave_signals, wave_confs, use_physics=True, base_position=0.3):
+def compute_wave_position_from_signals(
+    prices, wave_signals, wave_confs, use_physics=True, base_position=0.3
+):
     """根据波浪信号计算仓位"""
-    from ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
+    from ml.pitd_confidence_scorer import ConfidenceWeights, PhysicsConfidenceScorer
 
     print(f"  [Wave] 计算波浪仓位 (base_pos={base_position}, physics={use_physics})...")
     t0 = time.time()
@@ -112,13 +118,17 @@ def compute_wave_position_from_signals(prices, wave_signals, wave_confs, use_phy
 
     if use_physics:
         weights = ConfidenceWeights(
-            w_eta=0.211, w_reversal=0.368,
-            w_support=0.211, w_kinetic=0.211,
-            position_lower=0.6, position_scale=1.0,
+            w_eta=0.211,
+            w_reversal=0.368,
+            w_support=0.211,
+            w_kinetic=0.211,
+            position_lower=0.6,
+            position_scale=1.0,
         )
         scorer = PhysicsConfidenceScorer(weights)
-        from ml.pitd_kinematics_engineer import KinematicsEngineer
         from ml.pitd_dynamics_engineer import DynamicsEngineer
+        from ml.pitd_kinematics_engineer import KinematicsEngineer
+
         kin_fe = KinematicsEngineer()
         dyn_fe = DynamicsEngineer()
         kin_feats = kin_fe.extract_series(prices)
@@ -192,8 +202,17 @@ def compute_wave_position_from_signals(prices, wave_signals, wave_confs, use_phy
     return abs_position, direction_arr, phys_conf, eta_series
 
 
-def compute_smart_fusion(v4_pos, v4_dir, wave_signals, wave_confs, phys_conf, eta_series,
-                         add_ratio=0.3, bottom_ratio=0.2, max_position=1.0):
+def compute_smart_fusion(
+    v4_pos,
+    v4_dir,
+    wave_signals,
+    wave_confs,
+    phys_conf,
+    eta_series,
+    add_ratio=0.3,
+    bottom_ratio=0.2,
+    max_position=1.0,
+):
     """智能融合：V4定方向 + 波浪择时加仓
 
     规则：
@@ -211,8 +230,14 @@ def compute_smart_fusion(v4_pos, v4_dir, wave_signals, wave_confs, phys_conf, et
     wave_long_signals = ("ENTER_LONG_W3", "ENTER_LONG_W5", "HOLD_LONG_W3")
     wave_short_signals = ("ENTER_SHORT_W3", "ENTER_SHORT_W5", "HOLD_SHORT_W3")
 
-    stats = {"bull_add": 0, "bull_keep": 0, "empty_bottom": 0, "empty_wait": 0,
-             "bear_keep": 0, "bear_reduce": 0}
+    stats = {
+        "bull_add": 0,
+        "bull_keep": 0,
+        "empty_bottom": 0,
+        "empty_wait": 0,
+        "bear_keep": 0,
+        "bear_reduce": 0,
+    }
 
     for i in range(n):
         v4_p = v4_pos[i] * v4_dir[i]  # 带方向V4仓位
@@ -271,7 +296,7 @@ def compute_smart_fusion(v4_pos, v4_dir, wave_signals, wave_confs, phys_conf, et
                 fusion_dir[i] = -1
                 stats["bear_keep"] += 1
 
-    print(f"\n  [SmartFusion] 智能融合状态统计:")
+    print("\n  [SmartFusion] 智能融合状态统计:")
     print(f"    V4多头+波浪加仓: {stats['bull_add']}天 ({stats['bull_add']/n*100:.1f}%)")
     print(f"    V4多头+保持: {stats['bull_keep']}天 ({stats['bull_keep']/n*100:.1f}%)")
     print(f"    V4空仓+波浪抄底: {stats['empty_bottom']}天 ({stats['empty_bottom']/n*100:.1f}%)")
@@ -353,8 +378,11 @@ def run_comparison(symbol="BTC", zigzag_threshold=0.05, wave_base_position=0.3):
     v4_pos, v4_dir = compute_v4_position(prices, symbol=symbol)
     wave_signals, wave_confs = generate_wave_signals(prices, zigzag_threshold=zigzag_threshold)
     wave_pos, wave_dir, phys_conf, eta_series = compute_wave_position_from_signals(
-        prices, wave_signals, wave_confs,
-        use_physics=True, base_position=wave_base_position,
+        prices,
+        wave_signals,
+        wave_confs,
+        use_physics=True,
+        base_position=wave_base_position,
     )
 
     valid_start = 365
@@ -371,7 +399,9 @@ def run_comparison(symbol="BTC", zigzag_threshold=0.05, wave_base_position=0.3):
     print(f"\n{'='*90}")
     print(f"  回测结果对比（有效天数: {n-valid_start}天）")
     print(f"{'='*90}")
-    print(f"{'策略':<32} {'年化':>8} {'总收益':>10} {'夏普':>8} {'回撤':>10} {'Calmar':>8} {'胜率':>8} {'均仓':>7}")
+    print(
+        f"{'策略':<32} {'年化':>8} {'总收益':>10} {'夏普':>8} {'回撤':>10} {'Calmar':>8} {'胜率':>8} {'均仓':>7}"
+    )
     print(f"{'-'*100}")
 
     results = {}
@@ -379,49 +409,68 @@ def run_comparison(symbol="BTC", zigzag_threshold=0.05, wave_base_position=0.3):
     # 纯V4
     m = backtest_position(v4_pos[valid_start:], v4_dir[valid_start:], prices.iloc[valid_start:])
     results["纯V4"] = m
-    print(f"{'纯V4':<32} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'纯V4':<32} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     # 纯波浪
     m = backtest_position(wave_pos[valid_start:], wave_dir[valid_start:], prices.iloc[valid_start:])
     results["纯波浪"] = m
-    print(f"{'纯波浪':<32} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'纯波浪':<32} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     # 简单分仓融合 (V4 70% + 波浪 30%)
     simple_fusion_pos = v4_pos[valid_start:] * 0.7
     simple_fusion_dir = v4_dir[valid_start:]
     m = backtest_position(simple_fusion_pos, simple_fusion_dir, prices.iloc[valid_start:])
     results["简单分仓(70/30)"] = m
-    print(f"{'简单分仓(70/30)':<32} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'简单分仓(70/30)':<32} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     # 智能融合
     for add_r, bot_r, name in smart_configs:
         print(f"\n  --- {name} ---")
         smart_pos, smart_dir = compute_smart_fusion(
-            v4_pos, v4_dir, wave_signals, wave_confs, phys_conf, eta_series,
-            add_ratio=add_r, bottom_ratio=bot_r, max_position=1.0,
+            v4_pos,
+            v4_dir,
+            wave_signals,
+            wave_confs,
+            phys_conf,
+            eta_series,
+            add_ratio=add_r,
+            bottom_ratio=bot_r,
+            max_position=1.0,
         )
-        m = backtest_position(smart_pos[valid_start:], smart_dir[valid_start:], prices.iloc[valid_start:])
+        m = backtest_position(
+            smart_pos[valid_start:], smart_dir[valid_start:], prices.iloc[valid_start:]
+        )
         results[name] = m
-        print(f"  {name:<30} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+        print(
+            f"  {name:<30} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+        )
 
     # 买入持有
     bh_pos = np.ones(n)
     bh_dir = np.ones(n)
     m = backtest_position(bh_pos[valid_start:], bh_dir[valid_start:], prices.iloc[valid_start:])
     results["买入持有"] = m
-    print(f"{'买入持有':<32} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'买入持有':<32} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     # 增量分析
     print(f"\n{'='*90}")
-    print(f"  相对纯V4的增量价值")
+    print("  相对纯V4的增量价值")
     print(f"{'='*90}")
     print(f"{'策略':<32} {'年化增量':>10} {'夏普增量':>10} {'回撤改善':>10} {'综合评分':>10}")
     print(f"{'-'*80}")
 
     v4_base = results["纯V4"]
-    v4_ann = v4_base['ann_return']
-    v4_sharpe = v4_base['sharpe']
-    v4_mdd = v4_base['max_drawdown']
+    v4_ann = v4_base["ann_return"]
+    v4_sharpe = v4_base["sharpe"]
+    v4_mdd = v4_base["max_drawdown"]
 
     best_score = -999
     best_name = ""
@@ -429,9 +478,9 @@ def run_comparison(symbol="BTC", zigzag_threshold=0.05, wave_base_position=0.3):
     for name, metrics in results.items():
         if name == "买入持有":
             continue
-        ann_delta = (metrics['ann_return'] - v4_ann) * 100
-        sharpe_delta = metrics['sharpe'] - v4_sharpe
-        mdd_delta = (metrics['max_drawdown'] - v4_mdd) * 100
+        ann_delta = (metrics["ann_return"] - v4_ann) * 100
+        sharpe_delta = metrics["sharpe"] - v4_sharpe
+        mdd_delta = (metrics["max_drawdown"] - v4_mdd) * 100
 
         score = sharpe_delta * 0.4 + ann_delta * 0.01 * 0.3 + (-mdd_delta) * 0.01 * 0.3
 
@@ -443,7 +492,9 @@ def run_comparison(symbol="BTC", zigzag_threshold=0.05, wave_base_position=0.3):
             best_name = name
             mark = " ★" if score > 0 else mark
 
-        print(f"{name:<32} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {score:>10.4f}{mark}")
+        print(
+            f"{name:<32} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {score:>10.4f}{mark}"
+        )
 
     print(f"\n最优组合: {best_name} (综合评分: {best_score:.4f})")
 

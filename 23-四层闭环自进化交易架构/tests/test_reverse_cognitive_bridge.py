@@ -3,16 +3,15 @@
 P3 §6: 逆向推导输出 ReverseDeriveResult 复用 33-REA Evidence 结构，
 统一入库认知记忆系统。
 """
-import sys
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
-import pytest
+import sys  # noqa: I001
+from pathlib import Path
+from unittest.mock import MagicMock
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "dreambuddy_evolution"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "dreambuddy_evolution" / "engines"))
 
-from reverse_deriver import ReverseDeriveResult
+from reverse_deriver import ReverseDeriveResult  # noqa: I001
 from reverse_cognitive_bridge import ReverseCognitiveBridge
 
 
@@ -64,7 +63,9 @@ def test_record_evidence_calls_cognitive_record():
     mock_entry.record.return_value = "VM-TEST-123"
     bridge._entry = mock_entry  # 注入 mock
 
-    memory_id = bridge.record_evidence(_make_derive_result(), {"symbol": "BTC"}, {"real_outcome": "SL"})
+    memory_id = bridge.record_evidence(
+        _make_derive_result(), {"symbol": "BTC"}, {"real_outcome": "SL"}
+    )
 
     assert memory_id == "VM-TEST-123"
     mock_entry.record.assert_called_once()

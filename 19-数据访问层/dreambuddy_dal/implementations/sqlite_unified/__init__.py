@@ -1,4 +1,5 @@
 """SqliteUnified 实现：Schema 初始化 / Repository 实现 / 迁移脚本入口。"""
+
 from .config_impl import SqliteConfigRepository
 from .kg_impl import SqliteKnowledgeGraphRepository
 from .market_macro_impl import SqliteMarketMacroRepository
@@ -16,6 +17,7 @@ from .trade_impl import SqliteTradeRepository
 def get_default_sqlite_db_path() -> str:
     """默认 sqlite_unified 单库路径 = DATA_DIR/dreambuddy_core.db。"""
     import os
+
     data_dir = os.environ.get("DATA_DIR", "./data")
     env_override = os.environ.get("DREAMBUDDY_CORE_DB")
     if env_override:

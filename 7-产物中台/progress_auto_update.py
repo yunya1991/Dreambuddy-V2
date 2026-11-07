@@ -17,15 +17,13 @@ UI-Map 项目进度自动检测与监控页面更新脚本
     */30 * * * * cd /path/to/7-产物中台 && python3 progress_auto_update.py >> progress-task.log 2>&1
 """
 
-import os
 import re
-import sys
-import json
 import shutil
 import socket
 import subprocess
-from pathlib import Path
+import sys
 from datetime import datetime, timedelta
+from pathlib import Path
 
 # ====================================================================
 # 路径配置（相对于脚本所在目录：7-产物中台/）
@@ -62,10 +60,12 @@ def run_cmd(cmd, cwd=None, timeout=120, capture=True):
         )
         return result
     except subprocess.TimeoutExpired:
+
         class _T:
             returncode = -1
             stdout = ""
             stderr = "[timeout]"
+
         return _T()
 
 
@@ -107,7 +107,7 @@ def detect_git_state() -> dict:
     # 最近 5 个 commit
     r = run_cmd("git log --oneline -5", cwd=PROJECT_ROOT)
     if r.returncode == 0:
-        lines = [l.strip() for l in r.stdout.strip().splitlines() if l.strip()]
+        lines = [l.strip() for l in r.stdout.strip().splitlines() if l.strip()]  # noqa: E741
         state["recent_commits"] = lines
         if lines:
             first = lines[0]
@@ -119,15 +119,15 @@ def detect_git_state() -> dict:
     r = run_cmd("git status --short", cwd=PROJECT_ROOT)
     if r.returncode == 0:
         state["changed_files"] = [
-            l.strip() for l in r.stdout.strip().splitlines() if l.strip()
-        ]
+            l.strip() for l in r.stdout.strip().splitlines() if l.strip()  # noqa: E741
+        ]  # noqa: E741
 
     # 与上一个 commit 对比（如可用）
     r = run_cmd("git diff --name-only HEAD~1 2>/dev/null || true", cwd=PROJECT_ROOT)
     if r.returncode == 0:
         state["diff_files"] = [
-            l.strip() for l in r.stdout.strip().splitlines() if l.strip()
-        ]
+            l.strip() for l in r.stdout.strip().splitlines() if l.strip()  # noqa: E741
+        ]  # noqa: E741
 
     return state
 
@@ -253,10 +253,7 @@ def detect_task_completion(test_results: dict) -> dict:
     docs_has_auto_test = file_contains(
         DOCS_DIR / "ENGINEERING_INDEX.md",
         r"自动测试|压力测试|pressure|test coverage",
-    ) or any(
-        file_contains(p, r"自动测试|压力测试|自动化测试")
-        for p in list(DOCS_DIR.rglob("*.md"))[:20]
-    )
+    ) or any(file_contains(p, r"自动测试|压力测试|自动化测试") for p in list(DOCS_DIR.rglob("*.md"))[:20])
     tasks["task6"] = {
         "name": "Task 6 · 压力测试脚本与自动测试文档",
         "description": "scripts/ui-map-pressure-check.mjs 存在，且文档中包含自动测试章节",
@@ -472,8 +469,7 @@ def render_html(git_state: dict, tasks: dict, test_results: dict) -> str:
             f'<div class="evidence-line">{ok_span if v else no_span} {k}</div>'
             for k, v in t["files"].items()
         )
-        task_cards.append(
-            f"""
+        task_cards.append(f"""
             <div class="task-card task-{status_class}">
                 <div class="task-header">
                     <span class="task-icon">{status_icon}</span>
@@ -485,8 +481,7 @@ def render_html(git_state: dict, tasks: dict, test_results: dict) -> str:
                 </div>
                 <div class="task-evidence">{evidence_html}</div>
             </div>
-            """
-        )
+            """)
 
     # —— 测试结果卡片 ——
     test_cards = []
@@ -512,8 +507,7 @@ def render_html(git_state: dict, tasks: dict, test_results: dict) -> str:
                 + "</div>"
             )
 
-        test_cards.append(
-            f"""
+        test_cards.append(f"""
             <div class="test-card test-{status}">
                 <div class="test-name">{fname}</div>
                 <div class="test-meta">
@@ -524,8 +518,7 @@ def render_html(git_state: dict, tasks: dict, test_results: dict) -> str:
                 <div class="test-status">{status_text}</div>
                 {failure_html}
             </div>
-            """
-        )
+            """)
 
     # —— 本轮运行日志 ——
     log_lines = [
@@ -536,7 +529,7 @@ def render_html(git_state: dict, tasks: dict, test_results: dict) -> str:
         f"[{now}] HTTP 服务器: {'可达' if test_results.get('http', {}).get('ok') else '不可达，已尝试重启'}",
         f"[{now}] Task 完成度: {completed}/{total} ({progress_pct}%)",
     ]
-    log_html = "".join(f'<div class="log-line">{l}</div>' for l in log_lines)
+    log_html = "".join(f'<div class="log-line">{l}</div>' for l in log_lines)  # noqa: E741
 
     # —— 最近 commits ——
     commits_html = "".join(
@@ -556,7 +549,9 @@ def render_html(git_state: dict, tasks: dict, test_results: dict) -> str:
 
     test_alert = ""
     if test_failed > 0:
-        test_alert = f'<div class="alert-fail">⚠ 有 {test_failed} 个测试失败，请关注上方红色卡片</div>'
+        test_alert = (
+            f'<div class="alert-fail">⚠ 有 {test_failed} 个测试失败，请关注上方红色卡片</div>'
+        )
 
     # —— 组装完整 HTML ——
     return f"""<!DOCTYPE html>
@@ -829,10 +824,14 @@ def ensure_http_server():
 
     # 等几秒再验证
     import time
+
     for _ in range(8):
         time.sleep(1)
         if is_port_open():
-            r = run_cmd(f'curl -s -o /dev/null -w "%{{http_code}}" "{SERVER_URL}/progress-monitor.html"', timeout=5)
+            r = run_cmd(
+                f'curl -s -o /dev/null -w "%{{http_code}}" "{SERVER_URL}/progress-monitor.html"',
+                timeout=5,
+            )
             if r.returncode == 0 and r.stdout.strip().isdigit():
                 code = int(r.stdout.strip())
                 if 200 <= code < 400:
@@ -883,7 +882,9 @@ def print_report(git_state: dict, tasks: dict, test_results: dict, server_status
     print()
     print("📄 监控页面:")
     print(f"  - 地址: {SERVER_URL}/progress-monitor.html")
-    print(f"  - 状态: {'已更新（HTTP 服务器运行中）' if server_status['verified'] else '已更新（HTTP 可能需要检查）'}")
+    print(
+        f"  - 状态: {'已更新（HTTP 服务器运行中）' if server_status['verified'] else '已更新（HTTP 可能需要检查）'}"
+    )
     print(f"  - 服务器: {'已在运行' if server_status['was_running'] else '已新启动'}")
 
     print()
@@ -924,8 +925,8 @@ def main():
     server_status = ensure_http_server()
     # 启动后再次确认 HTTP 测试结果
     test_results["http"]["ok"] = server_status["verified"]
-    test_results["http"]["status_code"] = "200" if server_status["verified"] else (
-        test_results["http"].get("status_code") or "N/A"
+    test_results["http"]["status_code"] = (
+        "200" if server_status["verified"] else (test_results["http"].get("status_code") or "N/A")
     )
 
     # 6. 输出报告
@@ -943,5 +944,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"[错误] 执行异常: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

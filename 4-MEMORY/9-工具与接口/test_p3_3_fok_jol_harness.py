@@ -14,13 +14,12 @@ RED 契约:
 
 参考: SPEC-CognitiveSystem-Evolution.md §2.5.3 + §4.3 P3-3
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import inspect
 import sys
 from pathlib import Path
-
-import pytest
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR) not in sys.path:
@@ -99,9 +98,13 @@ class TestJOLPostExecution:
         from fok_jol_harness import MetacogHarness
 
         harness = MetacogHarness()
-        result = harness.post_execute_jol({
-            "success": True, "error": None, "output": "分析完成",
-        })
+        result = harness.post_execute_jol(
+            {
+                "success": True,
+                "error": None,
+                "output": "分析完成",
+            }
+        )
         assert result["jol_score"] >= 0.5
         assert result["action"] == "record"
 
@@ -110,9 +113,12 @@ class TestJOLPostExecution:
         from fok_jol_harness import MetacogHarness
 
         harness = MetacogHarness()
-        result = harness.post_execute_jol({
-            "success": False, "error": "timeout",
-        })
+        result = harness.post_execute_jol(
+            {
+                "success": False,
+                "error": "timeout",
+            }
+        )
         assert result["jol_score"] < 0.5
         assert result["action"] == "mark_verify"
 

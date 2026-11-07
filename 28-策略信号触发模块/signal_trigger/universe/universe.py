@@ -14,6 +14,7 @@
 - 时间周期换算
 - BTC 相关性（基于收盘价）
 """
+
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -102,7 +103,7 @@ def _universe_pair_aliases(pair: str) -> List[str]:
 
 def _universe_pearson_corr(xs: List[float], ys: List[float]) -> Optional[float]:
     pairs: List[Tuple[float, float]] = []
-    for a, b in zip(xs, ys):
+    for a, b in zip(xs, ys):  # noqa: B905
         try:
             fa = float(a)
             fb = float(b)
@@ -155,7 +156,7 @@ def _universe_rankdata(values: List[float]) -> List[float]:
 
 def _universe_spearman_corr(xs: List[float], ys: List[float]) -> Optional[float]:
     pairs: List[Tuple[float, float]] = []
-    for a, b in zip(xs, ys):
+    for a, b in zip(xs, ys):  # noqa: B905
         try:
             fa = float(a)
             fb = float(b)
@@ -233,12 +234,12 @@ def _universe_ari_nmi(old_labels: List[int], new_labels: List[int]) -> Dict[str,
         if n < 10:
             return out
 
-        old_u = sorted(set(int(x) for x in old_labels))
-        new_u = sorted(set(int(x) for x in new_labels))
+        old_u = sorted(set(int(x) for x in old_labels))  # noqa: C401
+        new_u = sorted(set(int(x) for x in new_labels))  # noqa: C401
         oi = {v: i for i, v in enumerate(old_u)}
         ni = {v: i for i, v in enumerate(new_u)}
         cont = np.zeros((len(old_u), len(new_u)), dtype=float)
-        for a, b in zip(old_labels, new_labels):
+        for a, b in zip(old_labels, new_labels):  # noqa: B905
             cont[oi[int(a)], ni[int(b)]] += 1.0
 
         def comb2(x: float) -> float:
@@ -316,7 +317,7 @@ def _compute_btc_corr_from_closes(
     ts = ts[-int(n + 2) :]
     ax: List[float] = []
     bx: List[float] = []
-    for t0, t1 in zip(ts[:-1], ts[1:]):
+    for t0, t1 in zip(ts[:-1], ts[1:]):  # noqa: B905
         try:
             ca0 = float(a_close.get(int(t0)) or 0.0)
             ca1 = float(a_close.get(int(t1)) or 0.0)

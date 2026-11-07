@@ -11,14 +11,15 @@
 - 使用 mouse.move() + mouse.down() + mouse.up() 模拟真实点击
 - 添加微小的坐标偏移和时间抖动
 """
+
 from __future__ import annotations
 
 import logging
 import random
 import time
-from typing import Optional, Tuple
+from typing import Optional
 
-from playwright.sync_api import Page, Locator
+from playwright.sync_api import Locator, Page
 
 logger = logging.getLogger("real_env.user_simulator")
 
@@ -32,8 +33,9 @@ class UserSimulator:
     # ------------------------------------------------------------------
     # 鼠标行为
     # ------------------------------------------------------------------
-    def human_click(self, page: Page, locator: Locator,
-                    button: str = "left", click_count: int = 1) -> None:
+    def human_click(
+        self, page: Page, locator: Locator, button: str = "left", click_count: int = 1
+    ) -> None:
         """模拟真实人类点击。
 
         流程：获取元素位置 → 贝塞尔曲线移动 → 短暂停留 → 按下 → 释放
@@ -108,8 +110,8 @@ class UserSimulator:
             # 加入贝塞尔曲线偏移
             ctrl_x = (src_x + tgt_x) / 2 + random.uniform(-20, 20)
             ctrl_y = (src_y + tgt_y) / 2 + random.uniform(-20, 20)
-            x = (1 - t) ** 2 * src_x + 2 * (1 - t) * t * ctrl_x + t ** 2 * tgt_x
-            y = (1 - t) ** 2 * src_y + 2 * (1 - t) * t * ctrl_y + t ** 2 * tgt_y
+            x = (1 - t) ** 2 * src_x + 2 * (1 - t) * t * ctrl_x + t**2 * tgt_x
+            y = (1 - t) ** 2 * src_y + 2 * (1 - t) * t * ctrl_y + t**2 * tgt_y
             page.mouse.move(x, y)
             time.sleep(random.uniform(0.01, 0.03))
 
@@ -131,8 +133,8 @@ class UserSimulator:
         points = self._config.get("bezier_points", 20)
         for i in range(1, points + 1):
             t = i / points
-            x = (1 - t) ** 2 * current_x + 2 * (1 - t) * t * ctrl_x + t ** 2 * target_x
-            y = (1 - t) ** 2 * current_y + 2 * (1 - t) * t * ctrl_y + t ** 2 * target_y
+            x = (1 - t) ** 2 * current_x + 2 * (1 - t) * t * ctrl_x + t**2 * target_x
+            y = (1 - t) ** 2 * current_y + 2 * (1 - t) * t * ctrl_y + t**2 * target_y
             # 加入微小抖动
             x += random.uniform(-1, 1)
             y += random.uniform(-1, 1)
@@ -174,8 +176,13 @@ class UserSimulator:
     # ------------------------------------------------------------------
     # 滚动行为
     # ------------------------------------------------------------------
-    def human_scroll(self, page: Page, direction: str = "down",
-                     distance: Optional[int] = None, duration: float = 1.0) -> None:
+    def human_scroll(
+        self,
+        page: Page,
+        direction: str = "down",
+        distance: Optional[int] = None,
+        duration: float = 1.0,
+    ) -> None:
         """模拟真实滚动。
 
         Args:

@@ -8,7 +8,6 @@
 """
 
 import json
-import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -32,6 +31,7 @@ FILE_TS = NOW.strftime("%Y%m%d_%H%M")
 # 获取真实行情数据
 MARKET_SNAPSHOT = get_market_snapshot()
 
+
 def fmt_price(price_data):
     """格式化价格显示"""
     p = price_data.get("price_usd", 0)
@@ -39,6 +39,7 @@ def fmt_price(price_data):
     if p > 0:
         return f"${p:,.2f} ({c:+.2f}%)"
     return "数据暂不可用"
+
 
 def get_real_time_prices():
     """获取真实价格数据"""
@@ -51,24 +52,27 @@ def get_real_time_prices():
         "btc": {
             "price": btc.get("price_usd", 0),
             "change_24h": btc.get("change_24h", 0),
-            "display": fmt_price(btc)
+            "display": fmt_price(btc),
         },
         "eth": {
             "price": eth.get("price_usd", 0),
             "change_24h": eth.get("change_24h", 0),
-            "display": fmt_price(eth)
+            "display": fmt_price(eth),
         },
         "nasdaq": {
             "price": nasdaq.get("price_usd", 0),
             "change_24h": nasdaq.get("change_24h", 0),
-            "display": fmt_price(nasdaq) if nasdaq.get("price_usd", 0) > 0 else "数据暂不可用 (需 API key)"
+            "display": (
+                fmt_price(nasdaq) if nasdaq.get("price_usd", 0) > 0 else "数据暂不可用 (需 API key)"
+            ),
         },
         "vix": {
             "value": vix.get("value", 0),
-            "display": f"{vix.get('value', 0):.2f}" if vix.get("value", 0) > 0 else "数据暂不可用"
+            "display": f"{vix.get('value', 0):.2f}" if vix.get("value", 0) > 0 else "数据暂不可用",
         },
-        "eth_btc_ratio": MARKET_SNAPSHOT.get("crypto", {}).get("eth_btc_ratio", 0)
+        "eth_btc_ratio": MARKET_SNAPSHOT.get("crypto", {}).get("eth_btc_ratio", 0),
     }
+
 
 # ===== 新闻数据（模拟 + 真实爬虫占位）=====
 # 实际使用时替换为真实爬虫，这里保留模拟数据用于演示流程
@@ -84,7 +88,7 @@ CRYPTO_NEWS = [
         "impact_horizon": "T0",
         "cross_market_map": "BTC 价格上涨 → 山寨币跟随 → 风险偏好上升",
         "risk_flags": [],
-        "market_impact": "短期利好 BTC 价格，可能带动山寨季"
+        "market_impact": "短期利好 BTC 价格，可能带动山寨季",
     },
     {
         "title": "以太坊链上稳定币结算量首次超越比特币",
@@ -96,7 +100,7 @@ CRYPTO_NEWS = [
         "impact_horizon": "T1",
         "cross_market_map": "以太坊生态活跃 → ETH 相对 BTC 走强 → Layer2 受益",
         "risk_flags": [],
-        "market_impact": "ETH/BTC 汇率可能继续走强"
+        "market_impact": "ETH/BTC 汇率可能继续走强",
     },
     {
         "title": "某匿名分析师称山寨季将在 2 周内到来",
@@ -108,7 +112,7 @@ CRYPTO_NEWS = [
         "impact_horizon": "T2",
         "cross_market_map": "山寨季预期 → 资金从 BTC 流出 → 小市值币种波动加大",
         "risk_flags": ["单源爆料", "无数据支撑"],
-        "market_impact": "情绪面影响，需等待数据确认"
+        "market_impact": "情绪面影响，需等待数据确认",
     },
     {
         "title": "Solana 生态 TVL 突破 80 亿美元，创历史新高",
@@ -120,7 +124,7 @@ CRYPTO_NEWS = [
         "impact_horizon": "T1",
         "cross_market_map": "SOL 生态繁荣 → SOL 代币需求上升 → 竞品公链承压",
         "risk_flags": [],
-        "market_impact": "SOL 及相关生态代币可能继续走强"
+        "market_impact": "SOL 及相关生态代币可能继续走强",
     },
     {
         "title": "传某大型交易所面临监管调查",
@@ -132,8 +136,8 @@ CRYPTO_NEWS = [
         "impact_horizon": "T0",
         "cross_market_map": "交易所风险 → 市场恐慌 → 资金流向合规 ETF",
         "risk_flags": ["单源爆料", "数据不可复核"],
-        "market_impact": "短期情绪压制，若证实可能引发抛售"
-    }
+        "market_impact": "短期情绪压制，若证实可能引发抛售",
+    },
 ]
 
 MACRO_NEWS = [
@@ -147,7 +151,7 @@ MACRO_NEWS = [
         "impact_horizon": "T0",
         "cross_market_map": "鹰派纪要 → 美债收益率上升 → 美元走强 → 风险资产承压",
         "risk_flags": [],
-        "market_impact": "BTC 和美股短期可能承压，关注纳斯达克反应"
+        "market_impact": "BTC 和美股短期可能承压，关注纳斯达克反应",
     },
     {
         "title": "美国 12 月非农就业新增 25.6 万人，远超预期",
@@ -159,7 +163,7 @@ MACRO_NEWS = [
         "impact_horizon": "T0",
         "cross_market_map": "强劲就业 → 美联储降息空间受限 → 美债收益率飙升 → 高β资产承压",
         "risk_flags": [],
-        "market_impact": "利空 BTC 和成长股，利好美元和银行股"
+        "market_impact": "利空 BTC 和成长股，利好美元和银行股",
     },
     {
         "title": "中东局势升级：伊朗威胁封锁霍尔木兹海峡",
@@ -171,7 +175,7 @@ MACRO_NEWS = [
         "impact_horizon": "T1",
         "cross_market_map": "地缘风险 → 原油上涨 → 通胀预期上升 → VIX 上升 → 风险偏好下降",
         "risk_flags": ["标题与正文不一致"],
-        "market_impact": "避险资产 (黄金/美元) 受益，风险资产分化"
+        "market_impact": "避险资产 (黄金/美元) 受益，风险资产分化",
     },
     {
         "title": "特朗普考虑对加密货币实施更宽松监管框架",
@@ -183,7 +187,7 @@ MACRO_NEWS = [
         "impact_horizon": "T2",
         "cross_market_map": "监管放松 → 机构入场加速 → 长期需求上升 → 估值重构",
         "risk_flags": ["政策未落地"],
-        "market_impact": "长期利好，特别是合规相关标的"
+        "market_impact": "长期利好，特别是合规相关标的",
     },
     {
         "title": "纳斯达克与比特币相关性降至 2023 年来最低",
@@ -195,7 +199,7 @@ MACRO_NEWS = [
         "impact_horizon": "T1",
         "cross_market_map": "相关性下降 → BTC 独立行情 → 资产配置价值提升",
         "risk_flags": [],
-        "market_impact": "BTC 作为独立资产类别的配置价值凸显"
+        "market_impact": "BTC 作为独立资产类别的配置价值凸显",
     },
     {
         "title": "华尔街早餐：美股期货小幅上涨，英伟达再创新高",
@@ -207,8 +211,8 @@ MACRO_NEWS = [
         "impact_horizon": "T0",
         "cross_market_map": "AI 热潮延续 → 科技股领涨 → 风险偏好上升 → BTC 受益",
         "risk_flags": [],
-        "market_impact": "科技股情绪利好风险资产"
-    }
+        "market_impact": "科技股情绪利好风险资产",
+    },
 ]
 
 
@@ -224,7 +228,9 @@ def generate_briefing(prices):
     # 相关性分析
     btc_change = prices["btc"]["change_24h"]
     nasdaq_change = prices["nasdaq"]["change_24h"]
-    same_direction = (btc_change > 0) == (nasdaq_change > 0) if btc_change and nasdaq_change else None
+    same_direction = (
+        (btc_change > 0) == (nasdaq_change > 0) if btc_change and nasdaq_change else None
+    )
 
     briefing = f"""# 24h 市场简报（加密 + 宏观）【V1.2 真实数据版】
 
@@ -273,7 +279,7 @@ def generate_briefing(prices):
     else:
         briefing += "**股币分化**: BTC 与纳指反向/独立行情，BTC 资产配置价值凸显。\n"
 
-    briefing += f"""
+    briefing += """
 ---
 
 ## 1) 链上数据（高可信度优先）
@@ -282,7 +288,7 @@ def generate_briefing(prices):
 
     onchain_items = [n for n in CRYPTO_NEWS if n["category"] == "onchain_data"]
     for i, item in enumerate(onchain_items[:5], 1):
-        flags = f" ⚠️ `{', '.join(item['risk_flags'])}`" if item.get('risk_flags') else ""
+        flags = f" ⚠️ `{', '.join(item['risk_flags'])}`" if item.get("risk_flags") else ""
         briefing += f"""### {i}. {item['title']} {flags}
 
 - **事实**: {item['summary']}
@@ -300,7 +306,7 @@ def generate_briefing(prices):
 
     kol_items = [n for n in CRYPTO_NEWS if n["category"] == "kols_view"]
     for i, item in enumerate(kol_items[:5], 1):
-        flags = f" ⚠️ `{', '.join(item['risk_flags'])}`" if item.get('risk_flags') else ""
+        flags = f" ⚠️ `{', '.join(item['risk_flags'])}`" if item.get("risk_flags") else ""
         briefing += f"""### {i}. {item['title']} {flags}
 
 - **观点**: {item['summary']}
@@ -318,7 +324,7 @@ def generate_briefing(prices):
 
     project_items = [n for n in CRYPTO_NEWS if n["category"] == "project_update"]
     for i, item in enumerate(project_items[:5], 1):
-        flags = f" ⚠️ `{', '.join(item['risk_flags'])}`" if item.get('risk_flags') else ""
+        flags = f" ⚠️ `{', '.join(item['risk_flags'])}`" if item.get("risk_flags") else ""
         briefing += f"""### {i}. {item['title']} {flags}
 
 - **事件**: {item['summary']}
@@ -328,14 +334,14 @@ def generate_briefing(prices):
 
 """
 
-    briefing += f"""---
+    briefing += """---
 
 ## 4) 美国宏观政策与市场（投资决策关键）
 
 """
 
     for i, item in enumerate(MACRO_NEWS[:8], 1):
-        flags = f" ⚠️ `{', '.join(item['risk_flags'])}`" if item.get('risk_flags') else ""
+        flags = f" ⚠️ `{', '.join(item['risk_flags'])}`" if item.get("risk_flags") else ""
         briefing += f"""### {i}. {item['title']} {flags}
 
 - **关键事实**: {item['key_fact']}
@@ -440,7 +446,7 @@ def generate_briefing(prices):
 
 
 def main():
-    print(f"=== 核心任务 1:24h 加密 + 宏观新闻简报 (V1.2 真实数据版) ===")
+    print("=== 核心任务 1:24h 加密 + 宏观新闻简报 (V1.2 真实数据版) ===")
     print(f"生成时间：{NOW.isoformat()}")
     print(f"文件时间戳：{FILE_TS}")
     print()
@@ -458,7 +464,7 @@ def main():
 
     # 保存原始行情数据
     snapshot_path = RAW_DIR / f"market_snapshot_{FILE_TS}.json"
-    with open(snapshot_path, 'w', encoding='utf-8') as f:
+    with open(snapshot_path, "w", encoding="utf-8") as f:
         json.dump(MARKET_SNAPSHOT, f, indent=2, ensure_ascii=False)
     print(f"[✓] 行情快照已保存：{snapshot_path}")
 
@@ -466,11 +472,11 @@ def main():
     raw_crypto_path = RAW_DIR / f"raw_crypto_{FILE_TS}.json"
     raw_macro_path = RAW_DIR / f"raw_macro_{FILE_TS}.json"
 
-    with open(raw_crypto_path, 'w', encoding='utf-8') as f:
+    with open(raw_crypto_path, "w", encoding="utf-8") as f:
         json.dump(CRYPTO_NEWS, f, indent=2, ensure_ascii=False)
     print(f"[✓] 加密新闻已保存：{raw_crypto_path}")
 
-    with open(raw_macro_path, 'w', encoding='utf-8') as f:
+    with open(raw_macro_path, "w", encoding="utf-8") as f:
         json.dump(MACRO_NEWS, f, indent=2, ensure_ascii=False)
     print(f"[✓] 宏观新闻已保存：{raw_macro_path}")
 
@@ -478,13 +484,13 @@ def main():
     briefing = generate_briefing(prices)
 
     brief_path = OUTPUTS_DIR / f"brief_{FILE_TS}.md"
-    with open(brief_path, 'w', encoding='utf-8') as f:
+    with open(brief_path, "w", encoding="utf-8") as f:
         f.write(briefing)
     print(f"[✓] 简报已生成：{brief_path}")
 
     print()
     print("=== 执行完成 ===")
-    print(f"落盘路径:")
+    print("落盘路径:")
     print(f"  - 原始数据：{RAW_DIR}")
     print(f"  - 最终简报：{OUTPUTS_DIR}")
     print()
@@ -493,7 +499,9 @@ def main():
     print("【投资信号摘要】")
     btc_signal = "✅ 持有/加仓" if prices["btc"]["change_24h"] > 0 else "⚠️ 观望"
     print(f"  BTC 趋势：{btc_signal}")
-    print(f"  股币关联：{'正相关 (跟随美股)' if (prices['btc']['change_24h'] > 0) == (prices['nasdaq']['change_24h'] > 0) else '独立行情 (配置价值)'}")
+    print(
+        f"  股币关联：{'正相关 (跟随美股)' if (prices['btc']['change_24h'] > 0) == (prices['nasdaq']['change_24h'] > 0) else '独立行情 (配置价值)'}"
+    )
 
     return 0
 

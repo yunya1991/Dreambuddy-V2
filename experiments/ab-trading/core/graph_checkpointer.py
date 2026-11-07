@@ -14,13 +14,12 @@
 """
 
 import json
-import time
 import os
 import threading
+import time
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field, asdict
-
+from typing import Any, Dict, List, Optional
 
 DEFAULT_STORAGE_DIR = Path(__file__).parent.parent / "data" / "graph-checkpoints"
 
@@ -28,6 +27,7 @@ DEFAULT_STORAGE_DIR = Path(__file__).parent.parent / "data" / "graph-checkpoints
 @dataclass
 class CheckpointRecord:
     """检查点记录"""
+
     snapshot_id: str
     node_id: str
     timestamp: float
@@ -63,6 +63,7 @@ class CheckpointRecord:
 @dataclass
 class CheckpointStore:
     """检查点存储"""
+
     id: str
     execution_id: str
     checkpoints: List[CheckpointRecord] = field(default_factory=list)
@@ -83,10 +84,7 @@ class CheckpointStore:
         return cls(
             id=data.get("id", ""),
             execution_id=data.get("executionId", ""),
-            checkpoints=[
-                CheckpointRecord.from_dict(cp)
-                for cp in data.get("checkpoints", [])
-            ],
+            checkpoints=[CheckpointRecord.from_dict(cp) for cp in data.get("checkpoints", [])],
             created_at=data.get("createdAt", time.time()),
             last_updated=data.get("lastUpdated", time.time()),
         )
@@ -95,7 +93,7 @@ class CheckpointStore:
 class GraphCheckpointer:
     """
     图执行检查点管理器
-    
+
     为 A 层执行提供断点持久化能力，支持回滚到任意节点重新执行
     与 TS 侧 GraphCheckpointer 格式兼容
     """
@@ -132,7 +130,7 @@ class GraphCheckpointer:
         """加载已有存储或创建新存储"""
         if self._file_path.exists():
             try:
-                with open(self._file_path, 'r', encoding='utf-8') as f:
+                with open(self._file_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 return CheckpointStore.from_dict(data)
             except Exception as e:
@@ -153,14 +151,14 @@ class GraphCheckpointer:
     ) -> CheckpointRecord:
         """
         保存检查点
-        
+
         Args:
             node_id: 节点ID
             state: 状态数据
             confidence: 置信度
             token_used: Token消耗
             snapshot_id: 快照ID（可选，自动生成）
-            
+
         Returns:
             检查点记录
         """
@@ -184,7 +182,7 @@ class GraphCheckpointer:
             self._store.last_updated = time.time()
 
             if len(self._store.checkpoints) > self.max_checkpoints:
-                self._store.checkpoints = self._store.checkpoints[-self.max_checkpoints:]
+                self._store.checkpoints = self._store.checkpoints[-self.max_checkpoints :]
 
             if self.auto_save:
                 self._persist()
@@ -194,7 +192,7 @@ class GraphCheckpointer:
     def _persist(self) -> None:
         """持久化到磁盘"""
         try:
-            with open(self._file_path, 'w', encoding='utf-8') as f:
+            with open(self._file_path, "w", encoding="utf-8") as f:
                 json.dump(self._store.to_dict(), f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"[GraphCheckpointer] 持久化失败: {e}")
@@ -202,14 +200,14 @@ class GraphCheckpointer:
     def revert_to_node(self, node_id: str) -> Optional[Dict[str, Any]]:
         """
         回滚到指定节点
-        
+
         语义：回到该节点执行完成后的状态
         - 如果该节点有保存的快照，返回该节点最新的快照
         - 否则返回该节点之前最新的快照
-        
+
         Args:
             node_id: 节点ID
-            
+
         Returns:
             状态数据，没有则返回None
         """
@@ -237,10 +235,7 @@ class GraphCheckpointer:
             return None
 
         valid_node_ids = set(self.node_order[:target_index])
-        checkpoints_before = [
-            cp for cp in self._store.checkpoints
-            if cp.node_id in valid_node_ids
-        ]
+        checkpoints_before = [cp for cp in self._store.checkpoints if cp.node_id in valid_node_ids]
 
         if not checkpoints_before:
             return None
@@ -278,7 +273,7 @@ class GraphCheckpointer:
             except ValueError:
                 return []
 
-            nodes_after = set(self.node_order[target_index + 1:])
+            nodes_after = set(self.node_order[target_index + 1 :])
             return [cp for cp in self._store.checkpoints if cp.node_id in nodes_after]
 
     def clear_checkpoints_after_node(self, node_id: str) -> None:
@@ -292,10 +287,9 @@ class GraphCheckpointer:
             except ValueError:
                 return
 
-            nodes_to_remove = set(self.node_order[target_index + 1:])
+            nodes_to_remove = set(self.node_order[target_index + 1 :])
             self._store.checkpoints = [
-                cp for cp in self._store.checkpoints
-                if cp.node_id not in nodes_to_remove
+                cp for cp in self._store.checkpoints if cp.node_id not in nodes_to_remove
             ]
             self._store.last_updated = time.time()
 
@@ -315,12 +309,10 @@ class GraphCheckpointer:
                 "execution_id": self.execution_id,
                 "total_checkpoints": len(self._store.checkpoints),
                 "first_checkpoint": (
-                    self._store.checkpoints[0].timestamp
-                    if self._store.checkpoints else 0
+                    self._store.checkpoints[0].timestamp if self._store.checkpoints else 0
                 ),
                 "last_checkpoint": (
-                    self._store.checkpoints[-1].timestamp
-                    if self._store.checkpoints else 0
+                    self._store.checkpoints[-1].timestamp if self._store.checkpoints else 0
                 ),
                 "latest_confidence": latest.confidence if latest else 0.0,
                 "latest_token_used": latest.token_used if latest else 0,
@@ -343,7 +335,9 @@ class GraphCheckpointer:
         """获取节点执行顺序"""
         return list(self.node_order)
 
-    def set_node_order(self, node_order: List[str], node_names: Optional[Dict[str, str]] = None) -> None:
+    def set_node_order(
+        self, node_order: List[str], node_names: Optional[Dict[str, str]] = None
+    ) -> None:
         """设置节点执行顺序"""
         with self._lock:
             self.node_order = list(node_order)

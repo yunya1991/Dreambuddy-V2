@@ -4,13 +4,14 @@
 输入: 按 3 维度分组的因子序列 + 收益率
 输出: G_dim ∈ {technical, fundamental, macro, none}, G_confidence ∈ [0,1]
 """
+
 import numpy as np
-import pytest
 
 
 def test_module_importable():
     """GrangerPipelineAdapter 可导入。"""
     from dreambuddy_evolution.core.granger_pipeline_adapter import GrangerPipelineAdapter
+
     assert GrangerPipelineAdapter is not None
 
 

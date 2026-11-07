@@ -17,11 +17,11 @@
   python scripts/rea_applicability_verify.py
   python scripts/rea_applicability_verify.py --json   # 机器可读输出
 """
+
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -208,8 +208,13 @@ def _evaluate_case(case: Dict[str, Any]) -> Dict[str, Any]:
     # 兼容旧路径：若适配层未输出 patterns，从 evidence 字符串匹配关键词
     if not detected_patterns:
         pattern_keywords = [
-            "recursion", "divide_conquer", "dynamic_programming",
-            "iteration", "accumulator", "backtracking", "greedy",
+            "recursion",
+            "divide_conquer",
+            "dynamic_programming",
+            "iteration",
+            "accumulator",
+            "backtracking",
+            "greedy",
         ]
         for e in evidence:
             res = str(e.get("result", "")).lower()
@@ -222,7 +227,9 @@ def _evaluate_case(case: Dict[str, Any]) -> Dict[str, Any]:
         hits = expected & detected_patterns
         pattern_recall = _pct(len(hits), len(expected))
         false_pos = detected_patterns - expected
-        pattern_precision = _pct(len(hits), len(hits) + len(false_pos)) if (hits or false_pos) else 100.0
+        pattern_precision = (
+            _pct(len(hits), len(hits) + len(false_pos)) if (hits or false_pos) else 100.0
+        )
     else:
         pattern_recall = 100.0 if not detected_patterns else 0.0
         pattern_precision = 100.0 if not detected_patterns else 0.0
@@ -247,8 +254,10 @@ def _evaluate_case(case: Dict[str, Any]) -> Dict[str, Any]:
     # 3.3 evidence_level 分布
     level_dist = {"L1": 0, "L2": 0, "L3": 0, "L4": 0}
     level_map = {
-        "observation": "L1", "derivation": "L2",
-        "inference": "L3", "unknown": "L4",
+        "observation": "L1",
+        "derivation": "L2",
+        "inference": "L3",
+        "unknown": "L4",
     }
     for e in evidence:
         lv = level_map.get(e.get("level", ""), "L3")
@@ -264,7 +273,9 @@ def _evaluate_case(case: Dict[str, Any]) -> Dict[str, Any]:
         "expected_patterns": sorted(expected),
         "chain_coverage_pct": chain_coverage,
         "expected_chain_calls": expected_calls,
-        "covered_calls": [c for c in expected_calls if c in all_funcs_norm] if expected_calls else [],
+        "covered_calls": (
+            [c for c in expected_calls if c in all_funcs_norm] if expected_calls else []
+        ),
         "evidence_level_dist": level_dist,
         "useful_known_gaps": len(useful_gaps),
     }
@@ -293,7 +304,9 @@ def run_verification() -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     valid_n = len(valid) or 1
 
     avg_recall = round(sum(r["metrics"].get("pattern_recall_pct", 0) for r in valid) / valid_n, 1)
-    avg_precision = round(sum(r["metrics"].get("pattern_precision_pct", 0) for r in valid) / valid_n, 1)
+    avg_precision = round(
+        sum(r["metrics"].get("pattern_precision_pct", 0) for r in valid) / valid_n, 1
+    )
     avg_coverage = round(sum(r["metrics"].get("chain_coverage_pct", 0) for r in valid) / valid_n, 1)
 
     total_levels = {"L1": 0, "L2": 0, "L3": 0, "L4": 0}
@@ -303,9 +316,7 @@ def run_verification() -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     total_evidence = sum(total_levels.values()) or 1
     level_dist_pct = {k: _pct(v, total_evidence) for k, v in total_levels.items()}
 
-    passed = (
-        avg_recall >= 70.0 and avg_coverage >= 80.0
-    )
+    passed = avg_recall >= 70.0 and avg_coverage >= 80.0
     # 降级建议：不通过则 33-REA 仅作辅助标注
     if not passed:
         recommendation = (
@@ -351,10 +362,14 @@ def _format_report(case_results: List[Dict], summary: Dict) -> str:
             f"functions={t.get('all_functions_count', 0)}, "
             f"entry_chain_len={t.get('entry_chain_len', 0)}"
         )
-        lines.append(f"  pattern_recall={m.get('pattern_recall_pct', 0)}% "
-                     f"(detected={m.get('detected_patterns', [])}, expected={m.get('expected_patterns', [])})")
-        lines.append(f"  chain_coverage={m.get('chain_coverage_pct', 0)}% "
-                     f"(covered={m.get('covered_calls', [])})")
+        lines.append(
+            f"  pattern_recall={m.get('pattern_recall_pct', 0)}% "
+            f"(detected={m.get('detected_patterns', [])}, expected={m.get('expected_patterns', [])})"
+        )
+        lines.append(
+            f"  chain_coverage={m.get('chain_coverage_pct', 0)}% "
+            f"(covered={m.get('covered_calls', [])})"
+        )
         lines.append(f"  evidence_levels={m.get('evidence_level_dist', {})}")
         gaps = t.get("known_gaps", [])
         lines.append(f"  known_gaps ({len(gaps)}): {gaps[:3]}")
@@ -382,8 +397,7 @@ def main():
     case_results, summary = run_verification()
 
     if args.json:
-        print(json.dumps({"cases": case_results, "summary": summary},
-                         ensure_ascii=False, indent=2))
+        print(json.dumps({"cases": case_results, "summary": summary}, ensure_ascii=False, indent=2))
     else:
         print(_format_report(case_results, summary))
 

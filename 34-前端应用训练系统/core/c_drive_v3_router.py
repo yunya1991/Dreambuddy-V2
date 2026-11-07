@@ -22,18 +22,22 @@ Feature flag: CDRIVE_V3=true 强制全量启用 (覆盖灰度)
   - P7: jev_gate.py (L4 jev 全局裁决)
   - P8: cognitive_loop.py (认知闭环训练进化)
 """
+
 import hashlib
 import os
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
-from core.cognitive_router import (
-    TIER1, TIER2, TIER3, TIER4,
-    evaluate_match, route,
-)
-from core.rea_cdrive_adapter import derive_decision_from_rea
-from core.jev_gate import jev_gate, JevAntiOscillation
 from core.cognitive_loop import close_loop
-
+from core.cognitive_router import (
+    TIER1,
+    TIER2,
+    TIER3,
+    TIER4,
+    evaluate_match,
+    route,
+)
+from core.jev_gate import JevAntiOscillation, jev_gate
+from core.rea_cdrive_adapter import derive_decision_from_rea
 
 # ============================================================
 # 常量
@@ -52,6 +56,7 @@ EARLY_TERMINATE = "EARLY_TERMINATE"
 # ============================================================
 # 灰度策略
 # ============================================================
+
 
 def _hash_node_id(node_id: str) -> int:
     """对 node_id 做 hash，返回 0-99 的整数 (确定性)"""
@@ -75,8 +80,7 @@ def should_use_v3(node_id: str, gray_percent: Optional[int] = None) -> bool:
 
     if gray_percent is None:
         try:
-            gray_percent = int(
-                os.environ.get("CDRIVE_V3_GRAY_PERCENT", DEFAULT_GRAY_PERCENT))
+            gray_percent = int(os.environ.get("CDRIVE_V3_GRAY_PERCENT", DEFAULT_GRAY_PERCENT))
         except (ValueError, TypeError):
             gray_percent = DEFAULT_GRAY_PERCENT
 
@@ -91,6 +95,7 @@ def should_use_v3(node_id: str, gray_percent: Optional[int] = None) -> bool:
 # 多路径检测
 # ============================================================
 
+
 def _detect_multi_path(signals: Optional[List[Dict]]) -> bool:
     """检测信号是否存在多路径冲突 (long+short 共存)"""
     if not signals:
@@ -103,6 +108,7 @@ def _detect_multi_path(signals: Optional[List[Dict]]) -> bool:
 # ============================================================
 # CDriveV3Router — v3 五步链路编排器
 # ============================================================
+
 
 class CDriveV3Router:
     """v3 五步链路编排器
@@ -186,19 +192,22 @@ class CDriveV3Router:
         memories = []
         if self._recall_fn is not None:
             try:
-                memories = self._recall_fn(
-                    context=f"node:{node_id} dir:{direction}{hint_part}",
-                    top_k=5,
-                    min_quality="C",
-                ) or []
+                memories = (
+                    self._recall_fn(
+                        context=f"node:{node_id} dir:{direction}{hint_part}",
+                        top_k=5,
+                        min_quality="C",
+                    )
+                    or []
+                )
             except Exception:
                 memories = []  # FAIL-OPEN
         # 41 L3 向量通道补充（D1 集成，§13.6）：BM25 漏召的语义近邻候选
         # 并入 memories 提升 case_density/match_score 估计，间接提升 jev 裁决质量
         try:
             from adapters.fis_vector_supplement import vector_supplement
-            extra = vector_supplement(
-                context=f"node:{node_id} dir:{direction}{hint_part}", top_k=5)
+
+            extra = vector_supplement(context=f"node:{node_id} dir:{direction}{hint_part}", top_k=5)
             if extra:
                 memories = list(memories or []) + extra
                 steps.append("vector_supplement")
@@ -230,8 +239,7 @@ class CDriveV3Router:
                     rea_decision = derive_decision_from_rea(rea_result)
                     if rea_decision is not None:
                         decision = rea_decision
-                    rea_confidence = float(
-                        getattr(rea_result, "confidence", confidence))
+                    rea_confidence = float(getattr(rea_result, "confidence", confidence))
                 except Exception:
                     pass  # FAIL-OPEN: 用默认 CONTINUE
 
@@ -239,6 +247,7 @@ class CDriveV3Router:
             # 案例少+低匹配 → L3 SKILL 调研 (P6)
             try:
                 from core.skill_research_layer import research_and_analyze
+
                 research_and_analyze(
                     match_score=match_score,
                     case_density=case_density,
@@ -269,12 +278,14 @@ class CDriveV3Router:
         # ── Step 3: L4 jev 全局裁决 (P7) ──────────────────
         try:
             jev_raw = jev_gate(
-                decision, match_score, case_density,
-                rea_confidence, debate_result,
+                decision,
+                match_score,
+                case_density,
+                rea_confidence,
+                debate_result,
             )
             # 防震荡
-            jev_final = self._jev_anti_oscillation.check_oscillation(
-                decision, jev_raw)
+            jev_final = self._jev_anti_oscillation.check_oscillation(decision, jev_raw)
         except Exception:
             jev_raw = decision
             jev_final = decision  # FAIL-OPEN: 用原始决策
@@ -292,7 +303,7 @@ class CDriveV3Router:
                     outcome="executed",
                     case_value_score=match_score,
                     content=f"v3 node:{node_id} tier:{tier} "
-                            f"match:{match_score:.2f} density:{case_density}",
+                    f"match:{match_score:.2f} density:{case_density}",
                     tags=f"C-Drive,v3,{tier}",
                     record_fn=self._record_fn,
                     verify_fn=self._verify_fn,

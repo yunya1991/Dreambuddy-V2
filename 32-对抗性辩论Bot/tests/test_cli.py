@@ -8,17 +8,16 @@ cli.py 功能：
 - 运行辩论并打印 transcript + marketing + quality
 - --output 将 DebateResult 保存为 JSON
 """
+
 from __future__ import annotations
 
 import json
-from pathlib import Path
-
-import pytest
 
 import cli
-
+import pytest
 
 # ─── argparse 测试 ───────────────────────────────────────────────
+
 
 class TestArgParse:
 
@@ -69,6 +68,7 @@ class TestArgParse:
 
 # ─── run_cli 行为测试 ────────────────────────────────────────────
 
+
 class TestRunCli:
 
     def test_run_cli_returns_debate_result(self, monkeypatch, tmp_path):
@@ -77,11 +77,11 @@ class TestRunCli:
 
         # mock create_llm_adapter，避免真实 API
         monkeypatch.setattr(
-            main, "create_llm_adapter",
+            main,
+            "create_llm_adapter",
             lambda config=None, model_name=None: _FakeLLM(),
         )
-        result = cli.run_cli(topic="测试话题", rounds=1, background="",
-                             judge=True, output=None)
+        result = cli.run_cli(topic="测试话题", rounds=1, background="", judge=True, output=None)
         assert result.topic == "测试话题"
         assert result.status == "completed"
         assert len(result.transcript) >= 2  # 至少 bull + bear
@@ -91,11 +91,11 @@ class TestRunCli:
         import main
 
         monkeypatch.setattr(
-            main, "create_llm_adapter",
+            main,
+            "create_llm_adapter",
             lambda config=None, model_name=None: _FakeLLM(),
         )
-        result = cli.run_cli(topic="测试", rounds=1, background="",
-                             judge=False, output=None)
+        result = cli.run_cli(topic="测试", rounds=1, background="", judge=False, output=None)
         assert result.verdict is None
 
     def test_run_cli_output_saves_json(self, monkeypatch, tmp_path):
@@ -103,12 +103,12 @@ class TestRunCli:
         import main
 
         monkeypatch.setattr(
-            main, "create_llm_adapter",
+            main,
+            "create_llm_adapter",
             lambda config=None, model_name=None: _FakeLLM(),
         )
         output_path = tmp_path / "result.json"
-        cli.run_cli(topic="测试", rounds=1, background="",
-                    judge=True, output=str(output_path))
+        cli.run_cli(topic="测试", rounds=1, background="", judge=True, output=str(output_path))
         assert output_path.exists()
         data = json.loads(output_path.read_text(encoding="utf-8"))
         assert data["topic"] == "测试"
@@ -120,34 +120,53 @@ class TestRunCli:
 
 # ─── 辅助 ────────────────────────────────────────────────────────
 
+
 class _FakeLLM:
     """模拟 LLMAdapter。"""
 
-    async def chat(self, system_prompt: str, user_prompt: str,
-                   max_tokens: int = 600) -> str:
+    async def chat(self, system_prompt: str, user_prompt: str, max_tokens: int = 600) -> str:
         # 根据 prompt 内容返回不同的 JSON
         if "正方" in system_prompt:
-            return json.dumps({
-                "thesis": "正方论点", "arguments": ["论据1"],
-                "quote": "正方金句", "confidence": 0.8,
-            })
+            return json.dumps(
+                {
+                    "thesis": "正方论点",
+                    "arguments": ["论据1"],
+                    "quote": "正方金句",
+                    "confidence": 0.8,
+                }
+            )
         if "反方" in system_prompt:
-            return json.dumps({
-                "thesis": "反方论点", "arguments": ["反驳1"],
-                "quote": "反方金句", "confidence": 0.7,
-            })
+            return json.dumps(
+                {
+                    "thesis": "反方论点",
+                    "arguments": ["反驳1"],
+                    "quote": "反方金句",
+                    "confidence": 0.7,
+                }
+            )
         if "裁判" in system_prompt or "综合" in system_prompt:
-            return json.dumps({
-                "summary": "综合裁决", "winner": "bull",
-                "key_insights": ["洞察"], "topic_angle": "升华",
-            })
+            return json.dumps(
+                {
+                    "summary": "综合裁决",
+                    "winner": "bull",
+                    "key_insights": ["洞察"],
+                    "topic_angle": "升华",
+                }
+            )
         if "营销" in system_prompt:
-            return json.dumps({
-                "copies": ["文案1"], "title": "辩论标题",
-            })
+            return json.dumps(
+                {
+                    "copies": ["文案1"],
+                    "title": "辩论标题",
+                }
+            )
         # 质量评估
-        return json.dumps({
-            "conflict_intensity": 7.0, "topic_elevation": 6.0,
-            "copy_convertibility": 8.0, "highlights": ["亮点"],
-            "suggestions": [],
-        })
+        return json.dumps(
+            {
+                "conflict_intensity": 7.0,
+                "topic_elevation": 6.0,
+                "copy_convertibility": 8.0,
+                "highlights": ["亮点"],
+                "suggestions": [],
+            }
+        )

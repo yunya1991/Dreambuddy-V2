@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 """6-TRADING Feishu Group Poller v2 — REST API polling → pending file → Agent handles"""
-import json, os, time, requests
+
+import json
+import os
+import time
 from datetime import datetime
 from pathlib import Path
+
+import requests
 
 DOMAIN = "open.feishu.cn"
 BOT_OPEN_ID = "ou_bcf92b6057e502054ca32bcd8ebf6570"

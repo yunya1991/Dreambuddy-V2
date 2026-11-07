@@ -13,6 +13,7 @@
 
 用法：python3 contradiction_state_adapter.py（独立运行时打印发布结果）
 """
+
 import json
 import os
 import sys
@@ -26,7 +27,9 @@ _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
 # 23 层产出物路径
 _23_SAMPLES_PATH = os.path.join(
     os.path.join(_DREAMBUDDY_ROOT, "23-四层闭环自进化交易架构"),
-    "dreambuddy_evolution", "data", "contradiction_samples.json",
+    "dreambuddy_evolution",
+    "data",
+    "contradiction_samples.json",
 )
 
 # 42 层 SignalBus 模块路径
@@ -53,8 +56,7 @@ def load_latest_sample(path: str = _23_SAMPLES_PATH):
         if not isinstance(samples, list) or not samples:
             return None, "samples 为空（fail-open）"
         valid = [
-            s for s in samples
-            if isinstance(s, dict) and s.get("direction") in _VALID_DIRECTIONS
+            s for s in samples if isinstance(s, dict) and s.get("direction") in _VALID_DIRECTIONS
         ]
         if not valid:
             return None, "无有效 direction 样本（fail-open）"
@@ -104,29 +106,40 @@ def main() -> int:
     sample_ts = float(sample.get("ts") or 0)
     age = (_now() - datetime.fromtimestamp(sample_ts, tz=timezone.utc)).total_seconds()
     if age > _MAX_AGE_SECONDS:
-        print(json.dumps({
-            "status": "stale",
-            "reason": "最新矛盾仲裁样本超过 24h，不发布",
-            "age_seconds": round(age, 1),
-        }, ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "status": "stale",
+                    "reason": "最新矛盾仲裁样本超过 24h，不发布",
+                    "age_seconds": round(age, 1),
+                },
+                ensure_ascii=False,
+            )
+        )
         return 1
 
     signal = build_signal(sample)
     bus = SignalBus()
     result = bus.publish(signal)
     bus.flush()
-    print(json.dumps({
-        "publish_result": result.get("status"),
-        "reason": result.get("reason"),
-        "signal_id": signal.get("signal_id"),
-        "source": signal.get("source"),
-        "direction": signal.get("direction"),
-        "confidence": signal.get("confidence"),
-        "risk_exposure_hint": signal.get("risk_exposure_hint"),
-        "sample_age_seconds": round(age, 1),
-        "bus_signal_count": bus.snapshot()["signal_count"],
-        "bus_sources": bus.snapshot()["sources"],
-    }, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "publish_result": result.get("status"),
+                "reason": result.get("reason"),
+                "signal_id": signal.get("signal_id"),
+                "source": signal.get("source"),
+                "direction": signal.get("direction"),
+                "confidence": signal.get("confidence"),
+                "risk_exposure_hint": signal.get("risk_exposure_hint"),
+                "sample_age_seconds": round(age, 1),
+                "bus_signal_count": bus.snapshot()["signal_count"],
+                "bus_sources": bus.snapshot()["sources"],
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 0 if result.get("status") == "accepted" else 1
 
 

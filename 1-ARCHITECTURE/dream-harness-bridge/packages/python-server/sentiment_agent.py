@@ -5,6 +5,7 @@
 输出: SubagentOutput (summary + signals + charts)
 图表: 仪表盘(gauge) + FGI折线(line)
 """
+
 from __future__ import annotations
 
 import traceback
@@ -38,7 +39,9 @@ class SentimentAgent:
         # D3: 填充 reasoning_chain + evidence_refs + artifact_uri
         reasoning_chain = " | ".join(rationale) if rationale else ""
         evidence_refs = [f"sentiment:{k}" for k in sentiment.keys()]
-        artifact_uri = f"artifact://sentiment/{hash(str(sentiment)) % 100000:05d}" if sentiment else None
+        artifact_uri = (
+            f"artifact://sentiment/{hash(str(sentiment)) % 100000:05d}" if sentiment else None
+        )
 
         return SubagentOutput(
             module="sentiment",
@@ -61,8 +64,7 @@ class SentimentAgent:
 
         # 新闻影响信号
         dir_map = {"BULLISH": "long", "BEARISH": "short", "NEUTRAL": "neutral"}
-        signals.append(Signal("新闻情绪", impact,
-                              dir_map.get(impact, "neutral"), score))
+        signals.append(Signal("新闻情绪", impact, dir_map.get(impact, "neutral"), score))
 
         # 恐惧贪婪指数信号
         if fgi is not None:
@@ -75,13 +77,16 @@ class SentimentAgent:
 
         return signals
 
-    def _generate_summary(self, sentiment: Dict[str, Any],
-                          rationale: List[str], signals: List[Signal]) -> str:
+    def _generate_summary(
+        self, sentiment: Dict[str, Any], rationale: List[str], signals: List[Signal]
+    ) -> str:
         """生成人读摘要"""
         if self._llm_fn is not None:
             try:
-                prompt = (f"情绪分析摘要: sentiment={sentiment}, "
-                          f"signals={[s.to_dict() for s in signals]}")
+                prompt = (
+                    f"情绪分析摘要: sentiment={sentiment}, "
+                    f"signals={[s.to_dict() for s in signals]}"
+                )
                 return self._llm_fn(prompt)[:300]
             except Exception:  # noqa: BLE001 FAIL-OPEN
                 pass
@@ -95,24 +100,29 @@ class SentimentAgent:
 
         # 情绪仪表盘
         score = sentiment.get("score", 0.5)
-        charts.append(ChartSpec(
-            type="gauge",
-            title="市场情绪仪表盘",
-            data={"score": score, "impact": sentiment.get("impact", "NEUTRAL")},
-            config={
-                "min": 0, "max": 1,
-                "axisLine": {"lineStyle": {"width": 20}},
-            },
-        ))
+        charts.append(
+            ChartSpec(
+                type="gauge",
+                title="市场情绪仪表盘",
+                data={"score": score, "impact": sentiment.get("impact", "NEUTRAL")},
+                config={
+                    "min": 0,
+                    "max": 1,
+                    "axisLine": {"lineStyle": {"width": 20}},
+                },
+            )
+        )
 
         # FGI 趋势折线
         fgi = sentiment.get("fgi")
         if fgi is not None:
-            charts.append(ChartSpec(
-                type="line",
-                title="恐惧贪婪指数趋势",
-                data={"fgi": fgi},
-            ))
+            charts.append(
+                ChartSpec(
+                    type="line",
+                    title="恐惧贪婪指数趋势",
+                    data={"fgi": fgi},
+                )
+            )
 
         return charts
 
@@ -121,6 +131,7 @@ def handle_sentiment_agent(params: dict) -> dict:
     """IPC handler: sentiment-agent"""
     try:
         from subagent_registry import get_handler_llm_fn
+
         agent = SentimentAgent(llm_fn=get_handler_llm_fn())
         output = agent.execute(params.get("node_output", {}))
         return {"ok": True, "output": output.to_dict()}

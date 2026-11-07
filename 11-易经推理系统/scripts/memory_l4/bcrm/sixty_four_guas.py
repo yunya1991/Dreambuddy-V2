@@ -14,15 +14,12 @@
 - 策略指引 → 卦辞/爻辞
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional
-from ._constants import (
-    EIGHT_GUAS, GUA_NAMES_CN, GUA_NATURE,
-    GUA_BINARY, BINARY_TO_GUA,
-    GUA_QIAN, GUA_KUN, GUA_ZHEN, GUA_XUN,
-    GUA_KAN, GUA_LI, GUA_GEN, GUA_DUI,
-)
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
+from ._constants import (
+    GUA_BINARY,
+)
 
 # ============================================================
 # 爻位名称
@@ -783,10 +780,20 @@ SIXTY_FOUR_GUAS = {
         "yao_ci": {
             0: ("初九", "九", "壮于趾，征凶，有孚。", "壮于趾，其孚穷也。"),
             1: ("九二", "九", "贞吉。", "九二贞吉，以中也。"),
-            2: ("九三", "九", "小人用壮，君子用罔，贞厉。羝羊触藩，羸其角。", "小人用壮，君子罔也。"),
+            2: (
+                "九三",
+                "九",
+                "小人用壮，君子用罔，贞厉。羝羊触藩，羸其角。",
+                "小人用壮，君子罔也。",
+            ),
             3: ("九四", "九", "贞吉，悔亡；藩决不羸，壮于大舆之輹。", "藩决不羸，尚往也。"),
             4: ("六五", "六", "丧羊于易，无悔。", "丧羊于易，位不当也。"),
-            5: ("上六", "六", "羝羊触藩，不能退，不能遂，无攸利，艰则吉。", "不能退，不能遂，不详也。"),
+            5: (
+                "上六",
+                "六",
+                "羝羊触藩，不能退，不能遂，无攸利，艰则吉。",
+                "不能退，不能遂，不详也。",
+            ),
         },
         "direction_hint": "UP",
         "confidence_base": 0.72,
@@ -806,7 +813,12 @@ SIXTY_FOUR_GUAS = {
             2: ("九三", "九", "舆说辐，夫妻反目。", "夫妻反目，不能正室也。"),
             3: ("六四", "六", "有孚，血去惕出，无咎。", "有孚惕出，上合志也。"),
             4: ("九五", "九", "有孚挛如，富以其邻。", "有孚挛如，不独富也。"),
-            5: ("上九", "九", "既雨既处，尚德载，妇贞厉。月几望，君子征凶。", "既雨既处，德积载也。"),
+            5: (
+                "上九",
+                "九",
+                "既雨既处，尚德载，妇贞厉。月几望，君子征凶。",
+                "既雨既处，德积载也。",
+            ),
         },
         "direction_hint": "UP",
         "confidence_base": 0.68,
@@ -926,7 +938,12 @@ SIXTY_FOUR_GUAS = {
             2: ("六三", "六", "震苏苏，震行无眚。", "震苏苏，位不当也。"),
             3: ("九四", "九", "震遂泥。", "震遂泥，未光也。"),
             4: ("六五", "六", "震往来厉，亿无丧，有事。", "震往来厉，危行也。"),
-            5: ("上六", "六", "震索索，视矍矍，征凶。震不于其躬，于其邻，无咎。婚媾有言。", "震索索，中未得也。"),
+            5: (
+                "上六",
+                "六",
+                "震索索，视矍矍，征凶。震不于其躬，于其邻，无咎。婚媾有言。",
+                "震索索，中未得也。",
+            ),
         },
         "direction_hint": "FLAT",
         "confidence_base": 0.55,
@@ -1082,11 +1099,21 @@ SIXTY_FOUR_GUAS = {
         "xiang_zhuan": "雷电皆至，丰；君子以折狱致刑。",
         "yao_ci": {
             0: ("初九", "九", "遇其配主，虽旬无咎，往有尚。", "虽旬无咎，过旬灾也。"),
-            1: ("六二", "六", "丰其蔀，日中见斗，往得疑疾，有孚发若，吉。", "有孚发若，信以发志也。"),
+            1: (
+                "六二",
+                "六",
+                "丰其蔀，日中见斗，往得疑疾，有孚发若，吉。",
+                "有孚发若，信以发志也。",
+            ),
             2: ("九三", "九", "丰其沛，日中见沬，折其右肱，无咎。", "丰其沛，不可大事也。"),
             3: ("九四", "九", "丰其蔀，日中见斗，遇其夷主，吉。", "丰其蔀，位不当也。"),
             4: ("六五", "六", "来章，有庆誉，吉。", "六五之吉，有庆也。"),
-            5: ("上六", "六", "丰其屋，蔀其家，窥其户，阒其无人，三岁不觌，凶。", "丰其屋，天际翔也。"),
+            5: (
+                "上六",
+                "六",
+                "丰其屋，蔀其家，窥其户，阒其无人，三岁不觌，凶。",
+                "丰其屋，天际翔也。",
+            ),
         },
         "direction_hint": "UP",
         "confidence_base": 0.68,
@@ -1243,7 +1270,12 @@ SIXTY_FOUR_GUAS = {
         "yao_ci": {
             0: ("初九", "九", "素履，往无咎。", "素履之往，独行愿也。"),
             1: ("九二", "九", "履道坦坦，幽人贞吉。", "幽人贞吉，中不自乱也。"),
-            2: ("六三", "六", "眇能视，跛能履，履虎尾，咥人，凶。武人为于大君。", "眇能视，不足以有明也。"),
+            2: (
+                "六三",
+                "六",
+                "眇能视，跛能履，履虎尾，咥人，凶。武人为于大君。",
+                "眇能视，不足以有明也。",
+            ),
             3: ("九四", "九", "履虎尾，愬愬，终吉。", "愬愬终吉，志行也。"),
             4: ("九五", "九", "夬履，贞厉。", "夬履贞厉，位正当也。"),
             5: ("上九", "九", "视履考祥，其旋元吉。", "元吉在上，大有庆也。"),
@@ -1285,7 +1317,12 @@ SIXTY_FOUR_GUAS = {
             1: ("九二", "九", "眇能视，利幽人之贞。", "利幽人之贞，未变常也。"),
             2: ("六三", "六", "归妹以须，反归以娣。", "归妹以须，未当也。"),
             3: ("九四", "九", "归妹愆期，迟归有时。", "愆期之志，有待而行也。"),
-            4: ("六五", "六", "帝乙归妹，其君之袂，不如其娣之袂良；月几望，吉。", "帝乙归妹，不如其娣之袂良也。"),
+            4: (
+                "六五",
+                "六",
+                "帝乙归妹，其君之袂，不如其娣之袂良；月几望，吉。",
+                "帝乙归妹，不如其娣之袂良也。",
+            ),
             5: ("上六", "六", "女承筐无实，士刲羊无血，无攸利。", "上六无实，承虚筐也。"),
         },
         "direction_hint": "DOWN",
@@ -1342,14 +1379,15 @@ SIXTY_FOUR_GUAS = {
 @dataclass
 class YaoResult:
     """爻辞结果。"""
-    yao_index: int           # 0-5，初爻到上爻
-    yao_name: str            # 如"初九"、"六二"
-    yao_type: str            # "九"（阳）或"六"（阴）
-    is_yang: bool            # 是否阳爻
-    is_changing: bool        # 是否动爻
-    yao_ci: str              # 爻辞
-    yao_xiang: str = ""      # 象曰
-    meaning: str = ""        # 含义解释
+
+    yao_index: int  # 0-5，初爻到上爻
+    yao_name: str  # 如"初九"、"六二"
+    yao_type: str  # "九"（阳）或"六"（阴）
+    is_yang: bool  # 是否阳爻
+    is_changing: bool  # 是否动爻
+    yao_ci: str  # 爻辞
+    yao_xiang: str = ""  # 象曰
+    meaning: str = ""  # 含义解释
     market_implication: str = ""  # 市场含义
 
     def to_dict(self) -> Dict[str, Any]:
@@ -1369,18 +1407,19 @@ class YaoResult:
 @dataclass
 class HexagramKnowledge:
     """六十四卦知识。"""
-    name: str                   # 英文名称
-    name_cn: str                # 中文名称
-    inner_gua: str              # 内卦（下卦）
-    outer_gua: str              # 外卦（上卦）
-    gua_ci: str                 # 卦辞
-    tuan_zhuan: str             # 彖传
-    xiang_zhuan: str            # 象传
-    yao_ci: List[str]           # 六爻爻辞
-    direction_hint: str         # 方向暗示
-    confidence_base: float      # 基础置信度
-    market_meaning: str         # 市场含义
-    risk_level: str             # 风险等级
+
+    name: str  # 英文名称
+    name_cn: str  # 中文名称
+    inner_gua: str  # 内卦（下卦）
+    outer_gua: str  # 外卦（上卦）
+    gua_ci: str  # 卦辞
+    tuan_zhuan: str  # 彖传
+    xiang_zhuan: str  # 象传
+    yao_ci: List[str]  # 六爻爻辞
+    direction_hint: str  # 方向暗示
+    confidence_base: float  # 基础置信度
+    market_meaning: str  # 市场含义
+    risk_level: str  # 风险等级
 
     def get_yao_result(self, yao_index: int, is_changing: bool = False) -> YaoResult:
         """获取指定爻的结果。"""
@@ -1473,9 +1512,7 @@ def get_all_hexagram_names() -> List[str]:
 
 
 # 中文名 → 拼音 key 反向映射（P1修复：支持按中文名查找卦象知识）
-_HEX_NAME_CN_TO_KEY: Dict[str, str] = {
-    v["name_cn"]: k for k, v in SIXTY_FOUR_GUAS.items()
-}
+_HEX_NAME_CN_TO_KEY: Dict[str, str] = {v["name_cn"]: k for k, v in SIXTY_FOUR_GUAS.items()}
 
 
 def get_hexagram_knowledge(name: str) -> Optional[HexagramKnowledge]:

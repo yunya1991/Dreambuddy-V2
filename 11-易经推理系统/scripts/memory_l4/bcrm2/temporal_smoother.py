@@ -16,6 +16,7 @@ Spec §7.2 + §2.4 Layer 3：
      变点 P>0.7 且量能≥1.5× 均量时，对 Trend 做 5 日渐进调整（每日 sign×0.06，合计 ±0.30）。
      未传 close/volume 或 bocpd_enabled=False 时保持全 0（兼容旧调用）。
 """
+
 from __future__ import annotations
 
 import logging
@@ -32,20 +33,19 @@ __all__ = ["TemporalSmoother", "SmootherOutput"]
 
 @dataclass
 class SmootherOutput:
-    level_smooth: pd.Series      # 最终平滑后的 Level（[-4, 4]）
-    trend_smooth: pd.Series      # 最终平滑后的 Trend（[-4, 4]）
-    hmm_state: pd.Series         # HMM 3 态：0=Bear, 1=Neutral, 2=Bull
-    ema_level: pd.Series         # EMA 兜底平滑（诊断用）
-    bocpd_cp_prob: pd.Series     # BOCPD 变点概率，Phase 0=0
+    level_smooth: pd.Series  # 最终平滑后的 Level（[-4, 4]）
+    trend_smooth: pd.Series  # 最终平滑后的 Trend（[-4, 4]）
+    hmm_state: pd.Series  # HMM 3 态：0=Bear, 1=Neutral, 2=Bull
+    ema_level: pd.Series  # EMA 兜底平滑（诊断用）
+    bocpd_cp_prob: pd.Series  # BOCPD 变点概率，Phase 0=0
 
 
 # 默认冷启动 HMM 3 态 → Bull/Neutral/Bear 语义映射。
 # HMM 是无监督的，状态编号不直接对应语义；Phase 0 中按「该状态下 (L+T)/2 的均值」
 # 进行简单重排：均值最低 = Bear(0)，中间 = Neutral(1)，最高 = Bull(2)。
-def _remap_states_by_level(hmm_states: np.ndarray,
-                           level: np.ndarray,
-                           trend: np.ndarray,
-                           n_states: int = 3) -> np.ndarray:
+def _remap_states_by_level(
+    hmm_states: np.ndarray, level: np.ndarray, trend: np.ndarray, n_states: int = 3
+) -> np.ndarray:
     """按「该状态样本的 (L+T)/2 均值」重映射：最小→Bear(0)，中间→Neutral(1)，最大→Bull(2)。"""
     score = (level + trend) / 2.0
     means = np.zeros(n_states, dtype=float)
@@ -64,20 +64,21 @@ def _remap_states_by_level(hmm_states: np.ndarray,
 class TemporalSmoother:
     """Layer 3：HMM Viterbi + EMA 时序平滑。"""
 
-    def __init__(self,
-                 n_hmm_states: int = 3,
-                 ma_window: int = 5,
-                 ema_alpha: float = 0.25,
-                 hmm_blend: float = 0.65,
-                 random_state: int = 42,
-                 # —— P1.2 BOCPD 变点 5 日渐进调整 ——
-                 bocpd_enabled: bool = True,
-                 bocpd_hazard: float = 0.01,
-                 bocpd_trigger_p: float = 0.7,
-                 bocpd_volume_ratio_thr: float = 1.5,
-                 bocpd_gradual_days: int = 5,
-                 bocpd_daily_amount: float = 0.06,
-                 ):
+    def __init__(
+        self,
+        n_hmm_states: int = 3,
+        ma_window: int = 5,
+        ema_alpha: float = 0.25,
+        hmm_blend: float = 0.65,
+        random_state: int = 42,
+        # —— P1.2 BOCPD 变点 5 日渐进调整 ——
+        bocpd_enabled: bool = True,
+        bocpd_hazard: float = 0.01,
+        bocpd_trigger_p: float = 0.7,
+        bocpd_volume_ratio_thr: float = 1.5,
+        bocpd_gradual_days: int = 5,
+        bocpd_daily_amount: float = 0.06,
+    ):
         self.n_hmm_states = int(n_hmm_states)
         self.ma_window = int(ma_window)
         self.ema_alpha = float(ema_alpha)
@@ -96,11 +97,13 @@ class TemporalSmoother:
     # ====================================================================
     # Public API
     # ====================================================================
-    def transform(self,
-                  level_raw: pd.Series,
-                  trend_raw: pd.Series,
-                  close: Optional[pd.Series] = None,
-                  volume: Optional[pd.Series] = None) -> SmootherOutput:
+    def transform(
+        self,
+        level_raw: pd.Series,
+        trend_raw: pd.Series,
+        close: Optional[pd.Series] = None,
+        volume: Optional[pd.Series] = None,
+    ) -> SmootherOutput:
         """输入 Level/Trend（已 clamp 过），输出时序平滑结果。
 
         可选 close/volume：当 bocpd_enabled=True 且同时传入时，计算 BOCPD 变点概率
@@ -154,11 +157,14 @@ class TemporalSmoother:
         # step 6: BOCPD 变点检测 + 5 日渐进调整（Spec §2.4 规则4）
         # 仅当 bocpd_enabled=True 且同时传入 close/volume（等长）时启用；
         # 否则 bocpd_cp_prob 保持全 0（兼容 Phase 0 旧调用）
-        if (self.bocpd_enabled and close is not None and volume is not None
-                and len(close) == len(level_arr)):
+        if (
+            self.bocpd_enabled
+            and close is not None
+            and volume is not None
+            and len(close) == len(level_arr)
+        ):
             bocpd_probs = self._compute_bocpd_probs(close, volume)
-            T_final = self._apply_bocpd_trend_adjustment(
-                T_final, close, volume, bocpd_probs)
+            T_final = self._apply_bocpd_trend_adjustment(T_final, close, volume, bocpd_probs)
         else:
             bocpd_probs = np.zeros(len(level_arr), dtype=float)
 
@@ -228,8 +234,7 @@ class TemporalSmoother:
     # ====================================================================
     _BOCPD_WINDOW = 20  # 滚动均值/标准差与量能基线共用窗口
 
-    def _compute_bocpd_probs(self, close: pd.Series,
-                             volume: pd.Series) -> np.ndarray:
+    def _compute_bocpd_probs(self, close: pd.Series, volume: pd.Series) -> np.ndarray:
         """计算变点概率序列（简化 BOCPD：滚动 z-score + sigmoid）。
 
         观测序列：close 的 1d log-return = np.log(close[i]/close[i-1])。
@@ -262,9 +267,7 @@ class TemporalSmoother:
         probs[1:] = cp
         return probs
 
-    def _apply_bocpd_trend_adjustment(self, trend_smooth,
-                                     close, volume,
-                                     bocpd_probs) -> np.ndarray:
+    def _apply_bocpd_trend_adjustment(self, trend_smooth, close, volume, bocpd_probs) -> np.ndarray:
         """对 trend 应用 BOCPD 触发的 5 日渐进调整。
 
         规则（Spec §2.4 规则4）：
@@ -287,9 +290,8 @@ class TemporalSmoother:
                 continue
             # 量能门槛：当日量 / 前 _BOCPD_WINDOW 日均量（不含当日，避免 lookahead）
             if i >= 1:
-                lookback = vol_arr[max(0, i - self._BOCPD_WINDOW):i]
-                baseline = (float(lookback.mean())
-                            if lookback.size > 0 else float(vol_arr[i]))
+                lookback = vol_arr[max(0, i - self._BOCPD_WINDOW) : i]
+                baseline = float(lookback.mean()) if lookback.size > 0 else float(vol_arr[i])
             else:
                 baseline = float(vol_arr[i]) if vol_arr[i] > 0 else 1.0
             vol_ratio = float(vol_arr[i]) / baseline if baseline > 0 else 0.0

@@ -29,6 +29,7 @@ Phase 1 EV-T2：宪法 Constitution v1.1
 
 Author: Dreambuddy Cognitive Evolution
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -65,17 +66,23 @@ AUTO_DRAFT_REVIEW_QUEUE_GLOBS: Tuple[str, ...] = (
 )
 
 # 交易参数 config.json 模式（A 类可写，B 类禁写）
-TRADING_CONFIG_GLOBS: Tuple[str, ...] = (
-    "**/config.json",  # 兜底，会再用关键字排除
+TRADING_CONFIG_GLOBS: Tuple[str, ...] = ("**/config.json",)  # 兜底，会再用关键字排除
+TRADING_CONFIG_MUST_HAVE_PARENT_TOKENS = (
+    "okx_sim",
+    "ab-trading",
+    "trading_params",
+    "polling_trader",
+    "memory_l4",
+    "v15_state",
+    "bcrm",
+    "experiments",
+    "data",
 )
-TRADING_CONFIG_MUST_HAVE_PARENT_TOKENS = ("okx_sim", "ab-trading", "trading_params",
-                                          "polling_trader", "memory_l4", "v15_state",
-                                          "bcrm", "experiments", "data")
 
 # B 类修改允许范围
 B_CLASS_ALLOWED_PREFIXES: Tuple[str, ...] = (
     "4-MEMORY/9-工具与接口/",
-    "4-MEMORY/artifacts/",          # 产物允许
+    "4-MEMORY/artifacts/",  # 产物允许
     "4-MEMORY/1-开发记忆单元/solution_paths/",  # B 类产生 APP-DEV-*（允许写正式，仅需 R2）
     "4-MEMORY/2-交易记忆单元/solution_paths/",  # B 类产生 APP-TRD-*（允许写正式，仅需 R2）
 )
@@ -102,7 +109,7 @@ DEFAULT_SEVERITY = "HIGH"
 @dataclass
 class Violation:
     rule_id: str
-    severity: str                 # CRITICAL / HIGH / MEDIUM / LOW
+    severity: str  # CRITICAL / HIGH / MEDIUM / LOW
     file: Optional[str] = None
     reason: str = ""
 
@@ -144,16 +151,14 @@ class AuditResult:
         return {
             "passed": self.passed,
             "proposal_id": self.proposal_id,
-            "rule_results": {rid: rr.to_dict()
-                             for rid, rr in self.rule_results.items()},
+            "rule_results": {rid: rr.to_dict() for rid, rr in self.rule_results.items()},
             "total_violations": self.total_violations,
             "severity_counts": dict(self.severity_counts),
             "audit_score": self.audit_score,
             "constitution_version": self.constitution_version,
             "constitution_hash": self.constitution_hash,
             "self_check_failed": self.self_check_failed,
-            "constitution_mismatch": (self.constitution_mismatch
-                                      or self.self_check_failed),
+            "constitution_mismatch": (self.constitution_mismatch or self.self_check_failed),
             "hash_warning": self.self_check_failed,
             "drift_detected": self.self_check_failed,
             "violations": [v.to_dict() for v in self.violations],
@@ -163,6 +168,7 @@ class AuditResult:
 # ==================================================================
 # 路径匹配工具
 # ==================================================================
+
 
 def _p(path: str) -> str:
     """统一路径分隔符为斜杠，允许 absolute 与 relative 混合对比。"""
@@ -182,6 +188,7 @@ def _matches_any_prefix(file: str, prefixes: Iterable[str]) -> Optional[str]:
 
 def _matches_any_glob(file: str, patterns: Iterable[str]) -> Optional[str]:
     import fnmatch
+
     f = _p(file)
     for pat in patterns:
         pp = _p(pat)
@@ -210,9 +217,12 @@ def _is_auto_draft_review_queue(file: str) -> bool:
 def _looks_like_trading_config(file: str) -> bool:
     f = _p(file)
     # 文件名必须是 config.json / params.json / risk_params.json
-    if not (f.endswith("/config.json") or f.endswith("/params.json")
-            or f.endswith("/risk_params.json")
-            or f.endswith("/memory.json")):
+    if not (
+        f.endswith("/config.json")
+        or f.endswith("/params.json")
+        or f.endswith("/risk_params.json")
+        or f.endswith("/memory.json")
+    ):
         return False
     # 且父路径包含"交易相关"关键字（排除 B 类的 config.json，如 cognitive 的）
     return any(tok in f for tok in TRADING_CONFIG_MUST_HAVE_PARENT_TOKENS)
@@ -228,15 +238,21 @@ def check_original_skill_immutable(touched_files: Iterable[str]) -> RuleResult:
     violations: List[Violation] = []
     for f in touched_files or []:
         if _is_original_skill_path(f):
-            violations.append(Violation(
-                rule_id="R1", severity="CRITICAL", file=f,
-                reason="原版 SKILL.md 属于通用认知层（红线①），只增不改 — 必须在同级 supplement "
-                       "文件追加，不得修改 SKILL.md 原文。见 EVOLUTION_BOUNDARY_MAP §2.2。",
-            ))
+            violations.append(
+                Violation(
+                    rule_id="R1",
+                    severity="CRITICAL",
+                    file=f,
+                    reason="原版 SKILL.md 属于通用认知层（红线①），只增不改 — 必须在同级 supplement "
+                    "文件追加，不得修改 SKILL.md 原文。见 EVOLUTION_BOUNDARY_MAP §2.2。",
+                )
+            )
     return RuleResult(rule_id="R1", passed=not violations, violations=violations)
 
 
-def check_solution_path_quality_driven(write_patch_by_path: Dict[str, Dict[str, Any]]) -> RuleResult:
+def check_solution_path_quality_driven(
+    write_patch_by_path: Dict[str, Dict[str, Any]],
+) -> RuleResult:
     """R2 应用认知 Solution Path 的 quality_level/confidence 只能由 verify 驱动（HIGH）。
 
     write_patch_by_path: {path: {delta, old_fields:{quality_level,confidence,...},
@@ -258,10 +274,16 @@ def check_solution_path_quality_driven(write_patch_by_path: Dict[str, Dict[str, 
             if new_v is _SENTINEL:  # 未变更
                 continue
             # 如果有 metadata.verify_count / old.verify_count 增长 ≥1 → 视为由 verify 驱动
-            old_vc = (old_f.get("metadata") or {}).get("verify_count", 0) \
-                if isinstance(old_f.get("metadata"), dict) else 0
-            new_vc = (patch.get("new_metadata") or {}).get("verify_count", 0) \
-                if isinstance(patch.get("new_metadata"), dict) else old_vc
+            old_vc = (
+                (old_f.get("metadata") or {}).get("verify_count", 0)
+                if isinstance(old_f.get("metadata"), dict)
+                else 0
+            )
+            new_vc = (
+                (patch.get("new_metadata") or {}).get("verify_count", 0)
+                if isinstance(patch.get("new_metadata"), dict)
+                else old_vc
+            )
             verify_driven = (
                 new_vc >= old_vc + 1
                 or bool(patch.get("verify_driven"))
@@ -271,12 +293,16 @@ def check_solution_path_quality_driven(write_patch_by_path: Dict[str, Dict[str, 
                 # 首次创建：允许（即使没 verify）视为 C/0.3 默认
                 continue
             if not verify_driven and old_v != new_v:
-                violations.append(Violation(
-                    rule_id="R2", severity="HIGH", file=path,
-                    reason=f"手工改动了 Solution Path 的 {fld}（{old_v!r}→{new_v!r}）"
-                           f"但缺少 verify_count 递增标记，非 verify 驱动。"
-                           f"见 EVOLUTION_BOUNDARY_MAP §2.2 L60。",
-                ))
+                violations.append(
+                    Violation(
+                        rule_id="R2",
+                        severity="HIGH",
+                        file=path,
+                        reason=f"手工改动了 Solution Path 的 {fld}（{old_v!r}→{new_v!r}）"
+                        f"但缺少 verify_count 递增标记，非 verify 驱动。"
+                        f"见 EVOLUTION_BOUNDARY_MAP §2.2 L60。",
+                    )
+                )
     return RuleResult(rule_id="R2", passed=not violations, violations=violations)
 
 
@@ -294,26 +320,36 @@ def check_ab_boundary(actor: str, written_paths: Iterable[str]) -> RuleResult:
     if actor == "A":
         for f in written_paths or []:
             if _is_official_solution_path(f) or _is_auto_draft_review_queue(f):
-                violations.append(Violation(
-                    rule_id="R3", severity="CRITICAL", file=f,
-                    reason="A 类（交易参数进化）不得直接写认知层 Solution Path 目录"
-                           "（红线§4：AB互通只走记忆系统）。见 EVOLUTION_BOUNDARY_MAP §4 L111。",
-                ))
+                violations.append(
+                    Violation(
+                        rule_id="R3",
+                        severity="CRITICAL",
+                        file=f,
+                        reason="A 类（交易参数进化）不得直接写认知层 Solution Path 目录"
+                        "（红线§4：AB互通只走记忆系统）。见 EVOLUTION_BOUNDARY_MAP §4 L111。",
+                    )
+                )
         return RuleResult(rule_id="R3", passed=not violations, violations=violations)
     if actor == "B":
         for f in written_paths or []:
             if _looks_like_trading_config(f):
-                violations.append(Violation(
-                    rule_id="R4", severity="CRITICAL", file=f,
-                    reason="B 类（认知流程进化）不得直接改交易参数 config.json / params.json"
-                           "（红线§4：AB互通只走记忆系统）。见 EVOLUTION_BOUNDARY_MAP §4 L111。",
-                ))
+                violations.append(
+                    Violation(
+                        rule_id="R4",
+                        severity="CRITICAL",
+                        file=f,
+                        reason="B 类（认知流程进化）不得直接改交易参数 config.json / params.json"
+                        "（红线§4：AB互通只走记忆系统）。见 EVOLUTION_BOUNDARY_MAP §4 L111。",
+                    )
+                )
         return RuleResult(rule_id="R4", passed=not violations, violations=violations)
     # actor 未知 → 两条规则都以 INFO 形式跑一遍（不产生违规，预留）
     return RuleResult(rule_id="R3/R4", passed=True, violations=[])
 
 
-def check_only_memory_channel_interaction(import_graph: Optional[Dict[str, Set[str]]]) -> RuleResult:
+def check_only_memory_channel_interaction(
+    import_graph: Optional[Dict[str, Set[str]]],
+) -> RuleResult:
     """R5 AB 交互只走记忆系统通道（HIGH）。
 
     import_graph: {改动的A类文件 set -> 被直接 import 的B类文件} 或相反。
@@ -324,8 +360,7 @@ def check_only_memory_channel_interaction(import_graph: Optional[Dict[str, Set[s
         # 缺数据不阻塞，仅 MEDIUM 形式在 future 扩展；当前仅 passed=True 空结果
         return RuleResult(rule_id="R5", passed=True, violations=[])
     memory_files_prefixes = ("4-MEMORY/",)
-    a_prefixes = ("11-易经推理系统/", "14-V15经典马丁策略/",
-                  "experiments/", "1-ARCHITECTURE/")
+    a_prefixes = ("11-易经推理系统/", "14-V15经典马丁策略/", "experiments/", "1-ARCHITECTURE/")
     b_prefixes = B_CLASS_ALLOWED_PREFIXES
 
     def _classify(path: str) -> str:
@@ -347,11 +382,15 @@ def check_only_memory_channel_interaction(import_graph: Optional[Dict[str, Set[s
             tgt_cls = _classify(tgt)
             if tgt_cls == other_cls:
                 # A → B 或 B → A 直连（非通过记忆目录）
-                violations.append(Violation(
-                    rule_id="R5", severity="HIGH", file=src,
-                    reason=f"{src_cls}类 {src!r} 直接 import/引用 {other_cls}类 {tgt!r}，"
-                           "违反红线§4（AB 交互只走记忆系统通道）。",
-                ))
+                violations.append(
+                    Violation(
+                        rule_id="R5",
+                        severity="HIGH",
+                        file=src,
+                        reason=f"{src_cls}类 {src!r} 直接 import/引用 {other_cls}类 {tgt!r}，"
+                        "违反红线§4（AB 交互只走记忆系统通道）。",
+                    )
+                )
     return RuleResult(rule_id="R5", passed=not violations, violations=violations)
 
 
@@ -367,17 +406,22 @@ def check_b_mod_scope(touched_paths: Iterable[str]) -> RuleResult:
         if path.startswith("0-系统文档管理/") and path.endswith(".md"):
             continue
         # 其余：HIGH 违规
-        violations.append(Violation(
-            rule_id="R6", severity="HIGH", file=path,
-            reason="B 类改动范围超出允许目录。允许前缀：4-MEMORY/9-工具与接口/ / "
-                   "4-MEMORY/artifacts/ / APP-DEV-* / APP-TRD-* / "
-                   "0-系统文档管理/*.md。见 EVOLUTION_BOUNDARY_MAP §5 L119。",
-        ))
+        violations.append(
+            Violation(
+                rule_id="R6",
+                severity="HIGH",
+                file=path,
+                reason="B 类改动范围超出允许目录。允许前缀：4-MEMORY/9-工具与接口/ / "
+                "4-MEMORY/artifacts/ / APP-DEV-* / APP-TRD-* / "
+                "0-系统文档管理/*.md。见 EVOLUTION_BOUNDARY_MAP §5 L119。",
+            )
+        )
     return RuleResult(rule_id="R6", passed=not violations, violations=violations)
 
 
-def check_experiment_zone_isolation(touched_paths: Iterable[str],
-                                     is_production_change: bool) -> RuleResult:
+def check_experiment_zone_isolation(
+    touched_paths: Iterable[str], is_production_change: bool
+) -> RuleResult:
     """R7 3-EVOLUTION/ 实验区隔离。
 
     - 生产部署改动碰实验区 → CRITICAL（阻塞）
@@ -387,12 +431,21 @@ def check_experiment_zone_isolation(touched_paths: Iterable[str],
     severity = "CRITICAL" if is_production_change else "HIGH"
     for f in touched_paths or []:
         if _matches_any_prefix(f, EXPERIMENT_ZONE_PREFIXES):
-            violations.append(Violation(
-                rule_id="R7", severity=severity, file=f,
-                reason=("3-EVOLUTION/ 是实验区（红线⑦），"
-                        + ("生产改动禁止放入。" if is_production_change
-                           else "建议不要放生产相关改动；当前 HIGH。")),
-            ))
+            violations.append(
+                Violation(
+                    rule_id="R7",
+                    severity=severity,
+                    file=f,
+                    reason=(
+                        "3-EVOLUTION/ 是实验区（红线⑦），"
+                        + (
+                            "生产改动禁止放入。"
+                            if is_production_change
+                            else "建议不要放生产相关改动；当前 HIGH。"
+                        )
+                    ),
+                )
+            )
     return RuleResult(rule_id="R7", passed=not violations, violations=violations)
 
 
@@ -410,15 +463,18 @@ def check_proposal_gating(proposal: Dict[str, Any]) -> RuleResult:
         approval_text = str(approvals)
     has_feishu = bool(re.search(r"FEISHU|飞书审批|审批单号|approval_id", approval_text, re.I))
     status = str(approvals.get("status") if isinstance(approvals, dict) else approvals).upper()
-    approved = has_feishu and status in ("APPROVED", "PENDING")
+    approved = has_feishu and status in ("APPROVED", "PENDING")  # noqa: F841
     # 只要含飞书审批单号 → 视为合规（即使 PENDING，审批流程已启动）
     if not has_feishu:
-        violations.append(Violation(
-            rule_id="R8", severity="CRITICAL",
-            file=None,
-            reason=f"Trading 类提案 category={cat!r} 必须含飞书审批单号 "
-                   "(EVOLUTION_BOUNDARY_MAP §1 A类提案治理)；approvals={approvals!r}",
-        ))
+        violations.append(
+            Violation(
+                rule_id="R8",
+                severity="CRITICAL",
+                file=None,
+                reason=f"Trading 类提案 category={cat!r} 必须含飞书审批单号 "
+                "(EVOLUTION_BOUNDARY_MAP §1 A类提案治理)；approvals={approvals!r}",
+            )
+        )
     return RuleResult(rule_id="R8", passed=not violations, violations=violations)
 
 
@@ -436,20 +492,24 @@ def check_auto_draft_not_promoted_without_review(promoted_patch: Any) -> RuleRes
     if not promoted:
         return RuleResult(rule_id="R9", passed=True, violations=[])
     # 是否属于 AUTO draft 升入：源在 review_queue 或 promoted_path id 含 "-AUTO-"
-    looks_auto = ("AUTO" in promoted.upper() or _is_auto_draft_review_queue(source))
+    looks_auto = "AUTO" in promoted.upper() or _is_auto_draft_review_queue(source)
     if not looks_auto:
         return RuleResult(rule_id="R9", passed=True, violations=[])
     status = str(promoted_patch.get("review_status", "")).upper()
     reviewer = promoted_patch.get("reviewed_by")
     reviewed_at = promoted_patch.get("reviewed_at")
-    approved = (status == "APPROVED" and reviewer and reviewed_at)
+    approved = status == "APPROVED" and reviewer and reviewed_at
     if not approved:
-        violations.append(Violation(
-            rule_id="R9", severity="CRITICAL", file=promoted,
-            reason=f"AUTO 草案未审核即升入正式目录 {promoted!r}；"
-                   f"review_status={status!r}, reviewed_by={reviewer!r}, reviewed_at={reviewed_at!r}。"
-                   "Phase1 EV-T3 设计：必须人工 review_status=APPROVED 后才能 promote。",
-        ))
+        violations.append(
+            Violation(
+                rule_id="R9",
+                severity="CRITICAL",
+                file=promoted,
+                reason=f"AUTO 草案未审核即升入正式目录 {promoted!r}；"
+                f"review_status={status!r}, reviewed_by={reviewer!r}, reviewed_at={reviewed_at!r}。"
+                "Phase1 EV-T3 设计：必须人工 review_status=APPROVED 后才能 promote。",
+            )
+        )
     return RuleResult(rule_id="R9", passed=not violations, violations=violations)
 
 
@@ -464,7 +524,9 @@ _HEADINGS = {
     "changes": re.compile(r"^\s*##+\s*(?:Proposed\s*Changes|变更内容|具体变更|Diff)", re.M | re.I),
     "approval": re.compile(r"^\s*##+\s*(?:Approval|审批|审批状态)", re.M | re.I),
 }
-_PATH_RE = re.compile(r"[\w\-/.]+(?:\.py|\.md|\.json|\.ts|\.js|\.yaml|\.yml|\.csv|\.txt|\.sh|\.plist)")
+_PATH_RE = re.compile(
+    r"[\w\-/.]+(?:\.py|\.md|\.json|\.ts|\.js|\.yaml|\.yml|\.csv|\.txt|\.sh|\.plist)"
+)
 
 
 def parse_proposal_md(md_text_or_path: Any) -> Dict[str, Any]:
@@ -480,8 +542,12 @@ def parse_proposal_md(md_text_or_path: Any) -> Dict[str, Any]:
     text: str
     if isinstance(md_text_or_path, Path):
         text = md_text_or_path.read_text(encoding="utf-8")
-    elif isinstance(md_text_or_path, str) and len(md_text_or_path) < 4096 \
-            and Path(md_text_or_path).exists() and Path(md_text_or_path).is_file():
+    elif (
+        isinstance(md_text_or_path, str)
+        and len(md_text_or_path) < 4096
+        and Path(md_text_or_path).exists()
+        and Path(md_text_or_path).is_file()
+    ):
         text = Path(md_text_or_path).read_text(encoding="utf-8")
     else:
         text = str(md_text_or_path)
@@ -504,7 +570,7 @@ def parse_proposal_md(md_text_or_path: Any) -> Dict[str, Any]:
         section_body = text[pos:end]
         # 去掉首行标题本身
         first_nl = section_body.find("\n")
-        sections[label] = section_body[first_nl + 1:].strip() if first_nl != -1 else ""
+        sections[label] = section_body[first_nl + 1 :].strip() if first_nl != -1 else ""
 
     # 3) Scope → actor / category
     scope_text = sections.get("scope", "")
@@ -530,8 +596,9 @@ def parse_proposal_md(md_text_or_path: Any) -> Dict[str, Any]:
     m_by = re.search(r"审批人[:：]?\s*([\w\u4e00-\u9fa5\-]+)", approval_text)
     if m_by:
         approvals["reviewed_by"] = m_by.group(1)
-    m_status = re.search(r"状态[:：]?\s*(APPROVED|PENDING|REJECTED|已通过|待审批|已拒绝)",
-                         approval_text, re.I)
+    m_status = re.search(
+        r"状态[:：]?\s*(APPROVED|PENDING|REJECTED|已通过|待审批|已拒绝)", approval_text, re.I
+    )
     if m_status:
         raw = m_status.group(1).upper()
         mapping = {"已通过": "APPROVED", "待审批": "PENDING", "已拒绝": "REJECTED"}
@@ -583,14 +650,16 @@ def _fallback_prop_id(text: str) -> str:
 def _build_constitution_hash() -> str:
     """计算 R1..R9 9 个 check_* 函数的 source byte hash。"""
     src_parts: List[bytes] = []
-    rule_order = ("check_original_skill_immutable",
-                  "check_solution_path_quality_driven",
-                  "check_ab_boundary",
-                  "check_only_memory_channel_interaction",
-                  "check_b_mod_scope",
-                  "check_experiment_zone_isolation",
-                  "check_proposal_gating",
-                  "check_auto_draft_not_promoted_without_review")
+    rule_order = (
+        "check_original_skill_immutable",
+        "check_solution_path_quality_driven",
+        "check_ab_boundary",
+        "check_only_memory_channel_interaction",
+        "check_b_mod_scope",
+        "check_experiment_zone_isolation",
+        "check_proposal_gating",
+        "check_auto_draft_not_promoted_without_review",
+    )
     this_mod = sys.modules[__name__]
     for name in rule_order:
         fn = getattr(this_mod, name, None)
@@ -634,20 +703,25 @@ def audit_proposal(
     执行顺序：R1 → R7 → R6 → R3/R4 → R5 → R2 → R8 → R9（按立即阻塞型先验排序）
     任何 CRITICAL 违规 → AuditResult.passed=False。
     """
-    proposal_id = str(proposal.get("proposal_id")
-                      or proposal.get("id")
-                      or _fallback_prop_id(json.dumps(proposal,
-                                                      ensure_ascii=False, sort_keys=True,
-                                                      default=str)))
+    proposal_id = str(
+        proposal.get("proposal_id")
+        or proposal.get("id")
+        or _fallback_prop_id(json.dumps(proposal, ensure_ascii=False, sort_keys=True, default=str))
+    )
     touched_files: Set[str] = set(proposal.get("touched_files") or [])
     written_paths: Set[str] = set(proposal.get("written_paths") or touched_files)
     actor: str = str(proposal.get("actor", "UNKNOWN")).upper()
     is_prod = bool(proposal.get("is_production_change"))
     write_patch_by_path: Dict[str, Dict[str, Any]] = (
         proposal.get("proposed_changes_by_path")
-        if isinstance(proposal.get("proposed_changes_by_path"), dict) else {})
-    auto_promoted = proposal.get("auto_draft_promotion") \
-        if isinstance(proposal.get("auto_draft_promotion"), dict) else None
+        if isinstance(proposal.get("proposed_changes_by_path"), dict)
+        else {}
+    )
+    auto_promoted = (
+        proposal.get("auto_draft_promotion")
+        if isinstance(proposal.get("auto_draft_promotion"), dict)
+        else None
+    )
 
     # 自检宪法 hash
     self_ok = _self_check_constitution_hash()
@@ -655,12 +729,21 @@ def audit_proposal(
     rule_results_list: List[RuleResult] = [
         check_original_skill_immutable(touched_files),  # R1
         check_experiment_zone_isolation(touched_files, is_prod),  # R7
-        check_b_mod_scope(touched_files) if actor == "B"
-        else RuleResult(rule_id="R6", passed=True, violations=[]),  # R6
-        check_ab_boundary("A", written_paths) if actor == "A"
-        else RuleResult(rule_id="R3", passed=True, violations=[]),  # R3
-        check_ab_boundary("B", written_paths) if actor == "B"
-        else RuleResult(rule_id="R4", passed=True, violations=[]),  # R4
+        (
+            check_b_mod_scope(touched_files)
+            if actor == "B"
+            else RuleResult(rule_id="R6", passed=True, violations=[])
+        ),  # R6
+        (
+            check_ab_boundary("A", written_paths)
+            if actor == "A"
+            else RuleResult(rule_id="R3", passed=True, violations=[])
+        ),  # R3
+        (
+            check_ab_boundary("B", written_paths)
+            if actor == "B"
+            else RuleResult(rule_id="R4", passed=True, violations=[])
+        ),  # R4
         check_only_memory_channel_interaction(import_graph),  # R5
         check_solution_path_quality_driven(write_patch_by_path),  # R2
         check_proposal_gating(proposal),  # R8
@@ -718,6 +801,7 @@ def audit_proposal(
 
 def _main(argv: Optional[List[str]] = None) -> int:
     import argparse
+
     parser = argparse.ArgumentParser(
         description="宪法审计：对单一 PROP-*.md 文件或 JSON proposal 进行红线校验",
     )
@@ -739,10 +823,12 @@ def _main(argv: Optional[List[str]] = None) -> int:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
         passed = result["passed"]
-        print(f"[CONSTITUTION] proposal={result['proposal_id']} "
-              f"passed={passed} score={result['audit_score']} "
-              f"violations={result['total_violations']} "
-              f"critical={result['severity_counts'].get('CRITICAL', 0)}")
+        print(
+            f"[CONSTITUTION] proposal={result['proposal_id']} "
+            f"passed={passed} score={result['audit_score']} "
+            f"violations={result['total_violations']} "
+            f"critical={result['severity_counts'].get('CRITICAL', 0)}"
+        )
     return 0 if result["passed"] else 1
 
 

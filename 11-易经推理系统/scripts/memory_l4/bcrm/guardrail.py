@@ -6,12 +6,13 @@ BCRM 护栏（Guardrail）。
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Any, Dict, List
 
 
 @dataclass
 class GuardResult:
     """护栏检查结果。"""
+
     passed: bool = True
     fail_reasons: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
@@ -38,20 +39,25 @@ class BCRMGuardrail:
     负责输入验证、数据质量检查、fail-closed 判定。
     """
 
-    def __init__(self,
-                 min_contradictions: int = 1,
-                 max_uncertainty: float = 0.8,
-                 required_fields: List[str] = None):
+    def __init__(
+        self,
+        min_contradictions: int = 1,
+        max_uncertainty: float = 0.8,
+        required_fields: List[str] = None,
+    ):
         self.min_contradictions = min_contradictions
         self.max_uncertainty = max_uncertainty
         self.required_fields = required_fields or [
-            "price", "volume",
+            "price",
+            "volume",
         ]
 
-    def validate(self,
-                 market_snapshot: Dict[str, Any],
-                 contradiction_list: List[Dict] = None,
-                 qmm_output: Dict = None) -> GuardResult:
+    def validate(
+        self,
+        market_snapshot: Dict[str, Any],
+        contradiction_list: List[Dict] = None,
+        qmm_output: Dict = None,
+    ) -> GuardResult:
         """
         验证输入。
 
@@ -66,7 +72,7 @@ class BCRMGuardrail:
         result = GuardResult()
 
         # 检查市场快照必填字段
-        for field in self.required_fields:
+        for field in self.required_fields:  # noqa: F402
             if field not in market_snapshot:
                 result.add_warning(f"缺少字段: {field}")
 

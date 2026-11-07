@@ -18,18 +18,18 @@ WorkBuddy OS 模块注册表加载器 (Python 侧)
 - 降级容错：加载失败时使用内置空注册表，不影响核心流程
 """
 
-import os
-import json
+import json  # noqa: I001
 import time
 import threading
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Set
-from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Set
+from dataclasses import dataclass
 
 import yaml
 
 try:
     import jsonschema
+
     _HAS_JSONSCHEMA = True
 except ImportError:
     _HAS_JSONSCHEMA = False
@@ -43,6 +43,7 @@ SCHEMA_PATH = _PROJECT_ROOT / "1-ARCHITECTURE" / "registry" / "module_registry.s
 @dataclass
 class ModuleInfo:
     """模块信息（扁平化结构，便于查询）"""
+
     id: str
     name: str
     description: str
@@ -123,35 +124,38 @@ class ModuleInfo:
 class ModuleRegistry:
     """
     模块注册表加载器
-    
+
     负责加载、校验、索引和查询模块注册表
     线程安全，支持热更新
     """
 
-    def __init__(self, registry_path: Optional[Path] = None,
-                 schema_path: Optional[Path] = None,
-                 auto_watch: bool = False):
+    def __init__(
+        self,
+        registry_path: Optional[Path] = None,
+        schema_path: Optional[Path] = None,
+        auto_watch: bool = False,
+    ):
         self._registry_path = registry_path or REGISTRY_PATH
         self._schema_path = schema_path or SCHEMA_PATH
-        
+
         self._lock = threading.RLock()
         self._modules: Dict[str, ModuleInfo] = {}
         self._raw_data: Dict = {}
         self._last_load_time: float = 0
         self._last_file_mtime: float = 0
-        
+
         self._by_chain: Dict[str, Set[str]] = {}
         self._by_category: Dict[str, Set[str]] = {}
         self._by_domain: Dict[str, Set[str]] = {}
         self._by_stage: Dict[str, Set[str]] = {}
         self._by_tag: Dict[str, Set[str]] = {}
-        
+
         self._watch_thread: Optional[threading.Thread] = None
         self._watch_running: bool = False
         self._watch_interval: float = 5.0
-        
+
         self._load()
-        
+
         if auto_watch:
             self.start_watching()
 
@@ -161,56 +165,55 @@ class ModuleRegistry:
             if not self._registry_path.exists():
                 print(f"[ModuleRegistry] 注册表文件不存在: {self._registry_path}")
                 return False
-            
+
             file_mtime = self._registry_path.stat().st_mtime
             if file_mtime == self._last_file_mtime and self._modules:
                 return True
-            
-            with open(self._registry_path, 'r', encoding='utf-8') as f:
+
+            with open(self._registry_path, "r", encoding="utf-8") as f:
                 raw_data = yaml.safe_load(f)
-            
+
             if not raw_data or not isinstance(raw_data, dict):
                 print("[ModuleRegistry] 注册表格式错误")
                 return False
-            
+
             if _HAS_JSONSCHEMA and self._schema_path.exists():
                 try:
-                    with open(self._schema_path, 'r', encoding='utf-8') as f:
+                    with open(self._schema_path, "r", encoding="utf-8") as f:
                         schema = json.load(f)
                     jsonschema.validate(instance=raw_data, schema=schema)
                 except jsonschema.ValidationError as e:
                     print(f"[ModuleRegistry] Schema校验失败: {e}")
                 except Exception as e:
                     print(f"[ModuleRegistry] Schema校验异常: {e}")
-            
+
             modules: Dict[str, ModuleInfo] = {}
             domains = raw_data.get("domains", {})
-            
+
             for domain_key, domain_data in domains.items():
                 categories = domain_data.get("categories", {})
                 for cat_key, cat_data in categories.items():
                     mod_map = cat_data.get("modules", {})
-                    for mod_key, mod_data in mod_map.items():
+                    for mod_key, mod_data in mod_map.items():  # noqa: B007
                         info = ModuleInfo.from_dict(
-                            mod_data,
-                            domain=domain_key,
-                            category_name=cat_key
+                            mod_data, domain=domain_key, category_name=cat_key
                         )
                         modules[info.id] = info
-            
+
             with self._lock:
                 self._raw_data = raw_data
                 self._modules = modules
                 self._last_load_time = time.time()
                 self._last_file_mtime = file_mtime
                 self._build_indexes()
-            
+
             print(f"[ModuleRegistry] 加载成功，共 {len(modules)} 个模块")
             return True
-            
+
         except Exception as e:
             print(f"[ModuleRegistry] 加载失败: {e}")
             import traceback
+
             traceback.print_exc()
             return False
 
@@ -221,25 +224,25 @@ class ModuleRegistry:
         self._by_domain.clear()
         self._by_stage.clear()
         self._by_tag.clear()
-        
+
         for mid, mod in self._modules.items():
             if mod.chain not in self._by_chain:
                 self._by_chain[mod.chain] = set()
             self._by_chain[mod.chain].add(mid)
-            
+
             if mod.category not in self._by_category:
                 self._by_category[mod.category] = set()
             self._by_category[mod.category].add(mid)
-            
+
             if mod.domain not in self._by_domain:
                 self._by_domain[mod.domain] = set()
             self._by_domain[mod.domain].add(mid)
-            
+
             for stage in mod.applicable_stages:
                 if stage not in self._by_stage:
                     self._by_stage[stage] = set()
                 self._by_stage[stage].add(mid)
-            
+
             for tag in mod.tags:
                 if tag not in self._by_tag:
                     self._by_tag[tag] = set()
@@ -256,7 +259,7 @@ class ModuleRegistry:
                 return False
             file_mtime = self._registry_path.stat().st_mtime
             if file_mtime > self._last_file_mtime:
-                print(f"[ModuleRegistry] 检测到文件更新，重新加载...")
+                print("[ModuleRegistry] 检测到文件更新，重新加载...")
                 return self._load()
             return False
         except Exception:
@@ -266,13 +269,11 @@ class ModuleRegistry:
         """启动文件监听线程"""
         if self._watch_running:
             return
-        
+
         self._watch_interval = interval
         self._watch_running = True
         self._watch_thread = threading.Thread(
-            target=self._watch_loop,
-            daemon=True,
-            name="ModuleRegistryWatcher"
+            target=self._watch_loop, daemon=True, name="ModuleRegistryWatcher"
         )
         self._watch_thread.start()
         print(f"[ModuleRegistry] 文件监听已启动，间隔 {interval}s")
@@ -313,20 +314,22 @@ class ModuleRegistry:
         with self._lock:
             return len(self._modules)
 
-    def query(self,
-              chain: Optional[str] = None,
-              category: Optional[str] = None,
-              domain: Optional[str] = None,
-              stage: Optional[str] = None,
-              tag: Optional[str] = None,
-              security_level: Optional[str] = None,
-              min_accuracy: Optional[float] = None,
-              max_tokens: Optional[int] = None,
-              intent: Optional[str] = None,
-              market_condition: Optional[str] = None) -> List[ModuleInfo]:
+    def query(
+        self,
+        chain: Optional[str] = None,
+        category: Optional[str] = None,
+        domain: Optional[str] = None,
+        stage: Optional[str] = None,
+        tag: Optional[str] = None,
+        security_level: Optional[str] = None,
+        min_accuracy: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        intent: Optional[str] = None,
+        market_condition: Optional[str] = None,
+    ) -> List[ModuleInfo]:
         """
         多条件查询模块
-        
+
         Args:
             chain: 所属链 (A/C/F/G/T)
             category: 分类
@@ -338,49 +341,49 @@ class ModuleRegistry:
             max_tokens: 最大token消耗
             intent: 适用意图
             market_condition: 适用市场条件
-            
+
         Returns:
             匹配的模块列表
         """
         with self._lock:
             candidates = set(self._modules.keys())
-            
+
             if chain and chain in self._by_chain:
                 candidates &= self._by_chain[chain]
-            
+
             if category and category in self._by_category:
                 candidates &= self._by_category[category]
-            
+
             if domain and domain in self._by_domain:
                 candidates &= self._by_domain[domain]
-            
+
             if stage and stage in self._by_stage:
                 candidates &= self._by_stage[stage]
-            
+
             if tag and tag in self._by_tag:
                 candidates &= self._by_tag[tag]
-            
+
             results = []
             for mid in candidates:
                 mod = self._modules[mid]
-                
+
                 if security_level and mod.security_level != security_level:
                     continue
-                
+
                 if min_accuracy is not None and mod.historical_accuracy < min_accuracy:
                     continue
-                
+
                 if max_tokens is not None and mod.estimated_tokens > max_tokens:
                     continue
-                
+
                 if intent and intent not in mod.applicable_intents:
                     continue
-                
+
                 if market_condition and market_condition not in mod.market_conditions:
                     continue
-                
+
                 results.append(mod)
-            
+
             return results
 
     def get_by_chain(self, chain: str) -> List[ModuleInfo]:
@@ -450,7 +453,9 @@ class ModuleRegistry:
         mod = self.get(module_id)
         if not mod:
             return False
-        return mod.lifecycle.get("status") == "active" and not mod.lifecycle.get("deprecated", False)
+        return mod.lifecycle.get("status") == "active" and not mod.lifecycle.get(
+            "deprecated", False
+        )
 
 
 _global_registry: Optional[ModuleRegistry] = None

@@ -6,6 +6,7 @@
   fh run-sample --set <name> --symbol S 用合成数据跑一次特征
   fh export-schema --set <name>        导出 JSON schema
 """
+
 from __future__ import annotations
 
 import json
@@ -21,18 +22,21 @@ def _make_sample_ohlcv(n: int = 300, symbol: str = "BTC") -> pd.DataFrame:
     rng = np.random.default_rng(hash(symbol) % 2**32)
     t = np.linspace(100, 200, n) * (1 + rng.normal(0, 0.01, n))
     idx = pd.date_range("2021-01-01", periods=n, freq="D")
-    return pd.DataFrame({
-        "open":   t * (1 + rng.normal(0, 0.004, n)),
-        "high":   t * (1 + np.abs(rng.normal(0, 0.01, n))),
-        "low":    t * (1 - np.abs(rng.normal(0, 0.01, n))),
-        "close":  t,
-        "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
-    }, index=idx)
+    return pd.DataFrame(
+        {
+            "open": t * (1 + rng.normal(0, 0.004, n)),
+            "high": t * (1 + np.abs(rng.normal(0, 0.01, n))),
+            "low": t * (1 - np.abs(rng.normal(0, 0.01, n))),
+            "close": t,
+            "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
+        },
+        index=idx,
+    )
 
 
 def _build_pipeline():
     """构建 FeaturePipeline 并注册模块 + 集合。"""
-    from feature_hub.pipeline.feature_pipeline import FeaturePipeline
+    from feature_hub.pipeline.feature_pipeline import FeaturePipeline  # noqa: I001
     from feature_hub.modules.loader import load_default_sets
 
     pipe = FeaturePipeline()
@@ -73,7 +77,7 @@ def _cmd_inspect(set_name: str) -> int:
     failed = fv.meta.get("modules_failed", [])
     if failed:
         print(f"Modules failed: {', '.join(failed)}")
-    print(f"Lineage: OK")
+    print("Lineage: OK")
     return 0
 
 

@@ -3,17 +3,15 @@ L2 自检测: TechnicalAgent 技术面 subagent 单测
 覆盖: 信号提取/摘要生成/图表生成/LLM 回退/IPC handler
 """
 
-import sys
+import sys  # noqa: I001
 from pathlib import Path
 from unittest.mock import MagicMock
-
-import pytest
 
 PYTHON_SERVER = Path(__file__).resolve().parent
 sys.path.insert(0, str(PYTHON_SERVER))
 
-from subagent_types import Signal, ChartSpec, SubagentOutput
-from technical_agent import TechnicalAgent, handle_technical_agent
+from subagent_types import Signal, SubagentOutput  # noqa: E402
+from technical_agent import TechnicalAgent, handle_technical_agent  # noqa: E402
 
 
 class TestTechnicalAgentSignals:
@@ -22,10 +20,15 @@ class TestTechnicalAgentSignals:
     def test_ema_bullish_alignment(self):
         """价格 > EMA20 > EMA50 → long 信号"""
         agent = TechnicalAgent()
-        signals = agent._extract_signals({
-            "price": 110, "ema20": 105, "ema50": 100,
-            "rsi14": 50, "macd": 0,
-        })
+        signals = agent._extract_signals(
+            {
+                "price": 110,
+                "ema20": 105,
+                "ema50": 100,
+                "rsi14": 50,
+                "macd": 0,
+            }
+        )
         ema_signal = next(s for s in signals if s.name == "EMA排列")
         assert ema_signal.direction == "long"
         assert ema_signal.confidence == 0.7
@@ -33,10 +36,15 @@ class TestTechnicalAgentSignals:
     def test_ema_bearish_alignment(self):
         """价格 < EMA20 < EMA50 → short 信号"""
         agent = TechnicalAgent()
-        signals = agent._extract_signals({
-            "price": 90, "ema20": 95, "ema50": 100,
-            "rsi14": 50, "macd": 0,
-        })
+        signals = agent._extract_signals(
+            {
+                "price": 90,
+                "ema20": 95,
+                "ema50": 100,
+                "rsi14": 50,
+                "macd": 0,
+            }
+        )
         ema_signal = next(s for s in signals if s.name == "EMA排列")
         assert ema_signal.direction == "short"
 
@@ -80,10 +88,15 @@ class TestTechnicalAgentSignals:
     def test_no_ema_signal_when_mixed(self):
         """EMA 排列混乱时无 EMA 信号"""
         agent = TechnicalAgent()
-        signals = agent._extract_signals({
-            "price": 100, "ema20": 105, "ema50": 95,
-            "rsi14": 50, "macd": 0,
-        })
+        signals = agent._extract_signals(
+            {
+                "price": 100,
+                "ema20": 105,
+                "ema50": 95,
+                "rsi14": 50,
+                "macd": 0,
+            }
+        )
         assert not any(s.name == "EMA排列" for s in signals)
 
 
@@ -139,12 +152,14 @@ class TestTechnicalAgentExecute:
     def test_execute_returns_subagent_output(self):
         """execute 返回 SubagentOutput"""
         agent = TechnicalAgent()
-        output = agent.execute({
-            "indicators": {"price": 110, "ema20": 105, "ema50": 100, "rsi14": 50, "macd": 0.5},
-            "rationale": ["趋势向上"],
-            "direction": "LONG",
-            "confidence": 0.75,
-        })
+        output = agent.execute(
+            {
+                "indicators": {"price": 110, "ema20": 105, "ema50": 100, "rsi14": 50, "macd": 0.5},
+                "rationale": ["趋势向上"],
+                "direction": "LONG",
+                "confidence": 0.75,
+            }
+        )
         assert isinstance(output, SubagentOutput)
         assert output.module == "technical"
         assert output.confidence == 0.75
@@ -174,9 +189,9 @@ class TestHandleTechnicalAgent:
 
     def test_success(self):
         """正常执行返回 ok=True"""
-        result = handle_technical_agent({
-            "node_output": {"indicators": {"price": 100, "rsi14": 50}}
-        })
+        result = handle_technical_agent(
+            {"node_output": {"indicators": {"price": 100, "rsi14": 50}}}
+        )
         assert result["ok"] is True
         assert "output" in result
         assert result["output"]["module"] == "technical"

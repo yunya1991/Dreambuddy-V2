@@ -12,22 +12,23 @@
 输出: 物理推理引擎评估报告
 """
 
+import json
 import os
 import sys
-import json
 import time
+
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
-from sklearn.metrics import roc_auc_score, roc_curve
 from scipy import stats
+from sklearn.metrics import roc_auc_score
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.feature_engineer import TrendFeatureEngineer
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
-from ml.pitd_reasoning_engine import PhysicsReasoningEngine
+from ml.feature_engineer import TrendFeatureEngineer  # noqa: E402
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
+from ml.pitd_reasoning_engine import PhysicsReasoningEngine  # noqa: E402
 
 
 def load_btc_data() -> pd.DataFrame:
@@ -41,8 +42,9 @@ def load_btc_data() -> pd.DataFrame:
     )
 
 
-def walk_forward_validation(features, labels, feature_names,
-                             n_splits=12, train_days=730, test_days=180, step_days=180):
+def walk_forward_validation(
+    features, labels, feature_names, n_splits=12, train_days=730, test_days=180, step_days=180
+):
     n = len(features)
     train_aucs, test_aucs = [], []
     test_end = n
@@ -68,10 +70,15 @@ def walk_forward_validation(features, labels, feature_names,
         if y_train.sum() < 5 or y_test.sum() < 2:
             continue
         model = lgb.LGBMClassifier(
-            n_estimators=200, max_depth=6, learning_rate=0.05,
-            num_leaves=31, min_child_samples=20,
-            subsample=0.8, colsample_bytree=0.8,
-            random_state=42, verbose=-1,
+            n_estimators=200,
+            max_depth=6,
+            learning_rate=0.05,
+            num_leaves=31,
+            min_child_samples=20,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42,
+            verbose=-1,
         )
         model.fit(X_train, y_train)
         if len(set(y_test)) > 1:
@@ -100,8 +107,7 @@ def main():
     prices = load_btc_data()
     closes = prices["close"].values
     n = len(prices)
-    print("\n  BTC日线: {}天, {} ~ {}".format(
-        n, prices.index[0].date(), prices.index[-1].date()))
+    print("\n  BTC日线: {}天, {} ~ {}".format(n, prices.index[0].date(), prices.index[-1].date()))
 
     # 1. 计算物理信号
     print("\n【1. 物理信号计算】")
@@ -110,25 +116,48 @@ def main():
     signals = engine.compute_signals(prices)
     print("  计算耗时: {:.2f}s".format(time.time() - t0))
     print("  信号样本:")
-    print(signals[["physics_signal", "physics_confidence", "physics_regime",
-                    "trend_signal", "reversal_signal", "support_signal", "momentum_signal"]].tail(10))
+    print(
+        signals[
+            [
+                "physics_signal",
+                "physics_confidence",
+                "physics_regime",
+                "trend_signal",
+                "reversal_signal",
+                "support_signal",
+                "momentum_signal",
+            ]
+        ].tail(10)
+    )
 
     # 2. 信号统计特征
     print("\n【2. 信号统计特征】")
     sig = signals["physics_signal"]
     conf = signals["physics_confidence"]
-    print("  综合信号: mean={:+.4f} std={:.4f} min={:+.4f} max={:+.4f}".format(
-        sig.mean(), sig.std(), sig.min(), sig.max()))
-    print("  置信度:   mean={:.4f} std={:.4f} min={:.4f} max={:.4f}".format(
-        conf.mean(), conf.std(), conf.min(), conf.max()))
+    print(
+        "  综合信号: mean={:+.4f} std={:.4f} min={:+.4f} max={:+.4f}".format(
+            sig.mean(), sig.std(), sig.min(), sig.max()
+        )
+    )
+    print(
+        "  置信度:   mean={:.4f} std={:.4f} min={:.4f} max={:.4f}".format(
+            conf.mean(), conf.std(), conf.min(), conf.max()
+        )
+    )
     print("\n  趋势状态分布:")
     regime_counts = signals["physics_regime"].value_counts()
     for regime, count in regime_counts.items():
         print("    {:<15s}  {:>5d} ({:.1%})".format(regime, count, count / n))
-    print("\n  反转预警: {}次 ({:.1%})".format(signals["reversal_warning"].sum(),
-                                              signals["reversal_warning"].mean()))
-    print("  强趋势:   {}次 ({:.1%})".format(signals["strong_trend"].sum(),
-                                             signals["strong_trend"].mean()))
+    print(
+        "\n  反转预警: {}次 ({:.1%})".format(
+            signals["reversal_warning"].sum(), signals["reversal_warning"].mean()
+        )
+    )
+    print(
+        "  强趋势:   {}次 ({:.1%})".format(
+            signals["strong_trend"].sum(), signals["strong_trend"].mean()
+        )
+    )
 
     # 3. 信号与未来收益相关性
     print("\n【3. 信号与未来收益相关性】")
@@ -139,26 +168,43 @@ def main():
             fr[i] = (closes[i + days] - closes[i]) / closes[i]
         future_returns[days] = fr
 
-    print("  {:<20s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}".format(
-        "信号", "1日", "3日", "5日", "10日", "20日", "40日", "60日"))
+    print(
+        "  {:<20s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}".format(
+            "信号", "1日", "3日", "5日", "10日", "20日", "40日", "60日"
+        )
+    )
     print("  " + "-" * 85)
-    for col in ["physics_signal", "trend_signal", "reversal_signal",
-                "support_signal", "momentum_signal"]:
+    for col in [
+        "physics_signal",
+        "trend_signal",
+        "reversal_signal",
+        "support_signal",
+        "momentum_signal",
+    ]:
         cors = []
         for days in [1, 3, 5, 10, 20, 40, 60]:
             r, p = stats.spearmanr(signals[col].values, future_returns[days])
             cors.append("{:+.3f}".format(r))
-        print("  {:<20s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}".format(
-            col, *cors))
+        print(
+            "  {:<20s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}".format(col, *cors)
+        )
 
     # 4. 信号方向准确率
     print("\n【4. 信号方向预测准确率】")
-    print("  {:<20s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}".format(
-        "信号", "5日", "10日", "20日", "40日", "60日", "样本"))
+    print(
+        "  {:<20s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}".format(
+            "信号", "5日", "10日", "20日", "40日", "60日", "样本"
+        )
+    )
     print("  " + "-" * 70)
 
-    for col in ["physics_signal", "trend_signal", "reversal_signal",
-                "support_signal", "momentum_signal"]:
+    for col in [
+        "physics_signal",
+        "trend_signal",
+        "reversal_signal",
+        "support_signal",
+        "momentum_signal",
+    ]:
         sig_vals = signals[col].values
         results = []
         for days in [5, 10, 20, 40, 60]:
@@ -169,9 +215,12 @@ def main():
                 results.append("{:.1%}".format(acc))
             else:
                 results.append("  N/A")
-        sample = ((sig_vals != 0).sum())
-        print("  {:<20s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8d}".format(
-            col, *results, sample))
+        sample = (sig_vals != 0).sum()
+        print(
+            "  {:<20s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8s}  {:>8d}".format(
+                col, *results, sample
+            )
+        )
 
     # 5. 分层收益分析（分位数组合）
     print("\n【5. 分层收益分析（20日持有）】")
@@ -184,8 +233,11 @@ def main():
         sig_valid = sig_vals[valid]
         fr_valid = fr_20[valid]
         quantiles = np.percentile(sig_valid, [0, 20, 40, 60, 80, 100])
-        print("  {:<15s}  {:>10s}  {:>10s}  {:>10s}  {:>10s}".format(
-            "分档", "信号范围", "平均收益", "胜率", "样本数"))
+        print(
+            "  {:<15s}  {:>10s}  {:>10s}  {:>10s}  {:>10s}".format(
+                "分档", "信号范围", "平均收益", "胜率", "样本数"
+            )
+        )
         for i in range(5):
             lo = quantiles[i]
             hi = quantiles[i + 1]
@@ -193,8 +245,11 @@ def main():
             if mask.sum() > 0:
                 mean_ret = fr_valid[mask].mean()
                 win_rate = (fr_valid[mask] > 0).mean()
-                print("  档{}({:.0%})      [{:+.3f}, {:+.3f}]  {:+.2%}   {:>5.1%}   {:>5d}".format(
-                    i + 1, (i + 1) / 5, lo, hi, mean_ret, win_rate, mask.sum()))
+                print(
+                    "  档{}({:.0%})      [{:+.3f}, {:+.3f}]  {:+.2%}   {:>5.1%}   {:>5d}".format(
+                        i + 1, (i + 1) / 5, lo, hi, mean_ret, win_rate, mask.sum()
+                    )
+                )
 
     # 6. 反转预警准确率
     print("\n【6. 反转预警准确率】")
@@ -214,8 +269,11 @@ def main():
                 reversal_acc = (predicted_dir[valid] == actual_dir[valid]).mean()
                 # 预警后平均收益
                 mean_ret = future_returns[days][valid].mean()
-                print("    {}日: 反转准确率={:.1%}, 平均收益={:+.2%}, 样本={}".format(
-                    days, reversal_acc, mean_ret, valid.sum()))
+                print(
+                    "    {}日: 反转准确率={:.1%}, 平均收益={:+.2%}, 样本={}".format(
+                        days, reversal_acc, mean_ret, valid.sum()
+                    )
+                )
 
     # 7. 不同市场状态下的表现
     print("\n【7. 不同趋势状态下的信号表现】")
@@ -228,10 +286,17 @@ def main():
         valid = np.abs(fr_r) < 0.5
         if valid.sum() > 0:
             corr, _ = stats.spearmanr(sig_r[valid], fr_r[valid])
-            acc = (np.sign(sig_r[valid]) == np.sign(fr_r[valid])).mean() if (sig_r[valid] != 0).any() else 0
+            acc = (
+                (np.sign(sig_r[valid]) == np.sign(fr_r[valid])).mean()
+                if (sig_r[valid] != 0).any()
+                else 0
+            )
             mean_ret = fr_r[valid].mean()
-            print("  {:<15s}: 样本={:>5d}, 相关性={:+.3f}, 方向准确率={:.1%}, 平均收益={:+.2%}".format(
-                regime, mask.sum(), corr, acc, mean_ret))
+            print(
+                "  {:<15s}: 样本={:>5d}, 相关性={:+.3f}, 方向准确率={:.1%}, 平均收益={:+.2%}".format(
+                    regime, mask.sum(), corr, acc, mean_ret
+                )
+            )
 
     # 8. 与V5.5 ML预测对比
     print("\n【8. 与V5.5 ML预测对比】")
@@ -245,7 +310,11 @@ def main():
     phil_fe = PhilosophyFeatureEngineer()
     phil_features = phil_fe.extract_series(prices, symbol="BTC")
 
-    v55_base = pd.concat([trend_features, phil_features], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    v55_base = (
+        pd.concat([trend_features, phil_features], axis=1)
+        .fillna(0.0)
+        .replace([np.inf, -np.inf], 0.0)
+    )
     v55_names = list(v55_base.columns)
 
     # 标签
@@ -261,9 +330,11 @@ def main():
     # V5.5 ML预测
     print("\n  8.1 V5.5 ML预测")
     ml_top, ml_top_tr, ml_top_dec, ml_top_preds = walk_forward_validation(
-        v55_base, top_exit_labels, v55_names)
+        v55_base, top_exit_labels, v55_names
+    )
     ml_dip, ml_dip_tr, ml_dip_dec, ml_dip_preds = walk_forward_validation(
-        v55_base, dip_buy_labels, v55_names)
+        v55_base, dip_buy_labels, v55_names
+    )
     print("    TOP_EXIT: AUC={:.4f} (decay={:.1%})".format(ml_top, ml_top_dec))
     print("    DIP_BUY:  AUC={:.4f} (decay={:.1%})".format(ml_dip, ml_dip_dec))
 
@@ -278,7 +349,8 @@ def main():
     phys_dip_pred = (phys_sig_vals + 1) / 2
 
     # 计算AUC（在V5.5相同的测试集上）
-    valid_mask = (top_exit_labels >= 0)  # 全部数据
+    valid_mask = top_exit_labels >= 0  # 全部数据  # noqa: F841
+
     # 使用与V5.5相同的分折计算AUC
     def compute_signal_auc(pred_vals, labels, n_splits=12, test_days=180, step_days=180):
         n = len(labels)
@@ -317,14 +389,17 @@ def main():
         fused_dip_auc = compute_signal_auc(fused_dip, dip_buy_labels)
         d_top = fused_top_auc - ml_top
         d_dip = fused_dip_auc - ml_dip
-        print("    α={:.1f} (ML权重): TOP={:.4f} (Δ{:+.4f}), DIP={:.4f} (Δ{:+.4f})".format(
-            alpha, fused_top_auc, d_top, fused_dip_auc, d_dip))
+        print(
+            "    α={:.1f} (ML权重): TOP={:.4f} (Δ{:+.4f}), DIP={:.4f} (Δ{:+.4f})".format(
+                alpha, fused_top_auc, d_top, fused_dip_auc, d_dip
+            )
+        )
 
     # 10. 物理信号作为后置过滤器
     print("\n  8.4 物理信号作为ML后置过滤器")
     # 策略：当物理信号与ML预测冲突时，降低置信度
     # 简化评估：在ML预测的基础上，用物理信号过滤
-    for conf_thresh in [0.3, 0.5, 0.7]:
+    for conf_thresh in [0.3, 0.5, 0.7]:  # noqa: B007
         # 物理置信度高时增强ML预测，低时减弱
         phys_conf = signals["physics_confidence"].values
         filtered_top = ml_top_preds * (0.5 + phys_conf)  # 置信度0.5~1.5倍调节
@@ -333,8 +408,11 @@ def main():
         filtered_dip_auc = compute_signal_auc(filtered_dip, dip_buy_labels)
         d_top = filtered_top_auc - ml_top
         d_dip = filtered_dip_auc - ml_dip
-        print("    conf调节(0.5+c): TOP={:.4f} (Δ{:+.4f}), DIP={:.4f} (Δ{:+.4f})".format(
-            filtered_top_auc, d_top, filtered_dip_auc, d_dip))
+        print(
+            "    conf调节(0.5+c): TOP={:.4f} (Δ{:+.4f}), DIP={:.4f} (Δ{:+.4f})".format(
+                filtered_top_auc, d_top, filtered_dip_auc, d_dip
+            )
+        )
 
     # 11. 总结
     print("\n" + "=" * 80)
@@ -394,13 +472,15 @@ def main():
         "direction_accuracy_20d": float(direction_acc_20),
         "best_correlation": {"days": best_corr_days, "value": float(best_corr)},
         "ml_comparison": {
-            "v55_top": ml_top, "v55_dip": ml_dip,
-            "physics_top": phys_top_auc, "physics_dip": phys_dip_auc,
+            "v55_top": ml_top,
+            "v55_dip": ml_dip,
+            "physics_top": phys_top_auc,
+            "physics_dip": phys_dip_auc,
         },
         "regime_distribution": {k: int(v) for k, v in regime_counts.items()},
     }
     output_path = os.path.join(BASE_DIR, "ml/backtest_results/pitd_reasoning_engine_result.json")
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(output, f, indent=2, ensure_ascii=False, default=str)
     print("\n  结果已保存: {}".format(output_path))
 

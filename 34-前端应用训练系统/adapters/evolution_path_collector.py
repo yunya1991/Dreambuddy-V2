@@ -9,6 +9,7 @@
   - 数据来源: evolution_snapshots.json 的 dimension_predictions / action / level0_dstar
   - FAIL-OPEN: 快照缺失/解析失败返回空列表
 """
+
 import json
 import os
 from typing import List, Optional
@@ -17,11 +18,14 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
 _PROJECT_ROOT = os.path.dirname(_34_DIR)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 _SNAPSHOT_PATH = os.path.join(
-    _PROJECT_ROOT, "23-四层闭环自进化交易架构",
-    "dreambuddy_evolution", "gene_data", "evolution_snapshots.json",
+    _PROJECT_ROOT,
+    "23-四层闭环自进化交易架构",
+    "dreambuddy_evolution",
+    "gene_data",
+    "evolution_snapshots.json",
 )
 
 _DIR_DESC = {"long": "看多", "short": "看空", "neutral": "中性"}
@@ -76,22 +80,26 @@ class EvolutionPathCollector(TrainingDataProvider):
             votes = list(dim_pred.values())
             agree = sum(1 for v in votes if v == action)
             summary = "/".join(f"{k}:{_DIR_DESC.get(v, v)}" for k, v in dim_pred.items())
-            cases.append(TrainingCase(
-                intent="path_insight",
-                actions=[f"path:{sym}", f"action:{action}"],
-                outcome_text=message,
-                learned=[f"路径交汇: {sym} {summary} → 最小阻力路径 {action}（{agree}/{len(votes)} 维度一致）"],
-                layer_tags=["S"],
-                quality="B",
-                confidence=0.6,
-                source="path_insight",
-                metadata={
-                    "symbol": sym,
-                    "dimension_predictions": dim_pred,
-                    "action": action,
-                    "level0_dstar": dstar,
-                    "agree_ratio": f"{agree}/{len(votes)}",
-                    "engine_hint": "23-自进化系统/矛盾Transformer",
-                },
-            ))
+            cases.append(
+                TrainingCase(
+                    intent="path_insight",
+                    actions=[f"path:{sym}", f"action:{action}"],
+                    outcome_text=message,
+                    learned=[
+                        f"路径交汇: {sym} {summary} → 最小阻力路径 {action}（{agree}/{len(votes)} 维度一致）"
+                    ],
+                    layer_tags=["S"],
+                    quality="B",
+                    confidence=0.6,
+                    source="path_insight",
+                    metadata={
+                        "symbol": sym,
+                        "dimension_predictions": dim_pred,
+                        "action": action,
+                        "level0_dstar": dstar,
+                        "agree_ratio": f"{agree}/{len(votes)}",
+                        "engine_hint": "23-自进化系统/矛盾Transformer",
+                    },
+                )
+            )
         return cases

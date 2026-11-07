@@ -19,9 +19,10 @@
 文件: ml/pitd_potential_field.py
 """
 
+from typing import List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import List, Tuple, Optional
 
 
 class PotentialFieldEngineer:
@@ -34,21 +35,21 @@ class PotentialFieldEngineer:
 
     FEATURE_NAMES: List[str] = [
         # 总势能场 (3维)
-        "field_potential_total",       # 总势能 V_total(s)
-        "field_gradient_total",        # 总势能梯度 dV/ds （正值=上涨阻力，负值=下跌阻力）
-        "field_direction",             # 阻力最小方向 sign(-dV/ds)  (+1=向上, -1=向下)
+        "field_potential_total",  # 总势能 V_total(s)
+        "field_gradient_total",  # 总势能梯度 dV/ds （正值=上涨阻力，负值=下跌阻力）
+        "field_direction",  # 阻力最小方向 sign(-dV/ds)  (+1=向上, -1=向下)
         # 分量势能梯度 (4维)
-        "field_gradient_ma",           # 均线分量梯度
-        "field_gradient_volume",       # 成交密集区分量梯度
-        "field_gradient_swing",        # 前高前低分量梯度
-        "field_gradient_fib",          # 斐波那契分量梯度
+        "field_gradient_ma",  # 均线分量梯度
+        "field_gradient_volume",  # 成交密集区分量梯度
+        "field_gradient_swing",  # 前高前低分量梯度
+        "field_gradient_fib",  # 斐波那契分量梯度
         # 距离特征 (3维)
-        "field_dist_to_nearest_min",   # 距最近势能极小点距离
-        "field_nearest_min_potential", # 最近极小点势能值
-        "field_potential_vs_avg",      # 当前势能 / 平均势能
+        "field_dist_to_nearest_min",  # 距最近势能极小点距离
+        "field_nearest_min_potential",  # 最近极小点势能值
+        "field_potential_vs_avg",  # 当前势能 / 平均势能
         # 不对称性 (2维)
-        "field_up_resistance",         # 上方阻力（积分上半部分）
-        "field_down_support",          # 下方支撑（积分下半部分）
+        "field_up_resistance",  # 上方阻力（积分上半部分）
+        "field_down_support",  # 下方支撑（积分下半部分）
     ]
 
     def __init__(
@@ -82,11 +83,11 @@ class PotentialFieldEngineer:
 
     def _gaussian_kernel(self, x: np.ndarray, sigma: float) -> np.ndarray:
         """高斯核 φ(x) = exp(-x²/2σ²)"""
-        return np.exp(-(x ** 2) / (2 * sigma ** 2))
+        return np.exp(-(x**2) / (2 * sigma**2))
 
     def _gaussian_derivative(self, x: np.ndarray, sigma: float) -> np.ndarray:
         """高斯核一阶导数 φ'(x) = -x/σ² × exp(-x²/2σ²)"""
-        return -(x / (sigma ** 2)) * np.exp(-(x ** 2) / (2 * sigma ** 2))
+        return -(x / (sigma**2)) * np.exp(-(x**2) / (2 * sigma**2))
 
     def _calc_ma_key_levels(self, prices: pd.DataFrame, i: int) -> List[Tuple[float, float]]:
         """计算均线关键价位（在第i天）
@@ -299,7 +300,7 @@ class PotentialFieldEngineer:
 
         # 距离（对数距离）
         min_price = float(prices[min_idx])
-        distance = abs(np.log(current_price) - np.log(min_price))
+        distance = abs(np.log(current_price) - np.log(min_price))  # noqa: F841
 
         return min_price, min_val
 
@@ -449,21 +450,36 @@ class PotentialFieldEngineer:
 
         # 各分量方向正确率
         component_match = {}
-        for comp in ["field_gradient_ma", "field_gradient_volume", "field_gradient_swing", "field_gradient_fib"]:
+        for comp in [
+            "field_gradient_ma",
+            "field_gradient_volume",
+            "field_gradient_swing",
+            "field_gradient_fib",
+        ]:
             comp_grad = feats[comp].values
             comp_dir = np.where(comp_grad < 0, 1.0, np.where(comp_grad > 0, -1.0, 0.0))
             comp_valid = (comp_dir != 0) & (future_direction != 0)
             if comp_valid.sum() > 0:
-                component_match[comp] = float((comp_dir[comp_valid] == future_direction[comp_valid]).mean())
+                component_match[comp] = float(
+                    (comp_dir[comp_valid] == future_direction[comp_valid]).mean()
+                )
             else:
                 component_match[comp] = 0.5
 
         # 数值范围
-        pot_range = (float(feats["field_potential_total"].min()), float(feats["field_potential_total"].max()))
-        grad_range = (float(feats["field_gradient_total"].min()), float(feats["field_gradient_total"].max()))
+        pot_range = (
+            float(feats["field_potential_total"].min()),
+            float(feats["field_potential_total"].max()),
+        )
+        grad_range = (
+            float(feats["field_gradient_total"].min()),
+            float(feats["field_gradient_total"].max()),
+        )
 
-        verdict = "✅ 理论4验证通过（阻力最小方向正确率>52%）" if direction_match > 0.52 else (
-            "🟡 接近验证" if direction_match > 0.48 else "❌ 未验证"
+        verdict = (
+            "✅ 理论4验证通过（阻力最小方向正确率>52%）"
+            if direction_match > 0.52
+            else ("🟡 接近验证" if direction_match > 0.48 else "❌ 未验证")
         )
 
         return {

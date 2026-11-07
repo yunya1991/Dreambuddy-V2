@@ -12,10 +12,9 @@
 用法:
     python collect_missing_data.py
 """
+
 from __future__ import annotations
 
-import json
-import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -54,15 +53,26 @@ def insert_record(source: str, sub_category: str, metrics: dict, raw: dict | Non
     try:
         from data_center.core.contract import DataRecord
         from data_center.storage.sink_postgres import get_sink
+
         sink = get_sink()
-        sink.write([DataRecord(
-            source=source, category="chain", sub_category=sub_category,
-            timestamp=_now_iso(), metrics=metrics, events=[], timeseries=[],
-            raw=raw or {},
-        )])
+        sink.write(
+            [
+                DataRecord(
+                    source=source,
+                    category="chain",
+                    sub_category=sub_category,
+                    timestamp=_now_iso(),
+                    metrics=metrics,
+                    events=[],
+                    timeseries=[],
+                    raw=raw or {},
+                )
+            ]
+        )
         print(f"  [OK] {source}/{sub_category}: {len(metrics)} metrics")
     except Exception as e:
         print(f"  [FAIL] {source}/{sub_category}: {e}")
+
 
 # ======================================================================
 # 1. 资金费率 — Binance Futures 免费 API
@@ -73,7 +83,8 @@ def collect_funding_rate():
         r = requests.get(
             "https://fapi.binance.com/fapi/v1/fundingRate",
             params={"symbol": "BTCUSDT", "limit": 5},
-            headers=HEADERS, timeout=15,
+            headers=HEADERS,
+            timeout=15,
         )
         r.raise_for_status()
         data = r.json()
@@ -81,11 +92,16 @@ def collect_funding_rate():
         rate = float(latest["fundingRate"])
         # 年化 = rate * 3 * 365 (Binance 8小时结算一次)
         annualized = rate * 3 * 365 * 100
-        insert_record("binance_futures", "funding_rate", {
-            "funding_rate_pct": round(rate * 100, 6),
-            "funding_rate_annualized_pct": round(annualized, 4),
-            "funding_time": latest["fundingTime"],
-        }, raw={"source": "binance.com", "symbol": "BTCUSDT"})
+        insert_record(
+            "binance_futures",
+            "funding_rate",
+            {
+                "funding_rate_pct": round(rate * 100, 6),
+                "funding_rate_annualized_pct": round(annualized, 4),
+                "funding_time": latest["fundingTime"],
+            },
+            raw={"source": "binance.com", "symbol": "BTCUSDT"},
+        )
         return rate
     except Exception as e:
         print(f"  [FAIL] funding_rate: {e}")
@@ -101,7 +117,8 @@ def collect_long_short_ratio():
         r = requests.get(
             "https://fapi.binance.com/futures/data/globalLongShortAccountRatio",
             params={"symbol": "BTCUSDT", "period": "5m", "limit": 3},
-            headers=HEADERS, timeout=15,
+            headers=HEADERS,
+            timeout=15,
         )
         r.raise_for_status()
         data = r.json()
@@ -109,11 +126,16 @@ def collect_long_short_ratio():
         lsr = float(latest["longShortRatio"])
         long_acc = float(latest["longAccount"])
         short_acc = float(latest["shortAccount"])
-        insert_record("binance_futures", "long_short_ratio", {
-            "long_short_ratio": round(lsr, 4),
-            "long_account_pct": round(long_acc * 100, 2),
-            "short_account_pct": round(short_acc * 100, 2),
-        }, raw={"source": "binance.com", "symbol": "BTCUSDT"})
+        insert_record(
+            "binance_futures",
+            "long_short_ratio",
+            {
+                "long_short_ratio": round(lsr, 4),
+                "long_account_pct": round(long_acc * 100, 2),
+                "short_account_pct": round(short_acc * 100, 2),
+            },
+            raw={"source": "binance.com", "symbol": "BTCUSDT"},
+        )
         return lsr
     except Exception as e:
         print(f"  [FAIL] long_short_ratio: {e}")
@@ -129,17 +151,23 @@ def collect_fear_greed():
         r = requests.get(
             "https://api.alternative.me/fng/",
             params={"limit": 1, "format": "json"},
-            headers=HEADERS, timeout=15,
+            headers=HEADERS,
+            timeout=15,
         )
         r.raise_for_status()
         data = r.json()
         d = data["data"][0]
         value = int(d["value"])
         classification = d.get("value_classification", "")
-        insert_record("fear_greed", "crypto_fear_greed", {
-            "value": value,
-            "count": len(data.get("data", [])),
-        }, raw={"source": "alternative.me", "classification": classification})
+        insert_record(
+            "fear_greed",
+            "crypto_fear_greed",
+            {
+                "value": value,
+                "count": len(data.get("data", [])),
+            },
+            raw={"source": "alternative.me", "classification": classification},
+        )
         return value
     except Exception as e:
         print(f"  [FAIL] fear_greed: {e}")
@@ -156,7 +184,8 @@ def collect_utxo_age():
         r = requests.get(
             "https://api.blockchain.info/charts/utxo-count",
             params={"format": "json", "timespan": "1days"},
-            headers=HEADERS, timeout=15,
+            headers=HEADERS,
+            timeout=15,
         )
         r.raise_for_status()
         data = r.json()
@@ -166,6 +195,7 @@ def collect_utxo_age():
         profit_supply_pct = 50.0
         try:
             from data_center.storage.sink_postgres import get_sink
+
             recs = get_sink().query_records(source="panewslab", limit=50)
             for rec in recs:
                 if rec.sub_category == "cycle_signals":
@@ -181,14 +211,19 @@ def collect_utxo_age():
         long_term = round(min(max(100 - short_term - 25, 15), 70), 1)
         mid_term = round(100 - short_term - long_term, 1)
 
-        insert_record("blockchain_info", "utxo_age_distribution", {
-            "utxo_count": utxo_count,
-            "profit_supply_pct": round(profit_supply_pct, 2),
-            "short_term_holder_supply_pct": short_term,
-            "mid_term_holder_supply_pct": mid_term,
-            "long_term_holder_supply_pct": long_term,
-            "hodl_waves_1y_plus_pct": long_term,
-        }, raw={"source": "blockchain.info + panewslab", "derived": True})
+        insert_record(
+            "blockchain_info",
+            "utxo_age_distribution",
+            {
+                "utxo_count": utxo_count,
+                "profit_supply_pct": round(profit_supply_pct, 2),
+                "short_term_holder_supply_pct": short_term,
+                "mid_term_holder_supply_pct": mid_term,
+                "long_term_holder_supply_pct": long_term,
+                "hodl_waves_1y_plus_pct": long_term,
+            },
+            raw={"source": "blockchain.info + panewslab", "derived": True},
+        )
         return {"short": short_term, "mid": mid_term, "long": long_term}
     except Exception as e:
         print(f"  [FAIL] utxo_age: {e}")
@@ -203,8 +238,9 @@ def collect_social_volume():
     try:
         # 统一存储接口统计新闻记录数（按源分别查询）
         from data_center.storage.sink_postgres import get_sink
+
         sink = get_sink()
-        news_sources = ('cryptopanic', 'gdelt', 'rsshub', 'tavily', 'odaily_newsflash')
+        news_sources = ("cryptopanic", "gdelt", "rsshub", "tavily", "odaily_newsflash")
         news_count_24h = 0
         total_news = 0
         for src in news_sources:
@@ -219,11 +255,16 @@ def collect_social_volume():
 
         # 社交声量 = 新闻数 * 放大系数（Alternative.me social volume 通常 5000-90000）
         social_volume = news_count_24h * 100
-        insert_record("news_aggregator", "social_volume", {
-            "social_volume": social_volume,
-            "news_count_24h": news_count_24h,
-            "total_news_records": total_news,
-        }, raw={"source": "18-news-collectors", "method": "news_count_derived"})
+        insert_record(
+            "news_aggregator",
+            "social_volume",
+            {
+                "social_volume": social_volume,
+                "news_count_24h": news_count_24h,
+                "total_news_records": total_news,
+            },
+            raw={"source": "18-news-collectors", "method": "news_count_derived"},
+        )
         return social_volume
     except Exception as e:
         print(f"  [FAIL] social_volume: {e}")
@@ -240,16 +281,24 @@ def collect_btc_basics():
         mcap = _to_number(requests.get("https://blockchain.info/q/marketcap", timeout=15).text)
         hashrate = _to_number(requests.get("https://blockchain.info/q/hashrate", timeout=15).text)
 
-        r = requests.get("https://api.blockchain.info/charts/n-unique-addresses",
-                         params={"timespan": "1days", "format": "json"}, timeout=15)
+        r = requests.get(
+            "https://api.blockchain.info/charts/n-unique-addresses",
+            params={"timespan": "1days", "format": "json"},
+            timeout=15,
+        )
         active_addr = int(r.json()["values"][-1]["y"]) if r.status_code == 200 else 0
 
-        insert_record("blockchain_info", "btc_basics", {
-            "total_btc": round(total_bc / 1e8, 2),
-            "market_cap_usd": mcap,
-            "hashrate": hashrate,
-            "active_addresses": active_addr,
-        }, raw={"source": "blockchain.info"})
+        insert_record(
+            "blockchain_info",
+            "btc_basics",
+            {
+                "total_btc": round(total_bc / 1e8, 2),
+                "market_cap_usd": mcap,
+                "hashrate": hashrate,
+                "active_addresses": active_addr,
+            },
+            raw={"source": "blockchain.info"},
+        )
         return mcap
     except Exception as e:
         print(f"  [FAIL] btc_basics: {e}")

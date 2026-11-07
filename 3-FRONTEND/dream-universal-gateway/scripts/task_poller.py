@@ -15,7 +15,6 @@ import json
 import os
 import sys
 import time
-import uuid
 import traceback
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,20 +25,20 @@ from typing import Optional
 # ============================================================
 # 优先级: CLI --workspace > 环境变量 WORKSPACE > 脚本同级目录的父目录
 _SCRIPT_DIR = Path(__file__).resolve().parent  # scripts/
-_GATEWAY_DIR = _SCRIPT_DIR.parent              # dream-universal-gateway/
-_WORKSPACE_DIR = _GATEWAY_DIR.parent.parent    # dreambuddy-v1/
+_GATEWAY_DIR = _SCRIPT_DIR.parent  # dream-universal-gateway/
+_WORKSPACE_DIR = _GATEWAY_DIR.parent.parent  # dreambuddy-v1/
 
-WORKSPACE = Path(os.environ.get('WORKSPACE', str(_WORKSPACE_DIR)))
-_ARTIFACTS_V2 = WORKSPACE / 'dreambuddy' / 'artifacts'
-ARTIFACTS_DIR = _ARTIFACTS_V2 if _ARTIFACTS_V2.exists() else (WORKSPACE / 'artifacts')
-TASKS_DIR = ARTIFACTS_DIR / 'tasks'
-RESULTS_DIR = ARTIFACTS_DIR / 'results'
+WORKSPACE = Path(os.environ.get("WORKSPACE", str(_WORKSPACE_DIR)))
+_ARTIFACTS_V2 = WORKSPACE / "dreambuddy" / "artifacts"
+ARTIFACTS_DIR = _ARTIFACTS_V2 if _ARTIFACTS_V2.exists() else (WORKSPACE / "artifacts")
+TASKS_DIR = ARTIFACTS_DIR / "tasks"
+RESULTS_DIR = ARTIFACTS_DIR / "results"
 
 # 并发限制
 MAX_CONCURRENT = 3
 
 # 轮询间隔(秒)
-POLL_INTERVAL = int(os.environ.get('POLL_INTERVAL', '10'))
+POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "10"))
 
 # 任务超时(秒)
 TASK_TIMEOUT = 30 * 60  # 30分钟
@@ -48,42 +47,49 @@ TASK_TIMEOUT = 30 * 60  # 30分钟
 # 意图类型分类
 # ============================================================
 # 对话任务 - 单次执行
-CONVERSATION_INTENTS = {'market_query', 'deep_analysis', 'simple_qa', 'scenario_sim', 'strategy_verify', 'command'}
+CONVERSATION_INTENTS = {
+    "market_query",
+    "deep_analysis",
+    "simple_qa",
+    "scenario_sim",
+    "strategy_verify",
+    "command",
+}
 
 # 交易任务 - 需用户确认执行时间
-TRADE_INTENTS = {'execute_trade'}
+TRADE_INTENTS = {"execute_trade"}
 
 # ============================================================
 # SKILL链路映射
 # ============================================================
 INTENT_CHAIN_MAP = {
-    'market_query': {
-        'quick': ['A6_intelligence'],
-        'deep':  ['A1_research', 'A6_intelligence'],
+    "market_query": {
+        "quick": ["A6_intelligence"],
+        "deep": ["A1_research", "A6_intelligence"],
     },
-    'deep_analysis': {
-        'quick': ['A1_research', 'A2_advisor'],
-        'deep':  ['A1_research', 'A2_advisor', 'A3_strategy'],
+    "deep_analysis": {
+        "quick": ["A1_research", "A2_advisor"],
+        "deep": ["A1_research", "A2_advisor", "A3_strategy"],
     },
-    'scenario_sim': {
-        'quick': ['A3_strategy'],
-        'deep':  ['A2_advisor', 'A3_strategy', 'A4_validation'],
+    "scenario_sim": {
+        "quick": ["A3_strategy"],
+        "deep": ["A2_advisor", "A3_strategy", "A4_validation"],
     },
-    'strategy_verify': {
-        'quick': ['A4_validation'],
-        'deep':  ['A3_strategy', 'A4_validation'],
+    "strategy_verify": {
+        "quick": ["A4_validation"],
+        "deep": ["A3_strategy", "A4_validation"],
     },
-    'execute_trade': {
-        'quick': ['A5_execution'],
-        'deep':  ['A4_validation', 'A5_execution'],
+    "execute_trade": {
+        "quick": ["A5_execution"],
+        "deep": ["A4_validation", "A5_execution"],
     },
-    'simple_qa': {
-        'quick': ['A6_intelligence'],
-        'deep':  ['A1_research', 'A6_intelligence'],
+    "simple_qa": {
+        "quick": ["A6_intelligence"],
+        "deep": ["A1_research", "A6_intelligence"],
     },
-    'command': {
-        'quick': ['A6_intelligence'],
-        'deep':  ['A6_intelligence'],
+    "command": {
+        "quick": ["A6_intelligence"],
+        "deep": ["A6_intelligence"],
     },
 }
 
@@ -94,7 +100,7 @@ INTENT_CHAIN_MAP = {
 def read_task(task_file: Path) -> Optional[dict]:
     """读取任务文件"""
     try:
-        with open(task_file, 'r', encoding='utf-8') as f:
+        with open(task_file, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
         print(f"[ERROR] Failed to read task {task_file.name}: {e}")
@@ -105,9 +111,9 @@ def update_task_status(task_file: Path, status: str):
     """更新任务状态"""
     task = read_task(task_file)
     if task:
-        task['status'] = status
-        task['updated_at'] = datetime.now(timezone.utc).isoformat()
-        with open(task_file, 'w', encoding='utf-8') as f:
+        task["status"] = status
+        task["updated_at"] = datetime.now(timezone.utc).isoformat()
+        with open(task_file, "w", encoding="utf-8") as f:
             json.dump(task, f, indent=2, ensure_ascii=False)
 
 
@@ -115,7 +121,7 @@ def write_result(task_id: str, result_data: dict):
     """写入结果文件"""
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     result_file = RESULTS_DIR / f"result_{task_id}.json"
-    with open(result_file, 'w', encoding='utf-8') as f:
+    with open(result_file, "w", encoding="utf-8") as f:
         json.dump(result_data, f, indent=2, ensure_ascii=False)
     print(f"[RESULT] Written: {result_file.name}")
 
@@ -128,71 +134,73 @@ def execute_skill_chain(task: dict) -> dict:
     执行SKILL链路
     当前为模拟执行模式，后续可替换为实际SKILL调用
     """
-    intent_type = task.get('intent', {}).get('type', 'simple_qa')
-    thinking_mode = task.get('thinking_mode', 'quick')
-    message = task.get('message', '')
-    
+    intent_type = task.get("intent", {}).get("type", "simple_qa")
+    thinking_mode = task.get("thinking_mode", "quick")
+    message = task.get("message", "")  # noqa: F841
+
     # 获取链路
-    chain_config = INTENT_CHAIN_MAP.get(intent_type, INTENT_CHAIN_MAP['simple_qa'])
-    chain = chain_config.get(thinking_mode, chain_config['quick'])
-    
+    chain_config = INTENT_CHAIN_MAP.get(intent_type, INTENT_CHAIN_MAP["simple_qa"])
+    chain = chain_config.get(thinking_mode, chain_config["quick"])
+
     start_time = time.time()
     execution_summary = {
-        'chain_executed': chain,
-        'total_steps': len(chain),
-        'skipped_steps': [],
-        'regime': 'RANGE_BOUND',
-        'confidence': task.get('intent', {}).get('confidence', 0.6),
+        "chain_executed": chain,
+        "total_steps": len(chain),
+        "skipped_steps": [],
+        "regime": "RANGE_BOUND",
+        "confidence": task.get("intent", {}).get("confidence", 0.6),
     }
-    
+
     artifacts_produced = []
-    
+
     # 判断是否为交易任务
     is_trade_task = intent_type in TRADE_INTENTS
-    
+
     if is_trade_task:
         # 交易任务 - 需用户确认执行时间
         content = generate_trade_pending_response(task, chain)
         # 不自动执行，写入scheduled状态等待用户确认
-        result_status = 'completed'  # 结果本身是completed，但content中包含待确认信息
+        result_status = "completed"  # 结果本身是completed，但content中包含待确认信息
     else:
         # 对话任务 - 单次执行
         content = execute_conversation_task(task, chain, artifacts_produced)
-        result_status = 'completed'
-    
+        result_status = "completed"
+
     execution_time_ms = int((time.time() - start_time) * 1000)
-    
+
     return {
-        'task_id': task['task_id'],
-        'status': result_status,
-        'created_at': datetime.now(timezone.utc).isoformat(),
-        'execution_time_ms': execution_time_ms,
-        'content': content,
-        'content_type': 'markdown',
-        'artifacts_produced': artifacts_produced,
-        'execution_summary': execution_summary,
-        'metadata': {
-            'executor': 'workbuddy_automation_v1',
-            'model': task.get('metadata', {}).get('llm_model', 'unknown'),
-            'cost_credits': calculate_credits(chain, thinking_mode),
+        "task_id": task["task_id"],
+        "status": result_status,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "execution_time_ms": execution_time_ms,
+        "content": content,
+        "content_type": "markdown",
+        "artifacts_produced": artifacts_produced,
+        "execution_summary": execution_summary,
+        "metadata": {
+            "executor": "workbuddy_automation_v1",
+            "model": task.get("metadata", {}).get("llm_model", "unknown"),
+            "cost_credits": calculate_credits(chain, thinking_mode),
         },
     }
 
 
 def execute_conversation_task(task: dict, chain: list, artifacts_produced: list) -> str:
     """执行对话类任务（单次执行）"""
-    intent_type = task.get('intent', {}).get('type', 'simple_qa')
-    message = task.get('message', '')
-    entities = task.get('intent', {}).get('entities', {})
-    symbol = entities.get('symbol', 'BTC')
-    timeframe = entities.get('timeframe', '4h')
-    
-    if intent_type == 'market_query':
-        artifacts_produced.append({
-            'file': f'a6_intelligence_brief_{datetime.now().strftime("%Y%m%d_%H%M")}.md',
-            'type': 'intelligence_brief',
-            'chain_phase': 'A6',
-        })
+    intent_type = task.get("intent", {}).get("type", "simple_qa")
+    message = task.get("message", "")
+    entities = task.get("intent", {}).get("entities", {})
+    symbol = entities.get("symbol", "BTC")
+    timeframe = entities.get("timeframe", "4h")
+
+    if intent_type == "market_query":
+        artifacts_produced.append(
+            {
+                "file": f'a6_intelligence_brief_{datetime.now().strftime("%Y%m%d_%H%M")}.md',
+                "type": "intelligence_brief",
+                "chain_phase": "A6",
+            }
+        )
         return f"""📊 **{symbol} 市场行情快报**
 
 > 由 WorkBuddy Automation 自动生成 | 链路: {' → '.join(chain)}
@@ -220,12 +228,14 @@ def execute_conversation_task(task: dict, chain: list, artifacts_produced: list)
 
 ⚡ 快速思考模式 | 执行链路: {' → '.join(chain)}"""
 
-    elif intent_type == 'deep_analysis':
-        artifacts_produced.append({
-            'file': f'a2_first_principles_{datetime.now().strftime("%Y%m%d_%H%M")}.md',
-            'type': 'first_principles',
-            'chain_phase': 'A2',
-        })
+    elif intent_type == "deep_analysis":
+        artifacts_produced.append(
+            {
+                "file": f'a2_first_principles_{datetime.now().strftime("%Y%m%d_%H%M")}.md',
+                "type": "first_principles",
+                "chain_phase": "A2",
+            }
+        )
         return f"""🔬 **{symbol} 深度分析报告**
 
 > 由 WorkBuddy Automation 自动生成 | 链路: {' → '.join(chain)}
@@ -255,7 +265,7 @@ def execute_conversation_task(task: dict, chain: list, artifacts_produced: list)
 
 🧠 思考模式: {task.get('thinking_mode', 'quick')} | 执行链路: {' → '.join(chain)}"""
 
-    elif intent_type == 'scenario_sim':
+    elif intent_type == "scenario_sim":
         return f"""🎭 **{symbol} 情景推演**
 
 > 由 WorkBuddy Automation 自动生成 | 链路: {' → '.join(chain)}
@@ -280,7 +290,7 @@ def execute_conversation_task(task: dict, chain: list, artifacts_produced: list)
 
 执行链路: {' → '.join(chain)}"""
 
-    elif intent_type == 'strategy_verify':
+    elif intent_type == "strategy_verify":
         return f"""✅ **策略验证结果**
 
 > 由 WorkBuddy Automation 自动生成 | 链路: {' → '.join(chain)}
@@ -330,10 +340,10 @@ def generate_trade_pending_response(task: dict, chain: list) -> str:
     交易任务 - 生成待确认响应
     交易任务需要用户确认执行时间，不自动执行
     """
-    intent_type = task.get('intent', {}).get('type', 'execute_trade')
-    entities = task.get('intent', {}).get('entities', {})
-    symbol = entities.get('symbol', 'BTC')
-    
+    intent_type = task.get("intent", {}).get("type", "execute_trade")  # noqa: F841
+    entities = task.get("intent", {}).get("entities", {})
+    symbol = entities.get("symbol", "BTC")
+
     return f"""⚠️ **交易任务 - 需确认执行时间**
 
 > 由 WorkBuddy Automation 生成 | 链路: {' → '.join(chain)}
@@ -371,15 +381,15 @@ def generate_trade_pending_response(task: dict, chain: list) -> str:
 def calculate_credits(chain: list, thinking_mode: str) -> int:
     """计算积分消耗"""
     base = {
-        'A1_research': 50,
-        'A2_advisor': 80,
-        'A3_strategy': 100,
-        'A4_validation': 120,
-        'A5_execution': 150,
-        'A6_intelligence': 30,
+        "A1_research": 50,
+        "A2_advisor": 80,
+        "A3_strategy": 100,
+        "A4_validation": 120,
+        "A5_execution": 150,
+        "A6_intelligence": 30,
     }
     total = sum(base.get(s, 50) for s in chain)
-    if thinking_mode == 'deep':
+    if thinking_mode == "deep":
         total = int(total * 1.5)
     return total
 
@@ -392,30 +402,35 @@ def poll_and_execute():
     # 确保目录存在
     TASKS_DIR.mkdir(parents=True, exist_ok=True)
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     # 查找pending任务
     pending_tasks = []
     try:
-        for f in sorted(TASKS_DIR.glob('task_*.json')):
+        for f in sorted(TASKS_DIR.glob("task_*.json")):
             task = read_task(f)
-            if task and task.get('status') == 'pending':
+            if task and task.get("status") == "pending":
                 # 检查超时
-                created_at = task.get('created_at', '')
+                created_at = task.get("created_at", "")
                 if created_at:
                     try:
-                        created_time = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                        if (datetime.now(timezone.utc) - created_time).total_seconds() > TASK_TIMEOUT:
+                        created_time = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                        if (
+                            datetime.now(timezone.utc) - created_time
+                        ).total_seconds() > TASK_TIMEOUT:
                             # 标记超时
-                            update_task_status(f, 'timeout')
-                            write_result(task['task_id'], {
-                                'task_id': task['task_id'],
-                                'status': 'failed',
-                                'created_at': datetime.now(timezone.utc).isoformat(),
-                                'content': '任务超时（30分钟），WorkBuddy未能及时处理',
-                                'content_type': 'text',
-                                'error': 'timeout',
-                                'metadata': {'executor': 'workbuddy_automation_v1'},
-                            })
+                            update_task_status(f, "timeout")
+                            write_result(
+                                task["task_id"],
+                                {
+                                    "task_id": task["task_id"],
+                                    "status": "failed",
+                                    "created_at": datetime.now(timezone.utc).isoformat(),
+                                    "content": "任务超时（30分钟），WorkBuddy未能及时处理",
+                                    "content_type": "text",
+                                    "error": "timeout",
+                                    "metadata": {"executor": "workbuddy_automation_v1"},
+                                },
+                            )
                             print(f"[TIMEOUT] {task['task_id']}")
                             continue
                     except Exception:
@@ -424,52 +439,57 @@ def poll_and_execute():
     except Exception as e:
         print(f"[ERROR] Failed to scan tasks: {e}")
         return 0
-    
+
     if not pending_tasks:
         return 0
-    
+
     # 并发限制
     executable = pending_tasks[:MAX_CONCURRENT]
-    
+
     executed = 0
     for task_file, task in executable:
-        task_id = task.get('task_id', 'unknown')
-        intent_type = task.get('intent', {}).get('type', 'unknown')
-        
+        task_id = task.get("task_id", "unknown")
+        intent_type = task.get("intent", {}).get("type", "unknown")
+
         print(f"[EXEC] Processing: {task_id} | intent: {intent_type}")
-        
+
         try:
             # 标记为processing
-            update_task_status(task_file, 'processing')
-            
+            update_task_status(task_file, "processing")
+
             # 执行SKILL链路
             result = execute_skill_chain(task)
-            
+
             # 写入结果
             write_result(task_id, result)
-            
+
             # 更新任务状态为completed
-            update_task_status(task_file, 'completed')
-            
+            update_task_status(task_file, "completed")
+
             executed += 1
-            print(f"[DONE] {task_id} | status: completed | time: {result.get('execution_time_ms', 0)}ms")
-            
+            print(
+                f"[DONE] {task_id} | status: completed | time: {result.get('execution_time_ms', 0)}ms"
+            )
+
         except Exception as e:
             print(f"[ERROR] Failed to execute {task_id}: {e}")
             traceback.print_exc()
-            
+
             # 标记失败
-            update_task_status(task_file, 'failed')
-            write_result(task_id, {
-                'task_id': task_id,
-                'status': 'failed',
-                'created_at': datetime.now(timezone.utc).isoformat(),
-                'content': f'任务执行失败: {str(e)}',
-                'content_type': 'text',
-                'error': str(e),
-                'metadata': {'executor': 'workbuddy_automation_v1'},
-            })
-    
+            update_task_status(task_file, "failed")
+            write_result(
+                task_id,
+                {
+                    "task_id": task_id,
+                    "status": "failed",
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "content": f"任务执行失败: {str(e)}",
+                    "content_type": "text",
+                    "error": str(e),
+                    "metadata": {"executor": "workbuddy_automation_v1"},
+                },
+            )
+
     return executed
 
 
@@ -477,56 +497,61 @@ def execute_single_task(task_id: str):
     """执行单个指定任务（由API route异步调用）"""
     TASKS_DIR.mkdir(parents=True, exist_ok=True)
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     # 查找任务文件
     task_file = TASKS_DIR / f"{task_id}.json"
     if not task_file.exists():
         print(f"[ERROR] Task file not found: {task_id}")
         return 0
-    
+
     task = read_task(task_file)
     if not task:
         print(f"[ERROR] Failed to read task: {task_id}")
         return 0
-    
-    if task.get('status') not in ('pending', 'processing'):
+
+    if task.get("status") not in ("pending", "processing"):
         print(f"[SKIP] Task {task_id} status is {task.get('status')}, not pending")
         return 0
-    
-    intent_type = task.get('intent', {}).get('type', 'unknown')
+
+    intent_type = task.get("intent", {}).get("type", "unknown")
     print(f"[EXEC] Single task: {task_id} | intent: {intent_type}")
-    
+
     try:
         # 标记为processing
-        update_task_status(task_file, 'processing')
-        
+        update_task_status(task_file, "processing")
+
         # 执行SKILL链路
         result = execute_skill_chain(task)
-        
+
         # 写入结果
         write_result(task_id, result)
-        
+
         # 更新任务状态为completed
-        update_task_status(task_file, 'completed')
-        
-        print(f"[DONE] {task_id} | status: completed | time: {result.get('execution_time_ms', 0)}ms")
+        update_task_status(task_file, "completed")
+
+        print(
+            f"[DONE] {task_id} | status: completed | time: {result.get('execution_time_ms', 0)}ms"
+        )
         return 1
-        
+
     except Exception as e:
         print(f"[ERROR] Failed to execute {task_id}: {e}")
         traceback.print_exc()
-        
+
         # 标记失败
-        update_task_status(task_file, 'failed')
-        write_result(task_id, {
-            'task_id': task_id,
-            'status': 'failed',
-            'created_at': datetime.now(timezone.utc).isoformat(),
-            'content': f'任务执行失败: {str(e)}',
-            'content_type': 'text',
-            'error': str(e),
-            'metadata': {'executor': 'workbuddy_poller_v1'},
-        })
+        update_task_status(task_file, "failed")
+        write_result(
+            task_id,
+            {
+                "task_id": task_id,
+                "status": "failed",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "content": f"任务执行失败: {str(e)}",
+                "content_type": "text",
+                "error": str(e),
+                "metadata": {"executor": "workbuddy_poller_v1"},
+            },
+        )
         return 0
 
 
@@ -535,30 +560,30 @@ def main():
     global WORKSPACE, ARTIFACTS_DIR, TASKS_DIR, RESULTS_DIR
 
     # 解析 --workspace 参数（覆盖默认路径）
-    if '--workspace' in sys.argv:
-        idx = sys.argv.index('--workspace')
+    if "--workspace" in sys.argv:
+        idx = sys.argv.index("--workspace")
         if idx + 1 < len(sys.argv):
             WORKSPACE = Path(sys.argv[idx + 1])
-            ARTIFACTS_DIR = WORKSPACE / 'artifacts'
-            TASKS_DIR = ARTIFACTS_DIR / 'tasks'
-            RESULTS_DIR = ARTIFACTS_DIR / 'results'
+            ARTIFACTS_DIR = WORKSPACE / "artifacts"
+            TASKS_DIR = ARTIFACTS_DIR / "tasks"
+            RESULTS_DIR = ARTIFACTS_DIR / "results"
         else:
             print("[ERROR] --workspace requires a directory path argument")
             return
 
-    print(f"=" * 60)
-    print(f"WorkBuddy Task Poller v1.2")
-    print(f"=" * 60)
+    print("=" * 60)
+    print("WorkBuddy Task Poller v1.2")
+    print("=" * 60)
     print(f"WORKSPACE:   {WORKSPACE}")
     print(f"TASKS_DIR:   {TASKS_DIR}")
     print(f"RESULTS_DIR: {RESULTS_DIR}")
     print(f"POLL_INTERVAL: {POLL_INTERVAL}s")
     print(f"MAX_CONCURRENT: {MAX_CONCURRENT}")
-    print(f"=" * 60)
-    
+    print("=" * 60)
+
     # 单任务执行模式（由API route通过child_process调用）
-    if '--task-id' in sys.argv:
-        idx = sys.argv.index('--task-id')
+    if "--task-id" in sys.argv:
+        idx = sys.argv.index("--task-id")
         if idx + 1 < len(sys.argv):
             task_id = sys.argv[idx + 1]
             count = execute_single_task(task_id)
@@ -566,17 +591,17 @@ def main():
         else:
             print("[ERROR] --task-id requires a task_id argument")
         return
-    
+
     # 批量扫描执行模式（供定时任务调用）
-    if '--once' in sys.argv:
+    if "--once" in sys.argv:
         count = poll_and_execute()
         print(f"\n[SUMMARY] Executed {count} task(s)")
         return
-    
+
     # 持续轮询模式
     print(f"[INFO] Starting continuous polling (interval: {POLL_INTERVAL}s)")
-    print(f"[INFO] Press Ctrl+C to stop\n")
-    
+    print("[INFO] Press Ctrl+C to stop\n")
+
     try:
         while True:
             count = poll_and_execute()
@@ -587,5 +612,5 @@ def main():
         print("\n[INFO] Stopped by user")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -21,7 +21,6 @@ TDD RED 阶段：验证组合级熔断（G-02 黑天鹅 3 条件 + G-04 终极 3
 from __future__ import annotations
 
 import sys
-import time
 from pathlib import Path
 
 import pytest
@@ -37,6 +36,7 @@ sys.path.insert(0, str(_PROJECT_ROOT))
 @pytest.fixture
 def fuse_enabled():
     from scripts.memory_l4.portfolio_risk_fuses import PortfolioRiskFuses
+
     f = PortfolioRiskFuses(enable=True)
     f._g02_block_until_ts = 0.0
     f._g02_last_trigger_at = 0.0
@@ -73,7 +73,7 @@ def test_t8_01_ctx_none_no_trigger(fuse_enabled):
 # T8.02：G-02 三条件缺一 → 不触发
 # ============================================================
 def test_t8_02_g02_missing_one_condition(fuse_enabled, g02_full_hit_ctx):
-    from scripts.memory_l4 import phase_c_constants as C
+
     # 缺 cond1：LONG=4 < 5
     c1 = dict(g02_full_hit_ctx)
     c1["positions_by_direction"] = {"LONG": 4, "SHORT": 2}
@@ -98,6 +98,7 @@ def test_t8_02_g02_missing_one_condition(fuse_enabled, g02_full_hit_ctx):
 # ============================================================
 def test_t8_03_g02_all_three_hit_triggered(fuse_enabled, g02_full_hit_ctx):
     from scripts.memory_l4 import phase_c_constants as C
+
     act = fuse_enabled.tick_and_check(g02_full_hit_ctx)
     assert act.block_new_open is True
     assert abs(act.sl_mult_adj - C.G02_SL_MULT_ADJ) < 1e-9  # 0.90
@@ -124,6 +125,7 @@ def test_t8_04_g02_cooldown_30min_still_block(fuse_enabled, g02_full_hit_ctx):
     assert act2.block_new_open is True
     # sl/tp 仍然生效（0.90/1.05）
     from scripts.memory_l4 import phase_c_constants as C
+
     assert abs(act2.sl_mult_adj - C.G02_SL_MULT_ADJ) < 1e-9
     assert abs(act2.tp_mult_adj - C.G02_TP_MULT_ADJ) < 1e-9
 
@@ -152,6 +154,7 @@ def test_t8_05_g02_cooldown_expired(fuse_enabled, g02_full_hit_ctx):
 # ============================================================
 def test_t8_06_g04_dd_ge_3pct_trigger(fuse_enabled):
     from scripts.memory_l4 import phase_c_constants as C
+
     # prev=2000, now=1930 → dd=70/2000=0.035 ≥ 0.03
     ctx = {
         "positions_by_direction": {"LONG": 1, "SHORT": 0},
@@ -176,7 +179,8 @@ def test_t8_06_g04_dd_ge_3pct_trigger(fuse_enabled):
 def test_t8_07_g04_within_24h_blocked(fuse_enabled):
     # 先触发 G-04
     ctx = {
-        "daily_equity_prev": 2000.0, "daily_equity_now": 1930.0,
+        "daily_equity_prev": 2000.0,
+        "daily_equity_now": 1930.0,
     }
     act1 = fuse_enabled.tick_and_check(ctx)
     assert act1.emergency_shutdown is True
@@ -195,17 +199,24 @@ def test_t8_07_g04_within_24h_blocked(fuse_enabled):
 # ============================================================
 def test_t8_08_g04_24h_expired_then_recover(fuse_enabled, g02_full_hit_ctx):
     from scripts.memory_l4 import phase_c_constants as C
+
     # 触发 G-04
-    fuse_enabled.tick_and_check({
-        "daily_equity_prev": 2000.0, "daily_equity_now": 1930.0,
-    })
+    fuse_enabled.tick_and_check(
+        {
+            "daily_equity_prev": 2000.0,
+            "daily_equity_now": 1930.0,
+        }
+    )
     # 往前拨 24h + 1s
     fuse_enabled._g04_emergency_until_ts -= C.G04_SHUTDOWN_HOURS * 3600 + 1
     fuse_enabled._g04_last_trigger_at -= C.G04_SHUTDOWN_HOURS * 3600 + 1
     # 先查：现在权益正常 → no_trigger
-    act_n = fuse_enabled.tick_and_check({
-        "daily_equity_prev": 2000, "daily_equity_now": 1995,
-    })
+    act_n = fuse_enabled.tick_and_check(
+        {
+            "daily_equity_prev": 2000,
+            "daily_equity_now": 1995,
+        }
+    )
     assert act_n.reason == "no_trigger"
     # 然后 G-02 三条件全中 → 应该能触发（不再被 G-04 挡住）
     act_g02 = fuse_enabled.tick_and_check(g02_full_hit_ctx)
@@ -251,15 +262,16 @@ def test_t8_10_exception_failopen(fuse_enabled):
 # ============================================================
 def test_t8_11_threshold_boundaries(fuse_enabled, g02_full_hit_ctx):
     from scripts.memory_l4 import phase_c_constants as C
+
     # ---- G-02 cond2 边界 ----
     # 刚好等于：0.50% = 0.0050
     c_exact = dict(g02_full_hit_ctx)
     c_exact["avg_float_loss_pct_15m"] = C.G02_AVG_FLOAT_LOSS_PCT  # 0.0050
     a_exact = fuse_enabled.tick_and_check(c_exact)
     # 三条件都满足，应该触发
-    assert a_exact.reason.startswith("g02_triggered_"), (
-        f"cond2 刚好命中 {C.G02_AVG_FLOAT_LOSS_PCT} 应触发，reason={a_exact.reason}"
-    )
+    assert a_exact.reason.startswith(
+        "g02_triggered_"
+    ), f"cond2 刚好命中 {C.G02_AVG_FLOAT_LOSS_PCT} 应触发，reason={a_exact.reason}"
     # 重置 fuse（清除冷却）
     fuse_enabled._g02_block_until_ts = 0.0
     fuse_enabled._g02_last_trigger_at = 0.0
@@ -284,7 +296,8 @@ def test_t8_11_threshold_boundaries(fuse_enabled, g02_full_hit_ctx):
     fuse_enabled._g04_last_trigger_at = 0.0
     dd_below = {
         "daily_equity_prev": 10000.0,
-        "daily_equity_now": 10000.0 * (1 - C.G04_DAILY_DRAWDOWN_THRESHOLD + 0.0001),  # 0.0299 < 0.03
+        "daily_equity_now": 10000.0
+        * (1 - C.G04_DAILY_DRAWDOWN_THRESHOLD + 0.0001),  # 0.0299 < 0.03
     }
     a_dd_below = fuse_enabled.tick_and_check(dd_below)
     assert a_dd_below.emergency_shutdown is False, "dd=0.0299 < 0.03 不应触发 G-04"
@@ -298,8 +311,15 @@ def test_t8_12_shadow_dict_fields(fuse_enabled, g02_full_hit_ctx):
     act = fuse_enabled.tick_and_check(g02_full_hit_ctx)
     d = act.as_shadow_dict()
     # 必填字段
-    for k in ["block_new_open", "sl_mult_adj", "tp_mult_adj",
-              "emergency_shutdown", "reason", "trigger_at", "block_until"]:
+    for k in [
+        "block_new_open",
+        "sl_mult_adj",
+        "tp_mult_adj",
+        "emergency_shutdown",
+        "reason",
+        "trigger_at",
+        "block_until",
+    ]:
         assert k in d, f"shadow dict 缺少字段 {k}"
     # bool 类型
     assert isinstance(d["block_new_open"], bool)

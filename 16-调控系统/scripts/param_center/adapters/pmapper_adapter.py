@@ -19,6 +19,7 @@
 
 输入 market_data 可选: L/T/C 三个 key (默认 0/0/0 = identity)
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -42,6 +43,7 @@ class PmapperAdapter(BaseAdapter):
 
         try:
             from memory_l4.bcrm2.parameter_mapper import ParameterMapper  # type: ignore
+
             mapper = ParameterMapper()
             ranges = mapper.map_global_parameters(L=L, T=T, C=C)
         except Exception:

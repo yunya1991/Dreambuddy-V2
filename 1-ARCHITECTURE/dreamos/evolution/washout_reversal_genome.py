@@ -30,6 +30,7 @@ Spec: docs/superpowers/specs/2026-09-22-washout-reversal-genome-design.md §3.3
     # 平仓后
     genome.record_case(closed_case)
 """
+
 from __future__ import annotations
 
 import logging
@@ -40,11 +41,11 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from .washout_ending_detector import EndingSignal, WashoutEndingDetector
-from .washout_reversal_case_library import WashoutReversalCaseLibrary
+from .exploration_policy import ExplorationPolicy
 from .washout_bayesian_updater import BayesianUpdater
 from .washout_case_library import WashoutCase
-from .exploration_policy import ExplorationPolicy
+from .washout_ending_detector import EndingSignal, WashoutEndingDetector
+from .washout_reversal_case_library import WashoutReversalCaseLibrary
 
 __all__ = ["WashoutReversalGenome", "WashoutReversalSignal"]
 
@@ -69,6 +70,7 @@ class WashoutReversalSignal:
         reason: 触发原因摘要
         timestamp: ISO 8601 UTC
     """
+
     direction: str
     confidence: float
     washout_verdict: object  # WashoutVerdict (延迟 import 避免循环)
@@ -117,7 +119,9 @@ class WashoutReversalGenome:
         self.bayesian_updater = bayesian_updater
         self.enable = bool(enable)
         self.sandbox_validate_fn = sandbox_validate_fn
-        self.exploration_policy = exploration_policy if exploration_policy is not None else ExplorationPolicy()
+        self.exploration_policy = (
+            exploration_policy if exploration_policy is not None else ExplorationPolicy()
+        )
 
     def detect_signal(
         self,
@@ -166,7 +170,8 @@ class WashoutReversalGenome:
 
             # 获取 label 值 (兼容 Enum 和 str)
             label_val = (
-                verdict.label.value if hasattr(verdict.label, "value")
+                verdict.label.value
+                if hasattr(verdict.label, "value")
                 else str(verdict.label).lower()
             )
 
@@ -244,16 +249,12 @@ class WashoutReversalGenome:
             )
         except Exception as e:
             tb = traceback.format_exc()
-            logger.error(
-                "WashoutReversalGenome.detect_signal FAIL-OPEN err=%s\n%s", e, tb
-            )
+            logger.error("WashoutReversalGenome.detect_signal FAIL-OPEN err=%s\n%s", e, tb)
             return WashoutReversalSignal(
                 direction="NONE",
                 confidence=0.0,
                 washout_verdict=None,
-                ending_signal=EndingSignal.not_activated(
-                    f"exception:{type(e).__name__}"
-                ),
+                ending_signal=EndingSignal.not_activated(f"exception:{type(e).__name__}"),
                 reason=f"exception:{type(e).__name__}",
                 timestamp=ts,
             )

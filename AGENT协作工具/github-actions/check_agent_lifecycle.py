@@ -2,12 +2,8 @@ import json
 import sys
 from pathlib import Path
 
-
 RULES_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "SKILLS"
-    / "agent-collab-supervisor"
-    / "rules.json"
+    Path(__file__).resolve().parents[1] / "SKILLS" / "agent-collab-supervisor" / "rules.json"
 )
 
 

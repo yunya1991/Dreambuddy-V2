@@ -12,27 +12,26 @@ Dream OS 系统压力测试框架
 
 from __future__ import annotations
 
-import os
-import sys
 import json
-import time
-import random
 import logging
-from typing import Dict, Any, List, Optional
+import random
+import sys
+import time
 from datetime import datetime
 from pathlib import Path
+from typing import Dict
 
 logger = logging.getLogger(__name__)
 
 root_dir = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(root_dir))
 
-from dreamos.cli.auto_trader import AutoTrader
-from dreamos.registry import get_default_registry
-from dreamos.capabilities.trading.nodes import register_all
-from dreamos.core.compute.graph_executor import GraphExecutor
-from dreamos.core.arrange.execution_graph import SequentialGraph
-from dreamos.shared.state import State, new_state
+from dreamos.capabilities.trading.nodes import register_all  # noqa: E402
+from dreamos.cli.auto_trader import AutoTrader  # noqa: E402
+from dreamos.core.arrange.execution_graph import SequentialGraph  # noqa: E402
+from dreamos.core.compute.graph_executor import GraphExecutor  # noqa: E402
+from dreamos.registry import get_default_registry  # noqa: E402
+from dreamos.shared.state import new_state  # noqa: E402
 
 
 class StressTestFramework:
@@ -60,8 +59,9 @@ class StressTestFramework:
         register_all(self.registry)
         self.symbols = ["BTC", "ETH", "SOL", "AVAX", "LINK", "ARB", "OP", "DOT"]
         # 场景驱动的编排选择（替代 random.choice）
-        from dreamos.core.sense.scenario_classifier import ScenarioClassifier
         from dreamos.core.memory.orchestration_memory import OrchestrationMemory
+        from dreamos.core.sense.scenario_classifier import ScenarioClassifier
+
         self.scenario_classifier = ScenarioClassifier()
         self.orchestration_memory = OrchestrationMemory()
         self.orchestration_memory.load()
@@ -180,10 +180,7 @@ class StressTestFramework:
             "path": result.get("_path", "unknown"),
             "action": result.get("action"),
             "confidence": result.get("confidence"),
-            "steps": [
-                {"step": s["step"], "status": s["status"]}
-                for s in result.get("steps", [])
-            ],
+            "steps": [{"step": s["step"], "status": s["status"]} for s in result.get("steps", [])],
             "error": result.get("error"),
         }
 
@@ -254,23 +251,23 @@ class StressTestFramework:
         auto_trade = result["tests"].get("auto_trade_chain", {})
         if auto_trade.get("error"):
             self.stats["failed_rounds"] += 1
-            self.stats["errors"].append({
-                "round": result["round"],
-                "error": auto_trade["error"],
-            })
+            self.stats["errors"].append(
+                {
+                    "round": result["round"],
+                    "error": auto_trade["error"],
+                }
+            )
         else:
             self.stats["success_rounds"] += 1
 
         if auto_trade.get("latency_ms"):
             self.stats["avg_latency_ms"] = (
-                (self.stats["avg_latency_ms"] * (self.stats["total_rounds"] - 1)
-                 + auto_trade["latency_ms"]) / self.stats["total_rounds"]
-            )
+                self.stats["avg_latency_ms"] * (self.stats["total_rounds"] - 1)
+                + auto_trade["latency_ms"]
+            ) / self.stats["total_rounds"]
 
         path = auto_trade.get("path", "unknown")
-        self.stats["path_distribution"][path] = (
-            self.stats["path_distribution"].get(path, 0) + 1
-        )
+        self.stats["path_distribution"][path] = self.stats["path_distribution"].get(path, 0) + 1
 
         action = auto_trade.get("action", "HOLD")
         self.stats["action_distribution"][action] = (
@@ -283,9 +280,7 @@ class StressTestFramework:
 
         graph_diversity = result["tests"].get("graph_diversity", {})
         for node_id in graph_diversity.get("nodes", []):
-            self.stats["nodes_executed"][node_id] = (
-                self.stats["nodes_executed"].get(node_id, 0) + 1
-            )
+            self.stats["nodes_executed"][node_id] = self.stats["nodes_executed"].get(node_id, 0) + 1
 
         pattern = graph_diversity.get("graph_pattern", "unknown")
         self.stats["graph_pattern_distribution"][pattern] = (
@@ -298,16 +293,14 @@ class StressTestFramework:
             self.stats["scenario_distribution"].get(sid, 0) + 1
         )
         fl = graph_diversity.get("fallback_level", "L3")
-        self.stats["fallback_distribution"][fl] = (
-            self.stats["fallback_distribution"].get(fl, 0) + 1
-        )
+        self.stats["fallback_distribution"][fl] = self.stats["fallback_distribution"].get(fl, 0) + 1
 
     def run(self) -> Dict:
         """运行完整压力测试"""
         print(f"\n{'='*60}")
-        print(f"🚀 Dream OS 压力测试框架启动")
+        print("🚀 Dream OS 压力测试框架启动")
         print(f"   测试轮数: {self.rounds}")
-        print(f"   测试场景: 7种市场场景")
+        print("   测试场景: 7种市场场景")
         print(f"   测试币种: {', '.join(self.symbols)}")
         print(f"{'='*60}\n")
 
@@ -320,7 +313,9 @@ class StressTestFramework:
 
             if i % progress_interval == 0:
                 success_rate = (self.stats["success_rounds"] / i) * 100
-                print(f"   [{i}/{self.rounds}] 进度: {round(i/self.rounds*100)}% | 成功率: {success_rate:.1f}% | 平均延迟: {self.stats['avg_latency_ms']:.1f}ms")
+                print(
+                    f"   [{i}/{self.rounds}] 进度: {round(i/self.rounds*100)}% | 成功率: {success_rate:.1f}% | 平均延迟: {self.stats['avg_latency_ms']:.1f}ms"
+                )
 
         return self._generate_report()
 
@@ -328,7 +323,8 @@ class StressTestFramework:
         """生成测试报告"""
         success_rate = (
             (self.stats["success_rounds"] / self.stats["total_rounds"]) * 100
-            if self.stats["total_rounds"] > 0 else 0
+            if self.stats["total_rounds"] > 0
+            else 0
         )
 
         report = {
@@ -345,12 +341,18 @@ class StressTestFramework:
             },
             "capability_verification": {
                 "graph_diversity": {
-                "status": "PASS" if self.stats["graph_pattern_distribution"] else "FAIL",
-                "details": {
-                    "graph_patterns_tested": ["c_chain", "c_f_chain", "full_chain", "f_chain", "c_g_chain"],
-                    "graph_pattern_distribution": self.stats["graph_pattern_distribution"],
+                    "status": "PASS" if self.stats["graph_pattern_distribution"] else "FAIL",
+                    "details": {
+                        "graph_patterns_tested": [
+                            "c_chain",
+                            "c_f_chain",
+                            "full_chain",
+                            "f_chain",
+                            "c_g_chain",
+                        ],
+                        "graph_pattern_distribution": self.stats["graph_pattern_distribution"],
+                    },
                 },
-            },
                 "node_capabilities": {
                     "status": "PASS" if self.stats["nodes_executed"] else "FAIL",
                     "details": {
@@ -365,10 +367,18 @@ class StressTestFramework:
                     },
                 },
                 "evolution_capability": {
-                    "status": "PASS" if any(r["tests"].get("evolution", {}).get("success") for r in self.results) else "WARN",
+                    "status": (
+                        "PASS"
+                        if any(r["tests"].get("evolution", {}).get("success") for r in self.results)
+                        else "WARN"
+                    ),
                     "details": {
                         "total_tokens_used": self.stats["total_tokens"],
-                        "evolution_success": sum(1 for r in self.results if r["tests"].get("evolution", {}).get("success")),
+                        "evolution_success": sum(
+                            1
+                            for r in self.results
+                            if r["tests"].get("evolution", {}).get("success")
+                        ),
                     },
                 },
             },
@@ -379,7 +389,9 @@ class StressTestFramework:
         if self.results:
             start_ts = datetime.fromisoformat(self.results[0]["timestamp"])
             end_ts = datetime.fromisoformat(self.results[-1]["timestamp"])
-            report["test_summary"]["duration_minutes"] = round((end_ts - start_ts).total_seconds() / 60, 2)
+            report["test_summary"]["duration_minutes"] = round(
+                (end_ts - start_ts).total_seconds() / 60, 2
+            )
 
         return report
 
@@ -388,9 +400,9 @@ class StressTestFramework:
         summary = report["test_summary"]
 
         print(f"\n{'='*60}")
-        print(f"📊 Dream OS 压力测试报告")
+        print("📊 Dream OS 压力测试报告")
         print(f"{'='*60}")
-        print(f"\n【测试摘要】")
+        print("\n【测试摘要】")
         print(f"  测试轮数: {summary['total_rounds']}")
         print(f"  成功轮数: {summary['success_rounds']}")
         print(f"  失败轮数: {summary['failed_rounds']}")
@@ -399,27 +411,38 @@ class StressTestFramework:
         print(f"  总耗时: {summary['duration_minutes']}分钟")
         print(f"  Token消耗: {summary['total_tokens']}")
 
-        print(f"\n【能力验证】")
+        print("\n【能力验证】")
         for capability, info in report["capability_verification"].items():
-            status = "✅" if info["status"] == "PASS" else "⚠️" if info["status"] == "WARN" else "❌"
+            status = (
+                "✅" if info["status"] == "PASS" else "⚠️" if info["status"] == "WARN" else "❌"
+            )
             print(f"  {status} {capability}: {info['status']}")
 
-        print(f"\n【图编排模式分布】")
-        for pattern, count in report["capability_verification"]["graph_diversity"]["details"]["graph_pattern_distribution"].items():
+        print("\n【图编排模式分布】")
+        for pattern, count in report["capability_verification"]["graph_diversity"]["details"][
+            "graph_pattern_distribution"
+        ].items():
             pct = (count / summary["total_rounds"]) * 100
             print(f"  {pattern}: {count}次 ({pct:.1f}%)")
 
-        print(f"\n【节点调用统计】")
-        for node_id, count in sorted(report["capability_verification"]["node_capabilities"]["details"]["nodes_executed"].items(), key=lambda x: -x[1]):
+        print("\n【节点调用统计】")
+        for node_id, count in sorted(
+            report["capability_verification"]["node_capabilities"]["details"][
+                "nodes_executed"
+            ].items(),
+            key=lambda x: -x[1],
+        ):
             print(f"  {node_id}: {count}次")
 
-        print(f"\n【动作分布】")
-        for action, count in report["capability_verification"]["auto_trade_chain"]["details"]["action_distribution"].items():
+        print("\n【动作分布】")
+        for action, count in report["capability_verification"]["auto_trade_chain"]["details"][
+            "action_distribution"
+        ].items():
             pct = (count / summary["total_rounds"]) * 100
             print(f"  {action}: {count}次 ({pct:.1f}%)")
 
         if report["errors"]:
-            print(f"\n【错误汇总】(前5个)")
+            print("\n【错误汇总】(前5个)")
             for err in report["errors"][:5]:
                 print(f"  第{err['round']}轮: {err['error']}")
 

@@ -10,13 +10,13 @@
 依赖：
 - 26-策略管理模块（查询策略 source_zip，可选 HTTP 调用）
 """
+
 from __future__ import annotations
 
-import json
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from flask import Flask, jsonify, request
 
@@ -25,15 +25,14 @@ _MODULE_DIR = Path(__file__).resolve().parent
 if str(_MODULE_DIR) not in sys.path:
     sys.path.insert(0, str(_MODULE_DIR))
 
-from signal_trigger.freqtrade.webhook import handle_webhook, query_events
-from signal_trigger.universe.screen import (
+from signal_trigger.freqtrade.webhook import handle_webhook, query_events  # noqa: E402
+from signal_trigger.universe.screen import (  # noqa: E402
     cluster_screen,
     screen_by_beta,
     screen_by_correlation,
     screen_tokens,
 )
-from signal_trigger.universe.universe import (
-    _compute_btc_corr_from_closes,
+from signal_trigger.universe.universe import (  # noqa: E402
     _universe_beta_from_ret,
     _universe_pair_aliases,
     _universe_pearson_corr,
@@ -62,6 +61,7 @@ STRATEGY_LIB_BASE = os.environ.get("STRATEGY_LIB_BASE", "http://127.0.0.1:8093")
 # 鉴权与工具
 # ---------------------------------------------------------------------------
 
+
 def _require_admin() -> bool:
     token = request.headers.get("X-Admin-Token", "")
     return token == SIGNAL_TRIGGER_ADMIN_TOKEN
@@ -88,32 +88,36 @@ def _safe_float(v: Any, default: float = 0.0) -> float:
 # 健康检查
 # ---------------------------------------------------------------------------
 
+
 @app.route("/health", methods=["GET"])
 def health():
-    return jsonify({
-        "ok": True,
-        "module": "28-策略信号触发模块",
-        "port": int(os.environ.get("SIGNAL_TRIGGER_PORT", "8096")),
-        "deps": {
-            "strategy_lib_base": STRATEGY_LIB_BASE,
-        },
-        "endpoints": [
-            "/api/v1/universe/screen",
-            "/api/v1/universe/screen/beta",
-            "/api/v1/universe/screen/corr",
-            "/api/v1/universe/cluster",
-            "/api/v1/universe/corr",
-            "/api/v1/universe/beta",
-            "/api/v1/universe/aliases",
-            "/webhook/freqtrade",
-            "/api/v1/webhook/events",
-        ],
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "module": "28-策略信号触发模块",
+            "port": int(os.environ.get("SIGNAL_TRIGGER_PORT", "8096")),
+            "deps": {
+                "strategy_lib_base": STRATEGY_LIB_BASE,
+            },
+            "endpoints": [
+                "/api/v1/universe/screen",
+                "/api/v1/universe/screen/beta",
+                "/api/v1/universe/screen/corr",
+                "/api/v1/universe/cluster",
+                "/api/v1/universe/corr",
+                "/api/v1/universe/beta",
+                "/api/v1/universe/aliases",
+                "/webhook/freqtrade",
+                "/api/v1/webhook/events",
+            ],
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # 代币筛选 API
 # ---------------------------------------------------------------------------
+
 
 @app.route("/api/v1/universe/screen", methods=["POST"])
 def universe_screen():
@@ -176,6 +180,7 @@ def universe_screen_beta():
     beta_max = _safe_float(body.get("beta_max"), 1.5)
     try:
         import numpy as np
+
         btc_ret = np.array(btc_ret_list, dtype=float)
         result = screen_by_beta(candidates, btc_ret, beta_min, beta_max)
         return jsonify(result)
@@ -231,6 +236,7 @@ def universe_cluster():
 # universe 纯函数 API（DSH 调用入口）
 # ---------------------------------------------------------------------------
 
+
 @app.route("/api/v1/universe/corr", methods=["POST"])
 def universe_corr():
     """计算两个序列的相关性。
@@ -271,6 +277,7 @@ def universe_beta():
         return jsonify({"ok": False, "error": "insufficient_data"}), 400
     try:
         import numpy as np
+
         x_ret = np.array(x_ret_list, dtype=float)
         y_ret = np.array(y_ret_list, dtype=float)
         beta = _universe_beta_from_ret(x_ret, y_ret)
@@ -299,6 +306,7 @@ def universe_aliases():
 # ---------------------------------------------------------------------------
 # Freqtrade webhook
 # ---------------------------------------------------------------------------
+
 
 @app.route("/webhook/freqtrade", methods=["POST"])
 def freqtrade_webhook():
@@ -346,6 +354,7 @@ def monitor_watchdog():
     """
     try:
         from signal_trigger.monitor.watchdog import run_watchdog
+
         result = run_watchdog()
         return jsonify(result)
     except Exception as e:
@@ -357,6 +366,7 @@ def monitor_strategy_performance(strategy_name: str):
     """查询指定策略的近期性能表现。"""
     try:
         from signal_trigger.monitor.watchdog import analyze_strategy_performance
+
         result = analyze_strategy_performance(strategy_name)
         return jsonify({"ok": True, **result})
     except Exception as e:
@@ -378,6 +388,7 @@ def backtest_show_trades():
     """展示回测交易记录。"""
     try:
         from strategy_gen.backtest_engine import show_trades
+
         body = _safe_get_json()
         strategy_id = body.get("strategy_id")
         if not strategy_id:
@@ -400,6 +411,7 @@ def backtest_download_data():
     """下载 OHLCV 数据。"""
     try:
         from strategy_gen.backtest_engine import download_data
+
         body = _safe_get_json()
         pairs = body.get("pairs")
         if not pairs:
@@ -422,6 +434,7 @@ def backtest_plot_profit():
     """生成回测利润图。"""
     try:
         from strategy_gen.backtest_engine import plot_profit
+
         body = _safe_get_json()
         strategy_id = body.get("strategy_id")
         if not strategy_id:

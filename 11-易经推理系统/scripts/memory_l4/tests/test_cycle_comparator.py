@@ -4,17 +4,19 @@
 以及 FAIL-OPEN 中性默认。
 对应 Spec §四 Step 6（7d+30d 双窗口共振校验）。
 """
-import pytest
+
 import sys
 from pathlib import Path
+
+import pytest
 
 # 将 memory_l4 加入 sys.path（force_vector 包所在目录）
 _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.models import CycleComparison
-from force_vector.cycle_comparator import CycleComparator
+from force_vector.cycle_comparator import CycleComparator  # noqa: E402
+from force_vector.models import CycleComparison  # noqa: E402
 
 
 class TestCycleComparatorResonance:
@@ -24,8 +26,10 @@ class TestCycleComparatorResonance:
         """7d=0.5, 30d=0.4 同向（同正）→ resonance, ×1.2。"""
         cc = CycleComparator()
         result = cc.compare(
-            direction_7d=0.5, direction_30d=0.4,
-            magnitude_7d=0.6, magnitude_30d=0.5,
+            direction_7d=0.5,
+            direction_30d=0.4,
+            magnitude_7d=0.6,
+            magnitude_30d=0.5,
         )
         assert isinstance(result, CycleComparison)
         assert result.resonance_state == "resonance"
@@ -35,8 +39,10 @@ class TestCycleComparatorResonance:
         """7d=-0.5, 30d=-0.4 同向（同负）→ resonance, ×1.2。"""
         cc = CycleComparator()
         result = cc.compare(
-            direction_7d=-0.5, direction_30d=-0.4,
-            magnitude_7d=0.6, magnitude_30d=0.5,
+            direction_7d=-0.5,
+            direction_30d=-0.4,
+            magnitude_7d=0.6,
+            magnitude_30d=0.5,
         )
         assert result.resonance_state == "resonance"
         assert result.strength_multiplier == pytest.approx(1.2, abs=1e-6)
@@ -52,8 +58,10 @@ class TestCycleComparatorDivergence:
         """
         cc = CycleComparator()
         result = cc.compare(
-            direction_7d=0.5, direction_30d=-0.4,
-            magnitude_7d=0.6, magnitude_30d=0.5,
+            direction_7d=0.5,
+            direction_30d=-0.4,
+            magnitude_7d=0.6,
+            magnitude_30d=0.5,
         )
         assert result.resonance_state == "divergence"
         assert result.strength_multiplier == pytest.approx(0.6, abs=1e-6)
@@ -66,8 +74,10 @@ class TestCycleComparatorObservation:
         """7d=0.0, 30d=0.0 双窗口中性 → observation, ×0.3。"""
         cc = CycleComparator()
         result = cc.compare(
-            direction_7d=0.0, direction_30d=0.0,
-            magnitude_7d=0.0, magnitude_30d=0.0,
+            direction_7d=0.0,
+            direction_30d=0.0,
+            magnitude_7d=0.0,
+            magnitude_30d=0.0,
         )
         assert result.resonance_state == "observation"
         assert result.strength_multiplier == pytest.approx(0.3, abs=1e-6)
@@ -80,8 +90,10 @@ class TestCycleComparatorOtherStates:
         """7d 有方向 + 30d 中性 → emerging, ×0.9。"""
         cc = CycleComparator()
         result = cc.compare(
-            direction_7d=0.5, direction_30d=0.0,
-            magnitude_7d=0.6, magnitude_30d=0.5,
+            direction_7d=0.5,
+            direction_30d=0.0,
+            magnitude_7d=0.6,
+            magnitude_30d=0.5,
         )
         assert result.resonance_state == "emerging"
         assert result.strength_multiplier == pytest.approx(0.9, abs=1e-6)
@@ -90,8 +102,10 @@ class TestCycleComparatorOtherStates:
         """7d 中性 + 30d 有方向 → persistent, ×1.0。"""
         cc = CycleComparator()
         result = cc.compare(
-            direction_7d=0.0, direction_30d=0.5,
-            magnitude_7d=0.6, magnitude_30d=0.5,
+            direction_7d=0.0,
+            direction_30d=0.5,
+            magnitude_7d=0.6,
+            magnitude_30d=0.5,
         )
         assert result.resonance_state == "persistent"
         assert result.strength_multiplier == pytest.approx(1.0, abs=1e-6)
@@ -103,8 +117,10 @@ class TestCycleComparatorOtherStates:
         """
         cc = CycleComparator()
         result = cc.compare(
-            direction_7d=-0.2, direction_30d=0.5,
-            magnitude_7d=0.3, magnitude_30d=0.7,
+            direction_7d=-0.2,
+            direction_30d=0.5,
+            magnitude_7d=0.3,
+            magnitude_30d=0.7,
         )
         assert result.resonance_state == "turning"
         assert result.strength_multiplier == pytest.approx(0.7, abs=1e-6)
@@ -117,8 +133,10 @@ class TestCycleComparatorFinalFields:
         """final_direction 取 30d 为主。"""
         cc = CycleComparator()
         result = cc.compare(
-            direction_7d=0.5, direction_30d=0.4,
-            magnitude_7d=0.6, magnitude_30d=0.5,
+            direction_7d=0.5,
+            direction_30d=0.4,
+            magnitude_7d=0.6,
+            magnitude_30d=0.5,
         )
         assert result.final_direction == pytest.approx(0.4, abs=1e-6)
 
@@ -126,7 +144,9 @@ class TestCycleComparatorFinalFields:
         """final_magnitude = magnitude_30d × strength_multiplier。"""
         cc = CycleComparator()
         result = cc.compare(
-            direction_7d=0.5, direction_30d=0.4,
-            magnitude_7d=0.6, magnitude_30d=0.5,
+            direction_7d=0.5,
+            direction_30d=0.4,
+            magnitude_7d=0.6,
+            magnitude_30d=0.5,
         )
         assert result.final_magnitude == pytest.approx(0.5 * 1.2, abs=1e-6)

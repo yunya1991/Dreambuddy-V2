@@ -19,6 +19,7 @@
   - C-Drive Agent: 1-ARCHITECTURE/dream-harness-bridge/packages/python-server/c_drive_agent.py
   - 决策常量: 34-前端应用训练系统/core/decision_deriver.py
 """
+
 from typing import Dict, List, Optional, Tuple
 
 # ============================================================
@@ -36,8 +37,8 @@ EARLY_TERMINATE = "EARLY_TERMINATE"
 # ============================================================
 
 # Fast-path 跳过阈值
-FAST_PATH_MATCH = 0.8       # match_score >= 0.8
-FAST_PATH_DENSITY = 5      # case_density >= 5
+FAST_PATH_MATCH = 0.8  # match_score >= 0.8
+FAST_PATH_DENSITY = 5  # case_density >= 5
 
 # 预测误差门控
 PREDICTION_ERROR_THRESHOLD = 0.3  # > 0.3 降级
@@ -46,22 +47,23 @@ PREDICTION_ERROR_THRESHOLD = 0.3  # > 0.3 降级
 BELIEVABILITY_THRESHOLD = 0.5  # < 0.5 降级
 
 # HOT Self-Model
-HOT_DENSITY_THRESHOLD = 3   # case_density >= 3
-HOT_MATCH_THRESHOLD = 0.6   # match_score >= 0.6
+HOT_DENSITY_THRESHOLD = 3  # case_density >= 3
+HOT_MATCH_THRESHOLD = 0.6  # match_score >= 0.6
 
 
 # ============================================================
 # 防震荡参数（对齐 SPEC §2.4.2）
 # ============================================================
 
-MAX_CONSECUTIVE_OVERRIDE = 2   # 连续改写上限，第 3 次信任原始
-DEGRADATION_THRESHOLD = 3      # 连续改写触发衰减的阈值
-RECOVERY_COUNT = 5             # 衰减后恢复 jev 权限所需未改写次数
+MAX_CONSECUTIVE_OVERRIDE = 2  # 连续改写上限，第 3 次信任原始
+DEGRADATION_THRESHOLD = 3  # 连续改写触发衰减的阈值
+RECOVERY_COUNT = 5  # 衰减后恢复 jev 权限所需未改写次数
 
 
 # ============================================================
 # jev_gate — 纯规则零 token 裁决
 # ============================================================
+
 
 def jev_gate(
     decision: str,
@@ -131,6 +133,7 @@ def jev_gate(
 # JevAntiOscillation — 防震荡控制器
 # ============================================================
 
+
 class JevAntiOscillation:
     """jev 防震荡控制器。
 
@@ -144,11 +147,11 @@ class JevAntiOscillation:
     """
 
     def __init__(self):
-        self._consecutive_overrides: int = 0     # 连续改写计数
+        self._consecutive_overrides: int = 0  # 连续改写计数
         self._last_decision: Optional[str] = None  # 上次原始决策
         self._override_history: List[Tuple[str, str]] = []  # 改写历史
-        self._jev_degraded: bool = False         # jev 是否已降级
-        self._degradation_count: int = 0         # 恢复 jev 权限还需未改写次数
+        self._jev_degraded: bool = False  # jev 是否已降级
+        self._degradation_count: int = 0  # 恢复 jev 权限还需未改写次数
 
     def check_oscillation(self, original_decision: str, jev_decision: str) -> str:
         """检查并防止决策震荡。

@@ -1,4 +1,4 @@
-import argparse
+import argparse  # noqa: I001
 import sys
 import time
 
@@ -70,13 +70,37 @@ def main() -> int:
         "features": {},
     }
 
-    r1 = requests.post(base + "/signals/v1", json={"signal": dict(signal), "trigger_decision": False}, timeout=10)
+    r1 = requests.post(
+        base + "/signals/v1", json={"signal": dict(signal), "trigger_decision": False}, timeout=10
+    )
     j1 = r1.json() if r1.headers.get("content-type", "").startswith("application/json") else {}
-    print("/signals/v1", r1.status_code, "ok", j1.get("ok"), "id", j1.get("id"), "dedup", j1.get("dedup"))
+    print(
+        "/signals/v1",
+        r1.status_code,
+        "ok",
+        j1.get("ok"),
+        "id",
+        j1.get("id"),
+        "dedup",
+        j1.get("dedup"),
+    )
 
-    r2 = requests.post(base + "/signals", json={**dict(signal), "trigger_decision": True}, timeout=10)
+    r2 = requests.post(
+        base + "/signals", json={**dict(signal), "trigger_decision": True}, timeout=10
+    )
     j2 = r2.json() if r2.headers.get("content-type", "").startswith("application/json") else {}
-    print("/signals", r2.status_code, "ok", j2.get("ok"), "id", j2.get("id"), "dedup", j2.get("dedup"), "auto_decision", j2.get("auto_decision"))
+    print(
+        "/signals",
+        r2.status_code,
+        "ok",
+        j2.get("ok"),
+        "id",
+        j2.get("id"),
+        "dedup",
+        j2.get("dedup"),
+        "auto_decision",
+        j2.get("auto_decision"),
+    )
 
     id1 = j1.get("id")
     id2 = j2.get("id")
@@ -154,4 +178,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

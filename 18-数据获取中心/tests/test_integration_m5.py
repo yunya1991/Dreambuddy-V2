@@ -5,26 +5,20 @@
 2. 采集抛异常 → metric error + ERROR 告警
 3. 返回 CONTRACT 异常记录 → CONTRACT_INVALID quality issue + WARNING 告警
 """
+
 from __future__ import annotations
 
-import json
-import tempfile
 import time
 from datetime import datetime, timezone
-from pathlib import Path
 
 import pytest
-
+from data_center.collectors._base import BaseCollector
 from data_center.core.contract import DataRecord
 from data_center.monitoring.alerting import (
     Alert,
     AlertChannel,
     AlertLevel,
-    FileAlertChannel,
 )
-from data_center.monitoring.metrics import InvocationMetric, MetricsStore
-from data_center.monitoring.quality import QualityIssue, QualityIssueCode
-from data_center.collectors._base import BaseCollector
 
 
 class _SpyAlertChannel(AlertChannel):
@@ -41,7 +35,7 @@ class _SpyAlertChannel(AlertChannel):
 def test_successful_fetch_records_ok_metric_and_no_quality_alerts():
     from data_center import DataCenter
     from data_center.core.registry import Registry
-    from data_center.monitoring import MonitoringBundle, AlertRouter, QualityChecker, MetricsStore
+    from data_center.monitoring import AlertRouter, MetricsStore, MonitoringBundle, QualityChecker
 
     spy = _SpyAlertChannel()
     bundle = MonitoringBundle(
@@ -57,12 +51,18 @@ def test_successful_fetch_records_ok_metric_and_no_quality_alerts():
 
         def fetch(self, params):
             time.sleep(0.002)
-            return [DataRecord(
-                source="ok_src", category="macro", sub_category="X",
-                timestamp=datetime.now(timezone.utc).isoformat(),
-                metrics={"value": 1.0, "date": "2026-08-24"},
-                events=[], timeseries=[], raw={},
-            )]
+            return [
+                DataRecord(
+                    source="ok_src",
+                    category="macro",
+                    sub_category="X",
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    metrics={"value": 1.0, "date": "2026-08-24"},
+                    events=[],
+                    timeseries=[],
+                    raw={},
+                )
+            ]
 
     reg = Registry()
     reg.register("macro", "ok_src", _OKCollector)
@@ -91,7 +91,7 @@ def test_successful_fetch_records_ok_metric_and_no_quality_alerts():
 def test_fetch_exception_records_error_metric_and_emits_error_alert():
     from data_center import DataCenter
     from data_center.core.registry import Registry
-    from data_center.monitoring import MonitoringBundle, AlertRouter, QualityChecker, MetricsStore
+    from data_center.monitoring import AlertRouter, MetricsStore, MonitoringBundle, QualityChecker
 
     spy = _SpyAlertChannel()
     bundle = MonitoringBundle(
@@ -132,7 +132,7 @@ def test_fetch_exception_records_error_metric_and_emits_error_alert():
 def test_contract_bad_record_emits_warning_alert():
     from data_center import DataCenter
     from data_center.core.registry import Registry
-    from data_center.monitoring import MonitoringBundle, AlertRouter, QualityChecker, MetricsStore
+    from data_center.monitoring import AlertRouter, MetricsStore, MonitoringBundle, QualityChecker
 
     spy = _SpyAlertChannel()
     bundle = MonitoringBundle(
@@ -148,10 +148,14 @@ def test_contract_bad_record_emits_warning_alert():
         def fetch(self, params):
             # 返回一条 metrics 嵌套非法的 record
             rec = DataRecord(
-                source="badrec", category="news", sub_category="rss",
+                source="badrec",
+                category="news",
+                sub_category="rss",
                 timestamp=datetime.now(timezone.utc).isoformat(),
                 metrics={"ok": 1},
-                events=[], timeseries=[], raw={},
+                events=[],
+                timeseries=[],
+                raw={},
             )
             rec.metrics = {"nested": {"deep": True}}  # 注入嵌套
             return [rec]
@@ -165,11 +169,14 @@ def test_contract_bad_record_emits_warning_alert():
     assert len(result) == 0
 
     # 有 CONTRACT_INVALID issue 告警
-    warns = [a for a in spy.received if "CONTRACT_INVALID" in a.title or
-             any("CONTRACT_INVALID" in tag for tag in a.tags)]
-    assert len(warns) >= 1, (
-        f"期望有 CONTRACT_INVALID 告警，实际: {[(a.level, a.title, a.tags) for a in spy.received]}"
-    )
+    warns = [
+        a
+        for a in spy.received
+        if "CONTRACT_INVALID" in a.title or any("CONTRACT_INVALID" in tag for tag in a.tags)
+    ]
+    assert (
+        len(warns) >= 1
+    ), f"期望有 CONTRACT_INVALID 告警，实际: {[(a.level, a.title, a.tags) for a in spy.received]}"
 
 
 # ---------------------------------------------------------------------------
@@ -184,12 +191,18 @@ def test_monitoring_none_uses_default_bundle_records_metrics():
         category = "macro"
 
         def fetch(self, params):
-            return [DataRecord(
-                source="tiny", category="macro", sub_category="foo",
-                timestamp=datetime.now(timezone.utc).isoformat(),
-                metrics={"value": 1, "date": "2026-08-24"},
-                events=[], timeseries=[], raw={},
-            )]
+            return [
+                DataRecord(
+                    source="tiny",
+                    category="macro",
+                    sub_category="foo",
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    metrics={"value": 1, "date": "2026-08-24"},
+                    events=[],
+                    timeseries=[],
+                    raw={},
+                )
+            ]
 
     reg = Registry()
     reg.register("macro", "tiny", _TinyCollector)
@@ -211,7 +224,7 @@ def test_monitoring_none_uses_default_bundle_records_metrics():
 def test_empty_records_non_degraded_emits_warning():
     from data_center import DataCenter
     from data_center.core.registry import Registry
-    from data_center.monitoring import MonitoringBundle, AlertRouter, QualityChecker, MetricsStore
+    from data_center.monitoring import AlertRouter, MetricsStore, MonitoringBundle, QualityChecker
 
     spy = _SpyAlertChannel()
     bundle = MonitoringBundle(

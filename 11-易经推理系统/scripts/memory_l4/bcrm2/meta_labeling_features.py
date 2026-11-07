@@ -13,10 +13,10 @@ L2 Meta-Labeling 特征工程模块 — 二级裁决的增强特征
   4. 宏观周期交叉特征: 库存周期阶段 × 技术信号组合
 """
 
+from typing import List
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple, Optional
-from collections import defaultdict
 
 
 class MetaLabelingFeatures:
@@ -29,7 +29,7 @@ class MetaLabelingFeatures:
 
     def __init__(
         self,
-        lookback_windows: List[int] = [20, 60, 120],
+        lookback_windows: List[int] = [20, 60, 120],  # noqa: B006
         regime_lookback: int = 60,
     ):
         self.lookback_windows = lookback_windows
@@ -56,7 +56,7 @@ class MetaLabelingFeatures:
         Returns:
             L2特征矩阵 (n_samples, n_meta_features)
         """
-        n = len(X)
+        n = len(X)  # noqa: F841
         meta_features = []
 
         # 1. 信号置信度特征
@@ -66,9 +66,7 @@ class MetaLabelingFeatures:
         meta_features.append(self._market_regime_features(df))
 
         # 3. 历史同类信号胜率特征
-        meta_features.append(self._historical_win_rate_features(
-            l1_pred, df, self.lookback_windows
-        ))
+        meta_features.append(self._historical_win_rate_features(l1_pred, df, self.lookback_windows))
 
         # 4. 宏观周期交叉特征 (库存周期 × 技术信号)
         meta_features.append(self._macro_cross_features(X, feature_names, df))
@@ -113,9 +111,9 @@ class MetaLabelingFeatures:
         features[:, 4] = sorted_probs[:, 0] / (sorted_probs[:, 1] + 1e-10)  # 比值
 
         # L1预测方向one-hot
-        features[:, 5] = (l1_pred == 1).astype(float)   # UP
+        features[:, 5] = (l1_pred == 1).astype(float)  # UP
         features[:, 6] = (l1_pred == -1).astype(float)  # DOWN
-        features[:, 7] = (l1_pred == 0).astype(float)   # FLAT
+        features[:, 7] = (l1_pred == 0).astype(float)  # FLAT
 
         return features
 
@@ -140,7 +138,9 @@ class MetaLabelingFeatures:
         volume = df["volume"].values if "volume" in df.columns else np.ones(n)
 
         # ATR (简化计算)
-        tr = np.maximum(high - low, np.abs(high - np.roll(close, 1)), np.abs(low - np.roll(close, 1)))
+        tr = np.maximum(
+            high - low, np.abs(high - np.roll(close, 1)), np.abs(low - np.roll(close, 1))
+        )
         tr[0] = high[0] - low[0]
         atr14 = pd.Series(tr).rolling(14, min_periods=3).mean().values
 
@@ -170,8 +170,9 @@ class MetaLabelingFeatures:
         # 波动率状态 (高/中/低)
         atr_pct = features[:, 0] * 100
         atr_median = np.median(atr_pct[~np.isnan(atr_pct)])
-        features[:, 9] = np.where(atr_pct > atr_median * 1.5, 2,
-                                  np.where(atr_pct < atr_median * 0.5, 0, 1))
+        features[:, 9] = np.where(
+            atr_pct > atr_median * 1.5, 2, np.where(atr_pct < atr_median * 0.5, 0, 1)
+        )
 
         return features
 
@@ -204,7 +205,7 @@ class MetaLabelingFeatures:
             freq = np.zeros(n)
 
             for i in range(window, n):
-                signals = l1_pred[i - window:i]
+                signals = l1_pred[i - window : i]
                 signal_mask_up = signals == 1
                 signal_mask_down = signals == -1
 
@@ -222,7 +223,9 @@ class MetaLabelingFeatures:
 
         return features
 
-    def _macro_cross_features(self, X: np.ndarray, feature_names: List[str], df: pd.DataFrame) -> np.ndarray:
+    def _macro_cross_features(
+        self, X: np.ndarray, feature_names: List[str], df: pd.DataFrame
+    ) -> np.ndarray:
         """
         宏观周期交叉特征: 库存周期阶段 × 技术信号组合
 
@@ -246,7 +249,9 @@ class MetaLabelingFeatures:
         # ATR波动率
         high = df["high"].values
         low = df["low"].values
-        tr = np.maximum(high - low, np.abs(high - np.roll(close, 1)), np.abs(low - np.roll(close, 1)))
+        tr = np.maximum(
+            high - low, np.abs(high - np.roll(close, 1)), np.abs(low - np.roll(close, 1))
+        )
         tr[0] = high[0] - low[0]
         atr14 = pd.Series(tr).rolling(14, min_periods=3).mean().values
         vol_high = (atr14 / close > 0.02).astype(float)
@@ -279,14 +284,26 @@ class MetaLabelingFeatures:
         features = np.zeros((n, 5))
 
         # 找出各类特征的索引
-        trend_indices = [i for i, fn in enumerate(feature_names)
-                         if any(k in fn.lower() for k in ['qian', 'trend', 'ma', 'ema', 'slope'])]
-        momentum_indices = [i for i, fn in enumerate(feature_names)
-                            if any(k in fn.lower() for k in ['zhen', 'momentum', 'roc', 'rsi'])]
-        vol_indices = [i for i, fn in enumerate(feature_names)
-                       if any(k in fn.lower() for k in ['xun', 'atr', 'vol', 'std', 'range'])]
-        support_indices = [i for i, fn in enumerate(feature_names)
-                           if any(k in fn.lower() for k in ['kun', 'pivot', 'support', 'resistance'])]
+        trend_indices = [
+            i
+            for i, fn in enumerate(feature_names)
+            if any(k in fn.lower() for k in ["qian", "trend", "ma", "ema", "slope"])
+        ]
+        momentum_indices = [
+            i
+            for i, fn in enumerate(feature_names)
+            if any(k in fn.lower() for k in ["zhen", "momentum", "roc", "rsi"])
+        ]
+        vol_indices = [
+            i
+            for i, fn in enumerate(feature_names)
+            if any(k in fn.lower() for k in ["xun", "atr", "vol", "std", "range"])
+        ]
+        support_indices = [
+            i
+            for i, fn in enumerate(feature_names)
+            if any(k in fn.lower() for k in ["kun", "pivot", "support", "resistance"])
+        ]
 
         # 各类特征的平均活跃度
         features[:, 0] = np.mean(np.abs(X[:, trend_indices]), axis=1) if trend_indices else 0
@@ -304,47 +321,74 @@ class MetaLabelingFeatures:
         names = []
 
         # 信号置信度特征
-        names.extend([
-            'l1_confidence', 'l1_entropy', 'l1_max_prob', 'l1_second_prob',
-            'l1_conf_ratio', 'l1_pred_up', 'l1_pred_down', 'l1_pred_flat',
-        ])
+        names.extend(
+            [
+                "l1_confidence",
+                "l1_entropy",
+                "l1_max_prob",
+                "l1_second_prob",
+                "l1_conf_ratio",
+                "l1_pred_up",
+                "l1_pred_down",
+                "l1_pred_flat",
+            ]
+        )
 
         # 市场状态特征
-        names.extend([
-            'atr_ratio', 'atr_ratio_20d', 'atr_ratio_60d',
-            'volume_ratio_20d', 'volume_ratio_60d',
-            'ema20_slope', 'ema200_slope',
-            'price_vs_ema20', 'price_vs_ema200',
-            'volatility_state',
-        ])
+        names.extend(
+            [
+                "atr_ratio",
+                "atr_ratio_20d",
+                "atr_ratio_60d",
+                "volume_ratio_20d",
+                "volume_ratio_60d",
+                "ema20_slope",
+                "ema200_slope",
+                "price_vs_ema20",
+                "price_vs_ema200",
+                "volatility_state",
+            ]
+        )
 
         # 历史同类信号胜率特征
         for window in self.lookback_windows:
-            names.extend([
-                f'win_rate_{window}d_up',
-                f'win_rate_{window}d_down',
-                f'signal_freq_{window}d',
-            ])
+            names.extend(
+                [
+                    f"win_rate_{window}d_up",
+                    f"win_rate_{window}d_down",
+                    f"signal_freq_{window}d",
+                ]
+            )
 
         # 宏观周期交叉特征
-        names.extend([
-            'trend_vol_up_high', 'trend_vol_up_low',
-            'trend_vol_down_high', 'trend_vol_down_low',
-            'cross_trend_both_up', 'cross_trend_short_up_long_down',
-            'cross_trend_short_down_long_up', 'cross_trend_both_down',
-        ])
+        names.extend(
+            [
+                "trend_vol_up_high",
+                "trend_vol_up_low",
+                "trend_vol_down_high",
+                "trend_vol_down_low",
+                "cross_trend_both_up",
+                "cross_trend_short_up_long_down",
+                "cross_trend_short_down_long_up",
+                "cross_trend_both_down",
+            ]
+        )
 
         # 特征重要性加权特征
-        names.extend([
-            'feat_importance_trend', 'feat_importance_momentum',
-            'feat_importance_volatility', 'feat_importance_support',
-            'feat_importance_total',
-        ])
+        names.extend(
+            [
+                "feat_importance_trend",
+                "feat_importance_momentum",
+                "feat_importance_volatility",
+                "feat_importance_support",
+                "feat_importance_total",
+            ]
+        )
 
         return names
 
 
-def calibrate_probability(l2_proba: np.ndarray, method: str = 'ecdf') -> np.ndarray:
+def calibrate_probability(l2_proba: np.ndarray, method: str = "ecdf") -> np.ndarray:
     """
     概率校准: 将L2输出概率转换为更可靠的校准概率
 
@@ -360,25 +404,27 @@ def calibrate_probability(l2_proba: np.ndarray, method: str = 'ecdf') -> np.ndar
     Returns:
         校准后的概率
     """
-    if method == 'ecdf':
+    if method == "ecdf":
         # ECDF校准: 将概率映射到其在训练集中的分位数
         sorted_probs = np.sort(l2_proba)
-        ranks = np.searchsorted(sorted_probs, l2_proba, side='left')
+        ranks = np.searchsorted(sorted_probs, l2_proba, side="left")
         calibrated = (ranks + 1) / (len(sorted_probs) + 2)
         return calibrated
 
-    elif method == 'isotonic':
+    elif method == "isotonic":
         try:
             from sklearn.isotonic import IsotonicRegression
-            ir = IsotonicRegression(out_of_bounds='clip')
+
+            ir = IsotonicRegression(out_of_bounds="clip")
             x = np.arange(len(l2_proba)) / len(l2_proba)
             return ir.fit_transform(x, l2_proba)
         except ImportError:
             return l2_proba
 
-    elif method == 'platt':
+    elif method == "platt":
         try:
             from sklearn.linear_model import LogisticRegression
+
             # 简化版Platt缩放
             x = l2_proba.reshape(-1, 1)
             # 假设标签与概率相关 (简化处理)

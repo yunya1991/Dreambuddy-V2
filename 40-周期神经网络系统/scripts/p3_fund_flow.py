@@ -7,11 +7,12 @@
 输入：sector_transmission.json + asset_rotation.json + data_center.db + OKX
 产出：fund_flow.json
 """
+
 import json
+import os
 import sqlite3
 from datetime import datetime, timezone
 from statistics import mean, stdev
-import os
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
 _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
@@ -48,6 +49,7 @@ def load_daily(sid):
 def fetch_okx_daily(symbol, total=400):
     """分页拉取 OKX 日线，返回 {日期字符串: 收盘价}。"""
     import ccxt
+
     ex = ccxt.okx({"enableRateLimit": True})
     day_ms = 86400000
     candles = {}
@@ -73,12 +75,12 @@ def corr(a, b):
     if n < 20:
         return None
     ma, mb = mean(a), mean(b)
-    cov = sum((x - ma) * (y - mb) for x, y in zip(a, b))
+    cov = sum((x - ma) * (y - mb) for x, y in zip(a, b))  # noqa: B905
     va = sum((x - ma) ** 2 for x in a)
     vb = sum((y - mb) ** 2 for y in b)
     if va == 0 or vb == 0:
         return None
-    return round(cov / (va ** 0.5 * vb ** 0.5), 3)
+    return round(cov / (va**0.5 * vb**0.5), 3)
 
 
 def rolling_corr_last(s1, s2, window=60):
@@ -97,7 +99,7 @@ def rs_ratio_line(s_num, s_den, window=20):
     ratios = [s_num[d] / s_den[d] for d in common]
     last = ratios[-1]
     ma = mean(ratios[-window:])
-    ma_prev = mean(ratios[-2 * window:-window]) if len(ratios) >= 2 * window else None
+    ma_prev = mean(ratios[-2 * window : -window]) if len(ratios) >= 2 * window else None
     if ma_prev is None:
         direction = "flat"
     elif ma > ma_prev:
@@ -197,10 +199,14 @@ def main():
                 continue
             gap = round(src_mom - dst_mom, 2)
             strength = "强" if gap > 15 else ("中" if gap > 5 else "弱")
-            flow_matrix.append({
-                "from": src, "to": dst,
-                "momentum_gap_pct": gap, "strength": strength,
-            })
+            flow_matrix.append(
+                {
+                    "from": src,
+                    "to": dst,
+                    "momentum_gap_pct": gap,
+                    "strength": strength,
+                }
+            )
 
     # ---------- 传统金融方法（v0.7） ----------
     spx = load_daily("SP500")

@@ -40,8 +40,7 @@ from typing import Any, Dict, List
 from uuid import uuid4
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
-
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 _DEFAULT_STRATEGY_PREFIX = "Classic"
 
@@ -153,8 +152,7 @@ class C6PlanGenerateNode(BaseNode):
                 node_id="C6",
                 status=NodeStatus.SUCCESS,
                 confidence=0.0,
-                outputs={"trade_plan": {}, "changeset": {},
-                         "strategy_name": "", "trace_id": ""},
+                outputs={"trade_plan": {}, "changeset": {}, "strategy_name": "", "trace_id": ""},
                 error="C6 无 market 数据，降级返回空结果",
             )
 
@@ -164,8 +162,7 @@ class C6PlanGenerateNode(BaseNode):
                 node_id="C6",
                 status=NodeStatus.SUCCESS,
                 confidence=0.0,
-                outputs={"trade_plan": {}, "changeset": {},
-                         "strategy_name": "", "trace_id": ""},
+                outputs={"trade_plan": {}, "changeset": {}, "strategy_name": "", "trace_id": ""},
                 error="C6 无 C4 上游结果，降级返回空结果",
             )
 
@@ -175,8 +172,7 @@ class C6PlanGenerateNode(BaseNode):
                 node_id="C6",
                 status=NodeStatus.SUCCESS,
                 confidence=0.0,
-                outputs={"trade_plan": {}, "changeset": {},
-                         "strategy_name": "", "trace_id": ""},
+                outputs={"trade_plan": {}, "changeset": {}, "strategy_name": "", "trace_id": ""},
                 error="C6 无 C5 上游结果，降级返回空结果",
             )
 
@@ -192,8 +188,7 @@ class C6PlanGenerateNode(BaseNode):
                 node_id="C6",
                 status=NodeStatus.SUCCESS,
                 confidence=0.0,
-                outputs={"trade_plan": {}, "changeset": {},
-                         "strategy_name": "", "trace_id": ""},
+                outputs={"trade_plan": {}, "changeset": {}, "strategy_name": "", "trace_id": ""},
                 error="C6 C4 position_size 为空",
             )
 
@@ -225,8 +220,16 @@ class C6PlanGenerateNode(BaseNode):
             direction = direction_map.get(sym, "LONG")
             directions.append(direction)
 
-            sl = float(stop_loss_map.get(sym, 0.0) or 0.0) if isinstance(stop_loss_map, dict) else 0.0
-            tp = float(take_profit_map.get(sym, 0.0) or 0.0) if isinstance(take_profit_map, dict) else 0.0
+            sl = (
+                float(stop_loss_map.get(sym, 0.0) or 0.0)
+                if isinstance(stop_loss_map, dict)
+                else 0.0
+            )
+            tp = (
+                float(take_profit_map.get(sym, 0.0) or 0.0)
+                if isinstance(take_profit_map, dict)
+                else 0.0
+            )
 
             entry_price = self._get_entry_price(state, sym, fallback=sl)
             if entry_price <= 0:

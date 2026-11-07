@@ -8,16 +8,15 @@
   3. 预警有效性（TDA/Ising/力学减速）
   4. P3双重预警止损收紧（TDA+Ising同时触发 → sl_tighten=0.7）
 """
-import sys
-import os
-import json
-import time
+
 import logging
+import os
+import sys
+from dataclasses import dataclass
+from typing import List, Optional
+
 import numpy as np
 import pandas as pd
-from datetime import datetime
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
 
 # 设置路径
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -90,7 +89,9 @@ class FastVerifier:
                 return df
         return None
 
-    def run_verification(self, df: pd.DataFrame, symbol: str, step: int = 20) -> List[VerificationRecord]:
+    def run_verification(
+        self, df: pd.DataFrame, symbol: str, step: int = 20
+    ) -> List[VerificationRecord]:
         """快速验证：用简化快照推理五角校验"""
         from scripts.memory_l4.triangle_verifier import TriangleVerifier
 
@@ -101,17 +102,17 @@ class FastVerifier:
         start_idx = 200
         end_idx = len(df) - 20
 
-        total = (end_idx - start_idx) // step
+        total = (end_idx - start_idx) // step  # noqa: F841
 
         for idx in range(start_idx, end_idx, step):
-            slice_df = df.iloc[:idx + 1].copy()
+            slice_df = df.iloc[: idx + 1].copy()
 
             # 未来收益
             future_10 = (closes[idx + 10] / closes[idx] - 1) if idx + 10 < len(closes) else 0.0
             actual_dir = "UP" if future_10 > 0.005 else ("DOWN" if future_10 < -0.005 else "FLAT")
 
             # 简化方向（动量）
-            recent_returns = np.diff(np.log(closes[idx-20:idx+1]))
+            recent_returns = np.diff(np.log(closes[idx - 20 : idx + 1]))
             momentum = np.mean(recent_returns[-10:])
             direction_text = "UP" if momentum > 0.001 else ("DOWN" if momentum < -0.001 else "FLAT")
             confidence = min(1.0, max(0.3, 0.5 + momentum * 50))
@@ -152,7 +153,9 @@ class FastVerifier:
                 bar_index=idx,
                 bcrm2_direction=direction_text,
                 bcrm2_confidence=confidence,
-                final_confidence=min(1.0, max(0.0, confidence + triangle_result.confidence_adjustment)),
+                final_confidence=min(
+                    1.0, max(0.0, confidence + triangle_result.confidence_adjustment)
+                ),
                 final_direction=direction_text,
                 fail_closed=triangle_result.should_fail_closed,
                 verdict=triangle_result.verdict,
@@ -160,9 +163,14 @@ class FastVerifier:
                 position_factor=triangle_result.position_factor,
                 sl_tighten_factor=triangle_result.sl_tighten_factor,
                 early_exit_signal=triangle_result.early_exit_signal,
-                reversal_alert=force_result.get("reversal_warning", False) if force_result else triangle_result.reversal_alert,
+                reversal_alert=(
+                    force_result.get("reversal_warning", False)
+                    if force_result
+                    else triangle_result.reversal_alert
+                ),
                 tda_warning=tda_result.get("early_warning", False),
-                ising_alert=ising_result.get("phase_transition_alert", False) or ising_result.get("phase") == "CRITICAL",
+                ising_alert=ising_result.get("phase_transition_alert", False)
+                or ising_result.get("phase") == "CRITICAL",
                 future_return_10=future_10,
                 actual_direction=actual_dir,
             )
@@ -187,9 +195,13 @@ class FastVerifier:
             high_conf = [r for r in valid if r.final_confidence >= 0.6]
             low_conf = [r for r in valid if r.final_confidence <= 0.4]
             if high_conf:
-                metrics.high_conf_accuracy = sum(1 for r in high_conf if r.final_direction == r.actual_direction) / len(high_conf)
+                metrics.high_conf_accuracy = sum(
+                    1 for r in high_conf if r.final_direction == r.actual_direction
+                ) / len(high_conf)
             if low_conf:
-                metrics.low_conf_accuracy = sum(1 for r in low_conf if r.final_direction == r.actual_direction) / len(low_conf)
+                metrics.low_conf_accuracy = sum(
+                    1 for r in low_conf if r.final_direction == r.actual_direction
+                ) / len(low_conf)
 
         # P3 风控监控（v3：verdict 恒为 P3_RISK_MONITOR，无方向一致性分级）
         for r in records:
@@ -231,23 +243,29 @@ class FastVerifier:
         print(f"\n{'='*80}")
         print(f"  {symbol} 五角校验快速验证报告")
         print(f"{'='*80}")
-        print(f"\n  [方向准确率]")
+        print("\n  [方向准确率]")
         print(f"    总信号数: {metrics.total_signals}")
         print(f"    方向准确率: {metrics.direction_accuracy:.1%}")
         print(f"    高置信(>=0.6)准确率: {metrics.high_conf_accuracy:.1%}")
         print(f"    低置信(<=0.4)准确率: {metrics.low_conf_accuracy:.1%}")
 
-        print(f"\n  [P3 风控监控]")
+        print("\n  [P3 风控监控]")
         if metrics.total_signals > 0:
-            print(f"    P3_RISK_MONITOR: {metrics.p3_monitor_count} ({metrics.p3_monitor_count/metrics.total_signals:.1%})")
+            print(
+                f"    P3_RISK_MONITOR: {metrics.p3_monitor_count} ({metrics.p3_monitor_count/metrics.total_signals:.1%})"
+            )
 
-        print(f"\n  [预警有效性]")
-        print(f"    力学减速预警: {metrics.total_reversal_warnings}次, 命中率={metrics.reversal_hit_rate:.1%}")
+        print("\n  [预警有效性]")
+        print(
+            f"    力学减速预警: {metrics.total_reversal_warnings}次, 命中率={metrics.reversal_hit_rate:.1%}"
+        )
         print(f"    TDA拓扑预警: {metrics.tda_warnings}次, 命中率={metrics.tda_hit_rate:.1%}")
         print(f"    Ising相变预警: {metrics.ising_alerts}次, 命中率={metrics.ising_hit_rate:.1%}")
 
-        print(f"\n  [P3预警联动策略]")
-        print(f"    TDA+Ising双重预警: {metrics.dual_warnings}次, 命中率={metrics.dual_warning_hit_rate:.1%}")
+        print("\n  [P3预警联动策略]")
+        print(
+            f"    TDA+Ising双重预警: {metrics.dual_warnings}次, 命中率={metrics.dual_warning_hit_rate:.1%}"
+        )
 
 
 def main():

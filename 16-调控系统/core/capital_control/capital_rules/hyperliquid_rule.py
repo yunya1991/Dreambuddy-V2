@@ -38,6 +38,7 @@ from capital_control.types import (  # noqa: E402
     CapitalMode,
     CapitalResult,
 )
+
 from ._shared import (  # noqa: E402
     _static_from_config,
     build_result_from_system,
@@ -57,8 +58,10 @@ def _hyperliquid_one_system(
     config: Dict[str, Any],
 ) -> CapitalResult:
     """单系统版本：供 CapitalControlComponent 内部按 enabled_systems 分别调用。"""
-    mode = context.get("mode", CapitalMode.DYNAMIC) if isinstance(context.get("mode"), CapitalMode) else (
-        CapitalMode.FIXED if context.get("mode") == "fixed" else CapitalMode.DYNAMIC
+    mode = (
+        context.get("mode", CapitalMode.DYNAMIC)
+        if isinstance(context.get("mode"), CapitalMode)
+        else (CapitalMode.FIXED if context.get("mode") == "fixed" else CapitalMode.DYNAMIC)
     )
     static_default = _DEFAULT_STATIC_BY_SYSTEM.get(system, 0.0)
     static_budget = _static_from_config(config, system, static_default)

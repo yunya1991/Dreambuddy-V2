@@ -1,7 +1,7 @@
 """M5-T1 Red — MetricsStore 调用统计测试（先写失败用例）。"""
+
 from __future__ import annotations
 
-import time
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -119,17 +119,19 @@ def test_query_filters_by_source_and_category():
         ("tavily", "news", "ok"),
     ]
     for src, cat, st in items:
-        store.record(InvocationMetric(
-            invocation_id=str(uuid.uuid4()),
-            ts=datetime.now(timezone.utc),
-            source=src,
-            category=cat,
-            status=st,
-            duration_ms=10.0,
-            records_count=0,
-            error_type=None if st == "ok" else "E",
-            error_msg=None,
-        ))
+        store.record(
+            InvocationMetric(
+                invocation_id=str(uuid.uuid4()),
+                ts=datetime.now(timezone.utc),
+                source=src,
+                category=cat,
+                status=st,
+                duration_ms=10.0,
+                records_count=0,
+                error_type=None if st == "ok" else "E",
+                error_msg=None,
+            )
+        )
     # source + category 过滤
     fred_macro = store.query(source="fred", category="macro")
     assert len(fred_macro) == 2
@@ -151,29 +153,33 @@ def test_query_filters_by_time_window():
     store = MetricsStore()
     now = datetime.now(timezone.utc)
     # 老记录（60 秒前）
-    store.record(InvocationMetric(
-        invocation_id="old",
-        ts=now - timedelta(seconds=60),
-        source="x",
-        category="y",
-        status="ok",
-        duration_ms=1.0,
-        records_count=0,
-        error_type=None,
-        error_msg=None,
-    ))
+    store.record(
+        InvocationMetric(
+            invocation_id="old",
+            ts=now - timedelta(seconds=60),
+            source="x",
+            category="y",
+            status="ok",
+            duration_ms=1.0,
+            records_count=0,
+            error_type=None,
+            error_msg=None,
+        )
+    )
     # 新记录
-    store.record(InvocationMetric(
-        invocation_id="new",
-        ts=now,
-        source="x",
-        category="y",
-        status="ok",
-        duration_ms=1.0,
-        records_count=0,
-        error_type=None,
-        error_msg=None,
-    ))
+    store.record(
+        InvocationMetric(
+            invocation_id="new",
+            ts=now,
+            source="x",
+            category="y",
+            status="ok",
+            duration_ms=1.0,
+            records_count=0,
+            error_type=None,
+            error_msg=None,
+        )
+    )
     recent = store.query(window_sec=5)
     assert len(recent) == 1
     assert recent[0].invocation_id == "new"
@@ -188,17 +194,19 @@ def test_summary_groups_by_source_category():
     store = MetricsStore()
     # fred/macro: 2 ok + 1 error，duration [10, 20, 30]
     for i, st in enumerate(["ok", "ok", "error"]):
-        store.record(InvocationMetric(
-            invocation_id=str(uuid.uuid4()),
-            ts=datetime.now(timezone.utc),
-            source="fred",
-            category="macro",
-            status=st,
-            duration_ms=float((i + 1) * 10),
-            records_count=i,
-            error_type=None if st == "ok" else "E",
-            error_msg=None,
-        ))
+        store.record(
+            InvocationMetric(
+                invocation_id=str(uuid.uuid4()),
+                ts=datetime.now(timezone.utc),
+                source="fred",
+                category="macro",
+                status=st,
+                duration_ms=float((i + 1) * 10),
+                records_count=i,
+                error_type=None if st == "ok" else "E",
+                error_msg=None,
+            )
+        )
     s = store.summary()
     fred_key = ("fred", "macro")
     assert fred_key in s
@@ -230,17 +238,19 @@ def test_metrics_store_thread_safe():
 
     def worker(tid: int):
         for i in range(per_thread):
-            store.record(InvocationMetric(
-                invocation_id=f"t{tid}-{i}",
-                ts=datetime.now(timezone.utc),
-                source="s",
-                category="c",
-                status="ok",
-                duration_ms=1.0,
-                records_count=0,
-                error_type=None,
-                error_msg=None,
-            ))
+            store.record(
+                InvocationMetric(
+                    invocation_id=f"t{tid}-{i}",
+                    ts=datetime.now(timezone.utc),
+                    source="s",
+                    category="c",
+                    status="ok",
+                    duration_ms=1.0,
+                    records_count=0,
+                    error_type=None,
+                    error_msg=None,
+                )
+            )
 
     threads = [threading.Thread(target=worker, args=(tid,)) for tid in range(N // per_thread)]
     for t in threads:

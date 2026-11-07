@@ -12,9 +12,14 @@ AB实验调度系统压力测试
   cd experiments/ab-trading
   python3 tests/stress_test.py
 """
-import os, sys, json, time, tempfile, shutil
+
+import json
+import shutil
+import sys
+import tempfile
+import time
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 # ── 路径设置 ────────────────────────────────────────────────────────────────
 BASE_DIR = Path(__file__).parent.parent.resolve()
@@ -22,9 +27,9 @@ sys.path.insert(0, str(BASE_DIR))
 sys.path.insert(0, str(BASE_DIR / "agents"))
 
 # ── 导入被测模块 ────────────────────────────────────────────────────────────
-import orchestrator
-from agent_a_runner import _self_schedule
-from agent_b_runner import _b_self_schedule
+import orchestrator  # noqa: E402
+from agent_a_runner import _self_schedule  # noqa: E402
+from agent_b_runner import _b_self_schedule  # noqa: E402
 
 # ── 备份原始路径（测试用临时目录隔离）────────────────────────────────────────
 ORIGINAL_SCHED_FILE = orchestrator.SCHED_FILE
@@ -66,11 +71,16 @@ def record(name, category, expected, actual, passed, detail=""):
         stats["passed"] += 1
     else:
         stats["failed"] += 1
-    results.append({
-        "name": name, "category": category,
-        "expected": expected, "actual": actual,
-        "passed": passed, "detail": detail
-    })
+    results.append(
+        {
+            "name": name,
+            "category": category,
+            "expected": expected,
+            "actual": actual,
+            "passed": passed,
+            "detail": detail,
+        }
+    )
     status = "✅ PASS" if passed else "❌ FAIL"
     print(f"  {status} | {name}")
     if not passed:
@@ -86,15 +96,23 @@ def test_a1_heartbeat_4h():
     now = time.time()
     state = {"last_run_ts": now - 5 * 3600, "run_count": 0}
     write_sched([])
-    with patch.object(orchestrator, "check_market_volatility",
-                      return_value={"change_pct": 0, "direction": "NEUTRAL"}), \
-         patch.object(orchestrator, "check_upcoming_events_local", return_value=[]):
+    with (
+        patch.object(
+            orchestrator,
+            "check_market_volatility",
+            return_value={"change_pct": 0, "direction": "NEUTRAL"},
+        ),
+        patch.object(orchestrator, "check_upcoming_events_local", return_value=[]),
+    ):
         trigger, reason = orchestrator.should_trigger(state)
     passed = trigger and "常规心跳" in reason and "5.0H" in reason
-    record("T1: 4H心跳触发(距上次5H)",
-           "A-orchestrator-4层触发",
-           "trigger=True, reason含'常规心跳'+5.0H",
-           f"trigger={trigger}, reason={reason}", passed)
+    record(
+        "T1: 4H心跳触发(距上次5H)",
+        "A-orchestrator-4层触发",
+        "trigger=True, reason含'常规心跳'+5.0H",
+        f"trigger={trigger}, reason={reason}",
+        passed,
+    )
 
 
 def test_a2_market_volatility():
@@ -102,86 +120,125 @@ def test_a2_market_volatility():
     now = time.time()
     state = {"last_run_ts": now - 1 * 3600, "run_count": 0}
     write_sched([])
-    with patch.object(orchestrator, "check_market_volatility",
-                      return_value={"change_pct": 4.0, "direction": "UP"}), \
-         patch.object(orchestrator, "check_upcoming_events_local", return_value=[]):
+    with (
+        patch.object(
+            orchestrator,
+            "check_market_volatility",
+            return_value={"change_pct": 4.0, "direction": "UP"},
+        ),
+        patch.object(orchestrator, "check_upcoming_events_local", return_value=[]),
+    ):
         trigger, reason = orchestrator.should_trigger(state)
     passed = trigger and "市场波动" in reason and "4.0" in reason and "UP" in reason
-    record("T2: 市场波动触发(BTC 1H +4.0%)",
-           "A-orchestrator-4层触发",
-           "trigger=True, reason含'市场波动'+4.0+UP",
-           f"trigger={trigger}, reason={reason}", passed)
+    record(
+        "T2: 市场波动触发(BTC 1H +4.0%)",
+        "A-orchestrator-4层触发",
+        "trigger=True, reason含'市场波动'+4.0+UP",
+        f"trigger={trigger}, reason={reason}",
+        passed,
+    )
 
 
 def test_a3_agent_request():
     """T3: Agent申请触发 - 有pending normal申请，距上次仅1H"""
     now = time.time()
     state = {"last_run_ts": now - 1 * 3600, "run_count": 0}
-    write_sched([{
-        "reason": "A高置信度78%信号",
-        "run_at_ts": now - 600,        # 10分钟前到点
-        "expires_ts": now + 3000,       # 50分钟后过期
-        "priority": "normal",
-        "created_ts": now - 700,
-    }])
-    with patch.object(orchestrator, "check_market_volatility",
-                      return_value={"change_pct": 0, "direction": "NEUTRAL"}), \
-         patch.object(orchestrator, "check_upcoming_events_local", return_value=[]):
+    write_sched(
+        [
+            {
+                "reason": "A高置信度78%信号",
+                "run_at_ts": now - 600,  # 10分钟前到点
+                "expires_ts": now + 3000,  # 50分钟后过期
+                "priority": "normal",
+                "created_ts": now - 700,
+            }
+        ]
+    )
+    with (
+        patch.object(
+            orchestrator,
+            "check_market_volatility",
+            return_value={"change_pct": 0, "direction": "NEUTRAL"},
+        ),
+        patch.object(orchestrator, "check_upcoming_events_local", return_value=[]),
+    ):
         trigger, reason = orchestrator.should_trigger(state)
     passed = trigger and "Agent自主申请" in reason and "78%" in reason
-    record("T3: Agent申请触发(pending normal)",
-           "A-orchestrator-4层触发",
-           "trigger=True, reason含'Agent自主申请'+78%",
-           f"trigger={trigger}, reason={reason}", passed)
+    record(
+        "T3: Agent申请触发(pending normal)",
+        "A-orchestrator-4层触发",
+        "trigger=True, reason含'Agent自主申请'+78%",
+        f"trigger={trigger}, reason={reason}",
+        passed,
+    )
 
 
 def test_a4_priority_urgent_wins():
     """T4: 优先级测试 - urgent+normal+市场波动+4H同时存在，urgent Agent申请应胜出"""
     now = time.time()
     state = {"last_run_ts": now - 5 * 3600, "run_count": 0}  # 已过5H，4H心跳也满足
-    write_sched([
-        {  # normal申请
-            "reason": "A高置信度75%信号",
-            "run_at_ts": now - 600,
-            "expires_ts": now + 3000,
-            "priority": "normal",
-            "created_ts": now - 700,
-        },
-        {  # urgent申请
-            "reason": "A连败3次，6H后复盘",
-            "run_at_ts": now - 500,
-            "expires_ts": now + 3100,
-            "priority": "urgent",
-            "created_ts": now - 800,
-        },
-    ])
+    write_sched(
+        [
+            {  # normal申请
+                "reason": "A高置信度75%信号",
+                "run_at_ts": now - 600,
+                "expires_ts": now + 3000,
+                "priority": "normal",
+                "created_ts": now - 700,
+            },
+            {  # urgent申请
+                "reason": "A连败3次，6H后复盘",
+                "run_at_ts": now - 500,
+                "expires_ts": now + 3100,
+                "priority": "urgent",
+                "created_ts": now - 800,
+            },
+        ]
+    )
     # 市场波动也满足（4%≥3%）
-    with patch.object(orchestrator, "check_market_volatility",
-                      return_value={"change_pct": 4.0, "direction": "DOWN"}), \
-         patch.object(orchestrator, "check_upcoming_events_local", return_value=[]):
+    with (
+        patch.object(
+            orchestrator,
+            "check_market_volatility",
+            return_value={"change_pct": 4.0, "direction": "DOWN"},
+        ),
+        patch.object(orchestrator, "check_upcoming_events_local", return_value=[]),
+    ):
         trigger, reason = orchestrator.should_trigger(state)
     # 应该返回 urgent 申请，而不是 normal 或 市场波动
     passed = trigger and "连败3次" in reason and "urgent" not in reason.lower()
-    record("T4: 优先级测试(urgent>normal>波动>4H)",
-           "A-orchestrator-4层触发",
-           "trigger=True, reason含'连败3次'(urgent优先)",
-           f"trigger={trigger}, reason={reason}", passed)
+    record(
+        "T4: 优先级测试(urgent>normal>波动>4H)",
+        "A-orchestrator-4层触发",
+        "trigger=True, reason含'连败3次'(urgent优先)",
+        f"trigger={trigger}, reason={reason}",
+        passed,
+    )
 
 
 def test_a5_expired_cleanup():
     """T5: 过期申请清理 - 申请expires_ts已过，应被清理且不触发"""
     now = time.time()
     state = {"last_run_ts": now - 0.5 * 3600, "run_count": 0}  # 距上次0.5H
-    write_sched([{
-        "reason": "旧的高置信度信号",
-        "run_at_ts": now - 7200,        # 2H前到点
-        "expires_ts": now - 3600,        # 1H前已过期
-        "priority": "normal",
-        "created_ts": now - 8000,
-    }])
-    with patch.object(orchestrator, "check_market_volatility",
-                      return_value={"change_pct": 0, "direction": "NEUTRAL"}), \
-         patch.object(orchestrator, "check_upcoming_events_local", return_value=[]):
+    write_sched(
+        [
+            {
+                "reason": "旧的高置信度信号",
+                "run_at_ts": now - 7200,  # 2H前到点
+                "expires_ts": now - 3600,  # 1H前已过期
+                "priority": "normal",
+                "created_ts": now - 8000,
+            }
+        ]
+    )
+    with (
+        patch.object(
+            orchestrator,
+            "check_market_volatility",
+            return_value={"change_pct": 0, "direction": "NEUTRAL"},
+        ),
+        patch.object(orchestrator, "check_upcoming_events_local", return_value=[]),
+    ):
         trigger, reason = orchestrator.should_trigger(state)
     # 应该不触发（申请已过期，距上次0.5H不到4H，无波动无事件）
     passed = (not trigger) and "等待中" in reason
@@ -190,10 +247,13 @@ def test_a5_expired_cleanup():
         remaining = json.load(f)
     cleaned = len(remaining) == 0
     passed = passed and cleaned
-    record("T5: 过期申请清理(expires_ts已过)",
-           "A-orchestrator-4层触发",
-           "trigger=False, 申请被清理(remaining=0)",
-           f"trigger={trigger}, reason={reason}, remaining={len(remaining)}", passed)
+    record(
+        "T5: 过期申请清理(expires_ts已过)",
+        "A-orchestrator-4层触发",
+        "trigger=False, 申请被清理(remaining=0)",
+        f"trigger={trigger}, reason={reason}, remaining={len(remaining)}",
+        passed,
+    )
 
 
 def test_a6_waiting_state():
@@ -201,15 +261,23 @@ def test_a6_waiting_state():
     now = time.time()
     state = {"last_run_ts": now - 1 * 3600, "run_count": 0}
     write_sched([])
-    with patch.object(orchestrator, "check_market_volatility",
-                      return_value={"change_pct": 1.5, "direction": "UP"}), \
-         patch.object(orchestrator, "check_upcoming_events_local", return_value=[]):
+    with (
+        patch.object(
+            orchestrator,
+            "check_market_volatility",
+            return_value={"change_pct": 1.5, "direction": "UP"},
+        ),
+        patch.object(orchestrator, "check_upcoming_events_local", return_value=[]),
+    ):
         trigger, reason = orchestrator.should_trigger(state)
     passed = (not trigger) and "等待中" in reason and "1.0H" in reason
-    record("T6: 等待状态(距上次1H，波动1.5%<3%)",
-           "A-orchestrator-4层触发",
-           "trigger=False, reason含'等待中'+1.0H",
-           f"trigger={trigger}, reason={reason}", passed)
+    record(
+        "T6: 等待状态(距上次1H，波动1.5%<3%)",
+        "A-orchestrator-4层触发",
+        "trigger=False, reason含'等待中'+1.0H",
+        f"trigger={trigger}, reason={reason}",
+        passed,
+    )
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -234,13 +302,21 @@ def test_b1_high_confidence():
         priority = kwargs.get("priority", "normal")
         now = time.time()
         delta_h = (run_at_ts - now) / 3600
-        passed = passed and "高置信度" in reason and "78%" in reason \
-                 and priority == "normal" and 0.9 <= delta_h <= 1.1
+        passed = (
+            passed
+            and "高置信度" in reason
+            and "78%" in reason
+            and priority == "normal"
+            and 0.9 <= delta_h <= 1.1
+        )
         detail = f"reason={reason}, priority={priority}, delta={delta_h:.2f}H"
-    record("T7: Agent A 高置信度(78%→1H normal)",
-           "B-AgentA-自调度",
-           "调用1次, reason含'高置信度'+78%', priority=normal, delta≈1H",
-           f"调用{len(calls)}次, {detail}", passed)
+    record(
+        "T7: Agent A 高置信度(78%→1H normal)",
+        "B-AgentA-自调度",
+        "调用1次, reason含'高置信度'+78%', priority=normal, delta≈1H",
+        f"调用{len(calls)}次, {detail}",
+        passed,
+    )
 
 
 def test_b2_volume_anomaly():
@@ -261,13 +337,21 @@ def test_b2_volume_anomaly():
         priority = kwargs.get("priority", "normal")
         now = time.time()
         delta_h = (run_at_ts - now) / 3600
-        passed = passed and "成交量异常" in reason and "3.0" in reason \
-                 and priority == "normal" and 1.9 <= delta_h <= 2.1
+        passed = (
+            passed
+            and "成交量异常" in reason
+            and "3.0" in reason
+            and priority == "normal"
+            and 1.9 <= delta_h <= 2.1
+        )
         detail = f"reason={reason}, priority={priority}, delta={delta_h:.2f}H"
-    record("T8: Agent A 成交量异常(3.0x→2H normal)",
-           "B-AgentA-自调度",
-           "调用1次, reason含'成交量异常'+3.0', priority=normal, delta≈2H",
-           f"调用{len(calls)}次, {detail}", passed)
+    record(
+        "T8: Agent A 成交量异常(3.0x→2H normal)",
+        "B-AgentA-自调度",
+        "调用1次, reason含'成交量异常'+3.0', priority=normal, delta≈2H",
+        f"调用{len(calls)}次, {detail}",
+        passed,
+    )
 
 
 def test_b3_loss_streak_urgent():
@@ -288,13 +372,15 @@ def test_b3_loss_streak_urgent():
         priority = kwargs.get("priority", "normal")
         now = time.time()
         delta_h = (run_at_ts - now) / 3600
-        passed = passed and "连败3次" in reason and priority == "urgent" \
-                 and 5.9 <= delta_h <= 6.1
+        passed = passed and "连败3次" in reason and priority == "urgent" and 5.9 <= delta_h <= 6.1
         detail = f"reason={reason}, priority={priority}, delta={delta_h:.2f}H"
-    record("T9: Agent A 连败3次(→6H urgent)",
-           "B-AgentA-自调度",
-           "调用1次, reason含'连败3次', priority=urgent, delta≈6H",
-           f"调用{len(calls)}次, {detail}", passed)
+    record(
+        "T9: Agent A 连败3次(→6H urgent)",
+        "B-AgentA-自调度",
+        "调用1次, reason含'连败3次', priority=urgent, delta≈6H",
+        f"调用{len(calls)}次, {detail}",
+        passed,
+    )
 
 
 def test_b4_near_threshold():
@@ -315,13 +401,21 @@ def test_b4_near_threshold():
         priority = kwargs.get("priority", "normal")
         now = time.time()
         delta_h = (run_at_ts - now) / 3600
-        passed = passed and "接近门槛" in reason and "60%" in reason \
-                 and priority == "normal" and 0.9 <= delta_h <= 1.1
+        passed = (
+            passed
+            and "接近门槛" in reason
+            and "60%" in reason
+            and priority == "normal"
+            and 0.9 <= delta_h <= 1.1
+        )
         detail = f"reason={reason}, priority={priority}, delta={delta_h:.2f}H"
-    record("T10: Agent A 置信度60% HOLD(→1H normal)",
-           "B-AgentA-自调度",
-           "调用1次, reason含'接近门槛'+60%', priority=normal, delta≈1H",
-           f"调用{len(calls)}次, {detail}", passed)
+    record(
+        "T10: Agent A 置信度60% HOLD(→1H normal)",
+        "B-AgentA-自调度",
+        "调用1次, reason含'接近门槛'+60%', priority=normal, delta≈1H",
+        f"调用{len(calls)}次, {detail}",
+        passed,
+    )
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -346,13 +440,21 @@ def test_c1_contradiction_clear():
         priority = kwargs.get("priority", "normal")
         now = time.time()
         delta_h = (run_at_ts - now) / 3600
-        passed = passed and "矛盾清晰" in reason and "多" in reason \
-                 and priority == "normal" and 1.9 <= delta_h <= 2.1
+        passed = (
+            passed
+            and "矛盾清晰" in reason
+            and "多" in reason
+            and priority == "normal"
+            and 1.9 <= delta_h <= 2.1
+        )
         detail = f"reason={reason}, priority={priority}, delta={delta_h:.2f}H"
-    record("T11: Agent B 矛盾清晰(bull=5,bear=1→2H normal)",
-           "C-AgentB-自调度",
-           "调用1次, reason含'矛盾清晰'+多', priority=normal, delta≈2H",
-           f"调用{len(calls)}次, {detail}", passed)
+    record(
+        "T11: Agent B 矛盾清晰(bull=5,bear=1→2H normal)",
+        "C-AgentB-自调度",
+        "调用1次, reason含'矛盾清晰'+多', priority=normal, delta≈2H",
+        f"调用{len(calls)}次, {detail}",
+        passed,
+    )
 
 
 def test_c2_near_threshold_a2_up():
@@ -374,13 +476,21 @@ def test_c2_near_threshold_a2_up():
         priority = kwargs.get("priority", "normal")
         now = time.time()
         delta_h = (run_at_ts - now) / 3600
-        passed = passed and "接近门槛" in reason and "60%" in reason \
-                 and priority == "normal" and 0.9 <= delta_h <= 1.1
+        passed = (
+            passed
+            and "接近门槛" in reason
+            and "60%" in reason
+            and priority == "normal"
+            and 0.9 <= delta_h <= 1.1
+        )
         detail = f"reason={reason}, priority={priority}, delta={delta_h:.2f}H"
-    record("T12: Agent B 置信度60%+A2 UP(→1H normal)",
-           "C-AgentB-自调度",
-           "调用1次, reason含'接近门槛'+60%', priority=normal, delta≈1H",
-           f"调用{len(calls)}次, {detail}", passed)
+    record(
+        "T12: Agent B 置信度60%+A2 UP(→1H normal)",
+        "C-AgentB-自调度",
+        "调用1次, reason含'接近门槛'+60%', priority=normal, delta≈1H",
+        f"调用{len(calls)}次, {detail}",
+        passed,
+    )
 
 
 def test_c3_loss_streak_3():
@@ -402,13 +512,15 @@ def test_c3_loss_streak_3():
         priority = kwargs.get("priority", "normal")
         now = time.time()
         delta_h = (run_at_ts - now) / 3600
-        passed = passed and "连败" in reason and priority == "urgent" \
-                 and 5.9 <= delta_h <= 6.1
+        passed = passed and "连败" in reason and priority == "urgent" and 5.9 <= delta_h <= 6.1
         detail = f"reason={reason}, priority={priority}, delta={delta_h:.2f}H"
-    record("T13: Agent B 连败恰好3次(→6H urgent)",
-           "C-AgentB-自调度",
-           "调用1次, reason含'连败', priority=urgent, delta≈6H",
-           f"调用{len(calls)}次, {detail}", passed)
+    record(
+        "T13: Agent B 连败恰好3次(→6H urgent)",
+        "C-AgentB-自调度",
+        "调用1次, reason含'连败', priority=urgent, delta≈6H",
+        f"调用{len(calls)}次, {detail}",
+        passed,
+    )
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -426,10 +538,13 @@ def test_d1_b_loss_streak_4_no_trigger():
         calls = mock_req.call_args_list
     # 连败场景不触发（因为是 ==3 而非 >=3）
     passed = len(calls) == 0
-    record("T14: Agent B 连败4次(==3判断,不触发)",
-           "D-边缘case",
-           "调用0次(连败场景不触发)",
-           f"调用{len(calls)}次", passed)
+    record(
+        "T14: Agent B 连败4次(==3判断,不触发)",
+        "D-边缘case",
+        "调用0次(连败场景不触发)",
+        f"调用{len(calls)}次",
+        passed,
+    )
 
 
 def test_d2_a_confidence_boundary_65():
@@ -443,10 +558,13 @@ def test_d2_a_confidence_boundary_65():
         calls = mock_req.call_args_list
     # 0.65 不在 [0.58, 0.65) 范围内
     passed = len(calls) == 0
-    record("T15: Agent A 置信度65%(边界外不触发)",
-           "D-边缘case",
-           "调用0次(conf=0.65不在[0.58,0.65))",
-           f"调用{len(calls)}次", passed)
+    record(
+        "T15: Agent A 置信度65%(边界外不触发)",
+        "D-边缘case",
+        "调用0次(conf=0.65不在[0.58,0.65))",
+        f"调用{len(calls)}次",
+        passed,
+    )
 
 
 def test_d3_a_confidence_below_58():
@@ -459,10 +577,13 @@ def test_d3_a_confidence_below_58():
         _self_schedule(decision, mkt, memory)
         calls = mock_req.call_args_list
     passed = len(calls) == 0
-    record("T16: Agent A 置信度57.9%(低于0.58不触发)",
-           "D-边缘case",
-           "调用0次(conf=0.579<0.58)",
-           f"调用{len(calls)}次", passed)
+    record(
+        "T16: Agent A 置信度57.9%(低于0.58不触发)",
+        "D-边缘case",
+        "调用0次(conf=0.579<0.58)",
+        f"调用{len(calls)}次",
+        passed,
+    )
 
 
 def test_d4_empty_schedule_file():
@@ -471,38 +592,71 @@ def test_d4_empty_schedule_file():
     state = {"last_run_ts": now - 0.5 * 3600, "run_count": 0}
     # 写入空数组
     write_sched([])
-    with patch.object(orchestrator, "check_market_volatility",
-                      return_value={"change_pct": 0, "direction": "NEUTRAL"}), \
-         patch.object(orchestrator, "check_upcoming_events_local", return_value=[]):
+    with (
+        patch.object(
+            orchestrator,
+            "check_market_volatility",
+            return_value={"change_pct": 0, "direction": "NEUTRAL"},
+        ),
+        patch.object(orchestrator, "check_upcoming_events_local", return_value=[]),
+    ):
         trigger, reason = orchestrator.should_trigger(state)
     passed = (not trigger) and "等待中" in reason
-    record("T17: 空self_schedule.json处理",
-           "D-边缘case",
-           "trigger=False, reason含'等待中'",
-           f"trigger={trigger}, reason={reason}", passed)
+    record(
+        "T17: 空self_schedule.json处理",
+        "D-边缘case",
+        "trigger=False, reason含'等待中'",
+        f"trigger={trigger}, reason={reason}",
+        passed,
+    )
 
 
 def test_d5_multiple_pending_sort():
     """T18: 多pending申请排序 - 2 normal + 1 urgent，urgent应排第一"""
     now = time.time()
     state = {"last_run_ts": now - 0.5 * 3600, "run_count": 0}
-    write_sched([
-        {"reason": "normal申请1", "run_at_ts": now - 600,
-         "expires_ts": now + 3000, "priority": "normal", "created_ts": now - 700},
-        {"reason": "normal申请2", "run_at_ts": now - 500,
-         "expires_ts": now + 3100, "priority": "normal", "created_ts": now - 600},
-        {"reason": "urgent连败3次", "run_at_ts": now - 400,
-         "expires_ts": now + 3200, "priority": "urgent", "created_ts": now - 800},
-    ])
-    with patch.object(orchestrator, "check_market_volatility",
-                      return_value={"change_pct": 0, "direction": "NEUTRAL"}), \
-         patch.object(orchestrator, "check_upcoming_events_local", return_value=[]):
+    write_sched(
+        [
+            {
+                "reason": "normal申请1",
+                "run_at_ts": now - 600,
+                "expires_ts": now + 3000,
+                "priority": "normal",
+                "created_ts": now - 700,
+            },
+            {
+                "reason": "normal申请2",
+                "run_at_ts": now - 500,
+                "expires_ts": now + 3100,
+                "priority": "normal",
+                "created_ts": now - 600,
+            },
+            {
+                "reason": "urgent连败3次",
+                "run_at_ts": now - 400,
+                "expires_ts": now + 3200,
+                "priority": "urgent",
+                "created_ts": now - 800,
+            },
+        ]
+    )
+    with (
+        patch.object(
+            orchestrator,
+            "check_market_volatility",
+            return_value={"change_pct": 0, "direction": "NEUTRAL"},
+        ),
+        patch.object(orchestrator, "check_upcoming_events_local", return_value=[]),
+    ):
         trigger, reason = orchestrator.should_trigger(state)
     passed = trigger and "urgent连败3次" in reason
-    record("T18: 多pending排序(2normal+1urgent,urgent优先)",
-           "D-边缘case",
-           "trigger=True, reason含'urgent连败3次'",
-           f"trigger={trigger}, reason={reason}", passed)
+    record(
+        "T18: 多pending排序(2normal+1urgent,urgent优先)",
+        "D-边缘case",
+        "trigger=True, reason含'urgent连败3次'",
+        f"trigger={trigger}, reason={reason}",
+        passed,
+    )
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -526,27 +680,34 @@ def test_e1_e2e_self_schedule_loop():
     # Step 2: 验证申请已写入 self_schedule.json
     with open(orchestrator.SCHED_FILE) as f:
         reqs = json.load(f)
-    step2_ok = len(reqs) == 1 and reqs[0]["priority"] == "urgent" \
-               and "连败3次" in reqs[0]["reason"]
+    step2_ok = len(reqs) == 1 and reqs[0]["priority"] == "urgent" and "连败3次" in reqs[0]["reason"]
     expected_run_at = reqs[0].get("run_at_ts", 0) if reqs else 0
 
     # Step 3: orchestrator 检查是否触发
     # mock time.time 让 orchestrator 认为 run_at_ts 已到点（now >= run_at_ts）
     # 同时 mock check_market_volatility 和 check_upcoming_events_local
-    with patch.object(orchestrator, "check_market_volatility",
-                      return_value={"change_pct": 0, "direction": "NEUTRAL"}), \
-         patch.object(orchestrator, "check_upcoming_events_local", return_value=[]), \
-         patch("orchestrator.time") as mock_otime:
+    with (
+        patch.object(
+            orchestrator,
+            "check_market_volatility",
+            return_value={"change_pct": 0, "direction": "NEUTRAL"},
+        ),
+        patch.object(orchestrator, "check_upcoming_events_local", return_value=[]),
+        patch("orchestrator.time") as mock_otime,
+    ):
         # 让 time.time() 返回 run_at_ts + 100（申请已到点100秒）
         mock_otime.time.return_value = expected_run_at + 100
         trigger, reason = orchestrator.should_trigger(state)
 
     step3_ok = trigger and "连败3次" in reason
     passed = step2_ok and step3_ok
-    record("T19: 端到端闭环(Agent A写urgent→orchestrator触发)",
-           "E-集成测试",
-           "Step2: 申请写入(urgent+连败3次), Step3: orchestrator触发",
-           f"step2={step2_ok}, step3={step3_ok}, trigger={trigger}, reason={reason}", passed)
+    record(
+        "T19: 端到端闭环(Agent A写urgent→orchestrator触发)",
+        "E-集成测试",
+        "Step2: 申请写入(urgent+连败3次), Step3: orchestrator触发",
+        f"step2={step2_ok}, step3={step3_ok}, trigger={trigger}, reason={reason}",
+        passed,
+    )
 
 
 def test_e2_e2e_priority_loop():
@@ -573,23 +734,32 @@ def test_e2_e2e_priority_loop():
         reqs = json.load(f)
     step3_ok = len(reqs) == 2
     # 找到 urgent 申请的 run_at_ts（6H后）
-    urgent_run_at = max([r.get("run_at_ts", 0) for r in reqs
-                         if r.get("priority") == "urgent"], default=0)
+    urgent_run_at = max(
+        [r.get("run_at_ts", 0) for r in reqs if r.get("priority") == "urgent"], default=0
+    )
 
     # Step 4: orchestrator 在 urgent 到点后检查（urgent优先）
-    with patch.object(orchestrator, "check_market_volatility",
-                      return_value={"change_pct": 0, "direction": "NEUTRAL"}), \
-         patch.object(orchestrator, "check_upcoming_events_local", return_value=[]), \
-         patch("orchestrator.time") as mock_otime:
+    with (
+        patch.object(
+            orchestrator,
+            "check_market_volatility",
+            return_value={"change_pct": 0, "direction": "NEUTRAL"},
+        ),
+        patch.object(orchestrator, "check_upcoming_events_local", return_value=[]),
+        patch("orchestrator.time") as mock_otime,
+    ):
         mock_otime.time.return_value = urgent_run_at + 100
         trigger, reason = orchestrator.should_trigger(state)
 
     step4_ok = trigger and "连败" in reason
     passed = step3_ok and step4_ok
-    record("T20: 端到端优先级(A normal + B urgent → urgent胜出)",
-           "E-集成测试",
-           "Step3: 2条申请写入, Step4: orchestrator选urgent(连败)",
-           f"step3={step3_ok}(reqs={len(reqs)}), step4={step4_ok}, reason={reason}", passed)
+    record(
+        "T20: 端到端优先级(A normal + B urgent → urgent胜出)",
+        "E-集成测试",
+        "Step3: 2条申请写入, Step4: orchestrator选urgent(连败)",
+        f"step3={step3_ok}(reqs={len(reqs)}), step4={step4_ok}, reason={reason}",
+        passed,
+    )
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -608,40 +778,55 @@ def main():
 
     all_tests = [
         # A组 - orchestrator 4层触发
-        ("A组 - orchestrator 4层触发决策", [
-            test_a1_heartbeat_4h,
-            test_a2_market_volatility,
-            test_a3_agent_request,
-            test_a4_priority_urgent_wins,
-            test_a5_expired_cleanup,
-            test_a6_waiting_state,
-        ]),
+        (
+            "A组 - orchestrator 4层触发决策",
+            [
+                test_a1_heartbeat_4h,
+                test_a2_market_volatility,
+                test_a3_agent_request,
+                test_a4_priority_urgent_wins,
+                test_a5_expired_cleanup,
+                test_a6_waiting_state,
+            ],
+        ),
         # B组 - Agent A 自调度
-        ("B组 - Agent A 自调度4场景", [
-            test_b1_high_confidence,
-            test_b2_volume_anomaly,
-            test_b3_loss_streak_urgent,
-            test_b4_near_threshold,
-        ]),
+        (
+            "B组 - Agent A 自调度4场景",
+            [
+                test_b1_high_confidence,
+                test_b2_volume_anomaly,
+                test_b3_loss_streak_urgent,
+                test_b4_near_threshold,
+            ],
+        ),
         # C组 - Agent B 自调度
-        ("C组 - Agent B 自调度3场景", [
-            test_c1_contradiction_clear,
-            test_c2_near_threshold_a2_up,
-            test_c3_loss_streak_3,
-        ]),
+        (
+            "C组 - Agent B 自调度3场景",
+            [
+                test_c1_contradiction_clear,
+                test_c2_near_threshold_a2_up,
+                test_c3_loss_streak_3,
+            ],
+        ),
         # D组 - 边缘case
-        ("D组 - 边缘case", [
-            test_d1_b_loss_streak_4_no_trigger,
-            test_d2_a_confidence_boundary_65,
-            test_d3_a_confidence_below_58,
-            test_d4_empty_schedule_file,
-            test_d5_multiple_pending_sort,
-        ]),
+        (
+            "D组 - 边缘case",
+            [
+                test_d1_b_loss_streak_4_no_trigger,
+                test_d2_a_confidence_boundary_65,
+                test_d3_a_confidence_below_58,
+                test_d4_empty_schedule_file,
+                test_d5_multiple_pending_sort,
+            ],
+        ),
         # E组 - 端到端集成
-        ("E组 - 端到端集成测试", [
-            test_e1_e2e_self_schedule_loop,
-            test_e2_e2e_priority_loop,
-        ]),
+        (
+            "E组 - 端到端集成测试",
+            [
+                test_e1_e2e_self_schedule_loop,
+                test_e2_e2e_priority_loop,
+            ],
+        ),
     ]
 
     for group_name, tests in all_tests:
@@ -655,12 +840,16 @@ def main():
                 stats["total"] += 1
                 stats["failed"] += 1
                 print(f"  ❌ ERROR | {test_fn.__name__}: {type(e).__name__}: {e}")
-                results.append({
-                    "name": test_fn.__name__, "category": group_name,
-                    "expected": "正常执行",
-                    "actual": f"异常: {type(e).__name__}: {e}",
-                    "passed": False, "detail": ""
-                })
+                results.append(
+                    {
+                        "name": test_fn.__name__,
+                        "category": group_name,
+                        "expected": "正常执行",
+                        "actual": f"异常: {type(e).__name__}: {e}",
+                        "passed": False,
+                        "detail": "",
+                    }
+                )
 
     teardown_env(tmpdir)
 

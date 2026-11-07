@@ -5,6 +5,7 @@
 - Bear 只能反对话题，禁止让步/中立/支持
 - 输出 JSON 格式约束（thesis/arguments/quote/confidence）
 """
+
 from __future__ import annotations
 
 BULL_SYSTEM_PROMPT = """你是正方辩手。你的立场是：必须支持话题。

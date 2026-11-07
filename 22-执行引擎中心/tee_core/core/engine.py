@@ -20,6 +20,7 @@ two public entry points:
 Clock mocking: all ``time.time()`` calls in this module go through
 ``time.time`` so tests can patch via ``patch("tee_core.core.engine.time")``.
 """
+
 from __future__ import annotations
 
 import copy
@@ -30,16 +31,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-from . import config as _cfg
-from .auditor import Auditor, STATUS_OK_WRITTEN
-from .failopen import FailOpenManager
-from .router import OrderRouter, RouterDecision
-from .kill_switch import KillSwitch
-from ..estimators.slippage import SlippageEstimator
 from ..algorithms.direct_market import DirectMarket
-from ..algorithms.smart_twap import SmartTWAP
 from ..algorithms.smart_passive import SmartPassive
-
+from ..algorithms.smart_twap import SmartTWAP
+from ..estimators.slippage import SlippageEstimator
+from . import config as _cfg
+from .auditor import STATUS_OK_WRITTEN, Auditor
+from .failopen import FailOpenManager
+from .kill_switch import KillSwitch
+from .router import OrderRouter, RouterDecision
 
 # Idempotency TTL default.
 _DEFAULT_IDEMP_TTL_SEC = _cfg.IDEMPOTENCY_TTL_SEC
@@ -54,8 +54,7 @@ def _minute_bucket(ts_epoch: float, bucket_sec: int = 120) -> int:
     return int(ts_epoch // bucket_sec)
 
 
-def _make_parent_id(inst_id: str, side: str, sz: Any, source: str,
-                    minute_bucket_idx: int) -> str:
+def _make_parent_id(inst_id: str, side: str, sz: Any, source: str, minute_bucket_idx: int) -> str:
     """Stable 16-hex-char parent id. Matches spec 10.2 formula."""
     raw = f"{inst_id}|{side}|{sz}|{source}|{minute_bucket_idx}"
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
@@ -110,15 +109,13 @@ class TradeExecutionEngine:
         # suffixed "_shadow" files inside (we create a sub-config).
         # Auditor is shared; execute() stamps shadow into the filename
         # by temporarily overriding auditor dir when shadow mode.
-        self._audit_root = Path(audit_dir) if audit_dir else Path(
-            _cfg.AUDIT_LOG_DIR)
-        self._metrics_path = (Path(metrics_path) if metrics_path
-                              else Path(_cfg.METRICS_JSON_PATH))
-        self._fo_log_path = (Path(failopen_log_path) if failopen_log_path
-                             else Path(_cfg.FAILOPEN_LOG_PATH))
+        self._audit_root = Path(audit_dir) if audit_dir else Path(_cfg.AUDIT_LOG_DIR)
+        self._metrics_path = Path(metrics_path) if metrics_path else Path(_cfg.METRICS_JSON_PATH)
+        self._fo_log_path = (
+            Path(failopen_log_path) if failopen_log_path else Path(_cfg.FAILOPEN_LOG_PATH)
+        )
         self.auditor: Auditor = self._build_auditor(aud_cls, shadow=False)
-        self.auditor_shadow: Auditor = self._build_auditor(aud_cls,
-                                                            shadow=True)
+        self.auditor_shadow: Auditor = self._build_auditor(aud_cls, shadow=True)
 
         self.failopen = fo_cls(
             log_path=str(self._fo_log_path),
@@ -143,10 +140,8 @@ class TradeExecutionEngine:
             # auditor._append_jsonl_locked override patch.
             # For this minimal GREEN: just instantiate a separate Auditor
             # pointed at the same dir; execute() manually stamps files.
-            return cls(audit_dir=str(shadow_dir),
-                       metrics_path=str(self._metrics_path))
-        return cls(audit_dir=str(self._audit_root),
-                   metrics_path=str(self._metrics_path))
+            return cls(audit_dir=str(shadow_dir), metrics_path=str(self._metrics_path))
+        return cls(audit_dir=str(self._audit_root), metrics_path=str(self._metrics_path))
 
     # ==================================================================
     # PUBLIC 1/2 — full parent-req execute chain
@@ -178,8 +173,7 @@ class TradeExecutionEngine:
 
         # ── Step 2 Idempotency ──
         mb = _minute_bucket(now, bucket_sec=self.idempotency_ttl_sec)
-        pid = _make_parent_id(inst_id, side, sz,
-                              req.get("source") or "TEE", mb)
+        pid = _make_parent_id(inst_id, side, sz, req.get("source") or "TEE", mb)
         req["parent_id"] = pid
         cached = self._idempotency_cache.get(pid)
         if cached and (now - cached[0]) < self.idempotency_ttl_sec:
@@ -189,9 +183,9 @@ class TradeExecutionEngine:
         # Prepare a fallback runner for FailOpenManager.
         def _direct_fallback(pr: Dict[str, Any]) -> Dict[str, Any]:
             """Last-resort fallback (DM, no slip cap, single child)."""
-            return self._run_direct_market(pr, shadow=self.shadow_mode,
-                                            direct_no_slippage_cap=True,
-                                            max_bps=None)
+            return self._run_direct_market(
+                pr, shadow=self.shadow_mode, direct_no_slippage_cap=True, max_bps=None
+            )
 
         # Primary: run the 3–10 steps.
         def _primary(pr: Dict[str, Any]) -> Dict[str, Any]:
@@ -199,7 +193,8 @@ class TradeExecutionEngine:
 
         # ── Step 8 Wrapped (Fail-Open) ──
         result: Dict[str, Any] = self.failopen.execute_with_fallback(
-            parent_req=req, primary_runner=_primary,
+            parent_req=req,
+            primary_runner=_primary,
             fallback_runner=_direct_fallback,
         )
 
@@ -207,12 +202,18 @@ class TradeExecutionEngine:
         # with at least sentinels).
         result.setdefault("ts_epoch_ms", int(now * 1000))
         result.setdefault("parent", req)
-        for section in ("estimate", "router", "algo", "kill_switch",
-                        "fail_open", "exec", "children"):
+        for section in (
+            "estimate",
+            "router",
+            "algo",
+            "kill_switch",
+            "fail_open",
+            "exec",
+            "children",
+        ):
             result.setdefault(section, {})
         if not result.get("fail_open"):
-            result["fail_open"] = {"triggered": False, "tag": "",
-                                   "lark_alert_sent": False}
+            result["fail_open"] = {"triggered": False, "tag": "", "lark_alert_sent": False}
         if not result.get("children"):
             result["children"] = []
 
@@ -269,7 +270,10 @@ class TradeExecutionEngine:
         now = time.time()
         mb = _minute_bucket(now, bucket_sec=self.idempotency_ttl_sec)
         compat_id_key = _make_parent_id(
-            inst_id, side, sz, source=f"compat::{tag}",
+            inst_id,
+            side,
+            sz,
+            source=f"compat::{tag}",
             minute_bucket_idx=mb,
         )
         cached = self._idempotency_cache.get(compat_id_key)
@@ -312,9 +316,7 @@ class TradeExecutionEngine:
                 pass
             resp = self.client.place_order(**kwargs)
             # Record compat in dedup cache so repeat calls are idempotent.
-            self._idempotency_cache[compat_id_key] = (
-                now, copy.deepcopy(resp)
-            )
+            self._idempotency_cache[compat_id_key] = (now, copy.deepcopy(resp))
             return resp
 
         # ──── ENABLE_TEE=True path: full TEE then translate ────
@@ -342,8 +344,7 @@ class TradeExecutionEngine:
         }
         exec_result = self.execute(parent_req)
         # Translate TEE result → flat OKX client response.
-        compat = self._translate_exec_to_compat(exec_result, tag=tag,
-                                                 reason=reason)
+        compat = self._translate_exec_to_compat(exec_result, tag=tag, reason=reason)
         self._idempotency_cache[compat_id_key] = (now, copy.deepcopy(compat))
         self._idempotency_prune_counter += 1
         if self._idempotency_prune_counter % 100 == 0:
@@ -390,27 +391,31 @@ class TradeExecutionEngine:
         # or a default).
         try:
             size_ratio = self.router.compute_size_ratio(
-                client=self.client, inst_id=inst_id, sz_usd=(
-                    float(sz) * (decision_px or 1.0)
-                ),
+                client=self.client,
+                inst_id=inst_id,
+                sz_usd=(float(sz) * (decision_px or 1.0)),
             )
         except Exception:  # noqa: BLE001
             size_ratio = None  # fail-open via estimate next
 
         # Step 4 Slippage estimate.
         estimate = self.estimator.estimate(
-            client=self.client, inst_id=inst_id, side=side, sz=sz,
+            client=self.client,
+            inst_id=inst_id,
+            side=side,
+            sz=sz,
             decision_px=decision_px,
         )
-        slip_bps = float(estimate.get("slippage_bps")
-                         or estimate.get("slip_bps") or 0.0)
+        slip_bps = float(estimate.get("slippage_bps") or estimate.get("slip_bps") or 0.0)
 
         # Step 5 Pre killswitch.
         max_bps = _cfg.DEFAULT_MAX_SLIPPAGE_BPS_NORMAL
         if float(pr.get("sz") or 0) < 0.002:  # tiny position heuristic
             max_bps = _cfg.DEFAULT_MAX_SLIPPAGE_BPS_LIGHT
         ks_allow, ks_pre_reason = self.kill_switch.check_pre(
-            pr, estimate, max_bps=max_bps,
+            pr,
+            estimate,
+            max_bps=max_bps,
         )
 
         # Step 6 Router decision (bypass pre-rejected by KS by pushing
@@ -418,16 +423,18 @@ class TradeExecutionEngine:
         if not ks_allow:
             # Treat as rejected → reject, return DM fallback placeholder
             # with kill_switch_pre_reason.
-            dm_res = self._run_direct_market(pr, shadow=shadow,
-                                              direct_no_slippage_cap=False,
-                                              max_bps=None)
+            dm_res = self._run_direct_market(
+                pr, shadow=shadow, direct_no_slippage_cap=False, max_bps=None
+            )
             dm_res["kill_switch"] = dict(dm_res.get("kill_switch") or {})
-            dm_res["kill_switch"].update({
-                "pre_allowed": False,
-                "pre_reason": ks_pre_reason,
-                "runtime_triggered": False,
-                "closeout_child_sent": False,
-            })
+            dm_res["kill_switch"].update(
+                {
+                    "pre_allowed": False,
+                    "pre_reason": ks_pre_reason,
+                    "runtime_triggered": False,
+                    "closeout_child_sent": False,
+                }
+            )
             return dm_res
 
         # Step 6b: actual router.decide.
@@ -454,73 +461,78 @@ class TradeExecutionEngine:
         # context: dict) -> (triggered: bool, reason: str). Wrap our richer
         # cb into a plain-tuple return.
         ks_cb_internal = self._build_runtime_killswitch_cb_tuple(
-            pr, max_bps=max_bps,
+            pr,
+            max_bps=max_bps,
         )
-        audit_cb = lambda *a, **kw: None
+        audit_cb = lambda *a, **kw: None  # noqa: E731
         if shadow:
             algo_result = self._shadow_run(algo, pr, algo_params)
         else:
             try:
                 algo_result = algo.run(
-                    pr, algo_params, self.client, self.estimator,
-                    ks_cb_internal, audit_cb,
+                    pr,
+                    algo_params,
+                    self.client,
+                    self.estimator,
+                    ks_cb_internal,
+                    audit_cb,
                 )
             except (NotImplementedError, TypeError, Exception):
                 # Fallback to synthetic DM AlgoRunResult if algo interface
                 # isn't fully wired yet (keeps tests stable).
                 algo_result = self._dm_as_algo_result(
-                    pr, algo_params=algo_params, shadow=shadow,
+                    pr,
+                    algo_params=algo_params,
+                    shadow=shadow,
                     max_bps=max_bps,
                 )
 
-        bucket_str = (decision.bucket.value
-                       if hasattr(decision.bucket, "value")
-                       else str(decision.bucket))
+        bucket_str = (
+            decision.bucket.value if hasattr(decision.bucket, "value") else str(decision.bucket)
+        )
         estimate_dict = {
             "slippage_bps": slip_bps,
             "market_impact_usd": float(
-                estimate.get("market_impact_cost_usd") if isinstance(
-                    estimate, dict) else 0.0
+                estimate.get("market_impact_cost_usd") if isinstance(estimate, dict) else 0.0
             ),
             "walk_depth_level": int(
-                estimate.get("walk_depth_level") if isinstance(
-                    estimate, dict) else 0
+                estimate.get("walk_depth_level") if isinstance(estimate, dict) else 0
             ),
             "thin_book_warning": bool(
-                estimate.get("thin_book_warning") if isinstance(
-                    estimate, dict) else False
+                estimate.get("thin_book_warning") if isinstance(estimate, dict) else False
             ),
-            "fail_open": bool(
-                estimate.get("fail_open") if isinstance(
-                    estimate, dict) else False
-            ),
+            "fail_open": bool(estimate.get("fail_open") if isinstance(estimate, dict) else False),
         }
         return self._shape_result_from_algo(
-            pr, algo_result, algo_name=algo_name, slip_bps=slip_bps,
+            pr,
+            algo_result,
+            algo_name=algo_name,
+            slip_bps=slip_bps,
             estimate_dict=estimate_dict,
             size_ratio_bps=round(float(size_ratio or 0) * 10_000, 4),
             bucket=bucket_str,
-            urgency_shift_applied=int(getattr(decision,
-                                               "urgency_shift_applied", 0)),
+            urgency_shift_applied=int(getattr(decision, "urgency_shift_applied", 0)),
         )
 
     # ── algorithm factory ──
-    def _instantiate_algo(self, algo_name: str,
-                          decision: RouterDecision,
-                          pr: Dict[str, Any]):
+    def _instantiate_algo(self, algo_name: str, decision: RouterDecision, pr: Dict[str, Any]):
         bucket = decision.bucket
-        from ..algorithms.base import AlgoBucket  # noqa: WPS433
+
         bucket_str = bucket.value if hasattr(bucket, "value") else str(bucket)
         if bucket_str == "DIRECT":
             return DirectMarket()
         if bucket_str == "TWAP15":
-            return SmartTWAP(window_sec=15 * 60,
-                              n_slices=_cfg.TWAP_NUM_SLICES_TWAP15,
-                              jitter_pct=_cfg.TWAP_JITTER_PCT)
+            return SmartTWAP(
+                window_sec=15 * 60,
+                n_slices=_cfg.TWAP_NUM_SLICES_TWAP15,
+                jitter_pct=_cfg.TWAP_JITTER_PCT,
+            )
         if bucket_str == "TWAP60":
-            return SmartTWAP(window_sec=60 * 60,
-                              n_slices=_cfg.TWAP_NUM_SLICES_TWAP60,
-                              jitter_pct=_cfg.TWAP_JITTER_PCT)
+            return SmartTWAP(
+                window_sec=60 * 60,
+                n_slices=_cfg.TWAP_NUM_SLICES_TWAP60,
+                jitter_pct=_cfg.TWAP_JITTER_PCT,
+            )
         if bucket_str == "PASSIVE":
             return SmartPassive(
                 rehang_sec=_cfg.PASSIVE_REHANG_SEC,
@@ -532,7 +544,9 @@ class TradeExecutionEngine:
 
     # ── runtime ks callback — 2 variants ──
     def _build_runtime_killswitch_cb_tuple(
-        self, pr: Dict[str, Any], max_bps: float,
+        self,
+        pr: Dict[str, Any],
+        max_bps: float,
     ) -> Callable[[float, Dict[str, Any]], tuple[bool, str]]:
         """Task-6 algorithm hook signature: ``cb(slip_bps, ctx) -> (trigger, reason)``."""
         ks = self.kill_switch
@@ -554,8 +568,10 @@ class TradeExecutionEngine:
                         pass
                 if remaining > 0:
                     suggestion = ks.close_out_suggestion(
-                        sz=remaining, max_bps=max_bps,
-                        tag="tee_kill_closeout", reason_extra=reason,
+                        sz=remaining,
+                        max_bps=max_bps,
+                        tag="tee_kill_closeout",
+                        reason_extra=reason,
                     )
                     try:
                         self.client.place_order(
@@ -570,7 +586,9 @@ class TradeExecutionEngine:
 
     # ── Legacy dict-returning cb (Task 7 interface) kept for fallbacks ──
     def _build_runtime_killswitch_cb(
-        self, pr: Dict[str, Any], max_bps: float,
+        self,
+        pr: Dict[str, Any],
+        max_bps: float,
     ) -> Callable:
         tuple_cb = self._build_runtime_killswitch_cb_tuple(pr, max_bps)
 
@@ -581,9 +599,14 @@ class TradeExecutionEngine:
         return _dict_cb
 
     # ── Run a DirectMarket single-child for fallback/reject paths ──
-    def _run_direct_market(self, pr: Dict[str, Any], *, shadow: bool,
-                            direct_no_slippage_cap: bool,
-                            max_bps: Optional[float]) -> Dict[str, Any]:
+    def _run_direct_market(
+        self,
+        pr: Dict[str, Any],
+        *,
+        shadow: bool,
+        direct_no_slippage_cap: bool,
+        max_bps: Optional[float],
+    ) -> Dict[str, Any]:
         # Build an AlgoRunResult by either running the real DirectMarket
         # (with proper 6-arg signature and algo_params gate for
         # direct_no_slippage_cap), or shadow synthetic.
@@ -593,18 +616,19 @@ class TradeExecutionEngine:
             "direct_wait_sec": 0.5,  # fallback path uses short wait.
         }
         dm = DirectMarket()
-        ks_cb = self._build_runtime_killswitch_cb_tuple(pr, max_bps=(max_bps
-                                                                       or 30))
+        ks_cb = self._build_runtime_killswitch_cb_tuple(pr, max_bps=(max_bps or 30))
         try:
             if shadow:
                 algo_res = self._shadow_run(dm, pr, algo_params)
             else:
-                algo_res = dm.run(pr, algo_params, self.client,
-                                   self.estimator, ks_cb,
-                                   lambda *a, **kw: None)
+                algo_res = dm.run(
+                    pr, algo_params, self.client, self.estimator, ks_cb, lambda *a, **kw: None
+                )
         except Exception:  # noqa: BLE001
             algo_res = self._dm_as_algo_result(
-                pr, algo_params=algo_params, shadow=shadow,
+                pr,
+                algo_params=algo_params,
+                shadow=shadow,
                 max_bps=max_bps,
             )
 
@@ -613,8 +637,12 @@ class TradeExecutionEngine:
         return self._shape_result_from_algo(pr, algo_res, algo_name="DIRECT")
 
     def _shape_result_from_algo(
-        self, pr: Dict[str, Any], algo_res: Any, *,
-        algo_name: str, slip_bps: float = 0.0,
+        self,
+        pr: Dict[str, Any],
+        algo_res: Any,
+        *,
+        algo_name: str,
+        slip_bps: float = 0.0,
         estimate_dict: Optional[Dict[str, Any]] = None,
         size_ratio_bps: float = 0.0,
         bucket: str = "DIRECT",
@@ -628,7 +656,7 @@ class TradeExecutionEngine:
         fail_open_alert: bool = False,
     ) -> Dict[str, Any]:
         """Uniform translator from AlgoRunResult → result dict."""
-        from types import SimpleNamespace
+
         # ── pull out AlgoRunResult fields ──
         vwap = float(getattr(algo_res, "final_vwap", 0.0) or 0.0)
         child_orders = list(getattr(algo_res, "child_orders", None) or [])
@@ -643,35 +671,38 @@ class TradeExecutionEngine:
             fee = float(co.get("fee_usd") or 0)
             filled_total += sz_filled
             fee_total += fee
-            children.append({
-                "child_id": str(co.get("ord_id")
-                                 or f"{pr.get('parent_id','p')}-ch-{i}"),
-                "ord_type": str(co.get("ord_type") or "market"),
-                "tier": int(kvs.get(f"tier_{i}", 0)),
-                "sz": float(co.get("sz_submitted") or sz_filled or 0),
-                "avg_px": px_filled,
-                "sz_filled": sz_filled,
-                "fee_usd": fee,
-                "slippage_bps": float(co.get("slippage_bps") or 0),
-                "state": "filled" if sz_filled > 0 else "live",
-            })
+            children.append(
+                {
+                    "child_id": str(co.get("ord_id") or f"{pr.get('parent_id','p')}-ch-{i}"),
+                    "ord_type": str(co.get("ord_type") or "market"),
+                    "tier": int(kvs.get(f"tier_{i}", 0)),
+                    "sz": float(co.get("sz_submitted") or sz_filled or 0),
+                    "avg_px": px_filled,
+                    "sz_filled": sz_filled,
+                    "fee_usd": fee,
+                    "slippage_bps": float(co.get("slippage_bps") or 0),
+                    "state": "filled" if sz_filled > 0 else "live",
+                }
+            )
         if not filled_total and vwap:
             filled_total = max(0.0, float(pr.get("sz") or 0) - remaining)
         decision_px = float(pr.get("decision_px") or 0.0)
         avg_fill_px = vwap if vwap > 0 else decision_px
         if not children:
-            children.append({
-                "child_id": f"{pr.get('parent_id','p')}-ch-0",
-                "ord_type": "market",
-                "tier": 0, "sz": float(pr.get("sz") or 0),
-                "avg_px": avg_fill_px,
-                "sz_filled": filled_total,
-                "fee_usd": 0.0, "slippage_bps": 0.0,
-                "state": "filled" if filled_total > 0 else "pending",
-            })
-        vwap_sum_usd = sum(
-            c["sz_filled"] * c["avg_px"] for c in children
-        )
+            children.append(
+                {
+                    "child_id": f"{pr.get('parent_id','p')}-ch-0",
+                    "ord_type": "market",
+                    "tier": 0,
+                    "sz": float(pr.get("sz") or 0),
+                    "avg_px": avg_fill_px,
+                    "sz_filled": filled_total,
+                    "fee_usd": 0.0,
+                    "slippage_bps": 0.0,
+                    "state": "filled" if filled_total > 0 else "pending",
+                }
+            )
+        vwap_sum_usd = sum(c["sz_filled"] * c["avg_px"] for c in children)
         slip_exec = slip_bps
         if decision_px and avg_fill_px:
             slip_exec = ((avg_fill_px - decision_px) / decision_px) * 1e4
@@ -680,14 +711,19 @@ class TradeExecutionEngine:
         baseline_dm = slip_bps + 2.0 if slip_bps > 0 else 2.0
         return {
             "parent": pr,
-            "estimate": estimate_dict or {
-                "slippage_bps": slip_bps, "market_impact_usd": 0.0,
-                "walk_depth_level": 0, "thin_book_warning": False,
+            "estimate": estimate_dict
+            or {
+                "slippage_bps": slip_bps,
+                "market_impact_usd": 0.0,
+                "walk_depth_level": 0,
+                "thin_book_warning": False,
                 "fail_open": False,
             },
-            "router": {"size_ratio_bps": round(size_ratio_bps, 4),
-                        "bucket": bucket,
-                        "urgency_shift_applied": urgency_shift_applied},
+            "router": {
+                "size_ratio_bps": round(size_ratio_bps, 4),
+                "bucket": bucket,
+                "urgency_shift_applied": urgency_shift_applied,
+            },
             "algo": {
                 "name": algo_name,
                 "num_slices": len(children) or 1,
@@ -696,22 +732,19 @@ class TradeExecutionEngine:
                 "fallback_to_twap_hit": bool(kvs.get("to_twap", False)),
             },
             "kill_switch": {
-                "pre_allowed": ks_pre_allowed, "pre_reason": ks_pre_reason,
+                "pre_allowed": ks_pre_allowed,
+                "pre_reason": ks_pre_reason,
                 "runtime_triggered": bool(
-                    ks_runtime_triggered
-                    or bool(kvs.get("killswitch_triggered"))
+                    ks_runtime_triggered or bool(kvs.get("killswitch_triggered"))
                 ),
                 "closeout_child_sent": bool(
-                    ks_closeout_sent
-                    or bool(kvs.get("killswitch_closeout_sent"))
+                    ks_closeout_sent or bool(kvs.get("killswitch_closeout_sent"))
                 ),
             },
             "fail_open": {
                 "triggered": bool(fail_open or kvs.get("fail_open_hit")),
                 "tag": str(fail_open_tag or kvs.get("fail_open_tag", "")),
-                "lark_alert_sent": bool(
-                    fail_open_alert or kvs.get("lark_alert_sent")
-                ),
+                "lark_alert_sent": bool(fail_open_alert or kvs.get("lark_alert_sent")),
             },
             "exec": {
                 "avg_fill_px": avg_fill_px,
@@ -728,15 +761,11 @@ class TradeExecutionEngine:
                 or (avg_fill_px * filled_total)
             ),
             "total_filled_sz": filled_total,
-            "shadow_mode_hit": bool(
-                getattr(algo_res, "shadow_hit", False)
-                or not filled_total
-            ),
+            "shadow_mode_hit": bool(getattr(algo_res, "shadow_hit", False) or not filled_total),
         }
 
     # ── Shadow runner — mimics algo execution without real exchange IO.
-    def _shadow_run(self, algo: Any, pr: Dict[str, Any],
-                     algo_params: Dict[str, Any]) -> Any:
+    def _shadow_run(self, algo: Any, pr: Dict[str, Any], algo_params: Dict[str, Any]) -> Any:
         """Shadow: estimate fills from orderbook, NEVER calling
         place_order/cancel_order on the real exchange client.
 
@@ -763,11 +792,11 @@ class TradeExecutionEngine:
             fill_px = decision_px
         estimated_vwap = fill_px * sz
         from ..algorithms.base import AlgoRunResult  # noqa: WPS433
+
         # child_orders = [] (shadow: no real children filled; filled_total
         # will end up 0 which shape_result maps to shadow_mode_hit=True
         # per our convention).
-        slip = ((fill_px - decision_px) / decision_px * 1e4
-                if decision_px > 0 else 0.0)
+        slip = (fill_px - decision_px) / decision_px * 1e4 if decision_px > 0 else 0.0
         if str(pr.get("side")).lower() == "sell":
             slip = -slip
         ar = AlgoRunResult(
@@ -784,9 +813,14 @@ class TradeExecutionEngine:
         ar.shadow_hit = True
         return ar
 
-    def _dm_as_algo_result(self, pr: Dict[str, Any], *,
-                            algo_params: Dict[str, Any], shadow: bool,
-                            max_bps: Optional[float]) -> Any:
+    def _dm_as_algo_result(
+        self,
+        pr: Dict[str, Any],
+        *,
+        algo_params: Dict[str, Any],
+        shadow: bool,
+        max_bps: Optional[float],
+    ) -> Any:
         """Last-resort synthetic AlgoRunResult — used when algorithms
         throw during early wiring or during shadow paths."""
         if shadow:
@@ -794,14 +828,16 @@ class TradeExecutionEngine:
         dpx = float(pr.get("decision_px") or 0.0) or 70_000.0
         sz = float(pr.get("sz") or 0)
         filled = 0.0
-        fee = 0.0
+        fee = 0.0  # noqa: F841
         ord_id: Any = None
         try:
             # Manual forward one market order — mirroring the minimal
             # legacy compat path but also honoring direct_no_slippage_cap.
-            kwargs: Dict[str, Any] = dict(
-                inst_id=pr["inst_id"], side=pr["side"],
-                ord_type="market", sz=sz,
+            kwargs: Dict[str, Any] = dict(  # noqa: C408
+                inst_id=pr["inst_id"],
+                side=pr["side"],
+                ord_type="market",
+                sz=sz,
                 td_mode=pr.get("td_mode", "isolated"),
                 pos_side=pr.get("pos_side", "net"),
                 tag=pr.get("tag", "tee_dm_fallback"),
@@ -818,26 +854,32 @@ class TradeExecutionEngine:
                 ord_id = r.get("ord_id")
                 filled = sz
                 try:
-                    dpx = float(r.get("avg_px") or r.get("data", {}).get(
-                        "avgPx") or dpx)
+                    dpx = float(r.get("avg_px") or r.get("data", {}).get("avgPx") or dpx)
                 except (TypeError, ValueError):
                     pass
         except Exception:  # noqa: BLE001
             filled = 0.0
         from ..algorithms.base import AlgoRunResult  # noqa: WPS433
+
         co_list = []
         if ord_id is not None:
-            co_list.append({
-                "ord_id": str(ord_id), "ord_type": "market",
-                "px_submitted": None, "sz_submitted": sz,
-                "px_filled": dpx if filled > 0 else None,
-                "sz_filled": float(filled),
-                "slippage_bps": 0.0,
-                "ts_submitted_ms": int(time.time() * 1000),
-            })
-        slip_bps = ((dpx - pr.get("decision_px", dpx)) / pr.get(
-            "decision_px", dpx) * 1e4) if pr.get(
-                "decision_px", dpx) else 0.0
+            co_list.append(
+                {
+                    "ord_id": str(ord_id),
+                    "ord_type": "market",
+                    "px_submitted": None,
+                    "sz_submitted": sz,
+                    "px_filled": dpx if filled > 0 else None,
+                    "sz_filled": float(filled),
+                    "slippage_bps": 0.0,
+                    "ts_submitted_ms": int(time.time() * 1000),
+                }
+            )
+        slip_bps = (
+            ((dpx - pr.get("decision_px", dpx)) / pr.get("decision_px", dpx) * 1e4)
+            if pr.get("decision_px", dpx)
+            else 0.0
+        )
         if str(pr.get("side")).lower() == "sell":
             slip_bps = -slip_bps
         return AlgoRunResult(
@@ -850,18 +892,20 @@ class TradeExecutionEngine:
 
     # ── translate TEE exec result to OKX flat compat ──
     @staticmethod
-    def _translate_exec_to_compat(result: Dict[str, Any], *, tag: str,
-                                    reason: str) -> Dict[str, Any]:
+    def _translate_exec_to_compat(
+        result: Dict[str, Any], *, tag: str, reason: str
+    ) -> Dict[str, Any]:
         exec_block = result.get("exec") or {}
         children = result.get("children") or []
         first_child = children[0] if children else {}
         avg_px = exec_block.get("avg_fill_px") or first_child.get("avg_px")
         fee = exec_block.get("fee_total_usd") or first_child.get("fee_usd", 0)
-        state = (first_child.get("state")
-                 if exec_block.get("filled_sz_total", 0) > 0 else "live")
-        ord_id = (first_child.get("ord_id") or first_child.get("child_id")
-                  or "TEE-" + str(result.get("parent", {}).get("parent_id",
-                                                               "NONE")))
+        state = first_child.get("state") if exec_block.get("filled_sz_total", 0) > 0 else "live"
+        ord_id = (
+            first_child.get("ord_id")
+            or first_child.get("child_id")
+            or "TEE-" + str(result.get("parent", {}).get("parent_id", "NONE"))
+        )
         return {
             "ok": True,
             "ord_id": ord_id,
@@ -882,19 +926,18 @@ class TradeExecutionEngine:
         }
 
     # ── custom shadow audit file stamp: YYYY-MM-DD_shadow.jsonl ──
-    def _write_shadow_audit_line(self, auditor: Auditor,
-                                  result: Dict[str, Any]) -> None:
+    def _write_shadow_audit_line(self, auditor: Auditor, result: Dict[str, Any]) -> None:
         """Standard auditor writes to ``<date>.jsonl``. For shadow we
         mirror it to ``<date>_shadow.jsonl`` via one-off append."""
         try:
             ts_ms = result.get("ts_epoch_ms")
-            ts_s: float = (float(ts_ms) / 1000.0) if isinstance(
-                ts_ms, (int, float)) else time.time()
-            day = datetime.fromtimestamp(ts_s, tz=timezone.utc
-                                          ).strftime("%Y-%m-%d") + "_shadow"
+            ts_s: float = (
+                (float(ts_ms) / 1000.0) if isinstance(ts_ms, (int, float)) else time.time()
+            )
+            day = datetime.fromtimestamp(ts_s, tz=timezone.utc).strftime("%Y-%m-%d") + "_shadow"
             target = Path(auditor.audit_dir) / f"{day}.jsonl"
             target.parent.mkdir(parents=True, exist_ok=True)
-            line = json.dumps(result, ensure_ascii=False, default=str)
+            line = json.dumps(result, ensure_ascii=False, default=str)  # noqa: F821
             with open(target, "a", encoding="utf-8") as f:
                 f.write(line + "\n")
                 f.flush()
@@ -914,8 +957,10 @@ class TradeExecutionEngine:
 
 # shadow-only json.dumps fallback
 import json as _json  # noqa: E402  (kept at bottom to preserve order)
+
 TradeExecutionEngine._write_shadow_audit_line.__globals__[
-    "json"] = _json  # type: ignore[attr-defined]
+    "json"
+] = _json  # type: ignore[attr-defined]
 
 
 __all__ = ["TradeExecutionEngine"]

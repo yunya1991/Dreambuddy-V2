@@ -10,11 +10,12 @@
 帮助识别低质量特征和改进方向。
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import numpy as np
+import numpy as np  # noqa: I001
 import pandas as pd
 import json
 from datetime import datetime
@@ -37,26 +38,43 @@ def fetch_real_data(inst_id, limit=600):
 def _resample_to_weekly(daily_df):
     df = daily_df.copy()
     df.index = pd.to_datetime(df.index)
-    weekly = df.resample("W").agg({
-        "open": "first", "high": "max", "low": "min",
-        "close": "last", "volume": "sum",
-    }).dropna()
+    weekly = (
+        df.resample("W")
+        .agg(
+            {
+                "open": "first",
+                "high": "max",
+                "low": "min",
+                "close": "last",
+                "volume": "sum",
+            }
+        )
+        .dropna()
+    )
     return weekly
 
 
 def get_fundamental_data():
     return {
         "screen1": {
-            "composite_score": 65.0, "momentum_score": 70.0,
-            "value_score": 60.0, "growth_score": 65.0,
-            "quality_score": 68.0, "sentiment_score": 55.0,
+            "composite_score": 65.0,
+            "momentum_score": 70.0,
+            "value_score": 60.0,
+            "growth_score": 65.0,
+            "quality_score": 68.0,
+            "sentiment_score": 55.0,
         },
         "fundamental_9": {
-            "pe_ttm": 15.0, "pb": 2.0, "roe": 12.0,
-            "revenue_growth": 20.0, "profit_growth": 18.0,
-            "debt_ratio": 45.0, "cash_ratio": 30.0,
-            "gross_margin": 35.0, "net_margin": 15.0,
-        }
+            "pe_ttm": 15.0,
+            "pb": 2.0,
+            "roe": 12.0,
+            "revenue_growth": 20.0,
+            "profit_growth": 18.0,
+            "debt_ratio": 45.0,
+            "cash_ratio": 30.0,
+            "gross_margin": 35.0,
+            "net_margin": 15.0,
+        },
     }
 
 
@@ -77,7 +95,8 @@ def analyze_features(inst_id, name):
 
     fe = LeastResistanceFeatureEngineer(enable_fundamental=True)
     features_df = fe.create_features(
-        weekly_df, prices,
+        weekly_df,
+        prices,
         fundamental_data=get_fundamental_data(),
         label_lookahead=7,
     )
@@ -115,7 +134,11 @@ def analyze_features(inst_id, name):
             feature_types["weekly_res"].append(col)
         elif col.startswith("cross_"):
             feature_types["cross"].append(col)
-        elif col.startswith("daily_velocity") or col.startswith("daily_conf") or col.startswith("daily_accel"):
+        elif (
+            col.startswith("daily_velocity")
+            or col.startswith("daily_conf")
+            or col.startswith("daily_accel")
+        ):
             feature_types["daily_vel"].append(col)
         elif col.startswith("weekly_velocity") or col.startswith("weekly_accel"):
             feature_types["weekly_vel"].append(col)
@@ -155,7 +178,7 @@ def analyze_features(inst_id, name):
     print(f"  缺失率>30%的特征: {len(high_missing)} 个")
 
     if len(high_missing) > 0:
-        print(f"\n  高缺失特征（缺失率>30%）:")
+        print("\n  高缺失特征（缺失率>30%）:")
         for col, cnt in high_missing.items():
             print(f"    {col:30} {cnt:4d} ({cnt/total_rows*100:.1f}%)")
 
@@ -169,15 +192,20 @@ def analyze_features(inst_id, name):
         print("  数据不足，跳过相关性分析")
         return None
 
-    correlations = valid_data[feature_cols].corrwith(valid_data["label_direction"]).abs().sort_values(ascending=False)
+    correlations = (
+        valid_data[feature_cols]
+        .corrwith(valid_data["label_direction"])
+        .abs()
+        .sort_values(ascending=False)
+    )
 
-    print(f"\n  相关性最高的前20个特征:")
+    print("\n  相关性最高的前20个特征:")
     print(f"  {'特征':30} {'|相关性|':>12}")
     print(f"  {'-'*45}")
     for col, corr in correlations.head(20).items():
         print(f"  {col:30} {corr:>12.4f}")
 
-    print(f"\n  相关性最低的前10个特征（可能冗余）:")
+    print("\n  相关性最低的前10个特征（可能冗余）:")
     for col, corr in correlations.tail(10).items():
         print(f"  {col:30} {corr:>12.4f}")
 
@@ -224,15 +252,14 @@ def analyze_features(inst_id, name):
         y = valid_data["label_direction"].values
 
         model = lgb.LGBMClassifier(
-            n_estimators=100, max_depth=5, learning_rate=0.1,
-            random_state=42, verbose=-1
+            n_estimators=100, max_depth=5, learning_rate=0.1, random_state=42, verbose=-1
         )
         model.fit(X, y)
 
         importances = pd.Series(model.feature_importances_, index=feature_cols)
         importances = importances.sort_values(ascending=False)
 
-        print(f"\n  重要性最高的前20个特征:")
+        print("\n  重要性最高的前20个特征:")
         print(f"  {'特征':30} {'重要性':>10}")
         print(f"  {'-'*45}")
         for col, imp in importances.head(20).items():
@@ -288,7 +315,7 @@ def main():
 
     # 统计各类型特征数量
     type_totals = {}
-    for symbol, data in all_results.items():
+    for symbol, data in all_results.items():  # noqa: B007
         for ftype, count in data["feature_types"].items():
             type_totals[ftype] = type_totals.get(ftype, 0) + count
 
@@ -298,7 +325,7 @@ def main():
 
     # 统计低相关性特征（在多个标的中重复出现的）
     low_corr_all = set()
-    for symbol, data in all_results.items():
+    for symbol, data in all_results.items():  # noqa: B007
         if "low_corr_features" in data:
             low_corr_all.update(data["low_corr_features"])
 
@@ -308,7 +335,9 @@ def main():
 
     # 保存结果
     os.makedirs("ml/optimization_results", exist_ok=True)
-    result_file = f"ml/optimization_results/feature_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    result_file = (
+        f"ml/optimization_results/feature_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    )
 
     with open(result_file, "w", encoding="utf-8") as f:
         json.dump(all_results, f, indent=2, ensure_ascii=False)

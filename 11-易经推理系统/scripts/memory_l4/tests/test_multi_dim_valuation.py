@@ -24,10 +24,12 @@
 权重归一化（SPEC §7.2 FAIL-OPEN）：
   缺数据维度权重置 0，剩余维度权重归一化
 """
-import pytest
+
 import sys
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 
 # 将 force_vector 加入 sys.path
 _L4_DIR = Path(__file__).resolve().parent.parent
@@ -41,12 +43,14 @@ def _import_multi_dim():
         compute_multi_dim_score_from_percentiles,
         compute_multi_dim_valuation,
     )
+
     return compute_multi_dim_score_from_percentiles, compute_multi_dim_valuation
 
 
 # ---------------------------------------------------------------------------
 # 纯函数测试：compute_multi_dim_score_from_percentiles
 # ---------------------------------------------------------------------------
+
 
 class TestMultiDimScoreImport:
     """RED: 模块与符号必须可导入。"""
@@ -56,6 +60,7 @@ class TestMultiDimScoreImport:
             compute_multi_dim_score_from_percentiles,
             compute_multi_dim_valuation,
         )
+
         assert callable(compute_multi_dim_score_from_percentiles)
         assert callable(compute_multi_dim_valuation)
 
@@ -197,6 +202,7 @@ class TestMultiDimScoreFromPercentiles:
 # ---------------------------------------------------------------------------
 # 主函数测试：compute_multi_dim_valuation（集成）
 # ---------------------------------------------------------------------------
+
 
 class TestComputeMultiDimValuation:
     """主函数：从 DB 获取数据 + 调用纯函数。"""

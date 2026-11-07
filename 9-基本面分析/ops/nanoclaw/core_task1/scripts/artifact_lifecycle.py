@@ -8,7 +8,6 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-
 DEFAULT_POLICIES = [
     {"path": "raw", "days": 7, "keep_last": 40},
     {"path": "outputs", "days": 30, "keep_last": 80},
@@ -36,7 +35,9 @@ def _all_files(dir_path: Path) -> list[Path]:
     return out
 
 
-def collect_expired_files(dir_path: Path, days: int, keep_last: int, now_ts: float | None = None) -> list[Path]:
+def collect_expired_files(
+    dir_path: Path, days: int, keep_last: int, now_ts: float | None = None
+) -> list[Path]:
     files = _all_files(dir_path)
     if not files:
         return []
@@ -188,7 +189,9 @@ def archive_expired(
 def _find_latest_archive(archive_root: Path) -> Path | None:
     if not archive_root.exists():
         return None
-    items = sorted(archive_root.glob("artifacts_batch_*.tar.gz"), key=lambda x: x.stat().st_mtime, reverse=True)
+    items = sorted(
+        archive_root.glob("artifacts_batch_*.tar.gz"), key=lambda x: x.stat().st_mtime, reverse=True
+    )
     return items[0] if items else None
 
 
@@ -320,7 +323,11 @@ def main() -> int:
     parser = _build_parser()
     args = parser.parse_args()
     project_root = Path(str(args.project_root)).resolve()
-    archive_root = Path(str(args.archive_root)).resolve() if str(args.archive_root).strip() else (project_root / "archive" / "artifacts")
+    archive_root = (
+        Path(str(args.archive_root)).resolve()
+        if str(args.archive_root).strip()
+        else (project_root / "archive" / "artifacts")
+    )
     if args.cmd == "cleanup":
         policies = _merge_override(_policy_from_env(), args)
         res = archive_expired(
@@ -334,7 +341,15 @@ def main() -> int:
         return 0 if bool(res.get("ok")) else 1
     if args.cmd == "list":
         latest = _find_latest_archive(archive_root)
-        rows = sorted(archive_root.glob("artifacts_batch_*.tar.gz"), key=lambda x: x.stat().st_mtime, reverse=True) if archive_root.exists() else []
+        rows = (
+            sorted(
+                archive_root.glob("artifacts_batch_*.tar.gz"),
+                key=lambda x: x.stat().st_mtime,
+                reverse=True,
+            )
+            if archive_root.exists()
+            else []
+        )
         out = {
             "ok": True,
             "archive_root": str(archive_root),
@@ -347,12 +362,23 @@ def main() -> int:
     if archive_file == "latest":
         latest = _find_latest_archive(archive_root)
         if latest is None:
-            print(json.dumps({"ok": False, "error": "latest_archive_not_found", "archive_root": str(archive_root)}, ensure_ascii=False))
+            print(
+                json.dumps(
+                    {
+                        "ok": False,
+                        "error": "latest_archive_not_found",
+                        "archive_root": str(archive_root),
+                    },
+                    ensure_ascii=False,
+                )
+            )
             return 1
         target_archive = latest
     else:
         target_archive = Path(archive_file).resolve()
-    res = restore_archive(project_root=project_root, archive_file=target_archive, overwrite=bool(args.overwrite))
+    res = restore_archive(
+        project_root=project_root, archive_file=target_archive, overwrite=bool(args.overwrite)
+    )
     print(json.dumps(res, ensure_ascii=False))
     return 0 if bool(res.get("ok")) else 1
 

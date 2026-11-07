@@ -28,6 +28,7 @@ Panewslab（律动 PAData）增强（P3-2 接入）：
     地维度：市场广度(DeFi广度/扩散指数hit率)、交易所净流入(巨鲸净流)、支撑阻力(MA200距离proxy)
     宏观通用：美股 SP500、纳斯达克、美债10Y、美元指数、联邦基金利率(对齐 FRED)
 """
+
 from __future__ import annotations
 
 import os
@@ -45,10 +46,40 @@ if _DATA_CENTER_PKG_ROOT not in sys.path:
 ASSET_CLASSES = ("crypto_usdt", "us_stock", "precious_metal")
 
 # 政策情绪简易词典（Tavily 标题+内容匹配，后续可换模型）
-_POS_WORDS = ("宽松", "降息", "批准", "支持", "利好", "流入", "复苏", "升级",
-              "easing", "cut", "approve", "inflow", "bullish", "support")
-_NEG_WORDS = ("紧缩", "加息", "起诉", "处罚", "监管", "限制", "禁止", "流出", "暴跌",
-              "tightening", "hike", "sue", "penalty", "crackdown", "restrict", "outflow")
+_POS_WORDS = (
+    "宽松",
+    "降息",
+    "批准",
+    "支持",
+    "利好",
+    "流入",
+    "复苏",
+    "升级",
+    "easing",
+    "cut",
+    "approve",
+    "inflow",
+    "bullish",
+    "support",
+)
+_NEG_WORDS = (
+    "紧缩",
+    "加息",
+    "起诉",
+    "处罚",
+    "监管",
+    "限制",
+    "禁止",
+    "流出",
+    "暴跌",
+    "tightening",
+    "hike",
+    "sue",
+    "penalty",
+    "crackdown",
+    "restrict",
+    "outflow",
+)
 
 
 class FiveDomainFetcher:
@@ -66,9 +97,12 @@ class FiveDomainFetcher:
         "China crypto policy news latest",
     )
 
-    def __init__(self, data_center: Any = None, policy_queries: Tuple[str, ...] = DEFAULT_POLICY_QUERIES):
+    def __init__(
+        self, data_center: Any = None, policy_queries: Tuple[str, ...] = DEFAULT_POLICY_QUERIES
+    ):
         if data_center is None:
             from data_center.core.dispatcher import DataCenter
+
             data_center = DataCenter()
         self.dc = data_center
         self.policy_queries = tuple(policy_queries)
@@ -147,8 +181,11 @@ class FiveDomainFetcher:
 
         # ── P0-3: Coinglass 衍生品（OI/Funding/清算/多空比）──
         try:
-            recs = self.dc.fetch("chain", source="coinglass",
-                                 params={"pages": ["oi", "funding", "liquidations", "long_short"]})
+            recs = self.dc.fetch(
+                "chain",
+                source="coinglass",
+                params={"pages": ["oi", "funding", "liquidations", "long_short"]},
+            )
             out["coinglass"] = self._safe_first(recs)
         except Exception:
             out["coinglass"] = None
@@ -169,8 +206,9 @@ class FiveDomainFetcher:
 
         # ── P1-1: Deribit 期权（Max Pain/P-C Ratio）──
         try:
-            recs = self.dc.fetch("chain", source="deribit",
-                                 params={"currency": "BTC", "kind": "option"})
+            recs = self.dc.fetch(
+                "chain", source="deribit", params={"currency": "BTC", "kind": "option"}
+            )
             out["deribit"] = self._safe_first_metric(recs)
         except Exception:
             out["deribit"] = None
@@ -263,7 +301,9 @@ class FiveDomainFetcher:
             coin["m2_index_bln"] = m2
         # D3 WALCL → trillion（WALCL 原始是美元，除以 1e12 得万亿）
         walcl = self._val(raw.get("fred:WALCL"), "value")
-        coin["fed_balance_sheet_trillion"] = round(walcl / 1e12, 4) if isinstance(walcl, (int, float)) else None
+        coin["fed_balance_sheet_trillion"] = (
+            round(walcl / 1e12, 4) if isinstance(walcl, (int, float)) else None
+        )
         # D4 CPIAUCSL 同比（简化：当前只记录指数值）
         coin["us_cpi_yoy_pct"] = self._val(raw.get("fred:CPIAUCSL"), "value")
         # D5 PPI 预留
@@ -288,7 +328,9 @@ class FiveDomainFetcher:
                 coin["defi_tvl_bln"] = None
                 coin["stablecoin_mcap_bln"] = None
             gas_metrics = raw.get("etherscan:gas") or {}
-            coin["gas_eth_gwei"] = gas_metrics.get("propose_gas") if isinstance(gas_metrics, dict) else None
+            coin["gas_eth_gwei"] = (
+                gas_metrics.get("propose_gas") if isinstance(gas_metrics, dict) else None
+            )
         else:
             coin["defi_tvl_bln"] = None
             coin["stablecoin_mcap_bln"] = None
@@ -337,6 +379,7 @@ class FiveDomainFetcher:
           1) 现有 proxy 字段补强（当 FRED/VIX 缺失时）
           2) 新增的 panewslab_* 字段（供 FiveDomainFeatureComputer 子指标加分）
         """
+
         def _m(sub: str) -> Dict[str, Any]:
             return raw.get(f"panewslab:{sub}:m") or {}  # type: ignore[return-value]
 
@@ -354,13 +397,13 @@ class FiveDomainFetcher:
                 coin["vix_close"] = float(vix) if isinstance(vix, (int, float)) else None
             # 新增 macro proxy 字段（全类共享：道/天维度用）
             for k_src, k_dst in [
-                ("us_SP500_value",      "pn_us_sp500"),
-                ("us_NASDAQCOM_value",  "pn_us_nasdaq"),
-                ("us_DGS10_value",      "pn_us_10y_yield"),
-                ("us_DTWEXBGS_value",   "pn_us_dollar_index"),
-                ("us_DFF_value",        "pn_us_fedfunds"),
-                ("us_VIXCLS_value",     "pn_us_vix"),
-                ("us_SP500_chg_pct",    "pn_us_sp500_chg_pct"),
+                ("us_SP500_value", "pn_us_sp500"),
+                ("us_NASDAQCOM_value", "pn_us_nasdaq"),
+                ("us_DGS10_value", "pn_us_10y_yield"),
+                ("us_DTWEXBGS_value", "pn_us_dollar_index"),
+                ("us_DFF_value", "pn_us_fedfunds"),
+                ("us_VIXCLS_value", "pn_us_vix"),
+                ("us_SP500_chg_pct", "pn_us_sp500_chg_pct"),
                 ("us_NASDAQCOM_chg_pct", "pn_us_nasdaq_chg_pct"),
             ]:
                 v = macro.get(k_src)
@@ -400,8 +443,10 @@ class FiveDomainFetcher:
                 # 映射 0-100 到 [0,1]，作为 政策景气度 额外参考（道维度加分）
                 coin["pn_cycle_sentiment_norm"] = float(hit_ratio) / 100.0
                 # D10 政策情绪 score 的补强（当 tavily 失败时用抄底命中率代理）
-                if (coin.get("policy_sentiment_score") is None
-                        or coin.get("policy_sentiment_score") == 0.5):
+                if (
+                    coin.get("policy_sentiment_score") is None
+                    or coin.get("policy_sentiment_score") == 0.5
+                ):
                     coin["policy_sentiment_score"] = float(hit_ratio) / 100.0
             hit_count = cycle.get("bottom_hit_count")
             if isinstance(hit_count, (int, float)):
@@ -411,14 +456,13 @@ class FiveDomainFetcher:
                 coin["pn_cycle_bottom_total_count"] = int(total_count)
             # omnitools 扩散广度命中数 / 指标命中数 = 市场广度指数（0-1）
             omni_hits = [
-                float(v) for k, v in cycle.items()
+                float(v)
+                for k, v in cycle.items()
                 if isinstance(k, str) and k.endswith("_hit") and isinstance(v, bool)
             ]
             if omni_hits:
                 coin["pn_cycle_omnitools_hit_count"] = int(sum(omni_hits))
-                coin["pn_cycle_omnitools_hit_ratio"] = round(
-                    sum(omni_hits) / len(omni_hits), 4
-                )
+                coin["pn_cycle_omnitools_hit_ratio"] = round(sum(omni_hits) / len(omni_hits), 4)
 
         # ============================================================
         # etf_institutional：ETF/机构持仓（crypto 专用）
@@ -430,9 +474,7 @@ class FiveDomainFetcher:
                 coin["pn_btc_etf_daily_flow_usd"] = float(btc_flow)
                 # 道维度子指标2机构净流入 proxy（FED稳定币 + ETF流量）
                 # ETF 净流入/流出 ±2 亿 → 映射 stablecoin_change_rate ±3% 级
-                coin["pn_btc_etf_flow_norm"] = float(
-                    max(-1.0, min(1.0, float(btc_flow) / 2e8))
-                )
+                coin["pn_btc_etf_flow_norm"] = float(max(-1.0, min(1.0, float(btc_flow) / 2e8)))
             aum = etf.get("btc_etf_total_aum_usd")
             if isinstance(aum, (int, float)):
                 coin["pn_btc_etf_total_aum_usd"] = float(aum)
@@ -462,9 +504,15 @@ class FiveDomainFetcher:
             pulse = srwa.get("stable_pulse_rangeStatus")
             if pulse:
                 coin["pn_stablecoin_pulse_range"] = str(pulse)
-                rng_map = {"FLOOD": 0.85, "OVERFLOW": 0.95, "FULL": 0.7,
-                           "FILLING": 0.55, "HALF": 0.5, "DRAIN": 0.35,
-                           "DRAINED": 0.2}
+                rng_map = {
+                    "FLOOD": 0.85,
+                    "OVERFLOW": 0.95,
+                    "FULL": 0.7,
+                    "FILLING": 0.55,
+                    "HALF": 0.5,
+                    "DRAIN": 0.35,
+                    "DRAINED": 0.2,
+                }
                 if pulse in rng_map:
                     coin["pn_stablecoin_pulse_norm"] = rng_map[pulse]
             # RWA 7日变化：上涨=资金在入场→加分
@@ -555,15 +603,13 @@ class FiveDomainFetcher:
             chain_hit = hold.get("holdings_public-chain-activity-breadth_hit")
             hits = [v for v in (defi_hit, chain_hit) if isinstance(v, bool)]
             if hits:
-                coin["pn_holdings_breadth_hit_ratio"] = (
-                    round(sum(1 for h in hits if h) / len(hits), 4)
+                coin["pn_holdings_breadth_hit_ratio"] = round(
+                    sum(1 for h in hits if h) / len(hits), 4
                 )
             # 链上基本面广度 coverageStatus
             for k_src, k_dst in [
-                ("holdings_defi-fundamental-breadth_rangeStatus",
-                 "pn_defi_breadth_range"),
-                ("holdings_public-chain-activity-breadth_rangeStatus",
-                 "pn_chain_breadth_range"),
+                ("holdings_defi-fundamental-breadth_rangeStatus", "pn_defi_breadth_range"),
+                ("holdings_public-chain-activity-breadth_rangeStatus", "pn_chain_breadth_range"),
             ]:
                 v = hold.get(k_src)
                 if v:
@@ -604,19 +650,20 @@ class FiveDomainFetcher:
         infl_up = cpi >= 250.0
         # 增长方向：INDPRO 相对 100 → >100 视为↑
         grow_up = indpro >= 100.0
-        if grow_up and not infl_up: return "RECOVERY"    # 复苏
-        if grow_up and infl_up:     return "OVERHEAT"    # 过热
-        if not grow_up and infl_up: return "STAGFLATION" # 滞胀
-        return "REFLATION"                              # 衰退/再通
+        if grow_up and not infl_up:
+            return "RECOVERY"  # 复苏
+        if grow_up and infl_up:
+            return "OVERHEAT"  # 过热
+        if not grow_up and infl_up:
+            return "STAGFLATION"  # 滞胀
+        return "REFLATION"  # 衰退/再通
 
     # ------------------------------------------------------------------
     # 衍生：流动性评分 [0,1]（对齐 FiveDomainFeatureComputer._compute_liquidity_cycle_score）
     # 利率低→加分；M2 高→加分；联储表扩张→加分
     # ------------------------------------------------------------------
     @staticmethod
-    def _compute_liquidity_score(
-        fedfunds: Any, m2_yoy: Any, bs_trillion: Any
-    ) -> Optional[float]:
+    def _compute_liquidity_score(fedfunds: Any, m2_yoy: Any, bs_trillion: Any) -> Optional[float]:
         scores = []
         # 利率：0%→1.0, 6%→0.0, 线性
         if isinstance(fedfunds, (int, float)):
@@ -655,9 +702,12 @@ class FiveDomainFetcher:
             total += 1
             p = sum(1 for w in _POS_WORDS if w.lower() in text)
             n = sum(1 for w in _NEG_WORDS if w.lower() in text)
-            if p > n: pos += 1
-            elif p < n: pass  # 中性不加分
-            else: pos += 0.5   # 打平加半
+            if p > n:
+                pos += 1
+            elif p < n:
+                pass  # 中性不加分
+            else:
+                pos += 0.5  # 打平加半
         if total == 0:
             return 0.5
         return round(max(0.0, min(1.0, pos / total)), 4)

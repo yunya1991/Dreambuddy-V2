@@ -11,19 +11,19 @@
 - any: 任一验证通过就算通过
 - majority: 多数验证通过就算通过
 """
+
 from __future__ import annotations
 
 import io
-import json
 import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-from PIL import Image
 import numpy as np
+from PIL import Image
 from playwright.sync_api import Page, Response
 
 logger = logging.getLogger("real_env.result_verifier")
@@ -31,14 +31,16 @@ logger = logging.getLogger("real_env.result_verifier")
 
 class VerificationMode(Enum):
     """验证模式"""
-    ALL = "all"          # 全部通过
-    ANY = "any"          # 任一通过
+
+    ALL = "all"  # 全部通过
+    ANY = "any"  # 任一通过
     MAJORITY = "majority"  # 多数通过
 
 
 @dataclass
 class VerificationResult:
     """验证结果"""
+
     name: str
     passed: bool
     details: Dict[str, Any] = field(default_factory=dict)
@@ -129,11 +131,13 @@ class ResultVerifier:
                 if not result["passed"]:
                     details["passed"] = False
             except Exception as e:
-                details["checks"].append({
-                    "assertion": assertion,
-                    "passed": False,
-                    "error": str(e),
-                })
+                details["checks"].append(
+                    {
+                        "assertion": assertion,
+                        "passed": False,
+                        "error": str(e),
+                    }
+                )
                 details["passed"] = False
 
         return VerificationResult(
@@ -261,17 +265,15 @@ class ResultVerifier:
 
         try:
             # 截取当前页面
-            current_screenshot = page.screenshot(full_page=screenshot_assertion.get("full_page", False))
+            current_screenshot = page.screenshot(
+                full_page=screenshot_assertion.get("full_page", False)
+            )
 
             # 如果有基准截图，进行对比
             baseline_path = screenshot_assertion.get("baseline")
             if baseline_path and Path(baseline_path).exists():
-                diff_score = self._compare_screenshots(
-                    baseline_path, current_screenshot
-                )
-                threshold = screenshot_assertion.get(
-                    "threshold", self._screenshot_threshold
-                )
+                diff_score = self._compare_screenshots(baseline_path, current_screenshot)
+                threshold = screenshot_assertion.get("threshold", self._screenshot_threshold)
                 details["diff_score"] = diff_score
                 details["threshold"] = threshold
                 details["passed"] = diff_score <= threshold
@@ -279,7 +281,8 @@ class ResultVerifier:
                 # 保存差异截图
                 if not details["passed"] and screenshot_assertion.get("save_diff"):
                     self._save_diff_screenshot(
-                        baseline_path, current_screenshot,
+                        baseline_path,
+                        current_screenshot,
                         screenshot_assertion.get("diff_path", "/tmp/diff.png"),
                     )
             else:
@@ -306,10 +309,12 @@ class ResultVerifier:
         供 ResultVerifier 和 DesktopAssertions 共享。本方法保留为薄包装。
         """
         from utils.screenshot_diff import compare_screenshot_bytes
+
         return compare_screenshot_bytes(baseline_path, current_bytes)
 
-    def _save_diff_screenshot(self, baseline_path: str, current_bytes: bytes,
-                              diff_path: str) -> None:
+    def _save_diff_screenshot(
+        self, baseline_path: str, current_bytes: bytes, diff_path: str
+    ) -> None:
         """保存差异截图（红色高亮差异区域）。"""
         baseline = Image.open(baseline_path).convert("RGB")
         current = Image.open(io.BytesIO(current_bytes)).convert("RGB")
@@ -341,11 +346,13 @@ class ResultVerifier:
                 if not result["passed"]:
                     details["passed"] = False
             except Exception as e:
-                details["checks"].append({
-                    "assertion": assertion,
-                    "passed": False,
-                    "error": str(e),
-                })
+                details["checks"].append(
+                    {
+                        "assertion": assertion,
+                        "passed": False,
+                        "error": str(e),
+                    }
+                )
                 details["passed"] = False
 
         return VerificationResult(
@@ -361,10 +368,7 @@ class ResultVerifier:
         expected_status = assertion.get("status")
         expected_body = assertion.get("body_contains")
 
-        matched_logs = [
-            log for log in self._network_logs
-            if url_pattern in log.get("url", "")
-        ]
+        matched_logs = [log for log in self._network_logs if url_pattern in log.get("url", "")]
 
         if action == "request_exists":
             return {
@@ -417,12 +421,14 @@ class ResultVerifier:
         self._network_logs = []
 
         def on_request(request):
-            self._network_logs.append({
-                "type": "request",
-                "url": request.url,
-                "method": request.method,
-                "timestamp": time.time(),
-            })
+            self._network_logs.append(
+                {
+                    "type": "request",
+                    "url": request.url,
+                    "method": request.method,
+                    "timestamp": time.time(),
+                }
+            )
 
         def on_response(response: Response):
             try:
@@ -437,14 +443,16 @@ class ResultVerifier:
             except Exception:
                 body = ""
 
-            self._network_logs.append({
-                "type": "response",
-                "url": response.url,
-                "status": response.status,
-                "method": response.request.method,
-                "response_body": body,
-                "timestamp": time.time(),
-            })
+            self._network_logs.append(
+                {
+                    "type": "response",
+                    "url": response.url,
+                    "status": response.status,
+                    "method": response.request.method,
+                    "response_body": body,
+                    "timestamp": time.time(),
+                }
+            )
 
         page.on("request", on_request)
         page.on("response", on_response)

@@ -10,6 +10,7 @@ Spec: docs/superpowers/specs/2026-09-21-washout-detector-design.md §6.2 / §9.3
 
 FAIL-OPEN 铁律: API 异常 → 返回空列表不阻塞，不抛错。
 """
+
 from __future__ import annotations
 
 import logging

@@ -31,15 +31,17 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         self._orig_user_data_env = os.environ.get("ML_USER_DATA_DIR")
         os.environ["ML_USER_DATA_DIR"] = self._td.name
 
-        svc.CONFIG.update({
-            "outbox_allow_test_mode": True,
-            "trade_monitor_enabled": True,
-            "trade_monitor_daily_full_enabled": False,
-            "trade_monitor_alert_upgrade_enabled": False,
-            "trade_monitor_light_trades": 1,
-            "trade_monitor_full_trades": 999999,
-            "trade_monitor_full_min_age_hours": 9999,
-        })
+        svc.CONFIG.update(
+            {
+                "outbox_allow_test_mode": True,
+                "trade_monitor_enabled": True,
+                "trade_monitor_daily_full_enabled": False,
+                "trade_monitor_alert_upgrade_enabled": False,
+                "trade_monitor_light_trades": 1,
+                "trade_monitor_full_trades": 999999,
+                "trade_monitor_full_min_age_hours": 9999,
+            }
+        )
 
         svc.ORDERS.clear()
         svc.EVENTS.clear()
@@ -79,26 +81,28 @@ class TestAgentE2EAcceptance(unittest.TestCase):
     def _seed_eval_samples(self, *, n: int, ts0: int = 1_700_000_000_000) -> None:
         for i in range(int(n)):
             ts = int(ts0) + int(i) * 60_000
-            svc.EVAL_SAMPLES.append({
-                "ts": ts,
-                "pair": "BTC/USDT",
-                "side": "long",
-                "label": 1 if (i % 2 == 0) else 0,
-                "targets": {"return_tk": 0.01 if (i % 2 == 0) else -0.008},
-                "features": {
-                    "macro_atr_pct": 0.01 + 0.00001 * float(i),
-                    "macro_trend_shape_5": "up" if (i % 3) else "down",
-                    "macro_btc_time_regime": "trend" if (i % 4) else "chop",
-                    "close": 100.0 + float(i),
-                    "volume": 1000.0,
-                    "rsi_d": 50.0,
-                    "willr_d": -50.0,
-                    "macd_d": 0.0,
-                    "macdsignal_d": 0.0,
-                    "ma_cross_fast_d": 0.0,
-                    "ma_cross_slow_d": 0.0,
-                },
-            })
+            svc.EVAL_SAMPLES.append(
+                {
+                    "ts": ts,
+                    "pair": "BTC/USDT",
+                    "side": "long",
+                    "label": 1 if (i % 2 == 0) else 0,
+                    "targets": {"return_tk": 0.01 if (i % 2 == 0) else -0.008},
+                    "features": {
+                        "macro_atr_pct": 0.01 + 0.00001 * float(i),
+                        "macro_trend_shape_5": "up" if (i % 3) else "down",
+                        "macro_btc_time_regime": "trend" if (i % 4) else "chop",
+                        "close": 100.0 + float(i),
+                        "volume": 1000.0,
+                        "rsi_d": 50.0,
+                        "willr_d": -50.0,
+                        "macd_d": 0.0,
+                        "macdsignal_d": 0.0,
+                        "ma_cross_fast_d": 0.0,
+                        "ma_cross_slow_d": 0.0,
+                    },
+                }
+            )
 
     def test_automation_shadow_switch_card_contract_and_toggles(self) -> None:
         svc.AUTOMATION["enable_shadow_automation_loop"] = False
@@ -110,20 +114,43 @@ class TestAgentE2EAcceptance(unittest.TestCase):
             d0 = r0.get_json(force=True) or {}
             self.assertTrue(bool(d0.get("ok")))
             cards0 = d0.get("cards") if isinstance(d0.get("cards"), list) else []
-            shadow0 = next((x for x in cards0 if isinstance(x, dict) and str(x.get("card_id")) == "shadow_switch"), None)
+            shadow0 = next(
+                (
+                    x
+                    for x in cards0
+                    if isinstance(x, dict) and str(x.get("card_id")) == "shadow_switch"
+                ),
+                None,
+            )
             self.assertTrue(isinstance(shadow0, dict))
             acts0 = shadow0.get("actions") if isinstance(shadow0.get("actions"), list) else []
             act_ids0 = {str(a.get("id")) for a in acts0 if isinstance(a, dict)}
             self.assertTrue("toggle_shadow" in act_ids0)
             self.assertTrue("toggle_autostart" in act_ids0)
 
-            r1 = c.post("/automation/config", json={"trace_id": "t_shadow_1", "enable_shadow_automation_loop": True, "confirm_live": True}, environ_base={"REMOTE_ADDR": "127.0.0.1"})
+            r1 = c.post(
+                "/automation/config",
+                json={
+                    "trace_id": "t_shadow_1",
+                    "enable_shadow_automation_loop": True,
+                    "confirm_live": True,
+                },
+                environ_base={"REMOTE_ADDR": "127.0.0.1"},
+            )
             self.assertEqual(int(r1.status_code), 200)
             d1 = r1.get_json(force=True) or {}
             self.assertTrue(bool(d1.get("ok")))
             self.assertTrue(bool(svc.AUTOMATION.get("enable_shadow_automation_loop")))
 
-            r2 = c.post("/automation/config", json={"trace_id": "t_shadow_2", "shadow_automation_autostart": True, "confirm_live": True}, environ_base={"REMOTE_ADDR": "127.0.0.1"})
+            r2 = c.post(
+                "/automation/config",
+                json={
+                    "trace_id": "t_shadow_2",
+                    "shadow_automation_autostart": True,
+                    "confirm_live": True,
+                },
+                environ_base={"REMOTE_ADDR": "127.0.0.1"},
+            )
             self.assertEqual(int(r2.status_code), 200)
             d2 = r2.get_json(force=True) or {}
             self.assertTrue(bool(d2.get("ok")))
@@ -134,10 +161,24 @@ class TestAgentE2EAcceptance(unittest.TestCase):
             d3 = r3.get_json(force=True) or {}
             self.assertTrue(bool(d3.get("ok")))
             cards3 = d3.get("cards") if isinstance(d3.get("cards"), list) else []
-            shadow3 = next((x for x in cards3 if isinstance(x, dict) and str(x.get("card_id")) == "shadow_switch"), None)
+            shadow3 = next(
+                (
+                    x
+                    for x in cards3
+                    if isinstance(x, dict) and str(x.get("card_id")) == "shadow_switch"
+                ),
+                None,
+            )
             self.assertTrue(isinstance(shadow3, dict))
             acts3 = shadow3.get("actions") if isinstance(shadow3.get("actions"), list) else []
-            toggle_autostart = next((a for a in acts3 if isinstance(a, dict) and str(a.get("id")) == "toggle_autostart"), None)
+            toggle_autostart = next(
+                (
+                    a
+                    for a in acts3
+                    if isinstance(a, dict) and str(a.get("id")) == "toggle_autostart"
+                ),
+                None,
+            )
             self.assertTrue(isinstance(toggle_autostart, dict))
             self.assertIn("关闭自动启动", str((toggle_autostart or {}).get("label") or ""))
 
@@ -151,13 +192,29 @@ class TestAgentE2EAcceptance(unittest.TestCase):
             d0 = r0.get_json(force=True) or {}
             self.assertTrue(bool(d0.get("ok")))
             cards0 = d0.get("cards") if isinstance(d0.get("cards"), list) else []
-            p0 = next((x for x in cards0 if isinstance(x, dict) and str(x.get("card_id")) == "paramopt_automation"), None)
+            p0 = next(
+                (
+                    x
+                    for x in cards0
+                    if isinstance(x, dict) and str(x.get("card_id")) == "paramopt_automation"
+                ),
+                None,
+            )
             self.assertTrue(isinstance(p0, dict))
             self.assertEqual(str(p0.get("status")), "BLOCKED")
             stuck0 = p0.get("stuck") if isinstance(p0.get("stuck"), dict) else {}
             self.assertEqual(str(stuck0.get("reason_code") or ""), "shadow_disabled")
 
-            r1 = c.post("/automation/config", json={"trace_id": "t_paramopt_bad", "enable_shadow_automation_loop": False, "enable_paramopt_daily": True, "confirm_live": True}, environ_base={"REMOTE_ADDR": "127.0.0.1"})
+            r1 = c.post(
+                "/automation/config",
+                json={
+                    "trace_id": "t_paramopt_bad",
+                    "enable_shadow_automation_loop": False,
+                    "enable_paramopt_daily": True,
+                    "confirm_live": True,
+                },
+                environ_base={"REMOTE_ADDR": "127.0.0.1"},
+            )
             self.assertEqual(int(r1.status_code), 400)
             d1 = r1.get_json(force=True) or {}
             self.assertEqual(str(d1.get("error") or ""), "shadow_required_for_paramopt")
@@ -184,17 +241,62 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 data = svc.request.get_json(force=True) or {}
                 tid = str(data.get("trace_id") or "").strip() or "t_paramopt_stub"
                 ts = int(svc._now_ms())
-                svc._agent_pipeline_artifact_validate_and_emit(trace_id=str(tid), kind="paramopt_run", artifact={"ts": int(ts), "mode": "sandbox", "status": "DONE", "requested": (data.get("requested") if isinstance(data.get("requested"), dict) else {})})
-                svc._agent_pipeline_artifact_validate_and_emit(trace_id=str(tid), kind="paramopt_suggestion", artifact={"ts": int(ts), "ok": True, "mode": "sandbox", "eval_mode": "rolling", "family": "xgb", "keys": [], "gate": {"pass": True, "fails": []}})
-                svc._agent_pipeline_artifact_validate_and_emit(trace_id=str(tid), kind="rolling_verify", artifact={"ts": int(ts), "ok": True, "eval_mode": "rolling"})
-                svc._agent_pipeline_artifact_validate_and_emit(trace_id=str(tid), kind="approval_request", artifact={"ts": int(ts), "approval_id": "appr_paramopt_1", "action": "automation.paramopt.trigger"})
-                svc._agent_pipeline_artifact_validate_and_emit(trace_id=str(tid), kind="config.set.result", artifact={"ts": int(ts), "ok": True, "result": {"mode": "test"}})
-                return svc.jsonify({"ok": True, "trace_id": str(tid), "ts": int(ts), "mode": "sandbox"})
+                svc._agent_pipeline_artifact_validate_and_emit(
+                    trace_id=str(tid),
+                    kind="paramopt_run",
+                    artifact={
+                        "ts": int(ts),
+                        "mode": "sandbox",
+                        "status": "DONE",
+                        "requested": (
+                            data.get("requested") if isinstance(data.get("requested"), dict) else {}
+                        ),
+                    },
+                )
+                svc._agent_pipeline_artifact_validate_and_emit(
+                    trace_id=str(tid),
+                    kind="paramopt_suggestion",
+                    artifact={
+                        "ts": int(ts),
+                        "ok": True,
+                        "mode": "sandbox",
+                        "eval_mode": "rolling",
+                        "family": "xgb",
+                        "keys": [],
+                        "gate": {"pass": True, "fails": []},
+                    },
+                )
+                svc._agent_pipeline_artifact_validate_and_emit(
+                    trace_id=str(tid),
+                    kind="rolling_verify",
+                    artifact={"ts": int(ts), "ok": True, "eval_mode": "rolling"},
+                )
+                svc._agent_pipeline_artifact_validate_and_emit(
+                    trace_id=str(tid),
+                    kind="approval_request",
+                    artifact={
+                        "ts": int(ts),
+                        "approval_id": "appr_paramopt_1",
+                        "action": "automation.paramopt.trigger",
+                    },
+                )
+                svc._agent_pipeline_artifact_validate_and_emit(
+                    trace_id=str(tid),
+                    kind="config.set.result",
+                    artifact={"ts": int(ts), "ok": True, "result": {"mode": "test"}},
+                )
+                return svc.jsonify(
+                    {"ok": True, "trace_id": str(tid), "ts": int(ts), "mode": "sandbox"}
+                )
 
             svc.agent_paramopt_run = _stub_paramopt_run
             try:
                 trace_id = "t_paramopt_manual_1"
-                r3 = c.post("/automation/paramopt/trigger", json={"trace_id": trace_id, "confirm_live": True, "mode": "sandbox"}, environ_base={"REMOTE_ADDR": "127.0.0.1"})
+                r3 = c.post(
+                    "/automation/paramopt/trigger",
+                    json={"trace_id": trace_id, "confirm_live": True, "mode": "sandbox"},
+                    environ_base={"REMOTE_ADDR": "127.0.0.1"},
+                )
                 self.assertIn(int(r3.status_code), (200, 202))
                 d3 = r3.get_json(force=True) or {}
                 self.assertTrue(bool(d3.get("ok")))
@@ -207,7 +309,15 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                     d4 = r4.get_json(force=True) or {}
                     self.assertTrue(bool(d4.get("ok")))
                     cards4 = d4.get("cards") if isinstance(d4.get("cards"), list) else []
-                    p4 = next((x for x in cards4 if isinstance(x, dict) and str(x.get("card_id")) == "paramopt_automation"), None)
+                    p4 = next(
+                        (
+                            x
+                            for x in cards4
+                            if isinstance(x, dict)
+                            and str(x.get("card_id")) == "paramopt_automation"
+                        ),
+                        None,
+                    )
                     self.assertTrue(isinstance(p4, dict))
                     last_p4 = p4
                     self.assertEqual(str(p4.get("trace_id") or ""), trace_id)
@@ -215,13 +325,27 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                     if int(prog.get("pct") or 0) >= 100:
                         steps = prog.get("steps") if isinstance(prog.get("steps"), list) else []
                         keys = [str(s.get("key") or "") for s in steps if isinstance(s, dict)]
-                        self.assertTrue(all(k in keys for k in ["trigger", "run", "suggestion", "verify", "approval", "apply"]))
+                        self.assertTrue(
+                            all(
+                                k in keys
+                                for k in [
+                                    "trigger",
+                                    "run",
+                                    "suggestion",
+                                    "verify",
+                                    "approval",
+                                    "apply",
+                                ]
+                            )
+                        )
                         self.assertFalse(bool(p4.get("stuck")))
                         ok_done = True
                         break
                     time.sleep(0.05)
                 if not ok_done:
-                    self.fail(f"paramopt_automation not completed: {json.dumps(last_p4, ensure_ascii=False)[:2000]}")
+                    self.fail(
+                        f"paramopt_automation not completed: {json.dumps(last_p4, ensure_ascii=False)[:2000]}"
+                    )
             finally:
                 if orig is not None:
                     svc.agent_paramopt_run = orig
@@ -249,7 +373,11 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         self.assertEqual(int(code), 200)
         self.assertTrue(bool(out.get("ok")))
         self.assertTrue(isinstance(svc.CONFIG.get("eval_policies"), dict))
-        ep = svc.CONFIG.get("eval_policies") if isinstance(svc.CONFIG.get("eval_policies"), dict) else {}
+        ep = (
+            svc.CONFIG.get("eval_policies")
+            if isinstance(svc.CONFIG.get("eval_policies"), dict)
+            else {}
+        )
         self.assertTrue("p3_default" in ep)
         p3 = ep.get("p3_default") if isinstance(ep.get("p3_default"), dict) else {}
         self.assertEqual(int(p3.get("min_trades") or 0), 80)
@@ -294,12 +422,21 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                     "ts": int(old_ts),
                 }
             )
-            return {"ok": True, "trigger": "strategy.explore.cycle.trigger", "trace_id": str(tid), "ts": int(now_ms)}
+            return {
+                "ok": True,
+                "trigger": "strategy.explore.cycle.trigger",
+                "trace_id": str(tid),
+                "ts": int(now_ms),
+            }
 
         svc._automation_paramopt_explore_cycle_run = _stub_explore_run
         try:
             with svc.app.test_client() as c:
-                r0 = c.post("/automation/paramopt/explore/trigger", json={"confirm_live": True, "mode": "sandbox"}, environ_base={"REMOTE_ADDR": "127.0.0.1"})
+                r0 = c.post(
+                    "/automation/paramopt/explore/trigger",
+                    json={"confirm_live": True, "mode": "sandbox"},
+                    environ_base={"REMOTE_ADDR": "127.0.0.1"},
+                )
                 self.assertIn(int(r0.status_code), (200, 202))
                 d0 = r0.get_json(force=True) or {}
                 self.assertTrue(bool(d0.get("ok")))
@@ -308,16 +445,31 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 self.assertEqual(int(r1.status_code), 200)
                 d1 = r1.get_json(force=True) or {}
                 pending1 = d1.get("pending") if isinstance(d1.get("pending"), list) else []
-                p1 = next((x for x in pending1 if isinstance(x, dict) and str(x.get("id") or "") == "appr_explore_1"), None)
+                p1 = next(
+                    (
+                        x
+                        for x in pending1
+                        if isinstance(x, dict) and str(x.get("id") or "") == "appr_explore_1"
+                    ),
+                    None,
+                )
                 self.assertTrue(isinstance(p1, dict))
                 self.assertTrue(bool((p1 or {}).get("is_explore")))
-                self.assertEqual(str((p1 or {}).get("auto_reject_policy") or ""), "expired_24h_auto_reject")
+                self.assertEqual(
+                    str((p1 or {}).get("auto_reject_policy") or ""), "expired_24h_auto_reject"
+                )
 
-                rep_gc = svc._approvals_auto_reject_expired_explore(now_ms=int(svc._now_ms()), ttl_hours=24)
+                rep_gc = svc._approvals_auto_reject_expired_explore(
+                    now_ms=int(svc._now_ms()), ttl_hours=24
+                )
                 self.assertTrue(bool(rep_gc.get("ok")))
                 self.assertGreaterEqual(int(rep_gc.get("rejected") or 0), 1)
 
-                r2 = c.get("/approvals/get", query_string={"id": "appr_explore_1"}, environ_base={"REMOTE_ADDR": "127.0.0.1"})
+                r2 = c.get(
+                    "/approvals/get",
+                    query_string={"id": "appr_explore_1"},
+                    environ_base={"REMOTE_ADDR": "127.0.0.1"},
+                )
                 self.assertEqual(int(r2.status_code), 200)
                 d2 = r2.get_json(force=True) or {}
                 self.assertTrue(bool(d2.get("ok")))
@@ -329,9 +481,23 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 self.assertEqual(int(r3.status_code), 200)
                 d3 = r3.get_json(force=True) or {}
                 pending3 = d3.get("pending") if isinstance(d3.get("pending"), list) else []
-                self.assertFalse(any(isinstance(x, dict) and str(x.get("id") or "") == "appr_explore_1" for x in pending3))
-                auto_rej3 = d3.get("recent_auto_rejected") if isinstance(d3.get("recent_auto_rejected"), list) else []
-                self.assertTrue(any(isinstance(x, dict) and str(x.get("id") or "") == "appr_explore_1" for x in auto_rej3))
+                self.assertFalse(
+                    any(
+                        isinstance(x, dict) and str(x.get("id") or "") == "appr_explore_1"
+                        for x in pending3
+                    )
+                )
+                auto_rej3 = (
+                    d3.get("recent_auto_rejected")
+                    if isinstance(d3.get("recent_auto_rejected"), list)
+                    else []
+                )
+                self.assertTrue(
+                    any(
+                        isinstance(x, dict) and str(x.get("id") or "") == "appr_explore_1"
+                        for x in auto_rej3
+                    )
+                )
         finally:
             if orig is not None:
                 svc._automation_paramopt_explore_cycle_run = orig
@@ -360,14 +526,25 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         )
 
         with svc.app.test_client() as c:
-            r = c.get("/agent/observability/paramopt/recent", query_string={"days": 7, "limit": 50}, environ_base={"REMOTE_ADDR": "127.0.0.1"})
+            r = c.get(
+                "/agent/observability/paramopt/recent",
+                query_string={"days": 7, "limit": 50},
+                environ_base={"REMOTE_ADDR": "127.0.0.1"},
+            )
             self.assertEqual(int(r.status_code), 200)
             d = r.get_json(force=True) or {}
             self.assertTrue(bool(d.get("ok")))
             rec = d.get("timeout_recovery") if isinstance(d.get("timeout_recovery"), dict) else {}
             self.assertGreaterEqual(int(rec.get("recovered_n") or 0), 1)
             items = d.get("items") if isinstance(d.get("items"), list) else []
-            hit = next((x for x in items if isinstance(x, dict) and str(x.get("trace_id") or "") == trace_id), None)
+            hit = next(
+                (
+                    x
+                    for x in items
+                    if isinstance(x, dict) and str(x.get("trace_id") or "") == trace_id
+                ),
+                None,
+            )
             self.assertTrue(isinstance(hit, dict))
             self.assertEqual(str((hit or {}).get("opt_class") or ""), "strategy")
             self.assertEqual(str((hit or {}).get("strategy_id") or ""), "Strategy005")
@@ -375,7 +552,9 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         outbox = os.path.join(self._td.name, "pipeline_artifacts.jsonl")
         with open(outbox, "r", encoding="utf-8") as f:
             rows = [json.loads(line) for line in f.read().splitlines() if line.strip()]
-        rows_tid = [x for x in rows if isinstance(x, dict) and str(x.get("trace_id") or "") == trace_id]
+        rows_tid = [
+            x for x in rows if isinstance(x, dict) and str(x.get("trace_id") or "") == trace_id
+        ]
         self.assertTrue(bool(rows_tid))
         failed_run = next(
             (
@@ -384,7 +563,8 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 if str(x.get("kind") or "") == "paramopt_run"
                 and isinstance(x.get("artifact"), dict)
                 and str((x.get("artifact") or {}).get("status") or "") == "FAILED"
-                and str((x.get("artifact") or {}).get("reason_code") or "") == "paramopt_run_timeout"
+                and str((x.get("artifact") or {}).get("reason_code") or "")
+                == "paramopt_run_timeout"
             ),
             None,
         )
@@ -396,7 +576,8 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 if str(x.get("kind") or "") == "paramopt_suggestion"
                 and isinstance(x.get("artifact"), dict)
                 and bool((x.get("artifact") or {}).get("ok")) is False
-                and str((x.get("artifact") or {}).get("reason_code") or "") == "paramopt_run_timeout"
+                and str((x.get("artifact") or {}).get("reason_code") or "")
+                == "paramopt_run_timeout"
             ),
             None,
         )
@@ -446,19 +627,26 @@ class TestAgentE2EAcceptance(unittest.TestCase):
             self.assertTrue(bool(acts))
 
     def test_trade_monitor_full_report_routes_rule_suggestions(self) -> None:
-        svc.CONFIG.update({
-            "trade_monitor_light_trades": 1,
-            "trade_monitor_full_trades": 1,
-            "trade_monitor_full_min_age_hours": 0.0001,
-            "trade_monitor_alert_upgrade_enabled": False,
-            "trade_monitor_daily_full_enabled": False,
-            "trade_monitor_baseline_rolling_enabled": True,
-            "trade_monitor_throttle_skip_full_if_stable_24h": False,
-            "trade_monitor_budget_max_reports_per_day": 999,
-        })
+        svc.CONFIG.update(
+            {
+                "trade_monitor_light_trades": 1,
+                "trade_monitor_full_trades": 1,
+                "trade_monitor_full_min_age_hours": 0.0001,
+                "trade_monitor_alert_upgrade_enabled": False,
+                "trade_monitor_daily_full_enabled": False,
+                "trade_monitor_baseline_rolling_enabled": True,
+                "trade_monitor_throttle_skip_full_if_stable_24h": False,
+                "trade_monitor_budget_max_reports_per_day": 999,
+            }
+        )
 
         now1 = 1_700_000_400_000
-        svc.EVENTS["e1"] = {"id": "e1", "ts": now1 - 2000, "ts_emit_ms": now1 - 2000, "decision_info": {"decision": "enter"}}
+        svc.EVENTS["e1"] = {
+            "id": "e1",
+            "ts": now1 - 2000,
+            "ts_emit_ms": now1 - 2000,
+            "decision_info": {"decision": "enter"},
+        }
         svc.ORDERS["o1"] = {
             "id": "o1",
             "event_id": "e1",
@@ -476,7 +664,13 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         for i in range(50):
             pnl = 1.0 if i < 40 else -0.5
             svc.TRACKER_STATE["ab_settlements"].append(
-                {"ts": now1 - (50 - i) * 60_000, "order_id": f"b{i}", "event_id": f"be{i}", "pnl_usdc": pnl, "notional_usdc": 100.0}
+                {
+                    "ts": now1 - (50 - i) * 60_000,
+                    "order_id": f"b{i}",
+                    "event_id": f"be{i}",
+                    "pnl_usdc": pnl,
+                    "notional_usdc": 100.0,
+                }
             )
 
         r1 = svc._trade_monitor_scan(now_ms=int(now1), force_full=False)
@@ -484,7 +678,12 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         self.assertTrue(bool(r1.get("did_full")))
 
         now2 = 1_700_000_460_000
-        svc.EVENTS["e2"] = {"id": "e2", "ts": now2 - 2000, "ts_emit_ms": now2 - 2000, "decision_info": {"decision": "enter"}}
+        svc.EVENTS["e2"] = {
+            "id": "e2",
+            "ts": now2 - 2000,
+            "ts_emit_ms": now2 - 2000,
+            "decision_info": {"decision": "enter"},
+        }
         svc.ORDERS["o2"] = {
             "id": "o2",
             "event_id": "e2",
@@ -502,7 +701,13 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         for i in range(50):
             pnl = 0.5 if i < 20 else -0.8
             svc.TRACKER_STATE["ab_settlements"].append(
-                {"ts": now2 - (50 - i) * 60_000, "order_id": f"c{i}", "event_id": f"ce{i}", "pnl_usdc": pnl, "notional_usdc": 100.0}
+                {
+                    "ts": now2 - (50 - i) * 60_000,
+                    "order_id": f"c{i}",
+                    "event_id": f"ce{i}",
+                    "pnl_usdc": pnl,
+                    "notional_usdc": 100.0,
+                }
             )
 
         r2 = svc._trade_monitor_scan(now_ms=int(now2), force_full=False)
@@ -517,7 +722,14 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         rep = fulls[-1]
 
         rules = rep.get("trigger_rules") if isinstance(rep.get("trigger_rules"), list) else []
-        self.assertTrue(any(isinstance(r, dict) and str(r.get("rule_id")) == "TM-541-PERF_DEGRADE" and bool(r.get("matched")) for r in rules))
+        self.assertTrue(
+            any(
+                isinstance(r, dict)
+                and str(r.get("rule_id")) == "TM-541-PERF_DEGRADE"
+                and bool(r.get("matched"))
+                for r in rules
+            )
+        )
 
         sugs = rep.get("suggestions") if isinstance(rep.get("suggestions"), list) else []
         s_perf = None
@@ -532,7 +744,9 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         acts = (s_perf or {}).get("actions")
         self.assertTrue(isinstance(acts, list))
         self.assertTrue(bool(acts))
-        self.assertTrue(any(isinstance(a, dict) and str(a.get("type")) == "agent.paramopt" for a in acts))
+        self.assertTrue(
+            any(isinstance(a, dict) and str(a.get("type")) == "agent.paramopt" for a in acts)
+        )
 
     def test_agent_chat_sync_trade_monitor_uses_archived_orders(self) -> None:
         svc.ORDERS.clear()
@@ -565,7 +779,10 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 json={
                     "sync": True,
                     "llm_enabled": False,
-                    "intent": {"kind": "trade_monitor.analyze", "args": {"lookback_days": 5.0, "force_full": True}},
+                    "intent": {
+                        "kind": "trade_monitor.analyze",
+                        "args": {"lookback_days": 5.0, "force_full": True},
+                    },
                 },
             )
             self.assertEqual(int(resp.status_code), 200)
@@ -578,10 +795,23 @@ class TestAgentE2EAcceptance(unittest.TestCase):
     def test_agent_chat_llm_fast_path_general_assist_emits_result(self) -> None:
         orig = getattr(svc, "_agent_llm_chat", None)
         try:
-            svc._agent_llm_chat = lambda *_a, **_k: {"ok": True, "data": {"message": {"role": "assistant", "content": "{\"assistant_text\":\"pong\"}"}}}
+            svc._agent_llm_chat = lambda *_a, **_k: {
+                "ok": True,
+                "data": {"message": {"role": "assistant", "content": '{"assistant_text":"pong"}'}},
+            }
             svc._agent_chat_driver_process(
-                {"trace_id": "t_fast_1", "risk_level": "P2", "intent": {"text": "hello"}, "tool_plan": []},
-                {"enabled": True, "provider": "ollama", "model": "qwen2.5:7b-instruct", "timeout_sec": 60},
+                {
+                    "trace_id": "t_fast_1",
+                    "risk_level": "P2",
+                    "intent": {"text": "hello"},
+                    "tool_plan": [],
+                },
+                {
+                    "enabled": True,
+                    "provider": "ollama",
+                    "model": "qwen2.5:7b-instruct",
+                    "timeout_sec": 60,
+                },
             )
         finally:
             if orig is not None:
@@ -590,7 +820,14 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         outbox = os.path.join(self._td.name, "chat.jsonl")
         with open(outbox, "r", encoding="utf-8") as f:
             rows = [json.loads(line) for line in f.read().splitlines() if line.strip()]
-        hits = [r for r in rows if isinstance(r, dict) and str(r.get("trace_id")) == "t_fast_1" and str(r.get("type")) == "chat.result" and str(r.get("status")) == "succeeded"]
+        hits = [
+            r
+            for r in rows
+            if isinstance(r, dict)
+            and str(r.get("trace_id")) == "t_fast_1"
+            and str(r.get("type")) == "chat.result"
+            and str(r.get("status")) == "succeeded"
+        ]
         self.assertTrue(bool(hits))
         last = hits[-1]
         self.assertEqual(str(last.get("assistant_text") or "").strip(), "pong")
@@ -601,13 +838,51 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         w0 = now_ms - 5 * 86400 * 1000
 
         svc.TRACKER_STATE["ab_settlements"] = [
-            {"ts": now_ms - 120_000, "order_id": "o_win", "event_id": "e_win", "owner": "strategy", "pnl_usdc": 2.0, "notional_usdc": 100.0, "fee_abs": 0.10, "funding_abs": 0.02},
-            {"ts": now_ms - 60_000, "order_id": "o_loss", "event_id": "e_loss", "owner": "strategy", "pnl_usdc": -5.0, "notional_usdc": 100.0, "fee_abs": 0.20, "funding_abs": 0.03},
+            {
+                "ts": now_ms - 120_000,
+                "order_id": "o_win",
+                "event_id": "e_win",
+                "owner": "strategy",
+                "pnl_usdc": 2.0,
+                "notional_usdc": 100.0,
+                "fee_abs": 0.10,
+                "funding_abs": 0.02,
+            },
+            {
+                "ts": now_ms - 60_000,
+                "order_id": "o_loss",
+                "event_id": "e_loss",
+                "owner": "strategy",
+                "pnl_usdc": -5.0,
+                "notional_usdc": 100.0,
+                "fee_abs": 0.20,
+                "funding_abs": 0.03,
+            },
         ]
 
         close_orders = [
-            {"id": "o_win", "event_id": "e_win", "pair": "AAA/USDT", "system_id": "strategy", "ab_owner": "strategy", "ts": now_ms - 120_000, "side": "close", "action": "close", "status": "filled"},
-            {"id": "o_loss", "event_id": "e_loss", "pair": "BBB/USDT", "system_id": "strategy", "ab_owner": "strategy", "ts": now_ms - 60_000, "side": "close", "action": "close", "status": "filled"},
+            {
+                "id": "o_win",
+                "event_id": "e_win",
+                "pair": "AAA/USDT",
+                "system_id": "strategy",
+                "ab_owner": "strategy",
+                "ts": now_ms - 120_000,
+                "side": "close",
+                "action": "close",
+                "status": "filled",
+            },
+            {
+                "id": "o_loss",
+                "event_id": "e_loss",
+                "pair": "BBB/USDT",
+                "system_id": "strategy",
+                "ab_owner": "strategy",
+                "ts": now_ms - 60_000,
+                "side": "close",
+                "action": "close",
+                "status": "filled",
+            },
         ]
         rep = svc._trade_monitor_build_report(
             now_ms,
@@ -617,7 +892,13 @@ class TestAgentE2EAcceptance(unittest.TestCase):
             window_end_ms=int(now_ms),
             close_orders=close_orders,
             reject_stats={},
-            context={"monitor_cost": {"api_calls_total": 0, "latency_p95_ms": {}, "token_cost_estimate": 0}},
+            context={
+                "monitor_cost": {
+                    "api_calls_total": 0,
+                    "latency_p95_ms": {},
+                    "token_cost_estimate": 0,
+                }
+            },
         )
         summary = rep.get("summary") if isinstance(rep.get("summary"), dict) else {}
         self.assertEqual(int(summary.get("trades") or 0), 2)
@@ -635,15 +916,17 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         self.assertIn("loss_pair=BBB/USDT", text)
 
     def test_system_monitor_exec_failure_emits_playbook_hit(self) -> None:
-        svc.CONFIG.update({
-            "system_monitor_enabled": True,
-            "system_monitor_exec_failure_enabled": True,
-            "system_monitor_route_inconsistency_enabled": True,
-            "system_monitor_scan_period_seconds": 5,
-            "system_monitor_exec_failure_window_seconds": 120,
-            "system_monitor_exec_failure_min_count": 1,
-            "system_monitor_exec_failure_emit_ttl_seconds": 0,
-        })
+        svc.CONFIG.update(
+            {
+                "system_monitor_enabled": True,
+                "system_monitor_exec_failure_enabled": True,
+                "system_monitor_route_inconsistency_enabled": True,
+                "system_monitor_scan_period_seconds": 5,
+                "system_monitor_exec_failure_window_seconds": 120,
+                "system_monitor_exec_failure_min_count": 1,
+                "system_monitor_exec_failure_emit_ttl_seconds": 0,
+            }
+        )
 
         now_ms = 1_700_000_900_000
         svc.TRACKER_STATE["system_monitor_exec_failure"] = {"last_scan_ms": 0, "seen": {}}
@@ -684,15 +967,17 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         self.assertTrue(isinstance(pb0.get("minimal_fix_template"), dict))
 
     def test_system_monitor_route_inconsistency_emits_playbook_hit_venue_only(self) -> None:
-        svc.CONFIG.update({
-            "system_monitor_enabled": True,
-            "system_monitor_exec_failure_enabled": True,
-            "system_monitor_route_inconsistency_enabled": True,
-            "system_monitor_scan_period_seconds": 5,
-            "system_monitor_route_inconsistency_window_seconds": 3600,
-            "system_monitor_route_inconsistency_min_count": 1,
-            "system_monitor_route_inconsistency_emit_ttl_seconds": 0,
-        })
+        svc.CONFIG.update(
+            {
+                "system_monitor_enabled": True,
+                "system_monitor_exec_failure_enabled": True,
+                "system_monitor_route_inconsistency_enabled": True,
+                "system_monitor_scan_period_seconds": 5,
+                "system_monitor_route_inconsistency_window_seconds": 3600,
+                "system_monitor_route_inconsistency_min_count": 1,
+                "system_monitor_route_inconsistency_emit_ttl_seconds": 0,
+            }
+        )
 
         now_ms = 1_700_001_000_000
         svc.TRACKER_STATE["system_monitor_route_inconsistency"] = {"last_scan_ms": 0, "seen": {}}
@@ -736,36 +1021,60 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         self.assertTrue(isinstance(pb0.get("minimal_fix_template"), dict))
 
     def test_execution_aster_market_open_carry_records_route_inconsistency(self) -> None:
-        svc.CONFIG.update({
-            "system_monitor_enabled": True,
-            "system_monitor_route_inconsistency_enabled": True,
-        })
+        svc.CONFIG.update(
+            {
+                "system_monitor_enabled": True,
+                "system_monitor_route_inconsistency_enabled": True,
+            }
+        )
         svc.TRACKER_STATE["system_monitor_route_inconsistencies"] = []
 
         client = svc.app.test_client()
-        r = client.post("/execution/aster/market_open", json={"coin": "BTC", "side": "long", "notional_usdc": 300, "ab_owner": "carry", "execute": False, "tag": "unit"})
+        r = client.post(
+            "/execution/aster/market_open",
+            json={
+                "coin": "BTC",
+                "side": "long",
+                "notional_usdc": 300,
+                "ab_owner": "carry",
+                "execute": False,
+                "tag": "unit",
+            },
+        )
         self.assertEqual(r.status_code, 400)
         d = r.get_json() or {}
         self.assertEqual(str(d.get("error")), "carry_trade_venue_hl_only")
 
         items = svc.TRACKER_STATE.get("system_monitor_route_inconsistencies")
         self.assertTrue(isinstance(items, list))
-        self.assertTrue(any(isinstance(x, dict) and str(x.get("kind")) == "carry_trade_venue_hl_only" for x in items))
+        self.assertTrue(
+            any(
+                isinstance(x, dict) and str(x.get("kind")) == "carry_trade_venue_hl_only"
+                for x in items
+            )
+        )
 
         outbox = os.path.join(self._td.name, "chat.jsonl")
         with open(outbox, "r", encoding="utf-8") as f:
             rows = [json.loads(line) for line in f.read().splitlines() if line.strip()]
-        self.assertTrue(any(isinstance(r, dict) and str(r.get("type")) == "route.inconsistency.trigger" for r in rows))
+        self.assertTrue(
+            any(
+                isinstance(r, dict) and str(r.get("type")) == "route.inconsistency.trigger"
+                for r in rows
+            )
+        )
 
     def test_system_monitor_link_consistency_emits_and_enqueues_alert(self) -> None:
-        svc.CONFIG.update({
-            "system_monitor_enabled": True,
-            "system_monitor_link_consistency_enabled": True,
-            "system_monitor_scan_period_seconds": 5,
-            "system_monitor_link_consistency_window_seconds": 3600,
-            "system_monitor_link_consistency_min_count": 1,
-            "system_monitor_link_consistency_emit_ttl_seconds": 0,
-        })
+        svc.CONFIG.update(
+            {
+                "system_monitor_enabled": True,
+                "system_monitor_link_consistency_enabled": True,
+                "system_monitor_scan_period_seconds": 5,
+                "system_monitor_link_consistency_window_seconds": 3600,
+                "system_monitor_link_consistency_min_count": 1,
+                "system_monitor_link_consistency_emit_ttl_seconds": 0,
+            }
+        )
 
         now_ms = 1_700_002_000_000
         svc.TRACKER_STATE["system_monitor_link_consistency"] = {"last_scan_ms": 0, "seen": {}}
@@ -787,12 +1096,24 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         outbox = os.path.join(self._td.name, "chat.jsonl")
         with open(outbox, "r", encoding="utf-8") as f:
             rows = [json.loads(line) for line in f.read().splitlines() if line.strip()]
-        self.assertTrue(any(isinstance(r, dict) and str(r.get("type")) == "link.consistency.trigger" for r in rows))
+        self.assertTrue(
+            any(
+                isinstance(r, dict) and str(r.get("type")) == "link.consistency.trigger"
+                for r in rows
+            )
+        )
 
         alert = os.path.join(self._td.name, "alert.jsonl")
         with open(alert, "r", encoding="utf-8") as f:
             alert_rows = [json.loads(line) for line in f.read().splitlines() if line.strip()]
-        self.assertTrue(any(isinstance(r, dict) and str(r.get("type")) == "push.send" and "link.consistency.trigger" in str(r.get("message") or "") for r in alert_rows))
+        self.assertTrue(
+            any(
+                isinstance(r, dict)
+                and str(r.get("type")) == "push.send"
+                and "link.consistency.trigger" in str(r.get("message") or "")
+                for r in alert_rows
+            )
+        )
 
     def test_audit_execution_quality_endpoint(self) -> None:
         client = svc.app.test_client()
@@ -810,7 +1131,9 @@ class TestAgentE2EAcceptance(unittest.TestCase):
             "exec": {"mid": 100.0, "px": 100.2},
             "sync": {"ts": now_ms - 500},
         }
-        r = client.get(f"/audit/execution-quality?start_ts={now_ms - 10_000}&end_ts={now_ms}&max_points=200")
+        r = client.get(
+            f"/audit/execution-quality?start_ts={now_ms - 10_000}&end_ts={now_ms}&max_points=200"
+        )
         self.assertEqual(r.status_code, 200)
         d = r.get_json() or {}
         self.assertTrue(bool(d.get("ok")))
@@ -824,7 +1147,10 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         orig_extract = getattr(svc, "_paramopt_eval_extract_rolling", None)
         orig_score = getattr(svc, "_paramopt_score_rolling", None)
         svc._rolling_window_verify = lambda **_kwargs: {"ok": True}
-        svc._paramopt_eval_extract_rolling = lambda *_args, **_kwargs: {"ok": True, "stressed": {"trades_per_day": 100.0, "coverage": 1.0}}
+        svc._paramopt_eval_extract_rolling = lambda *_args, **_kwargs: {
+            "ok": True,
+            "stressed": {"trades_per_day": 100.0, "coverage": 1.0},
+        }
         svc._paramopt_score_rolling = lambda *_args, **_kwargs: (1.0, {"reason": "test"})
 
         client = svc.app.test_client()
@@ -835,25 +1161,35 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         )
         self.assertEqual(r0.status_code, 200)
         d0 = r0.get_json() or {}
-        items = (((d0.get("space") or {}).get("items")) if isinstance(d0.get("space"), dict) else None) or []
-        keys = [str(it.get("key")) for it in items if isinstance(it, dict) and str(it.get("type") or "").lower() in ("int", "float", "bool") and str(it.get("key") or "").strip()]
+        items = (
+            ((d0.get("space") or {}).get("items")) if isinstance(d0.get("space"), dict) else None
+        ) or []
+        keys = [
+            str(it.get("key"))
+            for it in items
+            if isinstance(it, dict)
+            and str(it.get("type") or "").lower() in ("int", "float", "bool")
+            and str(it.get("key") or "").strip()
+        ]
         keys = keys[:6]
         self.assertTrue(bool(keys))
 
         try:
             r1 = client.post(
                 "/agent/paramopt/run",
-                data=json.dumps({
-                    "mode": "suggest",
-                    "family": "lr",
-                    "eval_mode": "rolling",
-                    "folds": 3,
-                    "n_init": 2,
-                    "n_iter": 3,
-                    "keys": keys,
-                    "bootstrap_samples": False,
-                    "skip_robustness": True,
-                }),
+                data=json.dumps(
+                    {
+                        "mode": "suggest",
+                        "family": "lr",
+                        "eval_mode": "rolling",
+                        "folds": 3,
+                        "n_init": 2,
+                        "n_iter": 3,
+                        "keys": keys,
+                        "bootstrap_samples": False,
+                        "skip_robustness": True,
+                    }
+                ),
                 content_type="application/json",
             )
             self.assertEqual(r1.status_code, 200)
@@ -863,7 +1199,11 @@ class TestAgentE2EAcceptance(unittest.TestCase):
             sel = d1.get("selected") if isinstance(d1.get("selected"), dict) else {}
             self.assertTrue(isinstance(sel.get("patch"), dict))
             self.assertTrue(isinstance(sel.get("config_suggest"), dict))
-            pg = d1.get("portfolio_gate_config") if isinstance(d1.get("portfolio_gate_config"), dict) else {}
+            pg = (
+                d1.get("portfolio_gate_config")
+                if isinstance(d1.get("portfolio_gate_config"), dict)
+                else {}
+            )
             self.assertTrue(bool(pg))
             self.assertIn("u_r_min", pg)
             self.assertIn("dd_guard", pg)
@@ -872,27 +1212,33 @@ class TestAgentE2EAcceptance(unittest.TestCase):
             self.assertIn("rollback_consecutive_gate_fail_k", pg)
             r2 = client.post(
                 "/agent/paramopt/run",
-                data=json.dumps({
-                    "mode": "suggest",
-                    "family": "lr",
-                    "eval_mode": "rolling",
-                    "folds": 3,
-                    "n_init": 1,
-                    "n_iter": 1,
-                    "keys": keys,
-                    "bootstrap_samples": False,
-                    "skip_robustness": True,
-                    "portfolio_u_r_min": 0.03,
-                    "portfolio_dd_guard": 0.07,
-                    "portfolio_tail_guard": 0.12,
-                    "portfolio_order_fail_delta_guard": 0.04,
-                    "portfolio_rollback_consecutive_gate_fail_k": 3,
-                }),
+                data=json.dumps(
+                    {
+                        "mode": "suggest",
+                        "family": "lr",
+                        "eval_mode": "rolling",
+                        "folds": 3,
+                        "n_init": 1,
+                        "n_iter": 1,
+                        "keys": keys,
+                        "bootstrap_samples": False,
+                        "skip_robustness": True,
+                        "portfolio_u_r_min": 0.03,
+                        "portfolio_dd_guard": 0.07,
+                        "portfolio_tail_guard": 0.12,
+                        "portfolio_order_fail_delta_guard": 0.04,
+                        "portfolio_rollback_consecutive_gate_fail_k": 3,
+                    }
+                ),
                 content_type="application/json",
             )
             self.assertEqual(r2.status_code, 200)
             d2 = r2.get_json() or {}
-            pg2 = d2.get("portfolio_gate_config") if isinstance(d2.get("portfolio_gate_config"), dict) else {}
+            pg2 = (
+                d2.get("portfolio_gate_config")
+                if isinstance(d2.get("portfolio_gate_config"), dict)
+                else {}
+            )
             self.assertEqual(float(pg2.get("u_r_min") or 0.0), 0.03)
             self.assertEqual(float(pg2.get("dd_guard") or 0.0), 0.07)
             self.assertEqual(float(pg2.get("tail_guard") or 0.0), 0.12)
@@ -913,7 +1259,9 @@ class TestAgentE2EAcceptance(unittest.TestCase):
             required_regimes=["trend", "chop", "highvol"],
         )
         self.assertEqual(str(stats.get("ok")), "True")
-        miss = stats.get("missing_required") if isinstance(stats.get("missing_required"), list) else []
+        miss = (
+            stats.get("missing_required") if isinstance(stats.get("missing_required"), list) else []
+        )
         self.assertIn("highvol", miss)
         gate = svc._paramopt_regime_gate_eval(
             stats=stats,
@@ -962,7 +1310,10 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         orig_extract = getattr(svc, "_paramopt_eval_extract_rolling", None)
         orig_score = getattr(svc, "_paramopt_score_rolling", None)
         svc._rolling_window_verify = lambda **_kwargs: {"ok": True}
-        svc._paramopt_eval_extract_rolling = lambda *_args, **_kwargs: {"ok": True, "stressed": {"trades_per_day": 100.0, "coverage": 1.0}}
+        svc._paramopt_eval_extract_rolling = lambda *_args, **_kwargs: {
+            "ok": True,
+            "stressed": {"trades_per_day": 100.0, "coverage": 1.0},
+        }
         svc._paramopt_score_rolling = lambda *_args, **_kwargs: (1.0, {"reason": "test"})
         client = svc.app.test_client()
         try:
@@ -1008,7 +1359,9 @@ class TestAgentE2EAcceptance(unittest.TestCase):
             "B": {"rets": [-0.05, -0.04]},
             "C": {"rets": [0.02, 0.01]},
         }
-        out = svc._paramopt_strategy_cycle_select_targets(now_ms=1_700_000_000_000, topn=2, selector="loss")
+        out = svc._paramopt_strategy_cycle_select_targets(
+            now_ms=1_700_000_000_000, topn=2, selector="loss"
+        )
         self.assertTrue(bool(out.get("ok")))
         targets = out.get("targets") if isinstance(out.get("targets"), list) else []
         self.assertGreaterEqual(len(targets), 2)
@@ -1018,13 +1371,17 @@ class TestAgentE2EAcceptance(unittest.TestCase):
     def test_paramopt_strategy_cycle_select_targets_by_backtest(self) -> None:
         svc.TRACKER_STATE["strategy_weights"] = {"A": 0.9, "B": 0.8, "C": 0.7}
         orig_bt = getattr(svc, "_paramopt_strategy_cycle_backtest_rank_map", None)
-        svc._paramopt_strategy_cycle_backtest_rank_map = lambda _ids, metric_key="profit_total_pct": {
-            "A": {"score": -0.2, "metric": metric_key},
-            "B": {"score": -5.0, "metric": metric_key},
-            "C": {"score": 1.0, "metric": metric_key},
-        }
+        svc._paramopt_strategy_cycle_backtest_rank_map = (
+            lambda _ids, metric_key="profit_total_pct": {
+                "A": {"score": -0.2, "metric": metric_key},
+                "B": {"score": -5.0, "metric": metric_key},
+                "C": {"score": 1.0, "metric": metric_key},
+            }
+        )
         try:
-            out = svc._paramopt_strategy_cycle_select_targets(now_ms=1_700_000_000_000, topn=2, selector="backtest")
+            out = svc._paramopt_strategy_cycle_select_targets(
+                now_ms=1_700_000_000_000, topn=2, selector="backtest"
+            )
             self.assertTrue(bool(out.get("ok")))
             self.assertEqual(str(out.get("selector") or ""), "backtest")
             targets = out.get("targets") if isinstance(out.get("targets"), list) else []
@@ -1045,15 +1402,19 @@ class TestAgentE2EAcceptance(unittest.TestCase):
             "S1": {"rets": [0.03, -0.01]},
             "S2": {"rets": [-0.06, -0.04]},
         }
-        called: List[str] = []
+        called: List[str] = []  # noqa: F821
         orig_post = getattr(svc, "_automation_local_post_json", None)
-        svc._automation_local_post_json = lambda _ep, _fn, payload: (called.append(str((payload or {}).get("strategy_id") or "")) or ({"ok": True}, 200))
+        svc._automation_local_post_json = lambda _ep, _fn, payload: (
+            called.append(str((payload or {}).get("strategy_id") or "")) or ({"ok": True}, 200)
+        )
         try:
             rep = svc._automation_paramopt_strategy_cycle_run(1_700_000_500_000)
             self.assertTrue(bool(rep.get("ok")))
             ran = rep.get("ran") if isinstance(rep.get("ran"), list) else []
             self.assertTrue(bool(ran))
-            self.assertEqual(str((ran[0] if isinstance(ran[0], dict) else {}).get("strategy_id") or ""), "S2")
+            self.assertEqual(
+                str((ran[0] if isinstance(ran[0], dict) else {}).get("strategy_id") or ""), "S2"
+            )
             self.assertEqual(called[:1], ["S2"])
         finally:
             if orig_post is not None:
@@ -1066,9 +1427,11 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         svc.AUTOMATION["paramopt_strategy_cycle_allow_apply"] = False
         svc.TRACKER_STATE["strategy_weights"] = {"S1": 0.9}
         svc.TRACKER_STATE["strategy_perf"] = {"S1": {"rets": [-0.03, -0.02]}}
-        payloads: List[Dict[str, Any]] = []
+        payloads: List[Dict[str, Any]] = []  # noqa: F821
         orig_post = getattr(svc, "_automation_local_post_json", None)
-        svc._automation_local_post_json = lambda _ep, _fn, payload: (payloads.append(dict(payload or {})) or ({"ok": True}, 200))
+        svc._automation_local_post_json = lambda _ep, _fn, payload: (
+            payloads.append(dict(payload or {})) or ({"ok": True}, 200)
+        )
         try:
             rep = svc._automation_paramopt_strategy_cycle_run(1_700_000_600_000)
             self.assertTrue(bool(rep.get("ok")))
@@ -1088,9 +1451,11 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         svc.AUTOMATION["paramopt_strategy_cycle_apply_confirm_required"] = True
         svc.TRACKER_STATE["strategy_weights"] = {"S1": 0.9}
         svc.TRACKER_STATE["strategy_perf"] = {"S1": {"rets": [-0.03, -0.02]}}
-        payloads: List[Dict[str, Any]] = []
+        payloads: List[Dict[str, Any]] = []  # noqa: F821
         orig_post = getattr(svc, "_automation_local_post_json", None)
-        svc._automation_local_post_json = lambda _ep, _fn, payload: (payloads.append(dict(payload or {})) or ({"ok": True}, 200))
+        svc._automation_local_post_json = lambda _ep, _fn, payload: (
+            payloads.append(dict(payload or {})) or ({"ok": True}, 200)
+        )
         try:
             rep = svc._automation_paramopt_strategy_cycle_run(1_700_000_700_000)
             self.assertTrue(bool(rep.get("ok")))
@@ -1132,7 +1497,11 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         chat_outbox = os.path.join(self._td.name, "chat.jsonl")
         with open(chat_outbox, "r", encoding="utf-8") as f:
             rows = [json.loads(line) for line in f.read().splitlines() if line.strip()]
-        plans = [r for r in rows if isinstance(r, dict) and str(r.get("type")) == "loss.decision_tree.plan"]
+        plans = [
+            r
+            for r in rows
+            if isinstance(r, dict) and str(r.get("type")) == "loss.decision_tree.plan"
+        ]
         self.assertTrue(bool(plans))
         plan = plans[-1].get("plan") if isinstance(plans[-1], dict) else {}
         actions = (plan.get("actions") if isinstance(plan, dict) else None) or []
@@ -1142,7 +1511,9 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         with open(sandbox_q, "r", encoding="utf-8") as f:
             qrows = [json.loads(line) for line in f.read().splitlines() if line.strip()]
         self.assertTrue(bool(qrows))
-        self.assertTrue(any(isinstance(r, dict) and str(r.get("type")) == "sandbox.job.request" for r in qrows))
+        self.assertTrue(
+            any(isinstance(r, dict) and str(r.get("type")) == "sandbox.job.request" for r in qrows)
+        )
 
     def test_pnl_drawdown_rate_limited_emits_loss_auto_tasks_result(self) -> None:
         now_ms = 1_700_000_310_000
@@ -1157,7 +1528,11 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 "agent_pnl_auto_run_min_interval_sec": 1800,
             }
         )
-        svc.TRACKER_STATE["agent_pnl_trigger_state"] = {"last_auto_run_ms": int(now_ms), "seen": {}, "seen_plan": {}}
+        svc.TRACKER_STATE["agent_pnl_trigger_state"] = {
+            "last_auto_run_ms": int(now_ms),
+            "seen": {},
+            "seen_plan": {},
+        }
 
         svc.TRACKER_STATE["ab_settlements"] = []
         for i in range(6):
@@ -1176,7 +1551,13 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         chat_outbox = os.path.join(self._td.name, "chat.jsonl")
         with open(chat_outbox, "r", encoding="utf-8") as f:
             rows = [json.loads(line) for line in f.read().splitlines() if line.strip()]
-        results = [r for r in rows if isinstance(r, dict) and str(r.get("type")) == "loss.auto.tasks.result" and bool(r.get("skipped"))]
+        results = [
+            r
+            for r in rows
+            if isinstance(r, dict)
+            and str(r.get("type")) == "loss.auto.tasks.result"
+            and bool(r.get("skipped"))
+        ]
         self.assertTrue(bool(results))
 
     def test_sandbox_worker_processes_blocked_job(self) -> None:
@@ -1195,7 +1576,11 @@ class TestAgentE2EAcceptance(unittest.TestCase):
             "trace_id": "trace1",
             "ts": now_ms,
             "type": "sandbox.job.request",
-            "inputs": {"base_trace_id": "base1", "candidates": [], "gates": ["backtest", "robustness"]},
+            "inputs": {
+                "base_trace_id": "base1",
+                "candidates": [],
+                "gates": ["backtest", "robustness"],
+            },
             "outputs": {"status": "blocked", "block_reasons": ["no_candidate_with_p3_gate_ok"]},
         }
         svc._agent_outbox_append_jsonl("sandbox_queue.jsonl", q_item)
@@ -1205,7 +1590,9 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         self.assertGreaterEqual(int((rep or {}).get("processed_n") or 0), 1)
         with open(chat_outbox, "r", encoding="utf-8") as f:
             rows = [json.loads(line) for line in f.read().splitlines() if line.strip()]
-        self.assertTrue(any(isinstance(r, dict) and str(r.get("type")) == "sandbox.job.result" for r in rows))
+        self.assertTrue(
+            any(isinstance(r, dict) and str(r.get("type")) == "sandbox.job.result" for r in rows)
+        )
 
     def test_pipeline_sandbox_gate_updates_pipeline_state_and_triggers_gray_rollout(self) -> None:
         trace_id = "t_pipe_gray_1"
@@ -1230,8 +1617,14 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         st0 = svc._agent_pipeline_state_find_latest(trace_id=trace_id)
         self.assertTrue(isinstance(st0, dict))
         stages0 = st0.get("stages") if isinstance(st0.get("stages"), list) else []
-        sb0 = [s for s in stages0 if isinstance(s, dict) and str(s.get("name") or "") == "sandbox_validation"]
-        gr0 = [s for s in stages0 if isinstance(s, dict) and str(s.get("name") or "") == "gray_rollout"]
+        sb0 = [
+            s
+            for s in stages0
+            if isinstance(s, dict) and str(s.get("name") or "") == "sandbox_validation"
+        ]
+        gr0 = [
+            s for s in stages0 if isinstance(s, dict) and str(s.get("name") or "") == "gray_rollout"
+        ]
         self.assertTrue(bool(sb0))
         self.assertTrue(bool(gr0))
         self.assertIn(str(sb0[0].get("status")), ("running", "skipped"))
@@ -1241,8 +1634,20 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         svc._sandbox_job_result_emit(
             trace_id=trace_id,
             now_ms=int(now_ms),
-            inputs={"base_trace_id": None, "trigger_event": "unit_test", "candidates": [{"strategy_id": "UnitStrategy", "source_zip": "unit.zip"}]},
-            outputs={"gate_result": {"ok": True, "decision": "pass", "reasons": ["unit_ok"], "candidates": [], "selected": {"strategy_id": "UnitStrategy", "source_zip": "unit.zip"}}},
+            inputs={
+                "base_trace_id": None,
+                "trigger_event": "unit_test",
+                "candidates": [{"strategy_id": "UnitStrategy", "source_zip": "unit.zip"}],
+            },
+            outputs={
+                "gate_result": {
+                    "ok": True,
+                    "decision": "pass",
+                    "reasons": ["unit_ok"],
+                    "candidates": [],
+                    "selected": {"strategy_id": "UnitStrategy", "source_zip": "unit.zip"},
+                }
+            },
             evidence=[],
             doc_refs=[],
         )
@@ -1250,8 +1655,14 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         st1 = svc._agent_pipeline_state_find_latest(trace_id=trace_id)
         self.assertTrue(isinstance(st1, dict))
         stages1 = st1.get("stages") if isinstance(st1.get("stages"), list) else []
-        sb1 = [s for s in stages1 if isinstance(s, dict) and str(s.get("name") or "") == "sandbox_validation"]
-        gr1 = [s for s in stages1 if isinstance(s, dict) and str(s.get("name") or "") == "gray_rollout"]
+        sb1 = [
+            s
+            for s in stages1
+            if isinstance(s, dict) and str(s.get("name") or "") == "sandbox_validation"
+        ]
+        gr1 = [
+            s for s in stages1 if isinstance(s, dict) and str(s.get("name") or "") == "gray_rollout"
+        ]
         self.assertTrue(bool(sb1))
         self.assertTrue(bool(gr1))
         self.assertEqual(str(sb1[0].get("status")), "success")
@@ -1288,8 +1699,20 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         svc._sandbox_job_result_emit(
             trace_id=trace_id,
             now_ms=int(now_ms),
-            inputs={"base_trace_id": None, "trigger_event": "unit_test", "candidates": [{"strategy_id": "UnitStrategy", "source_zip": "unit.zip"}]},
-            outputs={"gate_result": {"ok": True, "decision": "pass", "reasons": ["unit_ok"], "candidates": [], "selected": {"strategy_id": "UnitStrategy", "source_zip": "unit.zip"}}},
+            inputs={
+                "base_trace_id": None,
+                "trigger_event": "unit_test",
+                "candidates": [{"strategy_id": "UnitStrategy", "source_zip": "unit.zip"}],
+            },
+            outputs={
+                "gate_result": {
+                    "ok": True,
+                    "decision": "pass",
+                    "reasons": ["unit_ok"],
+                    "candidates": [],
+                    "selected": {"strategy_id": "UnitStrategy", "source_zip": "unit.zip"},
+                }
+            },
             evidence=[],
             doc_refs=[],
         )
@@ -1300,7 +1723,11 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         d2 = r2.get_json() or {}
         self.assertTrue(bool(d2.get("ok")))
         cards = d2.get("cards") if isinstance(d2.get("cards"), list) else []
-        shadow_cards = [x for x in cards if isinstance(x, dict) and str(x.get("card_id") or "") == "strategy_shadow_loop"]
+        shadow_cards = [
+            x
+            for x in cards
+            if isinstance(x, dict) and str(x.get("card_id") or "") == "strategy_shadow_loop"
+        ]
         self.assertTrue(bool(shadow_cards))
         sc = shadow_cards[0]
         prog = sc.get("progress") if isinstance(sc.get("progress"), dict) else {}
@@ -1347,17 +1774,27 @@ class TestAgentE2EAcceptance(unittest.TestCase):
             svc.TRACKER_STATE["gate_history"] = []
             gate0 = svc._serving_pipeline_guard_status(sp=sp, now_ms=int(now_ms))
             self.assertTrue(bool(gate0.get("pass")))
-            sc0 = gate0.get("success_criteria") if isinstance(gate0.get("success_criteria"), dict) else {}
+            sc0 = (
+                gate0.get("success_criteria")
+                if isinstance(gate0.get("success_criteria"), dict)
+                else {}
+            )
             self.assertTrue(bool(sc0.get("success")))
             self.assertTrue(bool(sc0.get("p0")))
 
-            svc.TRACKER_STATE["gate_history"] = [{"ts": int(now_ms), "ok": False, "reason": "daily_loss_limit", "system_id": "unit"}]
+            svc.TRACKER_STATE["gate_history"] = [
+                {"ts": int(now_ms), "ok": False, "reason": "daily_loss_limit", "system_id": "unit"}
+            ]
             sp["canary_start_ms"] = int(now_ms) - 60_000
             gate1 = svc._serving_pipeline_guard_status(sp=sp, now_ms=int(now_ms))
             self.assertFalse(bool(gate1.get("pass")))
             checks1 = gate1.get("checks") if isinstance(gate1.get("checks"), dict) else {}
             self.assertFalse(bool(checks1.get("p0_loss")))
-            sc1 = gate1.get("success_criteria") if isinstance(gate1.get("success_criteria"), dict) else {}
+            sc1 = (
+                gate1.get("success_criteria")
+                if isinstance(gate1.get("success_criteria"), dict)
+                else {}
+            )
             self.assertFalse(bool(sc1.get("success")))
             self.assertFalse(bool(sc1.get("p0")))
             self.assertTrue(bool(gate1.get("rollback_recommended")))
@@ -1374,14 +1811,23 @@ class TestAgentE2EAcceptance(unittest.TestCase):
 
         r0 = client.post(
             "/approvals/log",
-            json={"approver": "unit", "decision": "reject", "action": "governance.changeset.apply", "reason": "unit_test"},
+            json={
+                "approver": "unit",
+                "decision": "reject",
+                "action": "governance.changeset.apply",
+                "reason": "unit_test",
+            },
             environ_base={"REMOTE_ADDR": "127.0.0.1"},
         )
         self.assertEqual(r0.status_code, 200)
         rid = str((r0.get_json() or {}).get("id") or "").strip()
         self.assertTrue(bool(rid))
 
-        r1 = client.post("/governance/changeset/apply", json={"approval_id": rid}, environ_base={"REMOTE_ADDR": "8.8.8.8"})
+        r1 = client.post(
+            "/governance/changeset/apply",
+            json={"approval_id": rid},
+            environ_base={"REMOTE_ADDR": "8.8.8.8"},
+        )
         self.assertEqual(r1.status_code, 403)
         d1 = r1.get_json() or {}
         self.assertEqual(str(d1.get("error")), "approval_rejected")
@@ -1405,7 +1851,12 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 "family": "trend",
                 "stage": "deployment",
                 "gate_result": {"ok": True},
-                "metrics_summary": {"backtest_days": 365, "profit_factor": 1.20, "max_drawdown_pct": 0.09, "trades": 210},
+                "metrics_summary": {
+                    "backtest_days": 365,
+                    "profit_factor": 1.20,
+                    "max_drawdown_pct": 0.09,
+                    "trades": 210,
+                },
                 "backtest_spec": {"cost_profile_id": "unit_cost"},
             }
             base = {
@@ -1414,17 +1865,32 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 "family": "trend",
                 "stage": "deployment",
                 "gate_result": {"ok": True},
-                "metrics_summary": {"backtest_days": 365, "profit_factor": 1.10, "max_drawdown_pct": 0.10, "trades": 200},
+                "metrics_summary": {
+                    "backtest_days": 365,
+                    "profit_factor": 1.10,
+                    "max_drawdown_pct": 0.10,
+                    "trades": 200,
+                },
                 "backtest_spec": {"cost_profile_id": "unit_cost"},
             }
-            r_up = client.post("/strategy/registry/upsert", json={"items": [cand, base]}, environ_base={"REMOTE_ADDR": "127.0.0.1"})
+            r_up = client.post(
+                "/strategy/registry/upsert",
+                json={"items": [cand, base]},
+                environ_base={"REMOTE_ADDR": "127.0.0.1"},
+            )
             self.assertEqual(r_up.status_code, 200)
             self.assertEqual(int((r_up.get_json() or {}).get("saved") or 0), 2)
 
             changeset = {
                 "policy_ref": "gov_default",
                 "action": "config.apply",
-                "doc_refs": [{"doc_path": "交易AI Agent 技术文档2.0.md", "section": "4.7.6", "rule": "变更包最小集合"}],
+                "doc_refs": [
+                    {
+                        "doc_path": "交易AI Agent 技术文档2.0.md",
+                        "section": "4.7.6",
+                        "rule": "变更包最小集合",
+                    }
+                ],
                 "strategy_id": "CandidateStrategy",
                 "source_zip": "unit_candidate.zip",
                 "baseline_ref": "unit-baseline-ref",
@@ -1434,7 +1900,11 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 "objective_profile": "risk_tighten",
                 "config_patch": {"max_open_trades": 5},
             }
-            r_pe = client.post("/policy/evaluate", json={"policy_ref": "gov_default", "changeset": changeset, "auto_approve": True}, environ_base={"REMOTE_ADDR": "127.0.0.1"})
+            r_pe = client.post(
+                "/policy/evaluate",
+                json={"policy_ref": "gov_default", "changeset": changeset, "auto_approve": True},
+                environ_base={"REMOTE_ADDR": "127.0.0.1"},
+            )
             self.assertEqual(r_pe.status_code, 200)
             d_pe = r_pe.get_json() or {}
             self.assertEqual(str(d_pe.get("decision") or "").lower(), "pass")
@@ -1445,7 +1915,12 @@ class TestAgentE2EAcceptance(unittest.TestCase):
 
             r_apply = client.post(
                 "/governance/changeset/apply",
-                json={"policy_ref": "gov_default", "changeset": changeset, "approval_id": aid, "trace_id": "t_unit_apply"},
+                json={
+                    "policy_ref": "gov_default",
+                    "changeset": changeset,
+                    "approval_id": aid,
+                    "trace_id": "t_unit_apply",
+                },
                 environ_base={"REMOTE_ADDR": "127.0.0.1"},
             )
             self.assertEqual(r_apply.status_code, 200)
@@ -1477,7 +1952,12 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 "family": "trend",
                 "stage": "deployment",
                 "gate_result": {"ok": True},
-                "metrics_summary": {"backtest_days": 365, "profit_factor": 1.20, "max_drawdown_pct": 0.09, "trades": 210},
+                "metrics_summary": {
+                    "backtest_days": 365,
+                    "profit_factor": 1.20,
+                    "max_drawdown_pct": 0.09,
+                    "trades": 210,
+                },
                 "backtest_spec": {"cost_profile_id": "unit_cost"},
             }
             base = {
@@ -1486,26 +1966,48 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 "family": "trend",
                 "stage": "deployment",
                 "gate_result": {"ok": True},
-                "metrics_summary": {"backtest_days": 365, "profit_factor": 1.10, "max_drawdown_pct": 0.10, "trades": 200},
+                "metrics_summary": {
+                    "backtest_days": 365,
+                    "profit_factor": 1.10,
+                    "max_drawdown_pct": 0.10,
+                    "trades": 200,
+                },
                 "backtest_spec": {"cost_profile_id": "unit_cost"},
             }
-            r_up = client.post("/strategy/registry/upsert", json={"items": [cand, base]}, environ_base={"REMOTE_ADDR": "127.0.0.1"})
+            r_up = client.post(
+                "/strategy/registry/upsert",
+                json={"items": [cand, base]},
+                environ_base={"REMOTE_ADDR": "127.0.0.1"},
+            )
             self.assertEqual(r_up.status_code, 200)
 
             changeset_b = {
                 "policy_ref": "gov_default",
                 "action": "config.apply",
-                "doc_refs": [{"doc_path": "交易AI Agent 技术文档2.0.md", "section": "4.7.6", "rule": "变更包最小集合"}],
+                "doc_refs": [
+                    {
+                        "doc_path": "交易AI Agent 技术文档2.0.md",
+                        "section": "4.7.6",
+                        "rule": "变更包最小集合",
+                    }
+                ],
                 "strategy_id": "CandidateStrategyB",
                 "source_zip": "unit_candidate_b.zip",
                 "baseline_ref": "unit-baseline-ref",
-                "baseline": {"strategy_id": "BaselineStrategyB", "source_zip": "unit_baseline_b.zip"},
+                "baseline": {
+                    "strategy_id": "BaselineStrategyB",
+                    "source_zip": "unit_baseline_b.zip",
+                },
                 "online_metrics": {"decision": "pass"},
                 "direction": "param",
                 "objective_profile": "risk_tighten",
                 "config_patch": {"serving_shadow_mode": True},
             }
-            r_pe = client.post("/policy/evaluate", json={"policy_ref": "gov_default", "changeset": changeset_b, "auto_approve": True}, environ_base={"REMOTE_ADDR": "127.0.0.1"})
+            r_pe = client.post(
+                "/policy/evaluate",
+                json={"policy_ref": "gov_default", "changeset": changeset_b, "auto_approve": True},
+                environ_base={"REMOTE_ADDR": "127.0.0.1"},
+            )
             self.assertEqual(r_pe.status_code, 200)
             d_pe = r_pe.get_json() or {}
             self.assertEqual(str(d_pe.get("decision") or "").lower(), "pass")
@@ -1519,28 +2021,45 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 svc._strategy_registry_save = orig_save
 
     def test_characterization_gate_blocks_config_change_without_baseline(self) -> None:
-        svc.CONFIG.update({"characterization_gate_enabled": True, "characterization_gate_bypass_in_test_mode": False})
+        svc.CONFIG.update(
+            {
+                "characterization_gate_enabled": True,
+                "characterization_gate_bypass_in_test_mode": False,
+            }
+        )
         p = Path(self._td.name) / "datasets" / "characterization_baseline.json"
         if p.exists():
             p.unlink()
 
-        out0, code0 = svc._config_set_impl({"signals_dedup_ttl_sec": 7200}, confirm_live=True, action="config.set")
+        out0, code0 = svc._config_set_impl(
+            {"signals_dedup_ttl_sec": 7200}, confirm_live=True, action="config.set"
+        )
         self.assertEqual(int(code0), 412)
         self.assertFalse(bool(out0.get("ok")))
         self.assertEqual(str(out0.get("error")), "characterization_gate_failed")
 
         client = svc.app.test_client()
-        r_b = client.post("/governance/characterization/baseline/build", json={"write": True}, environ_base={"REMOTE_ADDR": "127.0.0.1"})
+        r_b = client.post(
+            "/governance/characterization/baseline/build",
+            json={"write": True},
+            environ_base={"REMOTE_ADDR": "127.0.0.1"},
+        )
         self.assertEqual(r_b.status_code, 200)
         d_b = r_b.get_json(force=True) or {}
         self.assertTrue(bool(d_b.get("ok")))
 
-        r_c = client.post("/governance/characterization/compare", json={}, environ_base={"REMOTE_ADDR": "127.0.0.1"})
+        r_c = client.post(
+            "/governance/characterization/compare",
+            json={},
+            environ_base={"REMOTE_ADDR": "127.0.0.1"},
+        )
         self.assertEqual(r_c.status_code, 200)
         d_c = r_c.get_json(force=True) or {}
         self.assertTrue(bool(d_c.get("ok")))
 
-        out1, code1 = svc._config_set_impl({"signals_dedup_ttl_sec": 7200}, confirm_live=True, action="config.set")
+        out1, code1 = svc._config_set_impl(
+            {"signals_dedup_ttl_sec": 7200}, confirm_live=True, action="config.set"
+        )
         self.assertEqual(int(code1), 200)
         self.assertTrue(bool(out1.get("ok")))
         self.assertEqual(int(svc.CONFIG.get("signals_dedup_ttl_sec") or 0), 7200)
@@ -1550,10 +2069,16 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         import pandas as pd
 
         orig_gid = svc.CONFIG.get("three_screen_group_id_default")
-        svc.CONFIG.update({"three_screen_daily_autogen_enabled": True, "three_screen_group_id_default": "ThreeScreen.test_daily_autofill"})
+        svc.CONFIG.update(
+            {
+                "three_screen_daily_autogen_enabled": True,
+                "three_screen_group_id_default": "ThreeScreen.test_daily_autofill",
+            }
+        )
 
         orig_macro_daily = getattr(svc, "_macro_daily_df", None)
         try:
+
             def _stub_daily_df(_coin: str):
                 n = 260
                 idx = pd.date_range("2024-01-01", periods=n, freq="D", tz="UTC")
@@ -1564,7 +2089,10 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 high = np.maximum(open_, close) + 0.8
                 low = np.minimum(open_, close) - 0.8
                 vol = np.random.default_rng(9).uniform(1000.0, 2000.0, n)
-                return pd.DataFrame({"open": open_, "high": high, "low": low, "close": close, "volume": vol}, index=idx)
+                return pd.DataFrame(
+                    {"open": open_, "high": high, "low": low, "close": close, "volume": vol},
+                    index=idx,
+                )
 
             svc._macro_daily_df = _stub_daily_df
 
@@ -1576,7 +2104,12 @@ class TestAgentE2EAcceptance(unittest.TestCase):
             self.assertTrue(bool(obj.get("exists")))
             self.assertIn(str(obj.get("daily_signal_dir")), ("long", "short", "neutral"))
 
-            evt = svc._three_screen_pick_latest_event(timeframe="1d", coin="BTC", group_id=str(svc.CONFIG.get("three_screen_group_id_default") or "ThreeScreen.v0"), require_bar_closed=True)
+            evt = svc._three_screen_pick_latest_event(
+                timeframe="1d",
+                coin="BTC",
+                group_id=str(svc.CONFIG.get("three_screen_group_id_default") or "ThreeScreen.v0"),
+                require_bar_closed=True,
+            )
             self.assertTrue(isinstance(evt, dict))
             payload = dict(evt or {})
             payload["trigger_decision"] = False
@@ -1610,6 +2143,7 @@ class TestAgentE2EAcceptance(unittest.TestCase):
 
         orig_macro_daily = getattr(svc, "_macro_daily_df", None)
         try:
+
             def _stub_daily_df(_coin: str):
                 n = 320
                 idx = pd.date_range("2024-01-01", periods=n, freq="D", tz="UTC")
@@ -1620,7 +2154,10 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 high = np.maximum(open_, close) + 0.7
                 low = np.minimum(open_, close) - 0.7
                 vol = np.random.default_rng(13).uniform(1000.0, 2000.0, n)
-                return pd.DataFrame({"open": open_, "high": high, "low": low, "close": close, "volume": vol}, index=idx)
+                return pd.DataFrame(
+                    {"open": open_, "high": high, "low": low, "close": close, "volume": vol},
+                    index=idx,
+                )
 
             svc._macro_daily_df = _stub_daily_df
 
@@ -1638,7 +2175,7 @@ class TestAgentE2EAcceptance(unittest.TestCase):
             self.assertTrue(bool(d1.get("exists")))
             topk = d1.get("topk") if isinstance(d1.get("topk"), list) else []
             self.assertTrue(bool(topk))
-            folds = (topk[0].get("folds") if isinstance(topk[0], dict) else None)
+            folds = topk[0].get("folds") if isinstance(topk[0], dict) else None
             self.assertTrue(isinstance(folds, list) and len(folds) >= 1)
         finally:
             if orig_gid is not None:
@@ -1663,6 +2200,7 @@ class TestAgentE2EAcceptance(unittest.TestCase):
         orig_macro_daily = getattr(svc, "_macro_daily_df", None)
         orig_select = getattr(svc, "_three_screen_daily_select_from_stats", None)
         try:
+
             def _stub_daily_df(_coin: str):
                 n = 260
                 idx = pd.date_range("2024-01-01", periods=n, freq="D", tz="UTC")
@@ -1673,11 +2211,18 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 high = np.maximum(open_, close) + 0.8
                 low = np.minimum(open_, close) - 0.8
                 vol = np.random.default_rng(19).uniform(1000.0, 2000.0, n)
-                return pd.DataFrame({"open": open_, "high": high, "low": low, "close": close, "volume": vol}, index=idx)
+                return pd.DataFrame(
+                    {"open": open_, "high": high, "low": low, "close": close, "volume": vol},
+                    index=idx,
+                )
 
             svc._macro_daily_df = _stub_daily_df
 
-            r0 = svc._three_screen_daily_build_and_emit(coin="BTC", group_id=str(svc.CONFIG.get("three_screen_group_id_default") or "ThreeScreen.v0"), emit=False)
+            r0 = svc._three_screen_daily_build_and_emit(
+                coin="BTC",
+                group_id=str(svc.CONFIG.get("three_screen_group_id_default") or "ThreeScreen.v0"),
+                emit=False,
+            )
             sig0 = (r0.get("signal") if isinstance(r0, dict) else None) or {}
             bar_close_ms = int(sig0.get("bar_close_ms") or 0)
             self.assertTrue(int(bar_close_ms) > 0)
@@ -1690,7 +2235,9 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 "ingested_ms": int(bar_close_ms - 86400 * 1000),
                 "strategy_id": "ThreeScreen",
                 "strategy_version": "1.0.0",
-                "group_id": str(svc.CONFIG.get("three_screen_group_id_default") or "ThreeScreen.v0"),
+                "group_id": str(
+                    svc.CONFIG.get("three_screen_group_id_default") or "ThreeScreen.v0"
+                ),
                 "pair": "BTC/USDC",
                 "timeframe": "1d",
                 "action": "observe",
@@ -1713,13 +2260,19 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 return {
                     "ok": True,
                     "daily_topk_k": 1,
-                    "daily_topk": [{"indicator_id": "ema_cross_12_26_v1", "weight": 1.0, "oos_score": 0.0}],
+                    "daily_topk": [
+                        {"indicator_id": "ema_cross_12_26_v1", "weight": 1.0, "oos_score": 0.0}
+                    ],
                     "daily_best_indicator_id": "ema_cross_12_26_v1",
                 }
 
             svc._three_screen_daily_select_from_stats = _stub_select
 
-            r1 = svc._three_screen_daily_build_and_emit(coin="BTC", group_id=str(svc.CONFIG.get("three_screen_group_id_default") or "ThreeScreen.v0"), emit=False)
+            r1 = svc._three_screen_daily_build_and_emit(
+                coin="BTC",
+                group_id=str(svc.CONFIG.get("three_screen_group_id_default") or "ThreeScreen.v0"),
+                emit=False,
+            )
             sig1 = (r1.get("signal") if isinstance(r1, dict) else None) or {}
             feats1 = sig1.get("features") if isinstance(sig1.get("features"), dict) else {}
             self.assertEqual(str(feats1.get("daily_best_indicator_id")), str(prev_best))
@@ -1744,7 +2297,10 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 self.assertTrue(str(p).endswith("/pilot") or str(p).endswith("\\pilot"))
 
                 with svc.app.test_client() as c:
-                    r = c.get("/agent/governance/scan_contamination", environ_base={"REMOTE_ADDR": "127.0.0.1"})
+                    r = c.get(
+                        "/agent/governance/scan_contamination",
+                        environ_base={"REMOTE_ADDR": "127.0.0.1"},
+                    )
                     self.assertEqual(int(r.status_code), 200)
                     d = r.get_json(force=True) or {}
                     self.assertTrue(bool(d.get("ok")))
@@ -1774,7 +2330,10 @@ class TestAgentE2EAcceptance(unittest.TestCase):
                 p = svc._runtime_config_path()
                 self.assertEqual(str(p), str(Path(td) / "ml_config.json"))
 
-                Path(td, "ml_config.json").write_text(json.dumps({"governance_env": "pilot", "serving_canary_size_frac": 0.2}), encoding="utf-8")
+                Path(td, "ml_config.json").write_text(
+                    json.dumps({"governance_env": "pilot", "serving_canary_size_frac": 0.2}),
+                    encoding="utf-8",
+                )
                 if orig_loaded is not None:
                     svc._CONFIG_LOADED = False
                 svc.CONFIG.clear()

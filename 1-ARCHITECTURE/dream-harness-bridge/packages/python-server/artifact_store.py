@@ -10,15 +10,15 @@
 
 与 D1 (artifact_uri) 协同: subagent 输出 artifact_uri, 此模块负责持久化。
 """
+
 from __future__ import annotations
 
 import json
 import os
 import sqlite3
 import time
-from typing import Any, Dict, List, Optional
 from pathlib import Path
-
+from typing import Any, Dict, List, Optional
 
 # ── 产物类型枚举 ──────────────────────────────
 
@@ -34,6 +34,7 @@ ARTIFACT_TYPES = {
 
 
 # ── 路径解析 ──────────────────────────────────
+
 
 def _resolve_artifacts_root() -> str:
     """解析产物根目录 (与前端 task-manager.ts ARTIFACTS_DIR 对齐)"""
@@ -55,6 +56,7 @@ def _get_meta_db_path(artifacts_root: str) -> str:
 
 
 # ── MetaStore: SQLite 元数据层 ────────────────
+
 
 class MetaStore:
     """SQLite 元数据存储 — 产物元数据索引"""
@@ -87,27 +89,35 @@ class MetaStore:
                 ON artifacts(created_at DESC)
             """)
 
-    def store(self, artifact_uri: str, artifact_type: str, title: str,
-              file_path: str, module: str = "", tags: str = "",
-              metadata: str = "") -> None:
+    def store(
+        self,
+        artifact_uri: str,
+        artifact_type: str,
+        title: str,
+        file_path: str,
+        module: str = "",
+        tags: str = "",
+        metadata: str = "",
+    ) -> None:
         """存储/更新产物元数据"""
         created_at = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
         with sqlite3.connect(self._db_path) as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT OR REPLACE INTO artifacts
                     (artifact_uri, artifact_type, title, file_path,
                      module, tags, created_at, metadata)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (artifact_uri, artifact_type, title, file_path,
-                  module, tags, created_at, metadata))
+            """,
+                (artifact_uri, artifact_type, title, file_path, module, tags, created_at, metadata),
+            )
 
     def get(self, artifact_uri: str) -> Optional[Dict[str, Any]]:
         """按 URI 获取产物元数据"""
         with sqlite3.connect(self._db_path) as conn:
             conn.row_factory = sqlite3.Row
             row = conn.execute(
-                "SELECT * FROM artifacts WHERE artifact_uri = ?",
-                (artifact_uri,)
+                "SELECT * FROM artifacts WHERE artifact_uri = ?", (artifact_uri,)
             ).fetchone()
             return dict(row) if row else None
 
@@ -118,7 +128,7 @@ class MetaStore:
             rows = conn.execute(
                 "SELECT * FROM artifacts WHERE artifact_type = ? "
                 "ORDER BY created_at DESC LIMIT ?",
-                (artifact_type, limit)
+                (artifact_type, limit),
             ).fetchall()
             return [dict(r) for r in rows]
 
@@ -127,8 +137,7 @@ class MetaStore:
         with sqlite3.connect(self._db_path) as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
-                "SELECT * FROM artifacts ORDER BY created_at DESC LIMIT ?",
-                (limit,)
+                "SELECT * FROM artifacts ORDER BY created_at DESC LIMIT ?", (limit,)
             ).fetchall()
             return [dict(r) for r in rows]
 
@@ -138,8 +147,7 @@ class MetaStore:
             total = conn.execute("SELECT COUNT(*) FROM artifacts").fetchone()[0]
             type_counts: Dict[str, int] = {}
             rows = conn.execute(
-                "SELECT artifact_type, COUNT(*) as cnt "
-                "FROM artifacts GROUP BY artifact_type"
+                "SELECT artifact_type, COUNT(*) as cnt " "FROM artifacts GROUP BY artifact_type"
             ).fetchall()
             for r in rows:
                 type_counts[r[0]] = r[1]
@@ -147,6 +155,7 @@ class MetaStore:
 
 
 # ── ArtifactStore: 统一产物存储 ──────────────
+
 
 class ArtifactStore:
     """统一产物存储中间层
@@ -233,8 +242,9 @@ class ArtifactStore:
         with open(file_path, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    def list_artifacts(self, artifact_type: Optional[str] = None,
-                       limit: int = 50) -> List[Dict[str, Any]]:
+    def list_artifacts(
+        self, artifact_type: Optional[str] = None, limit: int = 50
+    ) -> List[Dict[str, Any]]:
         """列出产物元数据"""
         if artifact_type:
             return self._meta.list_by_type(artifact_type, limit)

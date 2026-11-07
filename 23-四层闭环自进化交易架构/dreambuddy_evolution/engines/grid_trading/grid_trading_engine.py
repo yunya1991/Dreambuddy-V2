@@ -15,10 +15,10 @@
 FAIL-OPEN 原则（HC-TF-07）：
   任何异常 → 返回中性兜底 {"action": "WAIT"}，不抛异常
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +26,12 @@ logger = logging.getLogger(__name__)
 # ====================================================================
 # 常量（硬约束对齐）
 # ====================================================================
-GRID_ATR_MULTIPLIER = 1.0        # Δ = 1×ATR（可调 1.0~2.0）
-GRID_MAX_COUNT = 20              # 最多 20 格
+GRID_ATR_MULTIPLIER = 1.0  # Δ = 1×ATR（可调 1.0~2.0）
+GRID_MAX_COUNT = 20  # 最多 20 格
 GRID_SINGLE_BUDGET_RATIO = 0.05  # 单格 = 5% 仓位预算（递减式）
 
-GRID_STOP_LOSS_PCT = 0.08         # 跌破下界 8% 停止加仓（HC-TF-05）
-GRID_REGIME_FILTER = True         # 趋势市暂停网格（HC-TF-05）
+GRID_STOP_LOSS_PCT = 0.08  # 跌破下界 8% 停止加仓（HC-TF-05）
+GRID_REGIME_FILTER = True  # 趋势市暂停网格（HC-TF-05）
 
 
 class GridParameterCalculator:
@@ -60,26 +60,35 @@ class GridParameterCalculator:
             closes = list(kline_data.get("close") or [])
 
             if not highs or not lows or not closes:
-                return {"spacing": 0.0, "grid_count": 0, "single_budget": 0.0,
-                        "grid_upper": 0.0, "grid_lower": 0.0}
+                return {
+                    "spacing": 0.0,
+                    "grid_count": 0,
+                    "single_budget": 0.0,
+                    "grid_upper": 0.0,
+                    "grid_lower": 0.0,
+                }
 
             # 计算 ATR（复用 V15 signal 模块）
             try:
                 import sys
                 from pathlib import Path
+
                 v15_core = Path(__file__).resolve().parents[3] / "14-V15经典马丁策略" / "core"
                 if str(v15_core) not in sys.path:
                     sys.path.insert(0, str(v15_core))
                 from v15_signal import calc_atr  # type: ignore
             except ImportError:
+
                 def calc_atr(highs, lows, closes, period=14):
                     if len(closes) < period + 1:
                         return 0.0
                     tr_list = []
                     for i in range(1, len(closes)):
-                        tr = max(highs[i] - lows[i],
-                                 abs(highs[i] - closes[i - 1]),
-                                 abs(lows[i] - closes[i - 1]))
+                        tr = max(
+                            highs[i] - lows[i],
+                            abs(highs[i] - closes[i - 1]),
+                            abs(lows[i] - closes[i - 1]),
+                        )
                         tr_list.append(tr)
                     return sum(tr_list[-period:]) / min(period, len(tr_list)) if tr_list else 0.0
 
@@ -114,8 +123,13 @@ class GridParameterCalculator:
             }
         except Exception as e:
             logger.warning("[FO] GridParameterCalculator.calc_params: %s", e)
-            return {"spacing": 0.0, "grid_count": 0, "single_budget": 0.0,
-                    "grid_upper": 0.0, "grid_lower": 0.0}
+            return {
+                "spacing": 0.0,
+                "grid_count": 0,
+                "single_budget": 0.0,
+                "grid_upper": 0.0,
+                "grid_lower": 0.0,
+            }
 
 
 class GridRiskGate:

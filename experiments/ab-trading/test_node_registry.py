@@ -13,29 +13,23 @@
 6. 从模块注册表自动生成
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import unittest
-from typing import Dict, Any, List
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from core.nodes.node_registry import (
+from core.nodes.node_registry import (  # noqa: I001
     NodeInfo,
     NodeRegistry,
     IOSchema,
     NodeRetryPolicy,
     NodeFallbackPolicy,
-    get_node_registry,
-    register_node,
-    get_node,
-    get_node_handler,
 )
 
 from core.nodes.node_definitions import (
     get_all_node_definitions,
     LEGACY_TO_NEW_ID,
-    NEW_TO_LEGACY_ID,
     map_legacy_id,
     map_new_id,
 )
@@ -49,10 +43,10 @@ from core.nodes import (
     get_node_registry as global_registry,
 )
 
-
 # ============================================================
 # 数据结构测试
 # ============================================================
+
 
 class TestDataStructures(unittest.TestCase):
     """测试数据结构"""
@@ -123,6 +117,7 @@ class TestDataStructures(unittest.TestCase):
 # 节点注册表测试
 # ============================================================
 
+
 class TestNodeRegistry(unittest.TestCase):
     """测试节点注册表"""
 
@@ -131,17 +126,41 @@ class TestNodeRegistry(unittest.TestCase):
         registry = NodeRegistry()
 
         nodes = [
-            NodeInfo(node_id="n1", name="节点1", chain="A", module_id="m1",
-                     node_type="local_node", tags=["tag1", "tag2"],
-                     applicable_stages=["analysis"]),
-            NodeInfo(node_id="n2", name="节点2", chain="A", module_id="m1",
-                     node_type="skill_node", tags=["tag2", "tag3"],
-                     applicable_stages=["analysis", "strategy"]),
-            NodeInfo(node_id="n3", name="节点3", chain="C", module_id="m2",
-                     node_type="api_node", tags=["tag1", "tag3"],
-                     applicable_stages=["execution"]),
-            NodeInfo(node_id="n4", name="节点4", chain="F", module_id="m3",
-                     node_type="local_node", tags=["tag4"]),
+            NodeInfo(
+                node_id="n1",
+                name="节点1",
+                chain="A",
+                module_id="m1",
+                node_type="local_node",
+                tags=["tag1", "tag2"],
+                applicable_stages=["analysis"],
+            ),
+            NodeInfo(
+                node_id="n2",
+                name="节点2",
+                chain="A",
+                module_id="m1",
+                node_type="skill_node",
+                tags=["tag2", "tag3"],
+                applicable_stages=["analysis", "strategy"],
+            ),
+            NodeInfo(
+                node_id="n3",
+                name="节点3",
+                chain="C",
+                module_id="m2",
+                node_type="api_node",
+                tags=["tag1", "tag3"],
+                applicable_stages=["execution"],
+            ),
+            NodeInfo(
+                node_id="n4",
+                name="节点4",
+                chain="F",
+                module_id="m3",
+                node_type="local_node",
+                tags=["tag4"],
+            ),
         ]
 
         for n in nodes:
@@ -257,6 +276,7 @@ class TestNodeRegistry(unittest.TestCase):
 # 节点定义测试
 # ============================================================
 
+
 class TestNodeDefinitions(unittest.TestCase):
     """测试节点定义"""
 
@@ -298,6 +318,7 @@ class TestNodeDefinitions(unittest.TestCase):
 # ============================================================
 # 全局注册表测试
 # ============================================================
+
 
 class TestGlobalRegistry(unittest.TestCase):
     """测试全局注册表"""
@@ -380,6 +401,7 @@ class TestGlobalRegistry(unittest.TestCase):
 # 从模块注册表生成测试
 # ============================================================
 
+
 class TestGenerateFromModuleRegistry(unittest.TestCase):
     """测试从模块注册表生成节点"""
 
@@ -407,5 +429,5 @@ class TestGenerateFromModuleRegistry(unittest.TestCase):
 # 运行测试
 # ============================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

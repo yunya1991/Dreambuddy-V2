@@ -3,6 +3,7 @@
 验证力向量 → war_state/cap/mask 映射 + 矛盾转化调整 + FAIL-OPEN。
 对应 Spec §四 strategic_mapper。
 """
+
 import copy
 import sys
 from pathlib import Path
@@ -13,12 +14,12 @@ _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.models import (
+from force_vector.models import (  # noqa: E402
     ContradictionTransform,
     ForceVector,
     StrategicLayerOutput,
 )
-from force_vector.strategic_mapper import StrategicMapper
+from force_vector.strategic_mapper import StrategicMapper  # noqa: E402
 
 
 # ============================================================
@@ -26,7 +27,7 @@ from force_vector.strategic_mapper import StrategicMapper
 # ============================================================
 def _make_contradiction(transform_type: str, **overrides) -> ContradictionTransform:
     """构造 ContradictionTransform。"""
-    defaults = dict(
+    defaults = dict(  # noqa: C408
         transforming=True,
         transform_type=transform_type,
         trigger_conditions=["c1"],
@@ -185,9 +186,7 @@ class TestDataQualityWarning:
 
         # war_state / cap 维持不变
         assert warned.war_state == base.war_state
-        assert warned.aggregate_position_cap_pct == pytest.approx(
-            base.aggregate_position_cap_pct
-        )
+        assert warned.aggregate_position_cap_pct == pytest.approx(base.aggregate_position_cap_pct)
         # force_vectors confidence 被 ×0.7
         assert warned.force_vectors["dao"].confidence == pytest.approx(0.9 * 0.7)
         # 原始输入未被修改（无副作用）

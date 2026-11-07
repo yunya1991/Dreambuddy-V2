@@ -8,7 +8,13 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-_SCHEMA_PATH = Path(__file__).resolve().parents[3] / ".workbuddy" / "memory_l4" / "schemas" / "trade_case.schema.json"
+_SCHEMA_PATH = (
+    Path(__file__).resolve().parents[3]
+    / ".workbuddy"
+    / "memory_l4"
+    / "schemas"
+    / "trade_case.schema.json"
+)
 
 _schema: Optional[Dict[str, Any]] = None
 
@@ -30,10 +36,22 @@ def _build_fallback_schema() -> Dict[str, Any]:
     return {
         "type": "object",
         "required": [
-            "case_id", "version", "system_source", "source", "ts",
-            "ts_start", "symbol", "direction", "decision_outcome",
-            "decision_context", "environment_snapshot", "thinking_chain",
-            "evidence_chain", "quadrant", "tags", "l4_status",
+            "case_id",
+            "version",
+            "system_source",
+            "source",
+            "ts",
+            "ts_start",
+            "symbol",
+            "direction",
+            "decision_outcome",
+            "decision_context",
+            "environment_snapshot",
+            "thinking_chain",
+            "evidence_chain",
+            "quadrant",
+            "tags",
+            "l4_status",
         ],
         "properties": {
             "case_id": {"type": "string"},
@@ -98,9 +116,13 @@ def validate_case(case: Dict[str, Any], strict: bool = False) -> Tuple[bool, Lis
                     type_matched = True
                     break
             if not type_matched and value is not None:
-                errors.append(f"字段 {field} 类型错误: 期望 {expected_type}, 实际 {type(value).__name__}")
+                errors.append(
+                    f"字段 {field} 类型错误: 期望 {expected_type}, 实际 {type(value).__name__}"
+                )
         elif expected_type and not _type_match(value, expected_type):
-            errors.append(f"字段 {field} 类型错误: 期望 {expected_type}, 实际 {type(value).__name__}")
+            errors.append(
+                f"字段 {field} 类型错误: 期望 {expected_type}, 实际 {type(value).__name__}"
+            )
 
         # 检查 enum
         enum_vals = prop_def.get("enum")
@@ -111,6 +133,7 @@ def validate_case(case: Dict[str, Any], strict: bool = False) -> Tuple[bool, Lis
         pattern = prop_def.get("pattern")
         if pattern and isinstance(value, str):
             import re
+
             if not re.match(pattern, value):
                 errors.append(f"字段 {field} 格式错误: {value}, 期望匹配: {pattern}")
 
@@ -154,8 +177,13 @@ def _validate_business_rules(case: Dict[str, Any], errors: List[str]) -> None:
 
     # system_source 有效性
     valid_sources = [
-        "yijing_inference", "three_screen", "martin_v15",
-        "agent_a", "agent_b", "dream_os", "unknown",
+        "yijing_inference",
+        "three_screen",
+        "martin_v15",
+        "agent_a",
+        "agent_b",
+        "dream_os",
+        "unknown",
     ]
     source = case.get("system_source")
     if source and source not in valid_sources:
@@ -171,10 +199,17 @@ def _validate_business_rules(case: Dict[str, Any], errors: List[str]) -> None:
         if y is not None and not (-1 <= y <= 1):
             errors.append(f"quadrant.y 超出范围: {y}")
 
-    # evidence_chain 结构（TradingAgents 增强版，包含 analyst_refs）
+        # evidence_chain 结构（TradingAgents 增强版，包含 analyst_refs）
         ec = case.get("evidence_chain")
         if isinstance(ec, dict):
-            required_ec_keys = ["market_data_refs", "signal_refs", "strategy_refs", "historical_refs", "constraint_refs", "analyst_refs"]
+            required_ec_keys = [
+                "market_data_refs",
+                "signal_refs",
+                "strategy_refs",
+                "historical_refs",
+                "constraint_refs",
+                "analyst_refs",
+            ]
             for key in required_ec_keys:
                 if key not in ec:
                     # analyst_refs 是可选的（向后兼容）
@@ -190,7 +225,9 @@ def _validate_business_rules(case: Dict[str, Any], errors: List[str]) -> None:
                             if not isinstance(ref, dict):
                                 errors.append(f"evidence_chain.{key}[{i}] 必须是对象")
                             elif "type" not in ref or "ref" not in ref:
-                                errors.append(f"evidence_chain.{key}[{i}] 必须包含 type 和 ref 字段")
+                                errors.append(
+                                    f"evidence_chain.{key}[{i}] 必须包含 type 和 ref 字段"
+                                )
 
     # decision_outcome
     do = case.get("decision_outcome")
@@ -248,17 +285,19 @@ def batch_validate_directory(dir_path: Path) -> Dict[str, Any]:
             results["invalid"] += 1
             for err in errors:
                 results["errors"].append(f"{f.name}: {err}")
-        results["details"].append({
-            "file": f.name,
-            "valid": is_valid,
-            "errors": errors,
-        })
+        results["details"].append(
+            {
+                "file": f.name,
+                "valid": is_valid,
+                "errors": errors,
+            }
+        )
 
     return results
 
 
 if __name__ == "__main__":
-    import sys
+
     from scripts.memory_l4.paths import memory_l4_cases_dir
 
     cases_dir = memory_l4_cases_dir()

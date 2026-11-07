@@ -45,10 +45,8 @@ SPEC: 非线性多阶段最优路径理论调研框架 §十五 + §十九 + §�
   T-C6：adjust_cognition→返回cognition+delta
   T-C7：信息流缺失→中性兜底0.5
 """
-from __future__ import annotations
 
-import pytest
-import numpy as np
+from __future__ import annotations  # noqa: I001
 
 
 class TestTierWeightedPrimary:
@@ -72,8 +70,11 @@ class TestTierWeightedPrimary:
         所以力量接近时 tier_bonus项被max(0,...)截断为0，实际是纯strength比较。
         修改测试：用力量差小于DOMINANCE_GAP但strength相同的case。
         """
-        from dreambuddy_evolution.core.exogenous_strength_evaluator import ExogenousStrengthEvaluator
         from unittest.mock import patch
+
+        from dreambuddy_evolution.core.exogenous_strength_evaluator import (
+            ExogenousStrengthEvaluator,
+        )
 
         eval = ExogenousStrengthEvaluator()
 
@@ -83,17 +84,21 @@ class TestTierWeightedPrimary:
             "fundamental": {"short": 0.5, "medium": 0.5, "long": 0.8},
             "macro": {"short": 0.5, "medium": 0.5, "long": 0.5},
         }
-        with patch.object(eval, 'evaluate', return_value=mock_evals):
+        with patch.object(eval, "evaluate", return_value=mock_evals):
             result = eval.get_primary_contradiction({})
         assert result is not None
         # short adj=0.6, long adj=0.6 → 力量相同 → tier驱动 → long优先
-        assert result["timeframe"] == "long", \
-            "力量相同时层级驱动：long(tier=0.5)应优先于short(tier=0.2)"
+        assert (
+            result["timeframe"] == "long"
+        ), "力量相同时层级驱动：long(tier=0.5)应优先于short(tier=0.2)"
 
     def test_t_p2_long_high_still_selects_long(self):
         """T-P2: long力量最高 → 仍选long（层级+力量一致）."""
-        from dreambuddy_evolution.core.exogenous_strength_evaluator import ExogenousStrengthEvaluator
         from unittest.mock import patch
+
+        from dreambuddy_evolution.core.exogenous_strength_evaluator import (
+            ExogenousStrengthEvaluator,
+        )
 
         eval = ExogenousStrengthEvaluator()
         mock_evals = {
@@ -101,15 +106,18 @@ class TestTierWeightedPrimary:
             "fundamental": {"short": 0.5, "medium": 0.5, "long": 0.5},
             "macro": {"short": 0.5, "medium": 0.5, "long": 0.5},
         }
-        with patch.object(eval, 'evaluate', return_value=mock_evals):
+        with patch.object(eval, "evaluate", return_value=mock_evals):
             result = eval.get_primary_contradiction({})
         assert result is not None
         assert result["timeframe"] == "long"
 
     def test_t_p3_medium_highest_selects_medium(self):
         """T-P3: medium力量最高 → 选medium."""
-        from dreambuddy_evolution.core.exogenous_strength_evaluator import ExogenousStrengthEvaluator
         from unittest.mock import patch
+
+        from dreambuddy_evolution.core.exogenous_strength_evaluator import (
+            ExogenousStrengthEvaluator,
+        )
 
         eval = ExogenousStrengthEvaluator()
         mock_evals = {
@@ -117,15 +125,18 @@ class TestTierWeightedPrimary:
             "fundamental": {"short": 0.5, "medium": 0.5, "long": 0.5},
             "macro": {"short": 0.5, "medium": 0.5, "long": 0.5},
         }
-        with patch.object(eval, 'evaluate', return_value=mock_evals):
+        with patch.object(eval, "evaluate", return_value=mock_evals):
             result = eval.get_primary_contradiction({})
         assert result is not None
         assert result["timeframe"] == "medium"
 
     def test_t_p4_all_neutral_returns_none(self):
         """T-P4: 全中性 → 返回None."""
-        from dreambuddy_evolution.core.exogenous_strength_evaluator import ExogenousStrengthEvaluator
         from unittest.mock import patch
+
+        from dreambuddy_evolution.core.exogenous_strength_evaluator import (
+            ExogenousStrengthEvaluator,
+        )
 
         eval = ExogenousStrengthEvaluator()
         mock_evals = {
@@ -133,14 +144,17 @@ class TestTierWeightedPrimary:
             "fundamental": {"short": 0.5, "medium": 0.5, "long": 0.5},
             "macro": {"short": 0.5, "medium": 0.5, "long": 0.5},
         }
-        with patch.object(eval, 'evaluate', return_value=mock_evals):
+        with patch.object(eval, "evaluate", return_value=mock_evals):
             result = eval.get_primary_contradiction({})
         assert result is None
 
     def test_t_p5_backward_compatible_no_timeframe(self):
         """T-P5: 向后兼容——get_primary_contradiction 正常运行不报错."""
-        from dreambuddy_evolution.core.exogenous_strength_evaluator import ExogenousStrengthEvaluator
         from unittest.mock import patch
+
+        from dreambuddy_evolution.core.exogenous_strength_evaluator import (
+            ExogenousStrengthEvaluator,
+        )
 
         eval = ExogenousStrengthEvaluator()
         mock_evals = {
@@ -148,7 +162,7 @@ class TestTierWeightedPrimary:
             "fundamental": {"short": 0.5, "medium": 0.5, "long": 0.5},
             "macro": {"short": 0.5, "medium": 0.5, "long": 0.5},
         }
-        with patch.object(eval, 'evaluate', return_value=mock_evals):
+        with patch.object(eval, "evaluate", return_value=mock_evals):
             result = eval.get_primary_contradiction({})
         assert result is not None
         assert "timeframe" in result
@@ -168,8 +182,10 @@ class TestLayeredElasticConstraint:
 
         # 应接受 timeframe 参数
         result = resolver.resolve(
-            primary, secondary,
-            primary_tf="long", secondary_tf="short",
+            primary,
+            secondary,
+            primary_tf="long",
+            secondary_tf="short",
         )
         assert result is not None
         assert "position_mult" in result
@@ -183,8 +199,7 @@ class TestLayeredElasticConstraint:
         secondary = {"direction": "bull", "strength": 0.1}
 
         # 力量差=0.8 >> DOMINANCE_GAP=0.15 → 力量驱动
-        result_power = resolver.resolve(primary, secondary,
-                                         primary_tf="short", secondary_tf="long")
+        result_power = resolver.resolve(primary, secondary, primary_tf="short", secondary_tf="long")
         result_base = resolver.resolve(primary, secondary)
 
         # 力量驱动时 tier_bonus 不应改变 T_max
@@ -200,13 +215,13 @@ class TestLayeredElasticConstraint:
 
         # 力量差=0.1 < DOMINANCE_GAP=0.15 → 层级驱动
         # long约束short → tier_bonus = 0.5/0.2 = 2.5 → T_max增大
-        result_tier = resolver.resolve(primary, secondary,
-                                         primary_tf="long", secondary_tf="short")
+        result_tier = resolver.resolve(primary, secondary, primary_tf="long", secondary_tf="short")
         result_base = resolver.resolve(primary, secondary)
 
         # 层级驱动时 T_max 应大于纯力量比
-        assert result_tier["t_max"] > result_base["t_max"], \
-            "long约束short时 T_max 应增大（tier_bonus>1）"
+        assert (
+            result_tier["t_max"] > result_base["t_max"]
+        ), "long约束short时 T_max 应增大（tier_bonus>1）"
 
     def test_t_e4_timeframe_missing_fallback_medium(self):
         """T-E4: timeframe缺失→兜底medium→等价旧行为."""
@@ -219,8 +234,9 @@ class TestLayeredElasticConstraint:
         # 不传 timeframe → 兜底
         result_default = resolver.resolve(primary, secondary)
         # 传 medium → 应等价
-        result_medium = resolver.resolve(primary, secondary,
-                                           primary_tf="medium", secondary_tf="medium")
+        result_medium = resolver.resolve(
+            primary, secondary, primary_tf="medium", secondary_tf="medium"
+        )
 
         assert abs(result_default["t_max"] - result_medium["t_max"]) < 1e-6
 
@@ -233,8 +249,7 @@ class TestLayeredElasticConstraint:
         secondary = {"direction": "bull", "strength": 0.5}
 
         # long/short tier_bonus = 0.5/0.2 = 2.5 → T_max 可能超界
-        result = resolver.resolve(primary, secondary,
-                                    primary_tf="long", secondary_tf="short")
+        result = resolver.resolve(primary, secondary, primary_tf="long", secondary_tf="short")
         # T_max 不应超过 base_limit（clip保护）
         assert result["t_max"] <= resolver._base_limit * 2.0 + 1e-6
         assert result["t_max"] >= 0.0
@@ -247,8 +262,7 @@ class TestLayeredElasticConstraint:
         primary = {"direction": "bull", "strength": 0.7}
         secondary = {"direction": "bull", "strength": 0.6}
 
-        result = resolver.resolve(primary, secondary,
-                                    primary_tf="long", secondary_tf="short")
+        result = resolver.resolve(primary, secondary, primary_tf="long", secondary_tf="short")
         # 方向对齐 → constraint_active=False
         assert result["constraint_active"] is False
         assert result["aligned"] is True
@@ -295,8 +309,7 @@ class TestCognitiveFunction:
         from dreambuddy_evolution.core.reflexivity_monitor import ReflexivityMonitor
 
         monitor = ReflexivityMonitor()
-        assert hasattr(monitor, "adjust_cognition"), \
-            "ReflexivityMonitor 应有 adjust_cognition 方法"
+        assert hasattr(monitor, "adjust_cognition"), "ReflexivityMonitor 应有 adjust_cognition 方法"
 
     def test_t_c6_adjust_cognition_returns_cognition_delta(self):
         """T-C6: adjust_cognition→返回cognition+delta."""
@@ -318,6 +331,5 @@ class TestCognitiveFunction:
 
         monitor = ReflexivityMonitor()
         result = monitor.adjust_cognition([])  # 空信息流
-        assert abs(result["cognition"] - 0.5) < 1e-6, \
-            "空信息流应返回中性认知0.5"
+        assert abs(result["cognition"] - 0.5) < 1e-6, "空信息流应返回中性认知0.5"
         assert result["cognition_delta"] == 0.0

@@ -9,9 +9,11 @@ d* = argmin_{d ∈ {long, short, WAIT}} [ d^T · g_MVP · d ]
 
 g_MVP = diag(R_up, R_down, R_smooth, R_flow, R_reflexivity)
 """
+
 import math
-import numpy as np
 from typing import Any
+
+import numpy as np
 
 
 def compute_g_diag(r_vector: dict[str, Any]) -> np.ndarray:
@@ -37,6 +39,7 @@ def compute_d_star(r_vector: dict[str, Any]) -> dict[str, Any]:
     confidence = 1 - (min_cost / sum_costs) 越大越自信.
     """
     import math as _math
+
     R_up = float(r_vector.get("R_up", 0.50))
     R_down = float(r_vector.get("R_down", 0.50))
     R_smooth = float(r_vector.get("R_smooth", 0.50))
@@ -53,9 +56,9 @@ def compute_d_star(r_vector: dict[str, Any]) -> dict[str, Any]:
     R_refl = max(0.01, R_refl) if not _math.isnan(R_refl) else 0.50
 
     costs = {
-        "long": R_up,                                    # §1.5.5 多开代价 = g_up
-        "short": R_down,                                 # §1.5.5 空开代价 = g_down
-        "wait": R_smooth * R_refl,                       # §1.5.5 WAIT代价 = R_smooth × R_reflexivity
+        "long": R_up,  # §1.5.5 多开代价 = g_up
+        "short": R_down,  # §1.5.5 空开代价 = g_down
+        "wait": R_smooth * R_refl,  # §1.5.5 WAIT代价 = R_smooth × R_reflexivity
     }
 
     d_star_raw = min(costs, key=costs.get)

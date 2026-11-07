@@ -9,7 +9,9 @@ SPEC-41-文件索引系统 v0.6 §2.2（v0.4 闭环 C1）
   4. 接口可替换：Tokenizer 协议 + HanLP 适配位预留
 位置: 41-文件索引系统/core/tokenizer.py
 """
+
 from __future__ import annotations
+
 import re
 from typing import List, Protocol
 
@@ -20,8 +22,8 @@ _FULLWIDTH_RE = re.compile(r"[\uff01-\uff5e]")
 
 # 驼峰拆分：camelCase / PascalCase / snake_case 统一处理
 _CAMEL_RE = re.compile(
-    r"(?<=[a-z0-9])(?=[A-Z])"          # camel 边界
-    r"|(?<=[A-Z])(?=[A-Z][a-z])"        # PascalCase 缩写边界（HTTPServer → HTTP/Server）
+    r"(?<=[a-z0-9])(?=[A-Z])"  # camel 边界
+    r"|(?<=[A-Z])(?=[A-Z][a-z])"  # PascalCase 缩写边界（HTTPServer → HTTP/Server）
 )
 
 # 词元清理：仅保留中英文与数字
@@ -30,16 +32,93 @@ _TOKEN_RE = re.compile(r"^[\u4e00-\u9fffA-Za-z0-9_-]+$")
 # 停用词表（内置中英文常用，SPEC §2.2）
 STOPWORDS = {
     # 英文
-    "the", "a", "an", "and", "or", "not", "is", "are", "was", "were",
-    "in", "on", "at", "to", "for", "of", "with", "by", "from", "as",
-    "this", "that", "these", "those", "it", "its", "be", "been", "if",
-    "then", "else", "when", "what", "which", "who", "how", "why", "all",
-    "any", "can", "do", "does", "did", "will", "would", "should", "may",
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "not",
+    "is",
+    "are",
+    "was",
+    "were",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "of",
+    "with",
+    "by",
+    "from",
+    "as",
+    "this",
+    "that",
+    "these",
+    "those",
+    "it",
+    "its",
+    "be",
+    "been",
+    "if",
+    "then",
+    "else",
+    "when",
+    "what",
+    "which",
+    "who",
+    "how",
+    "why",
+    "all",
+    "any",
+    "can",
+    "do",
+    "does",
+    "did",
+    "will",
+    "would",
+    "should",
+    "may",
     # 中文
-    "的", "了", "和", "是", "就", "都", "而", "与", "及", "或",
-    "在", "中", "对", "为", "被", "把", "让", "从", "到", "由",
-    "这", "那", "也", "还", "又", "很", "有", "无", "不", "没",
-    "我们", "你们", "他们", "它们", "一个", "一些", "什么", "怎么", "如何",
+    "的",
+    "了",
+    "和",
+    "是",
+    "就",
+    "都",
+    "而",
+    "与",
+    "及",
+    "或",
+    "在",
+    "中",
+    "对",
+    "为",
+    "被",
+    "把",
+    "让",
+    "从",
+    "到",
+    "由",
+    "这",
+    "那",
+    "也",
+    "还",
+    "又",
+    "很",
+    "有",
+    "无",
+    "不",
+    "没",
+    "我们",
+    "你们",
+    "他们",
+    "它们",
+    "一个",
+    "一些",
+    "什么",
+    "怎么",
+    "如何",
 }
 
 

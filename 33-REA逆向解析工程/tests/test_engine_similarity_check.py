@@ -3,6 +3,7 @@
 验收（SPEC L168）：engine_similarity_check.py 脚本实现，接入 CI
 （加权 Jaccard > 0.7 告警，排除基础库）。
 """
+
 import sys
 from pathlib import Path
 
@@ -10,18 +11,17 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from scripts.engine_similarity_check import (  # noqa: E402
+from scripts.engine_similarity_check import (  # noqa: E402, I001
     EngineSimilarityChecker,
     DEFAULT_TARGET_DIR,
     main,
 )
 
-
 # ---------------------------------------------------------------------------
 # 合成引擎样本
 # ---------------------------------------------------------------------------
 
-ENGINE_A = '''
+ENGINE_A = """
 import logging
 import numpy as np
 from typing import Any
@@ -41,10 +41,10 @@ class EngineA:
 
     def _scale(self, x):
         return x * 0.8
-'''
+"""
 
 # 与 A 共享领域 import + 主调用链，仅方法名/系数不同 → 高相似
-ENGINE_B = '''
+ENGINE_B = """
 import logging
 import numpy as np
 from typing import Any
@@ -64,10 +64,10 @@ class EngineB:
 
     def _apply(self, x):
         return x * 0.5
-'''
+"""
 
 # 完全不同域 → 低相似
-ENGINE_C = '''
+ENGINE_C = """
 import math
 
 class EngineC:
@@ -82,7 +82,7 @@ class EngineC:
         for x in data:
             total += x
         return total / len(data)
-'''
+"""
 
 
 def _write(tmp_path, name, source):
@@ -94,6 +94,7 @@ def _write(tmp_path, name, source):
 # ---------------------------------------------------------------------------
 # 特征提取：基础库排除 + 领域模块识别
 # ---------------------------------------------------------------------------
+
 
 class TestFeatureExtraction:
     def setup_method(self):
@@ -139,6 +140,7 @@ class TestFeatureExtraction:
 # 加权 Jaccard：领域模块权重 3x
 # ---------------------------------------------------------------------------
 
+
 class TestWeightedJaccard:
     def setup_method(self):
         self.checker = EngineSimilarityChecker()
@@ -169,6 +171,7 @@ class TestWeightedJaccard:
 # ---------------------------------------------------------------------------
 # 目录扫描：相似对告警 + 排除 __init__.py
 # ---------------------------------------------------------------------------
+
 
 class TestScan:
     def test_scan_reports_similar_pair_only(self, tmp_path):
@@ -207,6 +210,7 @@ class TestScan:
 # CLI：非阻塞退出码 + 告警文本
 # ---------------------------------------------------------------------------
 
+
 class TestCli:
     def test_main_returns_zero_even_with_warnings(self, tmp_path, capsys):
         _write(tmp_path, "engine_a.py", ENGINE_A)
@@ -235,6 +239,7 @@ class TestCli:
 # ---------------------------------------------------------------------------
 # 默认目标目录指向 engines/
 # ---------------------------------------------------------------------------
+
 
 class TestDefaultTarget:
     def test_default_target_dir_is_engines(self):

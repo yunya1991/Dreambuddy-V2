@@ -7,22 +7,23 @@
 
 验证：3 币种 × 5 段 walk-forward，全段退化 < 5% 才通过
 """
-import sys
+
 import json
-from pathlib import Path
+import sys
 from collections import Counter
+from pathlib import Path
 
 BASE_DIR = Path(__file__).parent
 sys.path.insert(0, str(BASE_DIR / "core"))
 sys.path.insert(0, str(BASE_DIR / "lib"))
 
-from v15_backtest import run_backtest, fetch_klines
-from walk_forward_validator import WalkForwardValidator
+from v15_backtest import fetch_klines, run_backtest  # noqa: E402
+from walk_forward_validator import WalkForwardValidator  # noqa: E402
 
 coins = ["BTC", "ETH", "SOL"]
 limit = 1500
 
-COMMON_KW = dict(
+COMMON_KW = dict(  # noqa: C408
     use_atr=True,
     use_trailing_tp=True,
     use_direction_gate=True,
@@ -65,13 +66,16 @@ for coin in coins:
     r_bp = run_backtest(coin=coin, klines=klines, subregime_enabled=True, **COMMON_KW)
     # Phase C: 子形态 + 易经
     r_c = run_backtest(
-        coin=coin, klines=klines,
-        subregime_enabled=True, yijing_enabled=True, yijing_step=6,
+        coin=coin,
+        klines=klines,
+        subregime_enabled=True,
+        yijing_enabled=True,
+        yijing_step=6,
         **COMMON_KW,
     )
 
     if "error" in r_base or "error" in r_c:
-        print(f"  回测出错")
+        print("  回测出错")
         continue
 
     base_trades = r_base.get("trades", [])
@@ -82,12 +86,14 @@ for coin in coins:
     mb = r_base["metrics"]
     mp = r_bp["metrics"]
     mc = r_c["metrics"]
-    print(f"\n  整体对比:")
+    print("\n  整体对比:")
     print(f"    {'方案':>10}  {'收益':>10}  {'交易':>6}  {'胜率':>7}  {'回撤':>8}  {'夏普':>8}")
     print(f"    {'-'*60}")
     for label, m in [("A+(BASE)", mb), ("B+(子形态)", mp), ("C(+易经)", mc)]:
-        print(f"    {label:>10}  {m['total_return_pct']:>+9.2f}%  {m['total_trades']:>6}  "
-              f"{m['win_rate']*100:>6.1f}%  {m['max_drawdown_pct']:>7.2f}%  {m['sharpe_ratio']:>8.4f}")
+        print(
+            f"    {label:>10}  {m['total_return_pct']:>+9.2f}%  {m['total_trades']:>6}  "
+            f"{m['win_rate']*100:>6.1f}%  {m['max_drawdown_pct']:>7.2f}%  {m['sharpe_ratio']:>8.4f}"
+        )
 
     # 易经信息统计
     yiji_trades = [t for t in c_trades if t.get("yiji_hexagram")]
@@ -101,8 +107,11 @@ for coin in coins:
     # Walk-forward: BASE vs C
     validator = WalkForwardValidator(n_segments=5, max_degradation_pct=5.0)
     report = validator.validate(
-        base_trades, c_trades, total_bars=limit,
-        label_base="A+", label_test="C",
+        base_trades,
+        c_trades,
+        total_bars=limit,
+        label_base="A+",
+        label_test="C",
     )
     print()
     print(validator.format_report(report))
@@ -122,23 +131,30 @@ for cr in all_coin_reports:
     coin = cr["coin"]
     rep = cr["report"]
     status = "✅" if rep["overall_pass"] else "❌"
-    print(f"  {coin}: {status} 通过{rep['pass_count']}/{rep['n_segments']}段 "
-          f"整体收益差={rep['overall_ret_delta']:+.2f} "
-          f"胜率差={rep['overall_wr_delta']:+.2f}%")
+    print(
+        f"  {coin}: {status} 通过{rep['pass_count']}/{rep['n_segments']}段 "
+        f"整体收益差={rep['overall_ret_delta']:+.2f} "
+        f"胜率差={rep['overall_wr_delta']:+.2f}%"
+    )
     if not rep["overall_pass"]:
         all_pass = False
 
 # 整体汇总（3 币种合并）
-print(f"\n  3 币种合并 walk-forward:")
+print("\n  3 币种合并 walk-forward:")
 validator_all = WalkForwardValidator(n_segments=5, max_degradation_pct=5.0)
 report_all = validator_all.validate(
-    all_base_trades, all_test_trades, total_bars=limit,
-    label_base="A+(合并)", label_test="C(合并)",
+    all_base_trades,
+    all_test_trades,
+    total_bars=limit,
+    label_base="A+(合并)",
+    label_test="C(合并)",
 )
 print(validator_all.format_report(report_all))
 
 final_pass = all_pass and report_all["overall_pass"]
-print(f"\n  最终决策: {'✅ Phase C 通过 → 可部署实盘' if final_pass else '❌ 未通过 → 回退 Phase B+'}")
+print(
+    f"\n  最终决策: {'✅ Phase C 通过 → 可部署实盘' if final_pass else '❌ 未通过 → 回退 Phase B+'}"
+)
 
 # 保存结果
 output_file = BASE_DIR / "data" / "phase_c_walkforward_result.json"

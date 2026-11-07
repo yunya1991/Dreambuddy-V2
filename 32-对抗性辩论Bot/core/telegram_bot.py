@@ -9,6 +9,7 @@ SPEC 3.5:
 
 采用 Protocol 注入模式（与 LLMClient 一致），便于测试 mock。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -98,12 +99,15 @@ class TelegramDualBot:
         if len(text) <= self.MAX_MESSAGE_LENGTH:
             return [text]
         return [
-            text[i:i + self.MAX_MESSAGE_LENGTH]
+            text[i : i + self.MAX_MESSAGE_LENGTH]
             for i in range(0, len(text), self.MAX_MESSAGE_LENGTH)
         ]
 
     async def _send_with_retry(
-        self, bot: TelegramBotClient, chat_id: int, text: str,
+        self,
+        bot: TelegramBotClient,
+        chat_id: int,
+        text: str,
     ) -> dict:
         """发送单段消息，失败重试 max_retries 次。"""
         # 发送前 sleep 规避 rate limit
@@ -117,7 +121,9 @@ class TelegramDualBot:
                 last_error = e
                 logger.warning(
                     "发送失败 (attempt %d/%d): %s",
-                    attempt + 1, self.max_retries + 1, e,
+                    attempt + 1,
+                    self.max_retries + 1,
+                    e,
                 )
                 if attempt < self.max_retries:
                     await asyncio.sleep(self.retry_delay)

@@ -3,6 +3,7 @@
 对 js_render=true 的站点用 Playwright headless 浏览器渲染后再解析。
 渲染后的 HTML 交给 GenericSpider 按选择器提取字段。
 """
+
 from __future__ import annotations
 
 from playwright.sync_api import sync_playwright

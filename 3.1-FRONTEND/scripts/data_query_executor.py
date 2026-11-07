@@ -11,6 +11,7 @@
 - 本层只保留: 问法解析、业务判空、答案格式化；数据源路径/读取/降级全部在 L0
 - FAIL-OPEN: 任何异常返回 degraded，不抛出
 """
+
 import json
 import os
 import re
@@ -18,20 +19,26 @@ import sys
 
 # 接入 34 系统 L0（core/l0_foundation.py，与本脚本同处项目根下两级）
 _TRAINING_SYS_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "..",
+    os.path.dirname(os.path.abspath(__file__)),
+    "..",
+    "..",
     "34-前端应用训练系统",
 )
 if _TRAINING_SYS_DIR not in sys.path:
     sys.path.insert(0, _TRAINING_SYS_DIR)
-from core.l0_foundation import get_l0
+from core.l0_foundation import get_l0  # noqa: E402
+
 # 18 中心已迁移 PostgreSQL，复用 39 模块统一 PG 辅助模块（FAIL-OPEN）
 _DC_PG_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "..",
-    "39-金融语义蒸馏系统", "scripts",
+    os.path.dirname(os.path.abspath(__file__)),
+    "..",
+    "..",
+    "39-金融语义蒸馏系统",
+    "scripts",
 )
 if _DC_PG_DIR not in sys.path:
     sys.path.insert(0, _DC_PG_DIR)
-import dc_pg
+import dc_pg  # noqa: E402
 
 # SPEC v1.5: 实体别名表（SSoT，39-金融语义蒸馏系统接管维护）
 _ALIASES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "entity_aliases.json")
@@ -66,12 +73,31 @@ def _resolve_symbol(message, candidates=None):
             return sym
     return None
 
+
 # 数据源关键词 → source 映射（消息中出现关键词即命中）
 SOURCE_KEYWORDS = [
     ("defillama", ["defi tvl", "tvl", "defillama"]),
     ("fear_greed", ["恐惧贪婪", "fear greed", "fear_greed"]),
     ("fear_greed_enhanced", ["恐惧贪婪指数增强", "增强恐惧贪婪"]),
-    ("fred", ["fred", "美联储经济数据", "cpi", "ppi", "通胀", "联邦基金利率", "货币供应", "工业产出", "美元指数", "美债", "美股", "标普", "纳指", "纳斯达克"]),
+    (
+        "fred",
+        [
+            "fred",
+            "美联储经济数据",
+            "cpi",
+            "ppi",
+            "通胀",
+            "联邦基金利率",
+            "货币供应",
+            "工业产出",
+            "美元指数",
+            "美债",
+            "美股",
+            "标普",
+            "纳指",
+            "纳斯达克",
+        ],
+    ),
     ("econ_calendar", ["非农", "nfp", "经济日历"]),
     ("coinglass", ["coinglass", "衍生品数据"]),
     ("deribit", ["deribit", "期权数据"]),
@@ -88,10 +114,18 @@ SOURCE_KEYWORDS = [
 
 # 变化模式知识库（与 34 系统 data_insight_collector 对齐）
 INSIGHT_KNOWLEDGE = [
-    ("CPI", ["超预期上行", "超预期", "高于预期"], "通胀超预期 → 加息预期升温 → 利好美元、压制风险资产，加密市场承压"),
+    (
+        "CPI",
+        ["超预期上行", "超预期", "高于预期"],
+        "通胀超预期 → 加息预期升温 → 利好美元、压制风险资产，加密市场承压",
+    ),
     ("CPI", ["低于预期", "不及预期"], "通胀降温 → 降息预期升温 → 风险资产受益，加密市场偏多"),
     ("恐惧贪婪指数", ["极度贪婪", "转向贪婪"], "市场情绪过热 → 追高风险加大，警惕回调（逆向信号）"),
-    ("恐惧贪婪指数", ["极度恐惧", "转向恐惧"], "市场恐慌 → 历史上常为阶段性底部区域（逆向机会信号）"),
+    (
+        "恐惧贪婪指数",
+        ["极度恐惧", "转向恐惧"],
+        "市场恐慌 → 历史上常为阶段性底部区域（逆向机会信号）",
+    ),
     ("稳定币", ["增长", "上升", "流入"], "场内资金流入 → 链上购买力增强，中期偏多信号"),
     ("稳定币", ["下降", "减少", "撤离"], "资金撤离 → 链上流动性收缩，中期偏空信号"),
     ("多空比", ["多头拥挤", "多头过度"], "多头拥挤 → 轧空动能不足，警惕多头踩踏下行"),
@@ -181,10 +215,18 @@ def _resolve_series(src: str, message: str):
 def _fetch_cpi_yoy():
     """从 19-DAL mm_metrics 读取 CPI 同比百分比（actual/forecast/previous，最新发布口径）"""
     import sqlite3 as _sq
+
     try:
-        dal_db = os.path.normpath(os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "..", "..",
-            "19-数据访问层", "data", "dreambuddy_core.db"))
+        dal_db = os.path.normpath(
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "..",
+                "..",
+                "19-数据访问层",
+                "data",
+                "dreambuddy_core.db",
+            )
+        )
         if not os.path.exists(dal_db):
             return None
         conn = _sq.connect(f"file:{dal_db}?mode=ro", uri=True)
@@ -193,7 +235,8 @@ def _fetch_cpi_yoy():
             row = conn.execute(
                 "SELECT metric_value FROM mm_metrics "
                 "WHERE sub_category='cpi' AND metric_name=? "
-                "ORDER BY timestamp DESC LIMIT 1", (name,),
+                "ORDER BY timestamp DESC LIMIT 1",
+                (name,),
             ).fetchone()
             if row and row[0] is not None:
                 out[name] = row[0]
@@ -206,7 +249,11 @@ def _fetch_cpi_yoy():
 def exec_data_query(message: str):
     src = resolve_source(message)
     if not src:
-        return {"success": True, "answer": "未能识别要查询的数据源，请指明具体数据（如 DeFi TVL、恐惧贪婪指数、CPI 等）", "data": None}
+        return {
+            "success": True,
+            "answer": "未能识别要查询的数据源，请指明具体数据（如 DeFi TVL、恐惧贪婪指数、CPI 等）",
+            "data": None,
+        }
     fetch_params = {"source": src}
     series = _resolve_series(src, message)
     if series:
@@ -214,8 +261,18 @@ def exec_data_query(message: str):
     ctx = get_l0().fetch_context("datacenter.record", fetch_params)
     if ctx.get("degraded"):
         if ctx["meta"].get("reason") == "source_missing":
-            return {"success": True, "degraded": True, "answer": "数据获取中心数据库暂不可用", "data": None}
-        return {"success": True, "degraded": True, "answer": f"查询失败: {ctx['meta'].get('error', '')}", "data": None}
+            return {
+                "success": True,
+                "degraded": True,
+                "answer": "数据获取中心数据库暂不可用",
+                "data": None,
+            }
+        return {
+            "success": True,
+            "degraded": True,
+            "answer": f"查询失败: {ctx['meta'].get('error', '')}",
+            "data": None,
+        }
     row = ctx["data"]
     if not row:
         return {"success": True, "answer": f"数据源 {src} 暂无记录", "data": None}
@@ -248,11 +305,27 @@ def exec_data_insight(message: str):
         if metric in message:
             for p in patterns:
                 if p in message:
-                    return {"success": True, "answer": f"{metric}{p}的市场含义：{meaning}", "data": {"metric": metric, "pattern": p, "meaning": meaning}}
-    return {"success": True, "answer": "暂无该变化模式的解读知识，可尝试询问 CPI、恐惧贪婪指数、稳定币、多空比、资金费率等指标的变化含义", "data": None}
+                    return {
+                        "success": True,
+                        "answer": f"{metric}{p}的市场含义：{meaning}",
+                        "data": {"metric": metric, "pattern": p, "meaning": meaning},
+                    }
+    return {
+        "success": True,
+        "answer": "暂无该变化模式的解读知识，可尝试询问 CPI、恐惧贪婪指数、稳定币、多空比、资金费率等指标的变化含义",
+        "data": None,
+    }
 
 
-_DIM_DESC = {"C1": "资金面", "C2": "情绪面", "C3": "技术面", "C4": "宏观", "C6": "时序", "C7": "隐性", "C8": "衍生维度"}
+_DIM_DESC = {
+    "C1": "资金面",
+    "C2": "情绪面",
+    "C3": "技术面",
+    "C4": "宏观",
+    "C6": "时序",
+    "C7": "隐性",
+    "C8": "衍生维度",
+}
 _DIR_DESC = {"long": "看多", "short": "看空", "neutral": "中性"}
 
 
@@ -272,14 +345,19 @@ def exec_contradiction_insight(message):
     parts = []
     for d in sorted(dims.keys()):
         direction, strength = dims[d]
-        parts.append(f"{_DIM_DESC.get(d, d)}({_DIR_DESC.get(direction, direction)}, 强度{strength:.2f})")
+        parts.append(
+            f"{_DIM_DESC.get(d, d)}({_DIR_DESC.get(direction, direction)}, 强度{strength:.2f})"
+        )
     # 矛盾/一致判断
-    dirs = set(v[0] for v in dims.values())
+    dirs = set(v[0] for v in dims.values())  # noqa: C401
     state = "各维度方向存在分歧（矛盾状态）" if len(dirs) > 1 else "各维度方向一致"
     return {
         "success": True,
         "answer": f"当前矛盾状态：{state}。各维度：{'；'.join(parts)}",
-        "data": {"dims": {d: {"direction": dims[d][0], "strength": dims[d][1]} for d in dims}, "state": state},
+        "data": {
+            "dims": {d: {"direction": dims[d][0], "strength": dims[d][1]} for d in dims},
+            "state": state,
+        },
     }
 
 
@@ -298,8 +376,12 @@ def exec_path_insight(message):
     # SPEC v1.5: 别名表统一解析（中文别名优先），无币种时澄清追问
     symbol = _resolve_symbol(message, snap)
     if symbol is None:
-        return {"success": True, "need_clarification": True,
-                "answer": "请问您想查询哪个币种？（如：以太坊、BTC、黄金）", "data": None}
+        return {
+            "success": True,
+            "need_clarification": True,
+            "answer": "请问您想查询哪个币种？（如：以太坊、BTC、黄金）",
+            "data": None,
+        }
     if symbol not in snap:
         # 取第一个有维度预测的币种
         for k, v in snap.items():
@@ -350,8 +432,12 @@ def exec_technical_analysis(message):
         return {"success": True, "answer": "BCRM2 汇总中暂无币种推理结果", "data": None}
     symbol = _extract_symbol(message, results)
     if symbol is None:
-        return {"success": True, "need_clarification": True,
-                "answer": "请问您想查询哪个币种？（如：以太坊、BTC、黄金）", "data": None}
+        return {
+            "success": True,
+            "need_clarification": True,
+            "answer": "请问您想查询哪个币种？（如：以太坊、BTC、黄金）",
+            "data": None,
+        }
     if symbol not in results:
         symbol = next(iter(results))
     info = results[symbol] or {}
@@ -361,7 +447,12 @@ def exec_technical_analysis(message):
     return {
         "success": True,
         "answer": f"{symbol} 技术面推理：方向{_YJ_DIR_DESC.get(direction, direction)}，置信度{confidence:.2f}，卦象{hexagram or '无'}",
-        "data": {"symbol": symbol, "direction": direction, "confidence": confidence, "hexagram": hexagram},
+        "data": {
+            "symbol": symbol,
+            "direction": direction,
+            "confidence": confidence,
+            "hexagram": hexagram,
+        },
     }
 
 
@@ -383,8 +474,12 @@ def exec_fundamental_valuation(message):
         return {"success": True, "answer": "快照中暂无可用币种估值数据", "data": None}
     symbol = _extract_symbol(message, avail)
     if symbol is None:
-        return {"success": True, "need_clarification": True,
-                "answer": "请问您想查询哪个币种？（如：以太坊、BTC、黄金）", "data": None}
+        return {
+            "success": True,
+            "need_clarification": True,
+            "answer": "请问您想查询哪个币种？（如：以太坊、BTC、黄金）",
+            "data": None,
+        }
     if symbol not in avail:
         symbol = next(iter(avail))
     info = avail[symbol] or {}
@@ -395,7 +490,13 @@ def exec_fundamental_valuation(message):
     return {
         "success": True,
         "answer": f"{symbol} 基本面估值：评分{score:.2f}，等级{rank or '无'}，阶段{phase or '无'}，估值百分位{pct:.0f}",
-        "data": {"symbol": symbol, "score": score, "rank": rank, "phase": phase, "valuation_percentile": pct},
+        "data": {
+            "symbol": symbol,
+            "score": score,
+            "rank": rank,
+            "phase": phase,
+            "valuation_percentile": pct,
+        },
     }
 
 
@@ -520,9 +621,13 @@ _EVENT_TYPE_KEYWORDS = {
     "project": ["项目", "融资", "上线", "合作"],
 }
 _EVENT_TYPE_DESC_L1 = {
-    "monetary_policy": "货币政策", "crypto_regulation": "加密监管",
-    "us_policy": "美国政策", "us_data": "美国经济数据",
-    "geopolitics": "地缘政治", "market": "行情动态", "project": "项目动态",
+    "monetary_policy": "货币政策",
+    "crypto_regulation": "加密监管",
+    "us_policy": "美国政策",
+    "us_data": "美国经济数据",
+    "geopolitics": "地缘政治",
+    "market": "行情动态",
+    "project": "项目动态",
 }
 
 
@@ -573,13 +678,15 @@ def exec_event_listing(message):
         pos = sum(1 for w in ("上涨", "突破", "新高", "利好", "批准", "融资") if w in desc)
         neg = sum(1 for w in ("下跌", "暴跌", "利空", "制裁", "禁止", "黑客", "清算") if w in desc)
         sentiment = "positive" if pos > neg else ("negative" if neg > pos else "neutral")
-        items.append({
-            "time": (ts or "")[:16],
-            "type": row_type,
-            "summary": desc[:100],
-            "tickers": tickers[:3],
-            "sentiment": sentiment,
-        })
+        items.append(
+            {
+                "time": (ts or "")[:16],
+                "type": row_type,
+                "summary": desc[:100],
+                "tickers": tickers[:3],
+                "sentiment": sentiment,
+            }
+        )
         if len(items) >= 10:
             break
     if not items:
@@ -593,18 +700,23 @@ def exec_event_listing(message):
     # 层间钩子 (SPEC v1.3 §9.7): 基于罗列内容动态生成 L2 引导
     hint = None
     if etype:
-        hint = (f"想了解{type_desc}事件的整体演变与量变趋势吗？"
-                f"可问：{type_desc}事件怎么演变")
+        hint = f"想了解{type_desc}事件的整体演变与量变趋势吗？" f"可问：{type_desc}事件怎么演变"
     else:
         hint = "想深入了解某类事件线的演变吗？可问：加密监管事件怎么演变"
-    return {"success": True, "answer": answer, "next_layer_hint": hint,
-            "data": {"event_type": etype, "items": items}}
+    return {
+        "success": True,
+        "answer": answer,
+        "next_layer_hint": hint,
+        "data": {"event_type": etype, "items": items},
+    }
 
 
 # ── L2 事件线查询 (39 SPEC v1.2 §9.7): 消费 event_lines.json ──
 _EVENT_LINES_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "..", "39-金融语义蒸馏系统", "event_lines.json",
+    "..",
+    "39-金融语义蒸馏系统",
+    "event_lines.json",
 )
 
 
@@ -614,19 +726,23 @@ def exec_event_line_query(message):
         with open(_EVENT_LINES_PATH, "r", encoding="utf-8") as f:
             data = json.load(f)
     except Exception:
-        return {"success": True, "degraded": True,
-                "answer": "事件线数据暂不可用（尚未生成）", "data": None}
+        return {
+            "success": True,
+            "degraded": True,
+            "answer": "事件线数据暂不可用（尚未生成）",
+            "data": None,
+        }
     lines = data.get("lines", [])
     if not lines:
         return {"success": True, "answer": "暂无事件线数据", "data": []}
     # 匹配主题（消息含主题关键词或主题名）
     matched = None
-    for l in lines:
+    for l in lines:  # noqa: E741
         if l["topic"] in (message or ""):
             matched = l
             break
     if matched is None:
-        for l in lines:
+        for l in lines:  # noqa: E741
             topic_kw = {
                 "美联储利率": ("美联储", "利率", "加息", "降息"),
                 "加密监管": ("监管", "SEC", "牌照"),
@@ -639,9 +755,8 @@ def exec_event_line_query(message):
                 matched = l
                 break
     if matched:
-        l = matched
-        items = "\n".join(
-            f"  · [{it['time']}] {it['summary']}" for it in l["recent_items"])
+        l = matched  # noqa: E741
+        items = "\n".join(f"  · [{it['time']}] {it['summary']}" for it in l["recent_items"])
         answer = (
             f"【{l['topic']}】事件线：共 {l['event_count']} 条事件，"
             f"时间跨度 {l['span_hours']}h（{l['time_start']} ~ {l['time_end']}）\n"
@@ -657,8 +772,10 @@ def exec_event_line_query(message):
         hint = None
         qsig = l.get("quantity_signal", "")
         if "加速积累" in qsig:
-            hint = (f"【{l['topic']}】量变正在加速积累，是否深入观察窗口分布与情绪变化？"
-                    f"（L3 多因子综合即将上线）")
+            hint = (
+                f"【{l['topic']}】量变正在加速积累，是否深入观察窗口分布与情绪变化？"
+                f"（L3 多因子综合即将上线）"
+            )
         elif "温和积累" in qsig or "消退" in qsig:
             hint = f"想看【{l['topic']}】的量变窗口分布详情吗？可追问：{l['topic']}量变分布"
         else:
@@ -667,16 +784,23 @@ def exec_event_line_query(message):
     # 未匹配主题：罗列全部事件线概览
     overview = "\n".join(
         f"  · {l['topic']}: {l['event_count']} 事件, 跨度 {l['span_hours']}h, "
-        f"频次{l['freq_trend']}, {l['sentiment_trend']}" for l in lines)
-    return {"success": True,
-            "answer": f"当前事件线概览（可追问具体主题如『加密监管事件怎么演变』）：\n{overview}",
-            "data": {"lines": [{"topic": l["topic"], "count": l["event_count"]} for l in lines]}}
+        f"频次{l['freq_trend']}, {l['sentiment_trend']}"
+        for l in lines  # noqa: E741
+    )
+    return {
+        "success": True,
+        "answer": f"当前事件线概览（可追问具体主题如『加密监管事件怎么演变』）：\n{overview}",
+        "data": {
+            "lines": [{"topic": l["topic"], "count": l["event_count"]} for l in lines]  # noqa: E741
+        },  # noqa: E741
+    }
 
 
 def exec_doc_search(message: str):
     """L1 文档检索（41 SPEC §7.10-1 / §13.1-A3）：零 token，桥接 41 BM25 倒排索引。"""
     import re as _re
     import subprocess as _sp
+
     # 从问法中提取查询词：去掉检索动词与文档类名词
     q = _re.sub(r"(帮我|请|查一下|查|搜一下|搜|找一下|找|检索|搜索|一下)", "", message)
     q = _re.sub(r"(的)?(文档|资料|SPEC|规范|手册|指南|知识库|wiki|在哪|位置|路径|全文检索)", "", q)
@@ -685,18 +809,33 @@ def exec_doc_search(message: str):
         proc = _sp.run(
             ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
             input=json.dumps({"query": q, "limit": 8}),
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
             env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD")},
         )
         res = json.loads(proc.stdout or "{}")
         hits = res.get("hits", []) if res.get("success") else []
         if not hits:
-            return {"success": True, "answer": f"未找到与『{q}』相关的文档", "data": {"query": q, "hits": []}}
-        lines = [f"{i+1}. {h['source']['path']}（相关度 {h['score']:.2f}）" for i, h in enumerate(hits[:8])]
+            return {
+                "success": True,
+                "answer": f"未找到与『{q}』相关的文档",
+                "data": {"query": q, "hits": []},
+            }
+        lines = [
+            f"{i+1}. {h['source']['path']}（相关度 {h['score']:.2f}）"
+            for i, h in enumerate(hits[:8])
+        ]
         return {
             "success": True,
             "answer": "找到 %d 篇相关文档：" % len(hits) + chr(10).join(lines),
-            "data": {"query": q, "hits": [{"path": h["source"]["path"], "score": h["score"], "type": h["type"]} for h in hits[:8]]},
+            "data": {
+                "query": q,
+                "hits": [
+                    {"path": h["source"]["path"], "score": h["score"], "type": h["type"]}
+                    for h in hits[:8]
+                ],
+            },
         }
     except Exception as e:
         return {"success": True, "degraded": True, "answer": f"文档检索暂不可用: {e}", "data": None}
@@ -707,8 +846,12 @@ def exec_price_query(message):
     # SPEC v1.5: 别名表统一解析，无币种时澄清追问（不再静默默认 BTC）
     symbol = _resolve_symbol(message)
     if symbol is None:
-        return {"success": True, "need_clarification": True,
-                "answer": "请问您想查询哪个币种的价格？（如：以太坊、BTC、黄金）", "data": None}
+        return {
+            "success": True,
+            "need_clarification": True,
+            "answer": "请问您想查询哪个币种的价格？（如：以太坊、BTC、黄金）",
+            "data": None,
+        }
     inst_id = f"{symbol}-USDT"
     ctx = get_l0().fetch_context("market.ticker", {"symbol": symbol})
     t = None if ctx.get("degraded") else ctx["data"]
@@ -729,9 +872,14 @@ def exec_price_query(message):
                 f"24h涨跌 {sign}{chg:.2f}%，24h最高 {high}，最低 {low}"
             ),
             "data": {
-                "symbol": symbol, "inst_id": inst_id, "last": last,
-                "open24h": open24h, "high24h": high, "low24h": low,
-                "change_pct": round(chg, 2), "source": "okx",
+                "symbol": symbol,
+                "inst_id": inst_id,
+                "last": last,
+                "open24h": open24h,
+                "high24h": high,
+                "low24h": low,
+                "change_pct": round(chg, 2),
+                "source": "okx",
             },
         }
     # 降级: 回查 18 中心数据库

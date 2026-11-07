@@ -4,9 +4,10 @@
 """
 
 import os
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
-import sys
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+import sys  # noqa: I001
 import json
 import time
 import argparse
@@ -18,10 +19,13 @@ torch.manual_seed(42)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, BASE_DIR)
-sys.path.insert(0, os.path.join(BASE_DIR, '12-三屏趋势系统'))
+sys.path.insert(0, os.path.join(BASE_DIR, "12-三屏趋势系统"))
 
-from ml.v60_lstm_baseline.v60_common import (
-    load_coin_data, generate_labels, build_features, walk_forward_splits,
+from ml.v60_lstm_baseline.v60_common import (  # noqa: E402, I001
+    load_coin_data,
+    generate_labels,
+    build_features,
+    walk_forward_splits,
 )
 
 
@@ -55,9 +59,16 @@ def main():
     from ml.models import LSTMModel
 
     lstm_params = {
-        'hidden_dim': 32, 'num_layers': 2, 'dropout': 0.5,
-        'weight_decay': 0.01, 'lr': 0.001, 'batch_size': 32,
-        'epochs': 15, 'patience': 5, 'seq_length': 20, 'pos_weight': True,
+        "hidden_dim": 32,
+        "num_layers": 2,
+        "dropout": 0.5,
+        "weight_decay": 0.01,
+        "lr": 0.001,
+        "batch_size": 32,
+        "epochs": 15,
+        "patience": 5,
+        "seq_length": 20,
+        "pos_weight": True,
     }
 
     t0 = time.time()
@@ -89,14 +100,17 @@ def main():
     print(f"  概率: 均值={np.mean(dip_proba):.3f}, 最大={np.max(dip_proba):.3f}")
 
     out_path = os.path.join(BASE_DIR, f"ml/backtest_results/v60_lstm_proba_{args.symbol}.json")
-    with open(out_path, 'w') as f:
-        json.dump({
-            'symbol': args.symbol,
-            'model': 'LSTM',
-            'task': 'DIP_BUY',
-            'n': int(n),
-            'proba': dip_proba.tolist(),
-        }, f)
+    with open(out_path, "w") as f:
+        json.dump(
+            {
+                "symbol": args.symbol,
+                "model": "LSTM",
+                "task": "DIP_BUY",
+                "n": int(n),
+                "proba": dip_proba.tolist(),
+            },
+            f,
+        )
     print(f"  已保存: {out_path}")
 
 

@@ -13,7 +13,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 import traceback
@@ -23,12 +22,12 @@ SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
 if SERVER_DIR not in sys.path:
     sys.path.insert(0, SERVER_DIR)
 
-import jev_judge
-
+import jev_judge  # noqa: E402
 
 # ============================================================
 # 模拟 Jev API 响应
 # ============================================================
+
 
 def mock_api(state, questions):
     """根据 questions 内容返回模拟的 Jev 响应"""
@@ -69,7 +68,7 @@ def mock_api(state, questions):
             else:
                 choice = list(criteria.keys())[0] if criteria else "other"
             # 构造概率分布
-            probs = {k: 0.05 for k in criteria}
+            probs = dict.fromkeys(criteria, 0.05)
             probs[choice] = 0.85
             answers[name] = {
                 "type": "choice",
@@ -134,7 +133,11 @@ SCENARIOS = [
         "state": {"task": "实现用户登录功能", "current_output": "已完成登录页面+API+测试"},
         "questions": {
             "task_complete": {"type": "noul", "instructions": "这个任务是否已经完成？"},
-            "quality_score": {"type": "score", "instructions": "完成质量如何？", "criteria": ["未完成", "部分完成", "基本完成", "高质量完成"]},
+            "quality_score": {
+                "type": "score",
+                "instructions": "完成质量如何？",
+                "criteria": ["未完成", "部分完成", "基本完成", "高质量完成"],
+            },
         },
         "assertions": [
             ("degraded", False),
@@ -148,7 +151,11 @@ SCENARIOS = [
         "state": {"task": "实现用户登录功能", "current_output": "partial: 只写了页面"},
         "questions": {
             "task_complete": {"type": "noul", "instructions": "这个任务是否已经完成？"},
-            "quality_score": {"type": "score", "instructions": "完成质量如何？", "criteria": ["未完成", "部分完成", "基本完成", "高质量完成"]},
+            "quality_score": {
+                "type": "score",
+                "instructions": "完成质量如何？",
+                "criteria": ["未完成", "部分完成", "基本完成", "高质量完成"],
+            },
         },
         "assertions": [
             ("degraded", False),
@@ -184,7 +191,17 @@ SCENARIOS = [
         "name": "意图路由-交易决策",
         "state": {"user_input": "我想做交易，开仓做多比特币"},
         "questions": {
-            "intent": {"type": "choice", "instructions": "用户意图？", "criteria": {"market_query": "行情", "trend_analysis": "趋势", "trading_decision": "交易", "risk_analysis": "风险", "other": "其他"}},
+            "intent": {
+                "type": "choice",
+                "instructions": "用户意图？",
+                "criteria": {
+                    "market_query": "行情",
+                    "trend_analysis": "趋势",
+                    "trading_decision": "交易",
+                    "risk_analysis": "风险",
+                    "other": "其他",
+                },
+            },
         },
         "assertions": [
             ("degraded", False),
@@ -196,7 +213,17 @@ SCENARIOS = [
         "name": "意图路由-行情查询",
         "state": {"user_input": "比特币现在价格多少"},
         "questions": {
-            "intent": {"type": "choice", "instructions": "用户意图？", "criteria": {"market_query": "行情", "trend_analysis": "趋势", "trading_decision": "交易", "risk_analysis": "风险", "other": "其他"}},
+            "intent": {
+                "type": "choice",
+                "instructions": "用户意图？",
+                "criteria": {
+                    "market_query": "行情",
+                    "trend_analysis": "趋势",
+                    "trading_decision": "交易",
+                    "risk_analysis": "风险",
+                    "other": "其他",
+                },
+            },
         },
         "assertions": [
             ("degraded", False),
@@ -207,7 +234,17 @@ SCENARIOS = [
         "name": "意图路由-风险分析",
         "state": {"user_input": "当前仓位风险如何"},
         "questions": {
-            "intent": {"type": "choice", "instructions": "用户意图？", "criteria": {"market_query": "行情", "trend_analysis": "趋势", "trading_decision": "交易", "risk_analysis": "风险", "other": "其他"}},
+            "intent": {
+                "type": "choice",
+                "instructions": "用户意图？",
+                "criteria": {
+                    "market_query": "行情",
+                    "trend_analysis": "趋势",
+                    "trading_decision": "交易",
+                    "risk_analysis": "风险",
+                    "other": "其他",
+                },
+            },
         },
         "assertions": [
             ("degraded", False),
@@ -226,7 +263,16 @@ SCENARIOS = [
             ("degraded", False),
             ("answers.q.noul", 0.95),
         ],
-        "forbidden_check": ["reward", "direction", "action", "position", "size", "position_delta", "target_weight", "notional"],
+        "forbidden_check": [
+            "reward",
+            "direction",
+            "action",
+            "position",
+            "size",
+            "position_delta",
+            "target_weight",
+            "notional",
+        ],
     },
     # --- FAIL-OPEN 降级 ---
     {
@@ -306,6 +352,7 @@ SCENARIOS = [
 # 验证引擎
 # ============================================================
 
+
 def get_nested(obj, path):
     """按点路径获取嵌套值"""
     keys = path.split(".")
@@ -320,7 +367,7 @@ def get_nested(obj, path):
 
 def run_scenario(scenario):
     """运行单个场景，返回 (passed, details)"""
-    name = scenario["name"]
+    name = scenario["name"]  # noqa: F841
     env_overrides = scenario.get("env", {})
     mock_fn = scenario.get("mock_fn", mock_api)
 
@@ -330,8 +377,16 @@ def run_scenario(scenario):
         patches.append(patch.dict(os.environ, {k: v}))
 
     # 重新加载模块级常量（因为 judge() 直接读模块变量）
-    patches.append(patch.object(jev_judge, "ENABLE_JEV_JUDGE", env_overrides.get("ENABLE_JEV_JUDGE", "1") == "1"))
-    patches.append(patch.object(jev_judge, "TYPESAFE_API_KEY", env_overrides.get("TYPESAFE_API_KEY", "fake-key")))
+    patches.append(
+        patch.object(
+            jev_judge, "ENABLE_JEV_JUDGE", env_overrides.get("ENABLE_JEV_JUDGE", "1") == "1"
+        )
+    )
+    patches.append(
+        patch.object(
+            jev_judge, "TYPESAFE_API_KEY", env_overrides.get("TYPESAFE_API_KEY", "fake-key")
+        )
+    )
 
     # 总是 mock API 调用（用场景指定的 mock_fn 或默认 mock_api）
     patches.append(patch.object(jev_judge, "_call_jev_api", mock_fn))
@@ -360,7 +415,9 @@ def run_scenario(scenario):
     if "reason_contains" in scenario:
         reason = result.get("reason", "")
         if scenario["reason_contains"] not in reason:
-            failures.append(f"  ✗ reason should contain '{scenario['reason_contains']}', got '{reason}'")
+            failures.append(
+                f"  ✗ reason should contain '{scenario['reason_contains']}', got '{reason}'"
+            )
 
     # 验证禁止字段被剔除
     forbidden = scenario.get("forbidden_check", [])

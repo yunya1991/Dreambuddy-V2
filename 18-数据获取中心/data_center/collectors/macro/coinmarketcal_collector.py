@@ -6,6 +6,7 @@ SPEC-Phase2 §6.1:
   - direction 动态判定: 价格趋势 + 社区情绪(percentage) + 子类型语义，阈值 ±0.3
   - FAIL-OPEN: API 失败返回空列表
 """
+
 from __future__ import annotations
 
 import logging
@@ -121,9 +122,7 @@ class CoinMarketCalCollector(BaseCollector):
             logger.warning("CoinMarketCal API 调用异常，FAIL-OPEN: %s", e)
             return []
 
-    def _parse_events(
-        self, data: list[dict], price_trend: float | None
-    ) -> list[DataRecord]:
+    def _parse_events(self, data: list[dict], price_trend: float | None) -> list[DataRecord]:
         """解析 API 响应，构造 DataRecord 列表（仅保留 tech_upgrade 类型）。"""
         records: list[DataRecord] = []
         for item in data:
@@ -149,15 +148,17 @@ class CoinMarketCalCollector(BaseCollector):
                     "coin": (item.get("coin") or {}).get("symbol", ""),
                     "date_event": item.get("date_event", ""),
                 },
-                events=[{
-                    "title": item.get("title", ""),
-                    "coin": (item.get("coin") or {}).get("symbol", ""),
-                    "date_event": item.get("date_event", ""),
-                    "category": category,
-                    "percentage": percentage,
-                    "source": item.get("source", ""),
-                    "proof": item.get("proof", ""),
-                }],
+                events=[
+                    {
+                        "title": item.get("title", ""),
+                        "coin": (item.get("coin") or {}).get("symbol", ""),
+                        "date_event": item.get("date_event", ""),
+                        "category": category,
+                        "percentage": percentage,
+                        "source": item.get("source", ""),
+                        "proof": item.get("proof", ""),
+                    }
+                ],
                 timeseries=[],
                 raw=item,
             )
@@ -166,9 +167,7 @@ class CoinMarketCalCollector(BaseCollector):
         return records
 
     @staticmethod
-    def _compute_direction(
-        category: str, percentage: float, price_trend: float | None
-    ) -> str:
+    def _compute_direction(category: str, percentage: float, price_trend: float | None) -> str:
         """动态判定 direction（SPEC §6.1 M3）。
 
         加权因子:

@@ -1,6 +1,5 @@
 """数据准备：从 L4 cases/distills 提取并清洗时间序列特征。"""
 
-import statistics
 from typing import Any, Dict, List, Optional
 
 from .types import CleanedEvent
@@ -64,8 +63,11 @@ def _extract_event(case: Dict[str, Any]) -> Optional[CleanedEvent]:
         if pnl is not None:
             x_val = 1.0 if pnl > 0 else (-1.0 if pnl < 0 else 0.0)
         elif direction:
-            x_val = 1.0 if direction in ("long", "up", "LONG", "UP") else (
-                -1.0 if direction in ("short", "down", "SHORT", "DOWN") else 0.0)
+            x_val = (
+                1.0
+                if direction in ("long", "up", "LONG", "UP")
+                else (-1.0 if direction in ("short", "down", "SHORT", "DOWN") else 0.0)
+            )
         else:
             x_val = 0.0
 
@@ -95,7 +97,11 @@ def _extract_event(case: Dict[str, Any]) -> Optional[CleanedEvent]:
         quadrant_y=y_val,
         pnl_pct=float(pnl) if pnl is not None else None,
         is_profit=(pnl > 0) if pnl is not None else None,
-        severity=_compute_severity(pnl, (do.get("drawdown") if isinstance(do, dict) else None) or (ao.get("drawdown") if isinstance(ao, dict) else None)),
+        severity=_compute_severity(
+            pnl,
+            (do.get("drawdown") if isinstance(do, dict) else None)
+            or (ao.get("drawdown") if isinstance(ao, dict) else None),
+        ),
         quality=0.0,
         clean_flags=[],
         system_source=case.get("system_source", "unknown"),
@@ -169,8 +175,8 @@ def _compute_quality(ev: CleanedEvent) -> float:
 
 def _compute_data_version(cases: List[Dict[str, Any]]) -> str:
     """生成 data_version: dv-{YYYYMMDD}-{N}。"""
-    from datetime import datetime, timezone
     import json
+    from datetime import datetime, timezone
 
     now = datetime.now(timezone.utc)
     date_str = now.strftime("%Y%m%d")
@@ -197,7 +203,12 @@ def _compute_data_version(cases: List[Dict[str, Any]]) -> str:
 
     data_version = f"dv-{date_str}-{seq:03d}"
     state_path.write_text(
-        json.dumps({"date": date_str, "seq": seq, "data_version": data_version}, ensure_ascii=False, indent=2) + "\n",
+        json.dumps(
+            {"date": date_str, "seq": seq, "data_version": data_version},
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     return data_version

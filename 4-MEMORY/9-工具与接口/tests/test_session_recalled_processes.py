@@ -3,10 +3,9 @@
 
 Task 17: RecalledProcessItem dataclass + session.recalled_processes 强类型。
 """
-import sys
-from pathlib import Path
 
-import pytest
+import sys  # noqa: I001
+from pathlib import Path
 
 _SCRIPT_DIR = Path(__file__).parent
 _PARENT = _SCRIPT_DIR.parent
@@ -17,12 +16,21 @@ if str(_PARENT) not in sys.path:
 def test_recalled_process_item_dataclass():
     from cognitive_session import RecalledProcessItem
     from cognitive_superpowers import SuperpowersSkill
+
     item = RecalledProcessItem(
         kind="meta",
         meta=SuperpowersSkill(
-            skill_id="tdd", display_name="TDD", description="",
-            version="v1", raw_skill_md="", hard_gates=[], checklists=[],
-            trigger_keywords=[], supplement=None, md5_of_base="x", localized=False,
+            skill_id="tdd",
+            display_name="TDD",
+            description="",
+            version="v1",
+            raw_skill_md="",
+            hard_gates=[],
+            checklists=[],
+            trigger_keywords=[],
+            supplement=None,
+            md5_of_base="x",
+            localized=False,
         ),
         applied=None,
         match_score=0.8,
@@ -38,6 +46,7 @@ def test_recalled_process_item_dataclass():
 
 def test_recalled_process_item_applied_kind():
     from cognitive_session import RecalledProcessItem
+
     item = RecalledProcessItem(
         kind="applied",
         meta=None,
@@ -54,11 +63,17 @@ def test_recalled_process_item_applied_kind():
 def test_session_recalled_processes_typed():
     """session.recalled_processes 应为 List[RecalledProcessItem]。"""
     from cognitive_session import CognitiveSession, RecalledProcessItem
+
     sess = CognitiveSession()
     assert isinstance(sess.recalled_processes, list)
     item = RecalledProcessItem(
-        kind="meta", meta=None, applied=None, match_score=0.5,
-        match_reason="x", skill_id="tdd", applied_id=None,
+        kind="meta",
+        meta=None,
+        applied=None,
+        match_score=0.5,
+        match_reason="x",
+        skill_id="tdd",
+        applied_id=None,
     )
     sess.recalled_processes.append(item)
     assert len(sess.recalled_processes) == 1

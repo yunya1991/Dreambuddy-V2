@@ -26,16 +26,18 @@ LEAN 核心思想：
   - MarketPreprocessor（归一化行情数据）
   - SelfEvolutionEngine（停滞检测）
 """
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple
-from pathlib import Path
-import json, math, time
 
-BASE_DIR  = Path(__file__).parent.parent.parent.parent
-DATA_DIR  = BASE_DIR / "data" / "polling_trader"
+import json
+import time
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List
+
+BASE_DIR = Path(__file__).parent.parent.parent.parent
+DATA_DIR = BASE_DIR / "data" / "polling_trader"
 
 # B1 占比阈值（超过此值触发多样性扩展）
-B1_DOMINANCE_THRESHOLD = 0.80   # 借鉴 LEAN: 单策略不超过 40%，我们放宽到 80%
+B1_DOMINANCE_THRESHOLD = 0.80  # 借鉴 LEAN: 单策略不超过 40%，我们放宽到 80%
 # 策略回撤超过此值降权
 DRAWDOWN_PENALTY_THRESHOLD = 0.15
 # 策略组合最大仓位各占比
@@ -45,27 +47,29 @@ MAX_SINGLE_STRATEGY_WEIGHT = 0.60
 @dataclass
 class StrategyStats:
     """单策略历史绩效统计。"""
-    strategy_id:  str
-    name:         str
-    win_rate:     float = 0.5
-    sharpe:       float = 0.0
+
+    strategy_id: str
+    name: str
+    win_rate: float = 0.5
+    sharpe: float = 0.0
     max_drawdown: float = 0.0
-    call_count:   int   = 0
-    win_count:    int   = 0
-    pnl_sum:      float = 0.0
-    weight:       float = 1.0          # 动态权重（LEAN Portfolio）
-    last_updated: str   = ""
+    call_count: int = 0
+    win_count: int = 0
+    pnl_sum: float = 0.0
+    weight: float = 1.0  # 动态权重（LEAN Portfolio）
+    last_updated: str = ""
 
 
 @dataclass
 class DiversityReport:
     """多样性检测报告。"""
-    b1_dominance:      float          # B1 在历史中的占比
-    triggered:         bool           # 是否触发多样性扩展
-    reason:            str
-    recommended_mix:   List[str]      # 推荐的策略组合
-    strategy_weights:  Dict[str, float]  # 每个策略的权重
-    new_branches:      List[Dict]     # 新增策略分支
+
+    b1_dominance: float  # B1 在历史中的占比
+    triggered: bool  # 是否触发多样性扩展
+    reason: str
+    recommended_mix: List[str]  # 推荐的策略组合
+    strategy_weights: Dict[str, float]  # 每个策略的权重
+    new_branches: List[Dict]  # 新增策略分支
 
 
 class StrategyDiversityManager:
@@ -97,9 +101,9 @@ class StrategyDiversityManager:
 
     # ── 主入口：检测并扩展策略 ────────────────────────────────────────────────
 
-    def check_and_expand(self,
-                          market_snapshot: Dict[str, Any],
-                          current_branches: List[Any]) -> DiversityReport:
+    def check_and_expand(
+        self, market_snapshot: Dict[str, Any], current_branches: List[Any]
+    ) -> DiversityReport:
         """
         检测 B1 占比，必要时扩展策略多样性。
 
@@ -150,22 +154,24 @@ class StrategyDiversityManager:
 
     # ── 核心：选择互补策略 ────────────────────────────────────────────────────
 
-    def _select_complementary_strategies(self,
-                                          snapshot: Dict[str, Any]) -> List[str]:
+    def _select_complementary_strategies(self, snapshot: Dict[str, Any]) -> List[str]:
         """
         根据市场状态选择与 B1 相关性最低的互补策略。
         LEAN 原则：策略相关性越低，组合夏普越高。
         """
         selected = []
 
-        pct      = float(snapshot.get("price_change_pct",
-                         snapshot.get("supply_demand_score", 0.5) * 20 - 10) or 0)
-        rsi      = float(snapshot.get("rsi", snapshot.get("technical_score", 0.5) * 100) or 50)
-        funding  = float(snapshot.get("funding_rate",
-                         snapshot.get("capital_flow_score", 0.5) * 0.002 - 0.001) or 0)
-        vol_r    = float(snapshot.get("volume_ratio", 1.0) or 1.0)
-        fgi      = float(snapshot.get("fgi",
-                         snapshot.get("sentiment_score", 0.5) * 100) or 50)
+        pct = float(
+            snapshot.get("price_change_pct", snapshot.get("supply_demand_score", 0.5) * 20 - 10)
+            or 0
+        )
+        rsi = float(snapshot.get("rsi", snapshot.get("technical_score", 0.5) * 100) or 50)
+        funding = float(
+            snapshot.get("funding_rate", snapshot.get("capital_flow_score", 0.5) * 0.002 - 0.001)
+            or 0
+        )
+        vol_r = float(snapshot.get("volume_ratio", 1.0) or 1.0)
+        fgi = float(snapshot.get("fgi", snapshot.get("sentiment_score", 0.5) * 100) or 50)
 
         # B4 均值回归：RSI 极端 + 资金费率极端（与 B1 趋势策略负相关）
         if rsi < 30 or rsi > 70 or abs(funding) > 0.0002:
@@ -187,8 +193,8 @@ class StrategyDiversityManager:
         # 至少选1个（保证多样性，选历史表现最好的）
         if not selected:
             best = max(
-                [s for s in ["B4", "B5", "B6", "B7"]],
-                key=lambda sid: self._stats[sid].sharpe
+                [s for s in ["B4", "B5", "B6", "B7"]],  # noqa: C416
+                key=lambda sid: self._stats[sid].sharpe,  # noqa: C416
             )
             selected.append(best)
 
@@ -197,8 +203,7 @@ class StrategyDiversityManager:
 
     # ── 策略权重计算（LEAN Portfolio）────────────────────────────────────────
 
-    def _compute_portfolio_weights(self,
-                                    strategies: List[str]) -> Dict[str, float]:
+    def _compute_portfolio_weights(self, strategies: List[str]) -> Dict[str, float]:
         """
         基于历史夏普比率计算策略权重。
         LEAN 使用 Equal Risk Contribution (ERC) 方法。
@@ -223,60 +228,58 @@ class StrategyDiversityManager:
 
     # ── 生成新策略分支（StrategyBranch 格式）────────────────────────────────
 
-    def _build_new_branches(self,
-                             snapshot: Dict[str, Any],
-                             strategies: List[str],
-                             weights: Dict[str, float]) -> List[Dict]:
+    def _build_new_branches(
+        self, snapshot: Dict[str, Any], strategies: List[str], weights: Dict[str, float]
+    ) -> List[Dict]:
         """构建新策略分支的字典格式（供 BCRMEngine 追加）。"""
         branches = []
-        price   = float(snapshot.get("price", 0) or 0)
-        vol     = float(snapshot.get("volatility",
-                        snapshot.get("volume_ratio", 1.0) * 0.02) or 0.02)
+        price = float(snapshot.get("price", 0) or 0)
+        vol = float(snapshot.get("volatility", snapshot.get("volume_ratio", 1.0) * 0.02) or 0.02)
 
         templates = {
             "B4": {
-                "branch_id":        "B4",
-                "condition":        "RSI极端或资金费率极端（均值回归信号）",
-                "action":           "均值回归：逆向小仓位，等待回归",
+                "branch_id": "B4",
+                "condition": "RSI极端或资金费率极端（均值回归信号）",
+                "action": "均值回归：逆向小仓位，等待回归",
                 "position_modifier": 0.3,
-                "stop_condition":   "RSI穿越50线或资金费率回归中性",
-                "rationale":        "借鉴LEAN: 与趋势策略负相关，降低组合波动",
-                "stop_loss_px":     price * (1 - vol * 1.5) if price else 0,
-                "take_profit_px":   price * (1 + vol * 2.5) if price else 0,
-                "reduce_ratio":     0.0,
+                "stop_condition": "RSI穿越50线或资金费率回归中性",
+                "rationale": "借鉴LEAN: 与趋势策略负相关，降低组合波动",
+                "stop_loss_px": price * (1 - vol * 1.5) if price else 0,
+                "take_profit_px": price * (1 + vol * 2.5) if price else 0,
+                "reduce_ratio": 0.0,
             },
             "B5": {
-                "branch_id":        "B5",
-                "condition":        "成交量放大≥1.5x且价格变动>3%（突破信号）",
-                "action":           "突破追势：顺势追入，仓位较B1更激进",
+                "branch_id": "B5",
+                "condition": "成交量放大≥1.5x且价格变动>3%（突破信号）",
+                "action": "突破追势：顺势追入，仓位较B1更激进",
                 "position_modifier": 1.2,
-                "stop_condition":   "量能萎缩或价格跌破突破点",
-                "rationale":        "借鉴vnpy: 量价突破形态，高确定性入场",
-                "stop_loss_px":     price * (1 - vol * 1.2) if price else 0,
-                "take_profit_px":   price * (1 + vol * 4.0) if price else 0,
-                "reduce_ratio":     0.0,
+                "stop_condition": "量能萎缩或价格跌破突破点",
+                "rationale": "借鉴vnpy: 量价突破形态，高确定性入场",
+                "stop_loss_px": price * (1 - vol * 1.2) if price else 0,
+                "take_profit_px": price * (1 + vol * 4.0) if price else 0,
+                "reduce_ratio": 0.0,
             },
             "B6": {
-                "branch_id":        "B6",
-                "condition":        "资金费率持续偏向多空某方（>0.03%）",
-                "action":           "资金套利：持仓反向收取资金费率",
+                "branch_id": "B6",
+                "condition": "资金费率持续偏向多空某方（>0.03%）",
+                "action": "资金套利：持仓反向收取资金费率",
                 "position_modifier": 0.5,
-                "stop_condition":   "资金费率回归 ±0.01% 区间",
-                "rationale":        "借鉴Binance套利策略: 资金费率年化>10%时稳定收益",
-                "stop_loss_px":     price * (1 - vol * 0.8) if price else 0,
-                "take_profit_px":   0,  # 靠套利收益，无硬止盈
-                "reduce_ratio":     0.0,
+                "stop_condition": "资金费率回归 ±0.01% 区间",
+                "rationale": "借鉴Binance套利策略: 资金费率年化>10%时稳定收益",
+                "stop_loss_px": price * (1 - vol * 0.8) if price else 0,
+                "take_profit_px": 0,  # 靠套利收益，无硬止盈
+                "reduce_ratio": 0.0,
             },
             "B7": {
-                "branch_id":        "B7",
-                "condition":        "FGI<20（极度恐惧）或FGI>85（极度贪婪）",
-                "action":           "被忽视情景：做梦部第四象限，反向试探",
+                "branch_id": "B7",
+                "condition": "FGI<20（极度恐惧）或FGI>85（极度贪婪）",
+                "action": "被忽视情景：做梦部第四象限，反向试探",
                 "position_modifier": 0.2,
-                "stop_condition":   "FGI回归40-60中性区间",
-                "rationale":        "做梦部: 市场极端情绪通常是最大机会被忽视时",
-                "stop_loss_px":     price * (1 - vol * 2.0) if price else 0,
-                "take_profit_px":   price * (1 + vol * 5.0) if price else 0,
-                "reduce_ratio":     0.0,
+                "stop_condition": "FGI回归40-60中性区间",
+                "rationale": "做梦部: 市场极端情绪通常是最大机会被忽视时",
+                "stop_loss_px": price * (1 - vol * 2.0) if price else 0,
+                "take_profit_px": price * (1 + vol * 5.0) if price else 0,
+                "reduce_ratio": 0.0,
             },
         }
 
@@ -294,6 +297,7 @@ class StrategyDiversityManager:
         """从绩效统计历史数据计算 B1 占比。"""
         try:
             from scripts.memory_l4.paths import memory_l4_stats_dir
+
             trades_file = memory_l4_stats_dir() / "all_trades.jsonl"
 
             b1_count = 0
@@ -310,8 +314,7 @@ class StrategyDiversityManager:
                         d = json.loads(line)
                         branch = d.get("strategy_branch", d.get("branch_id", ""))
                         total += 1
-                        if not branch or branch == "B1" or \
-                           "观望" in str(d.get("action", "")):
+                        if not branch or branch == "B1" or "观望" in str(d.get("action", "")):
                             b1_count += 1
                     except Exception:
                         continue
@@ -326,7 +329,7 @@ class StrategyDiversityManager:
 
     def _update_weights_from_performance(self):
         """根据近期绩效更新各策略权重（LEAN 动态权重思路）。"""
-        for sid, stat in self._stats.items():
+        for sid, stat in self._stats.items():  # noqa: B007
             if stat.call_count < 3:
                 continue
             wr = stat.win_count / stat.call_count
@@ -367,23 +370,30 @@ class StrategyDiversityManager:
                 pass
 
     def _save_history(self):
-        data = {sid: {
-            "win_rate":     s.win_rate,
-            "sharpe":       s.sharpe,
-            "max_drawdown": s.max_drawdown,
-            "call_count":   s.call_count,
-            "win_count":    s.win_count,
-            "pnl_sum":      s.pnl_sum,
-            "weight":       s.weight,
-            "last_updated": s.last_updated,
-        } for sid, s in self._stats.items()}
-        self._history_file.write_text(json.dumps(data, ensure_ascii=False, indent=2),
-                                       encoding="utf-8")
+        data = {
+            sid: {
+                "win_rate": s.win_rate,
+                "sharpe": s.sharpe,
+                "max_drawdown": s.max_drawdown,
+                "call_count": s.call_count,
+                "win_count": s.win_count,
+                "pnl_sum": s.pnl_sum,
+                "weight": s.weight,
+                "last_updated": s.last_updated,
+            }
+            for sid, s in self._stats.items()
+        }
+        self._history_file.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
 
     def get_stats(self) -> Dict:
-        return {sid: {
-            "call_count": s.call_count,
-            "win_rate":   round(s.win_count / max(s.call_count, 1), 3),
-            "sharpe":     round(s.sharpe, 3),
-            "weight":     round(s.weight, 3),
-        } for sid, s in self._stats.items()}
+        return {
+            sid: {
+                "call_count": s.call_count,
+                "win_rate": round(s.win_count / max(s.call_count, 1), 3),
+                "sharpe": round(s.sharpe, 3),
+                "weight": round(s.weight, 3),
+            }
+            for sid, s in self._stats.items()
+        }

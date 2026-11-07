@@ -16,6 +16,7 @@
 
 输出: dreambuddy_evolution/data/ablation_mask_head_dim.json
 """
+
 from __future__ import annotations
 
 import json
@@ -30,12 +31,15 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
-from dreambuddy_evolution.core.exogenous_data_bridge import (
+from dreambuddy_evolution.core.exogenous_data_bridge import (  # noqa: E402, I001
     CROSS_ATTENTION_FACTOR_METRICS,
     build_factor_head_mask,
     get_factor_dimensions,
 )
+from dreambuddy_evolution.core.neural_sde_model import (  # noqa: E402
+    NeuralSDEModel,
+    NeuralSDETrainer,
+)  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 N_FACTORS = len(CROSS_ATTENTION_FACTOR_METRICS)  # 36
 DIMENSIONS = get_factor_dimensions()  # C1..C8, news
-N_HEADS = len(DIMENSIONS)             # 8
+N_HEADS = len(DIMENSIONS)  # 8
 
 
 # ---------------------------------------------------------------------------
@@ -78,8 +82,8 @@ def generate_synthetic_factors(
         dim_groups.setdefault(dim, []).append(idx)
 
     phi = 0.95  # 均值回归系数
-    for dim, indices in dim_groups.items():
-        for j, f_idx in enumerate(indices):
+    for dim, indices in dim_groups.items():  # noqa: B007
+        for j, f_idx in enumerate(indices):  # noqa: B007
             # AR(1) 过程
             f = np.zeros(n_steps)
             f[0] = rng.randn() * 0.1
@@ -91,7 +95,7 @@ def generate_synthetic_factors(
     # factor[t] 与 return[t+1] 的相关性 = signal_strength
     # 通过在因子上加一个与未来收益相关的分量来实现
     # (这里用随机信号, 因为真实收益在生成时未知)
-    for dim, indices in dim_groups.items():
+    for dim, indices in dim_groups.items():  # noqa: B007
         if len(indices) == 0:
             continue
         signal_idx = indices[0]  # 第一个因子作为信号因子
@@ -114,9 +118,9 @@ def generate_synthetic_factors(
 def _train_and_evaluate(
     closes: np.ndarray,
     factors: np.ndarray,
-    mask_type: str,       # "hard" | "soft" | "none"
-    cross_attn_dim: int,   # 32 or 64
-    cross_attn_heads: int, # 8
+    mask_type: str,  # "hard" | "soft" | "none"
+    cross_attn_dim: int,  # 32 or 64
+    cross_attn_heads: int,  # 8
     seed: int,
     epochs: int = 100,
     label: str = "",
@@ -138,6 +142,7 @@ def _train_and_evaluate(
     """
     np.random.seed(seed)
     import torch
+
     torch.manual_seed(seed)
 
     # 构建 mask
@@ -162,21 +167,31 @@ def _train_and_evaluate(
         raise RuntimeError("torch 不可用")
 
     trainer = NeuralSDETrainer(
-        model=model, lr=1e-4, seq_len=64, horizon=20,
-        batch_size=64, loss_type="mse",
+        model=model,
+        lr=1e-4,
+        seq_len=64,
+        horizon=20,
+        batch_size=64,
+        loss_type="mse",
     )
 
     t0 = time.time()
     report = trainer.train(
-        closes, epochs=epochs,
+        closes,
+        epochs=epochs,
         regime_labels=None,  # 无 regime (隔离 cross-attention 效果)
         regime_balance="natural",
         exogenous_factors=factors,
     )
     train_time = time.time() - t0
-    logger.info("[%s] 训练: status=%s, n_windows=%d, final_loss=%.6f, 耗时=%.1fs",
-                label, report.get("status"), report.get("n_windows", 0),
-                report.get("final_loss", 0.0), train_time)
+    logger.info(
+        "[%s] 训练: status=%s, n_windows=%d, final_loss=%.6f, 耗时=%.1fs",
+        label,
+        report.get("status"),
+        report.get("n_windows", 0),
+        report.get("final_loss", 0.0),
+        train_time,
+    )
 
     if report.get("status") != "ok":
         raise RuntimeError(f"[{label}] 训练未完成: {report}")
@@ -186,13 +201,15 @@ def _train_and_evaluate(
     n_paths = 200
     n = len(closes)
     test_start = n - horizon - 1
-    history = closes[:test_start + 1]
-    actual = closes[test_start + 1:test_start + 1 + horizon]
+    history = closes[: test_start + 1]
+    actual = closes[test_start + 1 : test_start + 1 + horizon]
 
     # 推理时注入末尾因子快照
     factor_snapshot = factors[test_start]  # (n_factors,)
     sde_paths = model.forecast(
-        history, horizon, n_paths,
+        history,
+        horizon,
+        n_paths,
         exogenous_factors=factor_snapshot,
     )
     if sde_paths is None:
@@ -305,34 +322,67 @@ def main():
 
     with open(data_path) as f:
         closes = np.array(json.load(f), dtype=np.float64)
-    logger.info("加载 BTC 10y close: %d 点, $%.2f → $%.2f",
-                len(closes), closes[0], closes[-1])
+    logger.info("加载 BTC 10y close: %d 点, $%.2f → $%.2f", len(closes), closes[0], closes[-1])
 
     # 生成合成因子
     factors = generate_synthetic_factors(len(closes), N_FACTORS, seed=42)
-    logger.info("生成合成因子: shape=%s, dimensions=%s, factors=%d, heads=%d",
-                factors.shape, DIMENSIONS, N_FACTORS, N_HEADS)
+    logger.info(
+        "生成合成因子: shape=%s, dimensions=%s, factors=%d, heads=%d",
+        factors.shape,
+        DIMENSIONS,
+        N_FACTORS,
+        N_HEADS,
+    )
 
     SEED = 42
     EPOCHS = 100
 
     configs = [
         # Ablation 1: mask type (head_dim=4 固定)
-        {"mask_type": "hard", "cross_attn_dim": 32, "cross_attn_heads": N_HEADS, "label": "A-hard-hd4"},
-        {"mask_type": "soft", "cross_attn_dim": 32, "cross_attn_heads": N_HEADS, "label": "B-soft-hd4"},
-        {"mask_type": "none", "cross_attn_dim": 32, "cross_attn_heads": N_HEADS, "label": "C-none-hd4"},
+        {
+            "mask_type": "hard",
+            "cross_attn_dim": 32,
+            "cross_attn_heads": N_HEADS,
+            "label": "A-hard-hd4",
+        },
+        {
+            "mask_type": "soft",
+            "cross_attn_dim": 32,
+            "cross_attn_heads": N_HEADS,
+            "label": "B-soft-hd4",
+        },
+        {
+            "mask_type": "none",
+            "cross_attn_dim": 32,
+            "cross_attn_heads": N_HEADS,
+            "label": "C-none-hd4",
+        },
         # Ablation 2: head_dim (hard mask 固定)
-        {"mask_type": "hard", "cross_attn_dim": 64, "cross_attn_heads": N_HEADS, "label": "D-hard-hd8"},
-        {"mask_type": "soft", "cross_attn_dim": 64, "cross_attn_heads": N_HEADS, "label": "E-soft-hd8"},
+        {
+            "mask_type": "hard",
+            "cross_attn_dim": 64,
+            "cross_attn_heads": N_HEADS,
+            "label": "D-hard-hd8",
+        },
+        {
+            "mask_type": "soft",
+            "cross_attn_dim": 64,
+            "cross_attn_heads": N_HEADS,
+            "label": "E-soft-hd8",
+        },
     ]
 
     results = []
     for cfg in configs:
         logger.info("=" * 60)
-        logger.info("实验 %s: mask=%s, dim=%d, heads=%d, head_dim=%d",
-                    cfg["label"], cfg["mask_type"], cfg["cross_attn_dim"],
-                    cfg["cross_attn_heads"],
-                    cfg["cross_attn_dim"] // cfg["cross_attn_heads"])
+        logger.info(
+            "实验 %s: mask=%s, dim=%d, heads=%d, head_dim=%d",
+            cfg["label"],
+            cfg["mask_type"],
+            cfg["cross_attn_dim"],
+            cfg["cross_attn_heads"],
+            cfg["cross_attn_dim"] // cfg["cross_attn_heads"],
+        )
         logger.info("=" * 60)
         try:
             result = _train_and_evaluate(
@@ -346,19 +396,24 @@ def main():
                 label=cfg["label"],
             )
             results.append(result)
-            logger.info("[%s] MAE=%.2f, entropy=%.4f, sparsity=%.4f, leakage=%.6f",
-                        cfg["label"], result["mae"],
-                        result["attention"]["entropy"],
-                        result["attention"]["sparsity"],
-                        result["attention"]["mask_leakage_ratio"])
+            logger.info(
+                "[%s] MAE=%.2f, entropy=%.4f, sparsity=%.4f, leakage=%.6f",
+                cfg["label"],
+                result["mae"],
+                result["attention"]["entropy"],
+                result["attention"]["sparsity"],
+                result["attention"]["mask_leakage_ratio"],
+            )
         except Exception as e:
             logger.error("[%s] 失败: %s", cfg["label"], e, exc_info=True)
-            results.append({
-                "label": cfg["label"],
-                "mask_type": cfg["mask_type"],
-                "head_dim": cfg["cross_attn_dim"] // cfg["cross_attn_heads"],
-                "error": str(e),
-            })
+            results.append(
+                {
+                    "label": cfg["label"],
+                    "mask_type": cfg["mask_type"],
+                    "head_dim": cfg["cross_attn_dim"] // cfg["cross_attn_heads"],
+                    "error": str(e),
+                }
+            )
 
     # === 对比报告 ===
     report = {
@@ -390,10 +445,14 @@ def main():
     logger.info("=== Ablation 对照结果 ===")
     for r in results:
         if "mae" in r:
-            logger.info("%s: MAE=%.2f, entropy=%.4f, sparsity=%.4f, leakage=%.6f",
-                        r["label"], r["mae"],
-                        r["attention"]["entropy"], r["attention"]["sparsity"],
-                        r["attention"]["mask_leakage_ratio"])
+            logger.info(
+                "%s: MAE=%.2f, entropy=%.4f, sparsity=%.4f, leakage=%.6f",
+                r["label"],
+                r["mae"],
+                r["attention"]["entropy"],
+                r["attention"]["sparsity"],
+                r["attention"]["mask_leakage_ratio"],
+            )
         else:
             logger.info("%s: FAILED (%s)", r["label"], r.get("error", "unknown"))
     logger.info("报告: %s", out_path)

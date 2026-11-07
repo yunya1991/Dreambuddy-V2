@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """调试 _build_trend_closes_5ma 生成的 closes 和 MA 斜率方向"""
+
 import sys
 from pathlib import Path
+
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 
-from scripts.memory_l4.polling_trader import PollingTrader
-from unittest.mock import patch, MagicMock
-from scripts.memory_l4.tests.test_5ma_short_filter import _build_trend_closes_5ma
+from unittest.mock import MagicMock, patch  # noqa: E402
+
+from scripts.memory_l4.polling_trader import PollingTrader  # noqa: E402
+from scripts.memory_l4.tests.test_5ma_short_filter import _build_trend_closes_5ma  # noqa: E402
 
 # 构造 bear 趋势数据
 closes = _build_trend_closes_5ma(direction="bear", ma30=90000, spread_pct=0.05)
@@ -46,5 +49,5 @@ print()
 
 # 计算5根 MA 序列
 for i in range(5):
-    ma30_i = sum(closes[i:i+30]) / 30
+    ma30_i = sum(closes[i : i + 30]) / 30
     print(f"  ma_series[{i}] (往前{i}期) MA30={ma30_i:.1f}")

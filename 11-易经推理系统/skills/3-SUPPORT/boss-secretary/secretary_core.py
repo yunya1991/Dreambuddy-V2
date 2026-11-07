@@ -15,14 +15,14 @@ Boss Secretary - Core Processing Engine
 """
 
 import re
-import yaml
-import json
 import sys
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, asdict
 from enum import Enum
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import yaml
 
 # ============================================================
 # 顾问团队集成 (Step3 会诊触发)
@@ -34,7 +34,8 @@ ConsultationType = None
 
 try:
     sys.path.insert(0, str(ADVISOR_TEAM_ROOT))
-    from secretary_integration import SecretaryConsultation, ConsultationType
+    from secretary_integration import ConsultationType, SecretaryConsultation
+
     ADVISOR_INTEGRATION_AVAILABLE = True
 except ImportError:
     pass  # 顾问团队未安装时降级运行
@@ -52,6 +53,7 @@ PREFERENCES_DIR = SKILL_DIR / "preferences"
 
 class IntentType(Enum):
     """意图类型枚举"""
+
     # 执行类
     EXECUTE_LONG = "EXECUTE_LONG"
     EXECUTE_SHORT = "EXECUTE_SHORT"
@@ -107,17 +109,18 @@ class IntentType(Enum):
     EMERGENCY_RESPONSE = "EMERGENCY_RESPONSE"
 
     # v1.0 新增 - 数据分析类
-    DATA_ANALYSIS = "DATA_ANALYSIS"           # 数据分析请求
-    TREND_ANALYSIS = "TREND_ANALYSIS"         # 趋势分析
+    DATA_ANALYSIS = "DATA_ANALYSIS"  # 数据分析请求
+    TREND_ANALYSIS = "TREND_ANALYSIS"  # 趋势分析
     RESISTANCE_ANALYSIS = "RESISTANCE_ANALYSIS"  # 阻力分析
     CALIBRATION_SUGGESTION = "CALIBRATION_SUGGESTION"  # 校准建议
-    CHART_REQUEST = "CHART_REQUEST"           # 图表请求
-    DASHBOARD_VIEW = "DASHBOARD_VIEW"         # Dashboard查看
-    EPISODE_REVIEW = "EPISODE_REVIEW"         # Episode复盘
+    CHART_REQUEST = "CHART_REQUEST"  # 图表请求
+    DASHBOARD_VIEW = "DASHBOARD_VIEW"  # Dashboard查看
+    EPISODE_REVIEW = "EPISODE_REVIEW"  # Episode复盘
 
 
 class RiskLevel(Enum):
     """风险等级"""
+
     NONE = "none"
     LOW = "low"
     MEDIUM = "medium"
@@ -131,9 +134,11 @@ class RiskLevel(Enum):
 # 数据结构
 # ============================================================
 
+
 @dataclass
 class Entity:
     """提取的实体"""
+
     type: str
     value: str
     normalized: Optional[str] = None
@@ -143,6 +148,7 @@ class Entity:
 @dataclass
 class IntentResult:
     """意图识别结果"""
+
     intent: IntentType
     confidence: float
     entities: List[Entity]
@@ -159,13 +165,14 @@ class IntentResult:
             "raw_text": self.raw_text,
             "keywords_matched": self.keywords_matched,
             "requires_confirmation": self.requires_confirmation,
-            "risk_level": self.risk_level.value
+            "risk_level": self.risk_level.value,
         }
 
 
 @dataclass
 class RoutingResult:
     """路由结果"""
+
     primary_skill: str
     secondary_skills: List[str]
     department: str
@@ -180,13 +187,14 @@ class RoutingResult:
             "department": self.department,
             "advisors": self.advisors,
             "process": self.process,
-            "confirmation_required": self.confirmation_required
+            "confirmation_required": self.confirmation_required,
         }
 
 
 @dataclass
 class LearningRecord:
     """学习记录"""
+
     timestamp: str
     type: str  # intent_learn, routing_learn, confirmation_learn
     original: str
@@ -201,6 +209,7 @@ class LearningRecord:
 # ============================================================
 # 核心引擎类
 # ============================================================
+
 
 class SecretaryCore:
     """老板秘书核心引擎"""
@@ -220,16 +229,16 @@ class SecretaryCore:
         """加载意图关键词映射"""
         path = KNOWLEDGE_DIR / "keyword_mapping.yaml"
         if path.exists():
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
-                return data.get('intents', {})
+                return data.get("intents", {})
         return {}
 
     def _load_advisor_routing(self) -> Dict:
         """加载顾问路由规则"""
         path = KNOWLEDGE_DIR / "advisor_routing.yaml"
         if path.exists():
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, "r", encoding="utf-8") as f:
                 return yaml.safe_load(f)
         return {}
 
@@ -237,7 +246,7 @@ class SecretaryCore:
         """加载公司架构"""
         path = KNOWLEDGE_DIR / "company_structure.yaml"
         if path.exists():
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, "r", encoding="utf-8") as f:
                 return yaml.safe_load(f)
         return {}
 
@@ -245,7 +254,7 @@ class SecretaryCore:
         """加载老板偏好"""
         path = PREFERENCES_DIR / "boss_preferences.yaml"
         if path.exists():
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, "r", encoding="utf-8") as f:
                 return yaml.safe_load(f)
         return {}
 
@@ -253,31 +262,31 @@ class SecretaryCore:
         """加载学习日志"""
         path = LEARNING_DIR / "intent_log.yaml"
         if path.exists():
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
-                return [LearningRecord(**r) for r in data.get('learning_log', [])]
+                return [LearningRecord(**r) for r in data.get("learning_log", [])]
         return []
 
     def _save_learning_log(self):
         """保存学习日志"""
         path = LEARNING_DIR / "intent_log.yaml"
         data = {
-            'learning_log': [
+            "learning_log": [
                 {
-                    'timestamp': r.timestamp,
-                    'type': r.type,
-                    'original': r.original,
-                    'recognized_intent': r.recognized_intent,
-                    'confidence': r.confidence,
-                    'corrected': r.corrected,
-                    'user_feedback': r.user_feedback,
-                    'execution_result': r.execution_result,
-                    'satisfaction': r.satisfaction
+                    "timestamp": r.timestamp,
+                    "type": r.type,
+                    "original": r.original,
+                    "recognized_intent": r.recognized_intent,
+                    "confidence": r.confidence,
+                    "corrected": r.corrected,
+                    "user_feedback": r.user_feedback,
+                    "execution_result": r.execution_result,
+                    "satisfaction": r.satisfaction,
                 }
                 for r in self.learning_log[-100:]  # 只保留最近100条
             ]
         }
-        with open(path, 'w', encoding='utf-8') as f:
+        with open(path, "w", encoding="utf-8") as f:
             yaml.dump(data, f, allow_unicode=True, default_flow_style=False)
 
     # ============================================================
@@ -289,10 +298,9 @@ class SecretaryCore:
         text_lower = text.lower().strip()
 
         # 先检测模糊信号
-        confusion_keywords = self.keyword_mapping.get('CONFUSION_SIGNAL', {}).get('keywords', {})
-        confusion_keywords_flat = (
-            confusion_keywords.get('primary', []) +
-            confusion_keywords.get('secondary', [])
+        confusion_keywords = self.keyword_mapping.get("CONFUSION_SIGNAL", {}).get("keywords", {})
+        confusion_keywords_flat = confusion_keywords.get("primary", []) + confusion_keywords.get(
+            "secondary", []
         )
         if any(kw in text_lower for kw in confusion_keywords_flat):
             return IntentResult(
@@ -300,9 +308,9 @@ class SecretaryCore:
                 confidence=0.5,
                 entities=[],
                 raw_text=text,
-                keywords_matched=['模糊信号'],
+                keywords_matched=["模糊信号"],
                 requires_confirmation=True,
-                risk_level=RiskLevel.UNKNOWN
+                risk_level=RiskLevel.UNKNOWN,
             )
 
         # 检测多意图
@@ -312,9 +320,9 @@ class SecretaryCore:
                 confidence=0.6,
                 entities=[],
                 raw_text=text,
-                keywords_matched=['多意图'],
+                keywords_matched=["多意图"],
                 requires_confirmation=True,
-                risk_level=RiskLevel.MIXED
+                risk_level=RiskLevel.MIXED,
             )
 
         # 正常意图识别
@@ -323,15 +331,15 @@ class SecretaryCore:
         best_keywords = []
 
         for intent_id, intent_config in self.keyword_mapping.items():
-            if intent_id in ['CONFUSION_SIGNAL', 'MULTI_INTENT']:
+            if intent_id in ["CONFUSION_SIGNAL", "MULTI_INTENT"]:
                 continue
 
             score = 0
             matched = []
 
-            keywords = intent_config.get('keywords', {})
-            primary_kw = keywords.get('primary', [])
-            secondary_kw = keywords.get('secondary', [])
+            keywords = intent_config.get("keywords", {})
+            primary_kw = keywords.get("primary", [])
+            secondary_kw = keywords.get("secondary", [])
 
             # 精确匹配 primary 关键词
             for kw in primary_kw:
@@ -346,7 +354,7 @@ class SecretaryCore:
                     matched.append(f"[S]{kw}")
 
             # 置信度加成
-            score += intent_config.get('confidence_boost', 0)
+            score += intent_config.get("confidence_boost", 0)
 
             if score > best_score:
                 best_score = score
@@ -371,16 +379,16 @@ class SecretaryCore:
             raw_text=text,
             keywords_matched=best_keywords,
             requires_confirmation=requires_confirmation,
-            risk_level=risk_level
+            risk_level=risk_level,
         )
 
     def _detect_multi_intent(self, text: str) -> bool:
         """检测多意图"""
         conflict_patterns = [
-            r'.*但.*觉得.*',  # "开多但我觉得不稳"
-            r'.*但.*担心.*',
-            r'.*想.*又.*',
-            r'.*想做.*又想.*',
+            r".*但.*觉得.*",  # "开多但我觉得不稳"
+            r".*但.*担心.*",
+            r".*想.*又.*",
+            r".*想做.*又想.*",
         ]
         return any(re.match(pattern, text) for pattern in conflict_patterns)
 
@@ -390,92 +398,87 @@ class SecretaryCore:
 
         # 交易标的
         symbol_patterns = [
-            (r'\b(BTC|ETH|SOL|ORDI|MATIC|AVAX)\b', {
-                'BTC': 'BTC/USDT:USDT',
-                'ETH': 'ETH/USDT:USDT',
-                'SOL': 'SOL/USDT:USDT',
-            }),
+            (
+                r"\b(BTC|ETH|SOL|ORDI|MATIC|AVAX)\b",
+                {
+                    "BTC": "BTC/USDT:USDT",
+                    "ETH": "ETH/USDT:USDT",
+                    "SOL": "SOL/USDT:USDT",
+                },
+            ),
         ]
         for pattern, normalizations in symbol_patterns:
             matches = re.findall(pattern, text, re.IGNORECASE)
             for m in matches:
                 normalized = normalizations.get(m.upper(), m)
-                entities.append(Entity(
-                    type='symbol',
-                    value=m,
-                    normalized=normalized
-                ))
+                entities.append(Entity(type="symbol", value=m, normalized=normalized))
 
         # 杠杆倍数
         leverage_patterns = [
-            r'(\d+)x',
-            r'(\d+)倍',
-            r'杠杆(\d+)',
+            r"(\d+)x",
+            r"(\d+)倍",
+            r"杠杆(\d+)",
         ]
         for pattern in leverage_patterns:
             match = re.search(pattern, text)
             if match:
-                entities.append(Entity(
-                    type='leverage',
-                    value=match.group(1),
-                    normalized=match.group(1)
-                ))
+                entities.append(
+                    Entity(type="leverage", value=match.group(1), normalized=match.group(1))
+                )
 
         # 仓位比例
         position_patterns = [
-            r'(\d+)%',
-            r'(\d+)成',
-            r'(\d+)U',
+            r"(\d+)%",
+            r"(\d+)成",
+            r"(\d+)U",
         ]
         for pattern in position_patterns:
             match = re.search(pattern, text)
             if match:
-                entities.append(Entity(
-                    type='position_size',
-                    value=match.group(1),
-                    normalized=match.group(1)
-                ))
+                entities.append(
+                    Entity(type="position_size", value=match.group(1), normalized=match.group(1))
+                )
 
         return entities
 
     def _get_risk_level(self, intent: str) -> RiskLevel:
         """获取风险等级"""
         risk_map = {
-            'EXECUTE_LONG': RiskLevel.HIGH,
-            'EXECUTE_SHORT': RiskLevel.HIGH,
-            'EXECUTE_CLOSE': RiskLevel.HIGH,
-            'QUERY_POSITION': RiskLevel.NONE,
-            'QUERY_ORDER_STATUS': RiskLevel.NONE,
-            'QUOTE_PRICE': RiskLevel.NONE,
-            'MARKET_ANALYSIS': RiskLevel.LOW,
-            'OPPORTUNITY_SCAN': RiskLevel.LOW,
-            'DATA_QUERY': RiskLevel.NONE,
-            'PARAM_ADJUST': RiskLevel.MEDIUM,
-            'SKILL_QUERY': RiskLevel.NONE,
-            'FEATURE_REQUEST': RiskLevel.MEDIUM,
-            'SYSTEM_STATUS': RiskLevel.NONE,
-            'ADVISOR_CONSULT': RiskLevel.NONE,
-            'ADVISOR_REVIEW': RiskLevel.LOW,
-            'MASTER_ADVICE': RiskLevel.NONE,
-            'HISTORY_RETRIEVE': RiskLevel.NONE,
-            'PERFORMANCE_QUERY': RiskLevel.NONE,
-            'STATS_QUERY': RiskLevel.NONE,
-            'LESSON_CHECK': RiskLevel.LOW,
-            'REPORT_GENERATE': RiskLevel.NONE,
-            'AUTOMATION_CREATE': RiskLevel.MEDIUM,
-            'AUTOMATION_PAUSE': RiskLevel.MEDIUM,
-            'AUTOMATION_LIST': RiskLevel.NONE,
-            'AUTOMATION_OPTIMIZE': RiskLevel.MEDIUM,
+            "EXECUTE_LONG": RiskLevel.HIGH,
+            "EXECUTE_SHORT": RiskLevel.HIGH,
+            "EXECUTE_CLOSE": RiskLevel.HIGH,
+            "QUERY_POSITION": RiskLevel.NONE,
+            "QUERY_ORDER_STATUS": RiskLevel.NONE,
+            "QUOTE_PRICE": RiskLevel.NONE,
+            "MARKET_ANALYSIS": RiskLevel.LOW,
+            "OPPORTUNITY_SCAN": RiskLevel.LOW,
+            "DATA_QUERY": RiskLevel.NONE,
+            "PARAM_ADJUST": RiskLevel.MEDIUM,
+            "SKILL_QUERY": RiskLevel.NONE,
+            "FEATURE_REQUEST": RiskLevel.MEDIUM,
+            "SYSTEM_STATUS": RiskLevel.NONE,
+            "ADVISOR_CONSULT": RiskLevel.NONE,
+            "ADVISOR_REVIEW": RiskLevel.LOW,
+            "MASTER_ADVICE": RiskLevel.NONE,
+            "HISTORY_RETRIEVE": RiskLevel.NONE,
+            "PERFORMANCE_QUERY": RiskLevel.NONE,
+            "STATS_QUERY": RiskLevel.NONE,
+            "LESSON_CHECK": RiskLevel.LOW,
+            "REPORT_GENERATE": RiskLevel.NONE,
+            "AUTOMATION_CREATE": RiskLevel.MEDIUM,
+            "AUTOMATION_PAUSE": RiskLevel.MEDIUM,
+            "AUTOMATION_LIST": RiskLevel.NONE,
+            "AUTOMATION_OPTIMIZE": RiskLevel.MEDIUM,
             # v2.0 新增
-            'DAILY_REPORT': RiskLevel.NONE,
-            'MEETING_START': RiskLevel.LOW,
-            'MEETING_RECORD': RiskLevel.NONE,
-            'CRITICISM': RiskLevel.MEDIUM,
-            'SELF_CRITICISM': RiskLevel.LOW,
+            "DAILY_REPORT": RiskLevel.NONE,
+            "MEETING_START": RiskLevel.LOW,
+            "MEETING_RECORD": RiskLevel.NONE,
+            "CRITICISM": RiskLevel.MEDIUM,
+            "SELF_CRITICISM": RiskLevel.LOW,
             # v3.0 新增
-            'RISK_PREDICTION': RiskLevel.MEDIUM,
-            'URGENT_RISK': RiskLevel.CRITICAL,
-            'EMERGENCY_RESPONSE': RiskLevel.CRITICAL,
+            "RISK_PREDICTION": RiskLevel.MEDIUM,
+            "URGENT_RISK": RiskLevel.CRITICAL,
+            "EMERGENCY_RESPONSE": RiskLevel.CRITICAL,
         }
         return risk_map.get(intent, RiskLevel.MEDIUM)
 
@@ -490,11 +493,11 @@ class SecretaryCore:
             return True
 
         # 执行类操作需要确认
-        if intent.startswith('EXECUTE_'):
+        if intent.startswith("EXECUTE_"):
             return True
 
         # 自动化操作需要确认
-        if intent.startswith('AUTOMATION_'):
+        if intent.startswith("AUTOMATION_"):
             return True
 
         return False
@@ -508,282 +511,291 @@ class SecretaryCore:
         intent = intent_result.intent.value
 
         # 从公司架构中获取路由规则
-        routing_rules = self.advisor_routing.get('advisor_trigger_matrix', {})
+        routing_rules = self.advisor_routing.get("advisor_trigger_matrix", {})  # noqa: F841
 
         # 基础路由配置
         base_routes = {
-            'EXECUTE_LONG': {
-                'department': '执行部',
-                'primary_skill': 'dream-multiSkill',
-                'secondary_skills': ['dream-risk-position-sizing', 'dream-pretrade-gatekeeper'],
-                'process': 'dream-multiSkill 8步模板',
-                'advisors': ['ADVISOR-QT', 'ADVISOR-RM']
+            "EXECUTE_LONG": {
+                "department": "执行部",
+                "primary_skill": "dream-multiSkill",
+                "secondary_skills": ["dream-risk-position-sizing", "dream-pretrade-gatekeeper"],
+                "process": "dream-multiSkill 8步模板",
+                "advisors": ["ADVISOR-QT", "ADVISOR-RM"],
             },
-            'EXECUTE_SHORT': {
-                'department': '执行部',
-                'primary_skill': 'dream-multiSkill',
-                'secondary_skills': ['dream-risk-position-sizing', 'dream-pretrade-gatekeeper'],
-                'process': 'dream-multiSkill 8步模板',
-                'advisors': ['ADVISOR-QT', 'ADVISOR-RM']
+            "EXECUTE_SHORT": {
+                "department": "执行部",
+                "primary_skill": "dream-multiSkill",
+                "secondary_skills": ["dream-risk-position-sizing", "dream-pretrade-gatekeeper"],
+                "process": "dream-multiSkill 8步模板",
+                "advisors": ["ADVISOR-QT", "ADVISOR-RM"],
             },
-            'EXECUTE_CLOSE': {
-                'department': '执行部',
-                'primary_skill': 'okx-trade-cli',
-                'secondary_skills': ['dream-posttrade-mrm-audit'],
-                'process': '平仓流程 → 盘后审计',
-                'advisors': ['ADVISOR-RM']
+            "EXECUTE_CLOSE": {
+                "department": "执行部",
+                "primary_skill": "okx-trade-cli",
+                "secondary_skills": ["dream-posttrade-mrm-audit"],
+                "process": "平仓流程 → 盘后审计",
+                "advisors": ["ADVISOR-RM"],
             },
-            'QUERY_POSITION': {
-                'department': '执行部',
-                'primary_skill': 'okx-trade-cli',
-                'secondary_skills': [],
-                'process': '直接查询',
-                'advisors': []
+            "QUERY_POSITION": {
+                "department": "执行部",
+                "primary_skill": "okx-trade-cli",
+                "secondary_skills": [],
+                "process": "直接查询",
+                "advisors": [],
             },
-            'QUERY_ORDER_STATUS': {
-                'department': '执行部',
-                'primary_skill': 'okx-trade-cli',
-                'secondary_skills': [],
-                'process': '直接查询',
-                'advisors': []
+            "QUERY_ORDER_STATUS": {
+                "department": "执行部",
+                "primary_skill": "okx-trade-cli",
+                "secondary_skills": [],
+                "process": "直接查询",
+                "advisors": [],
             },
-            'QUOTE_PRICE': {
-                'department': '市场情报部',
-                'primary_skill': 'tavily',
-                'secondary_skills': ['okx-api'],
-                'process': '直接返回数据',
-                'advisors': []
+            "QUOTE_PRICE": {
+                "department": "市场情报部",
+                "primary_skill": "tavily",
+                "secondary_skills": ["okx-api"],
+                "process": "直接返回数据",
+                "advisors": [],
             },
-            'MARKET_ANALYSIS': {
-                'department': '市场情报部 + 研究部',
-                'primary_skill': 'tavily',
-                'secondary_skills': ['odaily', 'technical-analyst', 'macro-monitor'],
-                'process': '数据采集 → 技术分析 → 顾问评审',
-                'advisors': ['ADVISOR-MR', 'ADVISOR-QT']
+            "MARKET_ANALYSIS": {
+                "department": "市场情报部 + 研究部",
+                "primary_skill": "tavily",
+                "secondary_skills": ["odaily", "technical-analyst", "macro-monitor"],
+                "process": "数据采集 → 技术分析 → 顾问评审",
+                "advisors": ["ADVISOR-MR", "ADVISOR-QT"],
             },
-            'OPPORTUNITY_SCAN': {
-                'department': '研究部',
-                'primary_skill': 'stock-analysis',
-                'secondary_skills': ['technical-analyst', 'tavily'],
-                'process': '多维度扫描 → 信号评分 → 顾问评审',
-                'advisors': ['ADVISOR-QT', 'ADVISOR-MR']
+            "OPPORTUNITY_SCAN": {
+                "department": "研究部",
+                "primary_skill": "stock-analysis",
+                "secondary_skills": ["technical-analyst", "tavily"],
+                "process": "多维度扫描 → 信号评分 → 顾问评审",
+                "advisors": ["ADVISOR-QT", "ADVISOR-MR"],
             },
-            'DATA_QUERY': {
-                'department': '市场情报部',
-                'primary_skill': 'neodata-financial-search',
-                'secondary_skills': ['tavily', 'odaily'],
-                'process': '智能路由 → 数据查询',
-                'advisors': []
+            "DATA_QUERY": {
+                "department": "市场情报部",
+                "primary_skill": "neodata-financial-search",
+                "secondary_skills": ["tavily", "odaily"],
+                "process": "智能路由 → 数据查询",
+                "advisors": [],
             },
-            'PARAM_ADJUST': {
-                'department': '运营总监',
-                'primary_skill': 'dream-operation-director',
-                'secondary_skills': ['smart-skill-manager'],
-                'process': '评估 → 顾问评审 → 实施',
-                'advisors': ['ADVISOR-SA', 'ADVISOR-QT']
+            "PARAM_ADJUST": {
+                "department": "运营总监",
+                "primary_skill": "dream-operation-director",
+                "secondary_skills": ["smart-skill-manager"],
+                "process": "评估 → 顾问评审 → 实施",
+                "advisors": ["ADVISOR-SA", "ADVISOR-QT"],
             },
-            'SKILL_QUERY': {
-                'department': '基础设施部',
-                'primary_skill': 'smart-skill-manager',
-                'secondary_skills': [],
-                'process': '直接返回文档',
-                'advisors': []
+            "SKILL_QUERY": {
+                "department": "基础设施部",
+                "primary_skill": "smart-skill-manager",
+                "secondary_skills": [],
+                "process": "直接返回文档",
+                "advisors": [],
             },
-            'FEATURE_REQUEST': {
-                'department': '运营总监 + 基础设施部',
-                'primary_skill': 'smart-skill-manager',
-                'secondary_skills': ['capability-evolver'],
-                'process': '需求分析 → 顾问评审 → 方案设计 → 实施',
-                'advisors': ['ADVISOR-SA', 'ADVISOR-QT']
+            "FEATURE_REQUEST": {
+                "department": "运营总监 + 基础设施部",
+                "primary_skill": "smart-skill-manager",
+                "secondary_skills": ["capability-evolver"],
+                "process": "需求分析 → 顾问评审 → 方案设计 → 实施",
+                "advisors": ["ADVISOR-SA", "ADVISOR-QT"],
             },
-            'SYSTEM_STATUS': {
-                'department': '基础设施部',
-                'primary_skill': 'healthcheck',
-                'secondary_skills': ['self-improving-agent'],
-                'process': '健康检查 → 问题诊断 → 修复建议',
-                'advisors': []
+            "SYSTEM_STATUS": {
+                "department": "基础设施部",
+                "primary_skill": "healthcheck",
+                "secondary_skills": ["self-improving-agent"],
+                "process": "健康检查 → 问题诊断 → 修复建议",
+                "advisors": [],
             },
-            'ADVISOR_CONSULT': {
-                'department': '顾问委员会',
-                'primary_skill': 'secretary_integration',
-                'secondary_skills': ['dream-multiSkill'],
-                'process': '秘书Step3会诊 → 顾问并行分析 → 汇总 → Step4执行',
-                'advisors': ['ADVISOR-QT', 'ADVISOR-RM']
+            "ADVISOR_CONSULT": {
+                "department": "顾问委员会",
+                "primary_skill": "secretary_integration",
+                "secondary_skills": ["dream-multiSkill"],
+                "process": "秘书Step3会诊 → 顾问并行分析 → 汇总 → Step4执行",
+                "advisors": ["ADVISOR-QT", "ADVISOR-RM"],
             },
-            'ADVISOR_REVIEW': {
-                'department': '顾问委员会',
-                'primary_skill': 'secretary_integration',
-                'secondary_skills': ['dream-multiSkill'],
-                'process': '顾问评审流程 → 评审报告',
-                'advisors': ['ADVISOR-QT', 'ADVISOR-RM', 'ADVISOR-MR']
+            "ADVISOR_REVIEW": {
+                "department": "顾问委员会",
+                "primary_skill": "secretary_integration",
+                "secondary_skills": ["dream-multiSkill"],
+                "process": "顾问评审流程 → 评审报告",
+                "advisors": ["ADVISOR-QT", "ADVISOR-RM", "ADVISOR-MR"],
             },
-            'MASTER_ADVICE': {
-                'department': '培训部 (知识库)',
-                'primary_skill': 'ADVISOR-KB',
-                'secondary_skills': ['learning-recall-pack'],
-                'process': '知识检索 → 大师观点整合 → 建议',
-                'advisors': ['ADVISOR-KB']
+            "MASTER_ADVICE": {
+                "department": "培训部 (知识库)",
+                "primary_skill": "ADVISOR-KB",
+                "secondary_skills": ["learning-recall-pack"],
+                "process": "知识检索 → 大师观点整合 → 建议",
+                "advisors": ["ADVISOR-KB"],
             },
-            'HISTORY_RETRIEVE': {
-                'department': '培训部 (知识库)',
-                'primary_skill': 'memory-session-index',
-                'secondary_skills': ['ADVISOR-KB'],
-                'process': '历史检索 → 经验召回',
-                'advisors': []
+            "HISTORY_RETRIEVE": {
+                "department": "培训部 (知识库)",
+                "primary_skill": "memory-session-index",
+                "secondary_skills": ["ADVISOR-KB"],
+                "process": "历史检索 → 经验召回",
+                "advisors": [],
             },
-            'PERFORMANCE_QUERY': {
-                'department': '绩效考核部',
-                'primary_skill': 'dream-performance-review',
-                'secondary_skills': ['learning-episode-writer'],
-                'process': '数据汇总 → 绩效计算 → 报告',
-                'advisors': []
+            "PERFORMANCE_QUERY": {
+                "department": "绩效考核部",
+                "primary_skill": "dream-performance-review",
+                "secondary_skills": ["learning-episode-writer"],
+                "process": "数据汇总 → 绩效计算 → 报告",
+                "advisors": [],
             },
-            'STATS_QUERY': {
-                'department': '研究部',
-                'primary_skill': 'learning-episode-writer',
-                'secondary_skills': ['memory-session-index'],
-                'process': '数据查询 → 统计计算 → 报告',
-                'advisors': []
+            "STATS_QUERY": {
+                "department": "研究部",
+                "primary_skill": "learning-episode-writer",
+                "secondary_skills": ["memory-session-index"],
+                "process": "数据查询 → 统计计算 → 报告",
+                "advisors": [],
             },
-            'LESSON_CHECK': {
-                'department': '培训部',
-                'primary_skill': 'learning-lesson-distiller',
-                'secondary_skills': ['learning-recall-pack'],
-                'process': '教训检索 → 经验匹配 → 建议',
-                'advisors': ['ADVISOR-KB']
+            "LESSON_CHECK": {
+                "department": "培训部",
+                "primary_skill": "learning-lesson-distiller",
+                "secondary_skills": ["learning-recall-pack"],
+                "process": "教训检索 → 经验匹配 → 建议",
+                "advisors": ["ADVISOR-KB"],
             },
-            'REPORT_GENERATE': {
-                'department': '运营总监',
-                'primary_skill': 'proactive-agent',
-                'secondary_skills': ['pptx-generator', 'learning-episode-writer'],
-                'process': '数据收集 → 整理 → 生成',
-                'advisors': []
+            "REPORT_GENERATE": {
+                "department": "运营总监",
+                "primary_skill": "proactive-agent",
+                "secondary_skills": ["pptx-generator", "learning-episode-writer"],
+                "process": "数据收集 → 整理 → 生成",
+                "advisors": [],
             },
-            'AUTOMATION_CREATE': {
-                'department': '运营总监',
-                'primary_skill': 'automation_update',
-                'secondary_skills': ['smart-skill-manager'],
-                'process': '配置 → 评审 → 创建',
-                'advisors': ['ADVISOR-SA']
+            "AUTOMATION_CREATE": {
+                "department": "运营总监",
+                "primary_skill": "automation_update",
+                "secondary_skills": ["smart-skill-manager"],
+                "process": "配置 → 评审 → 创建",
+                "advisors": ["ADVISOR-SA"],
             },
-            'AUTOMATION_PAUSE': {
-                'department': '运营总监',
-                'primary_skill': 'automation_update',
-                'secondary_skills': [],
-                'process': '直接执行',
-                'advisors': []
+            "AUTOMATION_PAUSE": {
+                "department": "运营总监",
+                "primary_skill": "automation_update",
+                "secondary_skills": [],
+                "process": "直接执行",
+                "advisors": [],
             },
-            'AUTOMATION_LIST': {
-                'department': '运营总监',
-                'primary_skill': 'automation_update',
-                'secondary_skills': [],
-                'process': '直接查询',
-                'advisors': []
+            "AUTOMATION_LIST": {
+                "department": "运营总监",
+                "primary_skill": "automation_update",
+                "secondary_skills": [],
+                "process": "直接查询",
+                "advisors": [],
             },
-            'AUTOMATION_OPTIMIZE': {
-                'department': '运营总监',
-                'primary_skill': 'dream-operation-director',
-                'secondary_skills': ['capability-evolver'],
-                'process': '分析 → 评审 → 优化',
-                'advisors': ['ADVISOR-SA', 'ADVISOR-QT']
+            "AUTOMATION_OPTIMIZE": {
+                "department": "运营总监",
+                "primary_skill": "dream-operation-director",
+                "secondary_skills": ["capability-evolver"],
+                "process": "分析 → 评审 → 优化",
+                "advisors": ["ADVISOR-SA", "ADVISOR-QT"],
             },
-            'CONFUSION_SIGNAL': {
-                'department': '待定',
-                'primary_skill': '需要澄清',
-                'secondary_skills': [],
-                'process': '需要用户澄清',
-                'advisors': []
+            "CONFUSION_SIGNAL": {
+                "department": "待定",
+                "primary_skill": "需要澄清",
+                "secondary_skills": [],
+                "process": "需要用户澄清",
+                "advisors": [],
             },
-            'MULTI_INTENT': {
-                'department': '待定',
-                'primary_skill': '需要澄清',
-                'secondary_skills': [],
-                'process': '需要用户选择',
-                'advisors': []
+            "MULTI_INTENT": {
+                "department": "待定",
+                "primary_skill": "需要澄清",
+                "secondary_skills": [],
+                "process": "需要用户选择",
+                "advisors": [],
             },
             # v2.0 新增 - 日报与会议
-            'DAILY_REPORT': {
-                'department': '运营总监',
-                'primary_skill': 'daily_report_system',
-                'secondary_skills': [],
-                'process': '收集7部门日报 → AI分析 → 生成汇报',
-                'advisors': ['ADVISOR-SA']
+            "DAILY_REPORT": {
+                "department": "运营总监",
+                "primary_skill": "daily_report_system",
+                "secondary_skills": [],
+                "process": "收集7部门日报 → AI分析 → 生成汇报",
+                "advisors": ["ADVISOR-SA"],
             },
-            'MEETING_START': {
-                'department': '运营总监',
-                'primary_skill': 'daily_report_system',
-                'secondary_skills': [],
-                'process': '创建会议记录 → 开始计时',
-                'advisors': []
+            "MEETING_START": {
+                "department": "运营总监",
+                "primary_skill": "daily_report_system",
+                "secondary_skills": [],
+                "process": "创建会议记录 → 开始计时",
+                "advisors": [],
             },
-            'MEETING_RECORD': {
-                'department': '运营总监',
-                'primary_skill': 'daily_report_system',
-                'secondary_skills': [],
-                'process': '记录讨论 → 提取决策 → 行动项',
-                'advisors': ['ADVISOR-QT', 'ADVISOR-KB']
+            "MEETING_RECORD": {
+                "department": "运营总监",
+                "primary_skill": "daily_report_system",
+                "secondary_skills": [],
+                "process": "记录讨论 → 提取决策 → 行动项",
+                "advisors": ["ADVISOR-QT", "ADVISOR-KB"],
             },
-            'CRITICISM': {
-                'department': '绩效考核部',
-                'primary_skill': 'daily_report_system',
-                'secondary_skills': ['dream-performance-review'],
-                'process': '分析问题 → 找出根因 → 提出改进',
-                'advisors': ['ADVISOR-RM', 'ADVISOR-QT']
+            "CRITICISM": {
+                "department": "绩效考核部",
+                "primary_skill": "daily_report_system",
+                "secondary_skills": ["dream-performance-review"],
+                "process": "分析问题 → 找出根因 → 提出改进",
+                "advisors": ["ADVISOR-RM", "ADVISOR-QT"],
             },
-            'SELF_CRITICISM': {
-                'department': '培训部',
-                'primary_skill': 'daily_report_system',
-                'secondary_skills': ['learning-lesson-distiller'],
-                'process': '自我反思 → 教训蒸馏 → 规则更新',
-                'advisors': ['ADVISOR-KB']
+            "SELF_CRITICISM": {
+                "department": "培训部",
+                "primary_skill": "daily_report_system",
+                "secondary_skills": ["learning-lesson-distiller"],
+                "process": "自我反思 → 教训蒸馏 → 规则更新",
+                "advisors": ["ADVISOR-KB"],
             },
             # v3.0 新增 - 风险与紧急
-            'RISK_PREDICTION': {
-                'department': '风控部 + 研究部',
-                'primary_skill': 'risk_emergency_system',
-                'secondary_skills': ['dream-pretrade-gatekeeper', 'macro-monitor'],
-                'process': '收集数据 → 第一性原理分析 → 场景推演 → 评分',
-                'advisors': ['ADVISOR-RM', 'ADVISOR-MR']
+            "RISK_PREDICTION": {
+                "department": "风控部 + 研究部",
+                "primary_skill": "risk_emergency_system",
+                "secondary_skills": ["dream-pretrade-gatekeeper", "macro-monitor"],
+                "process": "收集数据 → 第一性原理分析 → 场景推演 → 评分",
+                "advisors": ["ADVISOR-RM", "ADVISOR-MR"],
             },
-            'URGENT_RISK': {
-                'department': '风控部 (紧急)',
-                'primary_skill': 'risk_emergency_system',
-                'secondary_skills': ['dream-pretrade-gatekeeper', 'dream-multiSkill'],
-                'process': '立即评估 → 决策 → 执行 (10分钟内)',
-                'advisors': ['ADVISOR-RM', 'ADVISOR-QT', 'ADVISOR-EE']
+            "URGENT_RISK": {
+                "department": "风控部 (紧急)",
+                "primary_skill": "risk_emergency_system",
+                "secondary_skills": ["dream-pretrade-gatekeeper", "dream-multiSkill"],
+                "process": "立即评估 → 决策 → 执行 (10分钟内)",
+                "advisors": ["ADVISOR-RM", "ADVISOR-QT", "ADVISOR-EE"],
             },
-            'EMERGENCY_RESPONSE': {
-                'department': '紧急响应小组',
-                'primary_skill': 'risk_emergency_system',
-                'secondary_skills': ['dream-risk-position-sizing', 'dream-execution-cost-model'],
-                'process': '组装顾问团队 → 评估 → 建议 → 执行',
-                'advisors': ['ADVISOR-RM', 'ADVISOR-MR', 'ADVISOR-EE', 'ADVISOR-QT', 'ADVISOR-SA', 'ADVISOR-KB']
+            "EMERGENCY_RESPONSE": {
+                "department": "紧急响应小组",
+                "primary_skill": "risk_emergency_system",
+                "secondary_skills": ["dream-risk-position-sizing", "dream-execution-cost-model"],
+                "process": "组装顾问团队 → 评估 → 建议 → 执行",
+                "advisors": [
+                    "ADVISOR-RM",
+                    "ADVISOR-MR",
+                    "ADVISOR-EE",
+                    "ADVISOR-QT",
+                    "ADVISOR-SA",
+                    "ADVISOR-KB",
+                ],
             },
-            'UNKNOWN': {
-                'department': '无法识别',
-                'primary_skill': '无法识别',
-                'secondary_skills': [],
-                'process': '无法处理',
-                'advisors': []
+            "UNKNOWN": {
+                "department": "无法识别",
+                "primary_skill": "无法识别",
+                "secondary_skills": [],
+                "process": "无法处理",
+                "advisors": [],
             },
         }
 
-        route = base_routes.get(intent, base_routes['UNKNOWN'])
+        route = base_routes.get(intent, base_routes["UNKNOWN"])
 
         return RoutingResult(
-            primary_skill=route['primary_skill'],
-            secondary_skills=route['secondary_skills'],
-            department=route['department'],
-            advisors=route['advisors'],
-            process=route['process'],
-            confirmation_required=intent_result.requires_confirmation
+            primary_skill=route["primary_skill"],
+            secondary_skills=route["secondary_skills"],
+            department=route["department"],
+            advisors=route["advisors"],
+            process=route["process"],
+            confirmation_required=intent_result.requires_confirmation,
         )
 
     # ============================================================
     # 确认模板生成
     # ============================================================
 
-    def generate_confirmation(self, intent_result: IntentResult, routing_result: RoutingResult) -> str:
+    def generate_confirmation(
+        self, intent_result: IntentResult, routing_result: RoutingResult
+    ) -> str:
         """生成确认消息"""
         if intent_result.intent == IntentType.CONFUSION_SIGNAL:
             return self._generate_ambiguous_confirm(intent_result)
@@ -792,12 +804,14 @@ class SecretaryCore:
         else:
             return self._generate_high_risk_confirm(intent_result, routing_result)
 
-    def _generate_high_risk_confirm(self, intent_result: IntentResult, routing_result: RoutingResult) -> str:
+    def _generate_high_risk_confirm(
+        self, intent_result: IntentResult, routing_result: RoutingResult
+    ) -> str:
         """生成高风险确认"""
         # 加载模板
         template_path = SKILL_DIR / "templates" / "high_risk_confirm.md"
         if template_path.exists():
-            with open(template_path, 'r', encoding='utf-8') as f:
+            with open(template_path, "r", encoding="utf-8") as f:
                 template = f.read()
         else:
             template = self._default_high_risk_template()
@@ -814,14 +828,14 @@ class SecretaryCore:
             execute_plan=plan,
             advisor_list=advisor_list,
             risk_warnings=risk_warnings,
-            secretary_suggestion=suggestion
+            secretary_suggestion=suggestion,
         )
 
     def _generate_ambiguous_confirm(self, intent_result: IntentResult) -> str:
         """生成模糊意图确认"""
         template_path = SKILL_DIR / "templates" / "ambiguous_confirm.md"
         if template_path.exists():
-            with open(template_path, 'r', encoding='utf-8') as f:
+            with open(template_path, "r", encoding="utf-8") as f:
                 template = f.read()
         else:
             template = self._default_ambiguous_template()
@@ -846,14 +860,14 @@ class SecretaryCore:
             keyword3=options[2][2],
             option4=options[3][0],
             keyword4=options[3][2],
-            clarification_prompt="您觉得哪里不太对？"
+            clarification_prompt="您觉得哪里不太对？",
         )
 
     def _generate_multi_intent_confirm(self, intent_result: IntentResult) -> str:
         """生成多意图确认"""
         template_path = SKILL_DIR / "templates" / "multi_intent_confirm.md"
         if template_path.exists():
-            with open(template_path, 'r', encoding='utf-8') as f:
+            with open(template_path, "r", encoding="utf-8") as f:
                 template = f.read()
         else:
             template = self._default_multi_intent_template()
@@ -865,7 +879,7 @@ class SecretaryCore:
             conf2=65,
             suggestion1="先让量化顾问评审一下信号，再决定是否开多",
             suggestion2="用小仓验证 (10-20%)，同时收集数据",
-            suggestion3="暂不执行，继续观察"
+            suggestion3="暂不执行，继续观察",
         )
 
     def _default_high_risk_template(self) -> str:
@@ -922,36 +936,38 @@ class SecretaryCore:
     def _get_intent_description(self, intent: str) -> str:
         """获取意图描述"""
         descriptions = {
-            'EXECUTE_LONG': '开多仓',
-            'EXECUTE_SHORT': '开空仓',
-            'EXECUTE_CLOSE': '平仓',
-            'PARAM_ADJUST': '调整参数',
-            'AUTOMATION_CREATE': '创建自动化任务',
-            'AUTOMATION_PAUSE': '暂停自动化任务',
-            'AUTOMATION_OPTIMIZE': '优化自动化任务',
+            "EXECUTE_LONG": "开多仓",
+            "EXECUTE_SHORT": "开空仓",
+            "EXECUTE_CLOSE": "平仓",
+            "PARAM_ADJUST": "调整参数",
+            "AUTOMATION_CREATE": "创建自动化任务",
+            "AUTOMATION_PAUSE": "暂停自动化任务",
+            "AUTOMATION_OPTIMIZE": "优化自动化任务",
         }
         return descriptions.get(intent, intent)
 
-    def _generate_execution_plan(self, intent_result: IntentResult, routing_result: RoutingResult) -> str:
+    def _generate_execution_plan(
+        self, intent_result: IntentResult, routing_result: RoutingResult
+    ) -> str:
         """生成执行计划"""
         lines = []
         step = 1
 
         # 添加实体处理步骤
         for entity in intent_result.entities:
-            if entity.type == 'symbol':
+            if entity.type == "symbol":
                 lines.append(f"{step}. 获取 {entity.normalized} 的行情数据")
                 step += 1
 
         # 添加顾问评审步骤
         if routing_result.advisors:
             advisor_names = {
-                'ADVISOR-QT': '量化顾问',
-                'ADVISOR-RM': '风控顾问',
-                'ADVISOR-MR': '宏观顾问',
-                'ADVISOR-EE': '执行顾问',
-                'ADVISOR-SA': '架构顾问',
-                'ADVISOR-KB': '大师知识库'
+                "ADVISOR-QT": "量化顾问",
+                "ADVISOR-RM": "风控顾问",
+                "ADVISOR-MR": "宏观顾问",
+                "ADVISOR-EE": "执行顾问",
+                "ADVISOR-SA": "架构顾问",
+                "ADVISOR-KB": "大师知识库",
             }
             advisors = [advisor_names.get(a, a) for a in routing_result.advisors]
             lines.append(f"{step}. 顾问评审: {', '.join(advisors)}")
@@ -960,7 +976,7 @@ class SecretaryCore:
         # 添加执行步骤
         lines.append(f"{step}. 调用 {routing_result.primary_skill}")
 
-        return '\n'.join(f"  {line}" for line in lines)
+        return "\n".join(f"  {line}" for line in lines)
 
     def _format_advisor_list(self, advisors: List[str]) -> str:
         """格式化顾问列表"""
@@ -968,12 +984,12 @@ class SecretaryCore:
             return "  无需顾问评审"
 
         advisor_names = {
-            'ADVISOR-QT': '量化顾问 (信号质量)',
-            'ADVISOR-RM': '风控顾问 (仓位安全)',
-            'ADVISOR-MR': '宏观顾问 (方向判断)',
-            'ADVISOR-EE': '执行顾问 (成交质量)',
-            'ADVISOR-SA': '架构顾问 (系统安全)',
-            'ADVISOR-KB': '大师知识库 (历史经验)'
+            "ADVISOR-QT": "量化顾问 (信号质量)",
+            "ADVISOR-RM": "风控顾问 (仓位安全)",
+            "ADVISOR-MR": "宏观顾问 (方向判断)",
+            "ADVISOR-EE": "执行顾问 (成交质量)",
+            "ADVISOR-SA": "架构顾问 (系统安全)",
+            "ADVISOR-KB": "大师知识库 (历史经验)",
         }
 
         lines = []
@@ -981,41 +997,33 @@ class SecretaryCore:
             name = advisor_names.get(advisor, advisor)
             lines.append(f"  • {name}")
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     def _get_risk_warnings(self, intent_result: IntentResult) -> str:
         """获取风险提示"""
         risk_warnings = {
-            RiskLevel.HIGH: [
-                "这是高风险操作，请仔细确认",
-                "涉及真实资金，请谨慎操作"
-            ],
-            RiskLevel.MEDIUM: [
-                "此操作可能影响系统配置",
-                "建议先了解影响范围"
-            ],
-            RiskLevel.LOW: [
-                "风险较低，但仍建议确认"
-            ],
-            RiskLevel.NONE: []
+            RiskLevel.HIGH: ["这是高风险操作，请仔细确认", "涉及真实资金，请谨慎操作"],
+            RiskLevel.MEDIUM: ["此操作可能影响系统配置", "建议先了解影响范围"],
+            RiskLevel.LOW: ["风险较低，但仍建议确认"],
+            RiskLevel.NONE: [],
         }
 
         warnings = risk_warnings.get(intent_result.risk_level, [])
         if not warnings:
             return "  无特殊风险"
 
-        return '\n'.join(f"  ⚠️ {w}" for w in warnings)
+        return "\n".join(f"  ⚠️ {w}" for w in warnings)
 
     def _get_secretary_suggestion(self, intent_result: IntentResult) -> str:
         """获取秘书建议"""
         suggestions = {
-            'EXECUTE_LONG': "建议先让量化顾问评审信号质量",
-            'EXECUTE_SHORT': "建议先让风控顾问评估仓位",
-            'EXECUTE_CLOSE': "平仓后建议进行盘后审计",
-            'PARAM_ADJUST': "建议小幅度调整，观察效果后再决定",
-            'AUTOMATION_CREATE': "建议先创建测试自动化，验证后再全量",
-            'AUTOMATION_PAUSE': "暂停后可随时恢复",
-            'AUTOMATION_OPTIMIZE': "建议先备份当前配置",
+            "EXECUTE_LONG": "建议先让量化顾问评审信号质量",
+            "EXECUTE_SHORT": "建议先让风控顾问评估仓位",
+            "EXECUTE_CLOSE": "平仓后建议进行盘后审计",
+            "PARAM_ADJUST": "建议小幅度调整，观察效果后再决定",
+            "AUTOMATION_CREATE": "建议先创建测试自动化，验证后再全量",
+            "AUTOMATION_PAUSE": "暂停后可随时恢复",
+            "AUTOMATION_OPTIMIZE": "建议先备份当前配置",
         }
 
         return suggestions.get(intent_result.intent.value, "请确认执行")
@@ -1024,20 +1032,25 @@ class SecretaryCore:
     # 学习记录
     # ============================================================
 
-    def record_learning(self, intent_result: IntentResult, corrected: bool = False,
-                       user_feedback: Optional[Dict] = None, execution_result: Optional[str] = None,
-                       satisfaction: Optional[int] = None):
+    def record_learning(
+        self,
+        intent_result: IntentResult,
+        corrected: bool = False,
+        user_feedback: Optional[Dict] = None,
+        execution_result: Optional[str] = None,
+        satisfaction: Optional[int] = None,
+    ):
         """记录学习"""
         record = LearningRecord(
             timestamp=datetime.now().isoformat(),
-            type='intent_learn',
+            type="intent_learn",
             original=intent_result.raw_text,
             recognized_intent=intent_result.intent.value,
             confidence=intent_result.confidence,
             corrected=corrected,
             user_feedback=user_feedback,
             execution_result=execution_result,
-            satisfaction=satisfaction
+            satisfaction=satisfaction,
         )
         self.learning_log.append(record)
         self._save_learning_log()
@@ -1086,7 +1099,9 @@ class SecretaryCore:
         consultation_result = self._trigger_consultation_if_needed(intent_result, routing_result)
         if consultation_result:
             # 将会诊结果附加到路由结果中供下游使用
-            routing_result = self._enrich_routing_with_consultation(routing_result, consultation_result)
+            routing_result = self._enrich_routing_with_consultation(
+                routing_result, consultation_result
+            )
 
         # 5. 记录学习
         self.record_learning(intent_result)
@@ -1097,11 +1112,12 @@ class SecretaryCore:
     # Step3 顾问会诊触发
     # ============================================================
 
-    def _trigger_consultation_if_needed(self, intent_result: IntentResult, 
-                                        routing_result: RoutingResult) -> Optional[dict]:
+    def _trigger_consultation_if_needed(
+        self, intent_result: IntentResult, routing_result: RoutingResult
+    ) -> Optional[dict]:
         """
         Step3: 根据路由结果触发顾问会诊
-        
+
         触发条件 (SOUL.md §6.1):
         - 路由结果包含顾问列表
         - 问题严重度 >= MEDIUM 或 置信度 < 80%
@@ -1143,7 +1159,7 @@ class SecretaryCore:
                 context=context,
                 consultation_type=consultation_type,
                 priority=priority,
-                wait_for_responses=False  # 异步模式，不阻塞
+                wait_for_responses=False,  # 异步模式，不阻塞
             )
             print(f"[秘书Step3] ✅ 顾问会诊已触发: {result.get('consultation_id', 'N/A')}")
             print(f"[秘书Step3]    类型: {consultation_type} | 优先级: {priority}")
@@ -1153,11 +1169,16 @@ class SecretaryCore:
             print(f"[秘书Step3] ⚠️ 顾问会诊触发失败: {e}")
             return None
 
-    def _should_trigger_consultation(self, intent_result: IntentResult, 
-                                      routing_result: RoutingResult) -> bool:
+    def _should_trigger_consultation(
+        self, intent_result: IntentResult, routing_result: RoutingResult
+    ) -> bool:
         """判断是否需要触发顾问会诊"""
         # 1. 路由结果包含顾问 → 需要
-        if routing_result.advisors and routing_result.advisors != ['按类型路由'] and routing_result.advisors != ['按请求类型']:
+        if (
+            routing_result.advisors
+            and routing_result.advisors != ["按类型路由"]
+            and routing_result.advisors != ["按请求类型"]
+        ):
             return True
 
         # 2. 高风险意图 → 需要
@@ -1181,24 +1202,45 @@ class SecretaryCore:
 
         return False
 
-    def _map_consultation_type(self, intent_result: IntentResult, 
-                                routing_result: RoutingResult) -> str:
+    def _map_consultation_type(
+        self, intent_result: IntentResult, routing_result: RoutingResult
+    ) -> str:
         """将意图类型映射为会诊类型"""
         intent_to_consultation = {
-            IntentType.EXECUTE_LONG: ConsultationType.SIGNAL_ASSESSMENT if ConsultationType else "SIGNAL_ASSESSMENT",
-            IntentType.EXECUTE_SHORT: ConsultationType.SIGNAL_ASSESSMENT if ConsultationType else "SIGNAL_ASSESSMENT",
-            IntentType.EXECUTE_CLOSE: ConsultationType.RISK_REVIEW if ConsultationType else "RISK_REVIEW",
-            IntentType.MARKET_ANALYSIS: ConsultationType.MACRO_ANALYSIS if ConsultationType else "MACRO_ANALYSIS",
-            IntentType.OPPORTUNITY_SCAN: ConsultationType.SIGNAL_ASSESSMENT if ConsultationType else "SIGNAL_ASSESSMENT",
-            IntentType.ADVISOR_CONSULT: ConsultationType.STRATEGY_ASSESSMENT if ConsultationType else "STRATEGY_ASSESSMENT",
-            IntentType.ADVISOR_REVIEW: ConsultationType.STRATEGY_REVIEW if ConsultationType else "STRATEGY_REVIEW",
-            IntentType.RISK_PREDICTION: ConsultationType.RISK_REVIEW if ConsultationType else "RISK_REVIEW",
-            IntentType.URGENT_RISK: ConsultationType.EMERGENCY_RESPONSE if ConsultationType else "EMERGENCY_RESPONSE",
-            IntentType.EMERGENCY_RESPONSE: ConsultationType.EMERGENCY_RESPONSE if ConsultationType else "EMERGENCY_RESPONSE",
+            IntentType.EXECUTE_LONG: (
+                ConsultationType.SIGNAL_ASSESSMENT if ConsultationType else "SIGNAL_ASSESSMENT"
+            ),
+            IntentType.EXECUTE_SHORT: (
+                ConsultationType.SIGNAL_ASSESSMENT if ConsultationType else "SIGNAL_ASSESSMENT"
+            ),
+            IntentType.EXECUTE_CLOSE: (
+                ConsultationType.RISK_REVIEW if ConsultationType else "RISK_REVIEW"
+            ),
+            IntentType.MARKET_ANALYSIS: (
+                ConsultationType.MACRO_ANALYSIS if ConsultationType else "MACRO_ANALYSIS"
+            ),
+            IntentType.OPPORTUNITY_SCAN: (
+                ConsultationType.SIGNAL_ASSESSMENT if ConsultationType else "SIGNAL_ASSESSMENT"
+            ),
+            IntentType.ADVISOR_CONSULT: (
+                ConsultationType.STRATEGY_ASSESSMENT if ConsultationType else "STRATEGY_ASSESSMENT"
+            ),
+            IntentType.ADVISOR_REVIEW: (
+                ConsultationType.STRATEGY_REVIEW if ConsultationType else "STRATEGY_REVIEW"
+            ),
+            IntentType.RISK_PREDICTION: (
+                ConsultationType.RISK_REVIEW if ConsultationType else "RISK_REVIEW"
+            ),
+            IntentType.URGENT_RISK: (
+                ConsultationType.EMERGENCY_RESPONSE if ConsultationType else "EMERGENCY_RESPONSE"
+            ),
+            IntentType.EMERGENCY_RESPONSE: (
+                ConsultationType.EMERGENCY_RESPONSE if ConsultationType else "EMERGENCY_RESPONSE"
+            ),
         }
         return intent_to_consultation.get(
             intent_result.intent,
-            ConsultationType.SIGNAL_ASSESSMENT if ConsultationType else "SIGNAL_ASSESSMENT"
+            ConsultationType.SIGNAL_ASSESSMENT if ConsultationType else "SIGNAL_ASSESSMENT",
         )
 
     def _map_priority(self, intent_result: IntentResult) -> str:
@@ -1212,8 +1254,9 @@ class SecretaryCore:
         }
         return priority_map.get(intent_result.risk_level, "NORMAL")
 
-    def _enrich_routing_with_consultation(self, routing_result: RoutingResult, 
-                                           consultation_result: dict) -> RoutingResult:
+    def _enrich_routing_with_consultation(
+        self, routing_result: RoutingResult, consultation_result: dict
+    ) -> RoutingResult:
         """将会诊结果附加到路由结果中"""
         # 创建新的RoutingResult，保留原有信息并附加会诊信息
         enriched = RoutingResult(
@@ -1222,10 +1265,10 @@ class SecretaryCore:
             department=routing_result.department,
             advisors=routing_result.advisors,
             process=routing_result.process,
-            confirmation_required=routing_result.confirmation_required
+            confirmation_required=routing_result.confirmation_required,
         )
         # 将会诊信息作为额外属性存储
-        enriched.__dict__['_consultation'] = consultation_result
+        enriched.__dict__["_consultation"] = consultation_result
         return enriched
 
     def check_consultation_status(self, consultation_id: str) -> Optional[dict]:
@@ -1260,7 +1303,7 @@ if __name__ == "__main__":
         "开多但我觉得不稳",
         "把杠杆调到5倍",
         "帮我看看仓位",
-        "有什么机会吗"
+        "有什么机会吗",
     ]
 
     secretary = SecretaryCore()
@@ -1286,7 +1329,7 @@ if __name__ == "__main__":
         print(f"👥 顾问: {routing.advisors}")
 
         if confirmation:
-            print(f"\n📋 需要确认:")
+            print("\n📋 需要确认:")
             print(confirmation)
 
         print("=" * 60)

@@ -16,6 +16,7 @@
 产出: term_semantic_map.json
 用法: python3 gen_term_semantic_map.py
 """
+
 import json
 import os
 import subprocess
@@ -55,13 +56,15 @@ def load_terms():
             data = json.load(f)
         domain = data.get("domain", fname.split("_terms")[0])
         for t in data.get("terms", []):
-            all_terms.append((
-                domain,
-                t.get("term", ""),
-                t.get("definition", ""),
-                t.get("source", ""),
-                t.get("quality", ""),
-            ))
+            all_terms.append(
+                (
+                    domain,
+                    t.get("term", ""),
+                    t.get("definition", ""),
+                    t.get("source", ""),
+                    t.get("quality", ""),
+                )
+            )
     return all_terms
 
 
@@ -161,7 +164,9 @@ def main():
         json.dump(out, f, ensure_ascii=False, indent=2)
 
     print(f"[OK] P2 术语-语义广泛对应完成: {len(entries)} 条 -> {OUT_PATH}")
-    print(f"     高频实操: {len(layers['high_freq'])} | 文档术语: {len(layers['documented'])} | 零活跃: {len(layers['dormant'])}")
+    print(
+        f"     高频实操: {len(layers['high_freq'])} | 文档术语: {len(layers['documented'])} | 零活跃: {len(layers['dormant'])}"
+    )
     dormant_by_domain = defaultdict(int)
     for e in entries:
         if e["activity_layer"] == "dormant":

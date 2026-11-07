@@ -14,9 +14,7 @@ CLOSE / REDUCE / HOLD / RAISE_TP
            - 置信度 × confidence_multiplier（默认 0.8）
 """
 
-import math
-from typing import Dict, List, Any
-from datetime import datetime, timezone
+from typing import Dict, List, Any  # noqa: I001
 
 try:
     from .skill_engine import register_skill
@@ -108,7 +106,9 @@ def _evaluate_single_position(
 
     final_score = weighted_score + regime_bonus
 
-    action, urgency = _score_to_action(final_score, direction, trend_phase, unrealized_pnl, entry_price)
+    action, urgency = _score_to_action(
+        final_score, direction, trend_phase, unrealized_pnl, entry_price
+    )
 
     # ---- Layer 5: 资金压力调整（v2.1 二期） ----
     system_name = position.get("system", "")
@@ -148,8 +148,14 @@ def _evaluate_single_position(
     # ---- Layer 5 end ----
 
     reason = _generate_reason(
-        action, direction, strategy_direction, least_resistance,
-        path_confidence, regime, trend_phase, unrealized_pnl,
+        action,
+        direction,
+        strategy_direction,
+        least_resistance,
+        path_confidence,
+        regime,
+        trend_phase,
+        unrealized_pnl,
     )
     if layer5_adjusted:
         reason += " | Layer5 资金压力调整生效"
@@ -266,7 +272,9 @@ def _generate_reason(
     elif action == "RAISE_TP":
         return f"战略方向({strategy_direction})与持仓方向一致，阻力最小路径({least_resistance})同向，{trend_phase}趋势阶段，建议提高止盈让利润奔跑"
     else:
-        return f"战略方向中性，阻力最小路径({least_resistance})不明朗，{regime}市场状态，维持现有持仓"
+        return (
+            f"战略方向中性，阻力最小路径({least_resistance})不明朗，{regime}市场状态，维持现有持仓"
+        )
 
 
 def _calc_stats(evaluations: List[Dict]) -> Dict:

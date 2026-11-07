@@ -8,6 +8,7 @@
 
 FAIL-OPEN: 数据库缺失/解析失败返回空列表，不阻塞训练。
 """
+
 import json
 import os
 import re
@@ -18,20 +19,52 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
 _PROJECT_ROOT = os.path.dirname(_34_DIR)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 # 18 中心已迁移 PostgreSQL，复用 39 模块统一 PG 辅助模块（FAIL-OPEN）
 sys.path.insert(0, os.path.join(_PROJECT_ROOT, "39-金融语义蒸馏系统", "scripts"))
-import dc_pg
+import dc_pg  # noqa: E402
 
 # 情绪关键词词典（§12.3 初期规则标注口径）
-_POSITIVE_WORDS = ["上涨", "突破", "新高", "利好", "增持", "批准", "通过", "合作", "融资", "上涨", "暴涨", "利好"]
-_NEGATIVE_WORDS = ["下跌", "暴跌", "新低", "利空", "减持", "制裁", "禁止", "警告", "诉讼", "黑客", "被盗", "清算", "崩盘", "风险"]
+_POSITIVE_WORDS = [
+    "上涨",
+    "突破",
+    "新高",
+    "利好",
+    "增持",
+    "批准",
+    "通过",
+    "合作",
+    "融资",
+    "上涨",
+    "暴涨",
+    "利好",
+]
+_NEGATIVE_WORDS = [
+    "下跌",
+    "暴跌",
+    "新低",
+    "利空",
+    "减持",
+    "制裁",
+    "禁止",
+    "警告",
+    "诉讼",
+    "黑客",
+    "被盗",
+    "清算",
+    "崩盘",
+    "风险",
+]
 
 _EVENT_TYPE_DESC = {
-    "monetary_policy": "货币政策", "crypto_regulation": "加密监管",
-    "us_policy": "美国政策", "us_data": "美国经济数据",
-    "geopolitics": "地缘政治", "market": "行情动态", "project": "项目动态",
+    "monetary_policy": "货币政策",
+    "crypto_regulation": "加密监管",
+    "us_policy": "美国政策",
+    "us_data": "美国经济数据",
+    "geopolitics": "地缘政治",
+    "market": "行情动态",
+    "project": "项目动态",
 }
 
 
@@ -91,22 +124,26 @@ class NewsflashSemanticCollector(TrainingDataProvider):
             sentiment = _sentiment_of(desc)
             type_desc = _EVENT_TYPE_DESC.get(event_type, event_type)
             excerpt = desc[:120]
-            cases.append(TrainingCase(
-                intent="news_event",
-                actions=[f"event_type:{event_type}", f"sentiment:{sentiment}"] +
-                        [f"ticker:{t}" for t in tickers_list[:3]],
-                outcome_text=f"这条快讯属于什么事件类型：{excerpt}",
-                learned=[f"快讯事件 | {type_desc} | 情绪:{sentiment} | 关联代币:{','.join(tickers_list[:3]) or '无'}"],
-                layer_tags=["S"],
-                quality="B",
-                confidence=0.7,
-                source="newsflash_semantic",
-                metadata={
-                    "event_type": event_type,
-                    "sentiment": sentiment,
-                    "tickers": tickers_list[:5],
-                    "published_at": ts,
-                    "engine_hint": "18-数据获取中心/odaily_newsflash",
-                },
-            ))
+            cases.append(
+                TrainingCase(
+                    intent="news_event",
+                    actions=[f"event_type:{event_type}", f"sentiment:{sentiment}"]
+                    + [f"ticker:{t}" for t in tickers_list[:3]],
+                    outcome_text=f"这条快讯属于什么事件类型：{excerpt}",
+                    learned=[
+                        f"快讯事件 | {type_desc} | 情绪:{sentiment} | 关联代币:{','.join(tickers_list[:3]) or '无'}"
+                    ],
+                    layer_tags=["S"],
+                    quality="B",
+                    confidence=0.7,
+                    source="newsflash_semantic",
+                    metadata={
+                        "event_type": event_type,
+                        "sentiment": sentiment,
+                        "tickers": tickers_list[:5],
+                        "published_at": ts,
+                        "engine_hint": "18-数据获取中心/odaily_newsflash",
+                    },
+                )
+            )
         return cases[:limit]

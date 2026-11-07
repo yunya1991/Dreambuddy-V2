@@ -20,6 +20,7 @@ CausalSampleStore — A2 双源历史因果样本库（非 LLM·数据驱动）
   - HC-AGI-02: 异常 → 中性兜底（返回 None，上层 insufficient_samples no-op）
 FAIL-OPEN：任何装载/解析异常 → 返回 None，不 crash。
 """
+
 from __future__ import annotations
 
 import json
@@ -125,10 +126,7 @@ class CausalSampleStore:
             return []
 
     def _build_live_triplet(self, samples: list[dict], min_n: int) -> Optional[dict[str, Any]]:
-        labeled = [
-            s for s in samples
-            if s.get("actual_return") is not None
-        ]
+        labeled = [s for s in samples if s.get("actual_return") is not None]
         if len(labeled) < min_n:
             return None
 

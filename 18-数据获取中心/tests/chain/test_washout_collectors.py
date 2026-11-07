@@ -16,13 +16,14 @@ Spec: docs/superpowers/specs/2026-09-21-washout-detector-design.md §9.3 测试 
   - 采集器遵循 BaseCollector 模式: fetch(params) -> list[DataRecord]
   - FAIL-OPEN 铁律: API 异常 → 返回空列表不阻塞
 """
+
 from __future__ import annotations
 
 from data_center.collectors.chain.cvd_collector import CvdCollector
-from data_center.collectors.chain.ofi_collector import OfiCollector
 from data_center.collectors.chain.long_short_ratio_collector import (
     LongShortRatioCollector,
 )
+from data_center.collectors.chain.ofi_collector import OfiCollector
 from data_center.core.contract import DataRecord
 from data_center.monitoring.quality import validate_washout_data
 
@@ -37,9 +38,9 @@ def test_cvd_collector_fetch_returns_cvd_value(mocker):
         "data": [
             {
                 "t": 1697200000000,
-                "c": 12345.6,        # cvd_value
-                "b": 50000.0,        # buy_volume
-                "s": 37654.4,        # sell_volume
+                "c": 12345.6,  # cvd_value
+                "b": 50000.0,  # buy_volume
+                "s": 37654.4,  # sell_volume
             }
         ],
     }
@@ -90,9 +91,7 @@ def test_ofi_collector_fetch_returns_ofi_value(mocker):
         "asks": [[60001.0, 1.2], [60002.0, 1.8], [60003.0, 2.5]],
         "timestamp": 1697200000000,
     }
-    mock_ccxt = mocker.patch(
-        "data_center.collectors.chain.ofi_collector.ccxt"
-    )
+    mock_ccxt = mocker.patch("data_center.collectors.chain.ofi_collector.ccxt")
     mock_exchange = mock_ccxt.binance.return_value
     mock_exchange.fetch_order_book.return_value = mock_order_book
 
@@ -143,7 +142,7 @@ def test_long_short_ratio_collector_fetch(mocker):
                 "longAccount": 0.5556,
                 "shortAccount": 0.4444,
             }
-        ]
+        ],
     }
     mocker.patch(
         "data_center.collectors.chain.long_short_ratio_collector.requests.get",
@@ -178,8 +177,7 @@ def test_quality_validate_washout_data_rejects_missing():
     r3 = {"symbol": "BTC", "cvd_value": 100.0, "ofi_value": 1.0}
     assert validate_washout_data(r3) is False
     # 字段值为 None
-    r4 = {"timestamp": "2026-09-21T00:00:00Z", "symbol": "BTC",
-          "cvd_value": None, "ofi_value": 1.0}
+    r4 = {"timestamp": "2026-09-21T00:00:00Z", "symbol": "BTC", "cvd_value": None, "ofi_value": 1.0}
     assert validate_washout_data(r4) is False
 
 
@@ -189,18 +187,24 @@ def test_quality_validate_washout_data_rejects_missing():
 def test_quality_validate_washout_data_rejects_outlier():
     """validate_washout_data 数值越界 → 返回 False。"""
     # cvd_value 超出 [-1e9, 1e9] 范围
-    r1 = {"timestamp": "2026-09-21T00:00:00Z", "symbol": "BTC",
-          "cvd_value": 2e9, "ofi_value": 1.0}
+    r1 = {"timestamp": "2026-09-21T00:00:00Z", "symbol": "BTC", "cvd_value": 2e9, "ofi_value": 1.0}
     assert validate_washout_data(r1) is False
     # cvd_value 负越界
-    r2 = {"timestamp": "2026-09-21T00:00:00Z", "symbol": "BTC",
-          "cvd_value": -2e9, "ofi_value": 1.0}
+    r2 = {"timestamp": "2026-09-21T00:00:00Z", "symbol": "BTC", "cvd_value": -2e9, "ofi_value": 1.0}
     assert validate_washout_data(r2) is False
     # ofi_value 越界
-    r3 = {"timestamp": "2026-09-21T00:00:00Z", "symbol": "BTC",
-          "cvd_value": 100.0, "ofi_value": 2e9}
+    r3 = {
+        "timestamp": "2026-09-21T00:00:00Z",
+        "symbol": "BTC",
+        "cvd_value": 100.0,
+        "ofi_value": 2e9,
+    }
     assert validate_washout_data(r3) is False
     # 正常数据 → True
-    r_ok = {"timestamp": "2026-09-21T00:00:00Z", "symbol": "BTC",
-            "cvd_value": 100.0, "ofi_value": 1.0}
+    r_ok = {
+        "timestamp": "2026-09-21T00:00:00Z",
+        "symbol": "BTC",
+        "cvd_value": 100.0,
+        "ofi_value": 1.0,
+    }
     assert validate_washout_data(r_ok) is True

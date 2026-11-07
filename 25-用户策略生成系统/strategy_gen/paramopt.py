@@ -8,6 +8,7 @@
 - 结果从 hyperopt 输出 JSON 中提取最优参数
 - FAIL-OPEN：异常时返回 ok=False 不阻断上层
 """
+
 from __future__ import annotations
 
 import json
@@ -42,6 +43,7 @@ _HYPEROPT_RESULTS_DIR = _USER_DATA_DIR / "hyperopt_results"
 # ---------------------------------------------------------------------------
 # 主入口
 # ---------------------------------------------------------------------------
+
 
 def paramopt(
     strategy_id: str,
@@ -143,6 +145,7 @@ def paramopt(
 # 策略定位
 # ---------------------------------------------------------------------------
 
+
 def _resolve_strategy(strategy_id: str) -> Optional[Path]:
     """定位策略文件。"""
     if not _STRATEGIES_DIR.exists():
@@ -155,6 +158,7 @@ def _resolve_strategy(strategy_id: str) -> Optional[Path]:
 # ---------------------------------------------------------------------------
 # Freqtrade hyperopt CLI 调用
 # ---------------------------------------------------------------------------
+
 
 def _run_freqtrade_hyperopt(
     config_path: Path,
@@ -169,17 +173,28 @@ def _run_freqtrade_hyperopt(
 ) -> Dict[str, Any]:
     """调用 freqtrade hyperopt CLI。"""
     cmd = [
-        _FREQTRADE_BIN, "hyperopt",
-        "--config", str(config_path),
-        "--strategy", strategy_name,
-        "--userdir", str(_USER_DATA_DIR),
-        "--datadir", str(_DATA_DIR),
-        "--timerange", timerange,
-        "--data-format-ohlcv", "json",
-        "--epochs", str(epochs),
-        "--spaces", *spaces,
-        "--hyperopt-loss", hyperopt_loss,
-        "--random-state", str(random_state),
+        _FREQTRADE_BIN,
+        "hyperopt",
+        "--config",
+        str(config_path),
+        "--strategy",
+        strategy_name,
+        "--userdir",
+        str(_USER_DATA_DIR),
+        "--datadir",
+        str(_DATA_DIR),
+        "--timerange",
+        timerange,
+        "--data-format-ohlcv",
+        "json",
+        "--epochs",
+        str(epochs),
+        "--spaces",
+        *spaces,
+        "--hyperopt-loss",
+        hyperopt_loss,
+        "--random-state",
+        str(random_state),
         "--print-json",
     ]
     if pairs:
@@ -213,6 +228,7 @@ def _run_freqtrade_hyperopt(
 # 结果解析
 # ---------------------------------------------------------------------------
 
+
 def _extract_best_params(stdout: str) -> Dict[str, Any]:
     """从 hyperopt --print-json 输出中提取最优参数。
 
@@ -243,9 +259,15 @@ def _extract_best_params(stdout: str) -> Dict[str, Any]:
         config_patch.update(params)
 
     # 顶层策略参数也加入
-    for top_key in ["minimal_roi", "stoploss", "trailing_stop",
-                    "trailing_stop_positive", "trailing_stop_positive_offset",
-                    "trailing_only_offset_is_reached", "max_open_trades"]:
+    for top_key in [
+        "minimal_roi",
+        "stoploss",
+        "trailing_stop",
+        "trailing_stop_positive",
+        "trailing_stop_positive_offset",
+        "trailing_only_offset_is_reached",
+        "max_open_trades",
+    ]:
         if top_key in data and data[top_key] is not None:
             config_patch[top_key] = data[top_key]
 

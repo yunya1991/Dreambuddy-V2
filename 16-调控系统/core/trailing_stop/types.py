@@ -14,11 +14,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
-
+from typing import Any, Dict
 
 # ---------------------------------------------------------------------------
 # 枚举
@@ -28,18 +27,18 @@ from typing import Any, Dict, List, Optional
 class TrailingAction(str, Enum):
     """追踪评估输出的动作。"""
 
-    HOLD = "HOLD"               # 无动作：未激活或未触发
-    ARM = "ARM"                 # 激活追踪：本次评估首次达到 arm 阈值
+    HOLD = "HOLD"  # 无动作：未激活或未触发
+    ARM = "ARM"  # 激活追踪：本次评估首次达到 arm 阈值
     TRIGGER_CLOSE = "TRIGGER_CLOSE"  # 触发平仓：价格跌破追踪线
 
 
 class TrailingStatus(str, Enum):
     """单持仓的追踪阶段状态。"""
 
-    IDLE = "IDLE"               # 未激活：盈利未达 arm 阈值
-    ARMED = "ARMED"             # 已激活：追踪运行中
-    TRIGGERED = "TRIGGERED"     # 已触发：待执行平仓（防止重复触发）
-    CLOSED = "CLOSED"           # 已平仓：追踪生命周期结束
+    IDLE = "IDLE"  # 未激活：盈利未达 arm 阈值
+    ARMED = "ARMED"  # 已激活：追踪运行中
+    TRIGGERED = "TRIGGERED"  # 已触发：待执行平仓（防止重复触发）
+    CLOSED = "CLOSED"  # 已平仓：追踪生命周期结束
 
 
 # ---------------------------------------------------------------------------
@@ -54,26 +53,26 @@ class TrailingState:
     主键：(system, coin, side)
     """
 
-    system: str                              # 所属系统，如 v15_martin
-    coin: str                                # 币种，如 BTC-USDT
-    side: str                                # long / short
+    system: str  # 所属系统，如 v15_martin
+    coin: str  # 币种，如 BTC-USDT
+    side: str  # long / short
     status: TrailingStatus = TrailingStatus.IDLE
 
-    entry_price: float = 0.0                 # 开仓均价
-    leverage: float = 1.0                    # 杠杆倍数
-    position_size: float = 0.0               # 仓位数量
+    entry_price: float = 0.0  # 开仓均价
+    leverage: float = 1.0  # 杠杆倍数
+    position_size: float = 0.0  # 仓位数量
 
     # 价格高点追踪（自激活后或自开仓后）
-    peak_price: float = 0.0                  # 持仓期间最高价（做多） / 最低价（做空）
-    peak_ts: str = ""                        # 峰值出现时间
+    peak_price: float = 0.0  # 持仓期间最高价（做多） / 最低价（做空）
+    peak_ts: str = ""  # 峰值出现时间
 
     # 激活 & 追踪参数
-    armed_ts: str = ""                       # 激活时间戳（ARM 时刻）
-    arm_pnl_eff_pct: float = 0.0             # 激活时的有效收益率（含杠杆）
-    atr_period: int = 14                     # ATR 周期
-    atr_multiplier: float = 2.5              # ATR 倍数
-    min_trail_pct: float = 0.03              # 最小追踪百分比（防 ATR 过小）
-    arm_threshold_pct: float = 0.20          # 激活有效收益率阈值（含杠杆，默认 20%）
+    armed_ts: str = ""  # 激活时间戳（ARM 时刻）
+    arm_pnl_eff_pct: float = 0.0  # 激活时的有效收益率（含杠杆）
+    atr_period: int = 14  # ATR 周期
+    atr_multiplier: float = 2.5  # ATR 倍数
+    min_trail_pct: float = 0.03  # 最小追踪百分比（防 ATR 过小）
+    arm_threshold_pct: float = 0.20  # 激活有效收益率阈值（含杠杆，默认 20%）
 
     # 追踪止损价（每次轮询更新）
     trailing_stop_price: float = 0.0
@@ -83,8 +82,8 @@ class TrailingState:
     # 触发记录
     triggered_ts: str = ""
     triggered_price: float = 0.0
-    trigger_reason: str = ""                 # "price_below_trail" / "price_above_trail"
-    locked_profit_pct: float = 0.0           # 触发时相对开仓的有效收益率
+    trigger_reason: str = ""  # "price_below_trail" / "price_above_trail"
+    locked_profit_pct: float = 0.0  # 触发时相对开仓的有效收益率
 
     # 元数据
     created_ts: str = ""
@@ -131,13 +130,13 @@ class TrailingResult:
     side: str
     action: TrailingAction
     status: TrailingStatus
-    current_pnl_eff_pct: float = 0.0          # 当前有效收益率（含杠杆）
+    current_pnl_eff_pct: float = 0.0  # 当前有效收益率（含杠杆）
     peak_price: float = 0.0
     trailing_stop_price: float = 0.0
     current_atr: float = 0.0
-    trail_distance_pct: float = 0.0            # 追踪距离占 peak_price 的百分比
-    locked_profit_pct: float = 0.0             # 若触发，锁定的有效盈利
-    reason: str = ""                           # 人类可读原因
+    trail_distance_pct: float = 0.0  # 追踪距离占 peak_price 的百分比
+    locked_profit_pct: float = 0.0  # 若触发，锁定的有效盈利
+    reason: str = ""  # 人类可读原因
     details: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -188,7 +187,7 @@ class TrailingStats:
     armed_count: int = 0
     triggered_count: int = 0
     closed_count: int = 0
-    triggered_total: int = 0       # 历史累计触发次数（持久化文件恢复）
+    triggered_total: int = 0  # 历史累计触发次数（持久化文件恢复）
     avg_armed_pnl_pct: float = 0.0  # 已激活仓位的平均激活时收益率
     avg_locked_profit_pct: float = 0.0  # 已触发仓位的平均锁定收益率
 

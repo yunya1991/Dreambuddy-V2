@@ -3,6 +3,7 @@
 验证 tech_upgrade / sec_deadline / congressional_hearing / fed_speech 等非宏观事件
 的 dominant_direction 能直接驱动信号输出，而非依赖 6 维宏观评分（composite=0.5→neutral）。
 """
+
 import sys
 from pathlib import Path
 
@@ -31,6 +32,7 @@ def _make_kline(ctx):
 
 
 # ---------- 非宏观事件 direction 直接驱动信号 ----------
+
 
 def test_tech_upgrade_long_drives_long_signal():
     """tech_upgrade dominant_direction=long → signal=long（不依赖宏观评分）。"""
@@ -86,6 +88,7 @@ def test_fed_speech_short_drives_short_signal():
 
 # ---------- 非宏观事件不应用 FOMC 专属偏移 ----------
 
+
 def test_non_macro_ignores_hike_prob_offset():
     """非宏观事件即使 event_ctx 含 hike_prob 也不应用预期阶段 bearish 偏移。"""
     strategy = EventDrivenStrategy()
@@ -98,6 +101,7 @@ def test_non_macro_ignores_hike_prob_offset():
 
 # ---------- strength 与 phase 乘数 ----------
 
+
 def test_non_macro_event_phase_has_higher_strength():
     """event 阶段 strength 高于 expectation_build 阶段（PHASE_POSITION_MULT）。"""
     strategy = EventDrivenStrategy()
@@ -109,6 +113,7 @@ def test_non_macro_event_phase_has_higher_strength():
 
 
 # ---------- 宏观事件不受非宏观分支影响 ----------
+
 
 def test_fomc_still_uses_macro_scoring():
     """FOMC 事件仍走宏观评分逻辑（不受非宏观分支影响）。"""

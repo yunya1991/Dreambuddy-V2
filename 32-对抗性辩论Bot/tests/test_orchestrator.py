@@ -10,40 +10,53 @@
 - /pause + /resume
 - Telegram 消息发送
 """
+
 from __future__ import annotations
 
 import asyncio
-from typing import Sequence
 
 import pytest
-
 from core.models import (
-    Argument, Turn, Verdict, MarketingMaterial, DebateQualityScore,
+    Argument,
+    DebateQualityScore,
     DebateResult,
+    MarketingMaterial,
+    Turn,
+    Verdict,
 )
 from core.orchestrator import DebateOrchestrator
 
-
 # ─── Mock 组件 ───────────────────────────────────────────────────
+
 
 class MockBullAgent:
     """记录 argue 调用，返回预设 Argument。"""
 
     def __init__(self, arg: Argument | None = None):
         self._arg = arg or Argument(
-            thesis="正方论点", arguments=["论据1", "论据2"],
-            quote="正方金句", confidence=0.8, raw="{}",
+            thesis="正方论点",
+            arguments=["论据1", "论据2"],
+            quote="正方金句",
+            confidence=0.8,
+            raw="{}",
         )
         self.calls: list[dict] = []
 
-    async def argue(self, topic: str, transcript: list[Turn],
-                    background: str = "",
-                    injected_views: list[str] | None = None) -> Argument:
-        self.calls.append({
-            "topic": topic, "transcript_len": len(transcript),
-            "background": background,
-            "injected_views": injected_views,
-        })
+    async def argue(
+        self,
+        topic: str,
+        transcript: list[Turn],
+        background: str = "",
+        injected_views: list[str] | None = None,
+    ) -> Argument:
+        self.calls.append(
+            {
+                "topic": topic,
+                "transcript_len": len(transcript),
+                "background": background,
+                "injected_views": injected_views,
+            }
+        )
         return self._arg
 
 
@@ -52,19 +65,29 @@ class MockBearAgent:
 
     def __init__(self, arg: Argument | None = None):
         self._arg = arg or Argument(
-            thesis="反方论点", arguments=["反驳1", "反驳2"],
-            quote="反方金句", confidence=0.7, raw="{}",
+            thesis="反方论点",
+            arguments=["反驳1", "反驳2"],
+            quote="反方金句",
+            confidence=0.7,
+            raw="{}",
         )
         self.calls: list[dict] = []
 
-    async def rebut(self, topic: str, transcript: list[Turn],
-                    background: str = "",
-                    injected_views: list[str] | None = None) -> Argument:
-        self.calls.append({
-            "topic": topic, "transcript_len": len(transcript),
-            "background": background,
-            "injected_views": injected_views,
-        })
+    async def rebut(
+        self,
+        topic: str,
+        transcript: list[Turn],
+        background: str = "",
+        injected_views: list[str] | None = None,
+    ) -> Argument:
+        self.calls.append(
+            {
+                "topic": topic,
+                "transcript_len": len(transcript),
+                "background": background,
+                "injected_views": injected_views,
+            }
+        )
         return self._arg
 
 
@@ -73,8 +96,10 @@ class MockJudgeAgent:
 
     def __init__(self, verdict: Verdict | None = None):
         self._verdict = verdict or Verdict(
-            summary="综合裁决", winner="bull",
-            key_insights=["洞察1"], topic_angle="升华角度",
+            summary="综合裁决",
+            winner="bull",
+            key_insights=["洞察1"],
+            topic_angle="升华角度",
         )
         self.calls: list[dict] = []
 
@@ -89,16 +114,21 @@ class MockMarketingExtractor:
     def __init__(self):
         self.calls: list[dict] = []
 
-    async def extract(self, topic: str, transcript: list[Turn],
-                      verdict: Verdict | None = None) -> MarketingMaterial:
-        self.calls.append({
-            "topic": topic,
-            "transcript_len": len(transcript),
-            "verdict": verdict,
-        })
+    async def extract(
+        self, topic: str, transcript: list[Turn], verdict: Verdict | None = None
+    ) -> MarketingMaterial:
+        self.calls.append(
+            {
+                "topic": topic,
+                "transcript_len": len(transcript),
+                "verdict": verdict,
+            }
+        )
         return MarketingMaterial(
-            quotes=["金句1"], hashtags=["#标签"],
-            highlight_paragraph="精华", short_copy=["文案"],
+            quotes=["金句1"],
+            hashtags=["#标签"],
+            highlight_paragraph="精华",
+            short_copy=["文案"],
             debate_title="辩论标题",
         )
 
@@ -109,18 +139,24 @@ class MockQualityEvaluator:
     def __init__(self):
         self.calls: list[dict] = []
 
-    async def evaluate(self, topic: str, transcript: list[Turn],
-                       material: MarketingMaterial) -> DebateQualityScore:
-        self.calls.append({
-            "topic": topic,
-            "transcript_len": len(transcript),
-            "material": material,
-        })
+    async def evaluate(
+        self, topic: str, transcript: list[Turn], material: MarketingMaterial
+    ) -> DebateQualityScore:
+        self.calls.append(
+            {
+                "topic": topic,
+                "transcript_len": len(transcript),
+                "material": material,
+            }
+        )
         return DebateQualityScore(
-            overall=7.5, grade="A",
+            overall=7.5,
+            grade="A",
             dimensions={"冲突强度": 8.0},
-            rule_score=7.0, llm_score=8.0,
-            highlights=["亮点"], suggestions=[],
+            rule_score=7.0,
+            llm_score=8.0,
+            highlights=["亮点"],
+            suggestions=[],
         )
 
 
@@ -151,17 +187,26 @@ def make_orchestrator(
     quality = quality or MockQualityEvaluator()
     telegram = telegram or MockTelegramDualBot()
     orch = DebateOrchestrator(
-        bull_agent=bull, bear_agent=bear, judge_agent=judge,
-        marketing_extractor=marketing, quality_evaluator=quality,
+        bull_agent=bull,
+        bear_agent=bear,
+        judge_agent=judge,
+        marketing_extractor=marketing,
+        quality_evaluator=quality,
         telegram_dual_bot=telegram,
         pause_timeout=pause_timeout,
     )
-    return orch, {"bull": bull, "bear": bear, "judge": judge,
-                  "marketing": marketing, "quality": quality,
-                  "telegram": telegram}
+    return orch, {
+        "bull": bull,
+        "bear": bear,
+        "judge": judge,
+        "marketing": marketing,
+        "quality": quality,
+        "telegram": telegram,
+    }
 
 
 # ─── 基本流程测试 ────────────────────────────────────────────────
+
 
 class TestBasicFlow:
     """测试完整辩论流程。"""
@@ -170,8 +215,7 @@ class TestBasicFlow:
     async def test_run_2_rounds_transcript_has_4_turns(self):
         """2 轮辩论 → transcript 有 4 条 Turn（2 bull + 2 bear）。"""
         orch, mocks = make_orchestrator(judge=MockJudgeAgent())
-        result = await orch.run(topic="BTC 是数字黄金", chat_id=123,
-                                max_rounds=2)
+        result = await orch.run(topic="BTC 是数字黄金", chat_id=123, max_rounds=2)
         # 4 辩手 turns + 1 judge turn = 5
         assert len(result.transcript) == 5
         speakers = [t.speaker for t in result.transcript]
@@ -206,13 +250,13 @@ class TestBasicFlow:
     async def test_background_passed_to_agents(self):
         """background 参数传入辩手。"""
         orch, mocks = make_orchestrator(judge=MockJudgeAgent())
-        await orch.run(topic="测试", chat_id=1, max_rounds=1,
-                       background="背景材料")
+        await orch.run(topic="测试", chat_id=1, max_rounds=1, background="背景材料")
         assert mocks["bull"].calls[0]["background"] == "背景材料"
         assert mocks["bear"].calls[0]["background"] == "背景材料"
 
 
 # ─── Judge 可选测试 ──────────────────────────────────────────────
+
 
 class TestJudgeOptional:
     """测试 judge_agent 为 None 时的行为。"""
@@ -224,8 +268,7 @@ class TestJudgeOptional:
         result = await orch.run(topic="测试", chat_id=1, max_rounds=1)
         # transcript 只有 2 辩手 turns，无 judge turn
         assert len(result.transcript) == 2
-        assert all(t.speaker in ("bull", "bear")
-                   for t in result.transcript)
+        assert all(t.speaker in ("bull", "bear") for t in result.transcript)
 
     @pytest.mark.asyncio
     async def test_no_judge_verdict_none(self):
@@ -245,6 +288,7 @@ class TestJudgeOptional:
 
 # ─── /stop 测试 ──────────────────────────────────────────────────
 
+
 class TestStop:
     """测试 /stop 机制。"""
 
@@ -256,16 +300,14 @@ class TestStop:
         # 在第一轮 bull 发言后触发 stop
         original_argue = mocks["bull"].argue
 
-        async def argue_then_stop(topic, transcript, background="",
-                                  injected_views=None):
-            result = await original_argue(topic, transcript, background,
-                                          injected_views)
+        async def argue_then_stop(topic, transcript, background="", injected_views=None):
+            result = await original_argue(topic, transcript, background, injected_views)
             orch.stop(123)  # 触发 stop
             return result
 
         mocks["bull"].argue = argue_then_stop
 
-        result = await orch.run(topic="测试", chat_id=123, max_rounds=3)
+        result = await orch.run(topic="测试", chat_id=123, max_rounds=3)  # noqa: F841
         # bull 发言了 1 次（第 1 轮），bear 仍发言 1 次（当前轮完成）
         # 但跳过第 2、3 轮
         assert len(mocks["bull"].calls) == 1
@@ -278,16 +320,14 @@ class TestStop:
 
         original_rebut = mocks["bear"].rebut
 
-        async def rebut_then_stop(topic, transcript, background="",
-                                  injected_views=None):
-            result = await original_rebut(topic, transcript, background,
-                                          injected_views)
+        async def rebut_then_stop(topic, transcript, background="", injected_views=None):
+            result = await original_rebut(topic, transcript, background, injected_views)
             orch.stop(1)
             return result
 
         mocks["bear"].rebut = rebut_then_stop
 
-        result = await orch.run(topic="测试", chat_id=1, max_rounds=5)
+        result = await orch.run(topic="测试", chat_id=1, max_rounds=5)  # noqa: F841
         # judge 仍被调用
         assert len(mocks["judge"].calls) == 1
         # marketing 仍被调用
@@ -302,10 +342,8 @@ class TestStop:
 
         original_argue = mocks["bull"].argue
 
-        async def argue_then_stop(topic, transcript, background="",
-                                  injected_views=None):
-            result = await original_argue(topic, transcript, background,
-                                          injected_views)
+        async def argue_then_stop(topic, transcript, background="", injected_views=None):
+            result = await original_argue(topic, transcript, background, injected_views)
             orch.stop(1)
             return result
 
@@ -316,6 +354,7 @@ class TestStop:
 
 
 # ─── /inject 测试 ────────────────────────────────────────────────
+
 
 class TestInject:
     """测试 /inject 机制。"""
@@ -353,6 +392,7 @@ class TestInject:
 
 # ─── 并发锁测试 ──────────────────────────────────────────────────
 
+
 class TestConcurrencyLock:
     """测试并发锁（asyncio.Lock per chat_id）。"""
 
@@ -363,17 +403,14 @@ class TestConcurrencyLock:
         bear = MockBearAgent()
         call_order: list[str] = []
 
-        async def slow_argue(topic, transcript, background="",
-                              injected_views=None):
+        async def slow_argue(topic, transcript, background="", injected_views=None):
             call_order.append("bull_start")
             await asyncio.sleep(0.01)
             call_order.append("bull_end")
-            return Argument(thesis="t", arguments=[], quote="",
-                            confidence=0.5, raw="")
+            return Argument(thesis="t", arguments=[], quote="", confidence=0.5, raw="")
 
         bull.argue = slow_argue
-        orch, _ = make_orchestrator(bull=bull, bear=bear,
-                                    judge=MockJudgeAgent())
+        orch, _ = make_orchestrator(bull=bull, bear=bear, judge=MockJudgeAgent())
 
         # 并发发起两场辩论
         await asyncio.gather(
@@ -391,17 +428,14 @@ class TestConcurrencyLock:
 
         original_argue = bull.argue
 
-        async def tracked_argue(topic, transcript, background="",
-                                injected_views=None):
+        async def tracked_argue(topic, transcript, background="", injected_views=None):
             call_order.append(f"{topic}_start")
             await asyncio.sleep(0.01)
             call_order.append(f"{topic}_end")
-            return await original_argue(topic, transcript, background,
-                                        injected_views)
+            return await original_argue(topic, transcript, background, injected_views)
 
         bull.argue = tracked_argue
-        orch, _ = make_orchestrator(bull=bull, bear=MockBearAgent(),
-                                    judge=MockJudgeAgent())
+        orch, _ = make_orchestrator(bull=bull, bear=MockBearAgent(), judge=MockJudgeAgent())
 
         await asyncio.gather(
             orch.run(topic="A", chat_id=1, max_rounds=1),
@@ -413,6 +447,7 @@ class TestConcurrencyLock:
 
 
 # ─── 状态转换测试 ────────────────────────────────────────────────
+
 
 class TestStatusTransitions:
     """测试状态机转换。"""
@@ -433,29 +468,25 @@ class TestStatusTransitions:
 
 # ─── /pause + /resume 测试 ────────────────────────────────────────
 
+
 class TestPauseResume:
     """测试 /pause + /resume 机制。"""
 
     @pytest.mark.asyncio
     async def test_pause_then_resume_completes(self):
         """/pause 后 /resume 能继续完成辩论。"""
-        orch, mocks = make_orchestrator(judge=MockJudgeAgent(),
-                                        pause_timeout=10.0)
+        orch, mocks = make_orchestrator(judge=MockJudgeAgent(), pause_timeout=10.0)
         original_argue = mocks["bull"].argue
 
-        async def argue_then_pause(topic, transcript, background="",
-                                   injected_views=None):
-            result = await original_argue(topic, transcript, background,
-                                          injected_views)
+        async def argue_then_pause(topic, transcript, background="", injected_views=None):
+            result = await original_argue(topic, transcript, background, injected_views)
             orch.pause(1)  # 在 bull 发言后请求暂停
             return result
 
         mocks["bull"].argue = argue_then_pause
 
         # 启动辩论（会在 bull 发言后暂停）
-        task = asyncio.create_task(
-            orch.run(topic="测试", chat_id=1, max_rounds=1)
-        )
+        task = asyncio.create_task(orch.run(topic="测试", chat_id=1, max_rounds=1))
 
         # 等待 orchestrator 进入 paused 状态（task 会阻塞在 resume 事件上）
         done, _ = await asyncio.wait({task}, timeout=0.5)

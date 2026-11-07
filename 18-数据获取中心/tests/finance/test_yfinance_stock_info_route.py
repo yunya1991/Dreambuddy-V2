@@ -7,9 +7,9 @@
 
 yfinance 薄封装，产出 DataRecord(category=finance)。
 """
+
 import pandas as pd
 import pytest
-
 from data_center.core.contract import DataRecord
 
 YF_MOD = "data_center.collectors.finance.yfinance_collector.yf"
@@ -45,6 +45,7 @@ def _financials_df():
 # ---------------------------------------------------------------------------
 # stock_info 路由
 # ---------------------------------------------------------------------------
+
 
 def test_stock_info_returns_pe_ratio(mocker):
     """stock_info 路由返回 trailingPE / forwardPE / operatingMargins 等指标。"""
@@ -133,6 +134,7 @@ def test_stock_info_missing_symbol_returns_empty(mocker):
 # stock_financials 路由
 # ---------------------------------------------------------------------------
 
+
 def test_stock_financials_returns_revenue(mocker):
     """stock_financials 路由返回营收/盈利季度时序列。"""
     from data_center.collectors.finance.yfinance_collector import YFinanceCollector
@@ -197,6 +199,7 @@ def test_stock_financials_missing_symbol_returns_empty(mocker):
 # 向后兼容：无 route 参数 → 走原有价格获取逻辑
 # ---------------------------------------------------------------------------
 
+
 def test_no_route_falls_back_to_price_fetch(mocker):
     """无 route 参数 → 走原有价格获取逻辑（向后兼容）。"""
     from data_center.collectors.finance.yfinance_collector import YFinanceCollector
@@ -221,9 +224,11 @@ def test_no_route_falls_back_to_price_fetch(mocker):
 # 容错
 # ---------------------------------------------------------------------------
 
+
 def test_stock_info_exception_returns_empty(mocker):
     """stock_info 异常 → fail-open 返回空列表。"""
     from unittest.mock import PropertyMock
+
     from data_center.collectors.finance.yfinance_collector import YFinanceCollector
 
     mock_yf = mocker.patch(YF_MOD)
@@ -240,6 +245,7 @@ def test_stock_info_exception_returns_empty(mocker):
 def test_stock_financials_exception_returns_empty(mocker):
     """stock_financials 异常 → fail-open 返回空列表。"""
     from unittest.mock import PropertyMock
+
     from data_center.collectors.finance.yfinance_collector import YFinanceCollector
 
     mock_yf = mocker.patch(YF_MOD)

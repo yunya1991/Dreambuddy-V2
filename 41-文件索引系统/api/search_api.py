@@ -14,7 +14,9 @@ SPEC-41-文件索引系统 v0.6 §5（部署形态见 §3.2：Python 库直调 +
   - 校验失败 FAIL-OPEN：返回空结果并记日志，不抛异常
 位置: 41-文件索引系统/api/search_api.py
 """
+
 from __future__ import annotations
+
 import json
 import logging
 import os
@@ -60,7 +62,8 @@ class SearchAPI:
         if agent_authorized:
             return hits
         return [
-            h for h in hits
+            h
+            for h in hits
             if not self._is_private(h.source["path"]) or (user_id and user_id in h.source["path"])
         ]
 
@@ -131,15 +134,11 @@ class SearchAPI:
             indexed_files = conn.execute("SELECT count(*) FROM files").fetchone()[0]
             chunk_count = conn.execute("SELECT count(*) FROM chunks").fetchone()[0]
             token_count = conn.execute("SELECT count(*) FROM tokens").fetchone()[0]
-            last_indexed = conn.execute(
-                "SELECT max(indexed_at) FROM files"
-            ).fetchone()[0]
+            last_indexed = conn.execute("SELECT max(indexed_at) FROM files").fetchone()[0]
         lazy = self.lazy.check()
         # v1.1：reconcile_diff 增加 wiki 页面变更维度（SPEC §8.1，对齐 §7.11 lint 对账联动）
         with self.db.connection() as conn:
-            wiki_total = conn.execute(
-                "SELECT count(*) FROM files WHERE type='wiki'"
-            ).fetchone()[0]
+            wiki_total = conn.execute("SELECT count(*) FROM files WHERE type='wiki'").fetchone()[0]
         return {
             "indexed_files": indexed_files,
             "chunks": chunk_count,
@@ -182,14 +181,22 @@ class SearchAPI:
             parts = p.split("/", 1)
             file_root = parts[0] if len(parts) > 1 else ""
             # category 推导：优先显式参数，否则 type + 路径首段
-            cat = category or (r["type"] if r["type"] != "doc" else ("doc:" + file_root if file_root else "doc"))
-            items.append({
-                "path": p,
-                "root": file_root,
-                "category": cat,
-                "last_synced": r["indexed_at"].isoformat() if hasattr(r["indexed_at"], "isoformat") else str(r["indexed_at"]),
-                "size_bytes": r["size"],
-            })
+            cat = category or (
+                r["type"] if r["type"] != "doc" else ("doc:" + file_root if file_root else "doc")
+            )
+            items.append(
+                {
+                    "path": p,
+                    "root": file_root,
+                    "category": cat,
+                    "last_synced": (
+                        r["indexed_at"].isoformat()
+                        if hasattr(r["indexed_at"], "isoformat")
+                        else str(r["indexed_at"])
+                    ),
+                    "size_bytes": r["size"],
+                }
+            )
         return {"files": items, "count": len(items)}
 
     def recall(self, query: str, topK: int = 50, agent_token: Optional[str] = None) -> List[Dict]:

@@ -12,8 +12,8 @@
   E5 回放先用合成快照序列（事件时间线 + E5/E6 序列 + 估值分位序列），
   真实历史数据接入留待 Phase F 数据源扩展。
 """
-import pytest
-import sys
+
+import sys  # noqa: I001
 from pathlib import Path
 
 # 将 memory_l4 和 scripts 加入 sys.path
@@ -25,25 +25,24 @@ _SCRIPTS_DIR = _L4_DIR / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from force_vector.coin_fundamental_phase_classifier import (
+from coin_fundamental_phase_replay import (  # noqa: E402
+    CRCL_REPLAY_TIMELINE,
+    HYPE_REPLAY_TIMELINE,
+    UNI_REPLAY_TIMELINE,
+    PhaseSnapshot,
+    replay_all_cases,
+    replay_case,
+)
+from force_vector.coin_fundamental_phase_classifier import (  # noqa: E402
     P1_EXPECTATION,
     P2_REVENUE_EXPANSION,
     P3_VALUATION_RECOVERY,
 )
 
-from coin_fundamental_phase_replay import (
-    PhaseSnapshot,
-    CRCL_REPLAY_TIMELINE,
-    UNI_REPLAY_TIMELINE,
-    HYPE_REPLAY_TIMELINE,
-    replay_case,
-    replay_all_cases,
-)
-
-
 # ---------------------------------------------------------------------------
 # 1. 数据结构
 # ---------------------------------------------------------------------------
+
 
 class TestPhaseSnapshotDataclass:
     """合成快照数据结构。"""
@@ -68,6 +67,7 @@ class TestPhaseSnapshotDataclass:
 # 2. CRCL 案例：P1 → P2 流转
 # ---------------------------------------------------------------------------
 
+
 class TestReplayCRCL:
     """CRCL 案例：主网预期（P1）→ 落地后盈收跟踪（P2）。"""
 
@@ -81,15 +81,13 @@ class TestReplayCRCL:
         result = replay_case("CRCL", CRCL_REPLAY_TIMELINE)
         # 必须出现 P1→P2 切换
         p1_to_p2_switch = [
-            sw for sw in result.switches
+            sw
+            for sw in result.switches
             if sw.from_phase == P1_EXPECTATION and sw.to_phase == P2_REVENUE_EXPANSION
         ]
         assert len(p1_to_p2_switch) >= 1, "CRCL 必须出现 P1→P2 切换"
         # 切换触发器应含 event_landed_switch_p1_to_p2
-        assert any(
-            "event_landed_switch_p1_to_p2" in sw.triggers
-            for sw in p1_to_p2_switch
-        )
+        assert any("event_landed_switch_p1_to_p2" in sw.triggers for sw in p1_to_p2_switch)
 
     def test_crcl_final_phase_is_p2(self):
         """CRCL 最终阶段为 P2（落地后进入盈收跟踪）。"""
@@ -100,6 +98,7 @@ class TestReplayCRCL:
 # ---------------------------------------------------------------------------
 # 3. UNI 案例：P2 → P3 流转
 # ---------------------------------------------------------------------------
+
 
 class TestReplayUNI:
     """UNI 案例：盈收扩张（P2）→ 估值到高位（P3）。"""
@@ -113,7 +112,8 @@ class TestReplayUNI:
         """估值到高位（>80）触发 P2→P3 切换。"""
         result = replay_case("UNI", UNI_REPLAY_TIMELINE)
         p2_to_p3_switch = [
-            sw for sw in result.switches
+            sw
+            for sw in result.switches
             if sw.from_phase == P2_REVENUE_EXPANSION and sw.to_phase == P3_VALUATION_RECOVERY
         ]
         assert len(p2_to_p3_switch) >= 1, "UNI 必须出现 P2→P3 切换"
@@ -128,6 +128,7 @@ class TestReplayUNI:
 # 4. HYPE 案例：P3 持续修复
 # ---------------------------------------------------------------------------
 
+
 class TestReplayHYPE:
     """HYPE 案例：盈收强+估值稳，P3 持续修复力。"""
 
@@ -135,9 +136,9 @@ class TestReplayHYPE:
         """HYPE 全程应稳定在 P3。"""
         result = replay_case("HYPE", HYPE_REPLAY_TIMELINE)
         phases = [s.phase for s in result.snapshots]
-        assert all(p == P3_VALUATION_RECOVERY for p in phases), (
-            f"HYPE 全程必须为 P3，实际: {phases}"
-        )
+        assert all(
+            p == P3_VALUATION_RECOVERY for p in phases
+        ), f"HYPE 全程必须为 P3，实际: {phases}"
         # 无切换发生
         assert len(result.switches) == 0
 
@@ -151,6 +152,7 @@ class TestReplayHYPE:
 # ---------------------------------------------------------------------------
 # 5. 切换检测延迟报告
 # ---------------------------------------------------------------------------
+
 
 class TestSwitchDetectionLatency:
     """回放报告必须含切换检测延迟和策略提示变化。"""
@@ -181,6 +183,7 @@ class TestSwitchDetectionLatency:
 # 6. 全案例回放
 # ---------------------------------------------------------------------------
 
+
 class TestReplayAllCases:
     """三个案例批量回放。"""
 
@@ -208,6 +211,7 @@ class TestReplayAllCases:
 # ---------------------------------------------------------------------------
 # 7. FAIL-OPEN
 # ---------------------------------------------------------------------------
+
 
 class TestReplayFailOpen:
     """异常输入的 FAIL-OPEN。"""

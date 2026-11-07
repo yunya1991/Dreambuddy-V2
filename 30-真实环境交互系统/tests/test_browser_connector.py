@@ -1,7 +1,8 @@
 """浏览器连接层单元测试"""
+
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -64,9 +65,7 @@ class TestBrowserConnector:
 
         assert result == mock_browser
         assert connector._browser == mock_browser
-        mock_playwright.chromium.connect_over_cdp.assert_called_once_with(
-            "http://localhost:9222"
-        )
+        mock_playwright.chromium.connect_over_cdp.assert_called_once_with("http://localhost:9222")
 
     def test_connect_cdp_with_custom_url(self, connector):
         mock_playwright = MagicMock()
@@ -75,7 +74,9 @@ class TestBrowserConnector:
 
         connector._playwright = mock_playwright
 
-        result = connector.connect(mode=BrowserMode.CONNECT_CDP, cdp_url="http://custom:9222")
+        result = connector.connect(  # noqa: F841
+            mode=BrowserMode.CONNECT_CDP, cdp_url="http://custom:9222"
+        )  # noqa: F841
         mock_playwright.chromium.connect_over_cdp.assert_called_once_with("http://custom:9222")
 
     def test_connect_unknown_mode(self, connector):

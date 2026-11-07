@@ -10,7 +10,16 @@
   - 易经/三屏等慢接口异步刷新，请求直接返回缓存
   - requests 禁用系统代理，避免本地代理干扰
 """
-import json, os, requests, warnings, subprocess, sys, threading, time, datetime
+
+import json  # noqa: I001
+import os
+import requests
+import warnings
+import subprocess
+import sys
+import threading
+import time
+import datetime
 from pathlib import Path
 from socketserver import ThreadingMixIn
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -25,18 +34,24 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 # 四层闭环自进化 AGI 快照（/api/agi/snapshot、/api/agi/status、
 # /api/nonlinear-path-metrics 共用同一数据源）
 _AGI_SNAPSHOT_FILE = (
-    _REPO_ROOT / "23-四层闭环自进化交易架构" / "dreambuddy_evolution" / "data" / "agi_snapshot.jsonl"
+    _REPO_ROOT
+    / "23-四层闭环自进化交易架构"
+    / "dreambuddy_evolution"
+    / "data"
+    / "agi_snapshot.jsonl"
 )
 
 BASE_DIR = Path(__file__).resolve().parent.parent / "experiments" / "ab-trading"
-LOG_A    = BASE_DIR / "logs" / "agent_a"
-LOG_B    = BASE_DIR / "logs" / "agent_b"
-PORT     = int(os.environ.get("DATA_SERVER_PORT", "8765"))
+LOG_A = BASE_DIR / "logs" / "agent_a"
+LOG_B = BASE_DIR / "logs" / "agent_b"
+PORT = int(os.environ.get("DATA_SERVER_PORT", "8765"))
 
-BCRM_REPO = Path(os.environ.get(
-    "BCRM_REPO",
-    str(Path(__file__).resolve().parent),
-))
+BCRM_REPO = Path(
+    os.environ.get(
+        "BCRM_REPO",
+        str(Path(__file__).resolve().parent),
+    )
+)
 
 sys.path.insert(0, str(BASE_DIR))
 # BCRM_REPO (11-易经推理系统) 加入 sys.path，确保 scripts.* 包可导入
@@ -54,13 +69,15 @@ if _BCRM_PKG_DIR not in sys.path:
     sys.path.insert(0, _BCRM_PKG_DIR)
 try:
     from screen_engine import get_all as get_screen_data
+
     SCREEN_AVAILABLE = True
 except ImportError:
     SCREEN_AVAILABLE = False
 
 # Phase B: ShadowLogger 影子模式开关（从 bcrm2.shadow_logger 导入，默认 False）
 try:
-    from bcrm2.shadow_logger import ShadowLogger, SHADOW_LOGGER_ENABLED
+    from bcrm2.shadow_logger import ShadowLogger, SHADOW_LOGGER_ENABLED  # noqa: I001
+
     _sl_import_ok = True
 except ImportError as _e:
     _sl_import_ok = False
@@ -70,6 +87,7 @@ except ImportError as _e:
 # Phase C: α blend 前瞻参数上线开关（从 bcrm2.parameter_mapper 导入，默认 False）
 try:
     from bcrm2.parameter_mapper import ALPHA_BLEND_ENABLED, ALPHA_BLEND_MAX, DEFAULT_ALPHA_BLEND
+
     _pm_import_ok = True
 except ImportError as _e:
     _pm_import_ok = False
@@ -121,6 +139,7 @@ def _json_default(obj):
     """
     try:
         import numpy as _np
+
         if isinstance(obj, _np.integer):
             return int(obj)
         if isinstance(obj, _np.floating):
@@ -142,7 +161,9 @@ def _load_yijing_baseline():
     累计已实现盈亏 = performance.total_pnl（自策略上线累计）
     浮动盈亏 = 当前持仓未实现盈亏之和
     """
-    baseline_file = Path(__file__).parent / ".workbuddy" / "memory_l4" / "stats" / "account_baseline.json"
+    baseline_file = (
+        Path(__file__).parent / ".workbuddy" / "memory_l4" / "stats" / "account_baseline.json"
+    )
     baseline = None
     if baseline_file.exists():
         try:
@@ -164,6 +185,8 @@ def _load_yijing_baseline():
         except Exception:
             pass
     return baseline
+
+
 _cache_lock = threading.Lock()
 
 
@@ -186,12 +209,12 @@ _LOGS_CACHE: dict = {}  # {dir_str: {"mtime_sig": tuple, "result": list}}
 # ── Hyperliquid API 代理 + 缓存 ──
 # trust_env=True 让 requests 自动使用系统代理（macOS 系统代理 / HTTPS_PROXY）
 _HL_CACHE: dict = {}  # {wallet: {"data": ..., "ts": ...}}
-_HL_CACHE_TTL = 300   # 缓存有效期 5 分钟
+_HL_CACHE_TTL = 300  # 缓存有效期 5 分钟
 
 
 def _make_session():
     s = requests.Session()
-    s.trust_env = True   # 启用系统代理（Clash/mihomo 等）
+    s.trust_env = True  # 启用系统代理（Clash/mihomo 等）
     return s
 
 
@@ -222,8 +245,11 @@ def load_logs(log_dir: Path, limit: int = 30):
 def get_perp_state(user: str) -> dict:
     s = _make_session()
     try:
-        r = s.post("https://api.hyperliquid.xyz/info",
-                   json={"type": "clearinghouseState", "user": user}, timeout=10).json()
+        r = s.post(
+            "https://api.hyperliquid.xyz/info",
+            json={"type": "clearinghouseState", "user": user},
+            timeout=10,
+        ).json()
     except Exception as e:
         # API 不可达时返回缓存数据（如有）
         cached = _HL_CACHE.get(user)
@@ -238,25 +264,30 @@ def get_perp_state(user: str) -> dict:
     for p in r.get("assetPositions", []):
         pos = p.get("position", {})
         if float(pos.get("szi", 0)) != 0:
-            positions.append({
-                "coin":     pos.get("coin"),
-                "size":     float(pos.get("szi", 0)),
-                "entry_px": float(pos.get("entryPx") or 0),
-                "upnl":     float(pos.get("unrealizedPnl") or 0),
-                "leverage": float((pos.get("leverage") or {}).get("value", 1)),
-            })
+            positions.append(
+                {
+                    "coin": pos.get("coin"),
+                    "size": float(pos.get("szi", 0)),
+                    "entry_px": float(pos.get("entryPx") or 0),
+                    "upnl": float(pos.get("unrealizedPnl") or 0),
+                    "leverage": float((pos.get("leverage") or {}).get("value", 1)),
+                }
+            )
     equity = float(m.get("accountValue", 0))
-    avail  = float(m.get("marginAvailable") or 0)
+    avail = float(m.get("marginAvailable") or 0)
     if equity == 0:
         try:
-            r2 = s.post("https://api.hyperliquid.xyz/info",
-                        json={"type": "spotClearinghouseState", "user": user}, timeout=10).json()
+            r2 = s.post(
+                "https://api.hyperliquid.xyz/info",
+                json={"type": "spotClearinghouseState", "user": user},
+                timeout=10,
+            ).json()
             spot_usdc = next(
                 (float(b["total"]) for b in r2.get("balances", []) if b.get("coin") == "USDC"), 0
             )
             if spot_usdc > 0:
                 equity = spot_usdc
-                avail  = spot_usdc
+                avail = spot_usdc
         except Exception:
             pass
     result = {"equity": equity, "avail": avail, "positions": positions}
@@ -271,17 +302,17 @@ def get_hl_state():
     b = get_perp_state(USER_B)
     c = get_perp_state(USER_C)
     return {
-        "perp_equity":    a["equity"],
-        "perp_avail":     a["avail"],
+        "perp_equity": a["equity"],
+        "perp_avail": a["avail"],
         "perp_positions": a["positions"],
-        "b_equity":       b["equity"],
-        "b_avail":        b["avail"],
-        "b_positions":    b["positions"],
-        "c_equity":       c["equity"],
-        "c_avail":        c["avail"],
-        "c_positions":    c["positions"],
-        "spot_usdc":      0,
-        "total_equity":   a["equity"] + b["equity"] + c["equity"],
+        "b_equity": b["equity"],
+        "b_avail": b["avail"],
+        "b_positions": b["positions"],
+        "c_equity": c["equity"],
+        "c_avail": c["avail"],
+        "c_positions": c["positions"],
+        "spot_usdc": 0,
+        "total_equity": a["equity"] + b["equity"] + c["equity"],
     }
 
 
@@ -301,13 +332,13 @@ def _read_yijing_okx_config():
                 k, v = line.split("=", 1)
                 raw[k.strip()] = v.strip()
     return {
-        "api_key":          raw.get("OKX_API_KEY", ""),
-        "secret_key":       raw.get("OKX_SECRET_KEY", ""),
-        "passphrase":       raw.get("OKX_PASSPHRASE", ""),
-        "base_url":         raw.get("OKX_BASE_URL", "https://www.okx.com"),
-        "simulated":        raw.get("OKX_SIMULATED", "false").lower() in ("true", "1", "yes"),
-        "dry_run":          raw.get("OKX_DRY_RUN", "false").lower() in ("true", "1", "yes"),
-        "default_inst_id":  raw.get("OKX_DEFAULT_INST_ID", "BTC-USDT-SWAP"),
+        "api_key": raw.get("OKX_API_KEY", ""),
+        "secret_key": raw.get("OKX_SECRET_KEY", ""),
+        "passphrase": raw.get("OKX_PASSPHRASE", ""),
+        "base_url": raw.get("OKX_BASE_URL", "https://www.okx.com"),
+        "simulated": raw.get("OKX_SIMULATED", "false").lower() in ("true", "1", "yes"),
+        "dry_run": raw.get("OKX_DRY_RUN", "false").lower() in ("true", "1", "yes"),
+        "default_inst_id": raw.get("OKX_DEFAULT_INST_ID", "BTC-USDT-SWAP"),
         "default_usdt_amount": 100,
         "default_leverage": float(raw.get("DEFAULT_LEVERAGE", "5") or 5),
     }
@@ -327,12 +358,19 @@ def get_yijing_okx_state():
         V15_DIR = _REPO_ROOT / "14-V15经典马丁策略"
         sys.path.insert(0, str(V15_DIR / "lib"))
         from okx_client import OKXSimulatedClient
+
         # 直接传 config dict，绕过 _load_config() 读 os.environ
         client = OKXSimulatedClient(config=_read_yijing_okx_config())
         bal = client.get_balance()
         if not bal.get("ok"):
-            return {"total_equity": 0, "perp_avail": 0, "perp_positions": [],
-                    "b_positions": [], "c_positions": [], "error": bal.get("error", "")}
+            return {
+                "total_equity": 0,
+                "perp_avail": 0,
+                "perp_positions": [],
+                "b_positions": [],
+                "c_positions": [],
+                "error": bal.get("error", ""),
+            }
         total_eq = float(bal.get("total_eq", 0) or 0)
         avail = 0.0
         for ccy, asset in (bal.get("assets") or {}).items():
@@ -346,23 +384,31 @@ def get_yijing_okx_state():
                 size = float(p.get("pos", 0) or 0)
                 if abs(size) < 1e-12:
                     continue
-                positions.append({
-                    "coin":     coin,
-                    "size":     size,
-                    "entry_px": float(p.get("avg_px", 0) or 0),
-                    "upnl":     float(p.get("upl", 0) or 0),
-                    "leverage": float(str(p.get("lever", "1")).replace("x", "") or 1),
-                })
+                positions.append(
+                    {
+                        "coin": coin,
+                        "size": size,
+                        "entry_px": float(p.get("avg_px", 0) or 0),
+                        "upnl": float(p.get("upl", 0) or 0),
+                        "leverage": float(str(p.get("lever", "1")).replace("x", "") or 1),
+                    }
+                )
         return {
-            "total_equity":   total_eq,
-            "perp_avail":     avail,
+            "total_equity": total_eq,
+            "perp_avail": avail,
             "perp_positions": positions,
-            "b_positions":    [],
-            "c_positions":    [],
+            "b_positions": [],
+            "c_positions": [],
         }
     except Exception as e:
-        return {"total_equity": 0, "perp_avail": 0, "perp_positions": [],
-                "b_positions": [], "c_positions": [], "error": str(e)}
+        return {
+            "total_equity": 0,
+            "perp_avail": 0,
+            "perp_positions": [],
+            "b_positions": [],
+            "c_positions": [],
+            "error": str(e),
+        }
 
 
 def get_full_state():
@@ -373,10 +419,17 @@ def get_full_state():
     except Exception as e:
         print(f"[state] get_hl_state failed: {e}")
         hl = {
-            "perp_equity": 0, "perp_avail": 0, "perp_positions": [],
-            "b_equity": 0, "b_avail": 0, "b_positions": [],
-            "c_equity": 0, "c_avail": 0, "c_positions": [],
-            "spot_usdc": 0, "total_equity": 0,
+            "perp_equity": 0,
+            "perp_avail": 0,
+            "perp_positions": [],
+            "b_equity": 0,
+            "b_avail": 0,
+            "b_positions": [],
+            "c_equity": 0,
+            "c_avail": 0,
+            "c_positions": [],
+            "spot_usdc": 0,
+            "total_equity": 0,
             "hl_error": str(e),
         }
     try:
@@ -426,10 +479,15 @@ def get_yijing_state():
         # 留足余量（高负载下 yijing-status 耗时可达 160s+，含 BCRM 推理+对比学习）
         result = subprocess.run(
             [sys.executable, "-m", "scripts.memory_l4.ab_bridge", "yijing-status"],
-            capture_output=True, text=True, timeout=300,
+            capture_output=True,
+            text=True,
+            timeout=300,
             cwd=str(BCRM_REPO),
-            env={**os.environ, "NO_PROXY": "localhost,127.0.0.1",
-                 "no_proxy": "localhost,127.0.0.1"},
+            env={
+                **os.environ,
+                "NO_PROXY": "localhost,127.0.0.1",
+                "no_proxy": "localhost,127.0.0.1",
+            },
         )
         if result.returncode == 0:
             # ab_bridge stdout 可能混入日志行，用 raw_decode 提取首个 JSON
@@ -464,11 +522,12 @@ def get_trend_screen_state(symbol: str = "BTC"):
         return {"error": "screen_engine not available"}
     try:
         spot_inst = f"{symbol}-USDT"
-        is_btc = (symbol.upper() == "BTC")
+        is_btc = symbol.upper() == "BTC"
         # screen_engine.compute_full_trading_signal 是模块级函数，
         # 返回 trend_consistency / bayesian_confidence / freqtrade_signals /
         # technical_fundamental_fusion / final_signal 等字段。
         import screen_engine as _se
+
         result = _se.compute_full_trading_signal(spot_inst=spot_inst, is_btc=is_btc)
         if not result or result.get("error"):
             return result or {"error": "compute_full_trading_signal failed"}
@@ -478,8 +537,11 @@ def get_trend_screen_state(symbol: str = "BTC"):
         direction = fs.get("direction", "NEUTRAL")
         confidence = fs.get("confidence", 0)
         if "action" not in fs:
-            fs["action"] = "ENTER_LONG" if direction == "BULL" else \
-                           "ENTER_SHORT" if direction == "BEAR" else "WAIT"
+            fs["action"] = (
+                "ENTER_LONG"
+                if direction == "BULL"
+                else "ENTER_SHORT" if direction == "BEAR" else "WAIT"
+            )
         if "position" not in fs:
             # 置信度→仓位映射（与前端 renderTrendScreen2 显示规则一致）
             if confidence >= 85:
@@ -514,7 +576,7 @@ def get_trend_screen_state(symbol: str = "BTC"):
                 hl_state = get_perp_state(USER_C)
                 account["equity"] = hl_state.get("equity", 0)
                 account["available"] = hl_state.get("avail", 0)
-                for p in (hl_state.get("positions") or []):
+                for p in hl_state.get("positions") or []:
                     if str(p.get("coin", "")).upper() == symbol.upper():
                         size = float(p.get("size", 0) or 0)
                         if abs(size) < 1e-12:
@@ -546,24 +608,31 @@ def get_trend_screen_state(symbol: str = "BTC"):
 # 物理增强：弱趋势(η<0.10)时启用物理置信度调节仓位
 V4_WAVE_BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "12-三屏趋势系统")
 
+
 def get_v4_wave_strategy(symbol: str = "BTC"):
     try:
-        import sys, json, os
+        import sys  # noqa: I001
+        import json
+        import os
+
         sys.path.insert(0, V4_WAVE_BASE_DIR)
 
         symbol_upper = symbol.upper()
-        is_btc = (symbol_upper == "BTC")
+        is_btc = symbol_upper == "BTC"
 
         # 加载本地历史数据（优先使用 730d 文件）
         data_path = os.path.join(V4_WAVE_BASE_DIR, f"data/historical/{symbol_upper}_1D_730d.json")
         if not os.path.exists(data_path):
-            data_path = os.path.join(V4_WAVE_BASE_DIR, f"data/historical/{symbol_upper}_1D_365d.json")
+            data_path = os.path.join(
+                V4_WAVE_BASE_DIR, f"data/historical/{symbol_upper}_1D_365d.json"
+            )
         if not os.path.exists(data_path):
             return {"error": f"未找到 {symbol_upper} 历史数据文件"}
 
         with open(data_path) as f:
             data = json.load(f)
         import pandas as pd
+
         df = pd.DataFrame(data)
         df["timestamp"] = pd.to_datetime(df["ts"], unit="ms")
         df = df.set_index("timestamp")
@@ -577,6 +646,7 @@ def get_v4_wave_strategy(symbol: str = "BTC"):
         # 1) 直接从 OKX ticker 获取实时价格
         try:
             from data_center.compat.market_compat import fetch_ticker
+
             ticker = fetch_ticker(f"{symbol_upper}-USDT")
             if ticker and ticker.get("last"):
                 realtime_price = ticker["last"]
@@ -616,15 +686,23 @@ def get_v4_wave_strategy(symbol: str = "BTC"):
         v4_result = None
         if is_btc:
             from ml.halving_top_exit_strategy import HalvingTopExitStrategy
-            v4_strategy = HalvingTopExitStrategy(symbol=symbol_upper, is_btc=True, btc_prices=daily_df)
+
+            v4_strategy = HalvingTopExitStrategy(
+                symbol=symbol_upper, is_btc=True, btc_prices=daily_df
+            )
             strategy_name = "HalvingTopExitStrategy_v4"
         else:
             from ml.altcoin_trend_strategy import AltcoinTrendStrategy
+
             v4_strategy = AltcoinTrendStrategy(symbol=symbol_upper, btc_prices=btc_daily_df)
             strategy_name = "AltcoinTrendStrategy"
 
         v4_position_series = v4_strategy.generate_signals(daily_df)
-        v4_pos_arr = v4_position_series.values if hasattr(v4_position_series, 'values') else v4_position_series
+        v4_pos_arr = (
+            v4_position_series.values
+            if hasattr(v4_position_series, "values")
+            else v4_position_series
+        )
         v4_current_pos = float(v4_pos_arr[-1]) if len(v4_pos_arr) > 0 else 0.0
 
         if v4_current_pos > 0.01:
@@ -653,6 +731,7 @@ def get_v4_wave_strategy(symbol: str = "BTC"):
         # === 2. 波浪策略（互斥融合）===
         wave_result = None
         from ml.ewave_strategy_adapter import EWaveStrategyAdapter, WaveConfig
+
         wave_adapter = EWaveStrategyAdapter(WaveConfig())
         wave_result = wave_adapter.evaluate(
             daily_df=daily_df,
@@ -665,7 +744,7 @@ def get_v4_wave_strategy(symbol: str = "BTC"):
         # === 3. 物理置信度评估 ===
         physics_result = None
         try:
-            import numpy as np
+            import numpy as np  # noqa: I001
             from ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
             from ml.pitd_kinematics_engineer import KinematicsEngineer
             from ml.pitd_dynamics_engineer import DynamicsEngineer
@@ -678,9 +757,12 @@ def get_v4_wave_strategy(symbol: str = "BTC"):
             current_eta = float(eta_series[-1]) if len(eta_series) > 0 else 0.0
 
             weights = ConfidenceWeights(
-                w_eta=0.211, w_reversal=0.368,
-                w_support=0.211, w_kinetic=0.211,
-                position_lower=0.6, position_scale=1.0,
+                w_eta=0.211,
+                w_reversal=0.368,
+                w_support=0.211,
+                w_kinetic=0.211,
+                position_lower=0.6,
+                position_scale=1.0,
             )
             scorer = PhysicsConfidenceScorer(weights)
             ml_preds = np.full(len(daily_df), 0.5)
@@ -703,19 +785,34 @@ def get_v4_wave_strategy(symbol: str = "BTC"):
                     "support_score": round(float(components["support_score"][-1]), 4),
                     "kinetic_score": round(float(components["kinetic_score"][-1]), 4),
                 },
-                "weights": {"w_eta": 0.211, "w_reversal": 0.368, "w_support": 0.211, "w_kinetic": 0.211},
+                "weights": {
+                    "w_eta": 0.211,
+                    "w_reversal": 0.368,
+                    "w_support": 0.211,
+                    "w_kinetic": 0.211,
+                },
             }
         except Exception as e:
             physics_result = {"enabled": False, "error": str(e)}
 
         # === 4. 最终决策 ===
         final_action = wave_result.get("final_action", v4_action) if wave_result else v4_action
-        final_direction = wave_result.get("final_direction", v4_direction) if wave_result else v4_direction
-        final_position = wave_result.get("total_position_pct", v4_position_pct) if wave_result else v4_position_pct
+        final_direction = (
+            wave_result.get("final_direction", v4_direction) if wave_result else v4_direction
+        )
+        final_position = (
+            wave_result.get("total_position_pct", v4_position_pct)
+            if wave_result
+            else v4_position_pct
+        )
 
         # 物理调节（仅弱趋势）
         adjusted_position = final_position
-        if physics_result.get("enabled") and physics_result.get("weak_trend") and final_action in ("ENTER_LONG", "ENTER_SHORT"):
+        if (
+            physics_result.get("enabled")
+            and physics_result.get("weak_trend")
+            and final_action in ("ENTER_LONG", "ENTER_SHORT")
+        ):
             base_pos_arr = np.array([final_position])
             conf_arr = np.array([physics_result["physics_confidence"]])
             adjusted_arr = scorer.adjust_position(base_pos_arr, conf_arr)
@@ -732,19 +829,22 @@ def get_v4_wave_strategy(symbol: str = "BTC"):
         try:
             sys.path.insert(0, CLASSIC_DIR)
             import ml_trade_service as _ml
+
             # 账户摘要
             try:
                 summary = _ml._aster_fetch_account_summary(owner="trend")
                 if summary and summary.get("ok"):
                     s = summary.get("summary", {}) or {}
-                    account["equity"] = float(s.get("totalWalletBalance", s.get("totalMarginBalance", 0)) or 0)
+                    account["equity"] = float(
+                        s.get("totalWalletBalance", s.get("totalMarginBalance", 0)) or 0
+                    )
                     account["available"] = float(s.get("availableBalance", 0) or 0)
             except Exception:
                 pass
             # 持仓查询：遍历所有持仓，匹配当前 symbol + 收集全部持仓
             try:
                 positions_raw, _ = _ml._aster_fetch_positions(owner="trend")
-                for p in (positions_raw or []):
+                for p in positions_raw or []:
                     coin = str(p.get("coin", "")).upper()
                     amt = float(p.get("position_amt", 0) or p.get("positionAmt", 0) or 0)
                     if abs(amt) < 1e-12:
@@ -755,7 +855,9 @@ def get_v4_wave_strategy(symbol: str = "BTC"):
                         "size": abs(amt),
                         "entry_px": float(p.get("entry_px", 0) or p.get("entryPrice", 0) or 0),
                         "leverage": float(p.get("leverage") or 1),
-                        "upnl": float(p.get("unrealized_pnl_u", 0) or p.get("unRealizedProfit", 0) or 0),
+                        "upnl": float(
+                            p.get("unrealized_pnl_u", 0) or p.get("unRealizedProfit", 0) or 0
+                        ),
                         "mark_px": float(p.get("mark_px", 0) or p.get("markPrice", 0) or 0),
                     }
                     all_positions.append(pos_item)
@@ -780,7 +882,9 @@ def get_v4_wave_strategy(symbol: str = "BTC"):
                 "direction": final_direction,
                 "position_pct": round(final_position, 4),
                 "adjusted_position_pct": round(adjusted_position, 4),
-                "fusion_rule": wave_result.get("fusion_rule", "no_wave") if wave_result else "no_wave",
+                "fusion_rule": (
+                    wave_result.get("fusion_rule", "no_wave") if wave_result else "no_wave"
+                ),
             },
             "account": account,
             "position": position,
@@ -790,6 +894,7 @@ def get_v4_wave_strategy(symbol: str = "BTC"):
         }
     except Exception as e:
         import traceback
+
         return {"error": str(e), "traceback": traceback.format_exc()}
 
 
@@ -828,12 +933,14 @@ def get_data_driven_screens(symbol: str = "BTC"):
         )
     except Exception as e:
         import traceback
+
         return {"error": str(e), "traceback": traceback.format_exc()}
 
 
 def get_executor_state():
     try:
         from screen_executor import get_executor_state
+
         return get_executor_state()
     except Exception as e:
         return {"error": str(e)}
@@ -842,6 +949,7 @@ def get_executor_state():
 def get_orchestrator_state():
     try:
         from screen_orchestrator import get_orchestrator_state
+
         return get_orchestrator_state()
     except Exception as e:
         return {"error": str(e)}
@@ -850,6 +958,7 @@ def get_orchestrator_state():
 def get_reports_state():
     try:
         from report_loader import get_all_reports
+
         return get_all_reports()
     except Exception as e:
         return {"error": str(e)}
@@ -862,7 +971,11 @@ CLASSIC_DIR = str(_REPO_ROOT / "10-经典指标系统")
 # Dream OS 实盘账户 owner（Aster 平台）
 # 注意：必须显式指定，避免被 12-三屏趋势系统的 AsterExecutor 导入时污染全局 ASTER_USER
 DREAMOS_ASTER_OWNER_RAW = os.environ.get("DREAMOS_ASTER_OWNER", "").strip()
-DREAMOS_ASTER_OWNER = DREAMOS_ASTER_OWNER_RAW if DREAMOS_ASTER_OWNER_RAW else "0x93842F1ea62E7E3c71494d9EA69EfC4F2D6e9934"
+DREAMOS_ASTER_OWNER = (
+    DREAMOS_ASTER_OWNER_RAW
+    if DREAMOS_ASTER_OWNER_RAW
+    else "0x93842F1ea62E7E3c71494d9EA69EfC4F2D6e9934"
+)
 
 
 def get_dreamos_state():
@@ -876,15 +989,21 @@ def get_dreamos_state():
         registered = []
         try:
             sys.path.insert(0, ARCH_DIR)
-            from dreamos.nodes import list_available_nodes, register_all
+            from dreamos.nodes import register_all
             from dreamos.registry import get_default_registry
 
             registry = get_default_registry()
             register_all(registry)
             nodes = registry.list_nodes()
-            registered = [{"node_id": n.node_id, "name": getattr(n, "name", ""),
-                           "chain": getattr(n, "chain", ""), "description": getattr(n, "description", "")}
-                          for n in nodes]
+            registered = [
+                {
+                    "node_id": n.node_id,
+                    "name": getattr(n, "name", ""),
+                    "chain": getattr(n, "chain", ""),
+                    "description": getattr(n, "description", ""),
+                }
+                for n in nodes
+            ]
         except Exception:
             pass
 
@@ -893,7 +1012,7 @@ def get_dreamos_state():
         try:
             hl_state = get_perp_state(USER_C)
             positions = {}
-            for p in (hl_state.get("positions") or []):
+            for p in hl_state.get("positions") or []:
                 coin = str(p.get("coin", "")).upper()
                 if not coin:
                     continue
@@ -901,32 +1020,39 @@ def get_dreamos_state():
                 if abs(size) < 1e-12:
                     continue
                 positions[coin] = {
-                    "size":     size,
+                    "size": size,
                     "entry_px": float(p.get("entry_px", 0) or 0),
-                    "upnl":     float(p.get("upnl", 0) or 0),
+                    "upnl": float(p.get("upnl", 0) or 0),
                     "leverage": float(p.get("leverage") or 1),
-                    "mark_px":  0,
-                    "liq_px":   0,
+                    "mark_px": 0,
+                    "liq_px": 0,
                     "notional": abs(size) * float(p.get("entry_px", 0) or 0),
-                    "side":     "long" if size > 0 else "short",
+                    "side": "long" if size > 0 else "short",
                 }
             account = {
-                "ok":        True,
-                "equity":    hl_state.get("equity", 0),
-                "avail":     hl_state.get("avail", 0),
+                "ok": True,
+                "equity": hl_state.get("equity", 0),
+                "avail": hl_state.get("avail", 0),
                 "positions": positions,
-                "mode":      "hyperliquid",
-                "wallet":    USER_C,
+                "mode": "hyperliquid",
+                "wallet": USER_C,
             }
         except Exception as e:
-            account = {"ok": False, "equity": 0, "avail": 0, "positions": {},
-                       "mode": "hyperliquid", "error": str(e)}
+            account = {
+                "ok": False,
+                "equity": 0,
+                "avail": 0,
+                "positions": {},
+                "mode": "hyperliquid",
+                "error": str(e),
+            }
 
         memory = {}
         try:
             sys.path.insert(0, PROJECT_ROOT)
             from experiments.agent_c.agent_c import AgentC
-            agent_c = AgentC(agent_id='b')
+
+            agent_c = AgentC(agent_id="b")
             memory = agent_c.get_memory()
         except Exception:
             pass
@@ -971,7 +1097,7 @@ def get_dreamos_scenarios():
     """
     try:
         sys.path.insert(0, ARCH_DIR)
-        from dreamos.core.memory.orchestration_memory import OrchestrationMemory
+        from dreamos.core.memory.orchestration_memory import OrchestrationMemory  # noqa: I001
         from dreamos.core.memory.execution_feedback import ExecutionFeedbackCollector
 
         memory = OrchestrationMemory()
@@ -980,15 +1106,17 @@ def get_dreamos_scenarios():
         # ── 场景列表 ──
         scenarios_out = []
         for entry in memory.list_scenarios():
-            scenarios_out.append({
-                "scenario_id":  entry.get("scenario_id", ""),
-                "covered":      not entry.get("sparse", True),
-                "inferred":     bool(entry.get("inferred", False)),
-                "confidence":   entry.get("confidence", "low"),
-                "best_pattern": entry.get("best_pattern", ""),
-                "sample_count": int(entry.get("sample_count", 0) or 0),
-                "score":        float(entry.get("score", 0.0) or 0.0),
-            })
+            scenarios_out.append(
+                {
+                    "scenario_id": entry.get("scenario_id", ""),
+                    "covered": not entry.get("sparse", True),
+                    "inferred": bool(entry.get("inferred", False)),
+                    "confidence": entry.get("confidence", "low"),
+                    "best_pattern": entry.get("best_pattern", ""),
+                    "sample_count": int(entry.get("sample_count", 0) or 0),
+                    "score": float(entry.get("score", 0.0) or 0.0),
+                }
+            )
 
         # ── 反馈统计 + 触发进化 ──
         collector = ExecutionFeedbackCollector(memory=memory)
@@ -1001,28 +1129,36 @@ def get_dreamos_scenarios():
                 pass
         for fb in collector.get_all_feedbacks():
             if fb.trigger_evolution:
-                trigger_list.append({
-                    "scenario_id":        fb.scenario_id,
-                    "pattern_used":       fb.pattern_used,
-                    "direction_accuracy": fb.direction_accuracy,
-                    "actual_sharpe":      fb.actual_sharpe,
-                    "expected_sharpe":    fb.expected_sharpe,
-                    "deviation":          fb.deviation,
-                })
+                trigger_list.append(
+                    {
+                        "scenario_id": fb.scenario_id,
+                        "pattern_used": fb.pattern_used,
+                        "direction_accuracy": fb.direction_accuracy,
+                        "actual_sharpe": fb.actual_sharpe,
+                        "expected_sharpe": fb.expected_sharpe,
+                        "deviation": fb.deviation,
+                    }
+                )
 
         stats = memory.get_stats()
         return {
-            "stats":             stats,
-            "scenarios":         scenarios_out,
-            "feedback":          feedback_out,
+            "stats": stats,
+            "scenarios": scenarios_out,
+            "feedback": feedback_out,
             "trigger_evolution": trigger_list,
-            "covered":           stats.get("covered_scenarios", len(scenarios_out)),
-            "total_scenarios":   stats.get("total_scenarios", 36) or 36,
-            "timestamp":         datetime.datetime.now().isoformat(),
+            "covered": stats.get("covered_scenarios", len(scenarios_out)),
+            "total_scenarios": stats.get("total_scenarios", 36) or 36,
+            "timestamp": datetime.datetime.now().isoformat(),
         }
     except Exception as e:
-        return {"error": str(e), "scenarios": [], "feedback": {},
-                "trigger_evolution": [], "covered": 0, "total_scenarios": 36}
+        return {
+            "error": str(e),
+            "scenarios": [],
+            "feedback": {},
+            "trigger_evolution": [],
+            "covered": 0,
+            "total_scenarios": 36,
+        }
 
 
 def get_token_signals():
@@ -1033,7 +1169,7 @@ def get_token_signals():
     """
     try:
         sys.path.insert(0, str(BASE_DIR))
-        from screen_engine import compute_full_trading_signal, CANDIDATE_COINS
+        from screen_engine import compute_full_trading_signal, CANDIDATE_COINS  # noqa: I001
 
         ENTRY_CONFIDENCE_THRESHOLD = 45  # 与 screen_executor.py 入场阈值一致
 
@@ -1060,32 +1196,39 @@ def get_token_signals():
                 )
                 ft4h = ft.get("4h", {}) or {}
                 ft1h = ft.get("1h", {}) or {}
-                signals.append({
-                    "symbol":               full.get("symbol", coin.get("symbol", "")),
-                    "price":                float(full.get("price", 0) or 0),
-                    "direction":            direction,
-                    "confidence":           confidence,
-                    "trend_consistent":     trend_consistent,
-                    "freqtrade_consistent": freqtrade_consistent,
-                    "entry_ready":          entry_ready,
-                    "freqtrade_4h":         ft4h.get("signal", ""),
-                    "freqtrade_4h_conf":    int(ft4h.get("confidence", 0) or 0),
-                    "freqtrade_1h":         ft1h.get("signal", ""),
-                    "freqtrade_1h_conf":    int(ft1h.get("confidence", 0) or 0),
-                })
+                signals.append(
+                    {
+                        "symbol": full.get("symbol", coin.get("symbol", "")),
+                        "price": float(full.get("price", 0) or 0),
+                        "direction": direction,
+                        "confidence": confidence,
+                        "trend_consistent": trend_consistent,
+                        "freqtrade_consistent": freqtrade_consistent,
+                        "entry_ready": entry_ready,
+                        "freqtrade_4h": ft4h.get("signal", ""),
+                        "freqtrade_4h_conf": int(ft4h.get("confidence", 0) or 0),
+                        "freqtrade_1h": ft1h.get("signal", ""),
+                        "freqtrade_1h_conf": int(ft1h.get("confidence", 0) or 0),
+                    }
+                )
             except Exception:
                 continue
 
         return {
-            "bull_count":    sum(1 for s in signals if s["direction"] == "BULL"),
-            "bear_count":    sum(1 for s in signals if s["direction"] == "BEAR"),
+            "bull_count": sum(1 for s in signals if s["direction"] == "BULL"),
+            "bear_count": sum(1 for s in signals if s["direction"] == "BEAR"),
             "neutral_count": sum(1 for s in signals if s["direction"] == "NEUTRAL"),
-            "signals":       signals,
-            "timestamp":     datetime.datetime.now().isoformat(),
+            "signals": signals,
+            "timestamp": datetime.datetime.now().isoformat(),
         }
     except Exception as e:
-        return {"error": str(e), "signals": [],
-                "bull_count": 0, "bear_count": 0, "neutral_count": 0}
+        return {
+            "error": str(e),
+            "signals": [],
+            "bull_count": 0,
+            "bear_count": 0,
+            "neutral_count": 0,
+        }
 
 
 def dreamos_analyze(symbol="BTC"):
@@ -1095,7 +1238,7 @@ def dreamos_analyze(symbol="BTC"):
         sys.path.insert(0, PROJECT_ROOT)
         from experiments.agent_c.agent_c import AgentC
 
-        agent_c = AgentC(agent_id='b')
+        agent_c = AgentC(agent_id="b")
         mkt_data = agent_c.fetch_market_data(symbol)
         if not mkt_data:
             return {"error": f"无法获取 {symbol} 的市场数据"}
@@ -1107,7 +1250,7 @@ def dreamos_analyze(symbol="BTC"):
         history_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         history_file = history_dir / f"{ts}_{symbol}.json"
-        with open(history_file, 'w') as f:
+        with open(history_file, "w") as f:
             json.dump(decision, f, indent=2, default=str)
 
         return decision
@@ -1119,14 +1262,17 @@ def dreamos_analyze(symbol="BTC"):
 
 _dreamos_v2_orch = None
 
+
 def _get_dreamos_v2():
     """获取或初始化 DreamOS V2 编排器单例"""
     global _dreamos_v2_orch
     if _dreamos_v2_orch is None:
         sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "1-ARCHITECTURE"))
         from dreamos.capabilities.trading.orchestrator_v2 import OrchestratorV2
+
         _dreamos_v2_orch = OrchestratorV2(use_hermes=False, seed=42)
     return _dreamos_v2_orch
+
 
 def _fetch_market_data_for_v2(symbol="BTC"):
     """获取 Hyperliquid 实时市场数据并转换为 V2 格式"""
@@ -1134,8 +1280,9 @@ def _fetch_market_data_for_v2(symbol="BTC"):
         AB_DIR = Path(__file__).resolve().parent.parent / "experiments" / "ab-trading"
         sys.path.insert(0, str(AB_DIR))
         from dotenv import load_dotenv
+
         load_dotenv(AB_DIR / "config" / ".env")
-        from execution.aster_spot import HyperliquidClient, _info_with_retry
+        from execution.aster_spot import HyperliquidClient, _info_with_retry  # noqa: I001
         import requests as _req
 
         client = HyperliquidClient("dream_os")
@@ -1162,15 +1309,21 @@ def _fetch_market_data_for_v2(symbol="BTC"):
 
         # 获取 K 线数据计算技术指标（使用 req 包装格式）
         try:
-            klines_resp = _info_with_retry(s, {
-                "type": "candleSnapshot",
-                "req": {
-                    "coin": symbol,
-                    "interval": "4h",
-                    "startTime": int((datetime.datetime.now().timestamp() - 30*4*3600) * 1000),
-                    "endTime": int(datetime.datetime.now().timestamp() * 1000),
+            klines_resp = _info_with_retry(
+                s,
+                {
+                    "type": "candleSnapshot",
+                    "req": {
+                        "coin": symbol,
+                        "interval": "4h",
+                        "startTime": int(
+                            (datetime.datetime.now().timestamp() - 30 * 4 * 3600) * 1000
+                        ),
+                        "endTime": int(datetime.datetime.now().timestamp() * 1000),
+                    },
                 },
-            }, None)
+                None,
+            )
             candles = klines_resp if isinstance(klines_resp, list) else []
         except Exception:
             candles = []
@@ -1225,7 +1378,7 @@ def _fetch_market_data_for_v2(symbol="BTC"):
         if len(closes) >= 5:
             avg = sum(closes[-5:]) / 5
             var = sum((c - avg) ** 2 for c in closes[-5:]) / 5
-            vol = (var ** 0.5) / avg if avg > 0 else 0.3
+            vol = (var**0.5) / avg if avg > 0 else 0.3
         else:
             vol = 0.3
 
@@ -1251,7 +1404,7 @@ def _fetch_market_data_for_v2(symbol="BTC"):
         # 四维评分（基于实时数据 + 24h 统计）
         # 供需评分：基于价格位置、趋势和未平仓合约
         prev_day_px = float(meta_ctx.get("prevDayPx", close_price))
-        open_interest = float(meta_ctx.get("openInterest", 0))
+        open_interest = float(meta_ctx.get("openInterest", 0))  # noqa: F841
         day_base_vlm = float(meta_ctx.get("dayBaseVlm", 0))
         funding = float(meta_ctx.get("funding", 0))
 
@@ -1322,8 +1475,9 @@ def _fetch_market_data_for_v2(symbol="BTC"):
             "pos_entry": pos_entry,
             "pos_upnl": pos_upnl,
         }
-    except Exception as e:
+    except Exception as e:  # noqa: F841
         return None
+
 
 def dreamos_v2_cycle(symbol="BTC"):
     """执行 DreamOS V2 六层闭环完整周期"""
@@ -1342,7 +1496,9 @@ def dreamos_v2_cycle(symbol="BTC"):
                 "volatility": 0.35,
                 "volume_ratio": 1.0,
                 "price_position": 0.50,
-                "ma5": 0.0, "ma10": 0.0, "ma20": 0.0,
+                "ma5": 0.0,
+                "ma10": 0.0,
+                "ma20": 0.0,
                 "momentum_direction": "UP",
                 "close_price": 0.0,
                 "entry_price": 0.0,
@@ -1351,6 +1507,7 @@ def dreamos_v2_cycle(symbol="BTC"):
         return result
     except Exception as e:
         return {"error": str(e)}
+
 
 def dreamos_v2_status():
     """获取 DreamOS V2 编排器状态"""
@@ -1388,19 +1545,21 @@ def get_yijing_positions():
                     coin = d.get("coin", "")
                     if not coin:
                         continue
-                    local_positions.append({
-                        "coin": coin,
-                        "inst_id": d.get("inst_id", ""),
-                        "direction": d.get("direction", ""),
-                        "entry_price": d.get("entry_price", 0),
-                        "entry_time": d.get("entry_time", ""),
-                        "confidence": d.get("confidence", 0),
-                        "hexagram": d.get("hexagram", ""),
-                        "pnl": d.get("pnl", 0),
-                        "pnl_pct": d.get("pnl_pct", 0),
-                        "trade_id": d.get("trade_id", ""),
-                        "source": "local",
-                    })
+                    local_positions.append(
+                        {
+                            "coin": coin,
+                            "inst_id": d.get("inst_id", ""),
+                            "direction": d.get("direction", ""),
+                            "entry_price": d.get("entry_price", 0),
+                            "entry_time": d.get("entry_time", ""),
+                            "confidence": d.get("confidence", 0),
+                            "hexagram": d.get("hexagram", ""),
+                            "pnl": d.get("pnl", 0),
+                            "pnl_pct": d.get("pnl_pct", 0),
+                            "trade_id": d.get("trade_id", ""),
+                            "source": "local",
+                        }
+                    )
             except Exception:
                 pass
 
@@ -1416,22 +1575,24 @@ def get_yijing_positions():
             "avail": okx_state.get("perp_avail", 0),
         }
         # OKX 持仓（perp_positions 即主账户持仓）
-        for p in (okx_state.get("perp_positions") or []):
+        for p in okx_state.get("perp_positions") or []:
             size = float(p.get("size", 0) or 0)
             if abs(size) < 1e-12:
                 continue
-            okx_positions.append({
-                "coin": p.get("coin", ""),
-                "inst_id": f"{p.get('coin', '')}-USDT-SWAP",
-                "direction": "long" if size > 0 else "short",
-                "entry_price": float(p.get("entry_px", 0) or 0),
-                "pos_size": abs(size),
-                "upl": float(p.get("upnl", 0) or 0),
-                "upl_ratio": 0,
-                "mark_px": 0,
-                "leverage": str(p.get("leverage", "")),
-                "source": "okx_live",
-            })
+            okx_positions.append(
+                {
+                    "coin": p.get("coin", ""),
+                    "inst_id": f"{p.get('coin', '')}-USDT-SWAP",
+                    "direction": "long" if size > 0 else "short",
+                    "entry_price": float(p.get("entry_px", 0) or 0),
+                    "pos_size": abs(size),
+                    "upl": float(p.get("upnl", 0) or 0),
+                    "upl_ratio": 0,
+                    "mark_px": 0,
+                    "leverage": str(p.get("leverage", "")),
+                    "source": "okx_live",
+                }
+            )
     except Exception as e:
         okx_positions = [{"error": str(e)}]
 
@@ -1506,7 +1667,9 @@ def get_yijing_account_overview():
     live_ok = bool(okx_balance)
     live_error = ""
     okx_avail = float(okx_balance.get("avail", 0) or 0) if live_ok else None
-    okx_total_eq = float(okx_balance.get("total_eq", okx_balance.get("eq", 0)) or 0) if live_ok else None
+    okx_total_eq = (
+        float(okx_balance.get("total_eq", okx_balance.get("eq", 0)) or 0) if live_ok else None
+    )
 
     if okx_positions and isinstance(okx_positions[0], dict) and "error" in okx_positions[0]:
         live_error = str(okx_positions[0].get("error", ""))
@@ -1537,20 +1700,22 @@ def get_yijing_account_overview():
                 notional = pos_size * px_for_notional if px_for_notional > 0 else 0.0
                 pos_margin = (notional / lever) if (lever > 0 and notional > 0) else 0.0
                 margin_used += pos_margin
-                positions_detail.append({
-                    "coin": p.get("coin", ""),
-                    "inst_id": p.get("inst_id", ""),
-                    "direction": p.get("direction", p.get("pos_side", "")),
-                    "upl": upl,
-                    "upl_ratio": float(p.get("upl_ratio", 0) or 0),
-                    "mark_px": mark_px,
-                    "entry_price": entry_px,
-                    "pos_size": pos_size,
-                    "leverage": lever if lever > 0 else None,
-                    "notional": round(notional, 2) if notional > 0 else None,
-                    "margin": round(pos_margin, 2) if pos_margin > 0 else None,
-                    "source": "okx_live",
-                })
+                positions_detail.append(
+                    {
+                        "coin": p.get("coin", ""),
+                        "inst_id": p.get("inst_id", ""),
+                        "direction": p.get("direction", p.get("pos_side", "")),
+                        "upl": upl,
+                        "upl_ratio": float(p.get("upl_ratio", 0) or 0),
+                        "mark_px": mark_px,
+                        "entry_price": entry_px,
+                        "pos_size": pos_size,
+                        "leverage": lever if lever > 0 else None,
+                        "notional": round(notional, 2) if notional > 0 else None,
+                        "margin": round(pos_margin, 2) if pos_margin > 0 else None,
+                        "source": "okx_live",
+                    }
+                )
         except Exception:
             continue
 
@@ -1561,22 +1726,28 @@ def get_yijing_account_overview():
                 upl = float(p.get("pnl", 0) or 0)
                 unrealized_pnl += upl
                 open_positions_count += 1
-                positions_detail.append({
-                    "coin": p.get("coin", ""),
-                    "inst_id": p.get("inst_id", ""),
-                    "direction": p.get("direction", ""),
-                    "upl": upl,
-                    "upl_ratio": float(p.get("pnl_pct", 0) or 0),
-                    "mark_px": 0,
-                    "entry_price": float(p.get("entry_price", 0) or 0),
-                    "source": "local",
-                })
+                positions_detail.append(
+                    {
+                        "coin": p.get("coin", ""),
+                        "inst_id": p.get("inst_id", ""),
+                        "direction": p.get("direction", ""),
+                        "upl": upl,
+                        "upl_ratio": float(p.get("pnl_pct", 0) or 0),
+                        "mark_px": 0,
+                        "entry_price": float(p.get("entry_price", 0) or 0),
+                        "source": "local",
+                    }
+                )
             except Exception:
                 continue
 
     # ── 盈亏计算（累计口径，基于 OKX 账户总权益）──
     # 当前账户余额 = OKX 账户总权益（实时）
-    current_balance = okx_total_eq if okx_total_eq is not None else (initial_capital + realized_pnl + unrealized_pnl)
+    current_balance = (
+        okx_total_eq
+        if okx_total_eq is not None
+        else (initial_capital + realized_pnl + unrealized_pnl)
+    )
     # 策略盈亏（累计）= 当前账户余额 - 初始资金
     total_pnl = current_balance - initial_capital
     # 涨跌幅（累计）= 策略盈亏 / 初始资金 × 100%
@@ -1698,7 +1869,10 @@ def get_v15_account_overview():
             state_updated_at = v15_state.get("last_poll")
 
             # 首次读取到 state_equity 时写入基准
-            if baseline.get("v15_state_equity_baseline") is None and current_state_equity is not None:
+            if (
+                baseline.get("v15_state_equity_baseline") is None
+                and current_state_equity is not None
+            ):
                 baseline["v15_state_equity_baseline"] = current_state_equity
                 _save_v15_baseline(baseline)
 
@@ -1708,29 +1882,31 @@ def get_v15_account_overview():
                 mark_price = float(p.get("current_price", p.get("mark_px", 0)) or 0)
                 unrealized_pnl_sum += upl
                 open_positions_count += 1
-                positions_detail.append({
-                    "coin": coin,
-                    "symbol": coin,
-                    "inst_id": p.get("inst_id", f"{coin}-USDT-SWAP"),
-                    "direction": p.get("direction", "LONG"),
-                    "upl": upl,
-                    "unrealized_pnl": upl,
-                    "upl_ratio": float(p.get("upl_ratio", 0) or 0),
-                    "mark_px": mark_price,
-                    "mark_price": mark_price,
-                    "current_price": mark_price,
-                    "entry_price": float(p.get("entry_price", 0) or 0),
-                    "sz": float(p.get("sz", 0) or 0),
-                    "lever": p.get("lever", ""),
-                    "source": p.get("source", "v15_state"),
-                    "open_time": p.get("open_time", ""),
-                    "addons": int(p.get("addons", 0) or 0),
-                    "profit_pct": float(p.get("profit_pct", 0) or 0),
-                    "confidence": int(p.get("confidence", 0) or 0),
-                    "take_profit_pct": float(p.get("take_profit_pct", 0) or 0),
-                    "stop_loss_price": p.get("stop_loss_price"),
-                    "stop_loss_type": p.get("stop_loss_type"),
-                })
+                positions_detail.append(
+                    {
+                        "coin": coin,
+                        "symbol": coin,
+                        "inst_id": p.get("inst_id", f"{coin}-USDT-SWAP"),
+                        "direction": p.get("direction", "LONG"),
+                        "upl": upl,
+                        "unrealized_pnl": upl,
+                        "upl_ratio": float(p.get("upl_ratio", 0) or 0),
+                        "mark_px": mark_price,
+                        "mark_price": mark_price,
+                        "current_price": mark_price,
+                        "entry_price": float(p.get("entry_price", 0) or 0),
+                        "sz": float(p.get("sz", 0) or 0),
+                        "lever": p.get("lever", ""),
+                        "source": p.get("source", "v15_state"),
+                        "open_time": p.get("open_time", ""),
+                        "addons": int(p.get("addons", 0) or 0),
+                        "profit_pct": float(p.get("profit_pct", 0) or 0),
+                        "confidence": int(p.get("confidence", 0) or 0),
+                        "take_profit_pct": float(p.get("take_profit_pct", 0) or 0),
+                        "stop_loss_price": p.get("stop_loss_price"),
+                        "stop_loss_type": p.get("stop_loss_type"),
+                    }
+                )
         except Exception:
             pass
 
@@ -1747,6 +1923,7 @@ def get_v15_account_overview():
         V15_DIR = _REPO_ROOT / "14-V15经典马丁策略"
         sys.path.insert(0, str(V15_DIR / "lib"))
         from capital_manager import get_account_balance, get_current_positions
+
         balance = get_account_balance()
         if balance.get("ok"):
             live_ok = True
@@ -1773,24 +1950,26 @@ def get_v15_account_overview():
                         coin = p.get("coin", p.get("symbol", ""))
                         new_upl_sum += upl
                         new_count += 1
-                        new_detail.append({
-                            "coin": coin,
-                            "symbol": coin,
-                            "inst_id": p.get("inst_id", ""),
-                            "direction": p.get("direction", ""),
-                            "upl": upl,
-                            "unrealized_pnl": upl,
-                            "upl_ratio": float(p.get("upl_ratio", 0) or 0),
-                            "mark_px": mark_price,
-                            "mark_price": mark_price,
-                            "current_price": mark_price,
-                            "entry_price": float(p.get("entry_price", 0) or 0),
-                            "sz": sz,
-                            "lever": p.get("lever", ""),
-                            "source": "okx_live",
-                            "open_time": p.get("open_time", ""),
-                            "addons": 0,
-                        })
+                        new_detail.append(
+                            {
+                                "coin": coin,
+                                "symbol": coin,
+                                "inst_id": p.get("inst_id", ""),
+                                "direction": p.get("direction", ""),
+                                "upl": upl,
+                                "unrealized_pnl": upl,
+                                "upl_ratio": float(p.get("upl_ratio", 0) or 0),
+                                "mark_px": mark_price,
+                                "mark_price": mark_price,
+                                "current_price": mark_price,
+                                "entry_price": float(p.get("entry_price", 0) or 0),
+                                "sz": sz,
+                                "lever": p.get("lever", ""),
+                                "source": "okx_live",
+                                "open_time": p.get("open_time", ""),
+                                "addons": 0,
+                            }
+                        )
                     if new_count > 0:
                         positions_detail = new_detail
                         unrealized_pnl_sum = new_upl_sum
@@ -1836,7 +2015,9 @@ def get_v15_account_overview():
     # 基准状态提示
     baseline_note = ""
     if baseline_eq is not None:
-        baseline_note = f"基准日 {baseline.get('baseline_date')} 起 OKX 权益 {round(baseline_eq, 2)}"
+        baseline_note = (
+            f"基准日 {baseline.get('baseline_date')} 起 OKX 权益 {round(baseline_eq, 2)}"
+        )
     elif baseline_state_eq is not None:
         baseline_note = f"基准日 {baseline.get('baseline_date')} 起策略权益 {round(baseline_state_eq, 2)}（本地）"
     else:
@@ -1883,6 +2064,7 @@ def get_l4_status():
     try:
         sys.path.insert(0, str(Path(__file__).parent))
         from scripts.memory_l4.l4_status_api import get_l4_status as _get_l4_status
+
         return _get_l4_status()
     except Exception as e:
         return {"error": str(e)}
@@ -1929,6 +2111,7 @@ def get_event_driven_state() -> dict:
             # 文件不存在不缓存（可能下一秒就有了）
             return result
         import json as _json
+
         state = _json.loads(state_path.read_text(encoding="utf-8"))
         state["available"] = True
         _event_driven_cache = {"data": state, "ts": now}
@@ -1954,17 +2137,17 @@ def get_global_trade_stats():
     try:
         sys.path.insert(0, str(Path(__file__).parent))
         from scripts.memory_l4.case_registry import UnifiedCaseRegistry
-        
+
         registry = UnifiedCaseRegistry()
         cases_dir = registry.cases_dir
-        
+
         stats = {
             "total_cases": 0,
             "systems": {},
             "summary": {},
             "timestamp": datetime.datetime.now().isoformat(),
         }
-        
+
         # 主系统定义（顺序决定前端展示顺序）
         system_names = {
             "yijing_inference": "易经推理",
@@ -2001,7 +2184,7 @@ def get_global_trade_stats():
                 return "unknown"
             s = str(src).strip().lower()
             return _SOURCE_NORMALIZE.get(s, s)
-        
+
         for source, name in system_names.items():
             stats["systems"][source] = {
                 "name": name,
@@ -2015,7 +2198,7 @@ def get_global_trade_stats():
                 "max_lose": 0.0,
                 "cases": [],
             }
-        
+
         all_cases = []
         if cases_dir.exists():
             for f in sorted(cases_dir.glob("*.json")):
@@ -2044,15 +2227,15 @@ def get_global_trade_stats():
                             "max_lose": 0.0,
                             "cases": [],
                         }
-                    
+
                     do = case.get("decision_outcome", {})
                     pnl_pct = do.get("pnl_pct", 0)
-                    is_correct = do.get("is_correct", False)
-                    
+                    is_correct = do.get("is_correct", False)  # noqa: F841
+
                     stats["systems"][source]["total_trades"] += 1
                     stats["systems"][source]["total_pnl"] += pnl_pct
                     stats["systems"][source]["cases"].append(case)
-                    
+
                     if pnl_pct > 0:
                         stats["systems"][source]["win_count"] += 1
                         if pnl_pct > stats["systems"][source]["max_win"]:
@@ -2061,12 +2244,12 @@ def get_global_trade_stats():
                         stats["systems"][source]["lose_count"] += 1
                         if pnl_pct < stats["systems"][source]["max_lose"]:
                             stats["systems"][source]["max_lose"] = pnl_pct
-                    
+
                     all_cases.append(case)
                 except Exception:
                     continue
-        
-        for source, data in stats["systems"].items():
+
+        for source, data in stats["systems"].items():  # noqa: B007
             if data["total_trades"] > 0:
                 data["win_rate"] = data["win_count"] / data["total_trades"]
                 data["avg_pnl"] = data["total_pnl"] / data["total_trades"]
@@ -2076,9 +2259,9 @@ def get_global_trade_stats():
             data["max_win"] = round(data["max_win"], 2)
             data["max_lose"] = round(data["max_lose"], 2)
             data["cases"] = []
-        
+
         stats["total_cases"] = len(all_cases)
-        
+
         overall_total = 0
         overall_win = 0
         overall_pnl = 0.0
@@ -2086,28 +2269,30 @@ def get_global_trade_stats():
             overall_total += data["total_trades"]
             overall_win += data["win_count"]
             overall_pnl += data["total_pnl"]
-        
+
         stats["summary"] = {
             "total_systems": len(stats["systems"]),
             "total_trades": overall_total,
             "win_count": overall_win,
             "win_rate": overall_win / overall_total if overall_total > 0 else 0.0,
-            "win_rate_pct": round((overall_win / overall_total * 100) if overall_total > 0 else 0, 2),
+            "win_rate_pct": round(
+                (overall_win / overall_total * 100) if overall_total > 0 else 0, 2
+            ),
             "total_pnl": round(overall_pnl, 2),
             "avg_pnl": round(overall_pnl / overall_total, 4) if overall_total > 0 else 0.0,
         }
-        
+
         best_system = None
-        best_win_rate = 0
-        best_pnl = float('-inf')
+        best_win_rate = 0  # noqa: F841
+        best_pnl = float("-inf")
         for source, data in stats["systems"].items():
             if data["total_trades"] >= 1:
                 if data["avg_pnl"] > best_pnl:
                     best_pnl = data["avg_pnl"]
                     best_system = source
-        
+
         stats["top_performer"] = best_system
-        
+
         return stats
     except Exception as e:
         return {"error": str(e), "systems": {}, "summary": {}}
@@ -2197,18 +2382,21 @@ def _bg_refresh_screen(interval: int = 30):
         try:
             sys.path.insert(0, str(BASE_DIR))
             from classic_executor import get_executor_state as _get_classic_state
+
             _cache_set("classic_executor", _get_classic_state())
         except Exception:
             pass
         try:
             sys.path.insert(0, str(BASE_DIR))
             from mode_manager import get_current_state
+
             _cache_set("mode_status", get_current_state())
         except Exception:
             pass
         try:
             sys.path.insert(0, str(BASE_DIR))
             from fundamental_bridge import get_fundamental_signals
+
             _cache_set("fundamental_signals_BTC", get_fundamental_signals("BTC"))
         except Exception:
             pass
@@ -2289,19 +2477,24 @@ def get_morph_params(symbol: str = "BTCUSDT"):
     """
     cache_key = f"morph_{symbol}"
     now = time.time()
-    if (_MORPH_CACHE["key"] == cache_key
-            and _MORPH_CACHE["data"] is not None
-            and now - _MORPH_CACHE["ts"] < _MORPH_TTL):
+    if (
+        _MORPH_CACHE["key"] == cache_key
+        and _MORPH_CACHE["data"] is not None
+        and now - _MORPH_CACHE["ts"] < _MORPH_TTL
+    ):
         return _MORPH_CACHE["data"]
 
     try:
-        from bcrm2.run_evolution_pipeline import get_storage, _DEFAULT_IDENTITY_BETAS
+        from bcrm2.run_evolution_pipeline import get_storage, _DEFAULT_IDENTITY_BETAS  # noqa: I001
         from bcrm2.parameter_mapper import ParameterMapper
 
         storage = get_storage()
         snapshot = storage.get_snapshot(symbol)
         if snapshot is None:
-            return {"ok": False, "error": f"symbol={symbol} 无 snapshot，请先运行 run_evolution_pipeline --sqlite-db"}
+            return {
+                "ok": False,
+                "error": f"symbol={symbol} 无 snapshot，请先运行 run_evolution_pipeline --sqlite-db",
+            }
 
         L = float(snapshot.get("level_smooth", 0.0))
         T = float(snapshot.get("trend_smooth", 0.0))
@@ -2310,11 +2503,15 @@ def get_morph_params(symbol: str = "BTCUSDT"):
         pm = ParameterMapper()
         global_params = pm.map_global_parameters(L, T, C)
         _sw_full = pm.map_sector_weights(L, T, C, sector_betas=_DEFAULT_IDENTITY_BETAS)
-        sector_weights = _sw_full.get("weights", _sw_full) if isinstance(_sw_full, dict) else _sw_full
+        sector_weights = (
+            _sw_full.get("weights", _sw_full) if isinstance(_sw_full, dict) else _sw_full
+        )
 
         identity_global = pm.map_global_parameters(0.0, 0.0, 0.0)
         _isw_full = pm.map_sector_weights(0.0, 0.0, 0.0, sector_betas=_DEFAULT_IDENTITY_BETAS)
-        identity_sector = _isw_full.get("weights", _isw_full) if isinstance(_isw_full, dict) else _isw_full
+        identity_sector = (
+            _isw_full.get("weights", _isw_full) if isinstance(_isw_full, dict) else _isw_full
+        )
 
         global_list = [
             {
@@ -2323,7 +2520,9 @@ def get_morph_params(symbol: str = "BTCUSDT"):
                 "hi": round(hi, 6),
                 "center": round((lo + hi) / 2.0, 6),
                 "bandwidth": round(hi - lo, 6),
-                "identity_center": round((identity_global[name][0] + identity_global[name][1]) / 2.0, 6),
+                "identity_center": round(
+                    (identity_global[name][0] + identity_global[name][1]) / 2.0, 6
+                ),
             }
             for name, (lo, hi) in global_params.items()
         ]
@@ -2335,11 +2534,12 @@ def get_morph_params(symbol: str = "BTCUSDT"):
                 if "weights" in sw and isinstance(sw["weights"], dict) and n in sw["weights"]:
                     return float(sw["weights"][n])
             return default
+
         sector_list = [
             {
                 "name": name,
-                "weight": round(_safe_sector(sector_weights, name, 1.0/5.0), 6),
-                "identity_weight": round(_safe_sector(identity_sector, name, 1.0/5.0), 6),
+                "weight": round(_safe_sector(sector_weights, name, 1.0 / 5.0), 6),
+                "identity_weight": round(_safe_sector(identity_sector, name, 1.0 / 5.0), 6),
             }
             for name in ("defi", "ai", "rwa", "meme", "l2")
         ]
@@ -2347,9 +2547,13 @@ def get_morph_params(symbol: str = "BTCUSDT"):
         if isinstance(_sw_full, dict):
             extra = {}
             if "sector_tp_mult" in _sw_full:
-                extra["sector_tp_mult"] = {k: round(float(v),6) for k,v in _sw_full["sector_tp_mult"].items()}
+                extra["sector_tp_mult"] = {
+                    k: round(float(v), 6) for k, v in _sw_full["sector_tp_mult"].items()
+                }
             if "sector_sl_mult" in _sw_full:
-                extra["sector_sl_mult"] = {k: round(float(v),6) for k,v in _sw_full["sector_sl_mult"].items()}
+                extra["sector_sl_mult"] = {
+                    k: round(float(v), 6) for k, v in _sw_full["sector_sl_mult"].items()
+                }
             if extra:
                 for s in sector_list:
                     if "sector_tp_mult" in extra:
@@ -2389,12 +2593,13 @@ def get_morph_params(symbol: str = "BTCUSDT"):
         return data
     except Exception as e:
         import traceback
+
         return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
 
 
 _MORPH_CYCLE_CACHE = {"key": None, "ts": 0, "data": None}
 _MORPH_CYCLE_TTL = 120  # 秒
-_MORPH_METRICS_TTL = 60   # 秒
+_MORPH_METRICS_TTL = 60  # 秒
 _MORPH_METRICS_CACHE = {"key": None, "ts": 0, "data": None}
 _MORPH_PREDICTOR_SINGLETON = None  # MorphCyclePredictor 单例
 
@@ -2405,8 +2610,9 @@ def _get_predictor():
     if _MORPH_PREDICTOR_SINGLETON is not None:
         return _MORPH_PREDICTOR_SINGLETON
     try:
-        from bcrm2.run_evolution_pipeline import get_storage
+        from bcrm2.run_evolution_pipeline import get_storage  # noqa: I001
         from bcrm2.morph_cycle_predictor import MorphCyclePredictor
+
         _MORPH_PREDICTOR_SINGLETON = MorphCyclePredictor(get_storage())
         return _MORPH_PREDICTOR_SINGLETON
     except Exception:
@@ -2432,9 +2638,11 @@ def get_morph_cycle(symbol: str = "BTCUSDT", hist_days: int = 60, forecast_days:
     tag = _get_correction_cache_tag(symbol, predictor)
     cache_key = f"cycle_{symbol}_{hist_days}_{forecast_days}_{tag}"
     now = time.time()
-    if (_MORPH_CYCLE_CACHE["key"] == cache_key
-            and _MORPH_CYCLE_CACHE["data"] is not None
-            and now - _MORPH_CYCLE_CACHE["ts"] < _MORPH_CYCLE_TTL):
+    if (
+        _MORPH_CYCLE_CACHE["key"] == cache_key
+        and _MORPH_CYCLE_CACHE["data"] is not None
+        and now - _MORPH_CYCLE_CACHE["ts"] < _MORPH_CYCLE_TTL
+    ):
         return _MORPH_CYCLE_CACHE["data"]
 
     try:
@@ -2449,6 +2657,7 @@ def get_morph_cycle(symbol: str = "BTCUSDT", hist_days: int = 60, forecast_days:
         return result
     except Exception as e:
         import traceback
+
         return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
 
 
@@ -2456,9 +2665,11 @@ def get_morph_metrics(symbol: str = "BTCUSDT", lookback: int = 30):
     """返回预测修正指标（MAE / RMSE / 分 horizon / 修正状态 / 误差历史序列）。"""
     cache_key = f"metrics_{symbol}_{lookback}"
     now = time.time()
-    if (_MORPH_METRICS_CACHE["key"] == cache_key
-            and _MORPH_METRICS_CACHE["data"] is not None
-            and now - _MORPH_METRICS_CACHE["ts"] < _MORPH_METRICS_TTL):
+    if (
+        _MORPH_METRICS_CACHE["key"] == cache_key
+        and _MORPH_METRICS_CACHE["data"] is not None
+        and now - _MORPH_METRICS_CACHE["ts"] < _MORPH_METRICS_TTL
+    ):
         return _MORPH_METRICS_CACHE["data"]
     try:
         predictor = _get_predictor()
@@ -2470,6 +2681,7 @@ def get_morph_metrics(symbol: str = "BTCUSDT", lookback: int = 30):
         return data
     except Exception as e:
         import traceback
+
         return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
 
 
@@ -2487,6 +2699,7 @@ def trigger_morph_correct(symbol: str = "BTCUSDT", min_samples: int = 3):
         return {"ok": True, "result": result}
     except Exception as e:
         import traceback
+
         return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
 
 
@@ -2494,6 +2707,7 @@ def get_cycle_bounds(symbol: str = "BTCUSDT"):
     """返回大周期对小周期的弹性边界参数（Spec §3bis.7）。"""
     try:
         from bcrm2.morph_cycle_predictor import cycle4y_theory
+
         predictor = _get_predictor()
         if predictor is None:
             return {"ok": False, "error": "无法构造 MorphCyclePredictor"}
@@ -2505,6 +2719,7 @@ def get_cycle_bounds(symbol: str = "BTCUSDT"):
         return {"ok": True, "symbol": symbol, "cycle_4y": cycle_4y, "bounds": bounds}
     except Exception as e:
         import traceback
+
         return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
 
 
@@ -2520,6 +2735,7 @@ def _get_shadow_logger():
         return None
     storage = predictor.storage
     from bcrm2.parameter_mapper import ParameterMapper
+
     mapper = ParameterMapper()
     return ShadowLogger(storage, predictor, mapper)
 
@@ -2541,6 +2757,7 @@ def get_shadow_report(symbol: str = "BTC", days: int = 7):
         return {"ok": True, "report": report}
     except Exception as e:
         import traceback
+
         return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
 
 
@@ -2590,26 +2807,27 @@ def get_strategy_layer_shadow(limit: int = 50):
         if fd_row:
             latest_strategic = {
                 "crypto_usdt": {
-                    "war_state": fd_row[0], "total_score": fd_row[1],
-                    "cap_mode": fd_row[2], "mult_mode": fd_row[3],
-                    "dao_score": fd_row[12], "tian_score": fd_row[13],
-                    "di_score": fd_row[14], "jiang_score": fd_row[15],
-                    "fa_score": fd_row[16]
+                    "war_state": fd_row[0],
+                    "total_score": fd_row[1],
+                    "cap_mode": fd_row[2],
+                    "mult_mode": fd_row[3],
+                    "dao_score": fd_row[12],
+                    "tian_score": fd_row[13],
+                    "di_score": fd_row[14],
+                    "jiang_score": fd_row[15],
+                    "fa_score": fd_row[16],
                 },
-                "us_stock": {
-                    "war_state": fd_row[4], "total_score": fd_row[5]
-                },
-                "precious_metal": {
-                    "war_state": fd_row[6], "total_score": fd_row[7]
-                },
+                "us_stock": {"war_state": fd_row[4], "total_score": fd_row[5]},
+                "precious_metal": {"war_state": fd_row[6], "total_score": fd_row[7]},
                 "direction_state": fd_row[8],
                 "direction_bias": fd_row[9],
                 "three_factor_short_signal": bool(fd_row[10]) if fd_row[10] is not None else None,
-                "btc_regime": fd_row[11]
+                "btc_regime": fd_row[11],
             }
 
         # 最近 N 条记录
-        cur.execute("""
+        cur.execute(
+            """
             SELECT timestamp, symbol,
                    fd_crypto_war_state, fd_crypto_total_score, fd_crypto_cap_mode, fd_crypto_mult_mode,
                    fd_us_stock_war_state, fd_us_stock_total_score,
@@ -2621,25 +2839,40 @@ def get_strategy_layer_shadow(limit: int = 50):
                    enable_inject, alpha_blend
             FROM shadow_param_log
             ORDER BY id DESC LIMIT ?
-        """, (limit,))
+        """,
+            (limit,),
+        )
         records = []
         for r in cur.fetchall():
-            records.append({
-                "timestamp": r[0], "symbol": r[1],
-                "fd_war_state": r[2], "fd_total_score": r[3],
-                "fd_cap_mode": r[4], "fd_mult_mode": r[5],
-                "fd_us_war_state": r[6], "fd_us_total_score": r[7],
-                "fd_pm_war_state": r[8], "fd_pm_total_score": r[9],
-                "direction_state": r[10], "direction_bias": r[11],
-                "three_factor_short_signal": bool(r[12]) if r[12] is not None else None,
-                "btc_regime": r[13],
-                "sal_type": r[14], "sal_regime": r[15],
-                "sal_calib_median": r[16], "sal_calib_min": r[17],
-                "sal_calib_max": r[18], "sal_gate": r[19],
-                "actual_direction": r[20], "actual_confidence": r[21],
-                "actual_position": r[22],
-                "enable_inject": r[23], "alpha_blend": r[24]
-            })
+            records.append(
+                {
+                    "timestamp": r[0],
+                    "symbol": r[1],
+                    "fd_war_state": r[2],
+                    "fd_total_score": r[3],
+                    "fd_cap_mode": r[4],
+                    "fd_mult_mode": r[5],
+                    "fd_us_war_state": r[6],
+                    "fd_us_total_score": r[7],
+                    "fd_pm_war_state": r[8],
+                    "fd_pm_total_score": r[9],
+                    "direction_state": r[10],
+                    "direction_bias": r[11],
+                    "three_factor_short_signal": bool(r[12]) if r[12] is not None else None,
+                    "btc_regime": r[13],
+                    "sal_type": r[14],
+                    "sal_regime": r[15],
+                    "sal_calib_median": r[16],
+                    "sal_calib_min": r[17],
+                    "sal_calib_max": r[18],
+                    "sal_gate": r[19],
+                    "actual_direction": r[20],
+                    "actual_confidence": r[21],
+                    "actual_position": r[22],
+                    "enable_inject": r[23],
+                    "alpha_blend": r[24],
+                }
+            )
 
         # AB 闸门 inject 统计
         cur.execute("""
@@ -2661,13 +2894,14 @@ def get_strategy_layer_shadow(limit: int = 50):
                 "sal_fill_rate": f"{sal_filled/total_records*100:.1f}%" if total_records else "0%",
                 "inject_true": inject_true,
                 "inject_false": inject_false,
-                "inject_ratio": f"{inject_true/total_records*100:.1f}%" if total_records else "0%"
+                "inject_ratio": f"{inject_true/total_records*100:.1f}%" if total_records else "0%",
             },
             "latest_strategic": latest_strategic,
-            "records": records
+            "records": records,
         }
     except Exception as e:
         import traceback
+
         return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
 
 
@@ -2675,7 +2909,9 @@ def get_strategy_layer_shadow(limit: int = 50):
 # 力向量可视化 API（五计庙算 4 子Tab）
 # ================================================================
 
-_FV_JSONL_PATH = Path(__file__).resolve().parent / "scripts" / "runtime" / "force_vector_records.jsonl"
+_FV_JSONL_PATH = (
+    Path(__file__).resolve().parent / "scripts" / "runtime" / "force_vector_records.jsonl"
+)
 
 
 def _read_force_vector_jsonl(path):
@@ -2704,6 +2940,7 @@ def _count_shadow_days(records):
     支持 ts_ms（int 毫秒时间戳）、timestamp、ts、datetime 多种字段名。
     """
     import datetime as _dt
+
     dates = set()
     for r in records:
         ts = r.get("ts_ms") or r.get("timestamp") or r.get("ts") or r.get("datetime")
@@ -2725,6 +2962,7 @@ def _count_shadow_days(records):
 def _generate_demo_timestamps(n=2880):
     """生成 30 天 × 96 点/天 的时间戳列表。"""
     import datetime as _dt
+
     now = _dt.datetime.now()
     start = now - _dt.timedelta(days=30)
     return [(start + _dt.timedelta(minutes=15 * i)).strftime("%Y-%m-%dT%H:%M") for i in range(n)]
@@ -2732,8 +2970,9 @@ def _generate_demo_timestamps(n=2880):
 
 def _generate_demo_data(sub_type, seed):
     """生成稳定的合成数据（seed=当日0点时间戳，同日刷新不跳变）。"""
-    import random as _rng
+    import random as _rng  # noqa: I001
     import math as _math
+
     rng = _rng.Random(seed)
     timestamps = _generate_demo_timestamps()
     n = len(timestamps)
@@ -2741,11 +2980,26 @@ def _generate_demo_data(sub_type, seed):
     if sub_type == "time-series":
         dims = {}
         configs = [
-            ("dao",   "Z-Score + OLS β",   "S1 sentiment_engine",   "force_vector_calculator.py _compute_dao()"),
-            ("tian",  "条件期望+分位数",    "S2 event_ledger",      "force_vector_calculator.py _compute_tian()"),
-            ("di",    "百分位+MA",         "S5 narrative_engine",   "force_vector_calculator.py _compute_di()"),
-            ("jiang", "Sharpe+偏度",       "A6 least_resistance",   "force_vector_calculator.py _compute_jiang()"),
-            ("fa",    "IC滚动+IR",         "A7 signal_engine",      "force_vector_calculator.py _compute_fa()"),
+            (
+                "dao",
+                "Z-Score + OLS β",
+                "S1 sentiment_engine",
+                "force_vector_calculator.py _compute_dao()",
+            ),
+            (
+                "tian",
+                "条件期望+分位数",
+                "S2 event_ledger",
+                "force_vector_calculator.py _compute_tian()",
+            ),
+            ("di", "百分位+MA", "S5 narrative_engine", "force_vector_calculator.py _compute_di()"),
+            (
+                "jiang",
+                "Sharpe+偏度",
+                "A6 least_resistance",
+                "force_vector_calculator.py _compute_jiang()",
+            ),
+            ("fa", "IC滚动+IR", "A7 signal_engine", "force_vector_calculator.py _compute_fa()"),
         ]
         for i, (dim_name, algo, engine, code_ref) in enumerate(configs):
             freq = 0.02 + i * 0.008
@@ -2758,12 +3012,18 @@ def _generate_demo_data(sub_type, seed):
                 smoothed.append(round(prev, 4))
             direction = [round(max(-1, min(1, v)), 4) for v in smoothed]
             magnitude = [round(abs(v), 4) for v in smoothed]
-            confidence = [round(max(0, min(1, 0.5 + 0.3 * v + rng.gauss(0, 0.05))), 4) for v in smoothed]
+            confidence = [
+                round(max(0, min(1, 0.5 + 0.3 * v + rng.gauss(0, 0.05))), 4) for v in smoothed
+            ]
             velocity = [round(rng.gauss(0, 0.02), 4) for _ in range(n)]
             dims[dim_name] = {
-                "direction": direction, "magnitude": magnitude,
-                "confidence": confidence, "velocity": velocity,
-                "algorithm": algo, "source_engine": engine, "code_ref": code_ref,
+                "direction": direction,
+                "magnitude": magnitude,
+                "confidence": confidence,
+                "velocity": velocity,
+                "algorithm": algo,
+                "source_engine": engine,
+                "code_ref": code_ref,
             }
         return {
             "timestamps": timestamps,
@@ -2773,23 +3033,39 @@ def _generate_demo_data(sub_type, seed):
 
     elif sub_type == "contradictions-top8":
         feature_names = [
-            "pn_news_volume", "sent_score", "evt_ledger_count", "narr_engagement",
-            "cbr_expectation", "resistance_3d", "evt_mapping_crr", "contract_pass_rate",
+            "pn_news_volume",
+            "sent_score",
+            "evt_ledger_count",
+            "narr_engagement",
+            "cbr_expectation",
+            "resistance_3d",
+            "evt_mapping_crr",
+            "contract_pass_rate",
         ]
         top8 = []
         for i, name in enumerate(feature_names):
             ic = round(max(0.05, 0.40 - i * 0.04 + rng.gauss(0, 0.02)), 4)
             mi = round(max(0.05, 0.50 - i * 0.05 + rng.gauss(0, 0.03)), 4)
             aw = round(max(0.3, 0.95 - i * 0.07 + rng.gauss(0, 0.02)), 4)
-            top8.append({"rank": i + 1, "name": name, "ic": ic, "mi": mi,
-                         "final_score": round(ic * aw, 4), "adaptive_weight": aw})
+            top8.append(
+                {
+                    "rank": i + 1,
+                    "name": name,
+                    "ic": ic,
+                    "mi": mi,
+                    "final_score": round(ic * aw, 4),
+                    "adaptive_weight": aw,
+                }
+            )
         return {
             "top8_features": top8,
             "dominant_switch_24h": {
                 "timestamps": ["T-24h", "T-18h", "T-12h", "T-6h", "T-0"],
                 "dominant_dim": ["dao", "dao", "tian", "tian", "dao"],
                 "strengths": [0.82, 0.75, 0.68, 0.71, 0.79],
-                "switches": [{"at": "T-12h", "from": "dao", "to": "tian", "type": "dominant_shift"}],
+                "switches": [
+                    {"at": "T-12h", "from": "dao", "to": "tian", "type": "dominant_shift"}
+                ],
             },
             "algorithm": "IC=Spearman(feature[t-1],ret[t]) | MI=互信息熵归一 | fuse=IC×adaptive_weight",
             "code_ref": "feature_correlation_calculator.py compute_ic()/compute_mi_normalized()/fuse_with_beta()",
@@ -2804,18 +3080,34 @@ def _generate_demo_data(sub_type, seed):
             base_price += rng.gauss(0, 200)
             price.append(round(base_price, 2))
         return {
-            "radar": {"labels": ["道", "天", "地", "将", "法"],
-                      "values": [0.82, 0.45, 0.61, 0.38, 0.29],
-                      "dominant": "dao", "dominant_value": 0.82},
-            "pca": {"explained_ratio": [0.42, 0.28, 0.15, 0.10, 0.05],
-                    "sign_alignment": 0.75, "strength_coefficient": 1.3,
-                    "resonance_label": "strong"},
+            "radar": {
+                "labels": ["道", "天", "地", "将", "法"],
+                "values": [0.82, 0.45, 0.61, 0.38, 0.29],
+                "dominant": "dao",
+                "dominant_value": 0.82,
+            },
+            "pca": {
+                "explained_ratio": [0.42, 0.28, 0.15, 0.10, 0.05],
+                "sign_alignment": 0.75,
+                "strength_coefficient": 1.3,
+                "resonance_label": "strong",
+            },
             "force_price_dual": {
                 "timestamps": timestamps[-120:],
-                "delta_direction": delta_dir, "strength": strength, "price": price,
+                "delta_direction": delta_dir,
+                "strength": strength,
+                "price": price,
                 "events": [
-                    {"at": timestamps[len(timestamps) // 2], "type": "resonance_break", "label": "共振破裂"},
-                    {"at": timestamps[len(timestamps) * 3 // 4], "type": "dominant_shift", "label": "维度切换"},
+                    {
+                        "at": timestamps[len(timestamps) // 2],
+                        "type": "resonance_break",
+                        "label": "共振破裂",
+                    },
+                    {
+                        "at": timestamps[len(timestamps) * 3 // 4],
+                        "type": "dominant_shift",
+                        "label": "维度切换",
+                    },
                 ],
             },
             "elasticity_beta": {"beta": 1.2, "label": "放大", "decay_days": 0, "amp_days": 4},
@@ -2828,19 +3120,58 @@ def _generate_demo_data(sub_type, seed):
         for t in range(n):
             v7 = round(base + 0.05 * _math.sin(t * 0.03) + rng.gauss(0, 0.02), 4)
             v30 = round(base + 0.02 * _math.sin(t * 0.01) + rng.gauss(0, 0.01), 4)
-            ma7.append(v7); ma30.append(v30); spread.append(round(v7 - v30, 4))
+            ma7.append(v7)
+            ma30.append(v30)
+            spread.append(round(v7 - v30, 4))
         return {
             "ma_series": {"timestamps": timestamps, "ma7": ma7, "ma30": ma30, "spread": spread},
             "consistency_states": [
-                {"start": timestamps[0], "end": timestamps[n // 5], "state": "resonance", "coef": 1.2},
-                {"start": timestamps[n // 5], "end": timestamps[2 * n // 5], "state": "divergence", "coef": 0.6},
-                {"start": timestamps[2 * n // 5], "end": timestamps[3 * n // 5], "state": "persistent", "coef": 1.0},
-                {"start": timestamps[3 * n // 5], "end": timestamps[4 * n // 5], "state": "turning", "coef": 0.7},
-                {"start": timestamps[4 * n // 5], "end": timestamps[-1], "state": "resonance", "coef": 1.2},
+                {
+                    "start": timestamps[0],
+                    "end": timestamps[n // 5],
+                    "state": "resonance",
+                    "coef": 1.2,
+                },
+                {
+                    "start": timestamps[n // 5],
+                    "end": timestamps[2 * n // 5],
+                    "state": "divergence",
+                    "coef": 0.6,
+                },
+                {
+                    "start": timestamps[2 * n // 5],
+                    "end": timestamps[3 * n // 5],
+                    "state": "persistent",
+                    "coef": 1.0,
+                },
+                {
+                    "start": timestamps[3 * n // 5],
+                    "end": timestamps[4 * n // 5],
+                    "state": "turning",
+                    "coef": 0.7,
+                },
+                {
+                    "start": timestamps[4 * n // 5],
+                    "end": timestamps[-1],
+                    "state": "resonance",
+                    "coef": 1.2,
+                },
             ],
             "signals": [
-                {"at": timestamps[n // 2], "type": "golden_cross", "label": "金叉", "ma7": 0.74, "ma30": 0.71},
-                {"at": timestamps[4 * n // 5], "type": "death_cross", "label": "死叉", "ma7": 0.66, "ma30": 0.69},
+                {
+                    "at": timestamps[n // 2],
+                    "type": "golden_cross",
+                    "label": "金叉",
+                    "ma7": 0.74,
+                    "ma30": 0.71,
+                },
+                {
+                    "at": timestamps[4 * n // 5],
+                    "type": "death_cross",
+                    "label": "死叉",
+                    "ma7": 0.66,
+                    "ma30": 0.69,
+                },
                 {"at": timestamps[3 * n // 5], "type": "top_divergence", "label": "顶背离"},
             ],
             "code_ref": "cycle_comparator.py compare()",
@@ -2849,12 +3180,51 @@ def _generate_demo_data(sub_type, seed):
     elif sub_type == "transform-lamps":
         return {
             "lamps": [
-                {"id": 1, "name": "弹性衰减β", "on": False, "confidence": 0.0, "detail": "β<0.5持续3天"},
-                {"id": 2, "name": "弹性放大β", "on": True, "confidence": 0.67, "detail": "β>2.0持续3天, amp_days=4"},
-                {"id": 3, "name": "维度主导切换", "on": False, "confidence": 0.0, "detail": "dominant_dim未变化", "s4_crr": 0.12, "s4_mr": 0.85},
-                {"id": 4, "name": "共振破裂", "on": False, "confidence": 0.0, "detail": "sign_alignment=0.75, 未破裂"},
-                {"id": 5, "name": "CBR背离", "on": False, "confidence": 0.0, "detail": "E[r|current]与E[r|all]同向"},
-                {"id": 6, "name": "数据质量预警⚠️S3", "on": False, "confidence": 0.0, "detail": "pass_rate=0.92, 阈值0.7", "s3_pass_rate": 0.92},
+                {
+                    "id": 1,
+                    "name": "弹性衰减β",
+                    "on": False,
+                    "confidence": 0.0,
+                    "detail": "β<0.5持续3天",
+                },
+                {
+                    "id": 2,
+                    "name": "弹性放大β",
+                    "on": True,
+                    "confidence": 0.67,
+                    "detail": "β>2.0持续3天, amp_days=4",
+                },
+                {
+                    "id": 3,
+                    "name": "维度主导切换",
+                    "on": False,
+                    "confidence": 0.0,
+                    "detail": "dominant_dim未变化",
+                    "s4_crr": 0.12,
+                    "s4_mr": 0.85,
+                },
+                {
+                    "id": 4,
+                    "name": "共振破裂",
+                    "on": False,
+                    "confidence": 0.0,
+                    "detail": "sign_alignment=0.75, 未破裂",
+                },
+                {
+                    "id": 5,
+                    "name": "CBR背离",
+                    "on": False,
+                    "confidence": 0.0,
+                    "detail": "E[r|current]与E[r|all]同向",
+                },
+                {
+                    "id": 6,
+                    "name": "数据质量预警⚠️S3",
+                    "on": False,
+                    "confidence": 0.0,
+                    "detail": "pass_rate=0.92, 阈值0.7",
+                    "s3_pass_rate": 0.92,
+                },
             ],
             "transforming": True,
             "overall_confidence": 0.17,
@@ -2902,14 +3272,32 @@ def _aggregate_real_data(sub_type, records, asset_class="crypto_usdt"):
     latest_fv = latest_cls.get("force_vectors", {})
     timestamps = [_fmt_ts(_get_ts(r)) for r in records_sorted]
     _configs = [
-        ("dao",   "Z-Score + OLS β",   "S1 sentiment_engine",   "force_vector_calculator.py _compute_dao()"),
-        ("tian",  "条件期望+分位数",    "S2 event_ledger",      "force_vector_calculator.py _compute_tian()"),
-        ("di",    "百分位+MA",         "S5 narrative_engine",   "force_vector_calculator.py _compute_di()"),
-        ("jiang", "Sharpe+偏度",       "A6 least_resistance",   "force_vector_calculator.py _compute_jiang()"),
-        ("fa",    "IC滚动+IR",         "A7 signal_engine",      "force_vector_calculator.py _compute_fa()"),
+        (
+            "dao",
+            "Z-Score + OLS β",
+            "S1 sentiment_engine",
+            "force_vector_calculator.py _compute_dao()",
+        ),
+        (
+            "tian",
+            "条件期望+分位数",
+            "S2 event_ledger",
+            "force_vector_calculator.py _compute_tian()",
+        ),
+        ("di", "百分位+MA", "S5 narrative_engine", "force_vector_calculator.py _compute_di()"),
+        (
+            "jiang",
+            "Sharpe+偏度",
+            "A6 least_resistance",
+            "force_vector_calculator.py _compute_jiang()",
+        ),
+        ("fa", "IC滚动+IR", "A7 signal_engine", "force_vector_calculator.py _compute_fa()"),
     ]
-    _meta = {"data_source": "real_jsonl", "record_count": len(records_sorted),
-             "selected_class": asset_class}
+    _meta = {
+        "data_source": "real_jsonl",
+        "record_count": len(records_sorted),
+        "selected_class": asset_class,
+    }
 
     # ── sub_type: time-series ──
     if sub_type == "time-series":
@@ -2923,12 +3311,17 @@ def _aggregate_real_data(sub_type, records, asset_class="crypto_usdt"):
                 confidence.append(round(float(fv.get("confidence", 0.5)), 4))
                 velocity.append(round(float(fv.get("velocity", 0)), 4))
             dims[dim_name] = {
-                "direction": direction, "magnitude": magnitude,
-                "confidence": confidence, "velocity": velocity,
-                "algorithm": algo, "source_engine": engine, "code_ref": code_ref,
+                "direction": direction,
+                "magnitude": magnitude,
+                "confidence": confidence,
+                "velocity": velocity,
+                "algorithm": algo,
+                "source_engine": engine,
+                "code_ref": code_ref,
             }
         return {
-            "timestamps": timestamps, "dimensions": dims,
+            "timestamps": timestamps,
+            "dimensions": dims,
             "kalman_params": {"F": "[[1,dt],[0,1]]", "Q": "diag(0.001,0.0001)", "R": "σ²_raw"},
             **_meta,
         }
@@ -2942,22 +3335,34 @@ def _aggregate_real_data(sub_type, records, asset_class="crypto_usdt"):
             fc = _get_cls(r).get("feature_correlation")
             if fc:
                 feat_corr = fc
-                fc_src_ts = _fmt_ts(_get_ts(r))
+                fc_src_ts = _fmt_ts(_get_ts(r))  # noqa: F841
                 break
         feat_corr = feat_corr or []
         top8 = []
         for i, fc in enumerate(feat_corr[:8]):
-            top8.append({
-                "rank": fc.get("rank", i + 1),
-                "name": fc.get("feature_name", fc.get("dimension", f"feature_{i}")),
-                "ic": round(float(fc.get("ic_30d", 0)), 4),
-                "mi": round(float(fc.get("mi_30d", 0)), 4),
-                "final_score": round(float(fc.get("combined_score", 0)), 4),
-                "adaptive_weight": round(float(fc.get("final_weight", fc.get("beta_weight", 1.0))), 4),
-            })
+            top8.append(
+                {
+                    "rank": fc.get("rank", i + 1),
+                    "name": fc.get("feature_name", fc.get("dimension", f"feature_{i}")),
+                    "ic": round(float(fc.get("ic_30d", 0)), 4),
+                    "mi": round(float(fc.get("mi_30d", 0)), 4),
+                    "final_score": round(float(fc.get("combined_score", 0)), 4),
+                    "adaptive_weight": round(
+                        float(fc.get("final_weight", fc.get("beta_weight", 1.0))), 4
+                    ),
+                }
+            )
         if not top8:
-            top8 = [{"rank": 1, "name": "awaiting_data", "ic": 0, "mi": 0,
-                     "final_score": 0, "adaptive_weight": 0}]
+            top8 = [
+                {
+                    "rank": 1,
+                    "name": "awaiting_data",
+                    "ic": 0,
+                    "mi": 0,
+                    "final_score": 0,
+                    "adaptive_weight": 0,
+                }
+            ]
         recent = records_sorted[-5:] if len(records_sorted) >= 5 else records_sorted
         dom_dims, strengths = [], []
         for r in recent:
@@ -2967,14 +3372,21 @@ def _aggregate_real_data(sub_type, records, asset_class="crypto_usdt"):
         switches = []
         for i in range(1, len(dom_dims)):
             if dom_dims[i] != dom_dims[i - 1]:
-                switches.append({"at": f"T-{(len(recent) - i) * 6}h",
-                                 "from": dom_dims[i - 1], "to": dom_dims[i],
-                                 "type": "dominant_shift"})
+                switches.append(
+                    {
+                        "at": f"T-{(len(recent) - i) * 6}h",
+                        "from": dom_dims[i - 1],
+                        "to": dom_dims[i],
+                        "type": "dominant_shift",
+                    }
+                )
         return {
             "top8_features": top8,
             "dominant_switch_24h": {
                 "timestamps": [f"T-{(len(recent) - 1 - i) * 6}h" for i in range(len(recent))],
-                "dominant_dim": dom_dims, "strengths": strengths, "switches": switches,
+                "dominant_dim": dom_dims,
+                "strengths": strengths,
+                "switches": switches,
             },
             "algorithm": "IC=Spearman(feature[t-1],ret[t]) | MI=互信息熵归一 | fuse=IC×adaptive_weight",
             "code_ref": "feature_correlation_calculator.py compute_ic()/compute_mi_normalized()/fuse_with_beta()",
@@ -3003,19 +3415,24 @@ def _aggregate_real_data(sub_type, records, asset_class="crypto_usdt"):
         beta_ratio = float(eb.get("beta_ratio", 1.0))
         sign_align = float(pca.get("sign_alignment", 1.0))
         return {
-            "radar": {"labels": radar_labels, "values": radar_values,
-                      "dominant": dominant,
-                      "dominant_value": radar_values[dominant_idx] if radar_values else 0},
+            "radar": {
+                "labels": radar_labels,
+                "values": radar_values,
+                "dominant": dominant,
+                "dominant_value": radar_values[dominant_idx] if radar_values else 0,
+            },
             "pca": {
                 "explained_ratio": [round(float(pca.get("explained_ratio", 0.5)), 4)],
                 "sign_alignment": round(sign_align, 4),
                 "strength_coefficient": round(float(pca.get("strength_coefficient", 0.5)), 4),
-                "resonance_label": ("strong" if sign_align > 0.7
-                                     else "weak" if sign_align < 0.3 else "moderate"),
+                "resonance_label": (
+                    "strong" if sign_align > 0.7 else "weak" if sign_align < 0.3 else "moderate"
+                ),
             },
             "force_price_dual": {
                 "timestamps": [_fmt_ts(_get_ts(r)) for r in recent],
-                "delta_direction": delta_dir, "strength": strength,
+                "delta_direction": delta_dir,
+                "strength": strength,
                 "price": [],  # 价格不在 JSONL 中，留空
                 "events": [],
             },
@@ -3042,20 +3459,40 @@ def _aggregate_real_data(sub_type, records, asset_class="crypto_usdt"):
         states = []
         for r in records_sorted:
             cc = _get_cls(r).get("cycle_comparison", {})
-            states.append({"state": cc.get("consistency_state", "observation"),
-                           "coef": round(float(cc.get("adjustment_coefficient", 1.0)), 4)})
+            states.append(
+                {
+                    "state": cc.get("consistency_state", "observation"),
+                    "coef": round(float(cc.get("adjustment_coefficient", 1.0)), 4),
+                }
+            )
         signals = []
         for i in range(1, len(spread)):
             if spread[i - 1] < 0 and spread[i] >= 0:
-                signals.append({"at": timestamps[i], "type": "golden_cross",
-                                "label": "金叉", "ma7": ma7[i], "ma30": ma30[i]})
+                signals.append(
+                    {
+                        "at": timestamps[i],
+                        "type": "golden_cross",
+                        "label": "金叉",
+                        "ma7": ma7[i],
+                        "ma30": ma30[i],
+                    }
+                )
             elif spread[i - 1] >= 0 and spread[i] < 0:
-                signals.append({"at": timestamps[i], "type": "death_cross",
-                                "label": "死叉", "ma7": ma7[i], "ma30": ma30[i]})
+                signals.append(
+                    {
+                        "at": timestamps[i],
+                        "type": "death_cross",
+                        "label": "死叉",
+                        "ma7": ma7[i],
+                        "ma30": ma30[i],
+                    }
+                )
         return {
             "ma_series": {"timestamps": timestamps, "ma7": ma7, "ma30": ma30, "spread": spread},
-            "consistency_states": states, "signals": signals,
-            "code_ref": "cycle_comparator.py compare()", **_meta,
+            "consistency_states": states,
+            "signals": signals,
+            "code_ref": "cycle_comparator.py compare()",
+            **_meta,
         }
 
     # ── sub_type: transform-lamps ──
@@ -3074,28 +3511,65 @@ def _aggregate_real_data(sub_type, records, asset_class="crypto_usdt"):
         data_ok = latest_cls.get("data_ok", True)
         return {
             "lamps": [
-                {"id": 1, "name": "弹性衰减β", "on": bool(eb.get("decay_signal", False)),
-                 "confidence": round(float(eb.get("beta_ratio", 1.0)), 4) if eb.get("decay_signal") else 0.0,
-                 "detail": f"β_ratio={float(eb.get('beta_ratio', 1.0)):.4f}"},
-                {"id": 2, "name": "弹性放大β", "on": bool(eb.get("amplification_signal", False)),
-                 "confidence": round(float(eb.get("beta_ratio", 1.0)), 4) if eb.get("amplification_signal") else 0.0,
-                 "detail": f"amp_days={int(eb.get('amplification_days', 0))}"},
-                {"id": 3, "name": "维度主导切换", "on": dom_changed,
-                 "confidence": 0.8 if dom_changed else 0.0,
-                 "detail": "dominant_dim变化" if dom_changed else "dominant_dim未变化"},
-                {"id": 4, "name": "共振破裂", "on": sign_align < 0.3,
-                 "confidence": round(1 - sign_align, 4) if sign_align < 0.3 else 0.0,
-                 "detail": f"sign_alignment={sign_align:.4f}"},
-                {"id": 5, "name": "CBR背离", "on": bool(ra.get("cbr_divergence_detected", False)),
-                 "confidence": round(float(ra.get("adjustment_ratio", 1.0)), 4) if ra.get("cbr_divergence_detected") else 0.0,
-                 "detail": f"E[r|cur]={float(ra.get('e_r_current', 0)):.6f} vs E[r|all]={float(ra.get('e_r_all', 0)):.6f}"},
-                {"id": 6, "name": "数据质量预警⚠️S3", "on": not data_ok,
-                 "confidence": 0.9 if not data_ok else 0.0,
-                 "detail": f"data_ok={data_ok}"},
+                {
+                    "id": 1,
+                    "name": "弹性衰减β",
+                    "on": bool(eb.get("decay_signal", False)),
+                    "confidence": (
+                        round(float(eb.get("beta_ratio", 1.0)), 4)
+                        if eb.get("decay_signal")
+                        else 0.0
+                    ),
+                    "detail": f"β_ratio={float(eb.get('beta_ratio', 1.0)):.4f}",
+                },
+                {
+                    "id": 2,
+                    "name": "弹性放大β",
+                    "on": bool(eb.get("amplification_signal", False)),
+                    "confidence": (
+                        round(float(eb.get("beta_ratio", 1.0)), 4)
+                        if eb.get("amplification_signal")
+                        else 0.0
+                    ),
+                    "detail": f"amp_days={int(eb.get('amplification_days', 0))}",
+                },
+                {
+                    "id": 3,
+                    "name": "维度主导切换",
+                    "on": dom_changed,
+                    "confidence": 0.8 if dom_changed else 0.0,
+                    "detail": "dominant_dim变化" if dom_changed else "dominant_dim未变化",
+                },
+                {
+                    "id": 4,
+                    "name": "共振破裂",
+                    "on": sign_align < 0.3,
+                    "confidence": round(1 - sign_align, 4) if sign_align < 0.3 else 0.0,
+                    "detail": f"sign_alignment={sign_align:.4f}",
+                },
+                {
+                    "id": 5,
+                    "name": "CBR背离",
+                    "on": bool(ra.get("cbr_divergence_detected", False)),
+                    "confidence": (
+                        round(float(ra.get("adjustment_ratio", 1.0)), 4)
+                        if ra.get("cbr_divergence_detected")
+                        else 0.0
+                    ),
+                    "detail": f"E[r|cur]={float(ra.get('e_r_current', 0)):.6f} vs E[r|all]={float(ra.get('e_r_all', 0)):.6f}",
+                },
+                {
+                    "id": 6,
+                    "name": "数据质量预警⚠️S3",
+                    "on": not data_ok,
+                    "confidence": 0.9 if not data_ok else 0.0,
+                    "detail": f"data_ok={data_ok}",
+                },
             ],
             "transforming": bool(ct.get("transforming", False)),
             "overall_confidence": round(float(ct.get("confidence", 0)), 4),
-            "code_ref": "contradiction_transform_detector.py detect()", **_meta,
+            "code_ref": "contradiction_transform_detector.py detect()",
+            **_meta,
         }
 
     return {"error": f"unknown sub_type: {sub_type}"}
@@ -3126,8 +3600,14 @@ def get_force_vector_data(sub_type):
         return data
     except Exception as e:
         import traceback
-        return {"ok": False, "error": str(e), "traceback": traceback.format_exc(),
-                "is_demo": True, "shadow_days": 0}
+
+        return {
+            "ok": False,
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+            "is_demo": True,
+            "shadow_days": 0,
+        }
 
 
 # ================================================================
@@ -3143,12 +3623,15 @@ def _get_rollout_manager():
     if _rollout_manager is not None:
         return _rollout_manager
     try:
-        from bcrm2.scripts.phase_c_rollout_manager import RolloutManager
+        from bcrm2.scripts.phase_c_rollout_manager import RolloutManager  # noqa: I001
         import os
-        state_path = Path(os.environ.get(
-            "V15_AI_ROLLOUT_STATE_PATH",
-            "data/alpha_rollout_state.json",
-        ))
+
+        state_path = Path(
+            os.environ.get(
+                "V15_AI_ROLLOUT_STATE_PATH",
+                "data/alpha_rollout_state.json",
+            )
+        )
         _rollout_manager = RolloutManager(state_path=state_path)
         return _rollout_manager
     except Exception:
@@ -3183,6 +3666,7 @@ def promote_alpha() -> dict:
         return {"ok": True, "new_alpha": new_alpha, "status": mgr.get_status()}
     except Exception as e:
         import traceback
+
         return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
 
 
@@ -3199,6 +3683,7 @@ def rollback_alpha() -> dict:
         return {"ok": True, "new_alpha": new_alpha, "status": mgr.get_status()}
     except Exception as e:
         import traceback
+
         return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
 
 
@@ -3211,17 +3696,21 @@ def _get_fma_rollout_mgr():
     if _FMA_ROLLOUT_MGR_CACHE["mgr"] is not None:
         return _FMA_ROLLOUT_MGR_CACHE["mgr"]
     try:
-        from bcrm2.scripts.phase_c_rollout_manager import RolloutManager
+        from bcrm2.scripts.phase_c_rollout_manager import RolloutManager  # noqa: I001
         import os
-        state_path = Path(os.environ.get(
-            "PHASE_C_ROLLOUT_STATE",
-            "data/phase_c_rollout_state.json",
-        ))
+
+        state_path = Path(
+            os.environ.get(
+                "PHASE_C_ROLLOUT_STATE",
+                "data/phase_c_rollout_state.json",
+            )
+        )
         mgr = RolloutManager(state_path=state_path)
         _FMA_ROLLOUT_MGR_CACHE["mgr"] = mgr
         return mgr
     except Exception as e:
         import traceback
+
         _FMA_ROLLOUT_MGR_CACHE["_err"] = f"{e} | {traceback.format_exc(limit=1)}"
         return None
 
@@ -3240,9 +3729,13 @@ def fma_set(enabled: bool, reason: str = "API手动切换") -> dict:
     prev = bool(getattr(mgr, "fma_enabled", False))
     changed = mgr.set_fma_enabled(bool(enabled), reason=reason)
     mgr.save()
-    return {"ok": True, "changed": bool(changed),
-            "prev_enabled": prev, "new_enabled": bool(mgr.fma_enabled),
-            "status": mgr.get_status()}
+    return {
+        "ok": True,
+        "changed": bool(changed),
+        "prev_enabled": prev,
+        "new_enabled": bool(mgr.fma_enabled),
+        "status": mgr.get_status(),
+    }
 
 
 def fma_eval_now(days: int = 7) -> dict:
@@ -3254,27 +3747,52 @@ def fma_eval_now(days: int = 7) -> dict:
     all_records: list = []
     try:
         from bcrm2.run_evolution_pipeline import get_storage
+
         storage = get_storage()
-        for sym in ["BTC", "SOL", "XAU", "XAG", "NVDA", "GOOGL", "AMZN",
-                    "MU", "SNDK", "SPCX", "OKB", "HYPE", "PUMP", "UNI", "SKHYNIX", "ETH",
-                    # — BDSM 2026-09 扩展：权威池 7 币审计 AAVE / CRCL（shadow 7 天）—
-                    "AAVE", "CRCL"]:
+        for sym in [
+            "BTC",
+            "SOL",
+            "XAU",
+            "XAG",
+            "NVDA",
+            "GOOGL",
+            "AMZN",
+            "MU",
+            "SNDK",
+            "SPCX",
+            "OKB",
+            "HYPE",
+            "PUMP",
+            "UNI",
+            "SKHYNIX",
+            "ETH",
+            # — BDSM 2026-09 扩展：权威池 7 币审计 AAVE / CRCL（shadow 7 天）—
+            "AAVE",
+            "CRCL",
+        ]:
             try:
                 all_records.extend(storage.get_shadow_log(sym, days=days))
             except Exception:
                 continue
     except Exception as _e:
         import traceback
-        return {"ok": False, "error": f"shadow log 加载失败: {_e}", "traceback": traceback.format_exc()}
+
+        return {
+            "ok": False,
+            "error": f"shadow log 加载失败: {_e}",
+            "traceback": traceback.format_exc(),
+        }
     prev = bool(mgr.fma_enabled)
     result = mgr.evaluate_fma_toggle(all_records)
     mgr.save()
-    return {"ok": True,
-            "prev_enabled": prev,
-            "new_enabled": bool(mgr.fma_enabled),
-            "records_pulled": len(all_records),
-            "evaluation": result,
-            "status": mgr.get_status()}
+    return {
+        "ok": True,
+        "prev_enabled": prev,
+        "new_enabled": bool(mgr.fma_enabled),
+        "records_pulled": len(all_records),
+        "evaluation": result,
+        "status": mgr.get_status(),
+    }
 
 
 # ── T6：Enable Inject 开关持久化 ────────────────────────────────
@@ -3286,10 +3804,13 @@ def _inject_state_path() -> Path:
     global _INJECT_STATE_PATH
     if _INJECT_STATE_PATH is None:
         import os
-        _INJECT_STATE_PATH = Path(os.environ.get(
-            "V15_AI_INJECT_STATE_PATH",
-            "data/enable_inject_state.json",
-        ))
+
+        _INJECT_STATE_PATH = Path(
+            os.environ.get(
+                "V15_AI_INJECT_STATE_PATH",
+                "data/enable_inject_state.json",
+            )
+        )
     return _INJECT_STATE_PATH
 
 
@@ -3309,8 +3830,12 @@ def _load_inject_state() -> bool:
             try:
                 fp.parent.mkdir(parents=True, exist_ok=True)
                 with open(fp, "w", encoding="utf-8") as f:
-                    json.dump({"enabled": False, "created_at": time.time()}, f,
-                              ensure_ascii=False, indent=2)
+                    json.dump(
+                        {"enabled": False, "created_at": time.time()},
+                        f,
+                        ensure_ascii=False,
+                        indent=2,
+                    )
             except Exception:
                 pass
     except Exception:
@@ -3325,10 +3850,15 @@ def _save_inject_state(enabled: bool) -> None:
     try:
         fp.parent.mkdir(parents=True, exist_ok=True)
         with open(fp, "w", encoding="utf-8") as f:
-            json.dump({
-                "enabled": bool(enabled),
-                "updated_at": time.time(),
-            }, f, ensure_ascii=False, indent=2)
+            json.dump(
+                {
+                    "enabled": bool(enabled),
+                    "updated_at": time.time(),
+                },
+                f,
+                ensure_ascii=False,
+                indent=2,
+            )
     except Exception:
         pass
 
@@ -3354,6 +3884,7 @@ def set_enable_inject(enabled: bool) -> dict:
         }
     except Exception as e:
         import traceback
+
         return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
 
 
@@ -3369,12 +3900,16 @@ def set_enable_inject(enabled: bool) -> dict:
 #   3. 比动态基线更好：若当前已是 AI 版，新候选必须 ≥ 旧版得分 × 1.05（5% 改善门槛）
 #   通过则 allow_promotion=True；否则 False，附带原因列表。
 
+
 def _shadow_logs_window(days: int) -> list:
     """从 evolution.db 中读取 shadow_param_log 表最近 N 天记录。"""
     try:
         sys.path.insert(0, str(BASE_DIR / "scripts" / "memory_l4"))
         from bcrm2.run_evolution_pipeline import get_storage
-        storage = get_storage()  # 使用统一 _DEFAULT_DB_PATH（scripts/artifacts/evolution_btc/evolution.db）
+
+        storage = (
+            get_storage()
+        )  # 使用统一 _DEFAULT_DB_PATH（scripts/artifacts/evolution_btc/evolution.db）
         try:
             records = storage.get_shadow_log(None, days)  # None=all symbols
         except TypeError:
@@ -3390,9 +3925,9 @@ def _agg_scores(records: list) -> dict:
     if not records:
         return {"n": 0}
     # 提取三值字段
-    pos_diffs_vs_static: list = []   # ai_pos / baseline_pos - 1
+    pos_diffs_vs_static: list = []  # ai_pos / baseline_pos - 1
     pos_diffs_vs_dynamic: list = []  # ai_pos / effective_pos - 1
-    thr_consistency: list = []       # 阈值与 L 方向一致
+    thr_consistency: list = []  # 阈值与 L 方向一致
     tp_inside_ratio: list = []
     sl_inside_ratio: list = []
     for r in records:
@@ -3407,8 +3942,10 @@ def _agg_scores(records: list) -> dict:
             except (TypeError, ZeroDivisionError):
                 pass
         # tp/sl 范围约束检查 (0.5×~2×)
-        for k_v, k_b, buf in [("ai_tp_mult", "baseline_tp_mult", tp_inside_ratio),
-                              ("ai_sl_mult", "baseline_sl_mult", sl_inside_ratio)]:
+        for k_v, k_b, buf in [
+            ("ai_tp_mult", "baseline_tp_mult", tp_inside_ratio),
+            ("ai_sl_mult", "baseline_sl_mult", sl_inside_ratio),
+        ]:
             v = r.get(k_v)
             b = r.get(k_b) or r.get(f"reactive_{k_b.split('_',1)[1]}")
             if v is None or b is None:
@@ -3432,8 +3969,7 @@ def _agg_scores(records: list) -> dict:
                     # 容差带内：阈值几乎未调整，视为一致
                     thr_consistency.append(1.0)
                 else:
-                    ok = ((fL >= 0 and a_thr <= b_thr)
-                          or (fL < 0 and a_thr >= b_thr))
+                    ok = (fL >= 0 and a_thr <= b_thr) or (fL < 0 and a_thr >= b_thr)
                     thr_consistency.append(1.0 if ok else 0.0)
             except (TypeError, ValueError):
                 pass
@@ -3456,9 +3992,10 @@ def _agg_scores(records: list) -> dict:
     }
 
 
-def evaluate_version_promotion(records: list,
-                               min_samples: int = 30,
-                               ) -> dict:
+def evaluate_version_promotion(
+    records: list,
+    min_samples: int = 30,
+) -> dict:
     """判断当前候选版本（ai_injected 计算）是否满足晋升条件。
 
     Returns:
@@ -3490,15 +4027,11 @@ def evaluate_version_promotion(records: list,
     pos_abs = scores.get("ai_vs_static_pos_bias_absmean")
     if pos_abs is None or pos_abs > 0.35:  # 整体仓位偏差 ≤ 35%
         sb_pass = False
-        reasons.append(
-            f"静态基线不通过：全局仓位 |偏差|={pos_abs} > 0.35（阈值 ±35%）"
-        )
+        reasons.append(f"静态基线不通过：全局仓位 |偏差|={pos_abs} > 0.35（阈值 ±35%）")
     thr_cons = scores.get("threshold_direction_consistency") or 0.0
     if thr_cons < 0.60:
         sb_pass = False
-        reasons.append(
-            f"静态基线不通过：阈值与方向一致性={thr_cons:.2%} < 60%"
-        )
+        reasons.append(f"静态基线不通过：阈值与方向一致性={thr_cons:.2%} < 60%")
     tp_ok = scores.get("tp_inside_05x_2x_ratio") or 0.0
     sl_ok = scores.get("sl_inside_05x_2x_ratio") or 0.0
     if min(tp_ok, sl_ok) < 0.90:
@@ -3580,10 +4113,14 @@ def get_bdsm_snapshot() -> dict:
     返回值包含完整 snapshot 结构（含 §6 sector_valuation 字段）。
     """
     import glob
-    snapshot_dir = os.path.normpath(os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        ".workbuddy", "bdsm",
-    ))
+
+    snapshot_dir = os.path.normpath(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            ".workbuddy",
+            "bdsm",
+        )
+    )
     today_str = datetime.date.today().strftime("%Y%m%d")
     today_file = os.path.join(snapshot_dir, f"bdsm_snapshot_{today_str}.json")
     if os.path.exists(today_file):
@@ -3599,6 +4136,7 @@ def get_bdsm_snapshot() -> dict:
         # FAIL-OPEN：返回中性快照结构
         try:
             from scripts.memory_l4.force_vector.bdsm_snapshot_writer import neutral_snapshot
+
             return neutral_snapshot("no_bdsm_snapshot_available")
         except Exception:
             return {"status": "error", "note": "bdsm snapshot 未生成"}
@@ -3686,6 +4224,7 @@ class Handler(BaseHTTPRequestHandler):
                     self._json(data)
                 except Exception as e:
                     import traceback
+
                     self._json({"error": str(e), "traceback": traceback.format_exc()})
 
         # ── 数据驱动三屏分析（Screen1 战略层 + 多维基本面） ─────────────────
@@ -3740,26 +4279,28 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 self._json(get_event_driven_state())
             except Exception as e:
-                self._json({
-                    "mode": "shadow",
-                    "available": False,
-                    "reason": f"endpoint_fail: {e}",
-                    "signal": {"signal": "neutral", "reason": "endpoint_error"},
-                    "updated_at": None,
-                })
+                self._json(
+                    {
+                        "mode": "shadow",
+                        "available": False,
+                        "reason": f"endpoint_fail: {e}",
+                        "signal": {"signal": "neutral", "reason": "endpoint_error"},
+                        "updated_at": None,
+                    }
+                )
 
         # ── V15-CT 马丁策略 API ────────────────────────────────────────
         elif path == "/api/v15-ct/account-overview":
             try:
                 self._json(get_v15_account_overview())
             except Exception as e:
-                self._json({"error": str(e), "strategy": "v15_martin",
-                             "initial_capital": 150.0})
+                self._json({"error": str(e), "strategy": "v15_martin", "initial_capital": 150.0})
 
         elif path == "/api/v15-ct/decision":
             try:
                 sys.path.insert(0, str(BASE_DIR))
                 from screen_executor import _v15_real_decision
+
                 coin = self._get_query_param("coin") or "BTC"
                 screen1 = {"spot_inst": f"{coin}-USDT"}
                 decision = _v15_real_decision(screen1, {})
@@ -3771,7 +4312,11 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(BASE_DIR))
                 from screen_executor import _v15_real_decision
-                coins_param = self._get_query_param("coins") or "BTC,ETH,SOL,ARB,OP,UNI,HYPE,OKB,PUMP,AAVE,CRCL"
+
+                coins_param = (
+                    self._get_query_param("coins")
+                    or "BTC,ETH,SOL,ARB,OP,UNI,HYPE,OKB,PUMP,AAVE,CRCL"
+                )
                 coins = [c.strip() for c in coins_param.split(",") if c.strip()]
                 decisions = []
                 for coin in coins:
@@ -3781,7 +4326,14 @@ class Handler(BaseHTTPRequestHandler):
                         d["symbol"] = coin
                         decisions.append(d)
                     except Exception:
-                        decisions.append({"symbol": coin, "action": "WAIT", "confidence": 0, "reasons": ["获取失败"]})
+                        decisions.append(
+                            {
+                                "symbol": coin,
+                                "action": "WAIT",
+                                "confidence": 0,
+                                "reasons": ["获取失败"],
+                            }
+                        )
                 self._json({"decisions": decisions})
             except Exception as e:
                 self._json({"error": str(e)})
@@ -3789,7 +4341,8 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/v15-ct/backtest":
             try:
                 sys.path.insert(0, str(BASE_DIR))
-                from v15_backtest import run_backtest, fetch_klines
+                from v15_backtest import run_backtest, fetch_klines  # noqa: I001
+
                 coin = self._get_query_param("coin") or "BTC"
                 klines = fetch_klines(coin, "4h", 1500)
                 result = run_backtest(coin=coin, klines=klines)
@@ -3826,49 +4379,53 @@ class Handler(BaseHTTPRequestHandler):
                             sz = float(p.get("sz", 0) or 0)
                             mark_price = float(p.get("current_price", p.get("mark_px", 0)) or 0)
                             upl = float(p.get("unrealized_pnl", 0) or 0)
-                            positions.append({
-                                # 原始字段
-                                "coin": coin,
-                                "symbol": coin,  # ← 前端用 pos.symbol
-                                "inst_id": p.get("inst_id", f"{coin}-USDT-SWAP"),
-                                "direction": p.get("direction", "LONG"),
-                                "entry_price": entry_price,
-                                "sz": sz,
-                                "open_time": p.get("open_time", ""),
-                                "per_coin_budget": float(p.get("per_coin_budget", 0) or 0),
-                                "addons": int(p.get("addons", 0) or 0),
-                                "current_price": mark_price,
-                                "mark_price": mark_price,  # ← 前端用 pos.mark_price
-                                "mark_px": mark_price,
-                                "unrealized_pnl": upl,
-                                "upl": upl,  # ← 前端用 pos.upl
-                                "upl_ratio": float(p.get("upl_ratio", 0) or 0),
-                                "profit_pct": float(p.get("profit_pct", 0) or 0),
-                                "confidence": int(p.get("confidence", 0) or 0),
-                                "take_profit_pct": float(p.get("take_profit_pct", 0) or 0),
-                                "stop_loss_price": p.get("stop_loss_price"),
-                                "stop_loss_type": p.get("stop_loss_type"),
-                                "lever": p.get("lever", ""),
-                                "source": "v15_state",
-                            })
+                            positions.append(
+                                {
+                                    # 原始字段
+                                    "coin": coin,
+                                    "symbol": coin,  # ← 前端用 pos.symbol
+                                    "inst_id": p.get("inst_id", f"{coin}-USDT-SWAP"),
+                                    "direction": p.get("direction", "LONG"),
+                                    "entry_price": entry_price,
+                                    "sz": sz,
+                                    "open_time": p.get("open_time", ""),
+                                    "per_coin_budget": float(p.get("per_coin_budget", 0) or 0),
+                                    "addons": int(p.get("addons", 0) or 0),
+                                    "current_price": mark_price,
+                                    "mark_price": mark_price,  # ← 前端用 pos.mark_price
+                                    "mark_px": mark_price,
+                                    "unrealized_pnl": upl,
+                                    "upl": upl,  # ← 前端用 pos.upl
+                                    "upl_ratio": float(p.get("upl_ratio", 0) or 0),
+                                    "profit_pct": float(p.get("profit_pct", 0) or 0),
+                                    "confidence": int(p.get("confidence", 0) or 0),
+                                    "take_profit_pct": float(p.get("take_profit_pct", 0) or 0),
+                                    "stop_loss_price": p.get("stop_loss_price"),
+                                    "stop_loss_type": p.get("stop_loss_type"),
+                                    "lever": p.get("lever", ""),
+                                    "source": "v15_state",
+                                }
+                            )
                         coins_monitored = list(raw_positions.keys())
                     except Exception:
                         pass
 
-                self._json({
-                    "strategy_mode": "v15_martin",
-                    "auto_execute": True,
-                    "positions": positions,
-                    "v15_ct_positions": positions,
-                    "total_trades": total_trades,
-                    "total_wins": total_wins,
-                    "win_rate": win_rate,
-                    "coins_monitored": coins_monitored,
-                    "capital": {"equity": total_equity},
-                    "consecutive_losses": consecutive_losses,
-                    "risk_level": "MEDIUM",
-                    "state_updated_at": state_updated_at,
-                })
+                self._json(
+                    {
+                        "strategy_mode": "v15_martin",
+                        "auto_execute": True,
+                        "positions": positions,
+                        "v15_ct_positions": positions,
+                        "total_trades": total_trades,
+                        "total_wins": total_wins,
+                        "win_rate": win_rate,
+                        "coins_monitored": coins_monitored,
+                        "capital": {"equity": total_equity},
+                        "consecutive_losses": consecutive_losses,
+                        "risk_level": "MEDIUM",
+                        "state_updated_at": state_updated_at,
+                    }
+                )
             except Exception as e:
                 self._json({"error": str(e)})
 
@@ -3877,6 +4434,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(BASE_DIR))
                 from capital_manager import calculate_capital_allocation
+
                 allocation = calculate_capital_allocation()
                 self._json(allocation)
             except Exception as e:
@@ -3886,6 +4444,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(BASE_DIR))
                 from capital_manager import get_account_balance
+
                 balance = get_account_balance()
                 self._json(balance)
             except Exception as e:
@@ -3895,6 +4454,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(BASE_DIR))
                 from capital_manager import get_current_positions
+
                 positions = get_current_positions()
                 self._json(positions)
             except Exception as e:
@@ -3904,6 +4464,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(BASE_DIR))
                 from capital_manager import get_signal_trigger_status
+
                 status = get_signal_trigger_status()
                 self._json(status)
             except Exception as e:
@@ -3928,6 +4489,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, ARCH_DIR)
                 from dreamos.nodes import list_available_nodes
+
                 nodes = list_available_nodes()
                 self._json(nodes)
             except Exception as e:
@@ -3952,15 +4514,22 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(cached["data"])
             else:
                 # 首次请求时缓存尚未就绪，同步返回（前端有 60s 超时）
-                self._json({"error": "token_signals loading, please retry in a moment",
-                            "signals": [], "bull_count": 0,
-                            "bear_count": 0, "neutral_count": 0})
+                self._json(
+                    {
+                        "error": "token_signals loading, please retry in a moment",
+                        "signals": [],
+                        "bull_count": 0,
+                        "bear_count": 0,
+                        "neutral_count": 0,
+                    }
+                )
 
         elif path == "/api/screen-trigger":
             try:
                 from screen_executor import check_and_execute
+
                 result = check_and_execute()
-                _cache_set("screen_executor", get_executor_state())
+                _cache_set("screen_executor", get_executor_state())  # noqa: F823
                 self._json(result)
             except Exception as e:
                 self._json({"error": str(e)})
@@ -3968,6 +4537,7 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/screen-orchestrator/trigger":
             try:
                 from screen_orchestrator import main
+
                 main()
                 _cache_set("screen_orchestrator", get_orchestrator_state())
                 self._json({"ok": True, "state": _cache_get("screen_orchestrator")["data"]})
@@ -3983,6 +4553,7 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     sys.path.insert(0, str(BASE_DIR))
                     from mode_manager import get_current_state
+
                     state = get_current_state()
                     _cache_set("mode_status", state)
                     self._json(state)
@@ -3994,6 +4565,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(BASE_DIR))
                 from mode_manager import get_mode_history
+
                 limit = int(self._get_query_param("limit") or "20")
                 history = get_mode_history(limit)
                 self._json({"history": history, "count": len(history)})
@@ -4005,6 +4577,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(BASE_DIR))
                 from mode_manager import get_ai_directive
+
                 directive = get_ai_directive()
                 self._json(directive)
             except Exception as e:
@@ -4020,6 +4593,7 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     sys.path.insert(0, str(BASE_DIR))
                     from fundamental_bridge import get_fundamental_signals
+
                     data = get_fundamental_signals(symbol)
                     _cache_set(f"fundamental_signals_{symbol}", data)
                     self._json(data)
@@ -4035,6 +4609,7 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     sys.path.insert(0, str(BASE_DIR))
                     from classic_executor import get_executor_state
+
                     state = get_executor_state()
                     _cache_set("classic_executor", state)
                     self._json(state)
@@ -4046,6 +4621,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(BASE_DIR))
                 from classic_executor import generate_signals
+
                 symbol = self._get_query_param("symbol") or "BTC"
                 signals = generate_signals(symbol)
                 self._json(signals)
@@ -4061,8 +4637,14 @@ class Handler(BaseHTTPRequestHandler):
                 # 无缓存时返回降级数据，后台异步刷新避免遍历 16 万案例文件阻塞请求
                 if not cached:
                     threading.Thread(target=_refresh_global_trade_stats_async, daemon=True).start()
-                    self._json({"loading": True, "message": "交易统计加载中，请稍后刷新",
-                                "systems": {}, "summary": {}})
+                    self._json(
+                        {
+                            "loading": True,
+                            "message": "交易统计加载中，请稍后刷新",
+                            "systems": {},
+                            "summary": {},
+                        }
+                    )
                 else:
                     # 缓存过期但仍有旧数据，先返回旧数据再后台刷新
                     threading.Thread(target=_refresh_global_trade_stats_async, daemon=True).start()
@@ -4192,19 +4774,22 @@ class Handler(BaseHTTPRequestHandler):
 
         # ── API: 健康检查（bcrm2 import 状态 + 基线模式核对）─────────
         elif path == "/api/baseline/health":
-            self._json({
-                "ok": True,
-                "shadow_logger_imported": _sl_import_ok,
-                "shadow_logger_enabled": bool(SHADOW_LOGGER_ENABLED),
-                "param_mapper_imported": _pm_import_ok,
-                "alpha_blend_enabled": bool(ALPHA_BLEND_ENABLED),
-                "alpha_blend_max": float(ALPHA_BLEND_MAX),
-                "default_alpha_blend": float(DEFAULT_ALPHA_BLEND),
-                "baseline_equivalent": (
-                    # alpha=0 且 enable_inject=false 时字节等价基线
-                    float(DEFAULT_ALPHA_BLEND) == 0.0
-                ),
-            })
+            self._json(
+                {
+                    "ok": True,
+                    "shadow_logger_imported": _sl_import_ok,
+                    "shadow_logger_enabled": bool(SHADOW_LOGGER_ENABLED),
+                    "param_mapper_imported": _pm_import_ok,
+                    "alpha_blend_enabled": bool(ALPHA_BLEND_ENABLED),
+                    "alpha_blend_max": float(ALPHA_BLEND_MAX),
+                    "default_alpha_blend": float(DEFAULT_ALPHA_BLEND),
+                    "baseline_equivalent": (
+                        # alpha=0 且 enable_inject=false 时字节等价基线
+                        float(DEFAULT_ALPHA_BLEND)
+                        == 0.0
+                    ),
+                }
+            )
 
         # ── API: T6 Enable Inject 融合层开关状态查询 ─────────────────
         elif path == "/api/inject/status":
@@ -4221,8 +4806,9 @@ class Handler(BaseHTTPRequestHandler):
         # ── API: 数据中心监控（源健康/采集趋势/最新样本/质量告警）────────
         elif path.startswith("/api/data-center/"):
             try:
-                from data_center.storage.sink_sqlite import SqliteSink
+                from data_center.storage.sink_sqlite import SqliteSink  # noqa: I001
                 import sqlite3 as _sq3_mod
+
                 _sink = SqliteSink(_DC_DB_PATH)
                 _sub = path.rsplit("/", 1)[-1]
                 if _sub == "health":
@@ -4246,13 +4832,18 @@ class Handler(BaseHTTPRequestHandler):
                                 "last_ts": info["last_ts"] or "",
                                 "last_duration_ms": None,
                                 "last_records": None,
-                                "total": 0, "ok_count": 0, "error_count": 0,
+                                "total": 0,
+                                "ok_count": 0,
+                                "error_count": 0,
                                 "total_records": info["cnt"],
                                 "via": "records_bypass",
                             }
                     except Exception as _he:
-                        base["_records_bypass_error"] = {"last_status": "error",
-                                                          "last_ts": "", "note": str(_he)}
+                        base["_records_bypass_error"] = {
+                            "last_status": "error",
+                            "last_ts": "",
+                            "note": str(_he),
+                        }
                     self._json({"ok": True, "health": base})
                 elif _sub == "summary":
                     base_raw = _sink.summary()
@@ -4268,19 +4859,25 @@ class Handler(BaseHTTPRequestHandler):
                             k = (src, cat)
                             if k in base_raw:
                                 base_raw[k]["total_records"] = max(
-                                    base_raw[k].get("total_records") or 0, cnt)
+                                    base_raw[k].get("total_records") or 0, cnt
+                                )
                             else:
                                 base_raw[k] = {
-                                    "total": 0, "ok_count": 0, "error_count": 0,
+                                    "total": 0,
+                                    "ok_count": 0,
+                                    "error_count": 0,
                                     "avg_duration_ms": 0,
                                     "total_records": cnt,
                                     "last_ts_records": last_ts,
                                     "via": "records_bypass",
                                 }
                     except Exception as _se:
-                        base_raw[("_records_bypass_error_", "")] = {"total": 0, "ok_count": 0,
-                                                                      "error_count": 1,
-                                                                      "note": str(_se)}
+                        base_raw[("_records_bypass_error_", "")] = {
+                            "total": 0,
+                            "ok_count": 0,
+                            "error_count": 1,
+                            "note": str(_se),
+                        }
                     _data = {f"{k[0]}/{k[1]}": v for k, v in base_raw.items()}
                     self._json({"ok": True, "summary": _data})
                 elif _sub == "records":
@@ -4288,10 +4885,17 @@ class Handler(BaseHTTPRequestHandler):
                     _source = self._get_query_param("source") or None
                     _category = self._get_query_param("category") or None
                     _recs = _sink.query_records(limit=_limit, source=_source, category=_category)
-                    _data = [{"source": r.source, "category": r.category,
-                              "sub_category": r.sub_category, "timestamp": r.timestamp,
-                              "metrics": r.metrics, "events": r.events}
-                             for r in _recs]
+                    _data = [
+                        {
+                            "source": r.source,
+                            "category": r.category,
+                            "sub_category": r.sub_category,
+                            "timestamp": r.timestamp,
+                            "metrics": r.metrics,
+                            "events": r.events,
+                        }
+                        for r in _recs
+                    ]
                     self._json({"ok": True, "records": _data, "count": len(_data)})
                 elif _sub == "blockbeats":
                     # 专属律动 latest batch：脉动/信号/卡片/Top10 结构化聚合给前端面板
@@ -4308,11 +4912,15 @@ class Handler(BaseHTTPRequestHandler):
                             batch = conn.execute(
                                 "SELECT source, category, sub_category, timestamp, metrics, events "
                                 "FROM records WHERE source='theblockbeats_dataview' AND timestamp=?",
-                                (latest_ts,)
+                                (latest_ts,),
                             ).fetchall()
                         conn.close()
                         import json as _j
-                        pulse = None; signals = []; cards = []; top10 = []
+
+                        pulse = None
+                        signals = []
+                        cards = []
+                        top10 = []
                         for r in batch:
                             src, cat, sub, ts, metrics_json, events_json = r
                             try:
@@ -4328,22 +4936,26 @@ class Handler(BaseHTTPRequestHandler):
                                 cards.append(item)
                             elif sub == "top10_inflow_di":
                                 top10.append(item)
+
                         # Top10 inflow 按 rank 升序排
                         def _rank(r):
                             try:
                                 return int(r["metrics"].get("rank", 9999) or 9999)
                             except Exception:
                                 return 9999
+
                         top10.sort(key=_rank)
-                        self._json({
-                            "ok": True,
-                            "batch_ts": latest_ts,
-                            "batch_count": len(batch),
-                            "pulse": pulse,
-                            "signals": signals,
-                            "cards": cards,
-                            "top10_inflow": top10,
-                        })
+                        self._json(
+                            {
+                                "ok": True,
+                                "batch_ts": latest_ts,
+                                "batch_count": len(batch),
+                                "pulse": pulse,
+                                "signals": signals,
+                                "cards": cards,
+                                "top10_inflow": top10,
+                            }
+                        )
                     except Exception as e:
                         self._json({"ok": False, "error": f"{type(e).__name__}: {e}"})
                 elif _sub == "panewslab":
@@ -4360,6 +4972,7 @@ class Handler(BaseHTTPRequestHandler):
                         latest_ts = max((r[1] for r in batch), default=None) if batch else None
                         conn.close()
                         import json as _j
+
                         sections = {}
                         for sub, ts, metrics_json in batch:
                             try:
@@ -4367,12 +4980,14 @@ class Handler(BaseHTTPRequestHandler):
                             except Exception:
                                 m = {}
                             sections[sub] = {"timestamp": ts, "metrics": m}
-                        self._json({
-                            "ok": True,
-                            "batch_ts": latest_ts,
-                            "batch_count": len(batch),
-                            "sections": sections,
-                        })
+                        self._json(
+                            {
+                                "ok": True,
+                                "batch_ts": latest_ts,
+                                "batch_count": len(batch),
+                                "sections": sections,
+                            }
+                        )
                     except Exception as e:
                         self._json({"ok": False, "error": f"{type(e).__name__}: {e}"})
                 elif _sub == "quality":
@@ -4405,7 +5020,10 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/evolution-overview":
             try:
                 import importlib.util as _ilu
-                _acc_path = str(Path(__file__).resolve().parent / "scripts" / "evolution_data_accessor.py")
+
+                _acc_path = str(
+                    Path(__file__).resolve().parent / "scripts" / "evolution_data_accessor.py"
+                )
                 _spec = _ilu.spec_from_file_location("evolution_data_accessor", _acc_path)
                 _mod = _ilu.module_from_spec(_spec)
                 _spec.loader.exec_module(_mod)
@@ -4419,12 +5037,17 @@ class Handler(BaseHTTPRequestHandler):
                 range_days = None if range_str == "all" else int(range_str.replace("d", ""))
                 self._json(_acc.get_evolution_overview(range_days=range_days))
             except Exception as e:
-                self._json({"error": str(e), "fallback": True, "evolution": None, "main_pool": None})
+                self._json(
+                    {"error": str(e), "fallback": True, "evolution": None, "main_pool": None}
+                )
 
         elif path == "/api/evolution-timeline":
             try:
                 import importlib.util as _ilu
-                _acc_path = str(Path(__file__).resolve().parent / "scripts" / "evolution_data_accessor.py")
+
+                _acc_path = str(
+                    Path(__file__).resolve().parent / "scripts" / "evolution_data_accessor.py"
+                )
                 _spec = _ilu.spec_from_file_location("evolution_data_accessor", _acc_path)
                 _mod = _ilu.module_from_spec(_spec)
                 _spec.loader.exec_module(_mod)
@@ -4438,12 +5061,24 @@ class Handler(BaseHTTPRequestHandler):
                 range_days = None if range_str == "all" else int(range_str.replace("d", ""))
                 self._json(_acc.get_evolution_timeline(range_days=range_days))
             except Exception as e:
-                self._json({"error": str(e), "fallback": True, "dates": [], "cumulative": {"evolution": [], "main_pool": []}, "daily": {"evolution": [], "main_pool": []}, "trade_points": {"evolution": [], "main_pool": []}})
+                self._json(
+                    {
+                        "error": str(e),
+                        "fallback": True,
+                        "dates": [],
+                        "cumulative": {"evolution": [], "main_pool": []},
+                        "daily": {"evolution": [], "main_pool": []},
+                        "trade_points": {"evolution": [], "main_pool": []},
+                    }
+                )
 
         elif path == "/api/evolution-evidence":
             try:
                 import importlib.util as _ilu
-                _acc_path = str(Path(__file__).resolve().parent / "scripts" / "evolution_data_accessor.py")
+
+                _acc_path = str(
+                    Path(__file__).resolve().parent / "scripts" / "evolution_data_accessor.py"
+                )
                 _spec = _ilu.spec_from_file_location("evolution_data_accessor", _acc_path)
                 _mod = _ilu.module_from_spec(_spec)
                 _spec.loader.exec_module(_mod)
@@ -4462,7 +5097,10 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/evolution-detail":
             try:
                 import importlib.util as _ilu
-                _acc_path = str(Path(__file__).resolve().parent / "scripts" / "evolution_data_accessor.py")
+
+                _acc_path = str(
+                    Path(__file__).resolve().parent / "scripts" / "evolution_data_accessor.py"
+                )
                 _spec = _ilu.spec_from_file_location("evolution_data_accessor", _acc_path)
                 _mod = _ilu.module_from_spec(_spec)
                 _spec.loader.exec_module(_mod)
@@ -4485,7 +5123,10 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/evolution-ftc":
             try:
                 import importlib.util as _ilu
-                _acc_path = str(Path(__file__).resolve().parent / "scripts" / "evolution_data_accessor.py")
+
+                _acc_path = str(
+                    Path(__file__).resolve().parent / "scripts" / "evolution_data_accessor.py"
+                )
                 _spec = _ilu.spec_from_file_location("evolution_data_accessor", _acc_path)
                 _mod = _ilu.module_from_spec(_spec)
                 _spec.loader.exec_module(_mod)
@@ -4546,14 +5187,22 @@ class Handler(BaseHTTPRequestHandler):
                     for rec in records:
                         sym = rec.get("symbol", "?")
                         latest_by_symbol[sym] = rec
-                    sde_backends = [r.get("neural_sde_backend") for r in latest_by_symbol.values() if r.get("neural_sde_backend")]
-                    self._json({
-                        "ok": True,
-                        "symbols": list(latest_by_symbol.keys()),
-                        "latest": list(latest_by_symbol.values()),
-                        "neural_sde_backend": sde_backends[0] if sde_backends else "unavailable",
-                        "total_snapshots": len(records),
-                    })
+                    sde_backends = [
+                        r.get("neural_sde_backend")
+                        for r in latest_by_symbol.values()
+                        if r.get("neural_sde_backend")
+                    ]
+                    self._json(
+                        {
+                            "ok": True,
+                            "symbols": list(latest_by_symbol.keys()),
+                            "latest": list(latest_by_symbol.values()),
+                            "neural_sde_backend": (
+                                sde_backends[0] if sde_backends else "unavailable"
+                            ),
+                            "total_snapshots": len(records),
+                        }
+                    )
             except Exception as e:
                 self._json({"ok": False, "error": str(e)})
 
@@ -4602,9 +5251,23 @@ class Handler(BaseHTTPRequestHandler):
 
                 # 组2：风控安全（G-05 4判据）
                 # 从 polling_trader 的 fuses 状态文件读取
-                g05_state = {"status": "idle", "judges": {"dim_jumped": False, "mech_active": False, "no_bounce": False, "no_intervener": False}}
+                g05_state = {
+                    "status": "idle",
+                    "judges": {
+                        "dim_jumped": False,
+                        "mech_active": False,
+                        "no_bounce": False,
+                        "no_intervener": False,
+                    },
+                }
                 try:
-                    fuses_file = _REPO_ROOT / "11-易经推理系统" / "scripts" / "artifacts" / "fuses_state.json"
+                    fuses_file = (
+                        _REPO_ROOT
+                        / "11-易经推理系统"
+                        / "scripts"
+                        / "artifacts"
+                        / "fuses_state.json"
+                    )
                     if fuses_file.exists():
                         fuses_data = json.loads(fuses_file.read_text(encoding="utf-8"))
                         g05_state = fuses_data.get("g05", g05_state)
@@ -4629,59 +5292,75 @@ class Handler(BaseHTTPRequestHandler):
                     else:
                         elastic = {}
 
-                self._json({
-                    "ok": True,
-                    "symbol": latest.get("symbol", "?"),
-                    "ts": latest.get("ts", "?"),
-                    "metrics": {
-                        # 组1：非线性路径核心
-                        "group1": {
-                            "title": "非线性路径核心",
-                            "primary": {
-                                "dimension": pc.get("dimension", "—"),
-                                "timeframe": pc.get("timeframe", "—"),
-                                "direction": pc.get("direction", "—"),
-                                "strength": round(pc.get("strength", 0), 4) if pc else 0,
+                self._json(
+                    {
+                        "ok": True,
+                        "symbol": latest.get("symbol", "?"),
+                        "ts": latest.get("ts", "?"),
+                        "metrics": {
+                            # 组1：非线性路径核心
+                            "group1": {
+                                "title": "非线性路径核心",
+                                "primary": {
+                                    "dimension": pc.get("dimension", "—"),
+                                    "timeframe": pc.get("timeframe", "—"),
+                                    "direction": pc.get("direction", "—"),
+                                    "strength": round(pc.get("strength", 0), 4) if pc else 0,
+                                },
+                                "hjb": {
+                                    "converged": hjb.get("converged", False) if hjb else False,
+                                    "total_cost": round(hjb.get("total_cost", 0), 6) if hjb else 0,
+                                    "backend": hjb.get("backend", "—") if hjb else "—",
+                                },
+                                "fuel": {
+                                    "type": fuel.get("type", "none") if fuel else "none",
+                                    "intensity": round(fuel.get("intensity", 0), 4) if fuel else 0,
+                                },
+                                "shift": {
+                                    "detected": (
+                                        shift.get("shift_detected", False) if shift else False
+                                    ),
+                                    "shift_time": shift.get("shift_time", "—") if shift else "—",
+                                    "new_direction": (
+                                        (shift.get("new_primary") or {}).get("direction", "—")
+                                        if shift
+                                        else "—"
+                                    ),
+                                },
                             },
-                            "hjb": {
-                                "converged": hjb.get("converged", False) if hjb else False,
-                                "total_cost": round(hjb.get("total_cost", 0), 6) if hjb else 0,
-                                "backend": hjb.get("backend", "—") if hjb else "—",
+                            # 组2：风控安全（G-05）
+                            "group2": {
+                                "title": "风控安全（G-05 级联熔断）",
+                                "status": g05_state.get("status", "idle"),
+                                "judges": g05_state.get("judges", {}),
+                                "cooldown_remaining": g05_state.get("cooldown_remaining", 0),
                             },
-                            "fuel": {
-                                "type": fuel.get("type", "none") if fuel else "none",
-                                "intensity": round(fuel.get("intensity", 0), 4) if fuel else 0,
+                            # 组3：反身性闭环
+                            "group3": {
+                                "title": "反身性闭环",
+                                "cognition": round(cog.get("cognition", 0.5), 4) if cog else 0.5,
+                                "cognition_delta": (
+                                    round(cog.get("cognition_delta", 0), 6) if cog else 0
+                                ),
+                                "loop_active": (
+                                    cog.get("reflexivity_loop_active", False) if cog else False
+                                ),
                             },
-                            "shift": {
-                                "detected": shift.get("shift_detected", False) if shift else False,
-                                "shift_time": shift.get("shift_time", "—") if shift else "—",
-                                "new_direction": (shift.get("new_primary") or {}).get("direction", "—") if shift else "—",
+                            # 组4：弹性约束
+                            "group4": {
+                                "title": "弹性约束",
+                                "t_max": round(elastic.get("t_max", 0), 4) if elastic else 0,
+                                "position_mult": (
+                                    round(elastic.get("position_mult", 1.0), 4) if elastic else 1.0
+                                ),
+                                "constraint_active": (
+                                    elastic.get("constraint_active", False) if elastic else False
+                                ),
+                                "aligned": elastic.get("aligned", True) if elastic else True,
                             },
                         },
-                        # 组2：风控安全（G-05）
-                        "group2": {
-                            "title": "风控安全（G-05 级联熔断）",
-                            "status": g05_state.get("status", "idle"),
-                            "judges": g05_state.get("judges", {}),
-                            "cooldown_remaining": g05_state.get("cooldown_remaining", 0),
-                        },
-                        # 组3：反身性闭环
-                        "group3": {
-                            "title": "反身性闭环",
-                            "cognition": round(cog.get("cognition", 0.5), 4) if cog else 0.5,
-                            "cognition_delta": round(cog.get("cognition_delta", 0), 6) if cog else 0,
-                            "loop_active": cog.get("reflexivity_loop_active", False) if cog else False,
-                        },
-                        # 组4：弹性约束
-                        "group4": {
-                            "title": "弹性约束",
-                            "t_max": round(elastic.get("t_max", 0), 4) if elastic else 0,
-                            "position_mult": round(elastic.get("position_mult", 1.0), 4) if elastic else 1.0,
-                            "constraint_active": elastic.get("constraint_active", False) if elastic else False,
-                            "aligned": elastic.get("aligned", True) if elastic else True,
-                        },
-                    },
-                })
+                    }
+                )
             except Exception as e:
                 self._json({"ok": False, "error": str(e), "metrics": {}})
 
@@ -4713,6 +5392,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(BASE_DIR))
                 from mode_manager import set_mode_override
+
                 content = self._read_json_body()
                 mode = content.get("mode") or self._get_query_param("mode")
                 reason = content.get("reason") or "API手动切换"
@@ -4728,6 +5408,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(BASE_DIR))
                 from mode_manager import check_and_switch_mode
+
                 result = check_and_switch_mode()
                 self._json(result)
             except Exception as e:
@@ -4737,6 +5418,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 sys.path.insert(0, str(BASE_DIR))
                 from mode_manager import set_ai_directive
+
                 content = self._read_json_body()
                 if not content:
                     self._json({"error": "缺少请求体"}, status=400)
@@ -4769,7 +5451,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def _file(self, path: Path, mime: str):
         if not path.exists():
-            self.send_response(404); self.end_headers(); return
+            self.send_response(404)
+            self.end_headers()
+            return
         body = path.read_bytes()
         self.send_response(200)
         self.send_header("Content-Type", mime)
@@ -4792,11 +5476,11 @@ if __name__ == "__main__":
     _start_bg_refresh()
     server = ThreadedHTTPServer(("127.0.0.1", PORT), Handler)
     print(f"监控服务已启动: http://localhost:{PORT}")
-    print(f"  - /api/state         5s 刷新")
-    print(f"  - /api/yijing       60s 刷新")
-    print(f"  - /api/screen-*     30s 刷新")
-    print(f"  - /api/dreamos      15s 刷新")
-    print(f"  Ctrl+C 停止")
+    print("  - /api/state         5s 刷新")
+    print("  - /api/yijing       60s 刷新")
+    print("  - /api/screen-*     30s 刷新")
+    print("  - /api/dreamos      15s 刷新")
+    print("  Ctrl+C 停止")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

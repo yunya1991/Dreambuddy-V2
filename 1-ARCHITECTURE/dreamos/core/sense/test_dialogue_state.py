@@ -10,27 +10,28 @@
 
 TDD RED: 本测试在 dialogue_state.py 落地前应全部失败（ImportError）。
 """
-import pytest
+
+import sys  # noqa: I001
 from pathlib import Path
-import sys
 
 # 1-ARCHITECTURE/ → sys.path
 BASE = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(BASE))
 
-from dreamos.core.sense.dialogue_state import (
-    TurnState,
+from dreamos.core.sense.dialogue_state import (  # noqa: E402
     DialogueStateManager,
+    TurnState,
 )
-
 
 # ============================================================
 # 1. 模块/类存在性
 # ============================================================
 
+
 def test_import_module():
     """dialogue_state 模块可被导入。"""
     from dreamos.core.sense import dialogue_state
+
     assert hasattr(dialogue_state, "TurnState")
     assert hasattr(dialogue_state, "DialogueStateManager")
 
@@ -70,12 +71,14 @@ def test_manager_init_custom_max_turns():
 # 2. add_turn + get_context
 # ============================================================
 
+
 def test_add_turn_and_get_context():
     """添加轮次并获取上下文。"""
     mgr = DialogueStateManager()
     sid = "session-1"
-    mgr.add_turn(sid, intent_primary="query", intent_secondary="market_query",
-                 slots={"stock": "BTC"})
+    mgr.add_turn(
+        sid, intent_primary="query", intent_secondary="market_query", slots={"stock": "BTC"}
+    )
     ctx = mgr.get_context(sid)
     assert isinstance(ctx, list)
     assert len(ctx) == 1
@@ -87,8 +90,9 @@ def test_get_context_returns_last_n():
     mgr = DialogueStateManager()
     sid = "session-2"
     for i in range(5):
-        mgr.add_turn(sid, intent_primary="query", intent_secondary="market_query",
-                     slots={"turn": i})
+        mgr.add_turn(
+            sid, intent_primary="query", intent_secondary="market_query", slots={"turn": i}
+        )
     ctx = mgr.get_context(sid, n=3)
     assert len(ctx) == 3
     # 最近 3 轮（turn_id 2,3,4 或 turn 字段 2,3,4）
@@ -108,12 +112,14 @@ def test_get_context_unknown_session_returns_empty():
 # 3. resolve_reference（前轮槽位继承）
 # ============================================================
 
+
 def test_resolve_reference_inherits_missing_slot():
     """前轮有 stock，当前轮缺 stock 时继承。"""
     mgr = DialogueStateManager()
     sid = "session-3"
-    mgr.add_turn(sid, intent_primary="query", intent_secondary="market_query",
-                 slots={"stock": "BTC"})
+    mgr.add_turn(
+        sid, intent_primary="query", intent_secondary="market_query", slots={"stock": "BTC"}
+    )
     # 当前轮没有 stock
     current_slots = {"timeframe": "1h"}
     resolved = mgr.resolve_reference(sid, current_slots)
@@ -126,8 +132,9 @@ def test_resolve_reference_does_not_overwrite_current():
     """当前轮的槽位不被前轮覆盖。"""
     mgr = DialogueStateManager()
     sid = "session-4"
-    mgr.add_turn(sid, intent_primary="query", intent_secondary="market_query",
-                 slots={"stock": "BTC"})
+    mgr.add_turn(
+        sid, intent_primary="query", intent_secondary="market_query", slots={"stock": "BTC"}
+    )
     current_slots = {"stock": "ETH"}  # 当前轮已显式指定
     resolved = mgr.resolve_reference(sid, current_slots)
     assert resolved["stock"] == "ETH"  # 当前轮优先
@@ -145,12 +152,14 @@ def test_resolve_reference_no_history_returns_current():
 # 4. clear_session + 滚动窗口
 # ============================================================
 
+
 def test_clear_session():
     """clear_session 清空指定会话。"""
     mgr = DialogueStateManager()
     sid = "session-5"
-    mgr.add_turn(sid, intent_primary="query", intent_secondary="market_query",
-                 slots={"stock": "BTC"})
+    mgr.add_turn(
+        sid, intent_primary="query", intent_secondary="market_query", slots={"stock": "BTC"}
+    )
     assert len(mgr.get_context(sid)) == 1
     mgr.clear_session(sid)
     assert mgr.get_context(sid) == []
@@ -161,8 +170,9 @@ def test_max_turns_rolling_window():
     mgr = DialogueStateManager(max_turns=3)
     sid = "session-6"
     for i in range(5):
-        mgr.add_turn(sid, intent_primary="query", intent_secondary="market_query",
-                     slots={"turn": i})
+        mgr.add_turn(
+            sid, intent_primary="query", intent_secondary="market_query", slots={"turn": i}
+        )
     ctx = mgr.get_context(sid, n=100)  # 取全部
     assert len(ctx) == 3  # 滚动后只剩 3 轮
     # 保留最近 3 轮 (turn=2,3,4)
@@ -173,10 +183,10 @@ def test_max_turns_rolling_window():
 def test_isolated_sessions():
     """不同 session 互相隔离。"""
     mgr = DialogueStateManager()
-    mgr.add_turn("s1", intent_primary="query", intent_secondary="market_query",
-                 slots={"stock": "BTC"})
-    mgr.add_turn("s2", intent_primary="trade", intent_secondary="buy",
-                 slots={"stock": "ETH"})
+    mgr.add_turn(
+        "s1", intent_primary="query", intent_secondary="market_query", slots={"stock": "BTC"}
+    )
+    mgr.add_turn("s2", intent_primary="trade", intent_secondary="buy", slots={"stock": "ETH"})
     assert len(mgr.get_context("s1")) == 1
     assert len(mgr.get_context("s2")) == 1
     assert mgr.get_context("s1")[0].intent_secondary == "market_query"

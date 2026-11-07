@@ -23,7 +23,7 @@ import json
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 BASE_DIR = Path(__file__).parent.parent.parent  # dreambuddy-v2/
 AB_TRADING_DIR = BASE_DIR / "experiments" / "ab-trading"
@@ -127,6 +127,7 @@ def _fetch_hl_positions(user_addr: str, system: str) -> Dict:
 
     try:
         import requests
+
         r = requests.post(
             "https://api.hyperliquid.xyz/info",
             json={"type": "clearinghouseState", "user": user_addr},
@@ -138,19 +139,21 @@ def _fetch_hl_positions(user_addr: str, system: str) -> Dict:
             pos = p.get("position", {})
             szi = float(pos.get("szi", 0))
             if szi != 0:
-                positions.append(_make_position(
-                    system=system,
-                    symbol=pos.get("coin", ""),
-                    direction="LONG" if szi > 0 else "SHORT",
-                    size=abs(szi),
-                    entry_price=float(pos.get("entryPx") or 0),
-                    exchange="hyperliquid",
-                    unrealized_pnl=float(pos.get("unrealizedPnl") or 0),
-                    leverage=float((pos.get("leverage") or {}).get("value", 1)),
-                    meta={
-                        "position_value": float(pos.get("positionValue") or 0),
-                    },
-                ))
+                positions.append(
+                    _make_position(
+                        system=system,
+                        symbol=pos.get("coin", ""),
+                        direction="LONG" if szi > 0 else "SHORT",
+                        size=abs(szi),
+                        entry_price=float(pos.get("entryPx") or 0),
+                        exchange="hyperliquid",
+                        unrealized_pnl=float(pos.get("unrealizedPnl") or 0),
+                        leverage=float((pos.get("leverage") or {}).get("value", 1)),
+                        meta={
+                            "position_value": float(pos.get("positionValue") or 0),
+                        },
+                    )
+                )
         equity = float(data.get("marginSummary", {}).get("accountValue", 0))
         # 资金调控：Hyperliquid 账户 extra 字段（复用 Agent A/B 已有 equity）
         hl_extra = {
@@ -196,6 +199,7 @@ def fetch_agent_b_positions() -> Dict:
 # 2. Agent C (共用 Agent B 账户 + memory.json)
 # ============================================================
 
+
 def fetch_agent_c_positions() -> Dict:
     """Agent C 持仓：从 memory.json 读取内存持仓"""
     try:
@@ -204,7 +208,9 @@ def fetch_agent_c_positions() -> Dict:
             # 资金调控：即使 memory.json 缺失，仍尝试复用 Agent B equity 缓存
             agent_b_equity = 0.0
             try:
-                agent_b_equity = float(_fetch_hl_positions(AGENT_B_ADDR, "agent_b").get("equity", 0.0))
+                agent_b_equity = float(
+                    _fetch_hl_positions(AGENT_B_ADDR, "agent_b").get("equity", 0.0)
+                )
             except Exception:
                 pass
             return _make_system_result(
@@ -228,20 +234,22 @@ def fetch_agent_c_positions() -> Dict:
         open_pos = mem.get("open_positions", {})
         positions = []
         for sym, pos in open_pos.items():
-            positions.append(_make_position(
-                system="agent_c_memory",
-                symbol=sym,
-                direction=pos.get("direction", "UNKNOWN"),
-                size=pos.get("size", 0),
-                entry_price=pos.get("entry_price", 0),
-                exchange="hyperliquid(agent_c)",
-                unrealized_pnl=pos.get("unrealized_pnl", 0),
-                open_time=pos.get("open_time", ""),
-                meta={
-                    "strategy": pos.get("strategy", ""),
-                    "cycle_id": pos.get("cycle_id", ""),
-                },
-            ))
+            positions.append(
+                _make_position(
+                    system="agent_c_memory",
+                    symbol=sym,
+                    direction=pos.get("direction", "UNKNOWN"),
+                    size=pos.get("size", 0),
+                    entry_price=pos.get("entry_price", 0),
+                    exchange="hyperliquid(agent_c)",
+                    unrealized_pnl=pos.get("unrealized_pnl", 0),
+                    open_time=pos.get("open_time", ""),
+                    meta={
+                        "strategy": pos.get("strategy", ""),
+                        "cycle_id": pos.get("cycle_id", ""),
+                    },
+                )
+            )
 
         return _make_system_result(
             system="agent_c_memory",
@@ -284,6 +292,7 @@ def fetch_agent_c_positions() -> Dict:
 # ============================================================
 # 3. V15 马丁 (OKX 模拟/实盘)
 # ============================================================
+
 
 def _load_v15_config() -> Optional[Dict]:
     """加载 V15 配置"""
@@ -339,7 +348,9 @@ def fetch_v15_martin_positions() -> Dict:
     api_key = config.get("OKX_API_KEY", "") if config else ""
     secret_key = config.get("OKX_SECRET_KEY", "") if config else ""
     passphrase = config.get("OKX_PASSPHRASE", "") if config else ""
-    base_url = config.get("OKX_BASE_URL", "https://www.okx.com") if config else "https://www.okx.com"
+    base_url = (
+        config.get("OKX_BASE_URL", "https://www.okx.com") if config else "https://www.okx.com"
+    )
     simulated = config.get("OKX_SIMULATED", "true").lower() == "true" if config else True
 
     # 资金调控：equity 字段填充（直接调用 OKX get_balance，避免依赖环境变量）
@@ -348,19 +359,22 @@ def fetch_v15_martin_positions() -> Dict:
     if api_key and secret_key and passphrase:
         try:
             import sys
+
             sys.path.insert(0, str(V15_DIR / "lib"))
-            from okx_client import OKXSimulatedClient
             from capital_manager import TOTAL_BUDGET as _V15_TOTAL_BUDGET
+            from okx_client import OKXSimulatedClient
 
             # V15 OKXSimulatedClient 接受 config dict（非关键字参数）
-            client = OKXSimulatedClient(config={
-                "api_key": api_key,
-                "secret_key": secret_key,
-                "passphrase": passphrase,
-                "simulated": simulated,
-                "base_url": base_url,
-                "dry_run": False,
-            })
+            client = OKXSimulatedClient(
+                config={
+                    "api_key": api_key,
+                    "secret_key": secret_key,
+                    "passphrase": passphrase,
+                    "simulated": simulated,
+                    "base_url": base_url,
+                    "dry_run": False,
+                }
+            )
 
             # 直接用已构造的 client 查询余额，填充 equity 字段
             try:
@@ -406,56 +420,62 @@ def fetch_v15_martin_positions() -> Dict:
                             if pos_sz != 0:
                                 pos_side = p.get("pos_side", "net")
                                 is_long = pos_side == "long" or (pos_side == "net" and pos_sz > 0)
-                                positions.append(_make_position(
-                                    system="v15_martin",
-                                    symbol=coin,
-                                    inst_id=inst_id,
-                                    direction="LONG" if is_long else "SHORT",
-                                    size=abs(pos_sz),
-                                    entry_price=float(p.get("avg_px", 0)),
-                                    exchange="okx" if not simulated else "okx_simulated",
-                                    unrealized_pnl=float(p.get("upl", 0)),
-                                    upl_ratio=float(p.get("upl_ratio", 0)),
-                                    leverage=float(p.get("lever", 0) or 0),
-                                    stop_loss=float(state_pos.get("stop_loss_price") or 0),
-                                    meta={
-                                        "addons": state_pos.get("addons", 0),
-                                        "confidence": state_pos.get("confidence", 0),
-                                        "open_time": state_pos.get("open_time", ""),
-                                        "take_profit_pct": state_pos.get("take_profit_pct", 0),
-                                        "stop_loss_type": state_pos.get("stop_loss_type", ""),
-                                        "last_addon_time": state_pos.get("last_addon_time", ""),
-                                        "simulated": simulated,
-                                    },
-                                ))
+                                positions.append(
+                                    _make_position(
+                                        system="v15_martin",
+                                        symbol=coin,
+                                        inst_id=inst_id,
+                                        direction="LONG" if is_long else "SHORT",
+                                        size=abs(pos_sz),
+                                        entry_price=float(p.get("avg_px", 0)),
+                                        exchange="okx" if not simulated else "okx_simulated",
+                                        unrealized_pnl=float(p.get("upl", 0)),
+                                        upl_ratio=float(p.get("upl_ratio", 0)),
+                                        leverage=float(p.get("lever", 0) or 0),
+                                        stop_loss=float(state_pos.get("stop_loss_price") or 0),
+                                        meta={
+                                            "addons": state_pos.get("addons", 0),
+                                            "confidence": state_pos.get("confidence", 0),
+                                            "open_time": state_pos.get("open_time", ""),
+                                            "take_profit_pct": state_pos.get("take_profit_pct", 0),
+                                            "stop_loss_type": state_pos.get("stop_loss_type", ""),
+                                            "last_addon_time": state_pos.get("last_addon_time", ""),
+                                            "simulated": simulated,
+                                        },
+                                    )
+                                )
                 except Exception:
                     pass
-        except Exception as import_err:
+        except Exception as import_err:  # noqa: F841
             pass
 
     if not positions and state_positions:
         for coin, state_pos in state_positions.items():
-            positions.append(_make_position(
-                system="v15_martin",
-                symbol=coin,
-                inst_id=state_pos.get("inst_id", f"{coin}-USDT-SWAP"),
-                direction=state_pos.get("direction", "LONG"),
-                size=float(state_pos.get("sz") or 0),
-                entry_price=float(state_pos.get("entry_price") or 0),
-                exchange="okx_state_only",
-                stop_loss=float(state_pos.get("stop_loss_price") or 0),
-                meta={
-                    "addons": state_pos.get("addons", 0),
-                    "confidence": state_pos.get("confidence", 0),
-                    "open_time": state_pos.get("open_time", ""),
-                    "source": "state_file_only",
-                },
-            ))
+            positions.append(
+                _make_position(
+                    system="v15_martin",
+                    symbol=coin,
+                    inst_id=state_pos.get("inst_id", f"{coin}-USDT-SWAP"),
+                    direction=state_pos.get("direction", "LONG"),
+                    size=float(state_pos.get("sz") or 0),
+                    entry_price=float(state_pos.get("entry_price") or 0),
+                    exchange="okx_state_only",
+                    stop_loss=float(state_pos.get("stop_loss_price") or 0),
+                    meta={
+                        "addons": state_pos.get("addons", 0),
+                        "confidence": state_pos.get("confidence", 0),
+                        "open_time": state_pos.get("open_time", ""),
+                        "source": "state_file_only",
+                    },
+                )
+            )
 
     # 合并 equity_extra 与现有 extra 字段
     merged_extra = {
         "state_position_count": len(state_positions),
-        "api_position_count": sum(1 for p in positions if p.get("meta", {}).get("source") != "state_file_only"),
+        "api_position_count": sum(
+            1 for p in positions if p.get("meta", {}).get("source") != "state_file_only"
+        ),
         "simulated": simulated if api_key else "unknown",
         "total_trades": state_data.get("total_trades", 0),
         "total_wins": state_data.get("total_wins", 0),
@@ -482,6 +502,7 @@ def fetch_v15_martin_positions() -> Dict:
 # ============================================================
 # 4. 易经推理 (OKX 模拟盘)
 # ============================================================
+
 
 def _get_yijing_open_positions_dir() -> Path:
     """获取易经系统持仓目录"""
@@ -522,6 +543,7 @@ def fetch_yijing_positions() -> Dict:
     equity_extra: Dict = {}
     try:
         import sys
+
         sys.path.insert(0, str(YIJING_DIR / "scripts" / "memory_l4"))
         from okx_simulated import OKXSimulatedClient
 
@@ -558,24 +580,26 @@ def fetch_yijing_positions() -> Dict:
                     rec = json.load(fp)
                 if rec.get("status") == "open" or not rec.get("exit_time", ""):
                     direction = rec.get("direction", "")
-                    positions.append(_make_position(
-                        system="yijing_bcrm",
-                        symbol=rec.get("coin", ""),
-                        inst_id=rec.get("inst_id", ""),
-                        direction=direction.upper() if direction else "UNKNOWN",
-                        size=float(rec.get("size", 0)),
-                        entry_price=float(rec.get("entry_price", 0)),
-                        exchange="okx_simulated",
-                        open_time=rec.get("entry_time", rec.get("open_time", "")),
-                        meta={
-                            "trade_id": rec.get("trade_id", ""),
-                            "confidence": rec.get("confidence", 0),
-                            "hexagram": rec.get("hexagram", ""),
-                            "strategy_source": rec.get("strategy_source", "bcrm"),
-                            "liangyi_state": rec.get("liangyi_state", {}),
-                            "contradiction_count": len(rec.get("contradiction_list", [])),
-                        },
-                    ))
+                    positions.append(
+                        _make_position(
+                            system="yijing_bcrm",
+                            symbol=rec.get("coin", ""),
+                            inst_id=rec.get("inst_id", ""),
+                            direction=direction.upper() if direction else "UNKNOWN",
+                            size=float(rec.get("size", 0)),
+                            entry_price=float(rec.get("entry_price", 0)),
+                            exchange="okx_simulated",
+                            open_time=rec.get("entry_time", rec.get("open_time", "")),
+                            meta={
+                                "trade_id": rec.get("trade_id", ""),
+                                "confidence": rec.get("confidence", 0),
+                                "hexagram": rec.get("hexagram", ""),
+                                "strategy_source": rec.get("strategy_source", "bcrm"),
+                                "liangyi_state": rec.get("liangyi_state", {}),
+                                "contradiction_count": len(rec.get("contradiction_list", [])),
+                            },
+                        )
+                    )
             except Exception:
                 continue
 
@@ -652,6 +676,7 @@ def fetch_three_screen_positions() -> Dict:
 
     try:
         import requests
+
         r = requests.get(
             f"{THREE_SCREEN_API_BASE}/tracker/stats",
             params={"sync": "1"},
@@ -682,33 +707,39 @@ def fetch_three_screen_positions() -> Dict:
             upl_pct = pos.get("unrealized_pnl_pct", 0)
             entry_ts = pos.get("entry_ts", pos.get("open_ts", 0))
 
-            positions.append(_make_position(
-                system="three_screen",
-                symbol=symbol,
-                direction="LONG" if side == "long" else "SHORT",
-                size=float(base_qty),
-                entry_price=float(entry_px),
-                exchange=pos.get("venue", "hyperliquid"),
-                unrealized_pnl=float(upl),
-                upl_ratio=float(upl_pct),
-                leverage=float(pos.get("leverage", 0)),
-                open_time=datetime.fromtimestamp(entry_ts, tz=timezone.utc).isoformat() if entry_ts else "",
-                stop_loss=float(pos.get("stop_loss", pos.get("sl_px", 0))),
-                take_profit=float(pos.get("take_profit", pos.get("tp_px", 0))),
-                meta={
-                    "venue": pos.get("venue", ""),
-                    "mode": pos.get("mode", ""),
-                    "strategy_id": pos.get("strategy_id", ""),
-                    "group_id": pos.get("group_id", ""),
-                    "notional_usdc": float(notional),
-                    "mark_price": float(pos.get("mark_price", 0)),
-                    "liq_px": float(pos.get("liq_px", pos.get("aster_liquidation_px", 0))),
-                    "system_id": pos.get("system_id", "three_screen"),
-                    "exit_owner": pos.get("exit_owner", ""),
-                    "data_source": "ml_trade_service",
-                    "note": "三屏趋势系统当前委托经典系统管理持仓",
-                },
-            ))
+            positions.append(
+                _make_position(
+                    system="three_screen",
+                    symbol=symbol,
+                    direction="LONG" if side == "long" else "SHORT",
+                    size=float(base_qty),
+                    entry_price=float(entry_px),
+                    exchange=pos.get("venue", "hyperliquid"),
+                    unrealized_pnl=float(upl),
+                    upl_ratio=float(upl_pct),
+                    leverage=float(pos.get("leverage", 0)),
+                    open_time=(
+                        datetime.fromtimestamp(entry_ts, tz=timezone.utc).isoformat()
+                        if entry_ts
+                        else ""
+                    ),
+                    stop_loss=float(pos.get("stop_loss", pos.get("sl_px", 0))),
+                    take_profit=float(pos.get("take_profit", pos.get("tp_px", 0))),
+                    meta={
+                        "venue": pos.get("venue", ""),
+                        "mode": pos.get("mode", ""),
+                        "strategy_id": pos.get("strategy_id", ""),
+                        "group_id": pos.get("group_id", ""),
+                        "notional_usdc": float(notional),
+                        "mark_price": float(pos.get("mark_price", 0)),
+                        "liq_px": float(pos.get("liq_px", pos.get("aster_liquidation_px", 0))),
+                        "system_id": pos.get("system_id", "three_screen"),
+                        "exit_owner": pos.get("exit_owner", ""),
+                        "data_source": "ml_trade_service",
+                        "note": "三屏趋势系统当前委托经典系统管理持仓",
+                    },
+                )
+            )
 
         # 资金调控：equity 字段填充（通过 Aster 账户摘要端点获取 totalWalletBalance）
         try:

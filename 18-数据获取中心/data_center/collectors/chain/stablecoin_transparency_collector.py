@@ -31,6 +31,7 @@ DataRecord schema（crypto 五计庙算的 D7 D8 两个关键字段，替代旧�
 
 Fail-Open: 任何异常 → 返回 []（含 429 抛 RateLimitError 由 dispatcher 告警）。
 """
+
 from __future__ import annotations
 
 import re
@@ -43,15 +44,22 @@ from data_center.collectors._base import BaseCollector
 from data_center.core.contract import DataRecord, validate_record
 from data_center.core.errors import RateLimitError
 
-
 _LLAMA_STABLE = "https://stablecoins.llama.fi"
 _HTTP_TIMEOUT = 25
 
 # DeFiLlama stablecoin id（从 stablecoins?includePrices=true 的 id 字段）
 # 这里列 Top 5 fiat-backed 币种供 historical 路由快速索引
 _ID_BY_SYMBOL = {
-    "USDT": 1, "USDC": 2, "BUSD": 153, "DAI": 5, "FRAX": 6,
-    "TUSD": 7, "USDP": 11, "PYUSD": 120, "FDUSD": 18, "USDD": 34,
+    "USDT": 1,
+    "USDC": 2,
+    "BUSD": 153,
+    "DAI": 5,
+    "FRAX": 6,
+    "TUSD": 7,
+    "USDP": 11,
+    "PYUSD": 120,
+    "FDUSD": 18,
+    "USDD": 34,
 }
 _SYMBOL_BY_ID = {v: k for k, v in _ID_BY_SYMBOL.items()}
 
@@ -85,22 +93,23 @@ class StablecoinTransparencyCollector(BaseCollector):
     # ------------------------------------------------------------------
     @staticmethod
     def _get(url: str, **kwargs):
-        resp = requests.get(url, timeout=kwargs.pop("timeout", _HTTP_TIMEOUT),
-                            headers={
-                                "User-Agent": (
-                                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"
-                                ),
-                                "Accept": "application/json,text/html,*/*",
-                                "Accept-Language": "en-US,en;q=0.9",
-                            },
-                            **kwargs)
+        resp = requests.get(
+            url,
+            timeout=kwargs.pop("timeout", _HTTP_TIMEOUT),
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36"
+                ),
+                "Accept": "application/json,text/html,*/*",
+                "Accept-Language": "en-US,en;q=0.9",
+            },
+            **kwargs,
+        )
         if resp.status_code == 429:
             raise RateLimitError(f"stablecoin_transparency 429 限流: {url}")
         if not resp.ok:
-            raise RuntimeError(
-                f"stablecoin_transparency HTTP {resp.status_code}: {url}"
-            )
+            raise RuntimeError(f"stablecoin_transparency HTTP {resp.status_code}: {url}")
         return resp
 
     # ------------------------------------------------------------------
@@ -125,23 +134,21 @@ class StablecoinTransparencyCollector(BaseCollector):
         # ── 1. 官网 DOM 尝试（不阻塞，失败就 None 交给回退）──
         tether_dom = usdc_dom = None
         try:
-            tether_dom = self._parse_tether_html(self._get(
-                "https://tether.to/en/transparency/?tab=usdt", timeout=_HTTP_TIMEOUT
-            ).text)
+            tether_dom = self._parse_tether_html(
+                self._get("https://tether.to/en/transparency/?tab=usdt", timeout=_HTTP_TIMEOUT).text
+            )
         except Exception:
             tether_dom = None
         try:
-            usdc_dom = self._parse_usdc_html(self._get(
-                "https://www.usdc.com/", timeout=_HTTP_TIMEOUT
-            ).text)
+            usdc_dom = self._parse_usdc_html(
+                self._get("https://www.usdc.com/", timeout=_HTTP_TIMEOUT).text
+            )
         except Exception:
             usdc_dom = None
 
         # ── 2. DeFiLlama stablecoins 汇总（回退 / 校验 / 链分布 / change 指标）──
         try:
-            llama_all = self._get(
-                f"{_LLAMA_STABLE}/stablecoins?includePrices=true"
-            ).json()
+            llama_all = self._get(f"{_LLAMA_STABLE}/stablecoins?includePrices=true").json()
         except Exception:
             llama_all = None
         llama_by_sym: dict[str, Any] = {}
@@ -174,34 +181,48 @@ class StablecoinTransparencyCollector(BaseCollector):
         circ_bln = round(circ_d / 1e9, 4) if circ_d else None
         total_bln = round(total_d / 1e9, 4) if total_d else None
         unreleased_bln = round(unreleased_d / 1e9, 4) if unreleased_d else None
-        src_tag = ("tether.to" if (circ_src == "tether.to/usdc.com") else
-                   (f"hybrid_{circ_src}" if circ_bln else "defillama_fallback"))
+        src_tag = (
+            "tether.to"
+            if (circ_src == "tether.to/usdc.com")
+            else (f"hybrid_{circ_src}" if circ_bln else "defillama_fallback")
+        )
 
         # 变化率（DeFiLlama 提供 PrevDay/PrevWeek/PrevMonth 字段，即使官网有也更准）
         chg_1d = chg_7d = chg_30d = None
         if isinstance(usdt_ll, dict) and circ_d:
-            for fld, dst in (("circulatingPrevDay", "chg_1d"),
-                             ("circulatingPrevWeek", "chg_7d"),
-                             ("circulatingPrevMonth", "chg_30d")):
+            for fld, dst in (
+                ("circulatingPrevDay", "chg_1d"),
+                ("circulatingPrevWeek", "chg_7d"),
+                ("circulatingPrevMonth", "chg_30d"),
+            ):
                 pv = usdt_ll.get(fld, {})
-                pv_usd = (pv.get("peggedUSD") if isinstance(pv, dict) else None)
+                pv_usd = pv.get("peggedUSD") if isinstance(pv, dict) else None
                 if isinstance(pv_usd, (int, float)) and pv_usd > 0 and circ_d > 0:
                     val = (circ_d - pv_usd) / pv_usd * 100.0
-                    if dst == "chg_1d": chg_1d = round(val, 3)
-                    elif dst == "chg_7d": chg_7d = round(val, 3)
-                    else: chg_30d = round(val, 3)
+                    if dst == "chg_1d":
+                        chg_1d = round(val, 3)
+                    elif dst == "chg_7d":
+                        chg_7d = round(val, 3)
+                    else:
+                        chg_30d = round(val, 3)
 
         # 链分布 Top 2
         top_chains = self._ll_top_chains(usdt_ll, n=2)
         metrics_usdt: dict = {
             "source_provider": src_tag,
         }
-        if circ_bln is not None: metrics_usdt["usdt_circulating_usd_bln"] = circ_bln
-        if total_bln is not None: metrics_usdt["usdt_total_supply_usd_bln"] = total_bln
-        if unreleased_bln is not None: metrics_usdt["unreleased_usd_bln"] = unreleased_bln
-        if chg_1d is not None: metrics_usdt["change_1d_pct"] = chg_1d
-        if chg_7d is not None: metrics_usdt["change_7d_pct"] = chg_7d
-        if chg_30d is not None: metrics_usdt["change_30d_pct"] = chg_30d
+        if circ_bln is not None:
+            metrics_usdt["usdt_circulating_usd_bln"] = circ_bln
+        if total_bln is not None:
+            metrics_usdt["usdt_total_supply_usd_bln"] = total_bln
+        if unreleased_bln is not None:
+            metrics_usdt["unreleased_usd_bln"] = unreleased_bln
+        if chg_1d is not None:
+            metrics_usdt["change_1d_pct"] = chg_1d
+        if chg_7d is not None:
+            metrics_usdt["change_7d_pct"] = chg_7d
+        if chg_30d is not None:
+            metrics_usdt["change_30d_pct"] = chg_30d
         for rank, (nm, vl) in enumerate(top_chains, start=1):
             metrics_usdt[f"top_chain_{rank}_name"] = nm
             metrics_usdt[f"top_chain_{rank}_bln"] = round(vl / 1e9, 4)
@@ -213,12 +234,18 @@ class StablecoinTransparencyCollector(BaseCollector):
             "tether_dom_present": bool(tether_dom),
             "llama_fields": self._ll_brief(usdt_ll),
         }
-        recs.append(DataRecord(
-            source=self.source, category=self.category,
-            sub_category="tether_current",
-            timestamp=now_iso,
-            metrics=metrics_usdt, events=[], timeseries=[], raw=raw_usdt,
-        ))
+        recs.append(
+            DataRecord(
+                source=self.source,
+                category=self.category,
+                sub_category="tether_current",
+                timestamp=now_iso,
+                metrics=metrics_usdt,
+                events=[],
+                timeseries=[],
+                raw=raw_usdt,
+            )
+        )
 
         # ───────── USDC (Circle) record ─────────
         usdc_ll = llama_by_sym.get("USDC") or {}
@@ -228,42 +255,67 @@ class StablecoinTransparencyCollector(BaseCollector):
         circ_bln_u = round(circ_u / 1e9, 4) if circ_u else None
         total_bln_u = round(total_u / 1e9, 4) if total_u else None
         unreleased_bln_u = round(unreleased_u / 1e9, 4) if unreleased_u else None
-        src_tag_u = ("usdc.com" if circ_src_u == "tether.to/usdc.com" else
-                     (f"hybrid_{circ_src_u}" if circ_bln_u else "defillama_fallback"))
+        src_tag_u = (
+            "usdc.com"
+            if circ_src_u == "tether.to/usdc.com"
+            else (f"hybrid_{circ_src_u}" if circ_bln_u else "defillama_fallback")
+        )
         chg_1d_u = chg_7d_u = chg_30d_u = None
         if isinstance(usdc_ll, dict) and circ_u:
-            for fld, dst in (("circulatingPrevDay", "chg_1d_u"),
-                             ("circulatingPrevWeek", "chg_7d_u"),
-                             ("circulatingPrevMonth", "chg_30d_u")):
-                pv = usdc_ll.get(fld, {}); pv_usd = pv.get("peggedUSD") if isinstance(pv, dict) else None
+            for fld, dst in (
+                ("circulatingPrevDay", "chg_1d_u"),
+                ("circulatingPrevWeek", "chg_7d_u"),
+                ("circulatingPrevMonth", "chg_30d_u"),
+            ):
+                pv = usdc_ll.get(fld, {})
+                pv_usd = pv.get("peggedUSD") if isinstance(pv, dict) else None
                 if isinstance(pv_usd, (int, float)) and pv_usd > 0 and circ_u > 0:
                     val = (circ_u - pv_usd) / pv_usd * 100.0
-                    if dst == "chg_1d_u": chg_1d_u = round(val, 3)
-                    elif dst == "chg_7d_u": chg_7d_u = round(val, 3)
-                    else: chg_30d_u = round(val, 3)
+                    if dst == "chg_1d_u":
+                        chg_1d_u = round(val, 3)
+                    elif dst == "chg_7d_u":
+                        chg_7d_u = round(val, 3)
+                    else:
+                        chg_30d_u = round(val, 3)
         top_chains_u = self._ll_top_chains(usdc_ll, n=2)
         metrics_usdc: dict = {"source_provider": src_tag_u}
-        if circ_bln_u: metrics_usdc["usdc_circulating_usd_bln"] = circ_bln_u
-        if total_bln_u: metrics_usdc["usdc_total_supply_usd_bln"] = total_bln_u
-        if unreleased_bln_u: metrics_usdc["unreleased_usd_bln"] = unreleased_bln_u
-        if chg_1d_u is not None: metrics_usdc["change_1d_pct"] = chg_1d_u
-        if chg_7d_u is not None: metrics_usdc["change_7d_pct"] = chg_7d_u
-        if chg_30d_u is not None: metrics_usdc["change_30d_pct"] = chg_30d_u
+        if circ_bln_u:
+            metrics_usdc["usdc_circulating_usd_bln"] = circ_bln_u
+        if total_bln_u:
+            metrics_usdc["usdc_total_supply_usd_bln"] = total_bln_u
+        if unreleased_bln_u:
+            metrics_usdc["unreleased_usd_bln"] = unreleased_bln_u
+        if chg_1d_u is not None:
+            metrics_usdc["change_1d_pct"] = chg_1d_u
+        if chg_7d_u is not None:
+            metrics_usdc["change_7d_pct"] = chg_7d_u
+        if chg_30d_u is not None:
+            metrics_usdc["change_30d_pct"] = chg_30d_u
         for rank, (nm, vl) in enumerate(top_chains_u, start=1):
             metrics_usdc[f"top_chain_{rank}_name"] = nm
             metrics_usdc[f"top_chain_{rank}_bln"] = round(vl / 1e9, 4)
         if isinstance(usdc_dom, dict) and usdc_dom.get("reserve_value"):
             metrics_usdc["reserve_fund_usd_bln"] = round(float(usdc_dom["reserve_value"]) / 1e9, 4)
-        raw_usdc = {"source_used": src_tag_u, "usdc_dom_present": bool(usdc_dom),
-                    "llama_fields": self._ll_brief(usdc_ll)}
-        recs.append(DataRecord(
-            source=self.source, category=self.category,
-            sub_category="usdc_current",
-            timestamp=now_iso,
-            metrics=metrics_usdc, events=[], timeseries=[], raw=raw_usdc,
-        ))
+        raw_usdc = {
+            "source_used": src_tag_u,
+            "usdc_dom_present": bool(usdc_dom),
+            "llama_fields": self._ll_brief(usdc_ll),
+        }
+        recs.append(
+            DataRecord(
+                source=self.source,
+                category=self.category,
+                sub_category="usdc_current",
+                timestamp=now_iso,
+                metrics=metrics_usdc,
+                events=[],
+                timeseries=[],
+                raw=raw_usdc,
+            )
+        )
 
-        for r in recs: validate_record(r)
+        for r in recs:
+            validate_record(r)
         return recs
 
     # ------------------------------------------------------------------
@@ -291,7 +343,8 @@ class StablecoinTransparencyCollector(BaseCollector):
                 except (TypeError, ValueError):
                     continue
                 dt = datetime.fromtimestamp(d, tz=timezone.utc).date().isoformat()
-                if first_date is None: first_date = dt
+                if first_date is None:
+                    first_date = dt
                 last_date = dt
                 tc = item.get("totalCirculatingUSD") if isinstance(item, dict) else None
                 circ_usd = float(tc.get("peggedUSD") or 0) if isinstance(tc, dict) else 0.0
@@ -299,12 +352,14 @@ class StablecoinTransparencyCollector(BaseCollector):
                 unr_usd = float(unr.get("peggedUSD") or 0) if isinstance(unr, dict) else 0.0
                 if circ_usd > 0:
                     latest = circ_usd
-                ts.append({
-                    "date": dt,
-                    "circulating_usd": round(circ_usd, 2),
-                    "circulating_usd_bln": round(circ_usd / 1e9, 4),
-                    "unreleased_usd": round(unr_usd, 2),
-                })
+                ts.append(
+                    {
+                        "date": dt,
+                        "circulating_usd": round(circ_usd, 2),
+                        "circulating_usd_bln": round(circ_usd / 1e9, 4),
+                        "unreleased_usd": round(unr_usd, 2),
+                    }
+                )
         metrics_hist = {
             "points": len(ts),
             "coin_id": int(coin_id),
@@ -324,10 +379,14 @@ class StablecoinTransparencyCollector(BaseCollector):
             ts = ts[-days_n:]
             metrics_hist["trimmed_to_days"] = days_n
         rec = DataRecord(
-            source=self.source, category=self.category,
+            source=self.source,
+            category=self.category,
             sub_category=f"stablecoin_hist_{sym.lower()}",
-            timestamp=now_iso, metrics=metrics_hist, events=[],
-            timeseries=ts, raw={"url": url, "coin_id": coin_id, "symbol": sym},
+            timestamp=now_iso,
+            metrics=metrics_hist,
+            events=[],
+            timeseries=ts,
+            raw={"url": url, "coin_id": coin_id, "symbol": sym},
         )
         validate_record(rec)
         return [rec]
@@ -336,18 +395,17 @@ class StablecoinTransparencyCollector(BaseCollector):
     # Route: top_n（地维度稳定币赛道观察）
     # ------------------------------------------------------------------
     def _fetch_top_n(self, n: int) -> list[DataRecord]:
-        j = self._get(
-            f"{_LLAMA_STABLE}/stablecoins?includePrices=true"
-        ).json()
+        j = self._get(f"{_LLAMA_STABLE}/stablecoins?includePrices=true").json()
         assets = j.get("peggedAssets", []) if isinstance(j, dict) else []
         items = []
         for a in assets:
             circ = a.get("circulating") if isinstance(a, dict) else None
             v = float(circ.get("peggedUSD") or 0) if isinstance(circ, dict) else 0.0
-            if v <= 0: continue
+            if v <= 0:
+                continue
             items.append((a.get("symbol", ""), v, a.get("name", "")))
         items.sort(key=lambda x: -x[1])
-        top = items[:max(1, int(n))]
+        top = items[: max(1, int(n))]
         total = sum(v for _, v, _ in items)
         now_iso = datetime.now(timezone.utc).astimezone().isoformat()
         metrics = {
@@ -359,17 +417,28 @@ class StablecoinTransparencyCollector(BaseCollector):
         for sym, v, _ in top:
             metrics[f"{sym}_bln"] = round(v / 1e9, 4)
             metrics[f"{sym}_pct"] = round(v / total * 100, 2) if total else 0.0
-            if sym == "USDT": usdt_share = v
-            if sym == "USDC": usdc_share = v
+            if sym == "USDT":
+                usdt_share = v
+            if sym == "USDC":
+                usdc_share = v
         metrics["usdt_pct_of_total"] = round(usdt_share / total * 100, 2) if total else 0.0
         metrics["usdc_pct_of_total"] = round(usdc_share / total * 100, 2) if total else 0.0
-        metrics["top2_duopoly_pct"] = round(
-            (usdt_share + usdc_share) / total * 100, 2) if total else 0.0
-        raw = {"top": [{"symbol": s, "name": n, "circ_usd_bln": round(v/1e9,4)} for s,v,n in top]}
-        rec = DataRecord(source=self.source, category=self.category,
-                         sub_category=f"stablecoins_top_{len(top)}",
-                         timestamp=now_iso, metrics=metrics, events=[],
-                         timeseries=[], raw=raw)
+        metrics["top2_duopoly_pct"] = (
+            round((usdt_share + usdc_share) / total * 100, 2) if total else 0.0
+        )
+        raw = {
+            "top": [{"symbol": s, "name": n, "circ_usd_bln": round(v / 1e9, 4)} for s, v, n in top]
+        }
+        rec = DataRecord(
+            source=self.source,
+            category=self.category,
+            sub_category=f"stablecoins_top_{len(top)}",
+            timestamp=now_iso,
+            metrics=metrics,
+            events=[],
+            timeseries=[],
+            raw=raw,
+        )
         validate_record(rec)
         return [rec]
 
@@ -387,13 +456,15 @@ class StablecoinTransparencyCollector(BaseCollector):
             取前3个作为 total_assets / total_liabilities / circulating（顺序根据
             页面文案 heuristics 绑定）。
         """
-        if not html: return None
+        if not html:
+            return None
         # (a) 先试 NEXT_DATA__ / INITIAL_STATE
         for m in re.finditer(
             r"<script[^>]+id=\"__NEXT_DATA__\"[^>]*>([\s\S]*?)</script>", html, flags=re.I
         ):
             try:
                 import json as _json
+
                 j = _json.loads(m.group(1))
                 flat = _json.dumps(j)
                 return cls._parse_tether_json_blob(flat)
@@ -401,10 +472,12 @@ class StablecoinTransparencyCollector(BaseCollector):
                 pass
         for m in re.finditer(
             r"window\.__INITIAL_STATE__\s*=\s*(\{[\s\S]*?\})\s*;?\s*</script>",
-            html, flags=re.I,
+            html,
+            flags=re.I,
         ):
             try:
                 import json as _json
+
                 j = _json.loads(m.group(1))
                 return cls._parse_tether_json_blob(_json.dumps(j))
             except Exception:
@@ -417,22 +490,29 @@ class StablecoinTransparencyCollector(BaseCollector):
         out: dict = {}
         # circulating（peggedUSD / totalCirculating / supply）
         for regex, key in (
-            (r'"(?:totalCirculating|circulat[^"]{0,20}Supply|netCirculation)"\s*:\s*\{\s*"peggedUSD"\s*:\s*(-?\d[\d.]+)',
-             "circulating"),
-            (r'"(?:totalCirculating|circulat[^"]{0,20}Supply|netCirculation)"\s*:\s*(-?\d[\d.]+)',
-             "circulating"),
-            (r'"(?:totalSupply|tokensIssued|totalTokens)"\s*:\s*\{\s*"peggedUSD"\s*:\s*(-?\d[\d.]+)',
-             "total_supply"),
-            (r'"(?:totalSupply|tokensIssued|totalTokens)"\s*:\s*(-?\d[\d.]+)',
-             "total_supply"),
-            (r'"(?:totalUnreleased|unreleased)"\s*:\s*\{\s*"peggedUSD"\s*:\s*(-?\d[\d.]+)',
-             "unreleased"),
-            (r'"(?:totalUnreleased|unreleased)"\s*:\s*(-?\d[\d.]+)',
-             "unreleased"),
-            (r'"(?:totalAssets|assets|reserves)"\s*:\s*\{\s*"(?:usd|peggedUSD)"\s*:\s*(-?\d[\d.]+)',
-             "total_assets"),
-            (r'"(?:totalAssets|assets|reserves)"\s*:\s*(-?\d[\d.]+)',
-             "total_assets"),
+            (
+                r'"(?:totalCirculating|circulat[^"]{0,20}Supply|netCirculation)"\s*:\s*\{\s*"peggedUSD"\s*:\s*(-?\d[\d.]+)',
+                "circulating",
+            ),
+            (
+                r'"(?:totalCirculating|circulat[^"]{0,20}Supply|netCirculation)"\s*:\s*(-?\d[\d.]+)',
+                "circulating",
+            ),
+            (
+                r'"(?:totalSupply|tokensIssued|totalTokens)"\s*:\s*\{\s*"peggedUSD"\s*:\s*(-?\d[\d.]+)',
+                "total_supply",
+            ),
+            (r'"(?:totalSupply|tokensIssued|totalTokens)"\s*:\s*(-?\d[\d.]+)', "total_supply"),
+            (
+                r'"(?:totalUnreleased|unreleased)"\s*:\s*\{\s*"peggedUSD"\s*:\s*(-?\d[\d.]+)',
+                "unreleased",
+            ),
+            (r'"(?:totalUnreleased|unreleased)"\s*:\s*(-?\d[\d.]+)', "unreleased"),
+            (
+                r'"(?:totalAssets|assets|reserves)"\s*:\s*\{\s*"(?:usd|peggedUSD)"\s*:\s*(-?\d[\d.]+)',
+                "total_assets",
+            ),
+            (r'"(?:totalAssets|assets|reserves)"\s*:\s*(-?\d[\d.]+)', "total_assets"),
         ):
             for mi in re.finditer(regex, flat, flags=re.I):
                 out.setdefault(key, float(mi.group(1)))
@@ -442,30 +522,46 @@ class StablecoinTransparencyCollector(BaseCollector):
     @classmethod
     def _parse_usdc_html(cls, html: str) -> dict | None:
         """USDC 首页/透明度页 HTML。同样优先 __NEXT_DATA__ JSON，否则正则抓。"""
-        if not html: return None
+        if not html:
+            return None
         for m in re.finditer(
             r"<script[^>]+id=\"__NEXT_DATA__\"[^>]*>([\s\S]*?)</script>", html, flags=re.I
         ):
             try:
                 import json as _json
+
                 j = _json.loads(m.group(1))
                 flat = _json.dumps(j)
                 out: dict = {}
                 for regex, key in (
-                    (r'"(?:circulatingSupply|totalCirculat[^"]{0,20}|usdcInCirculation)"\s*:\s*\{\s*"peggedUSD"\s*:\s*(-?\d[\d.]+)',
-                     "circulating"),
-                    (r'"(?:circulatingSupply|totalCirculat[^"]{0,20}|usdcInCirculation)"\s*:\s*(-?\d[\d.]+)',
-                     "circulating"),
-                    (r'"(?:totalSupply|tokensOutstanding|outstanding[^"]{0,10}|totalIssuance)"\s*:\s*\{\s*"peggedUSD"\s*:\s*(-?\d[\d.]+)',
-                     "total_supply"),
-                    (r'"(?:totalSupply|tokensOutstanding|outstanding[^"]{0,10}|totalIssuance)"\s*:\s*(-?\d[\d.]+)',
-                     "total_supply"),
-                    (r'"(?:totalUnreleased|unreleased)"\s*:\s*\{\s*"peggedUSD"\s*:\s*(-?\d[\d.]+)',
-                     "unreleased"),
-                    (r'"(?:reserveValue|reserves|circleReserve|backedValue|totalAssets)"\s*:\s*\{\s*"(?:usd|peggedUSD)"\s*:\s*(-?\d[\d.]+)',
-                     "reserve_value"),
-                    (r'"(?:reserveValue|reserves|circleReserve|backedValue|totalAssets)"\s*:\s*(-?\d[\d.]+)',
-                     "reserve_value"),
+                    (
+                        r'"(?:circulatingSupply|totalCirculat[^"]{0,20}|usdcInCirculation)"\s*:\s*\{\s*"peggedUSD"\s*:\s*(-?\d[\d.]+)',
+                        "circulating",
+                    ),
+                    (
+                        r'"(?:circulatingSupply|totalCirculat[^"]{0,20}|usdcInCirculation)"\s*:\s*(-?\d[\d.]+)',
+                        "circulating",
+                    ),
+                    (
+                        r'"(?:totalSupply|tokensOutstanding|outstanding[^"]{0,10}|totalIssuance)"\s*:\s*\{\s*"peggedUSD"\s*:\s*(-?\d[\d.]+)',
+                        "total_supply",
+                    ),
+                    (
+                        r'"(?:totalSupply|tokensOutstanding|outstanding[^"]{0,10}|totalIssuance)"\s*:\s*(-?\d[\d.]+)',
+                        "total_supply",
+                    ),
+                    (
+                        r'"(?:totalUnreleased|unreleased)"\s*:\s*\{\s*"peggedUSD"\s*:\s*(-?\d[\d.]+)',
+                        "unreleased",
+                    ),
+                    (
+                        r'"(?:reserveValue|reserves|circleReserve|backedValue|totalAssets)"\s*:\s*\{\s*"(?:usd|peggedUSD)"\s*:\s*(-?\d[\d.]+)',
+                        "reserve_value",
+                    ),
+                    (
+                        r'"(?:reserveValue|reserves|circleReserve|backedValue|totalAssets)"\s*:\s*(-?\d[\d.]+)',
+                        "reserve_value",
+                    ),
                 ):
                     for mi in re.finditer(regex, flat, flags=re.I):
                         out.setdefault(key, float(mi.group(1)))
@@ -487,23 +583,27 @@ class StablecoinTransparencyCollector(BaseCollector):
             for ch, v in cc.items():
                 cur = v.get("current") if isinstance(v, dict) else None
                 usd = float(cur.get("peggedUSD") or 0) if isinstance(cur, dict) else 0.0
-                if usd > 0: rows.append((str(ch), usd))
+                if usd > 0:
+                    rows.append((str(ch), usd))
         rows.sort(key=lambda x: -x[1])
         return rows[: max(1, int(n))]
 
     @staticmethod
-    def _ll_brief(asset: dict, keys=("id","symbol","name","pegType","pegMechanism")) -> dict:
-        if not isinstance(asset, dict): return {}
+    def _ll_brief(asset: dict, keys=("id", "symbol", "name", "pegType", "pegMechanism")) -> dict:
+        if not isinstance(asset, dict):
+            return {}
         brief = {k: asset.get(k) for k in keys if asset.get(k) is not None}
         # 数值概览
-        for k in ("circulatingPrevDay","circulatingPrevWeek","circulatingPrevMonth"):
+        for k in ("circulatingPrevDay", "circulatingPrevWeek", "circulatingPrevMonth"):
             v = asset.get(k)
-            if isinstance(v, dict): brief[k] = v.get("peggedUSD")
+            if isinstance(v, dict):
+                brief[k] = v.get("peggedUSD")
         return brief
 
 
 if __name__ == "__main__":
     import json as _json
+
     sc = StablecoinTransparencyCollector()
     print("── latest_snapshot ──")
     rs = sc.fetch({"route": "latest_snapshot"})

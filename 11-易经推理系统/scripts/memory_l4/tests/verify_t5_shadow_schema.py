@@ -11,13 +11,14 @@
 3. 场景①：Fresh SQLite（新库）→ 插入含新字段 record → 无异常 + 可查回
 4. 场景②：老库模拟（只有原 42 列）→ 插入含新字段 record → 触发降级 → 不抛异常 → 原字段正确写入
 """
+
 from __future__ import annotations
 
 import os
-import sys
-import sqlite3
-import tempfile
 import py_compile
+import sqlite3
+import sys
+import tempfile
 from pathlib import Path
 
 THIS_DIR = Path(__file__).resolve().parent
@@ -29,6 +30,7 @@ passed = 0
 failed = 0
 total = 0
 
+
 def check(name, cond, detail=""):
     global passed, failed, total
     total += 1
@@ -38,6 +40,7 @@ def check(name, cond, detail=""):
     else:
         failed += 1
         print(f"  [FAIL #{total}] {name}" + (f"  ({detail})" if detail else ""))
+
 
 # ================================================================
 # 0. py_compile 语法检查
@@ -60,46 +63,82 @@ except py_compile.PyCompileError as e:
 # ================================================================
 print("\n=== 1. TDD：ShadowLogger.record_polling() kwargs + record dict ===")
 
-from bcrm2.shadow_logger import ShadowLogger
-
 # 1.1 检查函数签名 12 kwargs 默认 None
-import inspect
+import inspect  # noqa: E402
+
+from bcrm2.shadow_logger import ShadowLogger  # noqa: E402
+
 sig = inspect.signature(ShadowLogger.record_polling)
 params = sig.parameters
 
 t5_kwargs = [
-    "fd_crypto_war_state", "fd_crypto_total_score", "fd_crypto_cap_mode", "fd_crypto_mult_mode",
-    "fd_us_stock_war_state", "fd_us_stock_total_score",
-    "sal_type", "sal_regime", "sal_calib_median", "sal_calib_min", "sal_calib_max", "sal_gate",
+    "fd_crypto_war_state",
+    "fd_crypto_total_score",
+    "fd_crypto_cap_mode",
+    "fd_crypto_mult_mode",
+    "fd_us_stock_war_state",
+    "fd_us_stock_total_score",
+    "sal_type",
+    "sal_regime",
+    "sal_calib_median",
+    "sal_calib_min",
+    "sal_calib_max",
+    "sal_gate",
 ]
 for k in t5_kwargs:
     check(f"kwargs {k} 存在", k in params)
     if k in params:
-        check(f"kwargs {k} 默认值=None", params[k].default is None, f"default={params[k].default!r}")
+        check(
+            f"kwargs {k} 默认值=None", params[k].default is None, f"default={params[k].default!r}"
+        )
 
 # 1.2 组装 record dict（通过直接构造 storage.save_shadow_log 用的 record）
-from datetime import datetime, timezone
+
 
 def _make_full_record(**overrides):
     """构造含新12字段的完整 shadow record。"""
     base = {
-        "reactive_L": 0.6, "reactive_T": 0.15, "reactive_C": 0.72,
+        "reactive_L": 0.6,
+        "reactive_T": 0.15,
+        "reactive_C": 0.72,
         "reactive_regime": "TREND_UP_STRONG",
-        "reactive_pos_mult": 1.2, "reactive_tp_mult": 1.0, "reactive_sl_mult": 0.9, "reactive_threshold": 1.1,
-        "forecast_L": 0.8, "forecast_T": 0.2,
+        "reactive_pos_mult": 1.2,
+        "reactive_tp_mult": 1.0,
+        "reactive_sl_mult": 0.9,
+        "reactive_threshold": 1.1,
+        "forecast_L": 0.8,
+        "forecast_T": 0.2,
         "forecast_global_ranges": '{"global_position_mult":[0.8,1.2]}',
         "forecast_sector_weights": '{"weights":{"defi":0.2}}',
-        "baseline_pos_mult": 1.1, "baseline_tp_mult": 1.0, "baseline_sl_mult": 0.95,
-        "baseline_threshold_mult": 1.05, "baseline_long_conf_threshold": 0.78, "baseline_short_conf_threshold": 0.8,
-        "ai_pos_mult": 1.25, "ai_tp_mult": 1.05, "ai_sl_mult": 0.88, "ai_threshold_mult": 1.08,
-        "ai_long_threshold": 0.76, "ai_short_threshold": 0.81, "ai_ls_ratio_cap": 2.0,
-        "effective_pos_mult": 1.2, "effective_tp_mult": 1.03, "effective_sl_mult": 0.9,
+        "baseline_pos_mult": 1.1,
+        "baseline_tp_mult": 1.0,
+        "baseline_sl_mult": 0.95,
+        "baseline_threshold_mult": 1.05,
+        "baseline_long_conf_threshold": 0.78,
+        "baseline_short_conf_threshold": 0.8,
+        "ai_pos_mult": 1.25,
+        "ai_tp_mult": 1.05,
+        "ai_sl_mult": 0.88,
+        "ai_threshold_mult": 1.08,
+        "ai_long_threshold": 0.76,
+        "ai_short_threshold": 0.81,
+        "ai_ls_ratio_cap": 2.0,
+        "effective_pos_mult": 1.2,
+        "effective_tp_mult": 1.03,
+        "effective_sl_mult": 0.9,
         "effective_threshold_mult": 1.07,
-        "effective_long_conf_threshold": 0.77, "effective_short_conf_threshold": 0.805,
-        "enable_inject": True, "alpha_blend": 0.35,
-        "actual_direction": "LONG", "actual_confidence": 0.85,
-        "actual_position_usdt": 500.0, "actual_tp_px": 72000.0, "actual_sl_px": 68000.0, "actual_threshold": 0.8,
-        "fma_on_allowed": True, "fma_on_eff_threshold": 0.82,
+        "effective_long_conf_threshold": 0.77,
+        "effective_short_conf_threshold": 0.805,
+        "enable_inject": True,
+        "alpha_blend": 0.35,
+        "actual_direction": "LONG",
+        "actual_confidence": 0.85,
+        "actual_position_usdt": 500.0,
+        "actual_tp_px": 72000.0,
+        "actual_sl_px": 68000.0,
+        "actual_threshold": 0.8,
+        "fma_on_allowed": True,
+        "fma_on_eff_threshold": 0.82,
         # T5 新12字段
         "fd_crypto_war_state": "攻守兼备-中",
         "fd_crypto_total_score": 78.5,
@@ -117,6 +156,7 @@ def _make_full_record(**overrides):
     base.update(overrides)
     return base
 
+
 # 1.3 验证 record 构造 OK，新字段位置在 fma_on_eff_threshold 之后
 rec_full = _make_full_record()
 check("record 新12字段 fd_crypto_war_state 存在", "fd_crypto_war_state" in rec_full)
@@ -129,20 +169,37 @@ check("12字段写在 fma_on_eff_threshold 之后（sal_gate > fma）", sal_idx 
 
 # 1.4 None 值 record（全部12字段 None）
 rec_none = _make_full_record(
-    fd_crypto_war_state=None, fd_crypto_total_score=None, fd_crypto_cap_mode=None, fd_crypto_mult_mode=None,
-    fd_us_stock_war_state=None, fd_us_stock_total_score=None,
-    sal_type=None, sal_regime=None, sal_calib_median=None, sal_calib_min=None, sal_calib_max=None, sal_gate=None,
+    fd_crypto_war_state=None,
+    fd_crypto_total_score=None,
+    fd_crypto_cap_mode=None,
+    fd_crypto_mult_mode=None,
+    fd_us_stock_war_state=None,
+    fd_us_stock_total_score=None,
+    sal_type=None,
+    sal_regime=None,
+    sal_calib_median=None,
+    sal_calib_min=None,
+    sal_calib_max=None,
+    sal_gate=None,
 )
 for k in t5_kwargs:
     check(f"None record: {k} is None", rec_none[k] is None)
 
 # 1.5 sal_gate 边界：True/False/None 转 1/0/None
-from bcrm2.storage import EvolutionStorageSQLite
+from bcrm2.storage import EvolutionStorageSQLite  # noqa: E402
+
+
 def _sg(v):
-    if v is None: return None
-    if isinstance(v, bool): return 1 if v else 0
-    try: return 1 if int(v) else 0
-    except: return None
+    if v is None:
+        return None
+    if isinstance(v, bool):
+        return 1 if v else 0
+    try:
+        return 1 if int(v) else 0
+    except:  # noqa: E722
+        return None
+
+
 check("sal_gate True → 1", _sg(True) == 1)
 check("sal_gate False → 0", _sg(False) == 0)
 check("sal_gate None → None", _sg(None) is None)
@@ -170,18 +227,34 @@ with tempfile.TemporaryDirectory() as tmpdir:
 
     # 2.3 get_shadow_log 查回新12字段值
     rows = storage_fresh.get_shadow_log("BTCUSDT", days=7)
-    check(f"get_shadow_log 返回 1 行", len(rows) == 1)
+    check("get_shadow_log 返回 1 行", len(rows) == 1)
     if rows:
         r = rows[0]
-        check("查回 fd_crypto_war_state='攻守兼备-中'", r.get("fd_crypto_war_state") == "攻守兼备-中")
-        check("查回 fd_crypto_total_score=78.5", abs(float(r.get("fd_crypto_total_score") or 0) - 78.5) < 1e-6)
-        check("查回 fd_crypto_cap_mode=0.62", abs(float(r.get("fd_crypto_cap_mode") or 0) - 0.62) < 1e-6)
-        check("查回 fd_crypto_mult_mode=1.35", abs(float(r.get("fd_crypto_mult_mode") or 0) - 1.35) < 1e-6)
+        check(
+            "查回 fd_crypto_war_state='攻守兼备-中'", r.get("fd_crypto_war_state") == "攻守兼备-中"
+        )
+        check(
+            "查回 fd_crypto_total_score=78.5",
+            abs(float(r.get("fd_crypto_total_score") or 0) - 78.5) < 1e-6,
+        )
+        check(
+            "查回 fd_crypto_cap_mode=0.62",
+            abs(float(r.get("fd_crypto_cap_mode") or 0) - 0.62) < 1e-6,
+        )
+        check(
+            "查回 fd_crypto_mult_mode=1.35",
+            abs(float(r.get("fd_crypto_mult_mode") or 0) - 1.35) < 1e-6,
+        )
         check("查回 fd_us_stock_war_state='进攻-强'", r.get("fd_us_stock_war_state") == "进攻-强")
-        check("查回 fd_us_stock_total_score=85.0", abs(float(r.get("fd_us_stock_total_score") or 0) - 85.0) < 1e-6)
+        check(
+            "查回 fd_us_stock_total_score=85.0",
+            abs(float(r.get("fd_us_stock_total_score") or 0) - 85.0) < 1e-6,
+        )
         check("查回 sal_type='crypto_usdt'", r.get("sal_type") == "crypto_usdt")
         check("查回 sal_regime='TREND_UP_STRONG'", r.get("sal_regime") == "TREND_UP_STRONG")
-        check("查回 sal_calib_median=0.042", abs(float(r.get("sal_calib_median") or 0) - 0.042) < 1e-6)
+        check(
+            "查回 sal_calib_median=0.042", abs(float(r.get("sal_calib_median") or 0) - 0.042) < 1e-6
+        )
         check("查回 sal_calib_min=-0.12", abs(float(r.get("sal_calib_min") or 0) - (-0.12)) < 1e-6)
         check("查回 sal_calib_max=0.18", abs(float(r.get("sal_calib_max") or 0) - 0.18) < 1e-6)
         check("查回 sal_gate=True（bool 转换）", r.get("sal_gate") is True)
@@ -289,14 +362,23 @@ with tempfile.TemporaryDirectory() as tmpdir:
 
     # 3.5 验证原字段正确写入（get_shadow_log 有 SELECT 降级，使用原生 SQL 查）
     cur_verify = storage_old2._conn.cursor()
-    row = cur_verify.execute("SELECT symbol, reactive_L, reactive_regime, ai_pos_mult, actual_direction, fma_on_allowed, fma_on_eff_threshold FROM shadow_param_log WHERE id=?", (rid_old,)).fetchone()
+    row = cur_verify.execute(
+        "SELECT symbol, reactive_L, reactive_regime, ai_pos_mult, actual_direction, fma_on_allowed, fma_on_eff_threshold FROM shadow_param_log WHERE id=?",
+        (rid_old,),
+    ).fetchone()
     check("老库降级写入：symbol='BTCUSDT'", row["symbol"] == "BTCUSDT")
     check("老库降级写入：reactive_L≈0.6", abs(float(row["reactive_L"] or 0) - 0.6) < 1e-6)
-    check("老库降级写入：reactive_regime='TREND_UP_STRONG'", row["reactive_regime"] == "TREND_UP_STRONG")
+    check(
+        "老库降级写入：reactive_regime='TREND_UP_STRONG'",
+        row["reactive_regime"] == "TREND_UP_STRONG",
+    )
     check("老库降级写入：ai_pos_mult≈1.25", abs(float(row["ai_pos_mult"] or 0) - 1.25) < 1e-6)
     check("老库降级写入：actual_direction='LONG'", row["actual_direction"] == "LONG")
     check("老库降级写入：fma_on_allowed=1 (True→1)", int(row["fma_on_allowed"] or 0) == 1)
-    check("老库降级写入：fma_on_eff_threshold≈0.82", abs(float(row["fma_on_eff_threshold"] or 0) - 0.82) < 1e-6)
+    check(
+        "老库降级写入：fma_on_eff_threshold≈0.82",
+        abs(float(row["fma_on_eff_threshold"] or 0) - 0.82) < 1e-6,
+    )
 
     # 3.6 验证老库中确实没有新12列（查 PRAGMA）
     cols_old = [r[1] for r in cur_verify.execute("PRAGMA table_info(shadow_param_log)").fetchall()]

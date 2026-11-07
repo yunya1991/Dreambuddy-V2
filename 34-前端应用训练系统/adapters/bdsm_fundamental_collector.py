@@ -7,6 +7,7 @@
 
 FAIL-OPEN: 快照目录缺失/解析失败返回空列表。
 """
+
 import glob
 import json
 import os
@@ -16,11 +17,9 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
 _PROJECT_ROOT = os.path.dirname(_34_DIR)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
-_BDSM_DIR = os.path.join(
-    _PROJECT_ROOT, "11-易经推理系统", ".workbuddy", "bdsm"
-)
+_BDSM_DIR = os.path.join(_PROJECT_ROOT, "11-易经推理系统", ".workbuddy", "bdsm")
 
 _TEMPLATES = [
     "{sym}估值怎么样",
@@ -70,25 +69,29 @@ class BDSMFundamentalCollector(TrainingDataProvider):
             pct = info.get("valuation_percentile", 0.0)
             tpl = _TEMPLATES[idx % len(_TEMPLATES)]
             message = tpl.format(sym=sym)
-            cases.append(TrainingCase(
-                intent="fundamental_valuation",
-                actions=[f"valuation:{sym}", f"rank:{rank}"],
-                outcome_text=message,
-                learned=[f"估值分析: {sym} 评分{score:.2f} 等级{rank} 阶段{phase} 估值百分位{pct:.0f}"],
-                layer_tags=["S"],
-                quality="B",
-                confidence=0.6,
-                source="fundamental_valuation",
-                metadata={
-                    "symbol": sym,
-                    "score": score,
-                    "rank": rank,
-                    "phase": phase,
-                    "valuation_percentile": pct,
-                    "direction_constraint": info.get("direction_constraint", ""),
-                    "engine_hint": "11-易经推理系统/BDSM",
-                },
-            ))
+            cases.append(
+                TrainingCase(
+                    intent="fundamental_valuation",
+                    actions=[f"valuation:{sym}", f"rank:{rank}"],
+                    outcome_text=message,
+                    learned=[
+                        f"估值分析: {sym} 评分{score:.2f} 等级{rank} 阶段{phase} 估值百分位{pct:.0f}"
+                    ],
+                    layer_tags=["S"],
+                    quality="B",
+                    confidence=0.6,
+                    source="fundamental_valuation",
+                    metadata={
+                        "symbol": sym,
+                        "score": score,
+                        "rank": rank,
+                        "phase": phase,
+                        "valuation_percentile": pct,
+                        "direction_constraint": info.get("direction_constraint", ""),
+                        "engine_hint": "11-易经推理系统/BDSM",
+                    },
+                )
+            )
         # 样本不足时用第二套问法补充
         if len(cases) < limit:
             for idx, (sym, info) in enumerate(coins.items()):
@@ -98,15 +101,17 @@ class BDSMFundamentalCollector(TrainingDataProvider):
                     continue
                 tpl = _TEMPLATES[(idx + 4) % len(_TEMPLATES)]
                 message = tpl.format(sym=sym)
-                cases.append(TrainingCase(
-                    intent="fundamental_valuation",
-                    actions=[f"valuation:{sym}"],
-                    outcome_text=message,
-                    learned=[f"估值分析: {sym} 单币种基本面维度结论"],
-                    layer_tags=["S"],
-                    quality="B",
-                    confidence=0.5,
-                    source="fundamental_valuation",
-                    metadata={"symbol": sym, "engine_hint": "11-易经推理系统/BDSM"},
-                ))
+                cases.append(
+                    TrainingCase(
+                        intent="fundamental_valuation",
+                        actions=[f"valuation:{sym}"],
+                        outcome_text=message,
+                        learned=[f"估值分析: {sym} 单币种基本面维度结论"],
+                        layer_tags=["S"],
+                        quality="B",
+                        confidence=0.5,
+                        source="fundamental_valuation",
+                        metadata={"symbol": sym, "engine_hint": "11-易经推理系统/BDSM"},
+                    )
+                )
         return cases

@@ -59,37 +59,46 @@ def run_e2e_scenarios():
             "name": "E2E-开关关闭降级",
             "env": {"ENABLE_JEV_JUDGE": "0"},
             "params": {"state": "test", "questions": {"q": {"type": "noul", "instructions": "x"}}},
-            "check": lambda r: r["result"]["degraded"] is True and r["result"]["reason"] == "jev_judge_disabled",
+            "check": lambda r: r["result"]["degraded"] is True
+            and r["result"]["reason"] == "jev_judge_disabled",
         },
         {
             "name": "E2E-缺APIKey降级",
             "env": {"ENABLE_JEV_JUDGE": "1", "TYPESAFE_API_KEY": ""},
             "params": {"state": "test", "questions": {"q": {"type": "noul", "instructions": "x"}}},
-            "check": lambda r: r["result"]["degraded"] is True and r["result"]["reason"] == "missing TYPESAFE_API_KEY",
+            "check": lambda r: r["result"]["degraded"] is True
+            and r["result"]["reason"] == "missing TYPESAFE_API_KEY",
         },
         {
             "name": "E2E-无效question类型",
             "env": {"ENABLE_JEV_JUDGE": "1", "TYPESAFE_API_KEY": "fake"},
             "params": {"state": "test", "questions": {"q": {"type": "bogus", "instructions": "x"}}},
-            "check": lambda r: r["result"]["degraded"] is True and "invalid type" in r["result"]["reason"],
+            "check": lambda r: r["result"]["degraded"] is True
+            and "invalid type" in r["result"]["reason"],
         },
         {
             "name": "E2E-空questions",
             "env": {"ENABLE_JEV_JUDGE": "1", "TYPESAFE_API_KEY": "fake"},
             "params": {"state": "test", "questions": {}},
-            "check": lambda r: r["result"]["degraded"] is True and "invalid_questions" in r["result"]["reason"],
+            "check": lambda r: r["result"]["degraded"] is True
+            and "invalid_questions" in r["result"]["reason"],
         },
         {
             "name": "E2E-choice缺criteria",
             "env": {"ENABLE_JEV_JUDGE": "1", "TYPESAFE_API_KEY": "fake"},
-            "params": {"state": "test", "questions": {"q": {"type": "choice", "instructions": "x"}}},
-            "check": lambda r: r["result"]["degraded"] is True and "criteria" in r["result"]["reason"],
+            "params": {
+                "state": "test",
+                "questions": {"q": {"type": "choice", "instructions": "x"}},
+            },
+            "check": lambda r: r["result"]["degraded"] is True
+            and "criteria" in r["result"]["reason"],
         },
         {
             "name": "E2E-score缺criteria",
             "env": {"ENABLE_JEV_JUDGE": "1", "TYPESAFE_API_KEY": "fake"},
             "params": {"state": "test", "questions": {"q": {"type": "score", "instructions": "x"}}},
-            "check": lambda r: r["result"]["degraded"] is True and "criteria" in r["result"]["reason"],
+            "check": lambda r: r["result"]["degraded"] is True
+            and "criteria" in r["result"]["reason"],
         },
         {
             "name": "E2E-多问题并行(noul+choice+score)",
@@ -98,8 +107,16 @@ def run_e2e_scenarios():
                 "state": "test",
                 "questions": {
                     "n1": {"type": "noul", "instructions": "is done?"},
-                    "c1": {"type": "choice", "instructions": "which?", "criteria": {"a": "x", "b": "y"}},
-                    "s1": {"type": "score", "instructions": "how good?", "criteria": ["low", "high"]},
+                    "c1": {
+                        "type": "choice",
+                        "instructions": "which?",
+                        "criteria": {"a": "x", "b": "y"},
+                    },
+                    "s1": {
+                        "type": "score",
+                        "instructions": "how good?",
+                        "criteria": ["low", "high"],
+                    },
                 },
             },
             # 有 fake key 但会调用真实 API → 401 → degraded
@@ -140,7 +157,7 @@ def run_e2e_scenarios():
 
             if response is None:
                 print(f"\n[{i:2d}/{len(scenarios)}] FAIL - {name}")
-                print(f"     无响应（超时）")
+                print("     无响应（超时）")
                 failed += 1
                 continue
 
@@ -155,7 +172,9 @@ def run_e2e_scenarios():
                 ok = scenario["check"](response)
                 if ok:
                     print(f"\n[{i:2d}/{len(scenarios)}] PASS - {name}")
-                    print(f"     degraded={response['result'].get('degraded')}, reason={response['result'].get('reason', 'N/A')}")
+                    print(
+                        f"     degraded={response['result'].get('degraded')}, reason={response['result'].get('reason', 'N/A')}"
+                    )
                     passed += 1
                 else:
                     print(f"\n[{i:2d}/{len(scenarios)}] FAIL - {name}")

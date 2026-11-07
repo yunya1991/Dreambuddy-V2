@@ -38,11 +38,21 @@ class DependencyGraph:
         """
         files = self._collect_files(target)
         if not files:
-            return {"nodes": [], "edges": [], "adjacency": {}, "cycles": [], "evidence": [
-                Evidence(result="未找到 Python 文件", provenance={"target": target},
-                         confidence=1.0, known_gaps=["目标不是目录或不含 .py 文件"],
-                         level="observation")
-            ]}
+            return {
+                "nodes": [],
+                "edges": [],
+                "adjacency": {},
+                "cycles": [],
+                "evidence": [
+                    Evidence(
+                        result="未找到 Python 文件",
+                        provenance={"target": target},
+                        confidence=1.0,
+                        known_gaps=["目标不是目录或不含 .py 文件"],
+                        level="observation",
+                    )
+                ],
+            }
 
         adjacency: dict[str, list[str]] = defaultdict(list)
         nodes: set[str] = set()
@@ -106,7 +116,7 @@ class DependencyGraph:
         """检测循环依赖（DFS 三色标记）。"""
         cycles = []
         WHITE, GRAY, BLACK = 0, 1, 2
-        color: dict[str, int] = {n: WHITE for n in adjacency}
+        color: dict[str, int] = dict.fromkeys(adjacency, WHITE)
 
         def dfs(node: str, path: list[str]) -> None:
             color[node] = GRAY
@@ -125,31 +135,40 @@ class DependencyGraph:
                 dfs(n, [])
         return cycles
 
-    def _build_evidence(self, n_nodes: int, n_edges: int, n_cycles: int,
-                        target: str) -> list[Evidence]:
+    def _build_evidence(
+        self, n_nodes: int, n_edges: int, n_cycles: int, target: str
+    ) -> list[Evidence]:
         evidence = []
-        evidence.append(Evidence(
-            result=f"依赖图: {n_nodes} 节点, {n_edges} 边",
-            provenance={"target": target, "analysis": "dependency_graph"},
-            confidence=1.0,
-            known_gaps=["第三方库依赖未解析（只记录顶层模块名）",
-                        "动态 import / 条件 import 无法静态解析"],
-            level="derivation",
-        ))
+        evidence.append(
+            Evidence(
+                result=f"依赖图: {n_nodes} 节点, {n_edges} 边",
+                provenance={"target": target, "analysis": "dependency_graph"},
+                confidence=1.0,
+                known_gaps=[
+                    "第三方库依赖未解析（只记录顶层模块名）",
+                    "动态 import / 条件 import 无法静态解析",
+                ],
+                level="derivation",
+            )
+        )
         if n_cycles > 0:
-            evidence.append(Evidence(
-                result=f"检测到 {n_cycles} 个循环依赖",
-                provenance={"target": target, "analysis": "cycle_detection"},
-                confidence=0.9,
-                known_gaps=["循环依赖可能由条件 import 导致，需人工确认"],
-                level="inference",
-            ))
+            evidence.append(
+                Evidence(
+                    result=f"检测到 {n_cycles} 个循环依赖",
+                    provenance={"target": target, "analysis": "cycle_detection"},
+                    confidence=0.9,
+                    known_gaps=["循环依赖可能由条件 import 导致，需人工确认"],
+                    level="inference",
+                )
+            )
         else:
-            evidence.append(Evidence(
-                result="未检测到循环依赖",
-                provenance={"target": target, "analysis": "cycle_detection"},
-                confidence=0.7,
-                known_gaps=["静态分析可能漏检运行时循环依赖"],
-                level="inference",
-            ))
+            evidence.append(
+                Evidence(
+                    result="未检测到循环依赖",
+                    provenance={"target": target, "analysis": "cycle_detection"},
+                    confidence=0.7,
+                    known_gaps=["静态分析可能漏检运行时循环依赖"],
+                    level="inference",
+                )
+            )
         return evidence

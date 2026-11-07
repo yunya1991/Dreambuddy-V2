@@ -2,7 +2,6 @@
 import argparse
 import json
 import os
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
@@ -70,7 +69,9 @@ def validate_receipt(obj: Dict[str, Any]) -> List[str]:
     else:
         if not _is_str(artifacts.get("brief_path"), 1):
             errs.append("artifacts.brief_path invalid")
-        if artifacts.get("regime_path") is not None and not _is_str(artifacts.get("regime_path"), 1):
+        if artifacts.get("regime_path") is not None and not _is_str(
+            artifacts.get("regime_path"), 1
+        ):
             errs.append("artifacts.regime_path must be string or null")
     summary = obj.get("summary")
     if not isinstance(summary, dict):
@@ -89,7 +90,14 @@ def validate_receipt(obj: Dict[str, Any]) -> List[str]:
     if not isinstance(quality, dict):
         errs.append("quality must be object")
     else:
-        if quality.get("overall_quality") not in {"ok", "stale", "missing", "backfilled", "suspect", "unknown"}:
+        if quality.get("overall_quality") not in {
+            "ok",
+            "stale",
+            "missing",
+            "backfilled",
+            "suspect",
+            "unknown",
+        }:
             errs.append("quality.overall_quality invalid")
         cov = quality.get("coverage")
         if not _is_num(cov) or float(cov) < 0 or float(cov) > 1:

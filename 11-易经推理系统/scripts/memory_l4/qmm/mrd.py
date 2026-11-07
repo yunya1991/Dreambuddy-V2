@@ -20,19 +20,16 @@ def compute_mrd(
     """
     if not events:
         return MDRResult(
-            direction="NEUTRAL", resistance_up=50, resistance_down=50,
-            net=0, confidence=0,
+            direction="NEUTRAL",
+            resistance_up=50,
+            resistance_down=50,
+            net=0,
+            confidence=0,
         )
 
     n = len(events)
-    benefit_count = sum(
-        1 for e in events
-        if e.quadrant_x > 0.3 and e.quadrant_y > 0.5
-    )
-    harm_count = sum(
-        1 for e in events
-        if e.quadrant_x < -0.3 and e.quadrant_y > 0.5
-    )
+    benefit_count = sum(1 for e in events if e.quadrant_x > 0.3 and e.quadrant_y > 0.5)
+    harm_count = sum(1 for e in events if e.quadrant_x < -0.3 and e.quadrant_y > 0.5)
 
     benefit_density = benefit_count / n
     harm_density = harm_count / n

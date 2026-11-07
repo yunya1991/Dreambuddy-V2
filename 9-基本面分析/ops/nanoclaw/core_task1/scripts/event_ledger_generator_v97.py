@@ -13,7 +13,7 @@ V9.7 设计原则:
 3. 严格控制大 V 事件数量（每日最多 1 条）
 """
 
-import json
+import json  # noqa: I001
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 class EventType(Enum):
     """事件类型 - 9.1 规范 V9.7"""
+
     ONCHAIN_DATA = "onchain_data"
     KOL_VIEW = "kol_view"  # V9.7: 大 V 观点归类为此
     PROJECT_UPDATE = "project_update"
@@ -40,9 +41,10 @@ class EventType(Enum):
 
 class InfluencerTier(Enum):
     """影响力分级 - V9.7"""
-    TIER_0 = "T0"   # 顶级大 V
-    TIER_1 = "T1"   # 知名分析师
-    TIER_2 = "T2"   # 一般 KOL
+
+    TIER_0 = "T0"  # 顶级大 V
+    TIER_1 = "T1"  # 知名分析师
+    TIER_2 = "T2"  # 一般 KOL
 
 
 # V9.7: 仅 T0 级顶级大 V
@@ -52,21 +54,21 @@ INFLUENCER_DATABASE = {
         "title": "以太坊创始人",
         "tier": InfluencerTier.TIER_0.value,
         "weight": 1.5,
-        "focus": ["以太坊", "Layer2", "zkEVM", "扩容"]
+        "focus": ["以太坊", "Layer2", "zkEVM", "扩容"],
     },
     "a16zcrypto": {
         "name": "a16z crypto",
         "title": "顶级 Web3 投资机构",
         "tier": InfluencerTier.TIER_0.value,
         "weight": 1.4,
-        "focus": ["Web3 投资", "监管政策"]
+        "focus": ["Web3 投资", "监管政策"],
     },
     "cz_binance": {
         "name": "CZ",
         "title": "币安创始人",
         "tier": InfluencerTier.TIER_0.value,
         "weight": 1.5,
-        "focus": ["交易所动态", "行业生态"]
+        "focus": ["交易所动态", "行业生态"],
     },
 }
 
@@ -103,6 +105,7 @@ INFLUENCER_TEMPLATES = {
 @dataclass
 class EventLedgerEntry:
     """事件账本条目 - V9.7"""
+
     event_id: str
     timestamp: str
     source: str
@@ -143,12 +146,15 @@ class V97EventLedgerGenerator:
         return f"EVT-V97-{now.strftime('%Y%m%d%H%M%S')}-{self.event_counter:04d}"
 
     def get_influencer_info(self, username: str) -> Dict:
-        return INFLUENCER_DATABASE.get(username, {
-            "tier": InfluencerTier.TIER_2.value,
-            "category": EventType.KOL_VIEW.value,
-            "weight": 0.8,
-            "focus": []
-        })
+        return INFLUENCER_DATABASE.get(
+            username,
+            {
+                "tier": InfluencerTier.TIER_2.value,
+                "category": EventType.KOL_VIEW.value,
+                "weight": 0.8,
+                "focus": [],
+            },
+        )
 
     def create_ledger_entry(self, news_item: Dict, is_influencer: bool = False) -> EventLedgerEntry:
         source = news_item.get("source", "")
@@ -213,7 +219,7 @@ class V97EventLedgerGenerator:
 
         # 设置失效时间
         published_at = news_item.get("published_at", datetime.now().isoformat())
-        pub_dt = datetime.fromisoformat(published_at.replace('Z', '+00:00').split('+')[0])
+        pub_dt = datetime.fromisoformat(published_at.replace("Z", "+00:00").split("+")[0])
 
         if window == "T0":
             expiry_dt = pub_dt + timedelta(days=1)
@@ -250,10 +256,12 @@ class V97EventLedgerGenerator:
             credibility=confidence,
             cross_market_map=news_item.get("cross_market_map", ""),
             risk_flags=risk_flags,
-            version="9.7"
+            version="9.7",
         )
 
-    def generate_ledger(self, v93_news: List[Dict], influencer_news: List[Dict]) -> List[EventLedgerEntry]:
+    def generate_ledger(
+        self, v93_news: List[Dict], influencer_news: List[Dict]
+    ) -> List[EventLedgerEntry]:
         """生成事件账本：V9.3 新闻 + 大 V 观点"""
         self.event_counter = 0
         entries = []
@@ -279,7 +287,7 @@ class V97EventLedgerGenerator:
 
     def save_jsonl(self, entries: List[EventLedgerEntry], output_path: Path):
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(self.to_jsonl(entries))
         print(f"[✓] 事件账本已保存：{output_path}")
 
@@ -339,19 +347,21 @@ def generate_v93_mock_news(days: int = 90) -> List[Dict]:
             pub_hour = random.randint(8, 20)
             pub_dt = date.replace(hour=pub_hour, minute=random.randint(0, 59))
 
-            news_list.append({
-                "title": template[0],
-                "summary": template[1],
-                "content": template[1],
-                "source": "aggregated",
-                "category": event_type,
-                "source_confidence": "high" if event_type == "onchain_data" else "medium",
-                "impact_horizon": random.choice(["T0", "T1"]),
-                "sentiment_score": template[2] + random.gauss(0, 0.1),
-                "published_at": pub_dt.isoformat(),
-                "cross_market_map": "链上/宏观→加密传导",
-                "risk_flags": []
-            })
+            news_list.append(
+                {
+                    "title": template[0],
+                    "summary": template[1],
+                    "content": template[1],
+                    "source": "aggregated",
+                    "category": event_type,
+                    "source_confidence": "high" if event_type == "onchain_data" else "medium",
+                    "impact_horizon": random.choice(["T0", "T1"]),
+                    "sentiment_score": template[2] + random.gauss(0, 0.1),
+                    "published_at": pub_dt.isoformat(),
+                    "cross_market_map": "链上/宏观→加密传导",
+                    "risk_flags": [],
+                }
+            )
 
     return news_list
 
@@ -378,20 +388,22 @@ def generate_influencer_news(days: int = 90) -> List[Dict]:
             pub_hour = random.randint(9, 22)
             pub_dt = date.replace(hour=pub_hour, minute=random.randint(0, 59))
 
-            news_list.append({
-                "title": template[0],
-                "summary": template[1],
-                "content": template[1],
-                "source": f"twitter/{influencer}",
-                "influencer": influencer,
-                "category": "kol_view",
-                "source_confidence": "high",  # T0 大 V 可信度高
-                "impact_horizon": random.choice(["T0", "T1"]),
-                "sentiment_score": template[2] + random.gauss(0, 0.1),
-                "published_at": pub_dt.isoformat(),
-                "cross_market_map": "大 V 观点→市场情绪→价格",
-                "risk_flags": []
-            })
+            news_list.append(
+                {
+                    "title": template[0],
+                    "summary": template[1],
+                    "content": template[1],
+                    "source": f"twitter/{influencer}",
+                    "influencer": influencer,
+                    "category": "kol_view",
+                    "source_confidence": "high",  # T0 大 V 可信度高
+                    "impact_horizon": random.choice(["T0", "T1"]),
+                    "sentiment_score": template[2] + random.gauss(0, 0.1),
+                    "published_at": pub_dt.isoformat(),
+                    "cross_market_map": "大 V 观点→市场情绪→价格",
+                    "risk_flags": [],
+                }
+            )
 
     return news_list
 
@@ -400,9 +412,9 @@ def main():
     """主函数 - 生成 V9.7 事件账本"""
     import argparse
 
-    parser = argparse.ArgumentParser(description='生成 V9.7 事件账本')
-    parser.add_argument('--days', '-d', type=int, default=90, help='生成天数')
-    parser.add_argument('--output', '-o', type=str, default=None, help='输出文件')
+    parser = argparse.ArgumentParser(description="生成 V9.7 事件账本")
+    parser.add_argument("--days", "-d", type=int, default=90, help="生成天数")
+    parser.add_argument("--output", "-o", type=str, default=None, help="输出文件")
     args = parser.parse_args()
 
     print("=" * 60)
@@ -437,7 +449,7 @@ def main():
     generator.save_jsonl(entries, output_path)
 
     # 统计
-    print(f"\n【事件账本统计】")
+    print("\n【事件账本统计】")
 
     by_type = {}
     by_influencer = {}

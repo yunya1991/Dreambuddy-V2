@@ -24,6 +24,7 @@
   - 不确定区间          → NEED_CLARIFY
   - 其余                → SUFFICIENT
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
@@ -93,20 +94,20 @@ def _signals(memories: Optional[List[Any]], cognitive_available: bool):
         return 0.0, 0, 0.0
     match_score, case_density = evaluate_match(memories)
     route_confidence, _ = compute_route_confidence(
-        match_score, case_density, None, c4_available=False)
+        match_score, case_density, None, c4_available=False
+    )
     return match_score, case_density, route_confidence
 
 
 def _in_uncertainty_band(match_score: float, case_density: int) -> bool:
-    return (CLARIFY_MATCH_MIN <= match_score < THRESHOLD_HIGH
-            and case_density < CASE_DENSITY_MIN)
+    return CLARIFY_MATCH_MIN <= match_score < THRESHOLD_HIGH and case_density < CASE_DENSITY_MIN
 
 
 def _signal_contradiction(match_score: float, case_density: int) -> bool:
     """信号矛盾：高匹配低密度 或 低匹配高密度（密度侧复用 jev FAST_PATH_DENSITY）。"""
-    return ((match_score >= THRESHOLD_HIGH and case_density < CASE_DENSITY_MIN)
-            or (match_score < CLARIFY_MATCH_MIN
-                and case_density >= FAST_PATH_DENSITY))
+    return (match_score >= THRESHOLD_HIGH and case_density < CASE_DENSITY_MIN) or (
+        match_score < CLARIFY_MATCH_MIN and case_density >= FAST_PATH_DENSITY
+    )
 
 
 def _jev_final(
@@ -121,8 +122,9 @@ def _jev_final(
     anti_oscillation 传入时经 JevAntiOscillation 三重防振荡。
     """
     raw = "CONTINUE"
-    decision = jev_gate(raw, match_score, case_density,
-                        rea_confidence=match_score, debate_result=None)
+    decision = jev_gate(
+        raw, match_score, case_density, rea_confidence=match_score, debate_result=None
+    )
     if anti_oscillation is not None:
         decision = anti_oscillation.check_oscillation(raw, decision)
     return decision
@@ -137,39 +139,57 @@ def evaluate_entry_sufficiency(
 ) -> SufficiencyResult:
     """S0 入口充分性评估（规划前）。"""
     if not cognitive_available:
-        return SufficiencyResult(NEED_PLAN, 0.0, 0, 0.0, depth,
-                                 [R_COGNITIVE_UNAVAILABLE])
+        return SufficiencyResult(NEED_PLAN, 0.0, 0, 0.0, depth, [R_COGNITIVE_UNAVAILABLE])
     if not memories:
         return SufficiencyResult(NEED_PLAN, 0.0, 0, 0.0, depth, [R_RECALL_EMPTY])
 
     match_score, case_density, route_confidence = _signals(memories, True)
 
-    if (depth == "light" and match_score >= THRESHOLD_HIGH
-            and case_density >= CASE_DENSITY_MIN):
-        return SufficiencyResult(SUFFICIENT_DIRECT, match_score, case_density,
-                                 route_confidence, depth, [R_LIGHT_FAST_PATH])
+    if depth == "light" and match_score >= THRESHOLD_HIGH and case_density >= CASE_DENSITY_MIN:
+        return SufficiencyResult(
+            SUFFICIENT_DIRECT,
+            match_score,
+            case_density,
+            route_confidence,
+            depth,
+            [R_LIGHT_FAST_PATH],
+        )
 
     if match_score < CLARIFY_MATCH_MIN and case_density < CASE_DENSITY_MIN:
-        return SufficiencyResult(NEED_RESEARCH, match_score, case_density,
-                                 route_confidence, depth, [R_DOUBLE_LOW])
+        return SufficiencyResult(
+            NEED_RESEARCH, match_score, case_density, route_confidence, depth, [R_DOUBLE_LOW]
+        )
 
     if _signal_contradiction(match_score, case_density):
-        return SufficiencyResult(NEED_CLARIFY, match_score, case_density,
-                                 route_confidence, depth,
-                                 [R_SIGNAL_CONTRADICTION])
+        return SufficiencyResult(
+            NEED_CLARIFY,
+            match_score,
+            case_density,
+            route_confidence,
+            depth,
+            [R_SIGNAL_CONTRADICTION],
+        )
 
     if _in_uncertainty_band(match_score, case_density):
-        return SufficiencyResult(NEED_CLARIFY, match_score, case_density,
-                                 route_confidence, depth, [R_UNCERTAINTY_BAND])
+        return SufficiencyResult(
+            NEED_CLARIFY, match_score, case_density, route_confidence, depth, [R_UNCERTAINTY_BAND]
+        )
 
     jev_decision = _jev_final(match_score, case_density, anti_oscillation)
     if jev_decision != "CONTINUE":
-        return SufficiencyResult(NEED_CLARIFY, match_score, case_density,
-                                 route_confidence, depth, [R_JEV_OVERRIDE],
-                                 jev_decision)
+        return SufficiencyResult(
+            NEED_CLARIFY,
+            match_score,
+            case_density,
+            route_confidence,
+            depth,
+            [R_JEV_OVERRIDE],
+            jev_decision,
+        )
 
-    return SufficiencyResult(NEED_PLAN, match_score, case_density,
-                             route_confidence, depth, [], jev_decision)
+    return SufficiencyResult(
+        NEED_PLAN, match_score, case_density, route_confidence, depth, [], jev_decision
+    )
 
 
 def evaluate_plan_sufficiency(
@@ -185,26 +205,39 @@ def evaluate_plan_sufficiency(
     plan_items = (plan or {}).get("plan_items") or []
     if not plan_items:
         if depth == "deep":
-            return SufficiencyResult(EARLY_TERMINATE, match_score, case_density,
-                                     route_confidence, depth,
-                                     [R_PLAN_EMPTY, R_DEPTH_MAXED])
-        return SufficiencyResult(NEED_DEEPER, match_score, case_density,
-                                 route_confidence, depth, [R_PLAN_EMPTY])
+            return SufficiencyResult(
+                EARLY_TERMINATE,
+                match_score,
+                case_density,
+                route_confidence,
+                depth,
+                [R_PLAN_EMPTY, R_DEPTH_MAXED],
+            )
+        return SufficiencyResult(
+            NEED_DEEPER, match_score, case_density, route_confidence, depth, [R_PLAN_EMPTY]
+        )
 
     if memories and _in_uncertainty_band(match_score, case_density):
-        return SufficiencyResult(NEED_CLARIFY, match_score, case_density,
-                                 route_confidence, depth, [R_UNCERTAINTY_BAND])
+        return SufficiencyResult(
+            NEED_CLARIFY, match_score, case_density, route_confidence, depth, [R_UNCERTAINTY_BAND]
+        )
 
     jev_decision = None
     # 双低信号已由入口 NEED_RESEARCH 处置，规划阶段不再经 jev（避免 believability 重复改写）
-    double_low = (match_score < CLARIFY_MATCH_MIN
-                  and case_density < CASE_DENSITY_MIN)
+    double_low = match_score < CLARIFY_MATCH_MIN and case_density < CASE_DENSITY_MIN
     if memories and not double_low:
         jev_decision = _jev_final(match_score, case_density, anti_oscillation)
         if jev_decision != "CONTINUE":
-            return SufficiencyResult(NEED_CLARIFY, match_score, case_density,
-                                     route_confidence, depth, [R_JEV_OVERRIDE],
-                                     jev_decision)
+            return SufficiencyResult(
+                NEED_CLARIFY,
+                match_score,
+                case_density,
+                route_confidence,
+                depth,
+                [R_JEV_OVERRIDE],
+                jev_decision,
+            )
 
-    return SufficiencyResult(SUFFICIENT, match_score, case_density,
-                             route_confidence, depth, [], jev_decision)
+    return SufficiencyResult(
+        SUFFICIENT, match_score, case_density, route_confidence, depth, [], jev_decision
+    )

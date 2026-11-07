@@ -15,12 +15,12 @@
 
 FAIL-OPEN: DAL 不可用时 exogenous_factors 全 0, Cross-Attention 退化为无外生.
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import sys
-import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -30,13 +30,16 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
-from dreambuddy_evolution.core.garch_fallback import GARCHFallback
-from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
-from dreambuddy_evolution.core.exogenous_data_bridge import (
-    build_exogenous_series,
+from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector  # noqa: E402, I001
+from dreambuddy_evolution.core.exogenous_data_bridge import (  # noqa: E402
     build_exogenous_factors_for_cross_attention,
+    build_exogenous_series,
 )
+from dreambuddy_evolution.core.garch_fallback import GARCHFallback  # noqa: E402
+from dreambuddy_evolution.core.neural_sde_model import (  # noqa: E402
+    NeuralSDEModel,
+    NeuralSDETrainer,
+)  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -44,8 +47,11 @@ logger = logging.getLogger(__name__)
 
 def build_model(config_name: str, exogenous_factor_dim: int = 0):
     """根据配置名构建模型."""
-    base_kwargs = dict(
-        n_regimes=3, use_moe=True, moe_routing="hard", dropout=0.05,
+    base_kwargs = dict(  # noqa: C408
+        n_regimes=3,
+        use_moe=True,
+        moe_routing="hard",
+        dropout=0.05,
     )
     if config_name == "A":
         return NeuralSDEModel(**base_kwargs)
@@ -62,15 +68,21 @@ def build_model(config_name: str, exogenous_factor_dim: int = 0):
     raise ValueError(f"未知配置: {config_name}")
 
 
-def evaluate_on_windows(model, closes, test_starts, regime_labels,
-                         exo_snapshot_series=None,
-                         exo_factors_matrix=None,
-                         n_paths=200, horizon=20):
+def evaluate_on_windows(
+    model,
+    closes,
+    test_starts,
+    regime_labels,
+    exo_snapshot_series=None,
+    exo_factors_matrix=None,
+    n_paths=200,
+    horizon=20,
+):
     """在测试窗口上评估 SDE vs GARCH."""
     results = []
     for ts in test_starts:
-        history = closes[:ts + 1]
-        actual = closes[ts + 1:ts + 1 + horizon]
+        history = closes[: ts + 1]
+        actual = closes[ts + 1 : ts + 1 + horizon]
         if len(actual) < horizon:
             continue
         init_price = float(history[-1])
@@ -99,7 +111,9 @@ def evaluate_on_windows(model, closes, test_starts, regime_labels,
                 exo_factors = exo_factors.reshape(-1, 1)
 
         sde_paths = model.forecast(
-            history, horizon, n_paths,
+            history,
+            horizon,
+            n_paths,
             regime=test_regime,
             exogenous_snapshot=exo_snap,
             exogenous_factors=exo_factors,
@@ -111,13 +125,15 @@ def evaluate_on_windows(model, closes, test_starts, regime_labels,
             sde_mae = float("inf")
 
         ratio = sde_mae / garch_mae if garch_mae > 0 else float("inf")
-        results.append({
-            "start_idx": ts,
-            "regime": test_regime,
-            "sde_mae": round(sde_mae, 4),
-            "garch_mae": round(garch_mae, 4),
-            "ratio": round(ratio, 4),
-        })
+        results.append(
+            {
+                "start_idx": ts,
+                "regime": test_regime,
+                "sde_mae": round(sde_mae, 4),
+                "garch_mae": round(garch_mae, 4),
+                "ratio": round(ratio, 4),
+            }
+        )
     return results
 
 
@@ -173,8 +189,7 @@ def main():
     logger.info("构建 Cross-Attention 因子矩阵 (真实 DAL 数据)...")
     end_ts = datetime(2025, 1, 1, tzinfo=timezone.utc)
     timestamps = [
-        end_ts - timedelta(hours=len(closes_full) - 1 - i)
-        for i in range(len(closes_full))
+        end_ts - timedelta(hours=len(closes_full) - 1 - i) for i in range(len(closes_full))
     ]
     exo_factors_full, factor_names = build_exogenous_factors_for_cross_attention(
         timestamps=timestamps,
@@ -206,13 +221,20 @@ def main():
 
         trainer = NeuralSDETrainer(
             model,
-            lr=1e-4, seq_len=64, horizon=20, batch_size=64,
-            loss_type="return_mse", weight_decay=1e-4,
-            patience=10, val_split=0.1,
+            lr=1e-4,
+            seq_len=64,
+            horizon=20,
+            batch_size=64,
+            loss_type="return_mse",
+            weight_decay=1e-4,
+            patience=10,
+            val_split=0.1,
         )
 
         # 训练 (Config A 无外生, B 有 P1 exogenous, C 有 P1+ cross-attention factors)
-        train_kwargs = dict(epochs=250, regime_labels=regime_train, regime_balance="natural")
+        train_kwargs = dict(  # noqa: C408
+            epochs=250, regime_labels=regime_train, regime_balance="natural"
+        )  # noqa: C408
         if config == "B":
             train_kwargs["exogenous_series"] = exo_series_full[:train_end]
         elif config == "C":
@@ -226,7 +248,10 @@ def main():
         exo_factors = exo_factors_full if config == "C" else None
 
         results = evaluate_on_windows(
-            model, closes_full, test_starts, regime_full,
+            model,
+            closes_full,
+            test_starts,
+            regime_full,
             exo_snapshot_series=exo_snap,
             exo_factors_matrix=exo_factors,
         )
@@ -240,7 +265,8 @@ def main():
     for config, s in all_summaries.items():
         logger.info(
             "Config %s: mean_ratio=%.4f, max_ratio=%.4f, mean_mae=%.4f",
-            config, s.get("mean_ratio", float("nan")),
+            config,
+            s.get("mean_ratio", float("nan")),
             s.get("max_ratio", float("nan")),
             s.get("mean_mae", float("nan")),
         )
@@ -251,13 +277,16 @@ def main():
         if mean_ratio_c < target:
             logger.info(
                 "✓ 方案C 达标! mean_ratio=%.4f < %.3f (改善 %.1f%% vs baseline %.4f)",
-                mean_ratio_c, target,
+                mean_ratio_c,
+                target,
                 100 * (1 - mean_ratio_c / all_summaries["A"].get("mean_ratio", 1.0)),
                 all_summaries["A"].get("mean_ratio", float("nan")),
             )
         else:
             logger.warning(
-                "✗ 方案C 未达标: mean_ratio=%.4f >= %.3f", mean_ratio_c, target,
+                "✗ 方案C 未达标: mean_ratio=%.4f >= %.3f",
+                mean_ratio_c,
+                target,
             )
 
     # 保存结果

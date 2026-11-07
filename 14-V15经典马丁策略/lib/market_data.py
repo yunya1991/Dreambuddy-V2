@@ -4,13 +4,17 @@
 - K线数据获取（OKX API / OKX CLI 双路降级）
 - 常用技术指标计算（SMA/EMA/RSI）
 """
-import json, os, subprocess, sys
+
+import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
 
-from config_loader import get_config
+from config_loader import get_config  # noqa: E402
 
 
 def _get_okx_client():
@@ -20,11 +24,13 @@ def _get_okx_client():
     if get_config("V15_DATA_SOURCE", "").strip().lower() == "hyperliquid":
         try:
             from hl_data_adapter import HLDataAdapter
+
             return HLDataAdapter()
         except Exception:
             return None
     try:
         from okx_client import OKXSimulatedClient
+
         client = OKXSimulatedClient()
         return client
     except Exception:
@@ -35,15 +41,29 @@ def _run_okx(args):
     """通过 OKX CLI 执行命令（降级方案）"""
     profile = get_config("OKX_PROFILE", "screen_trade")
     home_bin = "/opt/homebrew/bin"
-    env = {**os.environ, "NO_UPDATE_CHECK": "1", "PATH": home_bin + ":" + os.environ.get("PATH", "")}
+    env = {
+        **os.environ,
+        "NO_UPDATE_CHECK": "1",
+        "PATH": home_bin + ":" + os.environ.get("PATH", ""),
+    }
     try:
         r = subprocess.run(
             ["okx", "--profile", profile] + args,
-            capture_output=True, text=True, timeout=15,
-            env=env
+            capture_output=True,
+            text=True,
+            timeout=15,
+            env=env,
         )
-        stdout = "\n".join(l for l in r.stdout.split("\n") if "Update available" not in l and "Run: npm" not in l).strip()
-        stderr = "\n".join(l for l in r.stderr.split("\n") if "Update available" not in l and "Run: npm" not in l).strip()
+        stdout = "\n".join(
+            l
+            for l in r.stdout.split("\n")  # noqa: E741
+            if "Update available" not in l and "Run: npm" not in l  # noqa: E741
+        ).strip()
+        stderr = "\n".join(
+            l
+            for l in r.stderr.split("\n")  # noqa: E741
+            if "Update available" not in l and "Run: npm" not in l  # noqa: E741
+        ).strip()
         if r.returncode != 0 and stderr:
             return {"ok": False, "err": stderr[:200]}
         if stdout.startswith("[") or stdout.startswith("{"):
@@ -68,14 +88,16 @@ def fetch_candles(inst_id: str, bar: str = "4H", limit: int = 200) -> list:
             if r.get("ok"):
                 candles = []
                 for c in r.get("candles", []):
-                    candles.append({
-                        "ts": int(c["ts"]),
-                        "o": float(c["o"]),
-                        "h": float(c["h"]),
-                        "l": float(c["l"]),
-                        "c": float(c["c"]),
-                        "vol": float(c.get("vol", 0)),
-                    })
+                    candles.append(
+                        {
+                            "ts": int(c["ts"]),
+                            "o": float(c["o"]),
+                            "h": float(c["h"]),
+                            "l": float(c["l"]),
+                            "c": float(c["c"]),
+                            "vol": float(c.get("vol", 0)),
+                        }
+                    )
                 return list(reversed(candles))
         except Exception:
             pass
@@ -85,14 +107,16 @@ def fetch_candles(inst_id: str, bar: str = "4H", limit: int = 200) -> list:
     raw = r["data"]
     candles = []
     for c in raw:
-        candles.append({
-            "ts": int(c[0]),
-            "o": float(c[1]),
-            "h": float(c[2]),
-            "l": float(c[3]),
-            "c": float(c[4]),
-            "vol": float(c[5]),
-        })
+        candles.append(
+            {
+                "ts": int(c[0]),
+                "o": float(c[1]),
+                "h": float(c[2]),
+                "l": float(c[3]),
+                "c": float(c[4]),
+                "vol": float(c[5]),
+            }
+        )
     return list(reversed(candles))
 
 

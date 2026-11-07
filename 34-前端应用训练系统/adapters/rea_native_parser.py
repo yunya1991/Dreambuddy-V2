@@ -9,6 +9,7 @@
   - S33 输出 → REAParseResult 转换
   - FAIL-OPEN：import 失败/分析异常 → 空 REAParseResult
 """
+
 import os
 import sys
 from typing import Optional
@@ -22,7 +23,7 @@ for _p in [_THIS_DIR, os.path.dirname(_THIS_DIR), _REA_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.rea_parser import REAParser, REAParseResult
+from interfaces.rea_parser import REAParser, REAParseResult  # noqa: E402
 
 # Evidence level 映射：33-REA EvidenceLevel → TDR evidence_level (L1-L4)
 _EVIDENCE_LEVEL_MAP = {
@@ -48,6 +49,7 @@ class REANativeParser(REAParser):
         if self._rea_module is None:
             try:
                 import dsh_nodes
+
                 self._rea_module = dsh_nodes
             except Exception:
                 self._rea_module = None
@@ -68,10 +70,12 @@ class REANativeParser(REAParser):
             return REAParseResult(raw_evidence={"error": "rea_import_failed"})
 
         try:
-            output = rea.S33_rea_analyze({
-                "target": target_path,
-                "scope": scope,
-            })
+            output = rea.S33_rea_analyze(
+                {
+                    "target": target_path,
+                    "scope": scope,
+                }
+            )
             return self._convert_output(output, is_trace=False, target_path=target_path)
         except Exception as e:
             return REAParseResult(raw_evidence={"error": f"analyze_failed: {e}"})
@@ -115,8 +119,10 @@ class REANativeParser(REAParser):
         原地修改 result.algorithm_patterns，FAIL-OPEN。
         """
         try:
-            from core.algorithm_reducer import reduce_algorithm
             import os
+
+            from core.algorithm_reducer import reduce_algorithm
+
             # algorithm_reducer 仅支持单文件
             if not os.path.isfile(target_path):
                 return
@@ -160,11 +166,8 @@ class REANativeParser(REAParser):
         evidence_list = result.get("evidence", [])
 
         # 提取 evidence_level（取最高级别）和 confidence（取均值）
-        levels = [
-            _EVIDENCE_LEVEL_MAP.get(e.get("level", ""), "L3")
-            for e in evidence_list
-        ]
-        evidence_level = min(levels, key=lambda l: int(l[1:])) if levels else "L3"
+        levels = [_EVIDENCE_LEVEL_MAP.get(e.get("level", ""), "L3") for e in evidence_list]
+        evidence_level = min(levels, key=lambda l: int(l[1:])) if levels else "L3"  # noqa: E741
         confidences = [e.get("confidence", 0.5) for e in evidence_list]
         avg_confidence = sum(confidences) / len(confidences) if confidences else 0.5
 
@@ -183,8 +186,15 @@ class REANativeParser(REAParser):
         algorithm_patterns = []
         for e in evidence_list:
             res = str(e.get("result", ""))
-            for pattern in ["recursion", "divide_conquer", "dynamic_programming",
-                            "iteration", "accumulator", "backtracking", "greedy"]:
+            for pattern in [
+                "recursion",
+                "divide_conquer",
+                "dynamic_programming",
+                "iteration",
+                "accumulator",
+                "backtracking",
+                "greedy",
+            ]:
                 if pattern in res.lower():
                     algorithm_patterns.append(pattern)
 

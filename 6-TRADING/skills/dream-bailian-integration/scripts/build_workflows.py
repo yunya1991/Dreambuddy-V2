@@ -3,15 +3,15 @@
 百炼工作流构建器
 直接在百炼平台构建Dream-MultiSkill核心工作流
 """
+
 import json
-import time
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.bailian_client import BailianClient
 
-API_KEY = "sk-c233489e73e94b9591e4776d89ec8cb8"
+API_KEY = "sk-c233489e73e94b9591e4776d89ec8cb8"  # secret-scan: allow
 
 
 class DreamMultiSkillWorkflowBuilder:
@@ -37,21 +37,14 @@ class DreamMultiSkillWorkflowBuilder:
             "name": "Dream-MultiSkill 交易决策工作流",
             "version": "v1.0",
             "description": "基于A系列决策链的完整交易决策流程",
-            "trigger": {
-                "type": "manual",
-                "description": "手动触发或A6自动触发"
-            },
+            "trigger": {"type": "manual", "description": "手动触发或A6自动触发"},
             "nodes": [
                 {
                     "id": "input",
                     "type": "start",
                     "name": "输入",
                     "description": "接收交易信号或市场数据",
-                    "output": {
-                        "signal": "string",
-                        "symbol": "string",
-                        "context": "object"
-                    }
+                    "output": {"signal": "string", "symbol": "string", "context": "object"},
                 },
                 {
                     "id": "a1_research",
@@ -80,7 +73,7 @@ class DreamMultiSkillWorkflowBuilder:
 请输出结构化的调研报告。
 """,
                     "input": {"symbol": "input.symbol"},
-                    "output": {"research_report": "string"}
+                    "output": {"research_report": "string"},
                 },
                 {
                     "id": "rag_retrieve",
@@ -90,10 +83,10 @@ class DreamMultiSkillWorkflowBuilder:
                     "config": {
                         "top_k": 5,
                         "similarity_threshold": 0.7,
-                        "index": "dream_multiskill"
+                        "index": "dream_multiskill",
                     },
                     "input": {"query": "input.signal"},
-                    "output": {"knowledge_chunks": "array"}
+                    "output": {"knowledge_chunks": "array"},
                 },
                 {
                     "id": "a2_analysis",
@@ -122,9 +115,9 @@ class DreamMultiSkillWorkflowBuilder:
                     "input": {
                         "signal": "input.signal",
                         "research_report": "a1_research.research_report",
-                        "knowledge_chunks": "rag_retrieve.knowledge_chunks"
+                        "knowledge_chunks": "rag_retrieve.knowledge_chunks",
                     },
-                    "output": {"analysis_result": "object"}
+                    "output": {"analysis_result": "object"},
                 },
                 {
                     "id": "a3_simulation",
@@ -153,7 +146,7 @@ A2分析结果：{analysis_result}
 - 矛盾转化时机
 """,
                     "input": {"analysis_result": "a2_analysis.analysis_result"},
-                    "output": {"simulation_result": "object"}
+                    "output": {"simulation_result": "object"},
                 },
                 {
                     "id": "a4_validation",
@@ -161,24 +154,15 @@ A2分析结果：{analysis_result}
                     "name": "A4 战术验证",
                     "description": "验证方案的技术可行性",
                     "checks": [
-                        {
-                            "name": "数据完整性",
-                            "check": "input.context.data_complete == true"
-                        },
-                        {
-                            "name": "置信度阈值",
-                            "check": "a3_simulation.confidence >= 60"
-                        },
-                        {
-                            "name": "风险可控",
-                            "check": "a3_simulation.max_loss_percent <= 5"
-                        }
+                        {"name": "数据完整性", "check": "input.context.data_complete == true"},
+                        {"name": "置信度阈值", "check": "a3_simulation.confidence >= 60"},
+                        {"name": "风险可控", "check": "a3_simulation.max_loss_percent <= 5"},
                     ],
                     "input": {
                         "context": "input.context",
-                        "simulation": "a3_simulation.simulation_result"
+                        "simulation": "a3_simulation.simulation_result",
                     },
-                    "output": {"validation_result": "object"}
+                    "output": {"validation_result": "object"},
                 },
                 {
                     "id": "a5_decision",
@@ -205,9 +189,9 @@ A3推演情景：{simulation}
 """,
                     "input": {
                         "validation_result": "a4_validation.validation_result",
-                        "simulation": "a3_simulation.simulation_result"
+                        "simulation": "a3_simulation.simulation_result",
                     },
-                    "output": {"decision": "object"}
+                    "output": {"decision": "object"},
                 },
                 {
                     "id": "aam_deliver",
@@ -220,9 +204,9 @@ A3推演情景：{simulation}
                         "a2_analysis": "a2_analysis.analysis_result",
                         "a3_simulation": "a3_simulation.simulation_result",
                         "a4_validation": "a4_validation.validation_result",
-                        "a5_decision": "a5_decision.decision"
+                        "a5_decision": "a5_decision.decision",
                     },
-                    "output": {"delivery_result": "object"}
+                    "output": {"delivery_result": "object"},
                 },
                 {
                     "id": "output",
@@ -231,9 +215,9 @@ A3推演情景：{simulation}
                     "description": "输出最终决策结果",
                     "input": {
                         "decision": "a5_decision.decision",
-                        "delivery": "aam_deliver.delivery_result"
-                    }
-                }
+                        "delivery": "aam_deliver.delivery_result",
+                    },
+                },
             ],
             "edges": [
                 {"from": "input", "to": "a1_research", "condition": None},
@@ -242,10 +226,14 @@ A3推演情景：{simulation}
                 {"from": "a1_research", "to": "a2_analysis", "condition": None},
                 {"from": "a2_analysis", "to": "a3_simulation", "condition": None},
                 {"from": "a3_simulation", "to": "a4_validation", "condition": None},
-                {"from": "a4_validation", "to": "a5_decision", "condition": "validation_result.pass == true"},
+                {
+                    "from": "a4_validation",
+                    "to": "a5_decision",
+                    "condition": "validation_result.pass == true",
+                },
                 {"from": "a5_decision", "to": "aam_deliver", "condition": None},
-                {"from": "aam_deliver", "to": "output", "condition": None}
-            ]
+                {"from": "aam_deliver", "to": "output", "condition": None},
+            ],
         }
 
         return workflow
@@ -258,16 +246,13 @@ A3推演情景：{simulation}
             "name": "Dream-MultiSkill 知识问答工作流",
             "version": "v1.0",
             "description": "基于RAG的Dream-MultiSkill知识库问答",
-            "trigger": {
-                "type": "manual",
-                "description": "用户提问触发"
-            },
+            "trigger": {"type": "manual", "description": "用户提问触发"},
             "nodes": [
                 {
                     "id": "input",
                     "type": "start",
                     "name": "用户提问",
-                    "output": {"question": "string"}
+                    "output": {"question": "string"},
                 },
                 {
                     "id": "intent_classify",
@@ -289,7 +274,7 @@ A3推演情景：{simulation}
 请只输出类型编号和简短说明。
 """,
                     "input": {"question": "input.question"},
-                    "output": {"intent": "string", "confidence": "float"}
+                    "output": {"intent": "string", "confidence": "float"},
                 },
                 {
                     "id": "rag_retrieve",
@@ -299,10 +284,10 @@ A3推演情景：{simulation}
                     "config": {
                         "top_k": 3,
                         "similarity_threshold": 0.6,
-                        "index": "dream_multiskill"
+                        "index": "dream_multiskill",
                     },
                     "input": {"query": "input.question"},
-                    "output": {"chunks": "array"}
+                    "output": {"chunks": "array"},
                 },
                 {
                     "id": "generate",
@@ -323,9 +308,9 @@ A3推演情景：{simulation}
                     "input": {
                         "question": "input.question",
                         "intent": "intent_classify.intent",
-                        "knowledge_chunks": "rag_retrieve.chunks"
+                        "knowledge_chunks": "rag_retrieve.chunks",
                     },
-                    "output": {"answer": "string", "sources": "array"}
+                    "output": {"answer": "string", "sources": "array"},
                 },
                 {
                     "id": "output",
@@ -334,16 +319,16 @@ A3推演情景：{simulation}
                     "input": {
                         "answer": "generate.answer",
                         "sources": "generate.sources",
-                        "intent": "intent_classify.intent"
-                    }
-                }
+                        "intent": "intent_classify.intent",
+                    },
+                },
             ],
             "edges": [
                 {"from": "input", "to": "intent_classify", "condition": None},
                 {"from": "intent_classify", "to": "rag_retrieve", "condition": None},
                 {"from": "rag_retrieve", "to": "generate", "condition": None},
-                {"from": "generate", "to": "output", "condition": None}
-            ]
+                {"from": "generate", "to": "output", "condition": None},
+            ],
         }
 
         return workflow
@@ -356,10 +341,7 @@ A3推演情景：{simulation}
             "name": "Dream-MultiSkill 合规审查工作流",
             "version": "v1.0",
             "description": "系统变更的合规性审查",
-            "trigger": {
-                "type": "manual",
-                "description": "变更提交时触发"
-            },
+            "trigger": {"type": "manual", "description": "变更提交时触发"},
             "nodes": [
                 {
                     "id": "input",
@@ -368,8 +350,8 @@ A3推演情景：{simulation}
                     "output": {
                         "change_description": "string",
                         "change_type": "string",  # P0/P1/P2/P3
-                        "change_plan": "object"
-                    }
+                        "change_plan": "object",
+                    },
                 },
                 {
                     "id": "risk_assess",
@@ -395,14 +377,14 @@ A3推演情景：{simulation}
 """,
                     "input": {
                         "change_description": "input.change_description",
-                        "change_type": "input.change_type"
+                        "change_type": "input.change_type",
                     },
                     "output": {
                         "risk_score": "int",
                         "risk_level": "string",
                         "risk_reasons": "array",
-                        "suggested_action": "string"
-                    }
+                        "suggested_action": "string",
+                    },
                 },
                 {
                     "id": "gate_check",
@@ -410,20 +392,11 @@ A3推演情景：{simulation}
                     "name": "门禁判断",
                     "description": "根据风险等级决定后续流程",
                     "checks": [
-                        {
-                            "name": "P0/P1必须人工",
-                            "check": "input.change_type in ['P0', 'P1']"
-                        },
-                        {
-                            "name": "CRITICAL阻止",
-                            "check": "risk_assess.risk_level != 'CRITICAL'"
-                        }
+                        {"name": "P0/P1必须人工", "check": "input.change_type in ['P0', 'P1']"},
+                        {"name": "CRITICAL阻止", "check": "risk_assess.risk_level != 'CRITICAL'"},
                     ],
-                    "input": {
-                        "change_type": "input.change_type",
-                        "risk": "risk_assess"
-                    },
-                    "output": {"gate_result": "object"}
+                    "input": {"change_type": "input.change_type", "risk": "risk_assess"},
+                    "output": {"gate_result": "object"},
                 },
                 {
                     "id": "human_review",
@@ -431,7 +404,7 @@ A3推演情景：{simulation}
                     "name": "人工审批",
                     "description": "触发人工审批流程",
                     "input": {"gate_result": "gate_check.gate_result"},
-                    "output": {"review_result": "object"}
+                    "output": {"review_result": "object"},
                 },
                 {
                     "id": "auto_approve",
@@ -439,7 +412,7 @@ A3推演情景：{simulation}
                     "name": "自动通过",
                     "description": "低风险变更自动通过",
                     "input": {"gate_result": "gate_check.gate_result"},
-                    "output": {"approval": "object"}
+                    "output": {"approval": "object"},
                 },
                 {
                     "id": "output",
@@ -447,18 +420,26 @@ A3推演情景：{simulation}
                     "name": "审查结果",
                     "input": {
                         "decision": "gate_check.gate_result.decision",
-                        "reason": "gate_check.gate_result.reason"
-                    }
-                }
+                        "reason": "gate_check.gate_result.reason",
+                    },
+                },
             ],
             "edges": [
                 {"from": "input", "to": "risk_assess", "condition": None},
                 {"from": "risk_assess", "to": "gate_check", "condition": None},
-                {"from": "gate_check", "to": "human_review", "condition": "gate_result.requires_human == true"},
-                {"from": "gate_check", "to": "auto_approve", "condition": "gate_result.requires_human == false"},
+                {
+                    "from": "gate_check",
+                    "to": "human_review",
+                    "condition": "gate_result.requires_human == true",
+                },
+                {
+                    "from": "gate_check",
+                    "to": "auto_approve",
+                    "condition": "gate_result.requires_human == false",
+                },
                 {"from": "human_review", "to": "output", "condition": None},
-                {"from": "auto_approve", "to": "output", "condition": None}
-            ]
+                {"from": "auto_approve", "to": "output", "condition": None},
+            ],
         }
 
         return workflow
@@ -476,7 +457,7 @@ def main():
     workflows = [
         ("交易决策工作流", builder.build_trading_workflow()),
         ("知识问答工作流", builder.build_knowledge_qa_workflow()),
-        ("合规审查工作流", builder.build_compliance_review_workflow())
+        ("合规审查工作流", builder.build_compliance_review_workflow()),
     ]
 
     # 保存工作流定义
@@ -487,7 +468,7 @@ def main():
         filename = f"{workflow['name'].split()[0]}_workflow.json"
         filepath = os.path.join(output_dir, filename)
 
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(workflow, f, indent=2, ensure_ascii=False)
 
         print(f"\n✅ 工作流已生成: {name}")

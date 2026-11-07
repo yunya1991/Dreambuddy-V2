@@ -10,11 +10,11 @@ Author: Dreambuddy-V2 DreamOS
 Version: 1.0.0
 Date: 2026-08-18
 """
+
 from __future__ import annotations
 
 import argparse
 import json
-import math
 import os
 import sys
 import time
@@ -30,7 +30,6 @@ from torch.utils.data import DataLoader, TensorDataset
 # Path setup
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 from phase_d_models import BiLSTMAttentionBust, PatchTSTForDrawdown
-
 
 # ── Training hyperparameters ──────────────────────────────────────────────────
 
@@ -54,13 +53,13 @@ def load_dataset(npz_path: str) -> Tuple[torch.Tensor, ...]:
         bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd
     """
     data = np.load(npz_path, allow_pickle=True)
-    
+
     bilstm_ohlcv = torch.tensor(data["bilstm_ohlcv"], dtype=torch.float32)
     bilstm_scalar = torch.tensor(data["bilstm_scalar"], dtype=torch.float32)
     patchtst_in = torch.tensor(data["patchtst_in"], dtype=torch.float32)
     label_bust = torch.tensor(data["label_bust"], dtype=torch.float32).unsqueeze(-1)
     label_maxdd = torch.tensor(data["label_maxdd"], dtype=torch.float32).unsqueeze(-1)
-    
+
     return bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd
 
 
@@ -77,13 +76,13 @@ def train_bilstm(
     model = model.to(device)
     criterion = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
-    
-    best_val_loss = float('inf')
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=5)
+
+    best_val_loss = float("inf")
     best_state = None
     patience_counter = 0
     history = {"train_loss": [], "val_loss": [], "val_acc": []}
-    
+
     for epoch in range(epochs):
         # Training
         model.train()
@@ -98,7 +97,7 @@ def train_bilstm(
             optimizer.step()
             train_loss += loss.item() * ohlcv.size(0)
         train_loss /= len(train_loader.dataset)
-        
+
         # Validation
         model.eval()
         val_loss = 0.0
@@ -115,29 +114,36 @@ def train_bilstm(
                 total += labels.size(0)
         val_loss /= len(val_loader.dataset)
         val_acc = correct / total if total > 0 else 0.0
-        
+
         history["train_loss"].append(round(train_loss, 6))
         history["val_loss"].append(round(val_loss, 6))
         history["val_acc"].append(round(val_acc, 4))
-        
+
         scheduler.step(val_loss)
-        
+
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
             patience_counter = 0
         else:
             patience_counter += 1
-        
+
         if (epoch + 1) % 10 == 0 or epoch == 0:
-            print(f"  BiLSTM Epoch {epoch+1:3d}/{epochs} | train_loss={train_loss:.4f} val_loss={val_loss:.4f} val_acc={val_acc:.3f}")
-        
+            print(
+                f"  BiLSTM Epoch {epoch+1:3d}/{epochs} | train_loss={train_loss:.4f} val_loss={val_loss:.4f} val_acc={val_acc:.3f}"
+            )
+
         if patience_counter >= EARLY_STOP_PATIENCE:
             print(f"  BiLSTM early stop at epoch {epoch+1}")
             break
-    
+
     model.load_state_dict(best_state)
-    return {"best_val_loss": round(best_val_loss, 6), "best_val_acc": round(val_acc, 4), "epochs_trained": epoch + 1 - patience_counter, "history": history}
+    return {
+        "best_val_loss": round(best_val_loss, 6),
+        "best_val_acc": round(val_acc, 4),
+        "epochs_trained": epoch + 1 - patience_counter,
+        "history": history,
+    }
 
 
 def train_patchtst(
@@ -153,13 +159,13 @@ def train_patchtst(
     model = model.to(device)
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5)
-    
-    best_val_loss = float('inf')
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=5)
+
+    best_val_loss = float("inf")
     best_state = None
     patience_counter = 0
     history = {"train_loss": [], "val_loss": [], "val_mae": []}
-    
+
     for epoch in range(epochs):
         # Training
         model.train()
@@ -174,7 +180,7 @@ def train_patchtst(
             optimizer.step()
             train_loss += loss.item() * series.size(0)
         train_loss /= len(train_loader.dataset)
-        
+
         # Validation
         model.eval()
         val_loss = 0.0
@@ -188,29 +194,36 @@ def train_patchtst(
                 val_mae += (outputs - labels).abs().sum().item()
         val_loss /= len(val_loader.dataset)
         val_mae /= len(val_loader.dataset)
-        
+
         history["train_loss"].append(round(train_loss, 6))
         history["val_loss"].append(round(val_loss, 6))
         history["val_mae"].append(round(val_mae, 6))
-        
+
         scheduler.step(val_loss)
-        
+
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
             patience_counter = 0
         else:
             patience_counter += 1
-        
+
         if (epoch + 1) % 10 == 0 or epoch == 0:
-            print(f"  PatchTST Epoch {epoch+1:3d}/{epochs} | train_loss={train_loss:.6f} val_loss={val_loss:.6f} val_mae={val_mae:.4f}")
-        
+            print(
+                f"  PatchTST Epoch {epoch+1:3d}/{epochs} | train_loss={train_loss:.6f} val_loss={val_loss:.6f} val_mae={val_mae:.4f}"
+            )
+
         if patience_counter >= EARLY_STOP_PATIENCE:
             print(f"  PatchTST early stop at epoch {epoch+1}")
             break
-    
+
     model.load_state_dict(best_state)
-    return {"best_val_loss": round(best_val_loss, 6), "best_val_mae": round(val_mae, 6), "epochs_trained": epoch + 1 - patience_counter, "history": history}
+    return {
+        "best_val_loss": round(best_val_loss, 6),
+        "best_val_mae": round(val_mae, 6),
+        "epochs_trained": epoch + 1 - patience_counter,
+        "history": history,
+    }
 
 
 def save_model(model: nn.Module, meta: Dict, path: str) -> None:
@@ -232,22 +245,24 @@ def main(argv=None):
     ap.add_argument("--bilstm-epochs", type=int, default=BILSTM_EPOCHS)
     ap.add_argument("--patchtst-epochs", type=int, default=PATCHTST_EPOCHS)
     args = ap.parse_args(argv)
-    
+
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
     print()
-    
+
     # Load dataset
     data_dir = Path(args.data_dir)
     train_path = data_dir / "phase_d_train_all.npz"
-    test_path = data_dir / "phase_d_test_all.npz"
-    
+    test_path = data_dir / "phase_d_test_all.npz"  # noqa: F841
+
     if not train_path.exists():
         print(f"ERROR: Training data not found: {train_path}")
         sys.exit(1)
-    
+
     print(f"Loading training data from {train_path}...")
-    bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd = load_dataset(str(train_path))
+    bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd = load_dataset(
+        str(train_path)
+    )
     n_samples = bilstm_ohlcv.size(0)
     print(f"  Samples: {n_samples}")
     print(f"  BiLSTM OHLCV: {bilstm_ohlcv.shape}")
@@ -256,51 +271,77 @@ def main(argv=None):
     print(f"  Label Bust: {label_bust.shape} (pos={label_bust.sum().item():.0f})")
     print(f"  Label MaxDD: {label_maxdd.shape} (mean={label_maxdd.mean().item():.4f})")
     print()
-    
+
     # Train/val split (80/20)
     n_train = int(n_samples * 0.8)
     indices = torch.randperm(n_samples)
     train_idx = indices[:n_train]
     val_idx = indices[n_train:]
-    
+
     # ── Train BiLSTMAttentionBust ──────────────────────────────────────────
     print("=" * 60)
     print("Training BiLSTMAttentionBust (Bust Prediction)")
     print("=" * 60)
-    
-    bilstm_model = BiLSTMAttentionBust(ohlcv_len=60, n_channels=5, n_scalar=7, hidden=48, n_layers=2)
-    
-    train_ds = TensorDataset(bilstm_ohlcv[train_idx], bilstm_scalar[train_idx], label_bust[train_idx])
+
+    bilstm_model = BiLSTMAttentionBust(
+        ohlcv_len=60, n_channels=5, n_scalar=7, hidden=48, n_layers=2
+    )
+
+    train_ds = TensorDataset(
+        bilstm_ohlcv[train_idx], bilstm_scalar[train_idx], label_bust[train_idx]
+    )
     val_ds = TensorDataset(bilstm_ohlcv[val_idx], bilstm_scalar[val_idx], label_bust[val_idx])
     train_loader = DataLoader(train_ds, batch_size=BILSTM_BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=BILSTM_BATCH_SIZE, shuffle=False)
-    
-    bilstm_result = train_bilstm(bilstm_model, train_loader, val_loader, args.bilstm_epochs, BILSTM_LR, BILSTM_WEIGHT_DECAY, device)
-    print(f"  Best val_loss: {bilstm_result['best_val_loss']}, val_acc: {bilstm_result['best_val_acc']}")
+
+    bilstm_result = train_bilstm(
+        bilstm_model,
+        train_loader,
+        val_loader,
+        args.bilstm_epochs,
+        BILSTM_LR,
+        BILSTM_WEIGHT_DECAY,
+        device,
+    )
+    print(
+        f"  Best val_loss: {bilstm_result['best_val_loss']}, val_acc: {bilstm_result['best_val_acc']}"
+    )
     print()
-    
+
     # ── Train PatchTSTForDrawdown ──────────────────────────────────────────
     print("=" * 60)
     print("Training PatchTSTForDrawdown (Drawdown Prediction)")
     print("=" * 60)
-    
-    patchtst_model = PatchTSTForDrawdown(c_in=5, seq_len=120, patch_len=12, stride=6, d_model=32, n_layers=2, n_heads=4, d_ff=64)
-    
+
+    patchtst_model = PatchTSTForDrawdown(
+        c_in=5, seq_len=120, patch_len=12, stride=6, d_model=32, n_layers=2, n_heads=4, d_ff=64
+    )
+
     # PatchTST expects (batch, c_in, seq_len); dataset has (batch, seq_len, c_in)
     patchtst_in_t = patchtst_in.transpose(1, 2)  # (N, c_in, seq_len)
     train_ds2 = TensorDataset(patchtst_in_t[train_idx], label_maxdd[train_idx])
     val_ds2 = TensorDataset(patchtst_in_t[val_idx], label_maxdd[val_idx])
     train_loader2 = DataLoader(train_ds2, batch_size=PATCHTST_BATCH_SIZE, shuffle=True)
     val_loader2 = DataLoader(val_ds2, batch_size=PATCHTST_BATCH_SIZE, shuffle=False)
-    
-    patchtst_result = train_patchtst(patchtst_model, train_loader2, val_loader2, args.patchtst_epochs, PATCHTST_LR, PATCHTST_WEIGHT_DECAY, device)
-    print(f"  Best val_loss: {patchtst_result['best_val_loss']}, val_mae: {patchtst_result['best_val_mae']}")
+
+    patchtst_result = train_patchtst(
+        patchtst_model,
+        train_loader2,
+        val_loader2,
+        args.patchtst_epochs,
+        PATCHTST_LR,
+        PATCHTST_WEIGHT_DECAY,
+        device,
+    )
+    print(
+        f"  Best val_loss: {patchtst_result['best_val_loss']}, val_mae: {patchtst_result['best_val_mae']}"
+    )
     print()
-    
+
     # ── Save models ────────────────────────────────────────────────────────
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    
+
     bilstm_meta = {
         "model": "BiLSTMAttentionBust",
         "ohlcv_len": 60,
@@ -315,7 +356,7 @@ def main(argv=None):
         "trained_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     save_model(bilstm_model, bilstm_meta, str(out_dir / "bilstm.pt"))
-    
+
     patchtst_meta = {
         "model": "PatchTSTForDrawdown",
         "c_in": 5,
@@ -333,7 +374,7 @@ def main(argv=None):
         "trained_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     save_model(patchtst_model, patchtst_meta, str(out_dir / "patchtst.pt"))
-    
+
     # ── Save training report ───────────────────────────────────────────────
     report = {
         "bilstm": bilstm_meta,
@@ -351,7 +392,7 @@ def main(argv=None):
     with open(report_path, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
     print(f"  Report: {report_path}")
-    
+
     print()
     print("=" * 60)
     print("Training complete!")

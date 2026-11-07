@@ -16,9 +16,9 @@ Phase B TDD 测试：TrendFollowingEngine + 正金字塔加仓 + 2N 止损
 参考：SPEC-趋势跟踪正金字塔与网格策略落地.md Phase B
 硬约束：HC-TF-01（SL 2×ATR 4-15%）、HC-TF-02（4 Unit 0.5N）、HC-TF-07（FAIL-OPEN）
 """
+
 from __future__ import annotations
 
-import math
 import sys
 from pathlib import Path
 
@@ -35,12 +35,13 @@ if str(REPO) not in sys.path:
 def test_trend_following_engine_importable():
     """T1: TrendFollowingEngine 模块可导入"""
     from dreambuddy_evolution.engines.trend_following import (
-        TrendFollowingEngine,
-        DonchianChannel,
         ATRStopCalculator,
+        DonchianChannel,
         PyramidingPositionSizer,
         TrendExitRule,
+        TrendFollowingEngine,
     )
+
     assert TrendFollowingEngine is not None
     assert DonchianChannel is not None
     assert ATRStopCalculator is not None
@@ -118,7 +119,7 @@ def test_pyramiding_unit():
     from dreambuddy_evolution.engines.trend_following import PyramidingPositionSizer
 
     account = 10000.0  # 10000 USDT
-    atr = 5.0          # ATR = 5 USDT
+    atr = 5.0  # ATR = 5 USDT
     point_value = 1.0  # 1 USDT/单位
     unit = PyramidingPositionSizer.calc_unit(account, atr, point_value)
     # Unit = (10000 × 0.01) / (5 × 1) = 100 / 5 = 20

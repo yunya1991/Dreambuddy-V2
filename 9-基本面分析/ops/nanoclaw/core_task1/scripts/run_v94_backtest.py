@@ -5,14 +5,13 @@ V9.4 回测对比分析
 对比 V9.3 vs V9.4 的回测结果
 """
 
-import json
-from datetime import datetime, timedelta
+import json  # noqa: I001
 from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from event_ledger_backtester import EventLedgerBacktester, BacktestConfig
+from event_ledger_backtester import EventLedgerBacktester, BacktestConfig  # noqa: I001
 
 
 def run_v94_backtest(ledger_path: Path, data_dir: Path):
@@ -23,7 +22,7 @@ def run_v94_backtest(ledger_path: Path, data_dir: Path):
         end_date="2026-03-08",
         initial_capital=100000,
         transaction_cost=0.001,
-        lookback_days=7
+        lookback_days=7,
     )
 
     backtester = EventLedgerBacktester(config)
@@ -52,9 +51,9 @@ def main():
 
     # 加载 V9.3 结果对比
     if v93_result_file.exists():
-        with open(v93_result_file, 'r') as f:
+        with open(v93_result_file, "r") as f:
             v93_data = json.load(f)
-        v93_results = v93_data['results']
+        v93_results = v93_data["results"]
     else:
         v93_results = None
 
@@ -70,7 +69,7 @@ def main():
         "annualized_return": result.annualized_return,
         "sharpe_ratio": result.sharpe_ratio,
         "max_drawdown": result.max_drawdown,
-        "total_trades": result.total_trades
+        "total_trades": result.total_trades,
     }
 
     print(f"\n{'指标':<15} {'V9.3':>15} {'V9.4':>15} {'变化':>15}")
@@ -106,7 +105,7 @@ def main():
         print(f"{name:<15} {v93_str:>15} {v94_str:>15} {change_str:>15}")
 
     # V9.4 事件统计
-    if hasattr(result, 'event_stats') and result.event_stats:
+    if hasattr(result, "event_stats") and result.event_stats:
         print("\n【V9.4 事件统计】")
         es = result.event_stats
         print(f"  总事件数：{es.get('total_events', 0)}")
@@ -121,19 +120,19 @@ def main():
             "end_date": config.end_date,
             "initial_capital": config.initial_capital,
             "transaction_cost": config.transaction_cost,
-            "lookback_days": config.lookback_days
+            "lookback_days": config.lookback_days,
         },
         "results": {
             "total_return": result.total_return,
             "annualized_return": result.annualized_return,
             "sharpe_ratio": result.sharpe_ratio,
             "max_drawdown": result.max_drawdown,
-            "total_trades": result.total_trades
-        }
+            "total_trades": result.total_trades,
+        },
     }
 
     output_file = data_dir / "backtest_result_ledger_v9_4.json"
-    with open(output_file, 'w', encoding='utf-8') as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         json.dump(result_summary, f, indent=2, ensure_ascii=False)
 
     print(f"\n[✓] 回测结果已保存：{output_file}")

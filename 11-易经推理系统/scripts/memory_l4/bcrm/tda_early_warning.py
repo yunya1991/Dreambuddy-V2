@@ -24,37 +24,41 @@ TDA持久同调早期预警 — 代数拓扑转折点检测。
 实现库：ripser（最快持久同调计算）+ persim（持久图距离度量）
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Tuple
 from collections import deque
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 
 from ._constants import (
-    TDA_EMBEDDING_DIM,
-    TDA_EMBEDDING_DELAY,
-    TDA_WINDOW_SIZE,
-    TDA_MAX_PERSISTENCE_DIM,
+    DIR_DOWN,
+    DIR_FLAT,
+    DIR_UNKNOWN,
+    DIR_UP,
     TDA_BETTI_SPIKE_FACTOR,
-    TDA_PERSISTENCE_RATIO_THRESHOLD,
     TDA_BOTTLENECK_DISTANCE_THRESHOLD,
+    TDA_EMBEDDING_DELAY,
+    TDA_EMBEDDING_DIM,
+    TDA_MAX_PERSISTENCE_DIM,
     TDA_MIN_POINTS,
-    DIR_UP, DIR_DOWN, DIR_FLAT, DIR_UNKNOWN,
+    TDA_WINDOW_SIZE,
 )
 
 
 @dataclass
 class TDAResult:
     """TDA持久同调检测结果"""
-    betti_0: int = 0                    # H0连通分量数（拓扑碎片化程度）
-    betti_1: int = 0                    # H1环数（周期性/振荡结构）
-    betti_curve_max: float = 0.0        # Betti曲线峰值
-    persistence_ratio: float = 0.0      # 长寿命特征占比（稳定性指标）
-    bottleneck_distance: float = 0.0    # 与历史拓扑的瓶颈距离
+
+    betti_0: int = 0  # H0连通分量数（拓扑碎片化程度）
+    betti_1: int = 0  # H1环数（周期性/振荡结构）
+    betti_curve_max: float = 0.0  # Betti曲线峰值
+    persistence_ratio: float = 0.0  # 长寿命特征占比（稳定性指标）
+    bottleneck_distance: float = 0.0  # 与历史拓扑的瓶颈距离
     topological_stability: float = 0.0  # 拓扑稳定性 [0,1]
-    early_warning: bool = False         # 早期转折预警
-    warning_strength: float = 0.0       # 预警强度 [0,1]
-    direction: str = DIR_UNKNOWN        # 拓扑推断方向
-    has_sufficient_data: bool = False   # 数据是否充足
+    early_warning: bool = False  # 早期转折预警
+    warning_strength: float = 0.0  # 预警强度 [0,1]
+    direction: str = DIR_UNKNOWN  # 拓扑推断方向
+    has_sufficient_data: bool = False  # 数据是否充足
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -140,8 +144,9 @@ class TDAEarlyWarning:
             return result
 
         # Step 3: 提取Betti数和持久性统计
-        betti_0, betti_1, persistence_ratio, betti_max = \
-            self._extract_topological_features(diagrams)
+        betti_0, betti_1, persistence_ratio, betti_max = self._extract_topological_features(
+            diagrams
+        )
         result.betti_0 = betti_0
         result.betti_1 = betti_1
         result.betti_curve_max = betti_max
@@ -154,8 +159,9 @@ class TDAEarlyWarning:
         result.bottleneck_distance = self._compute_bottleneck_distance(diagrams)
 
         # Step 6: 早期转折预警
-        result.early_warning, result.warning_strength = \
-            self._detect_early_warning(betti_max, result.bottleneck_distance)
+        result.early_warning, result.warning_strength = self._detect_early_warning(
+            betti_max, result.bottleneck_distance
+        )
 
         # Step 7: 方向推断（基于点云趋势）
         result.direction = self._infer_direction(point_cloud)
@@ -186,7 +192,7 @@ class TDAEarlyWarning:
         # 构建点云 shape=(n_points, m)
         point_cloud = np.zeros((n_points, m))
         for i in range(m):
-            point_cloud[:, i] = series[i * tau: i * tau + n_points]
+            point_cloud[:, i] = series[i * tau : i * tau + n_points]
 
         # 标准化（消除量纲影响，聚焦拓扑结构）
         std = np.std(point_cloud)
@@ -204,10 +210,12 @@ class TDAEarlyWarning:
         """
         try:
             from ripser import ripser
+
             result = ripser(point_cloud, maxdim=self.max_dim)
-            return result['dgms']
+            return result["dgms"]
         except Exception as e:
             import logging
+
             logging.getLogger(__name__).warning(f"[TDA] ripser计算失败: {e}")
             return None
 
@@ -263,6 +271,7 @@ class TDAEarlyWarning:
 
         try:
             from persim import bottleneck
+
             # 比较H0持久图
             dgm_current = diagrams[0] if len(diagrams) > 0 else np.array([])
             dgm_prev = self._prev_diagrams[0] if len(self._prev_diagrams) > 0 else np.array([])
@@ -285,9 +294,7 @@ class TDAEarlyWarning:
             prev_features = sum(len(d) for d in self._prev_diagrams) if self._prev_diagrams else 0
             return float(abs(curr_features - prev_features))
 
-    def _detect_early_warning(
-        self, betti_max: float, bottleneck_dist: float
-    ) -> Tuple[bool, float]:
+    def _detect_early_warning(self, betti_max: float, bottleneck_dist: float) -> Tuple[bool, float]:
         """
         早期转折预警检测。
 

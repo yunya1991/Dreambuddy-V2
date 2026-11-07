@@ -3,12 +3,12 @@
 SPEC v2.0-rc3 第五节：辩论认知模块。
 4-MEMORY L2 应用记忆新增 "debate" 类型。
 """
+
 from __future__ import annotations
 
 import json
 import os
 import sys
-import tempfile
 import unittest
 
 TOOL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -26,6 +26,7 @@ class TestAdd(unittest.TestCase):
 
     def test_add_returns_memory_id(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(":memory:")
         mid = mem.add(
             content=json.dumps({"thesis": "BTC稀缺性", "side": "bull"}),
@@ -38,6 +39,7 @@ class TestAdd(unittest.TestCase):
     def test_add_with_default_tags(self):
         """无 tags 时使用默认值。"""
         from debate_memory import DebateMemory
+
         mem = DebateMemory(":memory:")
         mid = mem.add(
             content="test content",
@@ -51,6 +53,7 @@ class TestGet(unittest.TestCase):
 
     def test_get_returns_memory(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(":memory:")
         mid = mem.add(
             content=json.dumps({"thesis": "BTC稀缺性"}),
@@ -63,6 +66,7 @@ class TestGet(unittest.TestCase):
 
     def test_get_nonexistent_returns_none(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(":memory:")
         result = mem.get("VM-nonexistent")
         self.assertIsNone(result)
@@ -73,11 +77,10 @@ class TestSearch(unittest.TestCase):
 
     def test_search_returns_list(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(":memory:")
-        mem.add(content=json.dumps({"thesis": "BTC稀缺"}),
-                quality_level="B", tags="debate,BTC")
-        mem.add(content=json.dumps({"thesis": "ETH DeFi"}),
-                quality_level="C", tags="debate,ETH")
+        mem.add(content=json.dumps({"thesis": "BTC稀缺"}), quality_level="B", tags="debate,BTC")
+        mem.add(content=json.dumps({"thesis": "ETH DeFi"}), quality_level="C", tags="debate,ETH")
         results = mem.search("BTC", top_k=5)
         self.assertIsInstance(results, list)
         self.assertGreater(len(results), 0)
@@ -85,10 +88,10 @@ class TestSearch(unittest.TestCase):
     def test_search_top_k_limit(self):
         """top_k 限制返回数量。"""
         from debate_memory import DebateMemory
+
         mem = DebateMemory(":memory:")
         for i in range(5):
-            mem.add(content=f"BTC test {i}", quality_level="B",
-                    tags="debate,BTC")
+            mem.add(content=f"BTC test {i}", quality_level="B", tags="debate,BTC")
         results = mem.search("BTC", top_k=2)
         self.assertLessEqual(len(results), 2)
 
@@ -98,6 +101,7 @@ class TestUpdate(unittest.TestCase):
 
     def test_update_quality(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(":memory:")
         mid = mem.add(content="test", quality_level="C", tags="debate")
         updated = mem.update(mid, quality_level="A")
@@ -111,6 +115,7 @@ class TestStats(unittest.TestCase):
 
     def test_stats_returns_dict(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(":memory:")
         mem.add(content="t1", quality_level="B", tags="debate,BTC")
         mem.add(content="t2", quality_level="C", tags="debate,ETH")
@@ -125,6 +130,7 @@ class TestDistillCandidates(unittest.TestCase):
 
     def test_returns_b_quality_and_above(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(":memory:")
         mem.add(content="high", quality_level="A", tags="debate")
         mem.add(content="mid", quality_level="B", tags="debate")
@@ -140,6 +146,7 @@ class TestHealthcheck(unittest.TestCase):
 
     def test_returns_ok(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(":memory:")
         result = mem.healthcheck()
         self.assertIsInstance(result, dict)

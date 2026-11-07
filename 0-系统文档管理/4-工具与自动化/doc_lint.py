@@ -26,6 +26,7 @@ doc_lint.py — DreamBuddy-V2 文档命名/格式/规范检查工具
     1 = 存在违规
     2 = 目录不存在或参数错误
 """
+
 import argparse
 import os
 import re
@@ -33,30 +34,51 @@ import sys
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-DOC_MGMT_DIR = SCRIPT_DIR.parent              # 0-系统文档管理
-PROJECT_ROOT = DOC_MGMT_DIR.parent            # dreambuddy-v2
+DOC_MGMT_DIR = SCRIPT_DIR.parent  # 0-系统文档管理
+PROJECT_ROOT = DOC_MGMT_DIR.parent  # dreambuddy-v2
 
 # 版本头检查时跳过的子目录（工具目录、模板目录）
-VERSION_HEADER_SKIP_DIRS = {'4-工具与自动化', 'TEMPLATES'}
+VERSION_HEADER_SKIP_DIRS = {"4-工具与自动化", "TEMPLATES"}
 
 # 扫描时忽略的目录
-IGNORED_DIRS = {'.git', 'node_modules', '__pycache__', '.venv', 'dist', 'build',
-                '.pytest_cache', '.cognitive', '.run', '.trae', '.claude',
-                'site-packages', '.workbuddy'}
+IGNORED_DIRS = {
+    ".git",
+    "node_modules",
+    "__pycache__",
+    ".venv",
+    "dist",
+    "build",
+    ".pytest_cache",
+    ".cognitive",
+    ".run",
+    ".trae",
+    ".claude",
+    "site-packages",
+    ".workbuddy",
+}
 
 # 禁止命名（精确匹配，大小写不敏感）
-FORBIDDEN_EXACT = {'新技术文档.md', '最终版文档.md', 'doc1.md', 'temp.md'}
+FORBIDDEN_EXACT = {"新技术文档.md", "最终版文档.md", "doc1.md", "temp.md"}
 # 禁止命名（正则匹配）
-FORBIDDEN_REGEX = [re.compile(r'^技术文档.*\.md$', re.IGNORECASE)]
+FORBIDDEN_REGEX = [re.compile(r"^技术文档.*\.md$", re.IGNORECASE)]
 # 主观形容词 token（出现在文件名中即报 warning）
 SUBJECTIVE_TOKENS = [
-    '最终', '最新', '临时', '草稿', '正式版', '完整版', '精简版',
-    '修改版', '修正版', '备份', '最终版',
+    "最终",
+    "最新",
+    "临时",
+    "草稿",
+    "正式版",
+    "完整版",
+    "精简版",
+    "修改版",
+    "修正版",
+    "备份",
+    "最终版",
 ]
 
-UPPER_UNDERSCORE_RE = re.compile(r'^[A-Z][A-Z0-9_]*$')
-NN_DIR_RE = re.compile(r'^\d+-')
-VERSION_KEYS = ['**版本**', '**更新日期**']
+UPPER_UNDERSCORE_RE = re.compile(r"^[A-Z][A-Z0-9_]*$")
+NN_DIR_RE = re.compile(r"^\d+-")
+VERSION_KEYS = ["**版本**", "**更新日期**"]
 
 
 class Violation:
@@ -72,7 +94,9 @@ class Violation:
             rel = str(Path(self.path).relative_to(root))
         except ValueError:
             rel = str(self.path)
-        return "[WARN] {vtype:<22} {rel} — {msg}".format(vtype=self.vtype, rel=rel, msg=self.message)
+        return "[WARN] {vtype:<22} {rel} — {msg}".format(
+            vtype=self.vtype, rel=rel, msg=self.message
+        )
 
 
 def walk_dir(target):
@@ -108,7 +132,7 @@ def is_version_check_target(md_path):
     except ValueError:
         return False
     parts = rel.parts
-    if len(parts) >= 2 and NN_DIR_RE.match(parts[0]) and parts[1] == 'docs':
+    if len(parts) >= 2 and NN_DIR_RE.match(parts[0]) and parts[1] == "docs":
         return True
     return False
 
@@ -120,23 +144,25 @@ def check_naming(md_path, violations):
 
     # 禁止命名（精确）
     if name.lower() in {n.lower() for n in FORBIDDEN_EXACT}:
-        violations.append(Violation(md_path, 'NAMING_FORBIDDEN', '禁止命名：{}'.format(name)))
+        violations.append(Violation(md_path, "NAMING_FORBIDDEN", "禁止命名：{}".format(name)))
         return
     for rx in FORBIDDEN_REGEX:
         if rx.match(name):
-            violations.append(Violation(md_path, 'NAMING_FORBIDDEN', '禁止命名：{}'.format(name)))
+            violations.append(Violation(md_path, "NAMING_FORBIDDEN", "禁止命名：{}".format(name)))
             return
     # 主观形容词
     for token in SUBJECTIVE_TOKENS:
         if token in name:
-            violations.append(Violation(md_path, 'NAMING_FORBIDDEN',
-                                        '含主观形容词「{}」：{}'.format(token, name)))
+            violations.append(
+                Violation(md_path, "NAMING_FORBIDDEN", "含主观形容词「{}」：{}".format(token, name))
+            )
             return
 
     # docs/ 下文件必须大写+下划线
-    if md_path.parent.name == 'docs' and not UPPER_UNDERSCORE_RE.match(stem):
-        violations.append(Violation(md_path, 'NAMING_CASE',
-                                    'docs/ 下文件应使用大写+下划线命名：{}'.format(name)))
+    if md_path.parent.name == "docs" and not UPPER_UNDERSCORE_RE.match(stem):
+        violations.append(
+            Violation(md_path, "NAMING_CASE", "docs/ 下文件应使用大写+下划线命名：{}".format(name))
+        )
 
 
 def check_version_header(md_path, violations):
@@ -144,38 +170,45 @@ def check_version_header(md_path, violations):
     if not is_version_check_target(md_path):
         return
     try:
-        with open(md_path, 'r', encoding='utf-8') as f:
-            head = ''.join(f.readline() for _ in range(30))
+        with open(md_path, "r", encoding="utf-8") as f:
+            head = "".join(f.readline() for _ in range(30))
     except OSError:
         return
     missing = [k for k in VERSION_KEYS if k not in head]
     if missing:
-        violations.append(Violation(md_path, 'VERSION_HEADER_MISSING',
-                                    '缺少版本头：{}'.format('、'.join(missing))))
+        violations.append(
+            Violation(
+                md_path, "VERSION_HEADER_MISSING", "缺少版本头：{}".format("、".join(missing))
+            )
+        )
 
 
 def scan(target, violations):
     """扫描单个目标目录。"""
-    for dirpath, dirnames, filenames in walk_dir(target):
+    for dirpath, dirnames, filenames in walk_dir(target):  # noqa: B007
         # README.md 与 INDEX.md 并存检测
-        if 'README.md' in filenames and 'INDEX.md' in filenames:
-            conflict_path = Path(dirpath) / 'README.md'
-            violations.append(Violation(conflict_path, 'README_INDEX_CONFLICT',
-                                        '同目录并存 README.md 与 INDEX.md（L2 用 README，L1 用 INDEX）'))
+        if "README.md" in filenames and "INDEX.md" in filenames:
+            conflict_path = Path(dirpath) / "README.md"
+            violations.append(
+                Violation(
+                    conflict_path,
+                    "README_INDEX_CONFLICT",
+                    "同目录并存 README.md 与 INDEX.md（L2 用 README，L1 用 INDEX）",
+                )
+            )
         for fn in filenames:
-            if fn.endswith('.md'):
+            if fn.endswith(".md"):
                 md = Path(dirpath) / fn
                 check_naming(md, violations)
                 check_version_header(md, violations)
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(
-        description='DreamBuddy-V2 文档命名/格式/规范检查工具')
-    parser.add_argument('targets', nargs='*',
-                        help='目标目录（默认：0-系统文档管理 + 各 NN-子系统）')
-    parser.add_argument('--quiet', '-q', action='store_true',
-                        help='只输出违规数')
+    parser = argparse.ArgumentParser(description="DreamBuddy-V2 文档命名/格式/规范检查工具")
+    parser.add_argument(
+        "targets", nargs="*", help="目标目录（默认：0-系统文档管理 + 各 NN-子系统）"
+    )
+    parser.add_argument("--quiet", "-q", action="store_true", help="只输出违规数")
     args = parser.parse_args(argv)
 
     targets = args.targets if args.targets else default_targets()
@@ -183,7 +216,7 @@ def main(argv=None):
     for t in targets:
         p = Path(t).resolve()
         if not p.exists():
-            print('错误：目录不存在：{}'.format(t), file=sys.stderr)
+            print("错误：目录不存在：{}".format(t), file=sys.stderr)
             return 2
         resolved.append(p)
 
@@ -196,14 +229,14 @@ def main(argv=None):
         print(len(violations))
     else:
         if not violations:
-            print('✅ 文档规范检查通过，未发现违规项。')
+            print("✅ 文档规范检查通过，未发现违规项。")
         else:
-            print('共发现 {} 项违规：\n'.format(len(violations)))
+            print("共发现 {} 项违规：\n".format(len(violations)))
             for v in violations:
                 print(v.format(PROJECT_ROOT))
-            print('\n违规统计：{} 项'.format(len(violations)))
+            print("\n违规统计：{} 项".format(len(violations)))
     return 1 if violations else 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

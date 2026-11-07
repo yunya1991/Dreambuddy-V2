@@ -2,6 +2,7 @@
 
 四阶段：定位(Locate)→追踪(Trace)→还原(Reduce)→标注(Annotate)
 """
+
 import os
 import sys
 import tempfile
@@ -9,9 +10,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.investigation_workflow import investigate, InvestigationWorkflow
+from core.investigation_workflow import investigate, InvestigationWorkflow  # noqa: I001
 from core.evidence import Evidence
-
 
 # 测试用 Python 项目
 SAMPLE_PROJECT = '''
@@ -200,5 +200,9 @@ def test_investigation_invalid_target():
     assert "evidence" in result
     assert len(result["evidence"]) > 0
     # 应有错误标记
-    assert any("不存在" in str(e.result) or "invalid" in str(e.result).lower()
-               or "not" in str(e.result).lower() for e in result["evidence"])
+    assert any(
+        "不存在" in str(e.result)
+        or "invalid" in str(e.result).lower()
+        or "not" in str(e.result).lower()
+        for e in result["evidence"]
+    )

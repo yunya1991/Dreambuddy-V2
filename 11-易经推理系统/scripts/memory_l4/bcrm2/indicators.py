@@ -19,17 +19,17 @@ Spec §2.2-2.3 定义的 12 个原子指标，输入 BTC 1D OHLCV DataFrame，
 
   MISC vol_60d_pct            原始 [0,1]          波动率分位（点阵图用）
 """
+
 from __future__ import annotations
 
 from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
-
-from bcrm2.ma200_cycle_features import compute_ma200_features, compute_btc_cycle_features
+from bcrm2.ma200_cycle_features import compute_btc_cycle_features, compute_ma200_features
 from bcrm2.multi_timeframe_features import (
-    compute_ma_alignment_score,
     compute_log_returns,
+    compute_ma_alignment_score,
     compute_vol_percentile,
     compute_volume_ratio,
 )
@@ -41,8 +41,10 @@ __all__ = ["IndicatorBank"]
 # Swing 检测（用于 dow_hhhl_score）
 # ================================================================
 
-def _detect_swings(high: pd.Series, low: pd.Series, lookback: int = 5
-                   ) -> Tuple[pd.Series, pd.Series]:
+
+def _detect_swings(
+    high: pd.Series, low: pd.Series, lookback: int = 5
+) -> Tuple[pd.Series, pd.Series]:
     """检测 Swing High / Swing Low。
 
     - Swing High: price[i] == max(price[i-lookback : i+lookback])
@@ -56,7 +58,7 @@ def _detect_swings(high: pd.Series, low: pd.Series, lookback: int = 5
     is_sl = np.zeros(n, dtype=float)
 
     h = high.values.astype(float)
-    l = low.values.astype(float)
+    l = low.values.astype(float)  # noqa: E741
 
     for i in range(n):
         lo = max(0, i - lookback)
@@ -65,12 +67,15 @@ def _detect_swings(high: pd.Series, low: pd.Series, lookback: int = 5
             is_sh[i] = 1.0
         if l[i] == l[lo:hi].min():
             is_sl[i] = 1.0
-    return (pd.Series(is_sh, index=high.index, name="sh"),
-            pd.Series(is_sl, index=low.index, name="sl"))
+    return (
+        pd.Series(is_sh, index=high.index, name="sh"),
+        pd.Series(is_sl, index=low.index, name="sl"),
+    )
 
 
-def _dow_hhhl_score(high: pd.Series, low: pd.Series, lookback: int = 5,
-                    n_recent: int = 3) -> pd.Series:
+def _dow_hhhl_score(
+    high: pd.Series, low: pd.Series, lookback: int = 5, n_recent: int = 3
+) -> pd.Series:
     """道氏理论 HH/HL 近 N 个 Swing 点评分。
 
     - 连续 Higher High + Higher Low（上升趋势）→ + (2 / n_recent) × k ，其中 k 为连续数
@@ -105,8 +110,8 @@ def _dow_hhhl_score(high: pd.Series, low: pd.Series, lookback: int = 5,
             continue
         start_sh = max(0, p_sh + 1 - n_recent)
         start_sl = max(0, p_sl + 1 - n_recent)
-        recent_sh = sh_idx[start_sh:p_sh + 1]  # 升序索引
-        recent_sl = sl_idx[start_sl:p_sl + 1]
+        recent_sh = sh_idx[start_sh : p_sh + 1]  # 升序索引
+        recent_sl = sl_idx[start_sl : p_sl + 1]
 
         if len(recent_sh) < 2 or len(recent_sl) < 2:
             score_arr[i] = 0.0
@@ -152,8 +157,7 @@ def _ma_slope_weighted_avg(close: pd.Series) -> pd.Series:
     return pd.Series(np.tanh(combined / 0.02), index=close.index)
 
 
-def _volume_trend_confidence(close: pd.Series, volume: pd.Series, lookback: int = 20
-                             ) -> pd.Series:
+def _volume_trend_confidence(close: pd.Series, volume: pd.Series, lookback: int = 20) -> pd.Series:
     """量能趋势确认评分 [-0.5, 0, +0.5]。
 
     规则：近 lookback 日中「涨日 vol > 1.5 × vol_ma20 且 跌日 vol < 0.8 × vol_ma20」
@@ -173,10 +177,14 @@ def _volume_trend_confidence(close: pd.Series, volume: pd.Series, lookback: int 
     good_up = up_day & (ratio > 1.5)
     good_down = down_day & (ratio < 0.8)
 
-    denom = up_day.rolling(lookback, min_periods=1).sum() + \
-            down_day.rolling(lookback, min_periods=1).sum()
-    numer = good_up.rolling(lookback, min_periods=1).sum() + \
-            good_down.rolling(lookback, min_periods=1).sum()
+    denom = (
+        up_day.rolling(lookback, min_periods=1).sum()
+        + down_day.rolling(lookback, min_periods=1).sum()
+    )
+    numer = (
+        good_up.rolling(lookback, min_periods=1).sum()
+        + good_down.rolling(lookback, min_periods=1).sum()
+    )
 
     ratio_support = (numer / denom.replace(0, np.nan)).fillna(0.5)
 
@@ -190,15 +198,24 @@ def _volume_trend_confidence(close: pd.Series, volume: pd.Series, lookback: int 
 # 主类
 # ================================================================
 
+
 class IndicatorBank:
     """Layer 0-1 指标银行。输出 12 主指标 + 若干 __raw_* 辅助列。"""
 
     #: 主指标顺序（与 Spec 定义完全一致）
     MAIN_INDICATORS: List[str] = [
-        "ma200_above_3d", "ma50_above", "ma20_vs_ma50_order",
-        "cycle_position_365d", "ma_alignment_score", "ma200_slope_signed",
-        "dow_hhhl_score", "log_ret_90d", "log_ret_30d",
-        "ma_slope_wavg", "volume_trend_conf", "vol_60d_pct",
+        "ma200_above_3d",
+        "ma50_above",
+        "ma20_vs_ma50_order",
+        "cycle_position_365d",
+        "ma_alignment_score",
+        "ma200_slope_signed",
+        "dow_hhhl_score",
+        "log_ret_90d",
+        "log_ret_30d",
+        "ma_slope_wavg",
+        "volume_trend_conf",
+        "vol_60d_pct",
     ]
 
     def compute_all(self, df: pd.DataFrame) -> Dict[str, pd.Series]:
@@ -214,14 +231,20 @@ class IndicatorBank:
         close = close.astype(float)
         high = df["high"].astype(float) if "high" in df.columns else close * 1.001
         low = df["low"].astype(float) if "low" in df.columns else close * 0.999
-        volume = df["volume"].astype(float) if "volume" in df.columns else pd.Series(1.0, index=close.index)
+        volume = (
+            df["volume"].astype(float)
+            if "volume" in df.columns
+            else pd.Series(1.0, index=close.index)
+        )
 
         # ===== 可复用模块计算 =====
         ma200_df = compute_ma200_features(close)
         cycle_df = compute_btc_cycle_features(close)
         ma_alignment = compute_ma_alignment_score(close)
         vol_pct = compute_vol_percentile(close)
-        vol_ratio_raw = compute_volume_ratio(df if "volume" in df.columns else df.assign(volume=volume))
+        vol_ratio_raw = compute_volume_ratio(
+            df if "volume" in df.columns else df.assign(volume=volume)
+        )
 
         ma50 = close.rolling(50, min_periods=25).mean()
         ma20 = close.rolling(20, min_periods=10).mean()
@@ -285,18 +308,18 @@ class IndicatorBank:
 
         # ===== 打包 12 主指标 =====
         out: Dict[str, pd.Series] = {
-            "ma200_above_3d":     ma200_3d,
-            "ma50_above":         ma50_above,
+            "ma200_above_3d": ma200_3d,
+            "ma50_above": ma50_above,
             "ma20_vs_ma50_order": ma20_vs_ma50_order,
-            "cycle_position_365d":cycle365,
+            "cycle_position_365d": cycle365,
             "ma_alignment_score": ma_alignment_score,
             "ma200_slope_signed": ma200_slope_signed,
-            "dow_hhhl_score":     dow_hhhl,
-            "log_ret_90d":        lr90,
-            "log_ret_30d":        lr30,
-            "ma_slope_wavg":      ma_slope_wavg,
-            "volume_trend_conf":  vol_conf,
-            "vol_60d_pct":        vol_60d_pct,
+            "dow_hhhl_score": dow_hhhl,
+            "log_ret_90d": lr90,
+            "log_ret_30d": lr30,
+            "ma_slope_wavg": ma_slope_wavg,
+            "volume_trend_conf": vol_conf,
+            "vol_60d_pct": vol_60d_pct,
         }
 
         # 再填 NaN → 0 保险（rolling 开头可能仍有 NaN）
@@ -306,7 +329,9 @@ class IndicatorBank:
         # ===== 辅助原始值 =====
         out["__raw_ma200_distance_pct"] = ma200_df["ma200_distance_pct"].ffill().fillna(0.0)
         out["__raw_ma200_slope"] = ma200_df["ma200_slope_20d"].ffill().fillna(0.0)
-        out["__raw_cycle_position_in_range"] = cycle_df["cycle_position_in_range"].ffill().fillna(0.5)
+        out["__raw_cycle_position_in_range"] = (
+            cycle_df["cycle_position_in_range"].ffill().fillna(0.5)
+        )
         out["__raw_log_ret_90d"] = lr90_raw.ffill().fillna(0.0)
         out["__raw_log_ret_30d"] = lr30_raw.ffill().fillna(0.0)
         out["__raw_volume_ma20_ratio"] = vol_ratio_raw.ffill().fillna(0.0)

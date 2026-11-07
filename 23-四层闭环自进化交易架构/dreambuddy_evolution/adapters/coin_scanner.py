@@ -14,11 +14,12 @@ CoinScanner — OKX 50+ 币种扫描器
 
   数据少 → 置信度低 → 仓位小，但**不禁止开仓**（探索价值）
 """
+
 from __future__ import annotations
 
+import logging
 import math
 import time
-import logging
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -43,37 +44,153 @@ class CoinScanner:
 
     # 美股代币白名单（OKX 上的美股/贵金属代币化合约）
     # 非白名单默认视为加密币
-    US_STOCK_COINS: frozenset[str] = frozenset({
-        # 科技
-        "AAPL", "AMZN", "GOOGL", "NVDA", "MSFT", "TSLA", "META", "NFLX", "AMD",
-        "INTC", "TSM", "AVGO", "QCOM", "ORCL", "CRM", "ADBE", "SAP", "NOW",
-        "INTU", "AMAT", "LRCX", "KLAC", "MU", "ARM", "SMCI", "PLTR", "SNOW",
-        "UBER", "ABNB", "PYPL", "SHOP", "SQ", "ROKU", "ZM", "SNAP", "PINS",
-        "DASH", "COIN", "MSTR", "HOOD", "SOFI", "RIVN", "LCID", "NIO", "XPEV",
-        "LI", "BABA", "PDD", "JD", "BIDU", "NIO", "TME", "WB", "YMM", "ZTO",
-        # 金融
-        "JPM", "V", "MA", "BAC", "WFC", "GS", "MS", "C", "AXP", "BLK",
-        # 消费
-        "WMT", "PG", "KO", "PEP", "MCD", "NKE", "SBUX", "TGT", "LOW", "HD",
-        "COST", "KR", "DG", "DLTR", "ROST", "BBY", "AZO",
-        # 医疗
-        "JNJ", "PFE", "UNH", "CVS", "LLY", "MRK", "ABBV", "TMO", "ABT", "DHR",
-        # 工业
-        "BA", "CAT", "GE", "MMM", "HON", "LMT", "RTX", "DE", "UNP", "UPS",
-        "FDX",
-        # 能源
-        "XOM", "CVX", "COP", "SLB", "EOG",
-        # 通信
-        "DIS", "CMCSA", "T", "VZ", "WBD", "PARA", "FOX",
-        # 半导体（韩国等）
-        "SKHYNIX", "SNDK", "SPCX",
-        # 汽车
-        "F", "GM", "TM", "RACE", "HMC",
-        # 贵金属/商品
-        "XAU", "XAG", "XPT", "XPD",
-        # 其他
-        "BMNR", "CRCL", "GME", "AMC", "BB", "NOK", "F",
-    })
+    US_STOCK_COINS: frozenset[str] = frozenset(
+        {
+            # 科技
+            "AAPL",
+            "AMZN",
+            "GOOGL",
+            "NVDA",
+            "MSFT",
+            "TSLA",
+            "META",
+            "NFLX",
+            "AMD",
+            "INTC",
+            "TSM",
+            "AVGO",
+            "QCOM",
+            "ORCL",
+            "CRM",
+            "ADBE",
+            "SAP",
+            "NOW",
+            "INTU",
+            "AMAT",
+            "LRCX",
+            "KLAC",
+            "MU",
+            "ARM",
+            "SMCI",
+            "PLTR",
+            "SNOW",
+            "UBER",
+            "ABNB",
+            "PYPL",
+            "SHOP",
+            "SQ",
+            "ROKU",
+            "ZM",
+            "SNAP",
+            "PINS",
+            "DASH",
+            "COIN",
+            "MSTR",
+            "HOOD",
+            "SOFI",
+            "RIVN",
+            "LCID",
+            "NIO",
+            "XPEV",
+            "LI",
+            "BABA",
+            "PDD",
+            "JD",
+            "BIDU",
+            "TME",
+            "WB",
+            "YMM",
+            "ZTO",
+            # 金融
+            "JPM",
+            "V",
+            "MA",
+            "BAC",
+            "WFC",
+            "GS",
+            "MS",
+            "C",
+            "AXP",
+            "BLK",
+            # 消费
+            "WMT",
+            "PG",
+            "KO",
+            "PEP",
+            "MCD",
+            "NKE",
+            "SBUX",
+            "TGT",
+            "LOW",
+            "HD",
+            "COST",
+            "KR",
+            "DG",
+            "DLTR",
+            "ROST",
+            "BBY",
+            "AZO",
+            # 医疗
+            "JNJ",
+            "PFE",
+            "UNH",
+            "CVS",
+            "LLY",
+            "MRK",
+            "ABBV",
+            "TMO",
+            "ABT",
+            "DHR",
+            # 工业
+            "BA",
+            "CAT",
+            "GE",
+            "MMM",
+            "HON",
+            "LMT",
+            "RTX",
+            "DE",
+            "UNP",
+            "UPS",
+            "FDX",
+            # 能源
+            "XOM",
+            "CVX",
+            "COP",
+            "SLB",
+            "EOG",
+            # 通信
+            "DIS",
+            "CMCSA",
+            "T",
+            "VZ",
+            "WBD",
+            "PARA",
+            "FOX",
+            # 半导体（韩国等）
+            "SKHYNIX",
+            "SNDK",
+            "SPCX",
+            # 汽车
+            "F",
+            "GM",
+            "TM",
+            "RACE",
+            "HMC",
+            # 贵金属/商品
+            "XAU",
+            "XAG",
+            "XPT",
+            "XPD",
+            # 其他
+            "BMNR",
+            "CRCL",
+            "GME",
+            "AMC",
+            "BB",
+            "NOK",
+        }
+    )
 
     # 美股代币在扫描结果中的目标占比（50%）
     US_STOCK_RATIO = 0.5
@@ -120,8 +237,10 @@ class CoinScanner:
             # 美股代币成交量普遍较低，单独降低门槛
             us_stock_min_vol = 300_000  # 美股 30 万 U（美股代币在 OKX 流动性较低）
             liquid = [
-                t for t in tickers
-                if t.get("vol24h_usd", 0) >= (
+                t
+                for t in tickers
+                if t.get("vol24h_usd", 0)
+                >= (
                     us_stock_min_vol
                     if t["inst_id"].replace("-USDT-SWAP", "") in self.US_STOCK_COINS
                     else self.MIN_VOLUME_24H
@@ -138,14 +257,16 @@ class CoinScanner:
                     if signal is not None:
                         confidence = self._calc_confidence(metrics)
                         position_mult = self._confidence_to_position(confidence)
-                        candidates.append({
-                            "symbol": symbol,
-                            "inst_id": inst_id,
-                            "signal": round(signal, 4),
-                            "confidence": round(confidence, 4),
-                            "position_mult": round(position_mult, 4),
-                            "metrics": metrics,
-                        })
+                        candidates.append(
+                            {
+                                "symbol": symbol,
+                                "inst_id": inst_id,
+                                "signal": round(signal, 4),
+                                "confidence": round(confidence, 4),
+                                "position_mult": round(position_mult, 4),
+                                "metrics": metrics,
+                            }
+                        )
                 except Exception as e:
                     logger.debug("[FO] scan coin %s: %s", symbol, e)
                     continue
@@ -156,10 +277,12 @@ class CoinScanner:
 
             # 各自按 |signal| × confidence 排序
             us_stock_cands.sort(
-                key=lambda x: abs(x["signal"]) * x["confidence"], reverse=True,
+                key=lambda x: abs(x["signal"]) * x["confidence"],
+                reverse=True,
             )
             crypto_cands.sort(
-                key=lambda x: abs(x["signal"]) * x["confidence"], reverse=True,
+                key=lambda x: abs(x["signal"]) * x["confidence"],
+                reverse=True,
             )
 
             # 5. 配额平衡：美股占 US_STOCK_RATIO(50%)，加密占剩余
@@ -170,14 +293,15 @@ class CoinScanner:
             us_stock_pick = us_stock_cands[:us_stock_n]
             crypto_pick = crypto_cands[:crypto_n]
             if len(us_stock_pick) < us_stock_n:
-                crypto_pick = crypto_cands[:crypto_n + (us_stock_n - len(us_stock_pick))]
+                crypto_pick = crypto_cands[: crypto_n + (us_stock_n - len(us_stock_pick))]
             if len(crypto_pick) < crypto_n:
-                us_stock_pick = us_stock_cands[:us_stock_n + (crypto_n - len(crypto_pick))]
+                us_stock_pick = us_stock_cands[: us_stock_n + (crypto_n - len(crypto_pick))]
 
             # 合并并按信号强度重新排序
             balanced = us_stock_pick + crypto_pick
             balanced.sort(
-                key=lambda x: abs(x["signal"]) * x["confidence"], reverse=True,
+                key=lambda x: abs(x["signal"]) * x["confidence"],
+                reverse=True,
             )
 
             self._cache = balanced
@@ -200,9 +324,7 @@ class CoinScanner:
             if callable(get_tickers):
                 resp = get_tickers(instType="SWAP")
             else:
-                resp = self._client._get(
-                    "/api/v5/market/tickers", {"instType": "SWAP"}, auth=False
-                )
+                resp = self._client._get("/api/v5/market/tickers", {"instType": "SWAP"}, auth=False)
 
             if not resp or resp.get("code") != "0":
                 return []
@@ -215,11 +337,13 @@ class CoinScanner:
                 try:
                     vol24h = float(item.get("vol24h", 0))
                     last = float(item.get("last", 0))
-                    tickers.append({
-                        "inst_id": inst_id,
-                        "vol24h_usd": vol24h * last,
-                        "last": last,
-                    })
+                    tickers.append(
+                        {
+                            "inst_id": inst_id,
+                            "vol24h_usd": vol24h * last,
+                            "last": last,
+                        }
+                    )
                 except (ValueError, TypeError):
                     continue
             return tickers

@@ -21,6 +21,7 @@ Dream-RSI 做梦阶段：候选策略在回放模拟器内确定性重放评估�
 
 关联：SPEC-33-反思层.md v0.3 §4.2-4.4；core/reflection/replay_simulator.py
 """
+
 from __future__ import annotations
 
 from itertools import permutations
@@ -257,8 +258,11 @@ class DreamingLoop:
             "improved": best["avg_v"] > current_eval["avg_v"] + 1e-9,
             "eval_ready": eval_ready,
             "candidates": [
-                {"strategy": e["strategy"], "avg_v": e["avg_v"],
-                 "transform": e["strategy"].get("transform", "current")}
+                {
+                    "strategy": e["strategy"],
+                    "avg_v": e["avg_v"],
+                    "transform": e["strategy"].get("transform", "current"),
+                }
                 for e in evaluated
             ],
             "selection_rule": "argmax_v_with_current_in_candidates",

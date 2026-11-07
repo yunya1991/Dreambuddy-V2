@@ -7,11 +7,12 @@
 
 FAIL-OPEN：任何异常 → 返回 "unknown"。
 """
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 _THIS_DIR = Path(__file__).resolve().parent
 _OP_SCRIPTS = _THIS_DIR.parent / "ops" / "nanoclaw" / "core_task1" / "scripts"

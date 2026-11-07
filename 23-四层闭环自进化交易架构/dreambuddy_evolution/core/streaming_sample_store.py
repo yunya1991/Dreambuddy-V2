@@ -18,14 +18,16 @@ SPEC: SPEC-ds4架构借鉴与系统增强.md §3.2 Dimension 5
     reward REAL NOT NULL       -- 冗余字段，用于 SQL 聚合统计
   )
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import sqlite3
-import numpy as np
 from pathlib import Path
 from typing import Any
+
+import numpy as np
 
 from dreambuddy_evolution.core.safe_call import safe_call
 
@@ -97,9 +99,7 @@ class StreamingSampleStore:
         if self._fallback is not None:
             return list(self._fallback)
         try:
-            cur = self._conn.execute(
-                "SELECT data FROM samples ORDER BY id ASC"
-            )
+            cur = self._conn.execute("SELECT data FROM samples ORDER BY id ASC")
             return [self._parse(row[0]) for row in cur.fetchall()]
         except Exception as e:
             logger.debug("[FO-DS4-D5] read_all fail: %s", e)
@@ -162,23 +162,22 @@ class StreamingSampleStore:
             return self._stats_memory()
 
         try:
-            cur = self._conn.execute(
-                "SELECT COUNT(*), AVG(reward) FROM samples"
-            )
+            cur = self._conn.execute("SELECT COUNT(*), AVG(reward) FROM samples")
             row = cur.fetchone()
             count = row[0] or 0
             mean = float(row[1]) if row[1] is not None else 0.0
 
             if count == 0:
                 return {
-                    "count": 0, "effective_count": 0,
-                    "mean_reward": 0.0, "std_reward": 0.0, "sharpe": 0.0,
+                    "count": 0,
+                    "effective_count": 0,
+                    "mean_reward": 0.0,
+                    "std_reward": 0.0,
+                    "sharpe": 0.0,
                 }
 
             # 有效样本数（reward != 0）
-            cur = self._conn.execute(
-                "SELECT COUNT(*) FROM samples WHERE reward != 0.0"
-            )
+            cur = self._conn.execute("SELECT COUNT(*) FROM samples WHERE reward != 0.0")
             effective = cur.fetchone()[0] or 0
 
             # 标准差（需要遍历，但比全量 JSON 解析快）
@@ -196,15 +195,25 @@ class StreamingSampleStore:
             }
         except Exception as e:
             logger.debug("[FO-DS4-D5] stats fail: %s", e)
-            return {"count": 0, "effective_count": 0,
-                    "mean_reward": 0.0, "std_reward": 0.0, "sharpe": 0.0}
+            return {
+                "count": 0,
+                "effective_count": 0,
+                "mean_reward": 0.0,
+                "std_reward": 0.0,
+                "sharpe": 0.0,
+            }
 
     def _stats_memory(self) -> dict[str, Any]:
         """内存模式下的统计."""
         samples = self._fallback or []
         if not samples:
-            return {"count": 0, "effective_count": 0,
-                    "mean_reward": 0.0, "std_reward": 0.0, "sharpe": 0.0}
+            return {
+                "count": 0,
+                "effective_count": 0,
+                "mean_reward": 0.0,
+                "std_reward": 0.0,
+                "sharpe": 0.0,
+            }
         rewards = np.array([float(s.get("reward", 0.0)) for s in samples], dtype=np.float64)
         mean = float(np.mean(rewards))
         std = float(np.std(rewards, ddof=1)) if len(rewards) > 1 else 0.0

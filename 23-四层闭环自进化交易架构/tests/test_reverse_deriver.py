@@ -2,10 +2,9 @@
 
 从交易结果反推哪个矛盾维度判断错，类比反向传播。
 """
-import sys
-from pathlib import Path
 
-import pytest
+import sys  # noqa: I001
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "dreambuddy_evolution" / "engines"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "dreambuddy_evolution"))

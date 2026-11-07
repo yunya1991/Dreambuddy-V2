@@ -3,7 +3,10 @@ from pathlib import Path
 
 
 def test_shared_memory_bus_publish_and_read(tmp_path: Path):
-    from scripts.memory_l4.shared_memory_bus import publish_shared_memory_event, read_shared_memory_events
+    from scripts.memory_l4.shared_memory_bus import (
+        publish_shared_memory_event,
+        read_shared_memory_events,
+    )
 
     acl = {"A3": {"publish": True, "read": True}}
     out = publish_shared_memory_event(
@@ -53,7 +56,11 @@ def test_memory_graph_build_from_events(tmp_path: Path):
             "ts": "2026-05-10T14:01:00+08:00",
             "agent_id": "A5",
             "event_type": "memory_reference",
-            "payload": {"memory_id": "TC_1", "kind": "case", "evidence_refs": ["artifacts/memory_l4/notes.json"]},
+            "payload": {
+                "memory_id": "TC_1",
+                "kind": "case",
+                "evidence_refs": ["artifacts/memory_l4/notes.json"],
+            },
         },
     ]
     out = build_memory_graph(

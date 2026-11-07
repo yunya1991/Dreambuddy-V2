@@ -11,15 +11,13 @@
   - 相似度计算（基于价格走势、波动率、RSI等特征）
 """
 
-import re
-import os
 import glob
-import json
-from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
-from datetime import datetime, timezone
+import os
+import re
 from dataclasses import dataclass, field
-import math
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 BASE_DIR = Path(__file__).parent.parent.parent
 
@@ -37,6 +35,7 @@ ARCHIVE_PATHS = [
 @dataclass
 class ArchiveEpisode:
     """历史案例"""
+
     episode_id: str
     title: str
     date: str
@@ -50,6 +49,7 @@ class ArchiveEpisode:
 @dataclass
 class StrategyRecord:
     """战略记录"""
+
     strategy_id: str
     name: str
     applicable_conditions: str
@@ -187,8 +187,9 @@ def _extract_episode_from_file(filepath: Path) -> Optional[ArchiveEpisode]:
         return None
 
 
-def search_similar_episodes(market_state: Dict[str, Any],
-                            max_results: int = 5) -> List[ArchiveEpisode]:
+def search_similar_episodes(
+    market_state: Dict[str, Any], max_results: int = 5
+) -> List[ArchiveEpisode]:
     """
     搜索相似历史案例
 
@@ -219,8 +220,13 @@ def search_similar_episodes(market_state: Dict[str, Any],
     }
 
     patterns = [
-        "*episode*", "*EP*", "*复盘*", "*review*",
-        "*交易记录*", "*trading_log*", "*绩效*",
+        "*episode*",
+        "*EP*",
+        "*复盘*",
+        "*review*",
+        "*交易记录*",
+        "*trading_log*",
+        "*绩效*",
     ]
 
     files = _search_archive_files(patterns, max_results=30)
@@ -331,21 +337,25 @@ def search_strategies(market_regime: str, signal_level: str = "MODERATE") -> Lis
     ]
 
     for st in strategy_templates:
-        if market_regime in st["conditions"] or any(r in regime_lower for r in [c.lower() for c in st["conditions"]]):
+        if market_regime in st["conditions"] or any(
+            r in regime_lower for r in [c.lower() for c in st["conditions"]]
+        ):
             adjusted_rate = st["success_rate"]
             if signal_level == "HIGH":
                 adjusted_rate = min(0.85, adjusted_rate + 0.1)
             elif signal_level == "LOW":
                 adjusted_rate = max(0.3, adjusted_rate - 0.1)
 
-            strategies.append(StrategyRecord(
-                strategy_id=st["id"],
-                name=st["name"],
-                applicable_conditions=market_regime,
-                historical_success_rate=round(adjusted_rate, 2),
-                use_count=st["use_count"],
-                source_file="built-in strategy library",
-            ))
+            strategies.append(
+                StrategyRecord(
+                    strategy_id=st["id"],
+                    name=st["name"],
+                    applicable_conditions=market_regime,
+                    historical_success_rate=round(adjusted_rate, 2),
+                    use_count=st["use_count"],
+                    source_file="built-in strategy library",
+                )
+            )
 
     strategies.sort(key=lambda s: s.historical_success_rate, reverse=True)
     return strategies
@@ -361,8 +371,9 @@ def get_lessons_from_episodes(episodes: List[ArchiveEpisode]) -> List[str]:
     return lessons[:10]
 
 
-def get_archive_findings_for_a1(market_state: Dict[str, Any],
-                                 max_cases: int = 3) -> List[Dict[str, Any]]:
+def get_archive_findings_for_a1(
+    market_state: Dict[str, Any], max_cases: int = 3
+) -> List[Dict[str, Any]]:
     """
     为 A1 适配器准备 archive_findings 字段（符合 SKILL.md 规范）
 
@@ -376,41 +387,47 @@ def get_archive_findings_for_a1(market_state: Dict[str, Any],
     episodes = search_similar_episodes(market_state, max_results=max_cases)
 
     findings = []
-    for i, ep in enumerate(episodes):
-        findings.append({
-            "case_id": ep.episode_id,
-            "similarity_score": ep.similarity_score,
-            "outcome": ep.outcome or "历史案例结果待补充",
-            "lessons": ep.key_lessons[:3],
-            "date": ep.date,
-            "title": ep.title,
-            "market_condition": ep.market_condition,
-        })
+    for i, ep in enumerate(episodes):  # noqa: B007
+        findings.append(
+            {
+                "case_id": ep.episode_id,
+                "similarity_score": ep.similarity_score,
+                "outcome": ep.outcome or "历史案例结果待补充",
+                "lessons": ep.key_lessons[:3],
+                "date": ep.date,
+                "title": ep.title,
+                "market_condition": ep.market_condition,
+            }
+        )
 
     if not findings:
-        findings.append({
-            "case_id": "DEFAULT_001",
-            "similarity_score": 0.5,
-            "outcome": "参考默认历史模式",
-            "lessons": [
-                "历史不会简单重复，但会押韵",
-                "注意当前与历史的宏观环境差异",
-                "严格执行止损纪律",
-            ],
-            "date": "",
-            "title": "默认参考案例",
-            "market_condition": "NEUTRAL",
-        })
+        findings.append(
+            {
+                "case_id": "DEFAULT_001",
+                "similarity_score": 0.5,
+                "outcome": "参考默认历史模式",
+                "lessons": [
+                    "历史不会简单重复，但会押韵",
+                    "注意当前与历史的宏观环境差异",
+                    "严格执行止损纪律",
+                ],
+                "date": "",
+                "title": "默认参考案例",
+                "market_condition": "NEUTRAL",
+            }
+        )
 
     return findings
 
 
-def get_strategy_recommendations_for_a1(market_regime: str,
-                                         signal_level: str = "MODERATE") -> List[str]:
+def get_strategy_recommendations_for_a1(
+    market_regime: str, signal_level: str = "MODERATE"
+) -> List[str]:
     """为 A1 适配器准备策略推荐列表"""
     strategies = search_strategies(market_regime, signal_level)
-    return [f"{s.strategy_id} {s.name}（成功率{s.historical_success_rate:.0%}）"
-            for s in strategies[:3]]
+    return [
+        f"{s.strategy_id} {s.name}（成功率{s.historical_success_rate:.0%}）" for s in strategies[:3]
+    ]
 
 
 if __name__ == "__main__":

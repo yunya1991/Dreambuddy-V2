@@ -30,7 +30,6 @@ import hashlib
 import importlib.util
 import json
 import logging
-import os
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -43,8 +42,15 @@ logger = logging.getLogger(__name__)
 # ── 同步触发规则 ────────────────────────────────────────
 TRACKED_EXTENSIONS = {".py", ".ts", ".tsx", ".js", ".jsx", ".prisma", ".sql", ".yaml", ".yml"}
 IGNORED_PATTERNS = {
-    "__pycache__", ".pytest_cache", "node_modules", ".git",
-    ".venv", "venv", "dist", "build", ".next",
+    "__pycache__",
+    ".pytest_cache",
+    "node_modules",
+    ".git",
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+    ".next",
 }
 INDEX_FILE = "0-系统文档管理/INDEX.md"
 KNOWLEDGE_INDEX = "2-KNOWLEDGE"
@@ -78,14 +84,17 @@ def _load_cognitive_record_fn() -> Optional[Callable]:
         sys.modules["cognitive_mcp_server"] = mcp
         spec.loader.exec_module(mcp)
 
-        def _record_wrapper(content: str, quality_level: str = "B",
-                            tags: str = "", **kwargs: Any) -> Optional[str]:
-            result = mcp._handle_record({
-                "content": content,
-                "quality_level": quality_level,
-                "tags": tags,
-                "source": kwargs.get("source", "doc_sync_trigger"),
-            })
+        def _record_wrapper(
+            content: str, quality_level: str = "B", tags: str = "", **kwargs: Any
+        ) -> Optional[str]:
+            result = mcp._handle_record(
+                {
+                    "content": content,
+                    "quality_level": quality_level,
+                    "tags": tags,
+                    "source": kwargs.get("source", "doc_sync_trigger"),
+                }
+            )
             if isinstance(result, str):
                 try:
                     data = json.loads(result)
@@ -101,25 +110,26 @@ def _load_cognitive_record_fn() -> Optional[Callable]:
 
 
 class ChangeType(str, Enum):
-    ADDED = "added"          # 新增文件
-    MODIFIED = "modified"    # 修改文件
-    DELETED = "deleted"      # 删除文件
-    RENAMED = "renamed"      # 重命名
+    ADDED = "added"  # 新增文件
+    MODIFIED = "modified"  # 修改文件
+    DELETED = "deleted"  # 删除文件
+    RENAMED = "renamed"  # 重命名
 
 
 class SyncAction(str, Enum):
-    SYNC = "sync"            # 需要同步
-    SKIP = "skip"            # 无需同步
-    FAILED = "failed"        # 同步失败
+    SYNC = "sync"  # 需要同步
+    SKIP = "skip"  # 无需同步
+    FAILED = "failed"  # 同步失败
 
 
 @dataclass
 class FileChange:
     """文件变更"""
+
     path: str
     change_type: ChangeType
     old_path: Optional[str] = None  # 重命名时
-    impact_level: str = "minor"     # minor / major / critical
+    impact_level: str = "minor"  # minor / major / critical
     reason: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
@@ -135,12 +145,11 @@ class FileChange:
 @dataclass
 class ChangeReport:
     """变更报告"""
+
     changes: List[FileChange] = field(default_factory=list)
     needs_sync: bool = False
     impact_summary: str = ""
-    detected_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z"
-    )
+    detected_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z")
 
     @property
     def major_changes(self) -> List[FileChange]:
@@ -158,6 +167,7 @@ class ChangeReport:
 @dataclass
 class SyncReport:
     """同步报告"""
+
     action: SyncAction
     index_updated: bool = False
     knowledge_updated: bool = False
@@ -165,9 +175,7 @@ class SyncReport:
     recorded: bool = False
     memory_id: Optional[str] = None
     reason: str = ""
-    synced_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z"
-    )
+    synced_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z")
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -283,34 +291,40 @@ class DocSyncTrigger:
         for path in after_set - before_set:
             if self._should_track(Path(path)):
                 level, reason = self._assess_impact(path, ChangeType.ADDED)
-                changes.append(FileChange(
-                    path=path,
-                    change_type=ChangeType.ADDED,
-                    impact_level=level,
-                    reason=reason,
-                ))
+                changes.append(
+                    FileChange(
+                        path=path,
+                        change_type=ChangeType.ADDED,
+                        impact_level=level,
+                        reason=reason,
+                    )
+                )
 
         # 删除
         for path in before_set - after_set:
             if self._should_track(Path(path)):
                 level, reason = self._assess_impact(path, ChangeType.DELETED)
-                changes.append(FileChange(
-                    path=path,
-                    change_type=ChangeType.DELETED,
-                    impact_level=level,
-                    reason=reason,
-                ))
+                changes.append(
+                    FileChange(
+                        path=path,
+                        change_type=ChangeType.DELETED,
+                        impact_level=level,
+                        reason=reason,
+                    )
+                )
 
         # 修改
         for path in before_set & after_set:
             if before[path] != after[path] and self._should_track(Path(path)):
                 level, reason = self._assess_impact(path, ChangeType.MODIFIED)
-                changes.append(FileChange(
-                    path=path,
-                    change_type=ChangeType.MODIFIED,
-                    impact_level=level,
-                    reason=reason,
-                ))
+                changes.append(
+                    FileChange(
+                        path=path,
+                        change_type=ChangeType.MODIFIED,
+                        impact_level=level,
+                        reason=reason,
+                    )
+                )
 
         needs_sync = any(c.impact_level in ("major", "critical") for c in changes)
 
@@ -319,9 +333,7 @@ class DocSyncTrigger:
             added = sum(1 for c in changes if c.change_type == ChangeType.ADDED)
             modified = sum(1 for c in changes if c.change_type == ChangeType.MODIFIED)
             deleted = sum(1 for c in changes if c.change_type == ChangeType.DELETED)
-            summary_parts.append(
-                f"+{added} ~{modified} -{deleted}"
-            )
+            summary_parts.append(f"+{added} ~{modified} -{deleted}")
             critical = sum(1 for c in changes if c.impact_level == "critical")
             if critical:
                 summary_parts.append(f"⚠ {critical} critical")

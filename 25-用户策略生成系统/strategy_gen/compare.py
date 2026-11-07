@@ -4,7 +4,8 @@
 对比用户策略与基线策略的回测指标，综合评分后给出推荐。
 推荐但不强制 - 用户可自主选择。
 """
-from typing import Any, Dict, Optional
+
+from typing import Any, Dict
 
 # 综合评分权重
 _WEIGHT_PF = 0.3
@@ -94,10 +95,14 @@ def compare_with_baseline(
     baseline_score = compute_score(baseline_metrics)
 
     delta = {
-        "profit_factor": _safe_float(user_metrics.get("profit_factor")) - _safe_float(baseline_metrics.get("profit_factor")),
-        "max_drawdown_pct": _safe_float(user_metrics.get("max_drawdown_pct")) - _safe_float(baseline_metrics.get("max_drawdown_pct")),
-        "winrate": _safe_float(user_metrics.get("winrate")) - _safe_float(baseline_metrics.get("winrate")),
-        "sharpe_ratio": _safe_float(user_metrics.get("sharpe_ratio")) - _safe_float(baseline_metrics.get("sharpe_ratio")),
+        "profit_factor": _safe_float(user_metrics.get("profit_factor"))
+        - _safe_float(baseline_metrics.get("profit_factor")),
+        "max_drawdown_pct": _safe_float(user_metrics.get("max_drawdown_pct"))
+        - _safe_float(baseline_metrics.get("max_drawdown_pct")),
+        "winrate": _safe_float(user_metrics.get("winrate"))
+        - _safe_float(baseline_metrics.get("winrate")),
+        "sharpe_ratio": _safe_float(user_metrics.get("sharpe_ratio"))
+        - _safe_float(baseline_metrics.get("sharpe_ratio")),
     }
 
     if user_score >= baseline_score:

@@ -8,21 +8,30 @@
 4. STANDARD_CHAINS 中 C_CLASSIC 链定义正确
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
-import pytest
 
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 
 def test_c_classic_chain_defined_in_standard_chains():
     """断言 STANDARD_CHAINS 中定义了 C_CLASSIC 链"""
     from dreamos.core.arrange.types import STANDARD_CHAINS
+
     assert "C_CLASSIC" in STANDARD_CHAINS, "STANDARD_CHAINS 缺少 C_CLASSIC 链"
 
     chain = STANDARD_CHAINS["C_CLASSIC"]
-    assert chain.node_ids == ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8"], \
-        f"C_CLASSIC node_ids 不正确: {chain.node_ids}"
+    assert chain.node_ids == [
+        "C0",
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6",
+        "C7",
+        "C8",
+    ], f"C_CLASSIC node_ids 不正确: {chain.node_ids}"
     assert chain.chain_id == "C_CLASSIC"
 
 
@@ -60,9 +69,15 @@ def test_serial_pipeline_execution_skeleton():
     from dreamos.capabilities.trading.nodes.c8_perf_attribution import C8PerfAttributionNode
 
     nodes = [
-        C0EnvScanNode(), C1SymbolFilterNode(), C2SignalDetectNode(),
-        C3BacktestVerifyNode(), C4RiskAssessNode(), C5ParamOptimizeNode(),
-        C6PlanGenerateNode(), C7ExecMonitorNode(), C8PerfAttributionNode(),
+        C0EnvScanNode(),
+        C1SymbolFilterNode(),
+        C2SignalDetectNode(),
+        C3BacktestVerifyNode(),
+        C4RiskAssessNode(),
+        C5ParamOptimizeNode(),
+        C6PlanGenerateNode(),
+        C7ExecMonitorNode(),
+        C8PerfAttributionNode(),
     ]
 
     state = State()
@@ -79,19 +94,21 @@ def test_serial_pipeline_execution_skeleton():
 
     for i, result in enumerate(results):
         expected_id = f"C{i}"
-        assert result.node_id == expected_id, \
-            f"第 {i} 个节点 node_id 期望 {expected_id} 实际 {result.node_id}"
-        assert isinstance(result, NodeResult), \
-            f"{expected_id} 未返回 NodeResult"
+        assert (
+            result.node_id == expected_id
+        ), f"第 {i} 个节点 node_id 期望 {expected_id} 实际 {result.node_id}"
+        assert isinstance(result, NodeResult), f"{expected_id} 未返回 NodeResult"
 
     # 骨架阶段：允许 SUCCESS + confidence=0（不强制要求真实业务输出）
     for result in results:
-        assert result.status in (NodeStatus.SUCCESS, NodeStatus.FAILED, NodeStatus.DEGRADED), \
-            f"{result.node_id} status 异常: {result.status}"
+        assert result.status in (
+            NodeStatus.SUCCESS,
+            NodeStatus.FAILED,
+            NodeStatus.DEGRADED,
+        ), f"{result.node_id} status 异常: {result.status}"
 
     # 断言 State.results 包含全部 9 个节点
-    assert len(state.results) == 9, \
-        f"State.results 期望 9 项，实际 {len(state.results)}"
+    assert len(state.results) == 9, f"State.results 期望 9 项，实际 {len(state.results)}"
     for i in range(9):
         assert f"C{i}" in state.results, f"State.results 缺少 C{i}"
 
@@ -109,9 +126,15 @@ def test_pipeline_trace_records_nine_steps():
     from dreamos.capabilities.trading.nodes.c8_perf_attribution import C8PerfAttributionNode
 
     nodes = [
-        C0EnvScanNode(), C1SymbolFilterNode(), C2SignalDetectNode(),
-        C3BacktestVerifyNode(), C4RiskAssessNode(), C5ParamOptimizeNode(),
-        C6PlanGenerateNode(), C7ExecMonitorNode(), C8PerfAttributionNode(),
+        C0EnvScanNode(),
+        C1SymbolFilterNode(),
+        C2SignalDetectNode(),
+        C3BacktestVerifyNode(),
+        C4RiskAssessNode(),
+        C5ParamOptimizeNode(),
+        C6PlanGenerateNode(),
+        C7ExecMonitorNode(),
+        C8PerfAttributionNode(),
     ]
 
     state = State()
@@ -123,5 +146,4 @@ def test_pipeline_trace_records_nine_steps():
 
     # 验证 trace 顺序
     for i, entry in enumerate(state.trace):
-        assert entry["node_id"] == f"C{i}", \
-            f"trace[{i}] node_id 期望 C{i} 实际 {entry['node_id']}"
+        assert entry["node_id"] == f"C{i}", f"trace[{i}] node_id 期望 C{i} 实际 {entry['node_id']}"

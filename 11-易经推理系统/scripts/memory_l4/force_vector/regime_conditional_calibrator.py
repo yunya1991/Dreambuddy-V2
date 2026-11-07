@@ -13,6 +13,7 @@ CBR背离：当前事件收益与历史同类事件收益方向相反
   方向相反 = sign(current) != sign(mean(historical)) 且 |mean(historical)| > 0.01
   样本不足（<3）→ False
 """
+
 from __future__ import annotations
 
 import math
@@ -27,14 +28,14 @@ class RegimeConditionalCalibrator:
     """
 
     # 调整因子阈值
-    _REDUCE_THRESHOLD = 0.3     # |adjustment_factor| < 0.3 → 力向量强度 ×0.5
-    _BOOST_THRESHOLD = 2.0     # |adjustment_factor| > 2.0 → 力向量强度 ×1.5
-    _EPS = 1e-12                # 分母接近 0 的判定阈值
-    _NEUTRAL = 1.0              # FAIL-OPEN 中性（不调整）
+    _REDUCE_THRESHOLD = 0.3  # |adjustment_factor| < 0.3 → 力向量强度 ×0.5
+    _BOOST_THRESHOLD = 2.0  # |adjustment_factor| > 2.0 → 力向量强度 ×1.5
+    _EPS = 1e-12  # 分母接近 0 的判定阈值
+    _NEUTRAL = 1.0  # FAIL-OPEN 中性（不调整）
 
     # CBR背离阈值
-    _MIN_SAMPLES = 3            # 历史样本下限
-    _MEAN_EPS = 0.01            # 历史均值显著下限（避免噪声误判）
+    _MIN_SAMPLES = 3  # 历史样本下限
+    _MEAN_EPS = 0.01  # 历史均值显著下限（避免噪声误判）
 
     def compute_adjustment(self, e_r_current: float, e_r_all: float) -> float:
         """阶段依赖性校准因子。
@@ -59,8 +60,7 @@ class RegimeConditionalCalibrator:
         except Exception:
             return self._NEUTRAL
 
-    def detect_cbr_divergence(self, current_result: float,
-                             historical_results: list) -> bool:
+    def detect_cbr_divergence(self, current_result: float, historical_results: list) -> bool:
         """CBR背离检测：当前事件结果与历史同类事件方向相反。
 
         方向相反 = sign(current) != sign(mean(historical)) 且 |mean(historical)| > 0.01

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import requests
+import requests  # noqa: I001
 import json
 import time
 import datetime
@@ -68,17 +68,22 @@ def main():
 
     summary_file = f"/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/data/agent_c_b/batch_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     with open(summary_file, "w") as f:
-        json.dump({
-            "timestamp": datetime.datetime.now().isoformat(),
-            "symbols": SYMBOLS,
-            "results": results,
-            "summary": {
-                "long": long_count,
-                "short": short_count,
-                "hold": hold_count,
-                "error": error_count
-            }
-        }, f, indent=2, default=str)
+        json.dump(
+            {
+                "timestamp": datetime.datetime.now().isoformat(),
+                "symbols": SYMBOLS,
+                "results": results,
+                "summary": {
+                    "long": long_count,
+                    "short": short_count,
+                    "hold": hold_count,
+                    "error": error_count,
+                },
+            },
+            f,
+            indent=2,
+            default=str,
+        )
 
     print(f"\n📁 汇总日志已保存: {summary_file}")
 

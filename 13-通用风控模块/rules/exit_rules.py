@@ -10,29 +10,27 @@
     P3 - 行为约束
 """
 
-from typing import Dict, Any, Optional
-from dataclasses import dataclass
+from typing import Dict, Any, Optional  # noqa: I001
 
 try:
-    from ..core.context import (
+    from ..core.context import (  # noqa: I001
         PositionState,
         MarketSnapshot,
         RiskContext,
         ExitResult,
         ExitAction,
         ExitPriority,
-        Direction,
+        Direction,  # noqa: F401
     )
     from ..core.registry import RuleRegistry, RuleCategory
 except ImportError:
-    from core.context import (
+    from core.context import (  # noqa: I001
         PositionState,
         MarketSnapshot,
         RiskContext,
         ExitResult,
         ExitAction,
         ExitPriority,
-        Direction,
     )
     from core.registry import RuleRegistry, RuleCategory
 
@@ -44,7 +42,7 @@ def register_default_exit_rules(registry: RuleRegistry, config: Optional[Dict[st
         registry: 规则注册表
         config: 全局配置
     """
-    exit_config = (config or {}).get("exit", {})
+    exit_config = (config or {}).get("exit", {})  # noqa: F841
 
     registry.register(
         name="max_loss_stop",
@@ -295,7 +293,7 @@ def trailing_stop(
     盈利达到一定幅度后启动跟踪止损，保护利润。
     """
     arm_pct = config.get("trailing_arm_pct", 0.03)
-    trail_pct = config.get("trailing_pct", 0.02)
+    trail_pct = config.get("trailing_pct", 0.02)  # noqa: F841
 
     current_price = position.current_price
     mfe_pnl_pct = position.mfe_pnl_pct

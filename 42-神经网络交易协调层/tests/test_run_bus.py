@@ -2,11 +2,9 @@
 # -*- coding: utf-8 -*-
 """42 总线运行入口 run_bus 契约测试（C 阶段：仅 40-cycle / 29-event + 指标）。"""
 
-import json
+import json  # noqa: I001
 import os
 import sys
-
-import pytest
 
 _42_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _42_ROOT not in sys.path:

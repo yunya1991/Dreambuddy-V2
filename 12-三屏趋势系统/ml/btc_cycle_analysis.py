@@ -17,6 +17,7 @@
 import json
 import os
 import sys
+
 import numpy as np
 import pandas as pd
 
@@ -115,10 +116,16 @@ def analyze_cycles(prices: pd.DataFrame):
     print("=" * 80)
 
     print("\n【1. 历次周期关键数据】")
-    print("  {:>6} | {:>12} | {:>12} | {:>10} | {:>12} | {:>10} | {:>10} | {:>10}".format(
-        "周期", "减半日期", "顶部日期", "顶价($)", "底部日期", "底价($)", "顶→底月", "跌幅%"))
-    print("  {} | {} | {} | {} | {} | {} | {} | {}".format(
-        "-"*6, "-"*12, "-"*12, "-"*10, "-"*12, "-"*10, "-"*10, "-"*10))
+    print(
+        "  {:>6} | {:>12} | {:>12} | {:>10} | {:>12} | {:>10} | {:>10} | {:>10}".format(
+            "周期", "减半日期", "顶部日期", "顶价($)", "底部日期", "底价($)", "顶→底月", "跌幅%"
+        )
+    )
+    print(
+        "  {} | {} | {} | {} | {} | {} | {} | {}".format(
+            "-" * 6, "-" * 12, "-" * 12, "-" * 10, "-" * 12, "-" * 10, "-" * 10, "-" * 10
+        )
+    )
 
     cycle_stats = []
     for cyc in HISTORICAL_CYCLES:
@@ -157,21 +164,23 @@ def analyze_cycles(prices: pd.DataFrame):
             bottom_after_peak_months = peak_to_bottom_months
         else:
             bottom_after_halving_months = None
-            bottom_after_peak_months = None
+            bottom_after_peak_months = None  # noqa: F841
 
-        cycle_stats.append({
-            "cycle": cyc["cycle"],
-            "halving_date": halving,
-            "peak_date": peak_date,
-            "peak_price": peak_price,
-            "bottom_date": bottom_date,
-            "bottom_price": bottom_price,
-            "peak_after_halving_months": peak_after_halving_months,
-            "bottom_after_halving_months": bottom_after_halving_months,
-            "peak_to_bottom_months": peak_to_bottom_months,
-            "drawdown_pct": drawdown_pct,
-            "status": status,
-        })
+        cycle_stats.append(
+            {
+                "cycle": cyc["cycle"],
+                "halving_date": halving,
+                "peak_date": peak_date,
+                "peak_price": peak_price,
+                "bottom_date": bottom_date,
+                "bottom_price": bottom_price,
+                "peak_after_halving_months": peak_after_halving_months,
+                "bottom_after_halving_months": bottom_after_halving_months,
+                "peak_to_bottom_months": peak_to_bottom_months,
+                "drawdown_pct": drawdown_pct,
+                "status": status,
+            }
+        )
 
         if peak_date is not None:
             peak_str = str(peak_date.date())
@@ -191,9 +200,18 @@ def analyze_cycles(prices: pd.DataFrame):
             ptb_str = "N/A"
             dd_str = "N/A"
 
-        print("  {:>6} | {:>12} | {:>12} | {:>10} | {:>12} | {:>10} | {:>10} | {:>10}".format(
-            cyc["cycle"], str(halving.date()), peak_str, peak_price_str,
-            bottom_str, bottom_price_str, ptb_str, dd_str))
+        print(
+            "  {:>6} | {:>12} | {:>12} | {:>10} | {:>12} | {:>10} | {:>10} | {:>10}".format(
+                cyc["cycle"],
+                str(halving.date()),
+                peak_str,
+                peak_price_str,
+                bottom_str,
+                bottom_price_str,
+                ptb_str,
+                dd_str,
+            )
+        )
 
     # 2. 周期规律统计
     print("\n【2. 周期规律统计】")
@@ -205,18 +223,38 @@ def analyze_cycles(prices: pd.DataFrame):
         ptb_months = [c["peak_to_bottom_months"] for c in completed]
         drawdowns = [c["drawdown_pct"] for c in completed]
 
-        print("  减半→顶部 月数: {} | 平均 {:.1f} | 范围 {:.1f}-{:.1f}".format(
-            ["{:.1f}".format(m) for m in peak_months], np.mean(peak_months),
-            min(peak_months), max(peak_months)))
-        print("  减半→底部 月数: {} | 平均 {:.1f} | 范围 {:.1f}-{:.1f}".format(
-            ["{:.1f}".format(m) for m in bottom_months], np.mean(bottom_months),
-            min(bottom_months), max(bottom_months)))
-        print("  顶部→底部 月数: {} | 平均 {:.1f} | 范围 {:.1f}-{:.1f}".format(
-            ["{:.1f}".format(m) for m in ptb_months], np.mean(ptb_months),
-            min(ptb_months), max(ptb_months)))
-        print("  顶部→底部 跌幅: {} | 平均 {:.1f}% | 范围 {:.1f}%-{:.1f}%".format(
-            ["-{:.1f}%".format(d) for d in drawdowns], np.mean(drawdowns),
-            min(drawdowns), max(drawdowns)))
+        print(
+            "  减半→顶部 月数: {} | 平均 {:.1f} | 范围 {:.1f}-{:.1f}".format(
+                ["{:.1f}".format(m) for m in peak_months],
+                np.mean(peak_months),
+                min(peak_months),
+                max(peak_months),
+            )
+        )
+        print(
+            "  减半→底部 月数: {} | 平均 {:.1f} | 范围 {:.1f}-{:.1f}".format(
+                ["{:.1f}".format(m) for m in bottom_months],
+                np.mean(bottom_months),
+                min(bottom_months),
+                max(bottom_months),
+            )
+        )
+        print(
+            "  顶部→底部 月数: {} | 平均 {:.1f} | 范围 {:.1f}-{:.1f}".format(
+                ["{:.1f}".format(m) for m in ptb_months],
+                np.mean(ptb_months),
+                min(ptb_months),
+                max(ptb_months),
+            )
+        )
+        print(
+            "  顶部→底部 跌幅: {} | 平均 {:.1f}% | 范围 {:.1f}%-{:.1f}%".format(
+                ["-{:.1f}%".format(d) for d in drawdowns],
+                np.mean(drawdowns),
+                min(drawdowns),
+                max(drawdowns),
+            )
+        )
 
         # 底部→下次减半
         print("\n  底部→下次减半 月数:")
@@ -224,9 +262,11 @@ def analyze_cycles(prices: pd.DataFrame):
             if i + 1 < len(BTC_HALVING_DATES):
                 next_halving = BTC_HALVING_DATES[c["cycle"]]  # cycle是1-based，下一个是cycle索引
                 months = (next_halving - c["bottom_date"]).days / 30.44
-                print("    周期{}: 底部{} → 下次减半{} = {:.1f}月".format(
-                    c["cycle"], str(c["bottom_date"].date()),
-                    str(next_halving.date()), months))
+                print(
+                    "    周期{}: 底部{} → 下次减半{} = {:.1f}月".format(
+                        c["cycle"], str(c["bottom_date"].date()), str(next_halving.date()), months
+                    )
+                )
 
     # 3. 第4周期当前状态
     print("\n【3. 第4周期当前状态（截至 {}）】".format(str(prices.index[-1].date())))
@@ -237,8 +277,11 @@ def analyze_cycles(prices: pd.DataFrame):
     print("  当前日期: {}".format(str(current_date.date())))
     print("  减半后月数: {:.1f}".format(months_after_halving))
     if current["peak_date"] is not None:
-        print("  当前周期高点: ${:,.0f} ({})".format(
-            current["peak_price"], str(current["peak_date"].date())))
+        print(
+            "  当前周期高点: ${:,.0f} ({})".format(
+                current["peak_price"], str(current["peak_date"].date())
+            )
+        )
         print("  距高点月数: {:.1f}".format((current_date - current["peak_date"]).days / 30.44))
 
         # 从高点回撤
@@ -254,10 +297,14 @@ def analyze_cycles(prices: pd.DataFrame):
             predicted_bottom_date = current["peak_date"] + pd.DateOffset(months=int(avg_ptb))
             predicted_bottom_price = current["peak_price"] * (1 - avg_dd / 100)
             print("\n  基于历史规律推断:")
-            print("    预测底部日期: ~{} (顶后{:.1f}月)".format(
-                str(predicted_bottom_date.date()), avg_ptb))
-            print("    预测底部价格: ~${:,.0f} (跌幅{:.1f}%)".format(
-                predicted_bottom_price, avg_dd))
+            print(
+                "    预测底部日期: ~{} (顶后{:.1f}月)".format(
+                    str(predicted_bottom_date.date()), avg_ptb
+                )
+            )
+            print(
+                "    预测底部价格: ~${:,.0f} (跌幅{:.1f}%)".format(predicted_bottom_price, avg_dd)
+            )
 
     # 4. 市值变化分析（用成交量作为市值代理）
     print("\n【4. 成交量变化与周期关系】")
@@ -279,8 +326,11 @@ def analyze_cycles(prices: pd.DataFrame):
             peak_vol_date = vol_ma30.idxmax()
             trough_vol = vol_ma30.min()
             trough_vol_date = vol_ma30.idxmin()
-            print("  周期{} ({}~{}):".format(
-                cyc["cycle"], str(halving.date()), str(next_halving.date())[:10]))
+            print(
+                "  周期{} ({}~{}):".format(
+                    cyc["cycle"], str(halving.date()), str(next_halving.date())[:10]
+                )
+            )
             print("    成交量峰值: {:,.0f} ({})".format(peak_vol, str(peak_vol_date.date())))
             print("    成交量谷值: {:,.0f} ({})".format(trough_vol, str(trough_vol_date.date())))
             print("    量能比: {:.1f}x".format(peak_vol / trough_vol if trough_vol > 0 else 0))
@@ -315,19 +365,23 @@ def analyze_cycles(prices: pd.DataFrame):
         "cycles": [],
     }
     for c in cycle_stats:
-        result["cycles"].append({
-            "cycle": c["cycle"],
-            "halving_date": str(c["halving_date"].date()),
-            "peak_date": str(c["peak_date"].date()) if c["peak_date"] is not None else None,
-            "peak_price": c["peak_price"],
-            "bottom_date": str(c["bottom_date"].date()) if c["bottom_date"] is not None else None,
-            "bottom_price": c["bottom_price"],
-            "peak_after_halving_months": c["peak_after_halving_months"],
-            "bottom_after_halving_months": c["bottom_after_halving_months"],
-            "peak_to_bottom_months": c["peak_to_bottom_months"],
-            "drawdown_pct": c["drawdown_pct"],
-            "status": c["status"],
-        })
+        result["cycles"].append(
+            {
+                "cycle": c["cycle"],
+                "halving_date": str(c["halving_date"].date()),
+                "peak_date": str(c["peak_date"].date()) if c["peak_date"] is not None else None,
+                "peak_price": c["peak_price"],
+                "bottom_date": (
+                    str(c["bottom_date"].date()) if c["bottom_date"] is not None else None
+                ),
+                "bottom_price": c["bottom_price"],
+                "peak_after_halving_months": c["peak_after_halving_months"],
+                "bottom_after_halving_months": c["bottom_after_halving_months"],
+                "peak_to_bottom_months": c["peak_to_bottom_months"],
+                "drawdown_pct": c["drawdown_pct"],
+                "status": c["status"],
+            }
+        )
 
     if len(completed) >= 2:
         result["cycle_patterns"] = {
@@ -368,6 +422,7 @@ def analyze_cycles(prices: pd.DataFrame):
 
 if __name__ == "__main__":
     prices = load_btc_data()
-    print("数据: {}天, {} ~ {}\n".format(
-        len(prices), prices.index[0].date(), prices.index[-1].date()))
+    print(
+        "数据: {}天, {} ~ {}\n".format(len(prices), prices.index[0].date(), prices.index[-1].date())
+    )
     analyze_cycles(prices)

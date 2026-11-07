@@ -6,6 +6,7 @@ SPEC-AGI升级蓝图.md §4.1.2
   - 适应步长动态化：CS≥0.9时+0.05，CS∈[0.7,0.9)时+0.02
   - EMA衰减：近期样本权重更高
 """
+
 from __future__ import annotations
 
 import pytest
@@ -17,6 +18,7 @@ class TestESSDynamicStep:
     def test_high_cs_success_gets_large_step(self):
         """CS≥0.9 且 TP → ess_delta=+0.05（高信心大步长）"""
         from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
         engine = ReflectionEngine()
         result = engine.apply_reward(cs=0.95, outcome="TP", cluster_id="c1", ess_id="e1", gmax=0.3)
         assert result["ess_delta"] == pytest.approx(0.05)
@@ -24,6 +26,7 @@ class TestESSDynamicStep:
     def test_boundary_cs_0_9_gets_large_step(self):
         """CS=0.9 恰好边界 → +0.05"""
         from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
         engine = ReflectionEngine()
         result = engine.apply_reward(cs=0.9, outcome="TP", cluster_id="c1", ess_id="e1", gmax=0.3)
         assert result["ess_delta"] == pytest.approx(0.05)
@@ -31,6 +34,7 @@ class TestESSDynamicStep:
     def test_moderate_cs_success_gets_small_step(self):
         """0.7≤CS<0.9 且 TP → ess_delta=+0.02"""
         from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
         engine = ReflectionEngine()
         result = engine.apply_reward(cs=0.8, outcome="TP", cluster_id="c1", ess_id="e1", gmax=0.3)
         assert result["ess_delta"] == pytest.approx(0.02)
@@ -38,6 +42,7 @@ class TestESSDynamicStep:
     def test_cs_0_7_boundary_gets_small_step(self):
         """CS=0.7 恰好边界 → +0.02"""
         from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
         engine = ReflectionEngine()
         result = engine.apply_reward(cs=0.7, outcome="TP", cluster_id="c1", ess_id="e1", gmax=0.3)
         assert result["ess_delta"] == pytest.approx(0.02)
@@ -45,6 +50,7 @@ class TestESSDynamicStep:
     def test_failure_step_unchanged(self):
         """CS≤-0.2 且 SL → ess_delta=-0.05（保持不变）"""
         from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
         engine = ReflectionEngine()
         result = engine.apply_reward(cs=-0.5, outcome="SL", cluster_id="c1", ess_id="e1", gmax=0.3)
         assert result["ess_delta"] == pytest.approx(-0.05)
@@ -70,12 +76,14 @@ class TestESSEMA:
     def test_ema_alpha_default_in_range(self):
         """EMA alpha 默认值在 (0, 1]"""
         from dreambuddy_evolution.core.ess_ema import ESSAdaptiveUpdater
+
         updater = ESSAdaptiveUpdater()
         assert 0.0 < updater.ema_alpha <= 1.0
 
     def test_high_cs_receives_full_step(self):
         """高CS交易获得完整步长（不衰减）"""
         from dreambuddy_evolution.core.ess_ema import ESSAdaptiveUpdater
+
         updater = ESSAdaptiveUpdater(ema_alpha=0.5)
         effective = updater.effective_delta(ess_delta=0.05, cs=0.95)
         assert effective == pytest.approx(0.05)

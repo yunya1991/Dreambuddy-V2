@@ -19,11 +19,11 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.capability import CapabilitySpec, ProviderType, CapabilityStatus
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.shared.capability import CapabilitySpec, CapabilityStatus, ProviderType
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 logger = logging.getLogger("subsystem_adapter_nodes")
 
@@ -33,6 +33,7 @@ BASE_DIR = Path(__file__).parent.parent.parent.parent.parent.parent
 # ============================================================
 # 三屏趋势信号节点
 # ============================================================
+
 
 class CS3TrendNode(BaseNode):
     """三屏趋势系统信号节点
@@ -73,8 +74,9 @@ class CS3TrendNode(BaseNode):
 
         try:
             sys.path.insert(0, str(BASE_DIR / "12-三屏趋势系统" / "core"))
-            from indicators import calc_indicator_dynamics, SCREEN1_INDICATORS, SCREEN2_INDICATORS
-            from config import WEEKLY_WEIGHT, DAILY_WEIGHT
+            from indicators import SCREEN1_INDICATORS, SCREEN2_INDICATORS, calc_indicator_dynamics
+
+            from config import DAILY_WEIGHT, WEEKLY_WEIGHT
 
             self._calc_dynamics = calc_indicator_dynamics
             self._screen1_indicators = SCREEN1_INDICATORS
@@ -156,7 +158,7 @@ class CS3TrendNode(BaseNode):
         atr_pct = mkt.get("atr_pct", 0.02)
 
         rationale = []
-        scores = []
+        scores = []  # noqa: F841
 
         # Screen 1: 长期趋势（周线）— 权重 0.4
         if price > ema200:
@@ -225,6 +227,7 @@ class CS3TrendNode(BaseNode):
 # ============================================================
 # 易经推理信号节点
 # ============================================================
+
 
 class AYJInferNode(BaseNode):
     """易经推理系统卦象推理节点
@@ -369,6 +372,7 @@ class AYJInferNode(BaseNode):
 # V15 马丁策略信号节点
 # ============================================================
 
+
 class CMartinV15Node(BaseNode):
     """V15 经典马丁策略信号节点
 
@@ -409,7 +413,10 @@ class CMartinV15Node(BaseNode):
         try:
             sys.path.insert(0, str(BASE_DIR / "14-V15经典马丁策略" / "core"))
             from v15_signal import (
-                calc_sma, calc_rsi, calc_fibonacci, calc_bollinger_bands,
+                calc_bollinger_bands,
+                calc_fibonacci,
+                calc_rsi,
+                calc_sma,
                 determine_position,
             )
 
@@ -500,8 +507,8 @@ class CMartinV15Node(BaseNode):
         # 2. 布林带分析
         bb = self._calc_bollinger_bands(prices)
         if bb:
-            upper = bb["upper"]
-            lower = bb["lower"]
+            upper = bb["upper"]  # noqa: F841
+            lower = bb["lower"]  # noqa: F841
             sma = bb["sma"]
             pct_b = bb.get("pct_b", 0.5)
 
@@ -510,9 +517,9 @@ class CMartinV15Node(BaseNode):
             elif pct_b > 0.8:
                 scores.append(("SHORT", 0.3, f"布林带高位({pct_b:.2f})，超买回调"))
             elif price > sma:
-                scores.append(("LONG", 0.1, f"价格高于布林带中轨"))
+                scores.append(("LONG", 0.1, "价格高于布林带中轨"))
             else:
-                scores.append(("SHORT", 0.1, f"价格低于布林带中轨"))
+                scores.append(("SHORT", 0.1, "价格低于布林带中轨"))
 
         # 3. RSI 分析
         rsi = self._calc_rsi(prices)
@@ -554,6 +561,7 @@ class CMartinV15Node(BaseNode):
 # 注册函数
 # ============================================================
 
+
 def register_subsystem_nodes(registry) -> int:
     """注册子系统封装节点到注册表
 
@@ -588,18 +596,25 @@ def register_subsystem_nodes(registry) -> int:
 # 测试入口
 # ============================================================
 
+
 def main():
     """测试子系统封装节点"""
     import argparse
 
     parser = argparse.ArgumentParser(description="子系统封装节点测试")
-    parser.add_argument("--node", "-n", type=str, default="all",
-                        help="测试节点（C_S3_TREND/A_YJ_INFER/C_MARTIN_V15/all）")
+    parser.add_argument(
+        "--node",
+        "-n",
+        type=str,
+        default="all",
+        help="测试节点（C_S3_TREND/A_YJ_INFER/C_MARTIN_V15/all）",
+    )
 
     args = parser.parse_args()
 
     # 创建模拟状态
     from dreamos.shared.state import State
+
     state = State()
     state.market = {
         "price": 67500.0,

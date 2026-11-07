@@ -7,6 +7,7 @@
 
 不调用外部数据源（_hl_*），数据由调用方提供。
 """
+
 from __future__ import annotations
 
 import math
@@ -19,10 +20,7 @@ from .universe import (
     _universe_beta_from_ret,
     _universe_kmeans_assign,
     _universe_pair_aliases,
-    _universe_pearson_corr,
-    _universe_spearman_corr,
 )
-
 
 __all__ = [
     "screen_tokens",
@@ -78,7 +76,12 @@ def screen_tokens(
     rejected: List[Dict[str, Any]] = []
 
     if not candidates:
-        return {"ok": True, "passed": [], "rejected": [], "stats": {"total": 0, "passed": 0, "rejected": 0}}
+        return {
+            "ok": True,
+            "passed": [],
+            "rejected": [],
+            "stats": {"total": 0, "passed": 0, "rejected": 0},
+        }
 
     # 规范化 close 的 key 为 int（JSON 反序列化后 key 为 str）
     def _normalize_close(d: Dict[Any, Any]) -> Dict[int, float]:
@@ -102,7 +105,7 @@ def screen_tokens(
     if len(btc_close_norm) >= 12:
         ts_sorted = sorted(btc_close_norm.keys())
         btc_rets: List[float] = []
-        for t0, t1 in zip(ts_sorted[:-1], ts_sorted[1:]):
+        for t0, t1 in zip(ts_sorted[:-1], ts_sorted[1:]):  # noqa: B905
             try:
                 a = float(btc_close_norm.get(t0) or 0.0)
                 b = float(btc_close_norm.get(t1) or 0.0)
@@ -124,7 +127,7 @@ def screen_tokens(
         if ret_arr is None and len(close) >= 12:
             ts_sorted = sorted(close.keys())
             rets: List[float] = []
-            for t0, t1 in zip(ts_sorted[:-1], ts_sorted[1:]):
+            for t0, t1 in zip(ts_sorted[:-1], ts_sorted[1:]):  # noqa: B905
                 try:
                     a = float(close.get(t0) or 0.0)
                     b = float(close.get(t1) or 0.0)
@@ -159,7 +162,10 @@ def screen_tokens(
                 reasons.append("corr_data_insufficient")
             else:
                 corr_result = _compute_btc_corr_from_closes(
-                    close, btc_close_norm, method=corr_method, n=n_corr,
+                    close,
+                    btc_close_norm,
+                    method=corr_method,
+                    n=n_corr,
                 )
                 corr_val = corr_result.get("corr")
                 if corr_val is None:
@@ -168,24 +174,28 @@ def screen_tokens(
                     reasons.append(f"corr_below_threshold:{corr_val:.3f}")
 
         if reasons:
-            rejected.append({
-                "pair": pair,
-                "aliases": _universe_pair_aliases(pair)[:3],
-                "beta": beta_val,
-                "corr": corr_val,
-                "reasons": reasons,
-            })
+            rejected.append(
+                {
+                    "pair": pair,
+                    "aliases": _universe_pair_aliases(pair)[:3],
+                    "beta": beta_val,
+                    "corr": corr_val,
+                    "reasons": reasons,
+                }
+            )
         else:
-            passed.append({
-                "pair": pair,
-                "aliases": _universe_pair_aliases(pair)[:3],
-                "beta": (round(beta_val, 4) if beta_val is not None else None),
-                "corr": (round(corr_val, 4) if corr_val is not None else None),
-            })
+            passed.append(
+                {
+                    "pair": pair,
+                    "aliases": _universe_pair_aliases(pair)[:3],
+                    "beta": (round(beta_val, 4) if beta_val is not None else None),
+                    "corr": (round(corr_val, 4) if corr_val is not None else None),
+                }
+            )
 
     # 限制返回数量
     if len(passed) > int(limit):
-        passed = passed[:int(limit)]
+        passed = passed[: int(limit)]
 
     return {
         "ok": True,

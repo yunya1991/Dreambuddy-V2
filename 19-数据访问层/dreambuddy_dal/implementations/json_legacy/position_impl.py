@@ -1,4 +1,5 @@
 """JsonLegacyPositionRepository（P0 内存实现，薄适配）"""
+
 from __future__ import annotations
 
 from datetime import datetime

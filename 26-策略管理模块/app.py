@@ -6,6 +6,7 @@
 - 用户层 /api/v1/user/*  CRUD（用户策略空间）
 - 代理层 /api/v1/agent/*  策略发现 + 回测触发代理
 """
+
 from __future__ import annotations
 
 import json
@@ -14,10 +15,9 @@ import re
 import subprocess
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from flask import Flask, jsonify, request
-
 from strategy_lib.services import registry as reg
 
 app = Flask(__name__)
@@ -45,13 +45,15 @@ _USER_DATA_DIR = _CLASSIC_ROOT / "user_data"
 _STRATEGIES_DIR = _USER_DATA_DIR / "strategies"
 
 # M25 回测引擎（用于回测触发代理）
-import sys
+import sys  # noqa: E402
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "25-用户策略生成系统"))
 
 
 # ---------------------------------------------------------------------------
 # 鉴权
 # ---------------------------------------------------------------------------
+
 
 def _require_admin() -> bool:
     """检查 admin token"""
@@ -68,6 +70,7 @@ def _user_id() -> str:
 # 健康检查
 # ---------------------------------------------------------------------------
 
+
 @app.route("/health", methods=["GET"])
 def health():
     try:
@@ -80,6 +83,7 @@ def health():
 # ---------------------------------------------------------------------------
 # 中台层接口（只读 + admin 写入）
 # ---------------------------------------------------------------------------
+
 
 @app.route("/api/v1/lib/strategies", methods=["GET"])
 def lib_list_strategies():
@@ -97,20 +101,22 @@ def lib_list_strategies():
         data = reg._strategy_registry_load()
         entries = data.get("entries", {}) if isinstance(data, dict) else {}
         items = []
-        for k, v in entries.items():
+        for k, v in entries.items():  # noqa: B007
             if isinstance(v, dict):
                 entry_tier = (v.get("tier") or "").strip().upper()
                 if tier_filter and entry_tier not in tier_filter:
                     continue
-                items.append({
-                    "strategy_id": v.get("strategy_id"),
-                    "source_zip": v.get("source_zip"),
-                    "family": v.get("family"),
-                    "stage": v.get("stage"),
-                    "tier": v.get("tier"),
-                    "tags": v.get("tags", []),
-                    "updated_at": v.get("updated_at"),
-                })
+                items.append(
+                    {
+                        "strategy_id": v.get("strategy_id"),
+                        "source_zip": v.get("source_zip"),
+                        "family": v.get("family"),
+                        "stage": v.get("stage"),
+                        "tier": v.get("tier"),
+                        "tags": v.get("tags", []),
+                        "updated_at": v.get("updated_at"),
+                    }
+                )
         return jsonify({"ok": True, "entries": items})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
@@ -143,15 +149,17 @@ def lib_get_strategy_events(strategy_id):
 @app.route("/api/v1/lib/tiers", methods=["GET"])
 def lib_get_tiers():
     """获取 tier 分级标准"""
-    return jsonify({
-        "ok": True,
-        "tiers": [
-            {"tier": "A", "label": "核心策略", "criteria": "多市场验证通过，robustness=pass"},
-            {"tier": "B", "label": "稳定策略", "criteria": "回测达标，稳健性良好"},
-            {"tier": "C", "label": "实验策略", "criteria": "初步验证，需更多数据"},
-            {"tier": "D", "label": "淘汰策略", "criteria": "不达标或已退役"},
-        ],
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "tiers": [
+                {"tier": "A", "label": "核心策略", "criteria": "多市场验证通过，robustness=pass"},
+                {"tier": "B", "label": "稳定策略", "criteria": "回测达标，稳健性良好"},
+                {"tier": "C", "label": "实验策略", "criteria": "初步验证，需更多数据"},
+                {"tier": "D", "label": "淘汰策略", "criteria": "不达标或已退役"},
+            ],
+        }
+    )
 
 
 @app.route("/api/v1/lib/strategies/upsert", methods=["POST"])
@@ -186,6 +194,7 @@ def lib_sync_product_hub():
         return jsonify({"ok": False, "error": "forbidden"}), 403
     try:
         from strategy_lib.services import product_hub_sync
+
         result = product_hub_sync.sync_strategies_to_product_hub()
         return jsonify(result)
     except Exception as e:
@@ -232,6 +241,7 @@ def lib_record_event():
 # ---------------------------------------------------------------------------
 # 用户层接口（CRUD）
 # ---------------------------------------------------------------------------
+
 
 def _user_strategies_path(uid: str) -> Path:
     return USER_STRATEGIES_DIR / uid / "strategies.json"
@@ -333,6 +343,7 @@ def user_clone_strategy(sid):
 # 代理层：策略发现 + 回测触发代理
 # ---------------------------------------------------------------------------
 
+
 def _parse_strategy_table(stdout: str) -> List[Dict[str, Any]]:
     """解析 freqtrade list-strategies 的表格输出。"""
     strategies = []
@@ -344,19 +355,21 @@ def _parse_strategy_table(stdout: str) -> List[Dict[str, Any]]:
             # 跳过分隔行
             if "━" in line or "─" in line:
                 continue
-            in_table = True
+            in_table = True  # noqa: F841
             # 按 │ 分割
             cells = [c.strip() for c in re.split(r"[│┃]", line) if c.strip()]
             if len(cells) >= 7 and cells[0] != "Strategy name":
-                strategies.append({
-                    "name": cells[0],
-                    "file": cells[1],
-                    "status": cells[2],
-                    "hyperoptable": cells[3] == "Yes",
-                    "buy_params": int(cells[4]) if cells[4].isdigit() else 0,
-                    "sell_params": int(cells[5]) if cells[5].isdigit() else 0,
-                    "protection_params": int(cells[6]) if cells[6].isdigit() else 0,
-                })
+                strategies.append(
+                    {
+                        "name": cells[0],
+                        "file": cells[1],
+                        "status": cells[2],
+                        "hyperoptable": cells[3] == "Yes",
+                        "buy_params": int(cells[4]) if cells[4].isdigit() else 0,
+                        "sell_params": int(cells[5]) if cells[5].isdigit() else 0,
+                        "protection_params": int(cells[6]) if cells[6].isdigit() else 0,
+                    }
+                )
     return strategies
 
 
@@ -365,14 +378,20 @@ def agent_discover_strategies():
     """策略自动发现：调用 freqtrade list-strategies。"""
     try:
         cmd = [
-            _FREQTRADE_BIN, "list-strategies",
-            "--userdir", str(_USER_DATA_DIR),
+            _FREQTRADE_BIN,
+            "list-strategies",
+            "--userdir",
+            str(_USER_DATA_DIR),
         ]
         env = os.environ.copy()
         env["PYTHONPATH"] = str(_CLASSIC_ROOT)
         result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=60,
-            env=env, cwd=str(_CLASSIC_ROOT),
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            env=env,
+            cwd=str(_CLASSIC_ROOT),
         )
         if result.returncode != 0:
             return jsonify({"ok": False, "error": result.stderr[-500:]}), 500
@@ -397,6 +416,7 @@ def agent_trigger_backtest():
     """回测触发代理：调用 M25 run_backtest。"""
     try:
         from strategy_gen.backtest_engine import run_backtest
+
         body = request.get_json(force=True) or {}
         strategy_id = body.get("strategy_id")
         if not strategy_id:
@@ -423,6 +443,7 @@ def agent_trigger_paramopt():
     """参数优化代理：调用 M25 paramopt。"""
     try:
         from strategy_gen.paramopt import paramopt
+
         body = request.get_json(force=True) or {}
         strategy_id = body.get("strategy_id")
         if not strategy_id:

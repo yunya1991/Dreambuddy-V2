@@ -43,8 +43,7 @@ import math
 from typing import Any, Dict
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
-
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 # ── 默认阈值 ──────────────────────────────────────────────
 _DEFAULT_RISK_PER_TRADE = 0.02
@@ -104,9 +103,15 @@ class C4RiskAssessNode(BaseNode):
                 return float(default)
 
         return {
-            "risk_per_trade": _clip(_get_float("risk_per_trade", _DEFAULT_RISK_PER_TRADE), 0.001, 0.50),
-            "stop_loss_pct": _clip(_get_float("risk_stop_loss_pct", _DEFAULT_STOP_LOSS_PCT), 0.001, 0.50),
-            "take_profit_pct": _clip(_get_float("risk_take_profit_pct", _DEFAULT_TAKE_PROFIT_PCT), 0.001, 1.00),
+            "risk_per_trade": _clip(
+                _get_float("risk_per_trade", _DEFAULT_RISK_PER_TRADE), 0.001, 0.50
+            ),
+            "stop_loss_pct": _clip(
+                _get_float("risk_stop_loss_pct", _DEFAULT_STOP_LOSS_PCT), 0.001, 0.50
+            ),
+            "take_profit_pct": _clip(
+                _get_float("risk_take_profit_pct", _DEFAULT_TAKE_PROFIT_PCT), 0.001, 1.00
+            ),
             "max_budget": _clip(_get_float("risk_max_budget", _DEFAULT_MAX_BUDGET), 0.01, 1.00),
         }
 
@@ -147,7 +152,12 @@ class C4RiskAssessNode(BaseNode):
                 node_id="C4",
                 status=NodeStatus.SUCCESS,
                 confidence=0.0,
-                outputs={"position_size": {}, "stop_loss": {}, "take_profit": {}, "risk_budget": 0.0},
+                outputs={
+                    "position_size": {},
+                    "stop_loss": {},
+                    "take_profit": {},
+                    "risk_budget": 0.0,
+                },
                 error="C4 无 market 数据，降级返回空结果",
             )
 
@@ -157,7 +167,12 @@ class C4RiskAssessNode(BaseNode):
                 node_id="C4",
                 status=NodeStatus.SUCCESS,
                 confidence=0.0,
-                outputs={"position_size": {}, "stop_loss": {}, "take_profit": {}, "risk_budget": 0.0},
+                outputs={
+                    "position_size": {},
+                    "stop_loss": {},
+                    "take_profit": {},
+                    "risk_budget": 0.0,
+                },
                 error="C4 无 C3 上游结果，降级返回空结果",
             )
 
@@ -167,7 +182,12 @@ class C4RiskAssessNode(BaseNode):
                 node_id="C4",
                 status=NodeStatus.SUCCESS,
                 confidence=0.0,
-                outputs={"position_size": {}, "stop_loss": {}, "take_profit": {}, "risk_budget": 0.0},
+                outputs={
+                    "position_size": {},
+                    "stop_loss": {},
+                    "take_profit": {},
+                    "risk_budget": 0.0,
+                },
                 error="C4 上游 verified_signals 为空",
             )
 
@@ -234,7 +254,15 @@ class C4RiskAssessNode(BaseNode):
             for sym in list(position_size.keys()):
                 position_size[sym] *= scale
             # 重新计算风险预算
-            risk_budget = sum(position_size[sym] * (market_data.get(sym, {}).get("price", 0.0) or 0.0) * sl_pct for sym in position_size) / capital
+            risk_budget = (
+                sum(
+                    position_size[sym]
+                    * (market_data.get(sym, {}).get("price", 0.0) or 0.0)
+                    * sl_pct
+                    for sym in position_size
+                )
+                / capital
+            )
 
         risk_budget = _clip(risk_budget, 0.0, max_budget)
 

@@ -6,19 +6,20 @@ SPEC: SPEC-事件驱动策略独立化-共享事件层与弹性约束.md §3.2.1
 A. news_score 评分方法 (3)
 B. 6 维加权集成 (1)
 """
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations  # noqa: I001
 
 
 def _make_strategy():
     from event_driven.event_driven_strategy import EventDrivenStrategy
+
     return EventDrivenStrategy()
 
 
 # ================================================================
 # A. news_score 评分方法
 # ================================================================
+
 
 def test_news_score_bullish():
     """news_sentiment_score=0.8（偏多） → news_score > 0.5"""
@@ -54,6 +55,7 @@ def test_news_score_neutral():
 # B. 6 维加权集成
 # ================================================================
 
+
 def test_composite_includes_news():
     """6 维加权包含 news_score，权重 10%。
 
@@ -76,12 +78,12 @@ def test_composite_includes_news():
     # 强看空新闻
     bearish = s.evaluate({**base_data, "news_sentiment_score": 0.1})
 
-    assert bullish.strength > neutral.strength, (
-        f"看多新闻应提升 composite: bullish={bullish.strength} > neutral={neutral.strength}"
-    )
-    assert bearish.strength < neutral.strength, (
-        f"看空新闻应降低 composite: bearish={bearish.strength} < neutral={neutral.strength}"
-    )
+    assert (
+        bullish.strength > neutral.strength
+    ), f"看多新闻应提升 composite: bullish={bullish.strength} > neutral={neutral.strength}"
+    assert (
+        bearish.strength < neutral.strength
+    ), f"看空新闻应降低 composite: bearish={bearish.strength} < neutral={neutral.strength}"
 
 
 def test_scores_dict_contains_news():

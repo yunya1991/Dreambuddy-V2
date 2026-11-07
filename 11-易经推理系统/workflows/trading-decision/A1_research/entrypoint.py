@@ -1,5 +1,5 @@
-import json
 import importlib.util
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -19,6 +19,7 @@ def _retrieve_memory(payload: Dict[str, Any]) -> list:
         from workflows.trading_decision.orchestrator.memory_retriever import (
             retrieve_memory_refs_for_stage,
         )
+
         return retrieve_memory_refs_for_stage("A1", payload, topk=3)
     except Exception:
         return []
@@ -36,11 +37,11 @@ def run_a1_research(payload: Dict[str, Any], output_dir: Optional[Path] = None) 
 
     result = proto.ensure_contract_fields(
         {
-        "stage_id": "A1",
-        "trace_id": payload.get("trace_id"),
-        "signals": list(payload.get("signals") or []),
-        "confidence": float(payload.get("confidence") or 0.0),
-        "timestamp": ts,
+            "stage_id": "A1",
+            "trace_id": payload.get("trace_id"),
+            "signals": list(payload.get("signals") or []),
+            "confidence": float(payload.get("confidence") or 0.0),
+            "timestamp": ts,
         },
         producer="workflows/trading-decision/A1_research",
     )

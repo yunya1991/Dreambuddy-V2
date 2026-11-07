@@ -14,9 +14,10 @@ knowledge_anchors — 金融知识锚点库
   - associated_genes: 关联的基因类型（用于语义匹配）
   - step_type_sequence: 典型步骤类型序列（如 ["condition", "inference", "condition", "action"]）
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from typing import Optional
 
 
@@ -112,7 +113,12 @@ EXPERIENCE_ANCHORS: list[KnowledgeAnchor] = [
         origin="实盘经验 · UNI 案例",
         causal_pattern="链上手续费↑ → 资金流入 → UNI/ARB涨 → Meme轮动 → PUMP跌",
         keywords=["手续费", "UNI", "ARB", "传导", "Meme", "PUMP", "轮动", "竞品"],
-        associated_genes=["CD-PROTOCOL-REVENUE", "CD-CAPITAL-ROTATION", "AC-LONG", "AC-SHORT-COMPETITOR"],
+        associated_genes=[
+            "CD-PROTOCOL-REVENUE",
+            "CD-CAPITAL-ROTATION",
+            "AC-LONG",
+            "AC-SHORT-COMPETITOR",
+        ],
         step_type_sequence=["condition", "inference", "condition", "action", "inference", "action"],
     ),
     KnowledgeAnchor(

@@ -8,11 +8,12 @@ meme 热点更替快，固定代币清单会滞后，改为平台级指标观测
 数据源：GeckoTerminal 公开 API（已验证可用，无需鉴权）。
 产出：meme_platform.json
 """
+
 import json
+import os
 import urllib.request
 from datetime import datetime, timezone
 from statistics import median
-import os
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
 _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
@@ -50,8 +51,8 @@ def main():
     print(f"fetched pools={len(pools)}  dexs={sorted(set(dex_names))}")
 
     # 按 dex 关系归属分类（pool 的 relationships.dex.data.id）
-    pump_fun_pools = []   # pump-fun：内盘 bonding curve
-    pumpswap_pools = []    # pumpswap：毕业池（AMM）
+    pump_fun_pools = []  # pump-fun：内盘 bonding curve
+    pumpswap_pools = []  # pumpswap：毕业池（AMM）
     other_pools = []
     for p in pools:
         dex_id = (p.get("relationships", {}).get("dex", {}).get("data") or {}).get("id", "")
@@ -63,12 +64,23 @@ def main():
             other_pools.append(p)
 
     def pool_stats(plist):
-        fdvs = [float(p["attributes"]["fdv_usd"]) for p in plist
-                if p["attributes"].get("fdv_usd") is not None]
+        fdvs = [
+            float(p["attributes"]["fdv_usd"])
+            for p in plist
+            if p["attributes"].get("fdv_usd") is not None
+        ]
         vol24 = [float(p["attributes"].get("volume_usd", {}).get("h24", 0)) for p in plist]
-        buys = sum(int(p["attributes"].get("transactions", {}).get("h24", {}).get("buys", 0)) for p in plist)
-        sells = sum(int(p["attributes"].get("transactions", {}).get("h24", {}).get("sells", 0)) for p in plist)
-        chg = [float(p["attributes"].get("price_change_percentage", {}).get("h24", 0)) for p in plist]
+        buys = sum(
+            int(p["attributes"].get("transactions", {}).get("h24", {}).get("buys", 0))
+            for p in plist
+        )
+        sells = sum(
+            int(p["attributes"].get("transactions", {}).get("h24", {}).get("sells", 0))
+            for p in plist
+        )
+        chg = [
+            float(p["attributes"].get("price_change_percentage", {}).get("h24", 0)) for p in plist
+        ]
         return {
             "count": len(plist),
             "fdv_median_usd": round(median(fdvs), 2) if fdvs else None,
@@ -90,7 +102,9 @@ def main():
         "pump_platform": {
             "pump_fun_bonding_pools": pool_stats(pump_fun_pools),
             "pumpswap_graduated_pools": pool_stats(pumpswap_pools),
-            "graduation_rate_pct": round(graduation_rate, 2) if graduation_rate is not None else None,
+            "graduation_rate_pct": (
+                round(graduation_rate, 2) if graduation_rate is not None else None
+            ),
         },
         "other_dex_pools": pool_stats(other_pools),
         "note": "毕业率=新池样本中 pumpswap 池占比（毕业=从 bonding curve 迁移到 AMM）；毕业率上升=meme 热度健康，下降=热度退潮；回购费用指标需链上数据，列为后续扩展",
@@ -99,8 +113,10 @@ def main():
     with open(OUT, "w") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
 
-    print(f"pump-fun(内盘): {len(pump_fun_pools)}  pumpswap(毕业): {len(pumpswap_pools)}  "
-          f"毕业率: {out['pump_platform']['graduation_rate_pct']}%")
+    print(
+        f"pump-fun(内盘): {len(pump_fun_pools)}  pumpswap(毕业): {len(pumpswap_pools)}  "
+        f"毕业率: {out['pump_platform']['graduation_rate_pct']}%"
+    )
     print(f"saved: {OUT}")
 
 

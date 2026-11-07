@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """BDSM 做空试错单信号分级测试（RED→GREEN）"""
+
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.memory_l4.polling_trader import PollingTrader
@@ -58,10 +60,13 @@ class TestClassifyBdsmShortSignal:
 
     def test_value_exit_full_exit_with_positive_bds_is_none(self):
         """value_exit=full_exit 但 bds≥0 → 不做空（高估止盈，非恶化）"""
-        snap = _make_snapshot("UNI", _make_entry(
-            bds_score=0.498,
-            value_exit={"action": "full_exit"},
-        ))
+        snap = _make_snapshot(
+            "UNI",
+            _make_entry(
+                bds_score=0.498,
+                value_exit={"action": "full_exit"},
+            ),
+        )
         assert PollingTrader._classify_bdsm_short_signal(snap, "UNI") is None
 
     def test_reduce_50_is_none(self):
@@ -99,4 +104,5 @@ class TestClassifyBdsmShortSignal:
 
 if __name__ == "__main__":
     import pytest
+
     sys.exit(pytest.main([__file__, "-v"]))

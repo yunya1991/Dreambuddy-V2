@@ -9,11 +9,12 @@ TDD 测试: P3 AGI 模块接入 pipeline
   T5. MetaCognitionGate 懒初始化接入 pipeline
   T6. 所有模块 FAIL-OPEN（异常不 crash）
 """
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -21,7 +22,7 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
+from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline  # noqa: E402
 
 
 # ====================================================================
@@ -82,7 +83,9 @@ def test_all_modules_fail_open():
     pipeline = EvolutionPipeline()
 
     # Mock import 失败场景
-    with patch("dreambuddy_evolution.core.causal_engine.CausalEngine", side_effect=Exception("test")):
+    with patch(
+        "dreambuddy_evolution.core.causal_engine.CausalEngine", side_effect=Exception("test")
+    ):
         engine = pipeline._get_causal_engine()
         # FAIL-OPEN: 应返回 None 或保持默认，不 crash
         assert engine is None or engine is not None  # 不 crash 即可

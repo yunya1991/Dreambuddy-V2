@@ -24,6 +24,7 @@ TDD 覆盖:
   - exogenous_data_bridge.py (ExogenousDataBridge)
   - exogenous_strength_evaluator.py (9 维输出)
 """
+
 from __future__ import annotations
 
 import sys
@@ -50,6 +51,7 @@ class TestBuildExogenousSeries:
         from dreambuddy_evolution.core.exogenous_data_bridge import (
             build_exogenous_series,
         )
+
         assert callable(build_exogenous_series)
 
     def test_build_exogenous_series_shape(self):
@@ -57,6 +59,7 @@ class TestBuildExogenousSeries:
         from dreambuddy_evolution.core.exogenous_data_bridge import (
             build_exogenous_series,
         )
+
         closes = np.linspace(100.0, 200.0, 200)
         series = build_exogenous_series(closes)
         assert series is not None
@@ -71,6 +74,7 @@ class TestBuildExogenousSeries:
         from dreambuddy_evolution.core.exogenous_data_bridge import (
             build_exogenous_series,
         )
+
         closes = np.linspace(100.0, 200.0, 250)
         series = build_exogenous_series(closes, bridge=None)
         assert series.shape == (250, 9)
@@ -83,6 +87,7 @@ class TestBuildExogenousSeries:
         from dreambuddy_evolution.core.exogenous_data_bridge import (
             build_exogenous_series,
         )
+
         closes = np.array([100.0, 101.0, 102.0])
         series = build_exogenous_series(closes)
         assert series.shape == (3, 9)
@@ -98,15 +103,20 @@ class TestPrepareDataExogenous:
 
     def _make_model(self):
         from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel
+
         # 显式 opt-in 9 维外生力量 (P1 设计: 默认 exogenous_dim=0 = 向后兼容)
         return NeuralSDEModel(
-            n_regimes=3, use_transition=False, dropout=0.0,
-            use_exogenous=True, exogenous_dim=9,
+            n_regimes=3,
+            use_transition=False,
+            dropout=0.0,
+            use_exogenous=True,
+            exogenous_dim=9,
         )
 
     def test_prepare_data_accepts_exogenous_kwarg(self):
         """E2.1: prepare_data 接受 exogenous_series 关键字参数."""
         from dreambuddy_evolution.core.neural_sde_model import NeuralSDETrainer
+
         model = self._make_model()
         trainer = NeuralSDETrainer(model, seq_len=32, horizon=8)
         closes = np.linspace(100.0, 200.0, 200)
@@ -118,6 +128,7 @@ class TestPrepareDataExogenous:
     def test_prepare_data_window_tuple_has_5_elements(self):
         """E2.2: 窗口元组扩展为 5 元素 (含 exo 向量)."""
         from dreambuddy_evolution.core.neural_sde_model import NeuralSDETrainer
+
         model = self._make_model()
         trainer = NeuralSDETrainer(model, seq_len=32, horizon=8)
         closes = np.linspace(100.0, 200.0, 200)
@@ -135,13 +146,16 @@ class TestPrepareDataExogenous:
         """E2.3: 第 i 个窗口的 exo = exogenous_series[start + seq_len - 1]
         (对齐 regime 的取法)."""
         from dreambuddy_evolution.core.neural_sde_model import NeuralSDETrainer
+
         model = self._make_model()
         trainer = NeuralSDETrainer(model, seq_len=32, horizon=8)
         closes = np.linspace(100.0, 200.0, 200)
         # 构造唯一值 exo, 便于验证对齐
         exo = np.tile(np.arange(200).reshape(-1, 1), (1, 9)) / 200.0
         windows = trainer.prepare_data(
-            closes, exogenous_series=exo, max_windows=9999,
+            closes,
+            exogenous_series=exo,
+            max_windows=9999,
         )
         # windows[0] 的起点 i=0, 末尾 idx = 0 + seq_len - 1 = 31
         win0 = windows[0]
@@ -152,6 +166,7 @@ class TestPrepareDataExogenous:
     def test_prepare_data_exogenous_none_fallback(self):
         """E2.4: exogenous_series=None → 窗口 exo = 零向量 (FAIL-OPEN)."""
         from dreambuddy_evolution.core.neural_sde_model import NeuralSDETrainer
+
         model = self._make_model()
         trainer = NeuralSDETrainer(model, seq_len=32, horizon=8)
         closes = np.linspace(100.0, 200.0, 200)
@@ -166,6 +181,7 @@ class TestPrepareDataExogenous:
     def test_prepare_data_exogenous_short_series(self):
         """E2.5: exogenous_series 长度 < closes → 截断/补零 (FAIL-OPEN)."""
         from dreambuddy_evolution.core.neural_sde_model import NeuralSDETrainer
+
         model = self._make_model()
         trainer = NeuralSDETrainer(model, seq_len=32, horizon=8)
         closes = np.linspace(100.0, 200.0, 200)
@@ -196,9 +212,13 @@ class TestDriftNetExogenousForward:
             pytest.skip("torch not available")
 
         from dreambuddy_evolution.core.neural_sde_model import _PathSignatureDriftNet
+
         # exogenous_dim=9 显式开启 (默认 0 = 关闭, 向后兼容)
         net = _PathSignatureDriftNet(
-            hidden_dim=32, sig_dim=4, n_regimes=3, exogenous_dim=9,
+            hidden_dim=32,
+            sig_dim=4,
+            n_regimes=3,
+            exogenous_dim=9,
         )
         y = torch.zeros(4, 1)
         log_sig = torch.zeros(4, 4)
@@ -206,8 +226,11 @@ class TestDriftNetExogenousForward:
         exo = torch.full((4, 9), 0.5)
         # 不应抛 TypeError
         out = net(
-            torch.tensor(0.5), y, log_sig=log_sig,
-            regime=regime, exogenous=exo,
+            torch.tensor(0.5),
+            y,
+            log_sig=log_sig,
+            regime=regime,
+            exogenous=exo,
         )
         assert out.shape == (4, 1)
         assert torch.isfinite(out).all()
@@ -215,9 +238,10 @@ class TestDriftNetExogenousForward:
     def test_path_sig_drift_net_in_dim_includes_exogenous(self):
         """E3.2: exogenous_dim=9 时, 第一层 in_features 应包含 +9 维."""
         from dreambuddy_evolution.core.neural_sde_model import (
-            _PathSignatureDriftNet,
             DEFAULT_SIG_DIM,
+            _PathSignatureDriftNet,
         )
+
         net = _PathSignatureDriftNet(n_regimes=3, exogenous_dim=9)
         expected = 3 + DEFAULT_SIG_DIM + 3 + 9
         first_linear = net.net[0]
@@ -229,9 +253,10 @@ class TestDriftNetExogenousForward:
     def test_path_sig_drift_net_exogenous_dim_zero_backward_compat(self):
         """E3.2b: exogenous_dim=0 (默认) → in_dim 不含 exo (向后兼容旧 ckpt)."""
         from dreambuddy_evolution.core.neural_sde_model import (
-            _PathSignatureDriftNet,
             DEFAULT_SIG_DIM,
+            _PathSignatureDriftNet,
         )
+
         net = _PathSignatureDriftNet(n_regimes=3)  # 默认 exogenous_dim=0
         expected = 3 + DEFAULT_SIG_DIM + 3  # 不含 exo
         first_linear = net.net[0]
@@ -248,8 +273,12 @@ class TestDriftNetExogenousForward:
             pytest.skip("torch not available")
 
         from dreambuddy_evolution.core.neural_sde_model import _PathSignatureDriftNet
+
         net = _PathSignatureDriftNet(
-            hidden_dim=32, sig_dim=4, n_regimes=3, exogenous_dim=9,
+            hidden_dim=32,
+            sig_dim=4,
+            n_regimes=3,
+            exogenous_dim=9,
         )
         y = torch.zeros(4, 1)
         # exogenous=None 不应抛
@@ -265,17 +294,25 @@ class TestDriftNetExogenousForward:
             pytest.skip("torch not available")
 
         from dreambuddy_evolution.core.neural_sde_model import _MoEDriftNet
+
         net = _MoEDriftNet(
-            n_experts=3, hidden_dim=32, sig_dim=4,
-            n_transition=0, routing="hard", exogenous_dim=9,
+            n_experts=3,
+            hidden_dim=32,
+            sig_dim=4,
+            n_transition=0,
+            routing="hard",
+            exogenous_dim=9,
         )
         y = torch.zeros(4, 1)
         log_sig = torch.zeros(4, 4)
         regime = torch.tensor([[1.0, 0.0, 0.0]] * 4)
         exo = torch.full((4, 9), 0.5)
         out = net(
-            torch.tensor(0.5), y,
-            log_sig=log_sig, regime=regime, exogenous=exo,
+            torch.tensor(0.5),
+            y,
+            log_sig=log_sig,
+            regime=regime,
+            exogenous=exo,
         )
         assert out.shape == (4, 1)
         assert torch.isfinite(out).all()
@@ -288,8 +325,12 @@ class TestDriftNetExogenousForward:
             pytest.skip("torch not available")
 
         from dreambuddy_evolution.core.neural_sde_model import _MoEDriftNet
+
         net = _MoEDriftNet(
-            n_experts=3, hidden_dim=32, sig_dim=4, exogenous_dim=9,
+            n_experts=3,
+            hidden_dim=32,
+            sig_dim=4,
+            exogenous_dim=9,
         )
         y = torch.zeros(4, 1)
         out = net(torch.tensor(0.5), y, exogenous=None)
@@ -307,49 +348,66 @@ class TestTrainExogenousPassthrough:
     def test_train_accepts_exogenous_kwarg(self):
         """E4.1: train 接受 exogenous_series 关键字参数, 不抛 TypeError."""
         try:
-            import torch
+            import torch  # noqa: F401
         except ImportError:
             pytest.skip("torch not available")
 
         from dreambuddy_evolution.core.neural_sde_model import (
-            NeuralSDEModel, NeuralSDETrainer,
+            NeuralSDEModel,
+            NeuralSDETrainer,
         )
+
         # use_exogenous=True 显式开启, drift_net 输入 +9 维 exo
         model = NeuralSDEModel(
-            n_regimes=3, use_moe=True, moe_routing="hard",
+            n_regimes=3,
+            use_moe=True,
+            moe_routing="hard",
             use_exogenous=True,
         )
         trainer = NeuralSDETrainer(
-            model, seq_len=32, horizon=8, batch_size=16,
-            loss_type="return_mse", weight_decay=1e-4,
+            model,
+            seq_len=32,
+            horizon=8,
+            batch_size=16,
+            loss_type="return_mse",
+            weight_decay=1e-4,
         )
         # 构造合成数据: 1000+ 窗口需要 ~1000+32+8 closes
         closes = np.cumsum(np.random.randn(1100) * 0.5 + 0.01) + 100.0
         exo = np.random.uniform(0.0, 1.0, size=(1100, 9))
         report = trainer.train(
-            closes, epochs=2, exogenous_series=exo,
+            closes,
+            epochs=2,
+            exogenous_series=exo,
         )
         assert "status" in report
         # 应该 ok 或 insufficient_samples (不应是 TypeError)
-        assert report["status"] in ("ok", "insufficient_samples"), (
-            f"train 返回 status={report.get('status')}"
-        )
+        assert report["status"] in (
+            "ok",
+            "insufficient_samples",
+        ), f"train 返回 status={report.get('status')}"
 
     def test_train_exogenous_none_no_regression(self):
         """E4.2: train(exogenous_series=None) 行为等价当前 (FAIL-OPEN)."""
         try:
-            import torch
+            import torch  # noqa: F401
         except ImportError:
             pytest.skip("torch not available")
 
         from dreambuddy_evolution.core.neural_sde_model import (
-            NeuralSDEModel, NeuralSDETrainer,
+            NeuralSDEModel,
+            NeuralSDETrainer,
         )
+
         # use_exogenous=False (默认), 行为等价当前最佳配置
         model = NeuralSDEModel(n_regimes=3, use_moe=True, moe_routing="hard")
         trainer = NeuralSDETrainer(
-            model, seq_len=32, horizon=8, batch_size=16,
-            loss_type="return_mse", weight_decay=1e-4,
+            model,
+            seq_len=32,
+            horizon=8,
+            batch_size=16,
+            loss_type="return_mse",
+            weight_decay=1e-4,
         )
         closes = np.cumsum(np.random.randn(1100) * 0.5 + 0.01) + 100.0
         report = trainer.train(closes, epochs=2, exogenous_series=None)
@@ -372,19 +430,26 @@ class TestForecastExogenousSnapshot:
     def test_forecast_accepts_exogenous_snapshot(self):
         """E5.1: forecast 接受 exogenous_snapshot 关键字参数."""
         try:
-            import torch
+            import torch  # noqa: F401
         except ImportError:
             pytest.skip("torch not available")
 
         from dreambuddy_evolution.core.neural_sde_model import (
-            NeuralSDEModel, NeuralSDETrainer,
+            NeuralSDEModel,
+            NeuralSDETrainer,
         )
+
         model = NeuralSDEModel(
-            n_regimes=3, use_moe=True, moe_routing="hard",
+            n_regimes=3,
+            use_moe=True,
+            moe_routing="hard",
             use_exogenous=True,
         )
         trainer = NeuralSDETrainer(
-            model, seq_len=32, horizon=8, batch_size=16,
+            model,
+            seq_len=32,
+            horizon=8,
+            batch_size=16,
         )
         closes = np.cumsum(np.random.randn(1100) * 0.5 + 0.01) + 100.0
         exo = np.full((1100, 9), 0.5)
@@ -393,7 +458,9 @@ class TestForecastExogenousSnapshot:
         exo_snap = np.full(9, 0.5)
         # 不应抛 TypeError
         paths = model.forecast(
-            history, horizon=4, n_paths=8,
+            history,
+            horizon=4,
+            n_paths=8,
             exogenous_snapshot=exo_snap,
         )
         # forecast 可能返回 None (torchsde 失败) 或 array
@@ -404,13 +471,15 @@ class TestForecastExogenousSnapshot:
     def test_forecast_exogenous_none(self):
         """E5.2: forecast(exogenous_snapshot=None) 不抛 (FAIL-OPEN)."""
         try:
-            import torch
+            import torch  # noqa: F401
         except ImportError:
             pytest.skip("torch not available")
 
         from dreambuddy_evolution.core.neural_sde_model import (
-            NeuralSDEModel, NeuralSDETrainer,
+            NeuralSDEModel,
+            NeuralSDETrainer,
         )
+
         # use_exogenous=False (默认), exogenous_snapshot=None 应等价当前
         model = NeuralSDEModel(n_regimes=3, use_moe=True, moe_routing="hard")
         trainer = NeuralSDETrainer(model, seq_len=32, horizon=8, batch_size=16)
@@ -418,7 +487,10 @@ class TestForecastExogenousSnapshot:
         self._train_mini(model, trainer, closes)
         history = closes[-64:]
         paths = model.forecast(
-            history, horizon=4, n_paths=8, exogenous_snapshot=None,
+            history,
+            horizon=4,
+            n_paths=8,
+            exogenous_snapshot=None,
         )
         if paths is not None:
             assert paths.ndim == 2
@@ -435,14 +507,17 @@ class TestFailOpenExogenous:
     def test_no_exogenous_signature_in_ckpt(self):
         """FO.1: use_exogenous=False 的 ckpt 可加载 (向后兼容旧模型)."""
         try:
-            import torch
+            import torch  # noqa: F401
         except ImportError:
             pytest.skip("torch not available")
 
         import tempfile
+
         from dreambuddy_evolution.core.neural_sde_model import (
-            NeuralSDEModel, NeuralSDETrainer,
+            NeuralSDEModel,
+            NeuralSDETrainer,
         )
+
         # 旧模型 (use_exogenous=False)
         model = NeuralSDEModel(n_regimes=3, use_moe=True, moe_routing="hard")
         trainer = NeuralSDETrainer(model, seq_len=32, horizon=8, batch_size=16)
@@ -454,13 +529,17 @@ class TestFailOpenExogenous:
             model.save(path)
             # 加载到同样配置的模型
             model2 = NeuralSDEModel(
-                n_regimes=3, use_moe=True, moe_routing="hard",
+                n_regimes=3,
+                use_moe=True,
+                moe_routing="hard",
             )
             ok = model2.load(path)
             assert ok, "load 应成功"
             # 加载到 use_exogenous=True 的模型应触发 rebuild
             model3 = NeuralSDEModel(
-                n_regimes=3, use_moe=True, moe_routing="hard",
+                n_regimes=3,
+                use_moe=True,
+                moe_routing="hard",
                 use_exogenous=True,
             )
             ok3 = model3.load(path)
@@ -476,13 +555,18 @@ class TestFailOpenExogenous:
             pytest.skip("torch not available")
 
         from dreambuddy_evolution.core.neural_sde_model import _PathSignatureDriftNet
+
         net = _PathSignatureDriftNet(
-            hidden_dim=32, sig_dim=4, n_regimes=3, exogenous_dim=9,
+            hidden_dim=32,
+            sig_dim=4,
+            n_regimes=3,
+            exogenous_dim=9,
         )
         y = torch.zeros(4, 1)
         out_none = net(torch.tensor(0.5), y, exogenous=None)
         out_zero = net(
-            torch.tensor(0.5), y,
+            torch.tensor(0.5),
+            y,
             exogenous=torch.zeros(4, 9),
         )
         torch.testing.assert_allclose(out_none, out_zero)

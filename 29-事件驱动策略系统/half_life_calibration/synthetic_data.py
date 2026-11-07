@@ -15,9 +15,10 @@
     - τ = true_half_life：T = 2×true_half_life，兑现全部 impulse → CAR 最高
     - τ > true_half_life：T > 2×true_half_life，impulse 已兑现完，额外天数只有负漂移 → CAR 下降
 """
+
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd

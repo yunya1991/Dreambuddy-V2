@@ -12,6 +12,7 @@ HOLD 0.1312 (2026-08-15 实盘验证发现)。
   - sentiment_score:      RSI 直接映射
 降级契约: K线不足/获取失败 → 只注入价格,其余字段保持默认(不阻塞周期)。
 """
+
 from typing import Any, Callable, Dict
 
 

@@ -11,6 +11,7 @@
 - 纯 MSE loss (放弃 multitask, v3 已证失败)
 - 期望: MAE < 269.51 (v2 基线), 进一步改善
 """
+
 from __future__ import annotations
 
 import json
@@ -24,8 +25,11 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
-from dreambuddy_evolution.core.garch_fallback import GARCHFallback
+from dreambuddy_evolution.core.garch_fallback import GARCHFallback  # noqa: E402, I001
+from dreambuddy_evolution.core.neural_sde_model import (  # noqa: E402
+    NeuralSDEModel,
+    NeuralSDETrainer,
+)  # noqa: E402
 
 
 def load_closes(path: Path) -> np.ndarray:
@@ -52,13 +56,21 @@ def evaluate_mae(model, garch, closes, horizon=20, n_paths=200):
     garch_mae = float(np.mean(np.abs(garch_pred - actual)))
 
     sde_paths = model.forecast(history, horizon, n_paths)
-    sde_mae = float(np.mean(np.abs(np.mean(sde_paths[:, 1:], axis=0) - actual))) if sde_paths is not None else float("inf")
+    sde_mae = (
+        float(np.mean(np.abs(np.mean(sde_paths[:, 1:], axis=0) - actual)))
+        if sde_paths is not None
+        else float("inf")
+    )
 
     return {
         "neural_sde_mae": round(sde_mae, 6),
         "garch_mae": round(garch_mae, 6),
         "improvement": round(garch_mae - sde_mae, 6) if sde_mae != float("inf") else 0.0,
-        "ratio": round(sde_mae / garch_mae, 4) if garch_mae > 0 and sde_mae != float("inf") else float("inf"),
+        "ratio": (
+            round(sde_mae / garch_mae, 4)
+            if garch_mae > 0 and sde_mae != float("inf")
+            else float("inf")
+        ),
     }
 
 
@@ -69,7 +81,9 @@ def main():
 
     btc_path = REPO / "dreambuddy_evolution" / "data" / "btc_close_10y.json"
     if not btc_path.exists():
-        print(f"[FAIL] 数据未找到: {btc_path} (先跑 download_binance_klines.py --years 10 --interval 1h)")
+        print(
+            f"[FAIL] 数据未找到: {btc_path} (先跑 download_binance_klines.py --years 10 --interval 1h)"
+        )
         return 1
     closes = load_closes(btc_path)
     print(f"[1] 数据: {len(closes)} 点 (1h, 10y) ← {btc_path.name}")
@@ -82,7 +96,12 @@ def main():
         return 1
     # 纯 MSE (放弃 multitask, v3 已证失败)
     trainer = NeuralSDETrainer(
-        model, lr=1e-4, seq_len=64, horizon=20, batch_size=64, loss_type="mse",
+        model,
+        lr=1e-4,
+        seq_len=64,
+        horizon=20,
+        batch_size=64,
+        loss_type="mse",
     )
     print(f"[2] loss_type=mse, sig_dim={model.sig_dim} (与 v2 一致, 仅数据扩充)")
 
@@ -92,22 +111,28 @@ def main():
     if report["status"] != "ok":
         print(f"[FAIL] {report}")
         return 1
-    print(f"[3] 训练: 200ep, final_loss={report['final_loss']:.6f}, n_windows={report['n_windows']}, 耗时={elapsed:.1f}s")
+    print(
+        f"[3] 训练: 200ep, final_loss={report['final_loss']:.6f}, n_windows={report['n_windows']}, 耗时={elapsed:.1f}s"
+    )
 
     garch = GARCHFallback()
     mae = evaluate_mae(model, garch, closes, horizon=20, n_paths=200)
-    print(f"[4] MAE:")
+    print("[4] MAE:")
     print(f"    NeuralSDE (mse+1h+10y): {mae['neural_sde_mae']:.4f}")
     print(f"    GARCH:                  {mae['garch_mae']:.4f}")
     print(f"    ratio:                  {mae['ratio']}")
-    print(f"    [对照] PoC v2 (mse+1h+2y): MAE=269.51, ratio=0.31 ✅")
-    print(f"    [对照] PoC v3b (mse+30m+5y): MAE=512, ratio=1.54 ❌")
+    print("    [对照] PoC v2 (mse+1h+2y): MAE=269.51, ratio=0.31 ✅")
+    print("    [对照] PoC v3b (mse+30m+5y): MAE=512, ratio=1.54 ❌")
 
     threshold = 1.2 * mae["garch_mae"]
     passed = mae["neural_sde_mae"] <= threshold
     improved_vs_v2 = mae["neural_sde_mae"] < 269.51
-    print(f"[5] 闸门: {mae['neural_sde_mae']:.4f} <= {threshold:.4f} ? {'PASS' if passed else 'FAIL'}")
-    print(f"    vs v2:  {mae['neural_sde_mae']:.4f} < 269.51 ? {'IMPROVED' if improved_vs_v2 else 'NO IMPROVEMENT'}")
+    print(
+        f"[5] 闸门: {mae['neural_sde_mae']:.4f} <= {threshold:.4f} ? {'PASS' if passed else 'FAIL'}"
+    )
+    print(
+        f"    vs v2:  {mae['neural_sde_mae']:.4f} < 269.51 ? {'IMPROVED' if improved_vs_v2 else 'NO IMPROVEMENT'}"
+    )
 
     poc_report = {
         "tdd": "TDD-013-v3c",

@@ -7,7 +7,8 @@ v2 优化（对齐行业标准 LUIS/Watson/Rasa DIET）：
 - 增加 混淆矩阵（行=gold，列=predicted）
 - 增加 FN/FP 错误分析列表
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import logging
 from dataclasses import dataclass, field
@@ -15,6 +16,7 @@ from typing import Callable, Dict, List, Optional
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.intent_sample_pipeline import IntentSamplePipeline
@@ -25,6 +27,7 @@ logger = logging.getLogger("real_env.eval_gate")
 @dataclass
 class EvalReport:
     """eval 报告（对齐 spec §3.5 + 行业标准指标）"""
+
     accuracy: float
     drift: float
     passed: bool
@@ -82,12 +85,14 @@ class IntentEvalGate:
                 zero_token_count += 1
             if correct:
                 route_hit_count += 1
-            details.append({
-                "sample_id": sample.sample_id,
-                "gold": gold,
-                "predicted": predicted,
-                "correct": correct,
-            })
+            details.append(
+                {
+                    "sample_id": sample.sample_id,
+                    "gold": gold,
+                    "predicted": predicted,
+                    "correct": correct,
+                }
+            )
             predictions.append((gold, predicted, sample.sample_id, sample.input["user_query"]))
 
         accuracy = sum(results) / len(results)
@@ -95,8 +100,9 @@ class IntentEvalGate:
         passed = accuracy >= self.ACCURACY_TARGET and drift < self.ACCURACY_DRIFT_LIMIT
 
         # v2: 计算行业标准指标
-        precision, recall, f1, f1_macro, confusion_matrix, intent_labels, fn_list, fp_list = \
+        precision, recall, f1, f1_macro, confusion_matrix, intent_labels, fn_list, fp_list = (
             self._compute_classification_metrics(predictions)
+        )
 
         report = EvalReport(
             accuracy=accuracy,
@@ -128,7 +134,10 @@ class IntentEvalGate:
             (precision, recall, f1, f1_macro, confusion_matrix, labels, fn_list, fp_list)
         """
         # 收集所有意图标签（gold ∪ predicted），按字母序稳定排序
-        all_labels = sorted(set(g for g, _, _, _ in predictions) | set(p for _, p, _, _ in predictions if p))
+        all_labels = sorted(
+            set(g for g, _, _, _ in predictions)  # noqa: C401
+            | set(p for _, p, _, _ in predictions if p)  # noqa: C401
+        )
         label_to_idx = {label: i for i, label in enumerate(all_labels)}
         n = len(all_labels)
 
@@ -166,22 +175,26 @@ class IntentEvalGate:
         # FN 列表：gold != predicted 的样本（漏判）
         for gold, predicted, sample_id, query in predictions:
             if gold != predicted:
-                fn_list.append({
-                    "sample_id": sample_id,
-                    "gold": gold,
-                    "predicted": predicted,
-                    "user_query": query[:60],
-                })
+                fn_list.append(
+                    {
+                        "sample_id": sample_id,
+                        "gold": gold,
+                        "predicted": predicted,
+                        "user_query": query[:60],
+                    }
+                )
 
         # FP 列表：predicted != gold 的样本（误判来源）
         for gold, predicted, sample_id, query in predictions:
             if predicted is not None and predicted != gold:
-                fp_list.append({
-                    "sample_id": sample_id,
-                    "predicted": predicted,
-                    "gold": gold,
-                    "user_query": query[:60],
-                })
+                fp_list.append(
+                    {
+                        "sample_id": sample_id,
+                        "predicted": predicted,
+                        "gold": gold,
+                        "user_query": query[:60],
+                    }
+                )
 
         return precision, recall, f1, f1_macro, cm, all_labels, fn_list, fp_list
 
@@ -194,6 +207,7 @@ class IntentEvalGate:
                 logger.warning("route_fn 失败，降级: %s", e)
                 return {"predicted_intent": None, "confidence": 0.0, "level": "failopen"}
         import requests
+
         try:
             resp = requests.post(
                 "http://localhost:8000/api/v1/intent/route",

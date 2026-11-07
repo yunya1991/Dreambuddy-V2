@@ -20,7 +20,6 @@ IPC handler:
 from __future__ import annotations
 
 import json
-import os
 import time
 import traceback
 import uuid
@@ -34,9 +33,8 @@ try:
 except ImportError:
     # 独立运行时 fallback
     import sys
-    _send_stderr = lambda level, msg: sys.stderr.write(  # noqa: E731
-        f"[{level}] {msg}\n"
-    )
+
+    _send_stderr = lambda level, msg: sys.stderr.write(f"[{level}] {msg}\n")  # noqa: E731
 
 # 训练数据集目录（HC-3 单一真相源：DreamOS 拥有数据主权）
 _TRAINING_DATASETS_DIR = Path.home() / ".workbuddy" / "training_datasets"
@@ -77,11 +75,7 @@ def handle_request_label(params: dict) -> dict:
         _ensure_dir()
 
         algorithm_result = params.get("algorithm_result", {}) or {}
-        user_message = (
-            params.get("user_message")
-            or algorithm_result.get("user_message")
-            or ""
-        )
+        user_message = params.get("user_message") or algorithm_result.get("user_message") or ""
         label = params.get("label")
         label_source = params.get("label_source", "shadow_review")
         sample_id = str(uuid.uuid4())

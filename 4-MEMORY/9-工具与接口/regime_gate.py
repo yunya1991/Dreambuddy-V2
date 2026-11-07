@@ -36,7 +36,7 @@ class ThompsonSamplingRegimeGate:
         arm: str,
         success_rate: float,
         drift_detected: bool = False,
-        _principal: Optional[dict] = None,  # D2：Mandate 感知，port 层硬门禁消费
+        _principal: Optional[dict] = None,  # D2：Mandate 感知，port 层硬门禁消费  # noqa: F821
     ) -> None:
         """更新 arm 的 Beta 分布。
 

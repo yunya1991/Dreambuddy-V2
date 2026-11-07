@@ -24,15 +24,15 @@ Phase 4: 最小阻力 AI 模型
 """
 
 from .feature_engineer import TrendFeatureEngineer
-from .models import MLModel, LightGBMModel, XGBoostModel, LogisticModel
-from .tuner import ModelTuner
-from .version_manager import ModelVersionManager
-from .ml_strategy import MLTrendStrategy
+from .fundamental_adapter import FundamentalFeatureAdapter
 from .lr_feature_engineer import LeastResistanceFeatureEngineer
 from .lr_ml_strategy import LeastResistanceAIStrategy
 from .lr_ml_strategy_v2 import LeastResistanceAIStrategyV2
-from .fundamental_adapter import FundamentalFeatureAdapter
-from .multitask_model import MultiTaskLightGBM, DynamicWeightFusion
+from .ml_strategy import MLTrendStrategy
+from .models import LightGBMModel, LogisticModel, MLModel, XGBoostModel
+from .multitask_model import DynamicWeightFusion, MultiTaskLightGBM
+from .tuner import ModelTuner
+from .version_manager import ModelVersionManager
 
 # 向后兼容别名
 MultiViewFeatureEngineer = TrendFeatureEngineer

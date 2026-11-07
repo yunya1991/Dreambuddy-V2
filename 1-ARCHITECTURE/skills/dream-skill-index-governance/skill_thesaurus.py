@@ -7,6 +7,7 @@
 
 工程约束：HC-1a（独立模块）/ FAIL-OPEN / 零回归
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -76,7 +77,6 @@ def is_generic_trigger(trigger: str, thesaurus: dict[str, Any] | None) -> bool:
 
 def _minimal_yaml_parse(text: str) -> dict[str, Any]:
     """极简 YAML 解析（仅支持本词表的同义词/消歧/黑名单结构）。"""
-    import re
 
     result: dict[str, Any] = {"synonyms": {}, "disambiguation": {}, "generic_triggers": []}
     lines = text.splitlines()

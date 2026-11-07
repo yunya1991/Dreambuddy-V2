@@ -9,13 +9,21 @@ SPEC v1.2-rc1 §6 P1: debate_memory.py 新增 CBR 案例表 + 策略权重表 + 
 - add_elo / get_elo / update_elo: Persona Elo 持久化
 - 向后兼容: 原 7 接口不变
 """
+
 from __future__ import annotations
-import os, sys, unittest
+
+import os
+import sys
+import unittest
 
 # 添加 python-server 到 path (导入 debate_trainer 的 hash encoder)
 SERVER_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "..", "1-ARCHITECTURE", "dream-harness-bridge", "packages", "python-server",
+    "..",
+    "1-ARCHITECTURE",
+    "dream-harness-bridge",
+    "packages",
+    "python-server",
 )
 if SERVER_DIR not in sys.path:
     sys.path.insert(0, SERVER_DIR)
@@ -30,6 +38,7 @@ class TestCBRCaseStorage(unittest.TestCase):
 
     def test_add_cbr_case(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(db_path=":memory:")
         case_id = mem.add_cbr_case(
             topic="BTC是数字黄金",
@@ -45,11 +54,19 @@ class TestCBRCaseStorage(unittest.TestCase):
 
     def test_search_cbr_cases(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(db_path=":memory:")
-        mem.add_cbr_case("BTC是数字黄金", "crypto", '["evidence-heavy"]',
-                         "bull", 23, 19, '["evidence-heavy"]', '[]')
-        mem.add_cbr_case("AI取代人类", "ai", '["kritik"]',
-                         "bear", 20, 22, '["kritik"]', '[]')
+        mem.add_cbr_case(
+            "BTC是数字黄金",
+            "crypto",
+            '["evidence-heavy"]',
+            "bull",
+            23,
+            19,
+            '["evidence-heavy"]',
+            "[]",
+        )
+        mem.add_cbr_case("AI取代人类", "ai", '["kritik"]', "bear", 20, 22, '["kritik"]', "[]")
         results = mem.search_cbr_cases("BTC", top_k=2)
         self.assertIsInstance(results, list)
         self.assertGreater(len(results), 0)
@@ -57,9 +74,10 @@ class TestCBRCaseStorage(unittest.TestCase):
 
     def test_cbr_case_count(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(db_path=":memory:")
         self.assertEqual(mem.cbr_case_count(), 0)
-        mem.add_cbr_case("BTC", "crypto", '[]', "bull", 20, 18, '[]', '[]')
+        mem.add_cbr_case("BTC", "crypto", "[]", "bull", 20, 18, "[]", "[]")
         self.assertEqual(mem.cbr_case_count(), 1)
 
 
@@ -68,15 +86,18 @@ class TestStrategyWeightStorage(unittest.TestCase):
 
     def test_add_strategy_weight(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(db_path=":memory:")
         mem.add_strategy_weight(
             strategy="evidence-heavy",
             topic_type="crypto",
-            alpha=2.0, beta=1.0,
+            alpha=2.0,
+            beta=1.0,
         )
 
     def test_get_strategy_weights(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(db_path=":memory:")
         mem.add_strategy_weight("evidence-heavy", "crypto", 2.0, 1.0)
         mem.add_strategy_weight("counterplan", "crypto", 1.0, 2.0)
@@ -90,6 +111,7 @@ class TestStrategyWeightStorage(unittest.TestCase):
 
     def test_update_strategy_weight(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(db_path=":memory:")
         mem.add_strategy_weight("evidence-heavy", "crypto", 1.0, 1.0)
         mem.update_strategy_weight("evidence-heavy", "crypto", alpha=3.0, beta=2.0)
@@ -104,11 +126,13 @@ class TestEloStorage(unittest.TestCase):
 
     def test_add_elo(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(db_path=":memory:")
         mem.add_elo("乐观分析师", elo=1200.0, debates=0)
 
     def test_get_elo(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(db_path=":memory:")
         mem.add_elo("乐观分析师", elo=1200.0, debates=0)
         elo = mem.get_elo("乐观分析师")
@@ -117,6 +141,7 @@ class TestEloStorage(unittest.TestCase):
 
     def test_update_elo(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(db_path=":memory:")
         mem.add_elo("乐观分析师", elo=1200.0, debates=0)
         mem.update_elo("乐观分析师", elo=1232.0, debates=1)
@@ -126,6 +151,7 @@ class TestEloStorage(unittest.TestCase):
 
     def test_get_elo_nonexistent(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(db_path=":memory:")
         elo = mem.get_elo("不存在")
         self.assertIsNone(elo)
@@ -136,12 +162,14 @@ class TestBackwardCompatibility(unittest.TestCase):
 
     def test_original_add_still_works(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(db_path=":memory:")
         mid = mem.add("测试内容", quality_level="B", tags="debate")
         self.assertIsNotNone(mid)
 
     def test_original_search_still_works(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(db_path=":memory:")
         mem.add("BTC辩论", quality_level="B", tags="debate,crypto")
         results = mem.search("BTC", top_k=5)
@@ -149,6 +177,7 @@ class TestBackwardCompatibility(unittest.TestCase):
 
     def test_original_stats_still_works(self):
         from debate_memory import DebateMemory
+
         mem = DebateMemory(db_path=":memory:")
         stats = mem.stats()
         self.assertIsInstance(stats, dict)

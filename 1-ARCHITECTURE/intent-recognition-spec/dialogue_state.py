@@ -22,32 +22,33 @@ Phase 2: 对话状态管理（Dialogue State Management, DSM）
     result2 = dsm.process("那它呢")  # "它" -> 茅台
 """
 
-import json
 import copy
-from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
-
+from typing import Any, Dict, List, Optional, Tuple
 
 # ── 状态枚举 ────────────────────────────────────────────────────────────────
 
+
 class DialoguePhase(str, Enum):
     """对话阶段"""
-    INITIAL = "initial"           # 初始状态，无上下文
-    ACTIVE = "active"             # 活跃对话中
+
+    INITIAL = "initial"  # 初始状态，无上下文
+    ACTIVE = "active"  # 活跃对话中
     AWAITING_CONFIRM = "awaiting_confirm"  # 等待确认（高风险交易）
     AWAITING_CLARIFY = "awaiting_clarify"  # 等待澄清
-    COMPLETED = "completed"       # 单轮完成
-    CANCELLED = "cancelled"       # 用户取消
+    COMPLETED = "completed"  # 单轮完成
+    CANCELLED = "cancelled"  # 用户取消
 
 
 class ModificationType(str, Enum):
     """修正类型"""
-    ACTION_CORRECTION = "action_correction"      # "不是买，是卖"
+
+    ACTION_CORRECTION = "action_correction"  # "不是买，是卖"
     PARAMETER_MODIFICATION = "parameter_modification"  # "改成200股"
-    TARGET_CORRECTION = "target_correction"      # "不是茅台，是五粮液"
+    TARGET_CORRECTION = "target_correction"  # "不是茅台，是五粮液"
     QUANTITY_MODIFICATION = "quantity_modification"  # "改100股"
-    CANCEL = "cancel"                              # "算了"
+    CANCEL = "cancel"  # "算了"
 
 
 # ── 指代消解规则 ────────────────────────────────────────────────────────────
@@ -75,13 +76,13 @@ REFERENCE_PATTERNS = {
 
 # 修正触发词
 MODIFICATION_TRIGGERS = {
-    "不是": ModificationType.ACTION_CORRECTION.value,      # "不是买，是卖"
-    "改成": ModificationType.PARAMETER_MODIFICATION.value,   # "改成200股"
-    "换成": ModificationType.TARGET_CORRECTION.value,       # "换成五粮液"
-    "不对": ModificationType.ACTION_CORRECTION.value,       # "不对，是卖"
-    "错了": ModificationType.ACTION_CORRECTION.value,       # "错了，应该是200股"
+    "不是": ModificationType.ACTION_CORRECTION.value,  # "不是买，是卖"
+    "改成": ModificationType.PARAMETER_MODIFICATION.value,  # "改成200股"
+    "换成": ModificationType.TARGET_CORRECTION.value,  # "换成五粮液"
+    "不对": ModificationType.ACTION_CORRECTION.value,  # "不对，是卖"
+    "错了": ModificationType.ACTION_CORRECTION.value,  # "错了，应该是200股"
     "修改": ModificationType.PARAMETER_MODIFICATION.value,  # "修改数量为200"
-    "改": ModificationType.PARAMETER_MODIFICATION.value,    # "改200股"
+    "改": ModificationType.PARAMETER_MODIFICATION.value,  # "改200股"
 }
 
 # 确认触发词
@@ -110,9 +111,11 @@ CANCEL_TRIGGERS = {
 
 # ── 对话状态数据结构 ────────────────────────────────────────────────────────
 
+
 @dataclass
 class TurnRecord:
     """单轮对话记录"""
+
     user_input: str
     intent_result: Dict[str, Any]
     timestamp: str = ""
@@ -122,6 +125,7 @@ class TurnRecord:
 @dataclass
 class DialogueState:
     """对话状态"""
+
     turns: List[TurnRecord] = field(default_factory=list)
     current_phase: DialoguePhase = DialoguePhase.INITIAL
 
@@ -183,6 +187,7 @@ class DialogueState:
 
 
 # ── 对话状态管理器 ──────────────────────────────────────────────────────────
+
 
 class DialogueStateManager:
     """对话状态管理器"""
@@ -342,11 +347,7 @@ class DialogueStateManager:
 
         return None
 
-    def _apply_modification(
-        self,
-        user_input: str,
-        modification: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _apply_modification(self, user_input: str, modification: Dict[str, Any]) -> Dict[str, Any]:
         """
         应用修正到上一轮意图
 
@@ -452,10 +453,11 @@ class DialogueStateManager:
     def _extract_params_from_modification(self, input_text: str) -> Dict[str, Any]:
         """从'改成200股'中提取参数"""
         import re
+
         params = {}
 
         # 提取数量
-        qty_match = re.search(r'(\d+)\s*(股|手|个|张)', input_text)
+        qty_match = re.search(r"(\d+)\s*(股|手|个|张)", input_text)
         if qty_match:
             params["quantity"] = int(qty_match.group(1))
             unit = qty_match.group(2)
@@ -463,7 +465,7 @@ class DialogueStateManager:
             params["quantity_unit"] = unit_map.get(unit, unit)
 
         # 提取价格
-        price_match = re.search(r'(\d+(?:\.\d+)?)\s*(元|块)', input_text)
+        price_match = re.search(r"(\d+(?:\.\d+)?)\s*(元|块)", input_text)
         if price_match:
             params["price"] = float(price_match.group(1))
 
@@ -502,9 +504,11 @@ class DialogueStateManager:
         # 部分继承：只继承新轮未提供的可继承槽位
         inherited_any = False
         for slot_name in self.INHERITABLE_SLOTS:
-            if (slot_name not in slots
-                    and slot_name in self.state.last_intent_slots
-                    and self.state.last_intent_slots[slot_name] is not None):
+            if (
+                slot_name not in slots
+                and slot_name in self.state.last_intent_slots
+                and self.state.last_intent_slots[slot_name] is not None
+            ):
                 slots[slot_name] = self.state.last_intent_slots[slot_name]
                 inherited_any = True
 
@@ -612,7 +616,8 @@ class DialogueStateManager:
         # 更新可继承槽位
         if slots:
             self.state.last_intent_slots = {
-                k: v for k, v in slots.items()
+                k: v
+                for k, v in slots.items()
                 if k in self.INHERITABLE_SLOTS or k in ("stock", "sector")
             }
 

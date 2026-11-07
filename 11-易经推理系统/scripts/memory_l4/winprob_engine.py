@@ -21,7 +21,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,9 @@ class WinProbEngine:
         self._last_failopen_logged_hour: str = ""
 
     # ---------------- 公共接口 ----------------
-    def get_multiplier(self, q_vec: Optional[Dict[str, Any]] = None) -> Tuple[float, Dict[str, Any]]:
+    def get_multiplier(
+        self, q_vec: Optional[Dict[str, Any]] = None
+    ) -> Tuple[float, Dict[str, Any]]:
         """
         返回 (final_winprob_mult, shadow_dict)。
 
@@ -139,8 +141,10 @@ class WinProbEngine:
             }
 
         except Exception as e:  # noqa: BLE001 - fail-open 兜底
-            from . import phase_c_constants as C
             import datetime as _dt
+
+            from . import phase_c_constants as C
+
             hour_tag = _dt.datetime.now().strftime("%Y-%m-%dT%H")
             if self._last_failopen_logged_hour != hour_tag:
                 logger.warning(

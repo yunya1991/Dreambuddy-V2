@@ -2,9 +2,10 @@
 
 etherscan-python 薄封装，覆盖 gas/balance/whales 三种 kind + 巨鲸地址表 + 无 Key 降级。
 """
+
 from data_center.collectors.chain.etherscan_collector import (
-    EtherscanCollector,
     WHALE_ADDRESSES,
+    EtherscanCollector,
 )
 from data_center.core.contract import DataRecord
 
@@ -29,7 +30,9 @@ def test_no_key_returns_empty(monkeypatch):
 def test_fetch_gas(mocker):
     mock_es = mocker.patch(ETH_MOD).return_value
     mock_es.get_gas_oracle.return_value = {
-        "ProposeGasPrice": "12", "SafeGasPrice": "10", "FastGasPrice": "15",
+        "ProposeGasPrice": "12",
+        "SafeGasPrice": "10",
+        "FastGasPrice": "15",
     }
     c = EtherscanCollector(config={"api_key": "fake"})
     recs = c.fetch({"kind": "gas"})

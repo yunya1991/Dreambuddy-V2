@@ -22,33 +22,33 @@ import json
 import sys
 import threading
 import time
-import traceback
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-_ALLOC_DIR = Path(__file__).resolve().parent          # capital_allocator
-_16_CORE_DIR = _ALLOC_DIR.parent                       # 16-调控系统/core
-_16_DIR = _16_CORE_DIR.parent                           # 16-调控系统
-_PROJECT_DIR = _16_DIR.parent                            # dreambuddy-v2
-_TRADES_FILE = _PROJECT_DIR / "11-易经推理系统" / ".workbuddy" / "memory_l4" / "stats" / "all_trades.jsonl"
+_ALLOC_DIR = Path(__file__).resolve().parent  # capital_allocator
+_16_CORE_DIR = _ALLOC_DIR.parent  # 16-调控系统/core
+_16_DIR = _16_CORE_DIR.parent  # 16-调控系统
+_PROJECT_DIR = _16_DIR.parent  # dreambuddy-v2
+_TRADES_FILE = (
+    _PROJECT_DIR / "11-易经推理系统" / ".workbuddy" / "memory_l4" / "stats" / "all_trades.jsonl"
+)
 _CACHE_FILE = _PROJECT_DIR / "11-易经推理系统" / "runtime" / "paca_performance_cache.json"
 
 for _p in (_16_CORE_DIR,):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
+from .layers.expansion_gate import GlobalExpansionGate  # noqa: E402
+from .layers.hierarchical_allocator import HierarchicalAllocator  # noqa: E402
+from .layers.kelly_sizer import KellySizer  # noqa: E402
+from .layers.performance_tracker import PerformanceTracker  # noqa: E402
 from .types import (  # noqa: E402
-    AllocatorMode,
     AllocationResult,
     AllocationSnapshot,
+    AllocatorMode,
     HealthLevel,
     now_iso,
 )
-from .layers.performance_tracker import PerformanceTracker  # noqa: E402
-from .layers.kelly_sizer import KellySizer  # noqa: E402
-from .layers.hierarchical_allocator import HierarchicalAllocator  # noqa: E402
-from .layers.expansion_gate import GlobalExpansionGate  # noqa: E402
-
 
 _DEFAULT_CONFIG: Dict[str, Any] = {
     "version": "1.0",
@@ -66,7 +66,10 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
     "cold_start_min_trades": 5,
     # Layer 3
     "subpool_weights": {
-        "bdsm": 0.25, "bcrm": 0.40, "evolution": 0.20, "strategy": 0.15,
+        "bdsm": 0.25,
+        "bcrm": 0.40,
+        "evolution": 0.20,
+        "strategy": 0.15,
     },
     "min_subpool_weight": 0.10,
     # Layer 4
@@ -333,7 +336,7 @@ class CapitalAllocatorComponent:
 
         # 聚合
         by_coin: Dict[str, AllocationResult] = {}
-        for coin, (perf, kelly_f, half_f, pos_pct) in coin_kelly.items():
+        for coin, (perf, kelly_f, half_f, pos_pct) in coin_kelly.items():  # noqa: B007
             source_tag = self._infer_source_tag(coin)
             subpool_w = subpool_budgets.get(source_tag, 0.0)
             final_pct = pos_pct * expansion_mult
@@ -376,7 +379,7 @@ class CapitalAllocatorComponent:
             if n_trades == 0:
                 return HealthLevel.CRITICAL  # 无数据
             if w_l < 0.5 or n_trades < 10:
-                return HealthLevel.WARNING   # 样本不足或绩效差
+                return HealthLevel.WARNING  # 样本不足或绩效差
             return HealthLevel.HEALTHY
         except Exception:
             return HealthLevel.CRITICAL

@@ -5,6 +5,7 @@
   T17-2: alt_trend_ensemble — 形态+Elder-ray+三屏跨域融合 → shape ≥ 60列，elder 5列one-hot存在
   T17-3: equity_classic_trend — 三屏+经典指标+五域 → shape ≥ 30列
 """
+
 from __future__ import annotations
 
 import sys
@@ -27,13 +28,16 @@ def btc_ohlcv():
     rng = np.random.default_rng(42)
     n = 300
     close = 100 * np.exp(np.cumsum(rng.normal(0, 0.02, n)))
-    return pd.DataFrame({
-        "open": close * (1 + rng.normal(0, 0.004, n)),
-        "high": close * (1 + np.abs(rng.normal(0, 0.01, n))),
-        "low": close * (1 - np.abs(rng.normal(0, 0.01, n))),
-        "close": close,
-        "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
-    }, index=pd.date_range("2024-01-01", periods=n, freq="D"))
+    return pd.DataFrame(
+        {
+            "open": close * (1 + rng.normal(0, 0.004, n)),
+            "high": close * (1 + np.abs(rng.normal(0, 0.01, n))),
+            "low": close * (1 - np.abs(rng.normal(0, 0.01, n))),
+            "close": close,
+            "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
+        },
+        index=pd.date_range("2024-01-01", periods=n, freq="D"),
+    )
 
 
 def _build_pipeline():
@@ -67,9 +71,15 @@ def test_t17_2_alt_trend_ensemble(btc_ohlcv):
     assert fv.df is not None
     assert len(fv.df.columns) >= 60, f"shape={len(fv.df.columns)} < 60"
     # elder_ray 5 列 one-hot 存在（带模块名前缀）
-    elder_cols = [c for c in fv.df.columns if "elder_" in c and any(
-        cat in c for cat in ("bullish_strong", "bullish", "neutral", "bearish", "bearish_strong")
-    )]
+    elder_cols = [
+        c
+        for c in fv.df.columns
+        if "elder_" in c
+        and any(
+            cat in c
+            for cat in ("bullish_strong", "bullish", "neutral", "bearish", "bearish_strong")
+        )
+    ]
     assert len(elder_cols) >= 5, f"elder one-hot cols={len(elder_cols)} < 5: {elder_cols}"
 
 

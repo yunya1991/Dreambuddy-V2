@@ -14,13 +14,12 @@ Bug背景: V15 与 11-易经 BCRM2.0 共用 screen_trade 实盘账户（无账�
 新增 `if coin.upper() not in [c.upper() for c in _RAW_COINS]: return` 守卫，
 阻断非 V15 币种的历史/外部持仓误触发。
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 _HERE = Path(__file__).resolve().parent
 _V15_ROOT = _HERE.parent
@@ -60,14 +59,16 @@ class TestPlaceAddonGridCoinGuard:
 
         pos = self._make_pos("MU", "LONG")
 
-        with patch("v15_trader.AUTO_EXECUTE", True), \
-             patch("v15_trader._RAW_COINS", ["BTC", "ETH", "SOL", "UNI", "LINK", "ZEC"]), \
-             patch("v15_trader._cancel_addon_grid_orders"), \
-             patch("v15_trader.get_contract_info", return_value=(0.01, 0.01)), \
-             patch("v15_trader.calc_lot_sz", return_value=0.05), \
-             patch("v15_trader.LEVERAGE", 5), \
-             patch("v15_trader.MAX_ADDONS", 4), \
-             patch("v15_trader.ADDON_PCT", 0.08):
+        with (
+            patch("v15_trader.AUTO_EXECUTE", True),
+            patch("v15_trader._RAW_COINS", ["BTC", "ETH", "SOL", "UNI", "LINK", "ZEC"]),
+            patch("v15_trader._cancel_addon_grid_orders"),
+            patch("v15_trader.get_contract_info", return_value=(0.01, 0.01)),
+            patch("v15_trader.calc_lot_sz", return_value=0.05),
+            patch("v15_trader.LEVERAGE", 5),
+            patch("v15_trader.MAX_ADDONS", 4),
+            patch("v15_trader.ADDON_PCT", 0.08),
+        ):
             _place_addon_grid_orders(client, "MU", pos)
 
         # 守卫应阻断：place_order 不应被调用
@@ -85,25 +86,27 @@ class TestPlaceAddonGridCoinGuard:
 
         pos = self._make_pos("BTC", "LONG")
 
-        with patch("v15_trader.AUTO_EXECUTE", True), \
-             patch("v15_trader._RAW_COINS", ["BTC", "ETH", "SOL", "UNI", "LINK", "ZEC"]), \
-             patch("v15_trader._cancel_addon_grid_orders"), \
-             patch("v15_trader.get_contract_info", return_value=(0.01, 0.01)), \
-             patch("v15_trader.calc_lot_sz", return_value=0.05), \
-             patch("v15_trader.LEVERAGE", 5), \
-             patch("v15_trader.MAX_ADDONS", 4), \
-             patch("v15_trader.ADDON_PCT", 0.08):
+        with (
+            patch("v15_trader.AUTO_EXECUTE", True),
+            patch("v15_trader._RAW_COINS", ["BTC", "ETH", "SOL", "UNI", "LINK", "ZEC"]),
+            patch("v15_trader._cancel_addon_grid_orders"),
+            patch("v15_trader.get_contract_info", return_value=(0.01, 0.01)),
+            patch("v15_trader.calc_lot_sz", return_value=0.05),
+            patch("v15_trader.LEVERAGE", 5),
+            patch("v15_trader.MAX_ADDONS", 4),
+            patch("v15_trader.ADDON_PCT", 0.08),
+        ):
             _place_addon_grid_orders(client, "BTC", pos)
 
         # 正常 V15 币种：place_order 应被调用（4 档加仓）
-        assert client.place_order.call_count > 0, (
-            "BTC 在 V15_COINS 时应正常挂加仓网格单，但 place_order 未被调用"
-        )
+        assert (
+            client.place_order.call_count > 0
+        ), "BTC 在 V15_COINS 时应正常挂加仓网格单，但 place_order 未被调用"
         # 确认 tag 是 v15addongrid
         first_call = client.place_order.call_args
-        assert first_call.kwargs.get("tag") == "v15addongrid", (
-            f"加仓网格 tag 应为 v15addongrid，实际: {first_call.kwargs.get('tag')}"
-        )
+        assert (
+            first_call.kwargs.get("tag") == "v15addongrid"
+        ), f"加仓网格 tag 应为 v15addongrid，实际: {first_call.kwargs.get('tag')}"
 
     def test_case_insensitive_coin_guard(self):
         """币种大小写不敏感：'mu' 小写也应被守卫阻断。"""
@@ -114,19 +117,19 @@ class TestPlaceAddonGridCoinGuard:
 
         pos = self._make_pos("mu", "LONG")
 
-        with patch("v15_trader.AUTO_EXECUTE", True), \
-             patch("v15_trader._RAW_COINS", ["BTC", "ETH", "SOL"]), \
-             patch("v15_trader._cancel_addon_grid_orders"), \
-             patch("v15_trader.get_contract_info", return_value=(0.01, 0.01)), \
-             patch("v15_trader.calc_lot_sz", return_value=0.05), \
-             patch("v15_trader.LEVERAGE", 5), \
-             patch("v15_trader.MAX_ADDONS", 4), \
-             patch("v15_trader.ADDON_PCT", 0.08):
+        with (
+            patch("v15_trader.AUTO_EXECUTE", True),
+            patch("v15_trader._RAW_COINS", ["BTC", "ETH", "SOL"]),
+            patch("v15_trader._cancel_addon_grid_orders"),
+            patch("v15_trader.get_contract_info", return_value=(0.01, 0.01)),
+            patch("v15_trader.calc_lot_sz", return_value=0.05),
+            patch("v15_trader.LEVERAGE", 5),
+            patch("v15_trader.MAX_ADDONS", 4),
+            patch("v15_trader.ADDON_PCT", 0.08),
+        ):
             _place_addon_grid_orders(client, "mu", pos)
 
-        assert client.place_order.call_count == 0, (
-            "小写 'mu' 不在 V15_COINS 时也应被守卫阻断"
-        )
+        assert client.place_order.call_count == 0, "小写 'mu' 不在 V15_COINS 时也应被守卫阻断"
 
     def test_auto_execute_false_skips_regardless_of_coin(self):
         """AUTO_EXECUTE=False 时无论币种都应直接返回（向后兼容）。"""
@@ -137,8 +140,10 @@ class TestPlaceAddonGridCoinGuard:
 
         pos = self._make_pos("BTC", "LONG")
 
-        with patch("v15_trader.AUTO_EXECUTE", False), \
-             patch("v15_trader._RAW_COINS", ["BTC", "ETH"]):
+        with (
+            patch("v15_trader.AUTO_EXECUTE", False),
+            patch("v15_trader._RAW_COINS", ["BTC", "ETH"]),
+        ):
             _place_addon_grid_orders(client, "BTC", pos)
 
         # AUTO_EXECUTE=False → 直接 return，place_order 不应被调用

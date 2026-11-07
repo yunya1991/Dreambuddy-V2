@@ -15,33 +15,28 @@ G层 - 图展开器
   回溯压缩: G.C → G.A → G.B
 """
 
-import time
 import copy
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass
+from typing import List, Optional
 
 from .types import (
-    BlueprintGraph,
-    ArchitectureGraph,
-    ChronicleGraph,
-    BNode,
-    ANode,
-    CNode,
-    BEdge,
     AEdge,
+    ANode,
+    ArchitectureGraph,
+    BlueprintGraph,
+    BNode,
     CEdge,
-    NodeType,
-    NodeStatus,
-    ComponentType,
+    ChronicleGraph,
+    CNode,
     NodeMetadata,
-    NodeId,
+    NodeStatus,
+    NodeType,
     _gen_id,
 )
-
 
 # ============================================================
 # 图展开器
 # ============================================================
+
 
 class GraphExpander:
     """图展开器
@@ -78,7 +73,7 @@ class GraphExpander:
         arch.entry_node_id = entry_id
 
         # 遍历 Blueprint 的节点
-        current_parent = entry_id
+        current_parent = entry_id  # noqa: F841
 
         # 获取 B 节点映射
         b_nodes_ordered = self._get_bfs_order(blueprint)

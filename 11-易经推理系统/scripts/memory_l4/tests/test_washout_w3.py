@@ -11,14 +11,13 @@ F11 cvd_price_divergence  — CVD 与价格相关性 (负=trapped trader 洗盘,
 F12 ofi_std_20d           — 20d OFI 滚动标准差 (低方差+高 vol=可疑洗盘, 高方差=真弱势)
 F13 wyckoff_climax_stage  — Wyckoff climax 阶段 (0=未触发, 1=Panic, 2=Sustained, 3=Exhaustion)
 """
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
-import pytest
 
 _THIS_DIR = Path(__file__).resolve().parent
 _PROJECT_ROOT = _THIS_DIR.parent.parent  # 11-易经推理系统/
@@ -57,7 +56,7 @@ class TestF9OiPriceQuadrant:
     def test_extract_oi_price_quadrant_oi_up_price_down(self):
         """OI↑+Price↓ → 象限 1 (空头建仓, 洗盘特征, 看多反向)."""
         closes = [50.0, 50.0, 45.0]  # 价格↓
-        oi = [100.0, 100.0, 120.0]   # OI↑
+        oi = [100.0, 100.0, 120.0]  # OI↑
         df = _make_df(closes)
         macro = {"oi_series": oi}
         ext = WashoutFeatureExtractor()
@@ -68,7 +67,7 @@ class TestF9OiPriceQuadrant:
     def test_extract_oi_price_quadrant_oi_down_price_down(self):
         """OI↓+Price↓ → 象限 3 (多头投降, 真弱势特征, 本地底部反转前兆)."""
         closes = [50.0, 50.0, 45.0]  # 价格↓
-        oi = [120.0, 120.0, 100.0]   # OI↓
+        oi = [120.0, 120.0, 100.0]  # OI↓
         df = _make_df(closes)
         macro = {"oi_series": oi}
         ext = WashoutFeatureExtractor()
@@ -78,7 +77,7 @@ class TestF9OiPriceQuadrant:
     def test_extract_oi_price_quadrant_oi_up_price_up(self):
         """OI↑+Price↑ → 象限 0 (多头增仓, 健康上涨趋势)."""
         closes = [50.0, 50.0, 55.0]  # 价格↑
-        oi = [100.0, 100.0, 120.0]   # OI↑
+        oi = [100.0, 100.0, 120.0]  # OI↑
         df = _make_df(closes)
         macro = {"oi_series": oi}
         ext = WashoutFeatureExtractor()
@@ -205,9 +204,28 @@ class TestF12OfiStd20d:
     def test_extract_ofi_std_20d_high_variance_genuine_selling(self):
         """高 OFI 方差 + 持续卖压 (真弱势特征)."""
         # 20 个 OFI 值波动剧烈 (高方差)
-        ofi = [0.1, -0.1, 0.2, -0.2, 0.15, -0.15, 0.25, -0.25,
-               0.1, -0.1, 0.2, -0.2, 0.15, -0.15, 0.25, -0.25,
-               0.1, -0.1, 0.2, -0.2]
+        ofi = [
+            0.1,
+            -0.1,
+            0.2,
+            -0.2,
+            0.15,
+            -0.15,
+            0.25,
+            -0.25,
+            0.1,
+            -0.1,
+            0.2,
+            -0.2,
+            0.15,
+            -0.15,
+            0.25,
+            -0.25,
+            0.1,
+            -0.1,
+            0.2,
+            -0.2,
+        ]
         df = _make_df([50.0] * 21)
         macro = {"ofi_series": ofi}
         ext = WashoutFeatureExtractor()
@@ -243,8 +261,8 @@ class TestF13WyckoffClimaxStage:
         # close[-1]=49.0 需跌破前 20d low (low[-21:-1] min)
         closes = [50.0] * 27 + [49.8, 49.6, 49.0]  # 累计跌 (49.8-49.0)/49.8 = 0.016 (1.6%)
         opens = [50.0] + closes[:-1]
-        highs = [max(o, c) * 1.001 for o, c in zip(opens, closes)]
-        lows = [min(o, c) * 0.999 for o, c in zip(opens, closes)]
+        highs = [max(o, c) * 1.001 for o, c in zip(opens, closes)]  # noqa: B905
+        lows = [min(o, c) * 0.999 for o, c in zip(opens, closes)]  # noqa: B905
         vols = [1000.0] * 27 + [3000.0, 3000.0, 3000.0]  # 后 3 bar 放量 3x
         df = pd.DataFrame(
             {"open": opens, "high": highs, "low": lows, "close": closes, "volume": vols},
@@ -260,10 +278,15 @@ class TestF13WyckoffClimaxStage:
         """Stage 2 Sustained: vol/vol_ma20 ∈ [2.0, 3.0], 跌幅 3-5%."""
         # 构造 30d 数据: 前 26 bar 平稳, 后 4 bar 跌 3.125% (Stage 2 Sustained)
         # close[-1]=46.5 需跌破前 20d low
-        closes = [50.0] * 26 + [49.0, 48.0, 47.5, 46.5]  # 累计跌 (48.0-46.5)/48.0 = 0.03125 (3.125%)
+        closes = [50.0] * 26 + [
+            49.0,
+            48.0,
+            47.5,
+            46.5,
+        ]  # 累计跌 (48.0-46.5)/48.0 = 0.03125 (3.125%)
         opens = [50.0] + closes[:-1]
-        highs = [max(o, c) * 1.001 for o, c in zip(opens, closes)]
-        lows = [min(o, c) * 0.999 for o, c in zip(opens, closes)]
+        highs = [max(o, c) * 1.001 for o, c in zip(opens, closes)]  # noqa: B905
+        lows = [min(o, c) * 0.999 for o, c in zip(opens, closes)]  # noqa: B905
         vols = [1000.0] * 26 + [2500.0, 2500.0, 2500.0, 2500.0]  # 放量 2.5x
         df = pd.DataFrame(
             {"open": opens, "high": highs, "low": lows, "close": closes, "volume": vols},
@@ -281,11 +304,21 @@ class TestF13WyckoffClimaxStage:
         # close[-1]=44.99 需跌破前 20d low (low[28]=min(45.1,45.05)*0.999=45.00495)
         closes = [50.0] * 20 + [49.0, 48.0, 47.0, 46.5, 46.0, 45.5, 45.2, 45.1, 45.05, 44.99]
         opens = [50.0] + closes[:-1]
-        highs = [max(o, c) * 1.001 for o, c in zip(opens, closes)]
-        lows = [min(o, c) * 0.999 for o, c in zip(opens, closes)]
+        highs = [max(o, c) * 1.001 for o, c in zip(opens, closes)]  # noqa: B905
+        lows = [min(o, c) * 0.999 for o, c in zip(opens, closes)]  # noqa: B905
         # 前 7 bar 放量跌 (Stage 1+2), 后 3 bar 量能递减 + 速度放缓
-        vols = [1000.0] * 20 + [3000.0, 3000.0, 2500.0, 2000.0, 1800.0, 1500.0, 1200.0,
-                                800.0, 600.0, 400.0]
+        vols = [1000.0] * 20 + [
+            3000.0,
+            3000.0,
+            2500.0,
+            2000.0,
+            1800.0,
+            1500.0,
+            1200.0,
+            800.0,
+            600.0,
+            400.0,
+        ]
         df = pd.DataFrame(
             {"open": opens, "high": highs, "low": lows, "close": closes, "volume": vols},
             index=pd.date_range("2026-01-01", periods=30, freq="1h", tz="UTC"),
@@ -333,10 +366,14 @@ class TestW3SubswitchGating:
         }
         # 关闭所有 W3 子开关
         config = {
-            "enable_volume_dim": True, "enable_support_dim": True,
-            "enable_amplitude_dim": True, "enable_oi_dim": True,
-            "enable_position_dim": True, "enable_rebound_dim": True,
-            "enable_news_dim": True, "enable_market_dim": True,
+            "enable_volume_dim": True,
+            "enable_support_dim": True,
+            "enable_amplitude_dim": True,
+            "enable_oi_dim": True,
+            "enable_position_dim": True,
+            "enable_rebound_dim": True,
+            "enable_news_dim": True,
+            "enable_market_dim": True,
             "enable_oi_price_quadrant": False,
             "enable_funding_rate": False,
             "enable_cvd": False,
@@ -346,8 +383,13 @@ class TestW3SubswitchGating:
         ext = WashoutFeatureExtractor(config=config)
         out = ext.extract_all(df, macro)
         # W3 维度不应出现在输出中
-        w3_keys = {"oi_price_quadrant", "funding_rate_zscore",
-                   "cvd_price_divergence", "ofi_std_20d", "wyckoff_climax_stage"}
+        w3_keys = {
+            "oi_price_quadrant",
+            "funding_rate_zscore",
+            "cvd_price_divergence",
+            "ofi_std_20d",
+            "wyckoff_climax_stage",
+        }
         for k in w3_keys:
             assert k not in out, f"子开关关闭后不应输出 {k}, got keys={set(out.keys())}"
 
@@ -363,8 +405,13 @@ class TestW3SubswitchGating:
         }
         ext = WashoutFeatureExtractor()  # 默认全开
         out = ext.extract_all(df, macro)
-        w3_keys = {"oi_price_quadrant", "funding_rate_zscore",
-                   "cvd_price_divergence", "ofi_std_20d", "wyckoff_climax_stage"}
+        w3_keys = {
+            "oi_price_quadrant",
+            "funding_rate_zscore",
+            "cvd_price_divergence",
+            "ofi_std_20d",
+            "wyckoff_climax_stage",
+        }
         out_keys = set(out.keys())
         for k in w3_keys:
             assert k in out_keys, f"子开关开启后应输出 {k}, got keys={out_keys}"

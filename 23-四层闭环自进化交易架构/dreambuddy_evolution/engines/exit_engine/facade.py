@@ -19,6 +19,7 @@
     facade.load_gene('{"trailing_arm_pct": 0.05, ...}')
     decision = facade.decide(context)
 """
+
 from __future__ import annotations
 
 import json

@@ -7,8 +7,9 @@
 结论：存入闭环管理器，更新假设状态。
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from ml.closed_loop_manager import ClosedLoopManager, HypothesisStatus
@@ -212,7 +213,7 @@ def main():
             HypothesisStatus.REJECTED.value,
             notes="MA128破位+反弹卖出的逃顶方案效果不佳，整体收益和胜率都下降。需要重新设计更保守的逃顶逻辑。",
         )
-        print(f"🔄 TOP_EXIT假设状态更新: pending → rejected")
+        print("🔄 TOP_EXIT假设状态更新: pending → rejected")
 
     print()
     print("=" * 80)

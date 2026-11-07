@@ -15,8 +15,7 @@
 """
 
 import json
-import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -35,7 +34,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 # 回测配置
 BACKTEST_CONFIG = {
     "lookback_days": 30,  # 回测窗口（天）
-    "min_samples": 10,    # 最小样本数
+    "min_samples": 10,  # 最小样本数
     "target_accuracy": 0.55,  # 目标准确率
     "target_bullish_accuracy": 0.60,  # 目标多头准确率
     "target_bearish_accuracy": 0.60,  # 目标空头准确率
@@ -44,6 +43,7 @@ BACKTEST_CONFIG = {
 # =============================================================================
 # 数据加载
 # =============================================================================
+
 
 def load_historical_regime(lookback_days: int = 30) -> List[dict]:
     """
@@ -74,7 +74,7 @@ def load_historical_regime(lookback_days: int = 30) -> List[dict]:
                         "bias": data.get("regime_output", {}).get("bias", "neutral"),
                         "filter": data.get("regime_output", {}).get("filter", "enable"),
                         "confidence": data.get("confidence", 0.5),
-                        "layer_signals": data.get("layer_signals", {})
+                        "layer_signals": data.get("layer_signals", {}),
                     }
                     records.append(record)
             return records
@@ -96,7 +96,7 @@ def load_historical_regime(lookback_days: int = 30) -> List[dict]:
                         )
                         if record_time >= cutoff:
                             records.append(record)
-                    except:
+                    except:  # noqa: E722
                         pass
 
     # 按时间排序
@@ -128,7 +128,7 @@ def load_historical_prices(lookback_days: int = 30) -> Dict[str, dict]:
                 price_cache = json.load(f)
             print(f"[INFO] Loaded {len(price_cache)} days of price history from cache")
             return price_cache
-        except:
+        except:  # noqa: E722
             pass
 
     # 尝试从 CoinGecko 获取
@@ -152,7 +152,7 @@ def load_historical_prices(lookback_days: int = 30) -> Dict[str, dict]:
                 "close": price,
                 "open": price,  # 简化：使用收盘价作为开盘价
                 "high": price * 1.02,  # 估计值
-                "low": price * 0.98    # 估计值
+                "low": price * 0.98,  # 估计值
             }
 
         print(f"[INFO] Fetched {len(price_cache)} days of price data from CoinGecko")
@@ -174,6 +174,7 @@ def load_historical_prices(lookback_days: int = 30) -> Dict[str, dict]:
         date_str = date.strftime("%Y-%m-%d")
         # 模拟随机波动
         import random
+
         random.seed(hash(date_str) % 10000)
         daily_change = random.uniform(-0.05, 0.05)
         base_price = base_price * (1 + daily_change)
@@ -181,7 +182,7 @@ def load_historical_prices(lookback_days: int = 30) -> Dict[str, dict]:
             "close": round(base_price, 2),
             "open": round(base_price * (1 - daily_change), 2),
             "high": round(base_price * 1.02, 2),
-            "low": round(base_price * 0.98, 2)
+            "low": round(base_price * 0.98, 2),
         }
 
     return price_cache
@@ -191,7 +192,10 @@ def load_historical_prices(lookback_days: int = 30) -> Dict[str, dict]:
 # 回测分析
 # =============================================================================
 
-def calculate_next_day_return(regime_timestamp: str, price_data: Dict[str, dict]) -> Tuple[float, str]:
+
+def calculate_next_day_return(
+    regime_timestamp: str, price_data: Dict[str, dict]
+) -> Tuple[float, str]:
     """
     计算 Regime 时间点次日的收益率
 
@@ -236,10 +240,7 @@ def calculate_next_day_return(regime_timestamp: str, price_data: Dict[str, dict]
         return 0.0, "unknown"
 
 
-def calculate_prediction_accuracy(
-    regime_records: List[dict],
-    price_data: Dict[str, dict]
-) -> dict:
+def calculate_prediction_accuracy(regime_records: List[dict], price_data: Dict[str, dict]) -> dict:
     """
     计算预测准确率
 
@@ -256,7 +257,7 @@ def calculate_prediction_accuracy(
         "bullish": {"total": 0, "correct": 0},
         "bearish": {"total": 0, "correct": 0},
         "neutral": {"total": 0, "correct": 0},
-        "predictions": []
+        "predictions": [],
     }
 
     for record in regime_records:
@@ -298,29 +299,40 @@ def calculate_prediction_accuracy(
             stats["correct"] += 1
 
         # 记录单次预测
-        stats["predictions"].append({
-            "timestamp": timestamp,
-            "bias": bias,
-            "confidence": confidence,
-            "next_return": round(next_return, 4),
-            "direction": direction,
-            "correct": correct
-        })
+        stats["predictions"].append(
+            {
+                "timestamp": timestamp,
+                "bias": bias,
+                "confidence": confidence,
+                "next_return": round(next_return, 4),
+                "direction": direction,
+                "correct": correct,
+            }
+        )
 
     # 计算准确率
     overall_accuracy = stats["correct"] / stats["total"] if stats["total"] > 0 else 0
-    bullish_accuracy = (stats["bullish"]["correct"] / stats["bullish"]["total"]
-                       if stats["bullish"]["total"] > 0 else 0)
-    bearish_accuracy = (stats["bearish"]["correct"] / stats["bearish"]["total"]
-                       if stats["bearish"]["total"] > 0 else 0)
-    neutral_accuracy = (stats["neutral"]["correct"] / stats["neutral"]["total"]
-                       if stats["neutral"]["total"] > 0 else 0)
+    bullish_accuracy = (
+        stats["bullish"]["correct"] / stats["bullish"]["total"]
+        if stats["bullish"]["total"] > 0
+        else 0
+    )
+    bearish_accuracy = (
+        stats["bearish"]["correct"] / stats["bearish"]["total"]
+        if stats["bearish"]["total"] > 0
+        else 0
+    )
+    neutral_accuracy = (
+        stats["neutral"]["correct"] / stats["neutral"]["total"]
+        if stats["neutral"]["total"] > 0
+        else 0
+    )
 
     stats["accuracy"] = {
         "overall": round(overall_accuracy, 4),
         "bullish": round(bullish_accuracy, 4),
         "bearish": round(bearish_accuracy, 4),
-        "neutral": round(neutral_accuracy, 4)
+        "neutral": round(neutral_accuracy, 4),
     }
 
     print(f"[INFO] Calculation complete: {stats['total']} samples")
@@ -330,6 +342,7 @@ def calculate_prediction_accuracy(
 # =============================================================================
 # 回测报告
 # =============================================================================
+
 
 def generate_backtest_report(accuracy_stats: dict) -> str:
     """
@@ -426,11 +439,13 @@ def generate_backtest_report(accuracy_stats: dict) -> str:
 """
         for pred in reversed(predictions[-10:]):
             result_icon = "✅" if pred.get("correct") else "❌"
-            direction_icon = {"up": "📈", "down": "📉", "flat": "➡️"}.get(pred.get("direction", ""), "?")
+            direction_icon = {"up": "📈", "down": "📉", "flat": "➡️"}.get(
+                pred.get("direction", ""), "?"
+            )
             report += f"| {pred.get('timestamp', '')[:16]} | {pred.get('bias', '')} | {pred.get('confidence', 0):.2f} | {pred.get('next_return', 0):+.2%} | {direction_icon} | {result_icon} |\n"
 
     # 置信度校准分析
-    report += f"""
+    report += """
 ---
 
 ## 🔍 置信度校准分析
@@ -442,8 +457,16 @@ def generate_backtest_report(accuracy_stats: dict) -> str:
     high_conf_preds = [p for p in predictions if p.get("confidence", 0) >= 0.7]
     low_conf_preds = [p for p in predictions if p.get("confidence", 0) < 0.5]
 
-    high_conf_acc = sum(1 for p in high_conf_preds if p.get("correct")) / len(high_conf_preds) if high_conf_preds else 0
-    low_conf_acc = sum(1 for p in low_conf_preds if p.get("correct")) / len(low_conf_preds) if low_conf_preds else 0
+    high_conf_acc = (
+        sum(1 for p in high_conf_preds if p.get("correct")) / len(high_conf_preds)
+        if high_conf_preds
+        else 0
+    )
+    low_conf_acc = (
+        sum(1 for p in low_conf_preds if p.get("correct")) / len(low_conf_preds)
+        if low_conf_preds
+        else 0
+    )
 
     report += f"""
 | 置信度区间 | 样本数 | 准确率 |
@@ -464,6 +487,7 @@ def generate_backtest_report(accuracy_stats: dict) -> str:
 # 主流程
 # =============================================================================
 
+
 def run_backtest(lookback_days: int = 30) -> dict:
     """
     执行完整回测流程
@@ -482,7 +506,7 @@ def run_backtest(lookback_days: int = 30) -> dict:
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "lookback_days": lookback_days,
         "accuracy_stats": None,
-        "report_path": None
+        "report_path": None,
     }
 
     # ==========================================================================
@@ -495,7 +519,7 @@ def run_backtest(lookback_days: int = 30) -> dict:
         print("[WARN] No historical regime records found")
         result["accuracy_stats"] = {
             "total": 0,
-            "accuracy": {"overall": 0, "bullish": 0, "bearish": 0, "neutral": 0}
+            "accuracy": {"overall": 0, "bullish": 0, "bearish": 0, "neutral": 0},
         }
         return result
 

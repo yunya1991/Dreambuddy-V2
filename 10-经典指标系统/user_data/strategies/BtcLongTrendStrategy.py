@@ -21,6 +21,7 @@ class BtcLongTrendStrategy(IStrategy):
     比特币多头趋势策略
     基于 EMA 趋势过滤 + RSI 回调 + MACD 动能确认的顺势做多策略，适用于 1h 周期。
     """
+
     INTERFACE_VERSION = 3
 
     timeframe = "1h"
@@ -115,7 +116,7 @@ class BtcLongTrendStrategy(IStrategy):
         if conditions:
             dataframe.loc[
                 functools.reduce(lambda x, y: x & y, conditions),
-                'enter_long',
+                "enter_long",
             ] = 1
 
         return dataframe
@@ -140,7 +141,7 @@ class BtcLongTrendStrategy(IStrategy):
         if conditions:
             dataframe.loc[
                 functools.reduce(lambda x, y: x | y, conditions),
-                'exit_long',
+                "exit_long",
             ] = 1
 
         return dataframe

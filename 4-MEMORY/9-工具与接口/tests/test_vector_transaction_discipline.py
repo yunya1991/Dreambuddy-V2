@@ -9,6 +9,7 @@
 2. busy_timeout 显式 ≥ 30s —— 写争用时等待而非立即失败；
 3. 所有写方法异常路径必须 rollback —— 事务零泄漏（in_transaction == False）。
 """
+
 import sqlite3
 import sys
 import tempfile
@@ -125,8 +126,6 @@ def test_delete_rollback_on_failure():
 
 def test_writers_do_not_block_readers_after_wal():
     """WAL 生效后：写事务持有时，另一连接仍可读（集成验证）。"""
-    import threading
-    import time
 
     iface = _make_file_interface()
     try:

@@ -7,6 +7,7 @@
                                            schema['groups']['lgbm_pool'] 仅包含基础三模块；
                                            feature_names_in_order 非空且无重复。
 """
+
 from __future__ import annotations
 
 import sys
@@ -36,13 +37,16 @@ def synth_df() -> pd.DataFrame:
     t3 = np.linspace(205, 140, 200)
     close = np.concatenate([t1, t2, t3]) * (1 + rng.normal(0, 0.012, n))
     idx = pd.date_range("2020-01-01", periods=n, freq="D")
-    return pd.DataFrame({
-        "open":  close * (1 + rng.normal(0, 0.004, n)),
-        "high":  close * (1 + np.abs(rng.normal(0, 0.011, n))),
-        "low":   close * (1 - np.abs(rng.normal(0, 0.011, n))),
-        "close": close,
-        "volume": 1e6 * (1 + rng.uniform(-0.5, 1.2, n)),
-    }, index=idx)
+    return pd.DataFrame(
+        {
+            "open": close * (1 + rng.normal(0, 0.004, n)),
+            "high": close * (1 + np.abs(rng.normal(0, 0.011, n))),
+            "low": close * (1 - np.abs(rng.normal(0, 0.011, n))),
+            "close": close,
+            "volume": 1e6 * (1 + rng.uniform(-0.5, 1.2, n)),
+        },
+        index=idx,
+    )
 
 
 # ================================================================
@@ -50,6 +54,7 @@ def synth_df() -> pd.DataFrame:
 # ================================================================
 def test_v4_enabled_sets_exist():
     from bcrm2 import feature_registry as fr
+
     assert hasattr(fr, "ENABLED_SETS"), "ENABLED_SETS 未定义"
     assert "btc_morphology_v4" in fr.ENABLED_SETS, "缺少 btc_morphology_v4 set"
     assert "btc_morphology_v4_layer1" in fr.ENABLED_SETS, "缺少 btc_morphology_v4_layer1 set"
@@ -65,13 +70,21 @@ def test_v4_enabled_sets_exist():
 # ================================================================
 def test_v4_rolling_stats_columns(synth_df: pd.DataFrame):
     from bcrm2.rolling_regime_stats import RollingRegimeStats
+
     rrs = RollingRegimeStats()
     out = rrs.compute(synth_df)
     assert isinstance(out, pd.DataFrame), "RollingRegimeStats.compute 必须返回 DataFrame"
     assert len(out) == len(synth_df), "行数必须对齐输入"
     assert out.shape[1] >= 12, f"rolling_regime_stats 列数应 ≥ 12，实际 {out.shape[1]}"
-    required_cols = ["L_p90_252d", "T_p90_252d", "regime_entropy_20d", "consensus_ma_20d",
-                     "L_std_60d", "T_std_60d", "volume_zscore_252d"]
+    required_cols = [
+        "L_p90_252d",
+        "T_p90_252d",
+        "regime_entropy_20d",
+        "consensus_ma_20d",
+        "L_std_60d",
+        "T_std_60d",
+        "volume_zscore_252d",
+    ]
     missing = [c for c in required_cols if c not in out.columns]
     assert not missing, f"缺失核心列：{missing}"
 
@@ -81,15 +94,24 @@ def test_v4_rolling_stats_columns(synth_df: pd.DataFrame):
 # ================================================================
 def test_v4_build_feature_schema(synth_df: pd.DataFrame):
     from bcrm2 import feature_registry as fr
+
     cls = fr.FeatureRegistry
-    assert hasattr(cls, "build_feature_schema"), "FeatureRegistry 类未实现 build_feature_schema classmethod"
+    assert hasattr(
+        cls, "build_feature_schema"
+    ), "FeatureRegistry 类未实现 build_feature_schema classmethod"
     schema = cls.build_feature_schema(set_name="btc_morphology_v4")
     assert isinstance(schema, dict), "schema 必须是 dict"
     assert schema.get("schema_version") == "feature.v4"
     groups = schema.get("groups", {})
     lgbm_pool = groups.get("lgbm_pool", [])
-    assert "morphology_core" in lgbm_pool and "ma200_cycle" in lgbm_pool and "multi_timeframe" in lgbm_pool
-    assert "rolling_regime_stats" not in lgbm_pool, "rolling_regime_stats 必须排除 LGBM 池（标签泄露风险）"
+    assert (
+        "morphology_core" in lgbm_pool
+        and "ma200_cycle" in lgbm_pool
+        and "multi_timeframe" in lgbm_pool
+    )
+    assert (
+        "rolling_regime_stats" not in lgbm_pool
+    ), "rolling_regime_stats 必须排除 LGBM 池（标签泄露风险）"
     assert "sector_beta_pool" not in lgbm_pool, "sector_beta_pool 必须排除 LGBM 池"
     names = schema.get("feature_names_in_order", [])
     assert len(names) >= 20, "lgbm_pool 三基础模块合并列数必须 ≥ 20"

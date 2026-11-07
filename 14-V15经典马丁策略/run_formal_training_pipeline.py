@@ -17,6 +17,7 @@
 
 所有 stdout/stderr 同时写到 data/ai_benchmarks/pipeline.log
 """
+
 from __future__ import annotations
 
 import json
@@ -24,7 +25,6 @@ import logging
 import os
 import sys
 import time
-from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -52,8 +52,7 @@ def _setup_logger() -> logging.Logger:
     """日志同时打 stdout 和文件。"""
     logger = logging.getLogger("formal_training")
     logger.setLevel(logging.INFO)
-    fmt = logging.Formatter("[%(asctime)s] %(levelname)s  %(message)s",
-                            datefmt="%Y-%m-%d %H:%M:%S")
+    fmt = logging.Formatter("[%(asctime)s] %(levelname)s  %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     sh = logging.StreamHandler(sys.stdout)
     sh.setFormatter(fmt)
     logger.addHandler(sh)
@@ -82,9 +81,9 @@ def train_phase_d_full(epochs: Optional[int] = None) -> Dict[str, Any]:
     import numpy as np
     import torch
     import torch.nn.functional as F
-    from torch.utils.data import DataLoader, TensorDataset
     from phase_d_models import BiLSTMAttentionBust
     from phase_d_train_bilstm import main as bilstm_cli_main
+    from torch.utils.data import DataLoader, TensorDataset
 
     tr_path = DS_DIR / "phase_d_train_all.npz"
     va_path = DS_DIR / "phase_d_test_all.npz"
@@ -92,16 +91,22 @@ def train_phase_d_full(epochs: Optional[int] = None) -> Dict[str, Any]:
     out_file = PH_D_OUT_DIR / "bilstm.pt"
 
     # v2: 走 CLI 入口（统一应用 Point2 正则 / EarlyStop / pos_weight_cap 等）
-    bilstm_cli_main([
-        "--data", str(tr_path),
-        "--val", str(va_path),
-        "--out", str(out_file),
-    ] + (["--epochs", str(int(epochs))] if epochs is not None else []))
+    bilstm_cli_main(
+        [
+            "--data",
+            str(tr_path),
+            "--val",
+            str(va_path),
+            "--out",
+            str(out_file),
+        ]
+        + (["--epochs", str(int(epochs))] if epochs is not None else [])
+    )
 
     # 回读权重并跑一次评估，得到 history/best_auc 供报告用
     tr_d = np.load(tr_path)
     va_d = np.load(va_path)
-    tr_ds = TensorDataset(
+    tr_ds = TensorDataset(  # noqa: F841
         torch.from_numpy(tr_d["bilstm_ohlcv"]).float(),
         torch.from_numpy(tr_d["bilstm_scalar"]).float(),
         torch.from_numpy(tr_d["label_bust"]).float().unsqueeze(-1),
@@ -135,19 +140,27 @@ def train_phase_d_full(epochs: Optional[int] = None) -> Dict[str, Any]:
     val_bce = float(F.binary_cross_entropy(p_cat, y_cat).item())
     val_acc = float(((p_cat > 0.5).long() == y_cat.long()).float().mean().item())
 
-    log.info(f"[BiLSTM] 回读权重验证: val_auc={best_auc:.3f}  val_bce={val_bce:.4f}  val_acc={val_acc:.2%}")
+    log.info(
+        f"[BiLSTM] 回读权重验证: val_auc={best_auc:.3f}  val_bce={val_bce:.4f}  val_acc={val_acc:.2%}"
+    )
     bilstm_result = {
         "model": "bilstm",
         "weights": str(out_file),
         "best_val_auc": best_auc,
         "last_val_acc": val_acc,
         "last_val_bce": val_bce,
-        "history": [{
-            "epoch": int(meta.get("epochs", 0)),
-            "val_auc": best_auc, "val_acc": val_acc, "val_bce": val_bce,
-            "hidden": meta.get("hidden"), "dropout": meta.get("dropout"),
-            "weight_decay": meta.get("weight_decay"), "pos_weight_cap": meta.get("pos_weight_cap"),
-        }],
+        "history": [
+            {
+                "epoch": int(meta.get("epochs", 0)),
+                "val_auc": best_auc,
+                "val_acc": val_acc,
+                "val_bce": val_bce,
+                "hidden": meta.get("hidden"),
+                "dropout": meta.get("dropout"),
+                "weight_decay": meta.get("weight_decay"),
+                "pos_weight_cap": meta.get("pos_weight_cap"),
+            }
+        ],
         "epochs_run": int(meta.get("epochs", 0)),
         "meta": meta,
     }
@@ -169,14 +182,21 @@ def train_phase_d_full(epochs: Optional[int] = None) -> Dict[str, Any]:
     )
     device = torch.device("cpu")
     model_pt = PatchTSTForDrawdown(
-        c_in=5, seq_len=120, patch_len=12, stride=6, d_model=32,
-        n_layers=2, n_heads=4,
+        c_in=5,
+        seq_len=120,
+        patch_len=12,
+        stride=6,
+        d_model=32,
+        n_layers=2,
+        n_heads=4,
     ).to(device)
     opt_pt = torch.optim.Adam(model_pt.parameters(), lr=1e-3, weight_decay=1e-4)
     sched_pt = torch.optim.lr_scheduler.CosineAnnealingLR(opt_pt, T_max=max(1, pt_epochs))
     n_params_pt = sum(p.numel() for p in model_pt.parameters())
-    log.info(f"[PatchTST] params={n_params_pt:,}  num_patches={model_pt.num_patches}  "
-             f"train={len(tr_ds_pt)}  val={len(va_ds_pt)}")
+    log.info(
+        f"[PatchTST] params={n_params_pt:,}  num_patches={model_pt.num_patches}  "
+        f"train={len(tr_ds_pt)}  val={len(va_ds_pt)}"
+    )
 
     best_mse = float("inf")
     best_state_pt = None
@@ -218,10 +238,16 @@ def train_phase_d_full(epochs: Optional[int] = None) -> Dict[str, Any]:
             f"  epoch={epoch:02d}/{pt_epochs}  huber={tr_loss:.5f}  "
             f"val_mse={mse:.5f}  val_mae={mae:.4f}  hit8pct_acc={hit8:.2%}  dt={dt:.1f}s"
         )
-        history_pt.append({
-            "epoch": epoch, "tr_huber": tr_loss,
-            "val_mse": mse, "val_mae": mae, "hit8pct_acc": hit8, "dt": dt,
-        })
+        history_pt.append(
+            {
+                "epoch": epoch,
+                "tr_huber": tr_loss,
+                "val_mse": mse,
+                "val_mae": mae,
+                "hit8pct_acc": hit8,
+                "dt": dt,
+            }
+        )
         if mse < best_mse:
             best_mse = mse
             best_state_pt = {k: v.detach().cpu().clone() for k, v in model_pt.state_dict().items()}
@@ -232,9 +258,16 @@ def train_phase_d_full(epochs: Optional[int] = None) -> Dict[str, Any]:
     payload_pt = {
         "state_dict": best_state_pt,
         "meta": {
-            "c_in": 5, "seq_len": 120, "patch_len": 12, "stride": 6,
-            "d_model": 32, "n_layers": 2, "n_heads": 4,
-            "best_val_mse": best_mse, "epochs": pt_epochs, "seed": 42,
+            "c_in": 5,
+            "seq_len": 120,
+            "patch_len": 12,
+            "stride": 6,
+            "d_model": 32,
+            "n_layers": 2,
+            "n_heads": 4,
+            "best_val_mse": best_mse,
+            "epochs": pt_epochs,
+            "seed": 42,
             "quick_smoke": False,
             "train_date": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "train_split": "phase_d_train_all.npz",
@@ -265,11 +298,11 @@ def run_walk_forward(epochs: int = 15) -> List[Dict[str, Any]]:
     import numpy as np
     import torch
     import torch.nn.functional as F
-    from torch.utils.data import DataLoader, TensorDataset
     from phase_d_models import BiLSTMAttentionBust, PatchTSTForDrawdown
+    from torch.utils.data import DataLoader, TensorDataset
 
     results = []
-    wf_dirs = []
+    wf_dirs = []  # noqa: F841
     for i in range(1, 6):
         # 基线参考：最后一次全量训练的 val 结果（phase_d_test_all.npz = 最后一段 holdout）
         results_wf: Dict[str, Any] = {"wf": f"wf{i}"}
@@ -293,7 +326,7 @@ def run_walk_forward(epochs: int = 15) -> List[Dict[str, Any]]:
         # v2: 同步 Point2 调参（hidden=32 / dropout=0.30 / pos_weight_cap=15 / lr=8e-4 / wd=5e-4）
         m = BiLSTMAttentionBust(hidden=32, n_layers=2, dropout=0.30).to(device)
         opt = torch.optim.Adam(m.parameters(), lr=8e-4, weight_decay=5e-4)
-        for ep in range(1, epochs + 1):
+        for ep in range(1, epochs + 1):  # noqa: B007
             m.train()
             for oh, s, y in DataLoader(tr_ds, batch_size=64, shuffle=True):
                 opt.zero_grad()
@@ -318,6 +351,7 @@ def run_walk_forward(epochs: int = 15) -> List[Dict[str, Any]]:
         y_cat = torch.cat(ys, dim=0).squeeze(-1)
         try:
             from sklearn.metrics import roc_auc_score  # type: ignore
+
             auc = float(roc_auc_score(y_cat.numpy(), p_cat.numpy()))
         except Exception:
             auc = float("nan")
@@ -335,10 +369,11 @@ def run_walk_forward(epochs: int = 15) -> List[Dict[str, Any]]:
             torch.from_numpy(va_d["patchtst_in"]).float(),
             torch.from_numpy(va_d["label_maxdd"]).float().unsqueeze(-1),
         )
-        m_pt = PatchTSTForDrawdown(c_in=5, seq_len=120, patch_len=12, stride=6,
-                                   d_model=32, n_layers=2, n_heads=4).to(device)
+        m_pt = PatchTSTForDrawdown(
+            c_in=5, seq_len=120, patch_len=12, stride=6, d_model=32, n_layers=2, n_heads=4
+        ).to(device)
         opt_pt = torch.optim.Adam(m_pt.parameters(), lr=1e-3, weight_decay=1e-4)
-        for ep in range(1, epochs + 1):
+        for ep in range(1, epochs + 1):  # noqa: B007
             m_pt.train()
             for x, y in DataLoader(tr_ds_pt, batch_size=64, shuffle=True):
                 opt_pt.zero_grad()
@@ -373,7 +408,9 @@ def run_walk_forward(epochs: int = 15) -> List[Dict[str, Any]]:
     bilstm_pos = sum(1 for r in results if r["bilstm_positive"])
     patch_pos = sum(1 for r in results if r["patchtst_positive"])
     # 退化率：任一段 AUC 相对上一段 drop ≥ 10%（这里用最差段 vs 最佳段近似）
-    aucs = [r["bilstm_val_auc"] for r in results if not (r["bilstm_val_auc"] != r["bilstm_val_auc"])]
+    aucs = [
+        r["bilstm_val_auc"] for r in results if not (r["bilstm_val_auc"] != r["bilstm_val_auc"])
+    ]
     wf_warn = []
     if aucs and (max(aucs) > 0):
         worst_drop = 1.0 - (min(aucs) / max(aucs)) if max(aucs) != 0 else 0.0
@@ -402,9 +439,13 @@ def run_walk_forward(epochs: int = 15) -> List[Dict[str, Any]]:
 def train_phase_e_full(episodes: Optional[int] = None) -> Dict[str, Any]:
     """PPO 正式训练，复用 phase_e_train_ppo.train_ppo（v2 ent_coef=0.03 / n_steps=512 / rolling window save / 每 ep 换 env seed）。"""
     import math
+
     import numpy as np
     from ai_boundary_scaler import (
-        compute_s_bt, k_bound_from_s_bt, BoundaryState, BoundaryStateStore,
+        BoundaryState,
+        BoundaryStateStore,
+        compute_s_bt,
+        k_bound_from_s_bt,
     )
 
     if episodes is None:
@@ -412,7 +453,9 @@ def train_phase_e_full(episodes: Optional[int] = None) -> Dict[str, Any]:
     episodes = int(episodes)
 
     log.info("=" * 72)
-    log.info("STEP 4/5: Phase E PPO-LSTM 正式训练（episodes=%d, ent_coef=0.03, n_steps=512）", episodes)
+    log.info(
+        "STEP 4/5: Phase E PPO-LSTM 正式训练（episodes=%d, ent_coef=0.03, n_steps=512）", episodes
+    )
     log.info("=" * 72)
     from phase_e_train_ppo import train_ppo
 
@@ -420,7 +463,7 @@ def train_phase_e_full(episodes: Optional[int] = None) -> Dict[str, Any]:
     t0 = time.time()
     result = train_ppo(
         episodes=episodes,
-        config=None,      # 用 PPO_CONFIG 默认（v2 已调）
+        config=None,  # 用 PPO_CONFIG 默认（v2 已调）
         out_path=out_path,
         log_interval=10,
         quick_smoke=False,
@@ -433,7 +476,9 @@ def train_phase_e_full(episodes: Optional[int] = None) -> Dict[str, Any]:
     # 简化稳健度得分：PPO best_reward 相对基线基准（0 为基线，-20 为差，+50 为优秀）
     base_benchmark = -10.0  # baseline identity 策略 avg reward
     best_r = float(result.get("best_reward", 0.0))
-    gross_return_ratio = max(0.0, 1.0 + (best_r - base_benchmark) / max(1e-6, abs(base_benchmark) + 1e-6))
+    gross_return_ratio = max(
+        0.0, 1.0 + (best_r - base_benchmark) / max(1e-6, abs(base_benchmark) + 1e-6)
+    )
     if not math.isnan(last_20_avg):
         calmar_ratio_ratio = 1.0 + max(0.0, last_20_avg) / 20.0
     else:
@@ -477,7 +522,9 @@ def train_phase_e_full(episodes: Optional[int] = None) -> Dict[str, Any]:
     except Exception as _e:
         log.warning(f"[PPO 学习曲线] 打印异常: {_e}")
 
-    log.info(f"[PPO] 完成 episodes={episodes}  best_reward={result['best_reward']:.2f}  last20_avg={last_20_avg:+.2f}  dt={dt:.1f}s")
+    log.info(
+        f"[PPO] 完成 episodes={episodes}  best_reward={result['best_reward']:.2f}  last20_avg={last_20_avg:+.2f}  dt={dt:.1f}s"
+    )
     return {
         "model": "ppo_lstm",
         "weights": out_path,
@@ -531,11 +578,21 @@ def run_full_backtest() -> Dict[str, Any]:
     log.info("=" * 72)
     log.info("STEP 5/5: 全量回测（5 币种，Baseline vs PhaseD vs PhaseD+E）")
     log.info("=" * 72)
-    from core.v15_backtest import run_backtest, fetch_klines
+    from core.v15_backtest import fetch_klines, run_backtest
 
     BACKTEST_BARS = int(os.environ.get("V15_BT_BARS", 5000))
-    BACKTEST_USE_TIMING_GATE = str(os.environ.get("V15_BT_USE_TIMING_GATE", "0")) not in ("1", "true", "True", "yes")
-    BACKTEST_LONG_ONLY = str(os.environ.get("V15_BT_LONG_ONLY", "0")) in ("1", "true", "True", "yes")
+    BACKTEST_USE_TIMING_GATE = str(os.environ.get("V15_BT_USE_TIMING_GATE", "0")) not in (
+        "1",
+        "true",
+        "True",
+        "yes",
+    )
+    BACKTEST_LONG_ONLY = str(os.environ.get("V15_BT_LONG_ONLY", "0")) in (
+        "1",
+        "true",
+        "True",
+        "yes",
+    )
 
     # v3-B: 模型路径
     bilstm_path = str(PH_D_OUT_DIR / "bilstm.pt")
@@ -550,10 +607,14 @@ def run_full_backtest() -> Dict[str, Any]:
             k_bound_val = float(bs.get("k_bound", 0.80))
     except Exception:
         pass
-    log.info(f"  模型: BiLSTM={bilstm_path}  PatchTST={patchtst_path}  PPO={ppo_path}  k_bound={k_bound_val:.2f}")
+    log.info(
+        f"  模型: BiLSTM={bilstm_path}  PatchTST={patchtst_path}  PPO={ppo_path}  k_bound={k_bound_val:.2f}"
+    )
 
     # v3-B: bust_threshold 扫参网格
-    BUST_THRESHOLDS = [float(x) for x in os.environ.get("V15_BUST_THRESHOLDS", "0.50,0.60,0.70,0.80").split(",")]
+    BUST_THRESHOLDS = [
+        float(x) for x in os.environ.get("V15_BUST_THRESHOLDS", "0.50,0.60,0.70,0.80").split(",")
+    ]
     BEST_THRESHOLD = float(os.environ.get("V15_BEST_BUST_THRESHOLD", "0"))  # 0=自动扫参
     if BEST_THRESHOLD > 0:
         BUST_THRESHOLDS = [BEST_THRESHOLD]
@@ -572,9 +633,12 @@ def run_full_backtest() -> Dict[str, Any]:
         for thr in BUST_THRESHOLDS:
             try:
                 r = run_backtest(
-                    coin="BTC", klines=klines_cache["BTC"],
-                    initial_capital=10000, base_position_pct=0.05,
-                    max_addons=3, confidence_threshold=0,
+                    coin="BTC",
+                    klines=klines_cache["BTC"],
+                    initial_capital=10000,
+                    base_position_pct=0.05,
+                    max_addons=3,
+                    confidence_threshold=0,
                     long_only=BACKTEST_LONG_ONLY,
                     use_timing_gate=BACKTEST_USE_TIMING_GATE,
                     phase_d_ai_enabled=True,
@@ -584,19 +648,23 @@ def run_full_backtest() -> Dict[str, Any]:
                     phase_e_ai_enabled=False,
                 )
                 s = _quick_summary(r)
-                log.info(f"    thr={thr:.2f}  BTC ret={s['total_return_pct']:+.2f}%  trades={s['total_trades']}  wr={s['win_rate']:.2%}")
+                log.info(
+                    f"    thr={thr:.2f}  BTC ret={s['total_return_pct']:+.2f}%  trades={s['total_trades']}  wr={s['win_rate']:.2%}"
+                )
                 if s["total_return_pct"] > best_ret:
                     best_ret = s["total_return_pct"]
                     best_threshold = thr
             except Exception as e:
                 log.warning(f"    thr={thr:.2f} 扫参异常: {e}")
-        log.info(f"[v3-B 扫参] 最优 bust_threshold={best_threshold:.2f}  (BTC ret={best_ret:+.2f}%)")
+        log.info(
+            f"[v3-B 扫参] 最优 bust_threshold={best_threshold:.2f}  (BTC ret={best_ret:+.2f}%)"
+        )
 
     # ── 正式回测：三模式 × 5 币种 ──
     modes = [
         ("Baseline", False, False),
-        ("PhaseD",  True,  False),
-        ("PhaseDE", True,  True),
+        ("PhaseD", True, False),
+        ("PhaseDE", True, True),
     ]
     results: List[Dict[str, Any]] = []
     for coin in coins:
@@ -605,9 +673,12 @@ def run_full_backtest() -> Dict[str, Any]:
             log.info(f"  回测 {coin}  {mode_name}  (bust_thr={best_threshold:.2f})")
             try:
                 r = run_backtest(
-                    coin=coin, klines=kl,
-                    initial_capital=10000, base_position_pct=0.05,
-                    max_addons=3, confidence_threshold=0,
+                    coin=coin,
+                    klines=kl,
+                    initial_capital=10000,
+                    base_position_pct=0.05,
+                    max_addons=3,
+                    confidence_threshold=0,
                     long_only=BACKTEST_LONG_ONLY,
                     use_timing_gate=BACKTEST_USE_TIMING_GATE,
                     phase_d_ai_enabled=d_on,
@@ -629,13 +700,19 @@ def run_full_backtest() -> Dict[str, Any]:
                 )
             except Exception as e:
                 log.exception(f"    回测异常: {e}")
-                results.append({
-                    "coin": coin, "mode": mode_name,
-                    "error": str(e), "total_return_pct": 0.0,
-                    "total_trades": 0, "win_rate": 0.0,
-                    "profit_factor": 0.0, "max_drawdown_pct": 0.0,
-                    "sharpe_ratio": 0.0,
-                })
+                results.append(
+                    {
+                        "coin": coin,
+                        "mode": mode_name,
+                        "error": str(e),
+                        "total_return_pct": 0.0,
+                        "total_trades": 0,
+                        "win_rate": 0.0,
+                        "profit_factor": 0.0,
+                        "max_drawdown_pct": 0.0,
+                        "sharpe_ratio": 0.0,
+                    }
+                )
 
     # 聚合：各模式均值
     agg = {}
@@ -662,13 +739,18 @@ def run_full_backtest() -> Dict[str, Any]:
             degenerate = (base_ret - de_ret) / base_ret if base_ret != 0 else 0.0
         else:
             degenerate = 0.0 if de_ret >= base_ret else -1.0
-        mdd_ok = agg["PhaseDE"]["avg_max_drawdown_pct"] <= agg["Baseline"]["avg_max_drawdown_pct"] * 1.10
+        mdd_ok = (
+            agg["PhaseDE"]["avg_max_drawdown_pct"] <= agg["Baseline"]["avg_max_drawdown_pct"] * 1.10
+        )
         validation = {
             "baseline_avg_return_pct": base_ret,
             "phase_de_avg_return_pct": de_ret,
             "return_degenerate_rate": degenerate,
             "return_degenerate_pass": bool(degenerate < 0.10),
-            "mdd_ratio_de_vs_base": (agg["PhaseDE"]["avg_max_drawdown_pct"] / max(1e-9, agg["Baseline"]["avg_max_drawdown_pct"])),
+            "mdd_ratio_de_vs_base": (
+                agg["PhaseDE"]["avg_max_drawdown_pct"]
+                / max(1e-9, agg["Baseline"]["avg_max_drawdown_pct"])
+            ),
             "mdd_110_pass": mdd_ok,
             "overall_backtest_pass": bool(degenerate < 0.10 and mdd_ok),
             "best_bust_threshold": best_threshold,
@@ -735,8 +817,10 @@ def main():
     for r in phase_d_wf:
         if "wf_summary" in r:
             s = r["wf_summary"]
-            md_lines.append(f"- **汇总**: BiLSTM 正向段={s['bilstm_positive_segments']}/5  "
-                            f"PatchTST 正向段={s['patchtst_positive_segments']}/5")
+            md_lines.append(
+                f"- **汇总**: BiLSTM 正向段={s['bilstm_positive_segments']}/5  "
+                f"PatchTST 正向段={s['patchtst_positive_segments']}/5"
+            )
             if s["warnings"]:
                 md_lines.append("  - 警告:")
                 for w in s["warnings"]:
@@ -762,12 +846,18 @@ def main():
             )
     if backtest.get("validation"):
         v = backtest["validation"]
-        md_lines.append(f"\n### 验收结果\n")
-        md_lines.append(f"- 收益退化率={v.get('return_degenerate_rate',0):.2%}  "
-                        f"{'✅ PASS' if v.get('return_degenerate_pass') else '❌ FAIL'}（<10%）")
-        md_lines.append(f"- MDD(DE/Base)={v.get('mdd_ratio_de_vs_base',0):.2f}x  "
-                        f"{'✅ PASS' if v.get('mdd_110_pass') else '❌ FAIL'}（≤1.10x）")
-        md_lines.append(f"- **总体回试验收**: {'✅ PASS' if v.get('overall_backtest_pass') else '❌ FAIL'}")
+        md_lines.append("\n### 验收结果\n")
+        md_lines.append(
+            f"- 收益退化率={v.get('return_degenerate_rate',0):.2%}  "
+            f"{'✅ PASS' if v.get('return_degenerate_pass') else '❌ FAIL'}（<10%）"
+        )
+        md_lines.append(
+            f"- MDD(DE/Base)={v.get('mdd_ratio_de_vs_base',0):.2f}x  "
+            f"{'✅ PASS' if v.get('mdd_110_pass') else '❌ FAIL'}（≤1.10x）"
+        )
+        md_lines.append(
+            f"- **总体回试验收**: {'✅ PASS' if v.get('overall_backtest_pass') else '❌ FAIL'}"
+        )
     md_lines.append(f"\n- 日志: `{LOG_FILE}`")
     md_lines.append(f"- JSON 报告: `{REPORT_JSON}`")
     REPORT_MD.write_text("\n".join(md_lines), encoding="utf-8")

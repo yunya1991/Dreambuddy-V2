@@ -2,8 +2,8 @@
 
 SDK 轨所有 collector 继承 BaseCollector，实现 fetch() -> list[DataRecord]。
 """
-import pytest
 
+import pytest
 from data_center.collectors._base import BaseCollector
 
 

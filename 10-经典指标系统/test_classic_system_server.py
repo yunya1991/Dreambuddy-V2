@@ -81,8 +81,9 @@ def test_unimplemented_endpoint_returns_501():
     assert resp.status_code == 501
     data = resp.get_json()
     assert data["ok"] is False
-    assert "not implemented" in (data.get("error") or "").lower() or \
-           "501" in (data.get("error") or "")
+    assert "not implemented" in (data.get("error") or "").lower() or "501" in (
+        data.get("error") or ""
+    )
 
 
 if __name__ == "__main__":

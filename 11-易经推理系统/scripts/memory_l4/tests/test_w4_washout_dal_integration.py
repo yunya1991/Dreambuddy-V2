@@ -10,6 +10,7 @@
 
 运行: python3 -m pytest tests/test_w4_washout_dal_integration.py -v -p no:warnings
 """
+
 from __future__ import annotations
 
 import sys
@@ -17,7 +18,6 @@ import unittest
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
-from typing import List, Tuple
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -26,11 +26,12 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 
+from scripts.memory_l4.bcrm2.washout_classifier import EnhancedWashoutClassifier  # noqa: E402
 from scripts.memory_l4.bcrm2.washout_detector import (  # noqa: E402
-    WashoutDetector, WashoutLabel, WashoutVerdict,
+    WashoutDetector,
+    WashoutLabel,
 )
 from scripts.memory_l4.bcrm2.washout_features import WashoutFeatureExtractor  # noqa: E402
-from scripts.memory_l4.bcrm2.washout_classifier import EnhancedWashoutClassifier  # noqa: E402
 from scripts.memory_l4.bcrm2.washout_macro_provider import WashoutMacroProvider  # noqa: E402
 
 
@@ -62,30 +63,27 @@ def _make_mock_repo_with_washout_data():
 
     # OI: 温和下降 (1e8 → 0.97e8)
     oi_data = [
-        ("BTC", Decimal(str(1e8 * (1 - 0.0003 * i))),
-         Decimal(str(1e8)), ts_list[i])
+        ("BTC", Decimal(str(1e8 * (1 - 0.0003 * i))), Decimal(str(1e8)), ts_list[i])
         for i in range(250)
     ]
 
     # Funding: 暂时偏负 (zscore ~ -1)
-    funding_data = [
-        ("BTC", Decimal(str(-0.0003)), ts_list[i])
-        for i in range(250)
-    ]
+    funding_data = [("BTC", Decimal(str(-0.0003)), ts_list[i]) for i in range(250)]
 
     # Taker volume: CVD 与价格背离 (buy > sell → CVD 上升)
     taker_data = [
-        ("BTC",
-         Decimal("1500"),  # buy_vol
-         Decimal("1000"),  # sell_vol
-         Decimal("500"),   # buy_sell_volume_diff
-         Decimal("1.5"),   # ratio
-         ts_list[i])
+        (
+            "BTC",
+            Decimal("1500"),  # buy_vol
+            Decimal("1000"),  # sell_vol
+            Decimal("500"),  # buy_sell_volume_diff
+            Decimal("1.5"),  # ratio
+            ts_list[i],
+        )
         for i in range(250)
     ]
 
-    return MockMacroRepo(oi_data=oi_data, funding_data=funding_data,
-                         taker_data=taker_data)
+    return MockMacroRepo(oi_data=oi_data, funding_data=funding_data, taker_data=taker_data)
 
 
 def _make_mock_repo_with_weakness_data():
@@ -95,30 +93,27 @@ def _make_mock_repo_with_weakness_data():
 
     # OI: 上升 (1e8 → 1.08e8)
     oi_data = [
-        ("BTC", Decimal(str(1e8 * (1 + 0.0008 * i))),
-         Decimal(str(1e8)), ts_list[i])
+        ("BTC", Decimal(str(1e8 * (1 + 0.0008 * i))), Decimal(str(1e8)), ts_list[i])
         for i in range(250)
     ]
 
     # Funding: 深度负值 (zscore ~ -3)
-    funding_data = [
-        ("BTC", Decimal(str(-0.0008)), ts_list[i])
-        for i in range(250)
-    ]
+    funding_data = [("BTC", Decimal(str(-0.0008)), ts_list[i]) for i in range(250)]
 
     # Taker volume: CVD 与价格同步 (sell > buy → CVD 下降)
     taker_data = [
-        ("BTC",
-         Decimal("800"),    # buy_vol
-         Decimal("1500"),   # sell_vol
-         Decimal("-700"),   # buy_sell_volume_diff (负值)
-         Decimal("0.53"),   # ratio
-         ts_list[i])
+        (
+            "BTC",
+            Decimal("800"),  # buy_vol
+            Decimal("1500"),  # sell_vol
+            Decimal("-700"),  # buy_sell_volume_diff (负值)
+            Decimal("0.53"),  # ratio
+            ts_list[i],
+        )
         for i in range(250)
     ]
 
-    return MockMacroRepo(oi_data=oi_data, funding_data=funding_data,
-                         taker_data=taker_data)
+    return MockMacroRepo(oi_data=oi_data, funding_data=funding_data, taker_data=taker_data)
 
 
 def _make_washout_ohlcv(seed=42):
@@ -144,10 +139,16 @@ def _make_washout_ohlcv(seed=42):
     volume[240:250] *= 0.5  # 缩量
 
     dates = pd.date_range("2025-01-01", periods=n, freq="1h")
-    return pd.DataFrame({
-        "open": prices, "high": prices * 1.005, "low": prices * 0.995,
-        "close": prices, "volume": volume,
-    }, index=dates)
+    return pd.DataFrame(
+        {
+            "open": prices,
+            "high": prices * 1.005,
+            "low": prices * 0.995,
+            "close": prices,
+            "volume": volume,
+        },
+        index=dates,
+    )
 
 
 # ============================================================
@@ -193,8 +194,14 @@ class TestWashoutMacroProvider(unittest.TestCase):
     def test_cvd_cumsum_correct(self):
         """CVD = cumsum(buy_sell_volume_diff)。"""
         taker_data = [
-            ("BTC", Decimal("1500"), Decimal("1000"), Decimal("500"),
-             Decimal("1.5"), datetime.now(timezone.utc))
+            (
+                "BTC",
+                Decimal("1500"),
+                Decimal("1000"),
+                Decimal("500"),
+                Decimal("1.5"),
+                datetime.now(timezone.utc),
+            )
             for _ in range(5)
         ]
         repo = MockMacroRepo(taker_data=taker_data)
@@ -294,15 +301,12 @@ class TestWashoutDetectorDALIntegration(unittest.TestCase):
         df = _make_washout_ohlcv()
         macro_data = provider.get_macro_data("BTC")
 
-        detector = WashoutDetector(
-            enable=True, classifier=self.clf, feature_extractor=self.ext
-        )
+        detector = WashoutDetector(enable=True, classifier=self.clf, feature_extractor=self.ext)
         verdict = detector.run("BTC", df, macro_data)
 
         # 应判为 WASHOUT 或 UNKNOWN (取决于特征提取)
         # 关键: 不应误判为 WEAKNESS
-        self.assertNotEqual(verdict.label, WashoutLabel.WEAKNESS,
-                            "真洗盘不应判为 WEAKNESS")
+        self.assertNotEqual(verdict.label, WashoutLabel.WEAKNESS, "真洗盘不应判为 WEAKNESS")
 
     def test_end_to_end_weakness_scenario(self):
         """假洗盘: DAL 数据(OI上升+CVD同步) + 洗盘 pattern → WEAKNESS。"""
@@ -311,23 +315,18 @@ class TestWashoutDetectorDALIntegration(unittest.TestCase):
         df = _make_washout_ohlcv()
         macro_data = provider.get_macro_data("BTC")
 
-        detector = WashoutDetector(
-            enable=True, classifier=self.clf, feature_extractor=self.ext
-        )
+        detector = WashoutDetector(enable=True, classifier=self.clf, feature_extractor=self.ext)
         verdict = detector.run("BTC", df, macro_data)
 
         # 应判为 WEAKNESS 或 UNKNOWN (取决于特征提取)
         # 关键: 不应误判为 WASHOUT
-        self.assertNotEqual(verdict.label, WashoutLabel.WASHOUT,
-                            "假洗盘不应判为 WASHOUT")
+        self.assertNotEqual(verdict.label, WashoutLabel.WASHOUT, "假洗盘不应判为 WASHOUT")
 
     def test_disabled_returns_unknown(self):
         """开关关闭 → UNKNOWN。"""
-        provider = WashoutMacroProvider(repo=None)
+        provider = WashoutMacroProvider(repo=None)  # noqa: F841
         df = _make_washout_ohlcv()
-        detector = WashoutDetector(
-            enable=False, classifier=self.clf, feature_extractor=self.ext
-        )
+        detector = WashoutDetector(enable=False, classifier=self.clf, feature_extractor=self.ext)
         verdict = detector.run("BTC", df, {})
         self.assertEqual(verdict.label, WashoutLabel.UNKNOWN)
         self.assertFalse(verdict.trigger_activated)
@@ -335,16 +334,14 @@ class TestWashoutDetectorDALIntegration(unittest.TestCase):
     def test_no_macro_data_still_runs(self):
         """macro_data 为空时 detector 仍运行 (降级中性默认值)。"""
         df = _make_washout_ohlcv()
-        detector = WashoutDetector(
-            enable=True, classifier=self.clf, feature_extractor=self.ext
-        )
+        detector = WashoutDetector(enable=True, classifier=self.clf, feature_extractor=self.ext)
         # macro_data={} → 特征提取器降级中性默认值 → classifier 可能判 UNKNOWN
         verdict = detector.run("BTC", df, {})
         # 不应崩溃，应返回有效 verdict
         self.assertIsNotNone(verdict)
-        self.assertIn(verdict.label,
-                       [WashoutLabel.WASHOUT, WashoutLabel.WEAKNESS,
-                        WashoutLabel.UNKNOWN])
+        self.assertIn(
+            verdict.label, [WashoutLabel.WASHOUT, WashoutLabel.WEAKNESS, WashoutLabel.UNKNOWN]
+        )
 
 
 if __name__ == "__main__":

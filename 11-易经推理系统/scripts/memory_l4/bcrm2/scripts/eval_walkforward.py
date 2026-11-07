@@ -8,6 +8,7 @@
   - Train 段: 校准 REGIME_CENTERS (标签均值) + 训练 LGBM 校正器（--with-lgbm 时）
   - Test 段: 高斯软分配概率 → （可选）LGBM calibrate 融合 → argmax / Top-3 统计
 """
+
 from __future__ import annotations
 
 import argparse
@@ -25,12 +26,12 @@ _MEMORY_L4 = _THIS.parent.parent.parent
 if str(_MEMORY_L4) not in sys.path:
     sys.path.insert(0, str(_MEMORY_L4))
 
-from bcrm2.indicators import IndicatorBank
-from bcrm2.score_composer import ScoreComposer
-from bcrm2.temporal_smoother import TemporalSmoother
-from bcrm2.regime_mapper import RegimeMapper, REGIME_ORDER
-from bcrm2.labels.regime_labeler import generate_8state_label, REGIME_CODE
-from bcrm2.walk_forward_splitter import walk_forward_time_series_split
+from bcrm2.indicators import IndicatorBank  # noqa: E402
+from bcrm2.labels.regime_labeler import REGIME_CODE, generate_8state_label  # noqa: E402
+from bcrm2.regime_mapper import REGIME_ORDER, RegimeMapper  # noqa: E402
+from bcrm2.score_composer import ScoreComposer  # noqa: E402
+from bcrm2.temporal_smoother import TemporalSmoother  # noqa: E402
+from bcrm2.walk_forward_splitter import walk_forward_time_series_split  # noqa: E402
 
 
 def _read_csv(csv_path: Path) -> pd.DataFrame:
@@ -61,21 +62,30 @@ def _compute_features(df: pd.DataFrame, feature_set: str = "btc_morphology_v6") 
     """预计算整段特征（滚动窗口特征，不泄露未来）。"""
     # 显式 import 所有涉及的特征模块，触发 FeatureRegistry.register
     import importlib as _il
-    for _mod_name in ("classic_experience_features", "ma200_cycle_features",
-                       "multi_timeframe_features", "rolling_regime_stats",
-                       "sector_beta_pool"):
+
+    for _mod_name in (
+        "classic_experience_features",
+        "ma200_cycle_features",
+        "multi_timeframe_features",
+        "rolling_regime_stats",
+        "sector_beta_pool",
+    ):
         try:
             _il.import_module(f"bcrm2.{_mod_name}")
         except Exception:
             pass
     from bcrm2.feature_registry import FeatureRegistry
+
     feats_df, _ = FeatureRegistry.compute_all(df, enabled_set=feature_set, verbose=False)
     return feats_df
 
 
 def _evaluate_fold(
-    train_idx: np.ndarray, test_idx: np.ndarray,
-    df: pd.DataFrame, level_smooth: pd.Series, trend_smooth: pd.Series,
+    train_idx: np.ndarray,
+    test_idx: np.ndarray,
+    df: pd.DataFrame,
+    level_smooth: pd.Series,
+    trend_smooth: pd.Series,
     labels: pd.Series,
     feats_df: Optional[pd.DataFrame] = None,
     with_lgbm: bool = False,
@@ -98,6 +108,7 @@ def _evaluate_fold(
             )
         else:
             from bcrm2.regime_mapper import REGIME_CENTERS
+
             centers[regime] = REGIME_CENTERS[regime]
 
     mapper = RegimeMapper(centers=centers, softmax_temperature=0.6)
@@ -106,6 +117,7 @@ def _evaluate_fold(
     calibrator = None
     if with_lgbm and feats_df is not None:
         from bcrm2.lgbm_calibrator import LGBMCalibrator
+
         # train_idx 是整数位置；feats_df 的 index 是时间戳，用 iloc 取行
         X_train_full = feats_df.iloc[train_idx].copy()
         y_train_full = train_labels.reset_index(drop=True)
@@ -121,7 +133,9 @@ def _evaluate_fold(
                 # 使用 tuned_params 覆盖默认超参；无 tuned_params 时用强正则默认值
                 tp = tuned_params or {}
                 cal.fit(
-                    X_tr, y_tr, schema_path="/tmp/_wf_lgbm_schema.json",
+                    X_tr,
+                    y_tr,
+                    schema_path="/tmp/_wf_lgbm_schema.json",
                     n_estimators=tp.get("n_estimators", 80),
                     learning_rate=tp.get("learning_rate", 0.05),
                     num_leaves=tp.get("num_leaves", 15),
@@ -137,7 +151,10 @@ def _evaluate_fold(
                 )
                 calibrator = cal
                 tag = "tuned" if tuned_params else "default"
-                print(f"    [LGBM] 训练完成（{len(X_tr)} 样本，{X_tr.shape[1]} 特征，balanced+{tag}）", flush=True)
+                print(
+                    f"    [LGBM] 训练完成（{len(X_tr)} 样本，{X_tr.shape[1]} 特征，balanced+{tag}）",
+                    flush=True,
+                )
             except Exception as e:
                 print(f"    [LGBM] 训练失败，退化为纯高斯: {e}", flush=True)
                 calibrator = None
@@ -211,6 +228,7 @@ def _evaluate_fold(
         _orig_wg = _orig_wl = _orig_t = None
         if tuned_params and ("w_gauss" in tuned_params or "temperature" in tuned_params):
             import bcrm2.lgbm_calibrator as _lc_mod
+
             _orig_wg = _lc_mod.W_GAUSS
             _orig_wl = _lc_mod.W_LGBM
             _orig_t = _lc_mod.TEMPERATURE
@@ -244,8 +262,12 @@ def _evaluate_fold(
 
     top3_rate_gauss = top3_hits_gauss / max(1, n_valid)
     top3_rate_fused = top3_hits_fused / max(1, n_valid)
-    macro_f1_gauss = f1_score(y_true, y_pred_gauss, average="macro", labels=list(range(8)), zero_division=0)
-    macro_f1_fused = f1_score(y_true, y_pred_fused, average="macro", labels=list(range(8)), zero_division=0)
+    macro_f1_gauss = f1_score(
+        y_true, y_pred_gauss, average="macro", labels=list(range(8)), zero_division=0
+    )
+    macro_f1_fused = f1_score(
+        y_true, y_pred_fused, average="macro", labels=list(range(8)), zero_division=0
+    )
 
     # Consensus vs fwd_ret R²
     consensus_r2 = 0.0
@@ -275,9 +297,13 @@ def _evaluate_fold(
     }
 
 
-def run_walkforward(csv_path: Path, n_splits: int = 5, with_lgbm: bool = False,
-                    feature_set: str = "btc_morphology_v6",
-                    tuned_params: Optional[Dict] = None) -> Dict:
+def run_walkforward(
+    csv_path: Path,
+    n_splits: int = 5,
+    with_lgbm: bool = False,
+    feature_set: str = "btc_morphology_v6",
+    tuned_params: Optional[Dict] = None,
+) -> Dict:
     df = _read_csv(csv_path)
     n = len(df)
     print(f"[P3.2] 读取 {csv_path} ({n} 条)")
@@ -290,7 +316,10 @@ def run_walkforward(csv_path: Path, n_splits: int = 5, with_lgbm: bool = False,
     if with_lgbm:
         print(f"[P3.2] 预计算 LGBM 特征池（{feature_set}）...", flush=True)
         feats_df = _compute_features(df, feature_set)
-        print(f"[P3.2] 特征形状 {feats_df.shape}，列 {list(feats_df.columns)[:3]}... 共 {len(feats_df.columns)} 列", flush=True)
+        print(
+            f"[P3.2] 特征形状 {feats_df.shape}，列 {list(feats_df.columns)[:3]}... 共 {len(feats_df.columns)} 列",
+            flush=True,
+        )
 
     folds: List[Dict] = []
     for k, (train_idx, test_idx) in enumerate(
@@ -301,13 +330,24 @@ def run_walkforward(csv_path: Path, n_splits: int = 5, with_lgbm: bool = False,
         print(f"  test:  [{test_idx[0]}, {test_idx[-1]}]  ({len(test_idx)} 条)")
 
         fold_result = _evaluate_fold(
-            train_idx, test_idx, df, level_smooth, trend_smooth, labels,
-            feats_df=feats_df, with_lgbm=with_lgbm, tuned_params=tuned_params,
+            train_idx,
+            test_idx,
+            df,
+            level_smooth,
+            trend_smooth,
+            labels,
+            feats_df=feats_df,
+            with_lgbm=with_lgbm,
+            tuned_params=tuned_params,
         )
         folds.append(fold_result)
-        print(f"  [Gauss]  Top-3: {fold_result['top3_hit_rate']:.4f}  Macro F1: {fold_result['macro_f1']:.4f}")
+        print(
+            f"  [Gauss]  Top-3: {fold_result['top3_hit_rate']:.4f}  Macro F1: {fold_result['macro_f1']:.4f}"
+        )
         if with_lgbm:
-            print(f"  [Fused]  Top-3: {fold_result['top3_hit_rate_fused']:.4f}  Macro F1: {fold_result['macro_f1_fused']:.4f}  (LGBM={'ON' if fold_result['lgbm_enabled'] else 'OFF'})")
+            print(
+                f"  [Fused]  Top-3: {fold_result['top3_hit_rate_fused']:.4f}  Macro F1: {fold_result['macro_f1_fused']:.4f}  (LGBM={'ON' if fold_result['lgbm_enabled'] else 'OFF'})"
+            )
         print(f"  Consensus R²: {fold_result['consensus_r2']:.4f}")
 
     # 汇总
@@ -351,6 +391,7 @@ def run_walkforward(csv_path: Path, n_splits: int = 5, with_lgbm: bool = False,
 # 对比不同 α 值的回测表现，找出最优 α
 # ================================================================
 
+
 def _simulate_simple_pnl(
     test_close: pd.Series,
     level_smooth: pd.Series,
@@ -380,9 +421,12 @@ def _simulate_simple_pnl(
         C = 0.5
 
         # 用 ParameterMapper 计算 global params（触发 α blend）
-        params = mapper.map_global_parameters(
-            L, T, C,
-            forecast_L=forecast_L, forecast_T=forecast_T,
+        params = mapper.map_global_parameters(  # noqa: F841
+            L,
+            T,
+            C,
+            forecast_L=forecast_L,
+            forecast_T=forecast_T,
             alpha_blend=alpha_blend,
         )
 
@@ -394,7 +438,7 @@ def _simulate_simple_pnl(
             ret = float(test_close.iloc[i + 1] / test_close.iloc[i] - 1.0)
             daily_ret = direction * ret
             daily_returns.append(daily_ret)
-            equity *= (1.0 + daily_ret)
+            equity *= 1.0 + daily_ret
             equity_curve.append(equity)
             peak = max(peak, equity)
             dd = (equity - peak) / peak
@@ -457,6 +501,7 @@ def run_alpha_blend_comparison(
     # 初始化 MorphCyclePredictor
     from bcrm2.morph_cycle_predictor import MorphCyclePredictor
     from bcrm2.run_evolution_pipeline import get_storage
+
     storage = get_storage()
     predictor = MorphCyclePredictor(storage)
 
@@ -466,7 +511,7 @@ def run_alpha_blend_comparison(
         fold_metrics: List[Dict] = []
         folds = list(walk_forward_time_series_split(n, n_splits=n_folds, gap=20, expanding=True))
 
-        for k, (train_idx, test_idx) in enumerate(folds):
+        for k, (train_idx, test_idx) in enumerate(folds):  # noqa: B007
             test_close = df["close"].iloc[test_idx]
             test_L = level_smooth.iloc[test_idx]
             test_T = trend_smooth.iloc[test_idx]
@@ -476,7 +521,7 @@ def run_alpha_blend_comparison(
             forecast_T = None
             if alpha > 0.0 and len(test_idx) > 0:
                 # 用 test 段第一天的前一日作为预测起点
-                pred_start_idx = max(0, test_idx[0] - 1)
+                pred_start_idx = max(0, test_idx[0] - 1)  # noqa: F841
                 try:
                     result = predictor.predict(
                         "BTCUSDT",
@@ -494,8 +539,11 @@ def run_alpha_blend_comparison(
 
             # 模拟 PnL
             metrics = _simulate_simple_pnl(
-                test_close, test_L, test_T,
-                forecast_L=forecast_L, forecast_T=forecast_T,
+                test_close,
+                test_L,
+                test_T,
+                forecast_L=forecast_L,
+                forecast_T=forecast_T,
                 alpha_blend=alpha,
             )
             fold_metrics.append(metrics)
@@ -540,18 +588,31 @@ def run_alpha_blend_comparison(
 
 
 def main(argv=None) -> int:
-    p = argparse.ArgumentParser(description="P3.2 WalkForward Top-3 回测基线（含 LGBM 概率校正器融合）")
+    p = argparse.ArgumentParser(
+        description="P3.2 WalkForward Top-3 回测基线（含 LGBM 概率校正器融合）"
+    )
     p.add_argument("--csv", required=True)
     p.add_argument("--out", default=None)
     p.add_argument("--n-splits", type=int, default=5)
-    p.add_argument("--with-lgbm", action="store_true", default=True,
-                   help="启用 LGBM 概率校正器融合（默认开启）")
-    p.add_argument("--no-lgbm", dest="with_lgbm", action="store_false",
-                   help="禁用 LGBM，仅用纯高斯软分配基线")
-    p.add_argument("--feature-set", default="btc_morphology_v6",
-                   help="LGBM 特征集（默认 v6 = v5 + rolling_regime_stats 16列）")
-    p.add_argument("--tuned-params", default=None,
-                   help="Optuna 搜索得到的最佳参数 JSON 路径（含 best_params 字段）")
+    p.add_argument(
+        "--with-lgbm",
+        action="store_true",
+        default=True,
+        help="启用 LGBM 概率校正器融合（默认开启）",
+    )
+    p.add_argument(
+        "--no-lgbm", dest="with_lgbm", action="store_false", help="禁用 LGBM，仅用纯高斯软分配基线"
+    )
+    p.add_argument(
+        "--feature-set",
+        default="btc_morphology_v6",
+        help="LGBM 特征集（默认 v6 = v5 + rolling_regime_stats 16列）",
+    )
+    p.add_argument(
+        "--tuned-params",
+        default=None,
+        help="Optuna 搜索得到的最佳参数 JSON 路径（含 best_params 字段）",
+    )
     args = p.parse_args(argv)
 
     tuned_params = None
@@ -564,19 +625,27 @@ def main(argv=None) -> int:
         else:
             print(f"[P3.2] WARNING: tuned-params 文件不存在: {tp_path}，使用默认参数")
 
-    result = run_walkforward(Path(args.csv).resolve(), n_splits=args.n_splits,
-                             with_lgbm=args.with_lgbm, feature_set=args.feature_set,
-                             tuned_params=tuned_params)
+    result = run_walkforward(
+        Path(args.csv).resolve(),
+        n_splits=args.n_splits,
+        with_lgbm=args.with_lgbm,
+        feature_set=args.feature_set,
+        tuned_params=tuned_params,
+    )
 
     print("\n=== WalkForward 汇总 ===")
     a = result["aggregate"]
-    print(f"  [Gauss]  Top-3: {a['top3_mean']:.4f} ± {a['top3_std']:.4f}  Macro F1: {a['macro_f1_mean']:.4f} ± {a['macro_f1_std']:.4f}")
+    print(
+        f"  [Gauss]  Top-3: {a['top3_mean']:.4f} ± {a['top3_std']:.4f}  Macro F1: {a['macro_f1_mean']:.4f} ± {a['macro_f1_std']:.4f}"
+    )
     if args.with_lgbm and "macro_f1_fused_mean" in a:
-        print(f"  [Fused]  Top-3: {a['top3_fused_mean']:.4f} ± {a['top3_fused_std']:.4f}  Macro F1: {a['macro_f1_fused_mean']:.4f} ± {a['macro_f1_fused_std']:.4f}")
-        delta = a['macro_f1_fused_mean'] - a['macro_f1_mean']
+        print(
+            f"  [Fused]  Top-3: {a['top3_fused_mean']:.4f} ± {a['top3_fused_std']:.4f}  Macro F1: {a['macro_f1_fused_mean']:.4f} ± {a['macro_f1_fused_std']:.4f}"
+        )
+        delta = a["macro_f1_fused_mean"] - a["macro_f1_mean"]
         print(f"  [Delta]  Macro F1 提升: {delta:+.4f}")
     print(f"  Consensus R²: {a['consensus_r2_mean']:.4f}  (目标 ≥ 0.30)")
-    print(f"  目标: Top-3 ≥ 0.70 | Macro F1 ≥ 0.45 | Consensus R² ≥ 0.30")
+    print("  目标: Top-3 ≥ 0.70 | Macro F1 ≥ 0.45 | Consensus R² ≥ 0.30")
 
     if args.out:
         out_path = Path(args.out).resolve()

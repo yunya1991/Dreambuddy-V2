@@ -11,10 +11,11 @@
 
 fail-open：本模块任何异常不阻断主流程，仅记录 guard_errors。
 """
+
 import json
 import os
 import sqlite3
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
 _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
@@ -62,8 +63,12 @@ def check_freshness(artifacts, max_age_hours=48):
     for name, ts in (artifacts or {}).items():
         dt = parse_ts(ts)
         if dt is None:
-            result[name] = {"age_hours": None, "degrade_steps": 0, "stale": True,
-                            "note": "时间戳缺失，按 stale 处理"}
+            result[name] = {
+                "age_hours": None,
+                "degrade_steps": 0,
+                "stale": True,
+                "note": "时间戳缺失，按 stale 处理",
+            }
             continue
         age_h = (now - dt).total_seconds() / 3600.0
         degrade = int(age_h // 24)
@@ -83,11 +88,15 @@ def check_event_window(db_path=DB, window_days=2):
     try:
         conn = sqlite3.connect(db_path)
         now = now_utc()
-        for source, sub, label in (("cme", "fomc_decision", "FOMC"),
-                                   ("econ_calendar", "cpi", "CPI")):
+        for source, sub, label in (
+            ("cme", "fomc_decision", "FOMC"),
+            ("econ_calendar", "cpi", "CPI"),
+        ):
             rows = conn.execute(
                 "SELECT timestamp FROM records WHERE source=? AND sub_category=? "
-                "ORDER BY timestamp DESC LIMIT 5", (source, sub)).fetchall()
+                "ORDER BY timestamp DESC LIMIT 5",
+                (source, sub),
+            ).fetchall()
             for (ts,) in rows:
                 dt = parse_ts(ts)
                 if dt is None:
@@ -95,9 +104,13 @@ def check_event_window(db_path=DB, window_days=2):
                 delta_days = (dt - now).total_seconds() / 86400.0
                 if abs(delta_days) <= window_days:
                     conn.close()
-                    return {"in_window": True, "event": label,
-                            "event_ts": ts, "days_to_event": round(delta_days, 2),
-                            "note": "事件窗口内状态冻结，不更新周期判定"}
+                    return {
+                        "in_window": True,
+                        "event": label,
+                        "event_ts": ts,
+                        "days_to_event": round(delta_days, 2),
+                        "note": "事件窗口内状态冻结，不更新周期判定",
+                    }
         conn.close()
     except Exception:
         pass
@@ -130,11 +143,13 @@ def check_tail_confidence(db_path=DB, series=("INDPRO", "CPIAUCSL"), tail_n=6):
         conn = sqlite3.connect(db_path)
         for s in series:
             n = conn.execute(
-                "SELECT COUNT(*) FROM records WHERE source='fred' AND sub_category=?",
-                (s,)).fetchone()[0]
-            result[s] = {"tail_points": min(n, tail_n),
-                         "low_confidence_tail": n >= tail_n,
-                         "note": "末端 6 期为初值/修正期，置信度降权" if n >= tail_n else "序列不足 6 期"}
+                "SELECT COUNT(*) FROM records WHERE source='fred' AND sub_category=?", (s,)
+            ).fetchone()[0]
+            result[s] = {
+                "tail_points": min(n, tail_n),
+                "low_confidence_tail": n >= tail_n,
+                "note": "末端 6 期为初值/修正期，置信度降权" if n >= tail_n else "序列不足 6 期",
+            }
         conn.close()
     except Exception as e:
         result["error"] = str(e)
@@ -163,8 +178,7 @@ def apply_guards(cycle, rotation, transmission, stovall, fund_flow, washout):
         guards["guard_errors"].append(f"event_window: {e}")
 
     try:
-        guards["clock_degradation"] = check_clock_degradation(
-            rotation, guards.get("freshness", {}))
+        guards["clock_degradation"] = check_clock_degradation(rotation, guards.get("freshness", {}))
     except Exception as e:
         guards["guard_errors"].append(f"clock_degradation: {e}")
 
@@ -194,7 +208,12 @@ if __name__ == "__main__":
                 return json.load(f)
         return {}
 
-    g = apply_guards(_load("cycle_state.json"), _load("asset_rotation.json"),
-                     _load("sector_transmission.json"), _load("stovall_breadth.json"),
-                     _load("fund_flow.json"), _load("washout_verdicts.json"))
+    g = apply_guards(
+        _load("cycle_state.json"),
+        _load("asset_rotation.json"),
+        _load("sector_transmission.json"),
+        _load("stovall_breadth.json"),
+        _load("fund_flow.json"),
+        _load("washout_verdicts.json"),
+    )
     print(json.dumps(g, ensure_ascii=False, indent=2))

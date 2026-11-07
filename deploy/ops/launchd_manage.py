@@ -9,10 +9,10 @@ DreamBuddy 全系统 Launchd 统一管理工具
 - 易经推理监控 (4h)
 - 易经推理交易 (1h)
 """
+
 import os
-import sys
-import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).parent.parent.resolve()
@@ -112,18 +112,19 @@ def install_service(svc):
 
     content = svc["plist_src"].read_text(encoding="utf-8")
     import tempfile
+
     tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False)
-    tmp.write(f'''
+    tmp.write(f"""
 import pathlib
 p = pathlib.Path("{plist_dst}")
 p.parent.mkdir(parents=True, exist_ok=True)
 p.write_text({repr(content)}, encoding="utf-8")
 print("ok")
-''')
+""")
     tmp.close()
     subprocess.run([sys.executable, tmp.name], check=True, capture_output=True)
     os.unlink(tmp.name)
-    print(f"    plist 已复制到 LaunchAgents")
+    print("    plist 已复制到 LaunchAgents")
 
     run(["plutil", "-lint", str(plist_dst)], check=False)
 
@@ -136,7 +137,7 @@ print("ok")
 
     run(["launchctl", "enable", f"gui/{UID}/{svc['label']}"], check=False)
     run(["launchctl", "kickstart", f"gui/{UID}/{svc['label']}"], check=False)
-    print(f"    ✅ 已加载并触发首次运行")
+    print("    ✅ 已加载并触发首次运行")
 
 
 def uninstall_service(svc):
@@ -149,18 +150,16 @@ def uninstall_service(svc):
     if plist_dst.exists():
         try:
             import os
+
             os.remove(str(plist_dst))
-        except:
+        except:  # noqa: E722
             pass
-        print(f"    已删除 plist")
-    print(f"    ✅ 已卸载")
+        print("    已删除 plist")
+    print("    ✅ 已卸载")
 
 
 def status_service(svc):
-    result = run(
-        ["launchctl", "print", f"gui/{UID}/{svc['label']}"],
-        check=False
-    )
+    result = run(["launchctl", "print", f"gui/{UID}/{svc['label']}"], check=False)
     state = "未运行"
     active = "0"
     interval = "-"
@@ -172,10 +171,12 @@ def status_service(svc):
         if line.startswith("active count ="):
             active = line.split("=")[1].strip()
         if line.startswith("run interval ="):
-            interval = line.split("=")[1].strip()
+            interval = line.split("=")[1].strip()  # noqa: F841
 
     status_icon = "🟢" if state in ("running", "active", "not running") else "🔴"
-    print(f"  {status_icon} {svc['name']:<20} 状态:{state:<12} 活跃:{active:<3} 间隔:{svc['interval']}")
+    print(
+        f"  {status_icon} {svc['name']:<20} 状态:{state:<12} 活跃:{active:<3} 间隔:{svc['interval']}"
+    )
 
 
 def cmd_install():
@@ -186,6 +187,7 @@ def cmd_install():
     LAUNCH_AGENTS_DIR.mkdir(parents=True, exist_ok=True)
 
     import os
+
     for old in OLD_SERVICES:
         old_plist = LAUNCH_AGENTS_DIR / f"{old}.plist"
         if old_plist.exists():
@@ -194,9 +196,9 @@ def cmd_install():
             run(["launchctl", "unload", str(old_plist)], check=False)
             try:
                 os.remove(str(old_plist))
-            except:
+            except:  # noqa: E722
                 pass
-            print(f"    ✅ 已清理")
+            print("    ✅ 已清理")
 
     for svc in SERVICES:
         install_service(svc)
@@ -241,7 +243,7 @@ def cmd_status():
     print("  常用命令:")
     print(f"    查看某服务详情: launchctl print gui/{UID}/<label>")
     print(f"    手动触发:       launchctl kickstart gui/{UID}/<label>")
-    print(f"    查看实时日志:   tail -f <log_file>")
+    print("    查看实时日志:   tail -f <log_file>")
     print()
 
 
@@ -253,7 +255,7 @@ def cmd_restart():
     for svc in SERVICES:
         print(f"\n  重启: {svc['name']}")
         run(["launchctl", "kickstart", "-k", f"gui/{UID}/{svc['label']}"], check=False)
-        print(f"    ✅ 已重启")
+        print("    ✅ 已重启")
 
     print("\n" + "=" * 60)
     print("  ✅ 全部重启完成")

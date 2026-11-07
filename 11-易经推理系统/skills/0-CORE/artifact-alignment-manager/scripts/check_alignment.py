@@ -5,47 +5,38 @@
 检查后端存储结构是否与前端分类体系对齐
 """
 
-import os
-import json
-import yaml
 import argparse
-from pathlib import Path
-from typing import Dict, List, Any, Optional
+import json
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict
+
+import yaml
 
 # 配置
 ARTIFACTS_ROOT = Path.home() / ".workbuddy" / "artifacts"
 FRONTEND_DEFINITIONS = {
     "masters": {
         "label": "蒸馏大师库",
-        "tags": ["master", "masters", "master_livermore", "master_druckenmiller",
-                 "master_soros", "master_tharp", "master_turtle", "master_buffett",
-                 "master_lynch", "master_paulson"]
+        "tags": [
+            "master",
+            "masters",
+            "master_livermore",
+            "master_druckenmiller",
+            "master_soros",
+            "master_tharp",
+            "master_turtle",
+            "master_buffett",
+            "master_lynch",
+            "master_paulson",
+        ],
     },
-    "tools": {
-        "label": "OKX工具库",
-        "tags": ["okx_tools", "okx_strategy", "tools", "commands"]
-    },
-    "macro": {
-        "label": "宏观资产库",
-        "tags": ["macro_assets", "correlation", "cross_asset"]
-    },
-    "risk": {
-        "label": "风险库",
-        "tags": ["risk", "thresholds"]
-    },
-    "exit": {
-        "label": "离场规则库",
-        "tags": ["exit", "rules"]
-    },
-    "practice": {
-        "label": "实践教训库",
-        "tags": ["practice", "lessons"]
-    },
-    "web_strategy": {
-        "label": "联网策略库",
-        "tags": ["web_strategy"]
-    }
+    "tools": {"label": "OKX工具库", "tags": ["okx_tools", "okx_strategy", "tools", "commands"]},
+    "macro": {"label": "宏观资产库", "tags": ["macro_assets", "correlation", "cross_asset"]},
+    "risk": {"label": "风险库", "tags": ["risk", "thresholds"]},
+    "exit": {"label": "离场规则库", "tags": ["exit", "rules"]},
+    "practice": {"label": "实践教训库", "tags": ["practice", "lessons"]},
+    "web_strategy": {"label": "联网策略库", "tags": ["web_strategy"]},
 }
 
 ALL_VALID_TAGS = set()
@@ -60,7 +51,7 @@ class AlignmentChecker:
             "timestamp": datetime.now().isoformat(),
             "categories": {},
             "issues": [],
-            "statistics": {"total_files": 0, "aligned": 0, "issues_count": 0}
+            "statistics": {"total_files": 0, "aligned": 0, "issues_count": 0},
         }
 
     def check_all(self, quick: bool = False) -> Dict[str, Any]:
@@ -96,16 +87,18 @@ class AlignmentChecker:
                 "path": str(cat_path),
                 "exists": exists,
                 "files_count": 0,
-                "index_exists": False
+                "index_exists": False,
             }
 
             if not exists:
-                self.results["issues"].append({
-                    "type": "missing_directory",
-                    "severity": "HIGH",
-                    "category": cat_id,
-                    "message": f"目录 {cat_id}/ 不存在，需要创建"
-                })
+                self.results["issues"].append(
+                    {
+                        "type": "missing_directory",
+                        "severity": "HIGH",
+                        "category": cat_id,
+                        "message": f"目录 {cat_id}/ 不存在，需要创建",
+                    }
+                )
                 print(f"  ❌ {cat_id}: 目录不存在")
             else:
                 print(f"  ✅ {cat_id}: OK")
@@ -129,12 +122,14 @@ class AlignmentChecker:
                         print(f"  ✅ {cat_id}/index.json: 有效")
                     except Exception as e:
                         self.results["categories"][cat_id]["index_valid"] = False
-                        self.results["issues"].append({
-                            "type": "invalid_index",
-                            "severity": "MEDIUM",
-                            "category": cat_id,
-                            "message": f"index.json 格式错误: {e}"
-                        })
+                        self.results["issues"].append(
+                            {
+                                "type": "invalid_index",
+                                "severity": "MEDIUM",
+                                "category": cat_id,
+                                "message": f"index.json 格式错误: {e}",
+                            }
+                        )
                         print(f"  ⚠️ {cat_id}/index.json: 格式错误")
                 else:
                     self.results["categories"][cat_id]["index_exists"] = False
@@ -170,35 +165,41 @@ class AlignmentChecker:
                     invalid_tags = [t for t in file_tags if t not in ALL_VALID_TAGS]
 
                     if invalid_tags:
-                        self.results["issues"].append({
-                            "type": "invalid_tags",
-                            "severity": "LOW",
-                            "category": cat_id,
-                            "file": str(md_file.relative_to(self.root)),
-                            "message": f"无效标签: {invalid_tags}"
-                        })
+                        self.results["issues"].append(
+                            {
+                                "type": "invalid_tags",
+                                "severity": "LOW",
+                                "category": cat_id,
+                                "file": str(md_file.relative_to(self.root)),
+                                "message": f"无效标签: {invalid_tags}",
+                            }
+                        )
 
                     # 检查是否在正确分类
                     has_category_tag = any(t in valid_tags for t in file_tags)
                     if not has_category_tag:
-                        self.results["issues"].append({
-                            "type": "missing_category_tag",
-                            "severity": "MEDIUM",
-                            "category": cat_id,
-                            "file": str(md_file.relative_to(self.root)),
-                            "message": f"文件缺少分类标签（期望: {valid_tags}）"
-                        })
+                        self.results["issues"].append(
+                            {
+                                "type": "missing_category_tag",
+                                "severity": "MEDIUM",
+                                "category": cat_id,
+                                "file": str(md_file.relative_to(self.root)),
+                                "message": f"文件缺少分类标签（期望: {valid_tags}）",
+                            }
+                        )
                     else:
                         self.results["statistics"]["aligned"] += 1
 
                 except Exception as e:
-                    self.results["issues"].append({
-                        "type": "read_error",
-                        "severity": "LOW",
-                        "category": cat_id,
-                        "file": str(md_file.relative_to(self.root)),
-                        "message": f"读取失败: {e}"
-                    })
+                    self.results["issues"].append(
+                        {
+                            "type": "read_error",
+                            "severity": "LOW",
+                            "category": cat_id,
+                            "file": str(md_file.relative_to(self.root)),
+                            "message": f"读取失败: {e}",
+                        }
+                    )
 
     def _extract_frontmatter(self, content: str) -> Dict[str, Any]:
         """提取 YAML frontmatter"""
@@ -207,7 +208,7 @@ class AlignmentChecker:
             if len(parts) >= 3:
                 try:
                     return yaml.safe_load(parts[1]) or {}
-                except:
+                except:  # noqa: E722
                     return {}
         return {}
 
@@ -217,9 +218,7 @@ class AlignmentChecker:
         aligned = self.results["statistics"]["aligned"]
         issues = len(self.results["issues"])
 
-        self.results["statistics"]["alignment_rate"] = (
-            aligned / total * 100 if total > 0 else 100.0
-        )
+        self.results["statistics"]["alignment_rate"] = aligned / total * 100 if total > 0 else 100.0
         self.results["statistics"]["issues_count"] = issues
 
     def print_report(self):
@@ -236,7 +235,7 @@ class AlignmentChecker:
 
         # 统计
         stats = self.results["statistics"]
-        print(f"\n📈 统计:")
+        print("\n📈 统计:")
         print(f"  总文件数: {stats['total_files']}")
         print(f"  对齐文件: {stats['aligned']}")
         print(f"  对齐率: {stats['alignment_rate']:.1f}%")
@@ -246,7 +245,9 @@ class AlignmentChecker:
         if self.results["issues"]:
             print(f"\n⚠️ 发现 {len(self.results['issues'])} 个问题:")
             for i, issue in enumerate(self.results["issues"], 1):
-                severity_icon = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(issue["severity"], "⚪")
+                severity_icon = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(
+                    issue["severity"], "⚪"
+                )
                 print(f"  {i}. {severity_icon} [{issue['severity']}] {issue['type']}")
                 print(f"     {issue['message']}")
                 if "file" in issue:
@@ -267,7 +268,11 @@ def main():
     if args.quick:
         print("⚡ 快速模式")
         # 仅检查目录结构
-        for cat_id in (FRONTEND_DEFINITIONS if not args.category else {args.category: FRONTEND_DEFINITIONS[args.category]}):
+        for cat_id in (
+            FRONTEND_DEFINITIONS
+            if not args.category
+            else {args.category: FRONTEND_DEFINITIONS[args.category]}
+        ):
             cat_path = ARTIFACTS_ROOT / cat_id
             exists = cat_path.exists()
             count = len(list(cat_path.rglob("*.md"))) if exists else 0

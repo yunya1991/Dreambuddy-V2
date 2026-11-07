@@ -1,5 +1,5 @@
 """边界验证 — FAIL-OPEN + 3 个负面场景。"""
-import os
+
 import sys
 import tempfile
 from pathlib import Path
@@ -7,11 +7,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from core.ai_audit import audit_ai_output
-from core.architecture_pattern_detector import detect_architecture_patterns
-from core.design_decision_recovery import recover_decisions
-from core.evolution_narrative import generate_narrative
-from dsh_nodes import S33_rea_audit, S33_rea_narrative, S33_rea_recover_decisions
+from core.ai_audit import audit_ai_output  # noqa: E402
+from core.architecture_pattern_detector import detect_architecture_patterns  # noqa: E402
+from core.design_decision_recovery import recover_decisions  # noqa: E402
+from core.evolution_narrative import generate_narrative  # noqa: E402
+from dsh_nodes import S33_rea_audit  # noqa: E402
 
 print("=" * 70)
 print("PoE 边界验证（dream-acceptance-verify 步骤6）")
@@ -48,7 +48,9 @@ print("\n[边界3] 非 Python 路径 → FAIL-OPEN")
 with tempfile.TemporaryDirectory() as d:
     Path(d, "readme.txt").write_text("not python")
     r = audit_ai_output(d)
-    print(f"observed=boundary-3 non_python poe_score={r['poe_score']} gate={r['gate_decision']} has_unknown_evidence={any(e.level.value == 'unknown' for e in r.get('evidence', []))}")
+    print(
+        f"observed=boundary-3 non_python poe_score={r['poe_score']} gate={r['gate_decision']} has_unknown_evidence={any(e.level.value == 'unknown' for e in r.get('evidence', []))}"
+    )
 
 # ========== 边界 4: DSH 节点缺 target 参数 ==========
 
@@ -63,7 +65,9 @@ extreme = "def f():\n    x = 1\n    for i in range(100):\n        if i:\n       
 with tempfile.TemporaryDirectory() as d:
     Path(d, "extreme.py").write_text(extreme)
     r = audit_ai_output(d)
-    print(f"observed=boundary-5 extreme_code complexity_penalty={r['complexity_penalty']:.3f} debts_count={len(r['cognitive_debt'])} gate={r['gate_decision']}")
+    print(
+        f"observed=boundary-5 extreme_code complexity_penalty={r['complexity_penalty']:.3f} debts_count={len(r['cognitive_debt'])} gate={r['gate_decision']}"
+    )
 
 print("\n" + "=" * 70)
 print("边界验证完成 — 5 个场景")

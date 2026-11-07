@@ -1,4 +1,5 @@
 """B-02 / DEC-12: 成对支配解析器测试."""
+
 from __future__ import annotations
 
 from dreambuddy_evolution.core.dominance_resolver import (

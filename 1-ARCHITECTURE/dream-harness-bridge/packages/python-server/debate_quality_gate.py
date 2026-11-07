@@ -7,6 +7,7 @@
 HC-J1: FAIL-OPEN — jev 不可用时 passed=True（不阻塞训练）
 HC-J4: 冷启动(debate_count<20)使用低阈值 cold_start_threshold
 """
+
 from __future__ import annotations
 
 import logging
@@ -24,6 +25,7 @@ COLD_START_DEBATE_COUNT = 20
 @dataclass
 class QualityGateResult:
     """质量门控结果。"""
+
     passed: bool
     noul: float
     reason: str
@@ -93,13 +95,14 @@ class DebateQualityGate:
         """
         # HC-J1: 无 jev_fn → 降级放行
         if self._jev_fn is None:
-            return QualityGateResult(
-                passed=True, noul=0.0, reason="jev_unavailable", degraded=True)
+            return QualityGateResult(passed=True, noul=0.0, reason="jev_unavailable", degraded=True)
 
         # 冷启动保护：debate_count < 20 使用低阈值
-        threshold = (self._cold_start_threshold
-                     if debate_count < COLD_START_DEBATE_COUNT
-                     else self._threshold)
+        threshold = (
+            self._cold_start_threshold
+            if debate_count < COLD_START_DEBATE_COUNT
+            else self._threshold
+        )
 
         # 构建 state
         state = self._build_state(topic, transcript, adjudication_result)
@@ -110,15 +113,19 @@ class DebateQualityGate:
         except Exception as e:  # noqa: BLE001 FAIL-OPEN
             logger.warning("质量门控 jev 异常(FAIL-OPEN): %s", e)
             return QualityGateResult(
-                passed=True, noul=0.0,
-                reason=f"jev_exception:{type(e).__name__}", degraded=True)
+                passed=True, noul=0.0, reason=f"jev_exception:{type(e).__name__}", degraded=True
+            )
 
         # jev 降级 → 放行
         if not isinstance(resp, dict) or resp.get("degraded", False):
             return QualityGateResult(
-                passed=True, noul=0.0,
-                reason=resp.get("reason", "jev_degraded") if isinstance(resp, dict) else "jev_degraded",
-                degraded=True)
+                passed=True,
+                noul=0.0,
+                reason=(
+                    resp.get("reason", "jev_degraded") if isinstance(resp, dict) else "jev_degraded"
+                ),
+                degraded=True,
+            )
 
         # 提取 noul
         answers = resp.get("answers", {})
@@ -133,15 +140,13 @@ class DebateQualityGate:
 
         # 无 noul → 降级放行
         if noul is None:
-            return QualityGateResult(
-                passed=True, noul=0.0, reason="missing_noul", degraded=True)
+            return QualityGateResult(passed=True, noul=0.0, reason="missing_noul", degraded=True)
 
         # 门控判定
         passed = noul >= threshold
         reason = "" if passed else f"noul={noul:.2f}<threshold={threshold:.2f}"
 
-        return QualityGateResult(
-            passed=passed, noul=noul, reason=reason, degraded=False)
+        return QualityGateResult(passed=passed, noul=noul, reason=reason, degraded=False)
 
     @staticmethod
     def _build_state(

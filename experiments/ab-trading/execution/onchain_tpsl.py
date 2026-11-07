@@ -30,6 +30,7 @@
     3. 向后兼容：不依赖调用方修改，可渐进式接入
     4. 方向安全：止损只允许向有利方向移动（防误操作）
 """
+
 import sys
 from pathlib import Path
 from typing import Dict, Optional
@@ -37,8 +38,8 @@ from typing import Dict, Optional
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from execution.aster_spot import HyperliquidClient
 
-
 # ── 核心 API ────────────────────────────────────────────────────────────────
+
 
 def ensure_tpsl(
     client: HyperliquidClient,
@@ -83,8 +84,12 @@ def ensure_tpsl(
         curr_tp_px = existing["tp_px"]
 
         # 3. 判断是否需要操作
-        sl_same = (sl_price is None) or (curr_sl_px is not None and abs(curr_sl_px - sl_price) < 0.0001)
-        tp_same = (tp_price is None) or (curr_tp_px is not None and abs(curr_tp_px - tp_price) < 0.0001)
+        sl_same = (sl_price is None) or (
+            curr_sl_px is not None and abs(curr_sl_px - sl_price) < 0.0001
+        )
+        tp_same = (tp_price is None) or (
+            curr_tp_px is not None and abs(curr_tp_px - tp_price) < 0.0001
+        )
 
         if sl_same and tp_same and (curr_sl_px or curr_tp_px):
             return {
@@ -171,10 +176,12 @@ def update_tpsl(
 
         final_tp = new_tp if (new_tp is not None and new_tp > 0) else curr_tp
 
-        sl_unchanged = (final_sl is None and curr_sl is None) or \
-                       (final_sl is not None and curr_sl is not None and abs(final_sl - curr_sl) < 0.0001)
-        tp_unchanged = (final_tp is None and curr_tp is None) or \
-                       (final_tp is not None and curr_tp is not None and abs(final_tp - curr_tp) < 0.0001)
+        sl_unchanged = (final_sl is None and curr_sl is None) or (
+            final_sl is not None and curr_sl is not None and abs(final_sl - curr_sl) < 0.0001
+        )
+        tp_unchanged = (final_tp is None and curr_tp is None) or (
+            final_tp is not None and curr_tp is not None and abs(final_tp - curr_tp) < 0.0001
+        )
 
         if sl_unchanged and tp_unchanged and (curr_sl or curr_tp):
             return {
@@ -271,9 +278,16 @@ def get_position_tpsl_status(client: HyperliquidClient, coin: str) -> Dict:
         acct = client.get_account()
         pos = acct["positions"].get(coin)
         if not pos:
-            return {"ok": True, "coin": coin, "has_position": False,
-                    "is_long": None, "sl_price": None, "tp_price": None,
-                    "orders": [], "count": 0}
+            return {
+                "ok": True,
+                "coin": coin,
+                "has_position": False,
+                "is_long": None,
+                "sl_price": None,
+                "tp_price": None,
+                "orders": [],
+                "count": 0,
+            }
 
         is_long = pos["size"] > 0
         info = _get_tpsl_orders(client, coin, is_long)
@@ -293,6 +307,7 @@ def get_position_tpsl_status(client: HyperliquidClient, coin: str) -> Dict:
 
 
 # ── 内部工具函数 ────────────────────────────────────────────────────────────
+
 
 def _get_tpsl_orders(
     client: HyperliquidClient,

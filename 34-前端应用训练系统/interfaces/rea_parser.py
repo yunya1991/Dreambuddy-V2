@@ -3,8 +3,9 @@
 定义训练系统调用33-REA逆向解析的统一接口。
 33-REA的S33节点通过适配器实现此协议。
 """
+
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
 
 class REAParseResult:

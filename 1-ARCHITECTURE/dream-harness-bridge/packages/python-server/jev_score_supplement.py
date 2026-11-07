@@ -9,6 +9,7 @@
 
 HC-J1: FAIL-OPEN — jev 不可用时保留 LLM 评分
 """
+
 from __future__ import annotations
 
 import logging
@@ -63,10 +64,26 @@ class JevScoreSupplement:
 
         # 4 个 score 问题
         questions = {
-            "fact_bull": {"type": "score", "instructions": "评估正方论点的事实真实性。", "criteria": SCORE_CRITERIA},
-            "fact_bear": {"type": "score", "instructions": "评估反方论点的事实真实性。", "criteria": SCORE_CRITERIA},
-            "logic_bull": {"type": "score", "instructions": "评估正方论点的逻辑有效性。", "criteria": LOGIC_CRITERIA},
-            "logic_bear": {"type": "score", "instructions": "评估反方论点的逻辑有效性。", "criteria": LOGIC_CRITERIA},
+            "fact_bull": {
+                "type": "score",
+                "instructions": "评估正方论点的事实真实性。",
+                "criteria": SCORE_CRITERIA,
+            },
+            "fact_bear": {
+                "type": "score",
+                "instructions": "评估反方论点的事实真实性。",
+                "criteria": SCORE_CRITERIA,
+            },
+            "logic_bull": {
+                "type": "score",
+                "instructions": "评估正方论点的逻辑有效性。",
+                "criteria": LOGIC_CRITERIA,
+            },
+            "logic_bear": {
+                "type": "score",
+                "instructions": "评估反方论点的逻辑有效性。",
+                "criteria": LOGIC_CRITERIA,
+            },
         }
 
         try:

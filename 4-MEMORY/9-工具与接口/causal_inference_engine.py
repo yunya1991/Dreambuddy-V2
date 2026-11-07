@@ -18,14 +18,14 @@ SPEC: SPEC-CognitiveSystem-Evolution.md §1.4 pgmpy + §4.2 P1-7
   - Pearl, Causality (2009): do-calculus 三规则
   - SPEC §1.4: "verify升级为因果推理引擎"
 """
+
 from __future__ import annotations
 
 import json
 import logging
-import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +35,9 @@ logger = logging.getLogger(__name__)
 
 try:
     import pgmpy  # type: ignore
-    from pgmpy.models import BayesianNetwork  # type: ignore
     from pgmpy.inference import VariableElimination  # type: ignore
+    from pgmpy.models import BayesianNetwork  # type: ignore
+
     PGMPY_AVAILABLE = True
 except ImportError:
     PGMPY_AVAILABLE = False
@@ -49,9 +50,11 @@ except ImportError:
 # 数据结构
 # ============================================================
 
+
 @dataclass
 class CausalNode:
     """因果图节点。"""
+
     id: str
     content: str = ""
     tags: List[str] = field(default_factory=list)
@@ -73,6 +76,7 @@ class CausalNode:
 @dataclass
 class CausalEdge:
     """因果图边 — 表示记忆间的因果关系。"""
+
     source: str
     target: str
     weight: float  # 0.0-1.0，因果强度
@@ -90,6 +94,7 @@ class CausalEdge:
 @dataclass
 class CausalChain:
     """因果链 — 从 verify 历史发现的因果关系。"""
+
     cause: str  # 原因记忆 ID
     effect: str  # 结果记忆 ID
     confidence: float  # 因果置信度
@@ -109,6 +114,7 @@ class CausalChain:
 # ============================================================
 # 核心引擎
 # ============================================================
+
 
 class CausalInferenceEngine:
     """因果推理引擎 — pgmpy 可选依赖。
@@ -188,7 +194,7 @@ class CausalInferenceEngine:
         # 构建边（tags 重叠）
         node_list = list(self._nodes.values())
         for i, node_a in enumerate(node_list):
-            for node_b in node_list[i + 1:]:
+            for node_b in node_list[i + 1 :]:
                 overlap = set(node_a.tags) & set(node_b.tags)
                 if overlap:
                     # weight = overlap_count / min(len_a, len_b)
@@ -262,11 +268,13 @@ class CausalInferenceEngine:
             else:
                 delta = -self.IMPACT_COEFFICIENT * edge_weight
 
-            affected.append({
-                "id": neighbor_id,
-                "delta_confidence": round(delta, 4),
-                "edge_weight": round(edge_weight, 4),
-            })
+            affected.append(
+                {
+                    "id": neighbor_id,
+                    "delta_confidence": round(delta, 4),
+                    "edge_weight": round(edge_weight, 4),
+                }
+            )
 
         return {
             "intervention": {
@@ -320,7 +328,7 @@ class CausalInferenceEngine:
             ts_a = entry_a.get("timestamp", 0)
 
             # 向后看窗口内的成功 verify
-            for entry_b in sorted_history[i + 1:]:
+            for entry_b in sorted_history[i + 1 :]:
                 ts_b = entry_b.get("timestamp", 0)
                 if ts_b - ts_a > self.TEMPORAL_WINDOW:
                     break
@@ -387,7 +395,9 @@ class CausalInferenceEngine:
 
         # 反事实分析
         counterfactual_desc = self._build_counterfactual(
-            memory_id, success, affected_nodes,
+            memory_id,
+            success,
+            affected_nodes,
         )
 
         return {

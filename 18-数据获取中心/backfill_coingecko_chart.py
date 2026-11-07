@@ -10,6 +10,7 @@
 
 CoinGecko 公共 API 限流 ~10-30 req/min，串行 + 间隔 5s 避免触发 429。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -23,32 +24,57 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
 
-from data_center.collectors.coin.coingecko_collector import CoinGeckoCollector
-from data_center.core.errors import RateLimitError
-from data_center.storage.sink_sqlite import SqliteSink
+from data_center.collectors.coin.coingecko_collector import CoinGeckoCollector  # noqa: E402
+from data_center.core.errors import RateLimitError  # noqa: E402
+from data_center.storage.sink_sqlite import SqliteSink  # noqa: E402
 
 DB_PATH = os.path.join(_THIS_DIR, "data_center.db")
 
 # 与 scheduler.py / coin_fundamental_crypto.py._SECTOR_COIN_META 对齐
 COIN_IDS = [
     # DEX
-    "uniswap", "curve-dao-token", "1inch", "pancakeswap-token", "sushi",
+    "uniswap",
+    "curve-dao-token",
+    "1inch",
+    "pancakeswap-token",
+    "sushi",
     # Lending
-    "aave", "compound-governance-token", "maker", "lido-dao",
+    "aave",
+    "compound-governance-token",
+    "maker",
+    "lido-dao",
     # L1
-    "bitcoin", "ethereum", "solana", "binancecoin", "cardano", "zcash",
-    "avalanche-2", "near",
+    "bitcoin",
+    "ethereum",
+    "solana",
+    "binancecoin",
+    "cardano",
+    "zcash",
+    "avalanche-2",
+    "near",
     # L2
-    "optimism", "arbitrum", "matic-network", "blockstack",
+    "optimism",
+    "arbitrum",
+    "matic-network",
+    "blockstack",
     # Meme
-    "pump-fun", "dogecoin", "shiba-inu", "pepe", "dogwifhat",
+    "pump-fun",
+    "dogecoin",
+    "shiba-inu",
+    "pepe",
+    "dogwifhat",
     # Perp DEX
-    "hyperliquid", "gmx", "gains-network", "dydx",
+    "hyperliquid",
+    "gmx",
+    "gains-network",
+    "dydx",
 ]
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Backfill CoinGecko chart data for SECTOR_MAP coins")
+    parser = argparse.ArgumentParser(
+        description="Backfill CoinGecko chart data for SECTOR_MAP coins"
+    )
     parser.add_argument("--only", nargs="+", metavar="COIN_ID", help="只回填指定的 coin_id 列表")
     args = parser.parse_args()
 
@@ -65,7 +91,9 @@ def main() -> int:
     fail_count = 0
     skip_count = 0
 
-    print(f"[{datetime.now(timezone.utc).isoformat()}] 开始 backfill {len(coin_ids)} 个币的 chart 数据")
+    print(
+        f"[{datetime.now(timezone.utc).isoformat()}] 开始 backfill {len(coin_ids)} 个币的 chart 数据"
+    )
     print(f"DB: {DB_PATH}")
 
     for i, coin_id in enumerate(coin_ids, 1):
@@ -84,10 +112,12 @@ def main() -> int:
             ts = recs[0].timeseries
             ts_len = len(ts) if ts else 0
             latest_mcap = ts[-1].get("market_cap", 0) if ts else 0
-            print(f"[{i:02d}/{len(coin_ids)}] {coin_id:30s} OK  points={ts_len} latest_mcap={latest_mcap:.2e}")
+            print(
+                f"[{i:02d}/{len(coin_ids)}] {coin_id:30s} OK  points={ts_len} latest_mcap={latest_mcap:.2e}"
+            )
             ok_count += 1
 
-        except RateLimitError as e:
+        except RateLimitError as e:  # noqa: F841
             # 429 限流：等 60s 后重试一次
             print(f"[{i:02d}/{len(coin_ids)}] {coin_id:30s} 429 限流，等 60s 后重试一次...")
             time.sleep(60.0)
@@ -111,7 +141,7 @@ def main() -> int:
             fail_count += 1
 
     print()
-    print(f"=== Backfill 完成 ===")
+    print("=== Backfill 完成 ===")
     print(f"  OK:   {ok_count}")
     print(f"  SKIP: {skip_count}")
     print(f"  FAIL: {fail_count}")

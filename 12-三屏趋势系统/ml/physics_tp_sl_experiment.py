@@ -8,16 +8,18 @@
 4. 动能止盈：动能充沛时扩大止盈，衰竭时提前止盈
 5. 综合物理止损止盈：η + jerk + 动能三维调节
 """
+
+import json
 import os
 import sys
-import json
 import time
+
 import numpy as np
 import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
-sys.path.insert(0, '.')
+sys.path.insert(0, ".")
 
 
 def load_coin_data(symbol: str) -> pd.DataFrame:
@@ -35,6 +37,7 @@ def load_coin_data(symbol: str) -> pd.DataFrame:
 
 def generate_wave_signals(prices, zigzag_threshold=0.03):
     from ml.ewave_recognizer import ElliottWaveRecognizer
+
     recognizer = ElliottWaveRecognizer(zigzag_threshold=zigzag_threshold)
     n = len(prices)
     signals = []
@@ -57,15 +60,18 @@ def generate_wave_signals(prices, zigzag_threshold=0.03):
 
 
 def compute_physics_features(prices):
-    from ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
-    from ml.pitd_kinematics_engineer import KinematicsEngineer
+    from ml.pitd_confidence_scorer import ConfidenceWeights, PhysicsConfidenceScorer
     from ml.pitd_dynamics_engineer import DynamicsEngineer
+    from ml.pitd_kinematics_engineer import KinematicsEngineer
 
     n = len(prices)
     weights = ConfidenceWeights(
-        w_eta=0.211, w_reversal=0.368,
-        w_support=0.211, w_kinetic=0.211,
-        position_lower=0.6, position_scale=1.0,
+        w_eta=0.211,
+        w_reversal=0.368,
+        w_support=0.211,
+        w_kinetic=0.211,
+        position_lower=0.6,
+        position_scale=1.0,
     )
     scorer = PhysicsConfidenceScorer(weights)
     kin_fe = KinematicsEngineer()
@@ -87,7 +93,10 @@ def compute_physics_features(prices):
 
 
 def compute_wave_position_custom_tp_sl(
-    prices, wave_signals, wave_confs, physics_feats,
+    prices,
+    wave_signals,
+    wave_confs,
+    physics_feats,
     base_position=0.3,
     wave_conf_threshold=0.7,
     phys_conf_threshold=0.5,
@@ -109,7 +118,7 @@ def compute_wave_position_custom_tp_sl(
     n = len(prices)
     closes = prices["close"].values
 
-    eta_series = physics_feats["eta"]
+    eta_series = physics_feats["eta"]  # noqa: F841
     phys_conf = physics_feats["phys_conf"]
     trend_score = physics_feats["trend_score"]
     reversal_score = physics_feats["reversal_score"]
@@ -128,9 +137,16 @@ def compute_wave_position_custom_tp_sl(
     wave_short_signals = ("ENTER_SHORT_W3", "ENTER_SHORT_W5", "HOLD_SHORT_W3")
 
     stats = {
-        "total_enter": 0, "total_exit_by_sl": 0, "total_exit_by_tp": 0,
-        "total_exit_by_signal": 0, "avg_sl_pct": [], "avg_tp_pct": [],
-        "sl_min": 1.0, "sl_max": 0.0, "tp_min": 1.0, "tp_max": 0.0,
+        "total_enter": 0,
+        "total_exit_by_sl": 0,
+        "total_exit_by_tp": 0,
+        "total_exit_by_signal": 0,
+        "avg_sl_pct": [],
+        "avg_tp_pct": [],
+        "sl_min": 1.0,
+        "sl_max": 0.0,
+        "tp_min": 1.0,
+        "tp_max": 0.0,
     }
 
     for i in range(n):
@@ -293,8 +309,9 @@ def compute_wave_position_custom_tp_sl(
     return abs_position, direction_arr, stats
 
 
-def compute_smart_fusion(v4_pos, v4_dir, wave_pos, wave_dir,
-                         add_ratio=0.5, bottom_ratio=0.25, max_position=1.0):
+def compute_smart_fusion(
+    v4_pos, v4_dir, wave_pos, wave_dir, add_ratio=0.5, bottom_ratio=0.25, max_position=1.0
+):
     n = len(v4_pos)
     fusion_pos = np.zeros(n)
     fusion_dir = np.zeros(n)
@@ -400,8 +417,11 @@ def run_tp_sl_experiment(symbol="BTC"):
 
     print("[3/5] 计算V4仓位...")
     from ml.halving_top_exit_strategy import HalvingTopExitStrategy
-    is_btc = (symbol == "BTC")
-    strategy = HalvingTopExitStrategy(symbol=symbol, is_btc=is_btc, btc_prices=prices if is_btc else None)
+
+    is_btc = symbol == "BTC"
+    strategy = HalvingTopExitStrategy(
+        symbol=symbol, is_btc=is_btc, btc_prices=prices if is_btc else None
+    )
     v4_series = strategy.generate_signals(prices)
     v4_pos = np.abs(v4_series.values)
     v4_dir = np.sign(v4_series.values)
@@ -421,15 +441,20 @@ def run_tp_sl_experiment(symbol="BTC"):
 
     print(f"\n[4/5] 测试 {len(configs)} 种止损止盈配置...")
     print(f"\n{'='*100}")
-    print(f"  纯波浪策略 - 不同止损止盈对比")
+    print("  纯波浪策略 - 不同止损止盈对比")
     print(f"{'='*100}")
-    print(f"{'配置':<25} {'年化':>8} {'总收益':>9} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'胜率':>7} {'均仓':>6} {'SL次数':>6} {'TP次数':>6}")
+    print(
+        f"{'配置':<25} {'年化':>8} {'总收益':>9} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'胜率':>7} {'均仓':>6} {'SL次数':>6} {'TP次数':>6}"
+    )
     print(f"{'-'*100}")
 
     wave_results = {}
     for name, sl_mode, tp_mode, base_sl, base_tp in configs:
         wave_pos, wave_dir, stats = compute_wave_position_custom_tp_sl(
-            prices, wave_signals, wave_confs, physics_feats,
+            prices,
+            wave_signals,
+            wave_confs,
+            physics_feats,
             base_position=0.3,
             wave_conf_threshold=0.7,
             phys_conf_threshold=0.5,
@@ -438,28 +463,41 @@ def run_tp_sl_experiment(symbol="BTC"):
             base_sl=base_sl,
             base_tp=base_tp,
         )
-        m = backtest_position(wave_pos[valid_start:], wave_dir[valid_start:], prices.iloc[valid_start:])
+        m = backtest_position(
+            wave_pos[valid_start:], wave_dir[valid_start:], prices.iloc[valid_start:]
+        )
         wave_results[name] = {"metrics": m, "stats": stats}
-        print(f"{name:<25} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>8.1f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>6.2f}% {m['avg_position']:>6.3f} {stats['total_exit_by_sl']:>6} {stats['total_exit_by_tp']:>6}")
+        print(
+            f"{name:<25} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>8.1f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>6.2f}% {m['avg_position']:>6.3f} {stats['total_exit_by_sl']:>6} {stats['total_exit_by_tp']:>6}"
+        )
 
     # 止损止盈范围统计
-    print(f"\n  动态止损止盈范围（最优配置）:")
+    print("\n  动态止损止盈范围（最优配置）:")
     best_wave = max(wave_results.items(), key=lambda x: x[1]["metrics"]["sharpe"])[0]
     bs = wave_results[best_wave]["stats"]
-    print(f"    止损范围: {bs['sl_min']*100:.1f}% ~ {bs['sl_max']*100:.1f}%, 平均: {bs['avg_sl']*100:.1f}%")
-    print(f"    止盈范围: {bs['tp_min']*100:.1f}% ~ {bs['tp_max']*100:.1f}%, 平均: {bs['avg_tp']*100:.1f}%")
+    print(
+        f"    止损范围: {bs['sl_min']*100:.1f}% ~ {bs['sl_max']*100:.1f}%, 平均: {bs['avg_sl']*100:.1f}%"
+    )
+    print(
+        f"    止盈范围: {bs['tp_min']*100:.1f}% ~ {bs['tp_max']*100:.1f}%, 平均: {bs['avg_tp']*100:.1f}%"
+    )
 
     # 融合策略对比
     print(f"\n{'='*100}")
-    print(f"  智能融合策略 - 不同止损止盈对比（加仓50%/抄底25%）")
+    print("  智能融合策略 - 不同止损止盈对比（加仓50%/抄底25%）")
     print(f"{'='*100}")
-    print(f"{'配置':<25} {'年化':>8} {'总收益':>9} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'均仓':>6}")
+    print(
+        f"{'配置':<25} {'年化':>8} {'总收益':>9} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'均仓':>6}"
+    )
     print(f"{'-'*85}")
 
     fusion_results = {}
     for name, sl_mode, tp_mode, base_sl, base_tp in configs:
         wave_pos, wave_dir, stats = compute_wave_position_custom_tp_sl(
-            prices, wave_signals, wave_confs, physics_feats,
+            prices,
+            wave_signals,
+            wave_confs,
+            physics_feats,
             base_position=0.3,
             wave_conf_threshold=0.7,
             phys_conf_threshold=0.5,
@@ -469,17 +507,23 @@ def run_tp_sl_experiment(symbol="BTC"):
             base_tp=base_tp,
         )
         smart_pos, smart_dir = compute_smart_fusion(v4_pos, v4_dir, wave_pos, wave_dir)
-        m = backtest_position(smart_pos[valid_start:], smart_dir[valid_start:], prices.iloc[valid_start:])
+        m = backtest_position(
+            smart_pos[valid_start:], smart_dir[valid_start:], prices.iloc[valid_start:]
+        )
         fusion_results[name] = m
-        print(f"{name:<25} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>8.1f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}% {m['calmar']:>8.4f} {m['avg_position']:>6.3f}")
+        print(
+            f"{name:<25} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>8.1f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}% {m['calmar']:>8.4f} {m['avg_position']:>6.3f}"
+        )
 
     # 纯V4参考
     m_v4 = backtest_position(v4_pos[valid_start:], v4_dir[valid_start:], prices.iloc[valid_start:])
-    print(f"{'纯V4 (参考)':<25} {m_v4['ann_return']*100:>7.2f}% {m_v4['total_return']*100:>8.1f}% {m_v4['sharpe']:>8.4f} {m_v4['max_drawdown']*100:>7.2f}% {m_v4['calmar']:>8.4f} {m_v4['avg_position']:>6.3f}")
+    print(
+        f"{'纯V4 (参考)':<25} {m_v4['ann_return']*100:>7.2f}% {m_v4['total_return']*100:>8.1f}% {m_v4['sharpe']:>8.4f} {m_v4['max_drawdown']*100:>7.2f}% {m_v4['calmar']:>8.4f} {m_v4['avg_position']:>6.3f}"
+    )
 
     # 增量分析
     print(f"\n{'='*100}")
-    print(f"  相对基线的增量（融合策略）")
+    print("  相对基线的增量（融合策略）")
     print(f"{'='*100}")
     print(f"{'配置':<25} {'年化增量':>10} {'夏普增量':>10} {'回撤改善':>10} {'综合评分':>10}")
     print(f"{'-'*75}")
@@ -488,15 +532,17 @@ def run_tp_sl_experiment(symbol="BTC"):
     best_score = -999
     best_name = ""
     for name, m in fusion_results.items():
-        ann_delta = (m['ann_return'] - base_m['ann_return']) * 100
-        sharpe_delta = m['sharpe'] - base_m['sharpe']
-        mdd_delta = (m['max_drawdown'] - base_m['max_drawdown']) * 100
+        ann_delta = (m["ann_return"] - base_m["ann_return"]) * 100
+        sharpe_delta = m["sharpe"] - base_m["sharpe"]
+        mdd_delta = (m["max_drawdown"] - base_m["max_drawdown"]) * 100
         score = sharpe_delta * 0.4 + ann_delta * 0.01 * 0.3 + (-mdd_delta) * 0.01 * 0.3
         mark = " ✅" if score > 0 else ""
         if score > best_score:
             best_score = score
             best_name = name
-        print(f"{name:<25} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {score:>10.4f}{mark}")
+        print(
+            f"{name:<25} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {score:>10.4f}{mark}"
+        )
 
     print(f"\n最优配置: {best_name} (综合评分: {best_score:.4f})")
 
@@ -504,7 +550,13 @@ def run_tp_sl_experiment(symbol="BTC"):
     os.makedirs("ml/backtest_results", exist_ok=True)
     save_data = {
         "symbol": symbol,
-        "wave_results": {k: {"metrics": v["metrics"], "stats": {kk: vv for kk, vv in v["stats"].items() if isinstance(vv, (int, float))}} for k, v in wave_results.items()},
+        "wave_results": {
+            k: {
+                "metrics": v["metrics"],
+                "stats": {kk: vv for kk, vv in v["stats"].items() if isinstance(vv, (int, float))},
+            }
+            for k, v in wave_results.items()
+        },
         "fusion_results": fusion_results,
         "v4_baseline": m_v4,
         "best_config": best_name,
@@ -518,6 +570,7 @@ def run_tp_sl_experiment(symbol="BTC"):
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="物理驱动动态止损止盈实验")
     parser.add_argument("--symbol", type=str, default="BTC")
     args = parser.parse_args()

@@ -2,23 +2,22 @@
 
 Spec: docs/superpowers/specs/2026-08-29-p0-fd7-score-backtest-design.md §7
 """
+
 from __future__ import annotations
 
 import json
 import os
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
-import pytest
 
 THIS_DIR = Path(__file__).resolve().parent
 if str(THIS_DIR) not in sys.path:
     sys.path.insert(0, str(THIS_DIR))
 
-from backtest_fd7_score import FD7ScoreBacktester, _MOCK_NEWS_LIST
+from backtest_fd7_score import _MOCK_NEWS_LIST, FD7ScoreBacktester  # noqa: E402
 
 
 class TestP0BacktestEngine:
@@ -37,14 +36,16 @@ class TestP0BacktestEngine:
         """TC-2：coin_data 构造 PIT 防泄漏，只含 [0, t] 数据。"""
         # 构造模拟 K 线
         dates = pd.date_range("2026-01-01", periods=200, freq="1H")
-        df = pd.DataFrame({
-            "ts": [int(d.timestamp() * 1000) for d in dates],
-            "open": np.linspace(100, 200, 200),
-            "high": np.linspace(105, 205, 200),
-            "low": np.linspace(95, 195, 200),
-            "close": np.linspace(100, 200, 200),
-            "vol": np.random.rand(200) * 1000,
-        })
+        df = pd.DataFrame(
+            {
+                "ts": [int(d.timestamp() * 1000) for d in dates],
+                "open": np.linspace(100, 200, 200),
+                "high": np.linspace(105, 205, 200),
+                "low": np.linspace(95, 195, 200),
+                "close": np.linspace(100, 200, 200),
+                "vol": np.random.rand(200) * 1000,
+            }
+        )
         bt = FD7ScoreBacktester(symbol="BTC")
         cd1 = bt.build_coin_data(df, t=100, symbol_key="BTC-USDT")
         cd2 = bt.build_coin_data(df, t=150, symbol_key="BTC-USDT")
@@ -58,17 +59,21 @@ class TestP0BacktestEngine:
     def test_tc3_system_state(self):
         """TC-3：system_state 构造，win_rate ∈ [0,1]，profit_factor > 0。"""
         dates = pd.date_range("2026-01-01", periods=200, freq="1H")
-        df = pd.DataFrame({
-            "ts": [int(d.timestamp() * 1000) for d in dates],
-            "open": np.linspace(100, 200, 200),
-            "high": np.linspace(105, 205, 200),
-            "low": np.linspace(95, 195, 200),
-            "close": np.linspace(100, 200, 200) + np.sin(np.arange(200) * 0.1) * 5,
-            "vol": np.random.rand(200) * 1000,
-        })
+        df = pd.DataFrame(
+            {
+                "ts": [int(d.timestamp() * 1000) for d in dates],
+                "open": np.linspace(100, 200, 200),
+                "high": np.linspace(105, 205, 200),
+                "low": np.linspace(95, 195, 200),
+                "close": np.linspace(100, 200, 200) + np.sin(np.arange(200) * 0.1) * 5,
+                "vol": np.random.rand(200) * 1000,
+            }
+        )
         bt = FD7ScoreBacktester(symbol="BTC")
         ss = bt.build_system_state(df, t=100)
-        assert "win_rate" in ss and "profit_factor" in ss, "system_state 应含 win_rate 和 profit_factor"
+        assert (
+            "win_rate" in ss and "profit_factor" in ss
+        ), "system_state 应含 win_rate 和 profit_factor"
         assert 0.0 <= ss["win_rate"] <= 1.0, f"win_rate 应 ∈ [0,1]，实际={ss['win_rate']}"
         assert ss["profit_factor"] > 0, f"profit_factor 应 > 0，实际={ss['profit_factor']}"
 
@@ -76,20 +81,23 @@ class TestP0BacktestEngine:
         """TC-4：compute() 返回五维评分，值 ∈ [0, 100]。"""
         bt = FD7ScoreBacktester(symbol="BTC")
         dates = pd.date_range("2026-01-01", periods=200, freq="1H")
-        df = pd.DataFrame({
-            "ts": [int(d.timestamp() * 1000) for d in dates],
-            "open": np.linspace(100, 200, 200),
-            "high": np.linspace(105, 205, 200),
-            "low": np.linspace(95, 195, 200),
-            "close": np.linspace(100, 200, 200),
-            "vol": np.random.rand(200) * 1000,
-        })
+        df = pd.DataFrame(
+            {
+                "ts": [int(d.timestamp() * 1000) for d in dates],
+                "open": np.linspace(100, 200, 200),
+                "high": np.linspace(105, 205, 200),
+                "low": np.linspace(95, 195, 200),
+                "close": np.linspace(100, 200, 200),
+                "vol": np.random.rand(200) * 1000,
+            }
+        )
         cd = bt.build_coin_data(df, t=150, symbol_key="BTC-USDT")
         ss = bt.build_system_state(df, t=150)
 
         os.environ["FUND_7ENGINES_BOOST"] = "1"
         os.environ["ODAILY_ENGINE_BOOST"] = "1"
         from five_domain_feature_computer import FiveDomainFeatureComputer
+
         computer = FiveDomainFeatureComputer(enable=True)
         computer._fetch_news_72h_limit200 = lambda *a, **kw: list(_MOCK_NEWS_LIST)
 
@@ -111,18 +119,21 @@ class TestP0BacktestEngine:
     def test_tc6_nav_curve(self):
         """TC-6：净值曲线 nav[0]=1.0，单调连续，无 NaN。"""
         dates = pd.date_range("2026-01-01", periods=300, freq="1H")
-        df = pd.DataFrame({
-            "ts": [int(d.timestamp() * 1000) for d in dates],
-            "open": np.linspace(100, 200, 300),
-            "high": np.linspace(105, 205, 300),
-            "low": np.linspace(95, 195, 300),
-            "close": np.linspace(100, 200, 300) + np.sin(np.arange(300) * 0.1) * 5,
-            "vol": np.random.rand(300) * 1000,
-        })
+        df = pd.DataFrame(
+            {
+                "ts": [int(d.timestamp() * 1000) for d in dates],
+                "open": np.linspace(100, 200, 300),
+                "high": np.linspace(105, 205, 300),
+                "low": np.linspace(95, 195, 300),
+                "close": np.linspace(100, 200, 300) + np.sin(np.arange(300) * 0.1) * 5,
+                "vol": np.random.rand(300) * 1000,
+            }
+        )
 
         os.environ["FUND_7ENGINES_BOOST"] = "1"
         os.environ["ODAILY_ENGINE_BOOST"] = "1"
         from five_domain_feature_computer import FiveDomainFeatureComputer
+
         computer = FiveDomainFeatureComputer(enable=True)
         computer._fetch_news_72h_limit200 = lambda *a, **kw: list(_MOCK_NEWS_LIST)
 
@@ -138,18 +149,21 @@ class TestP0BacktestEngine:
     def test_tc7_empyrical_metrics(self):
         """TC-7：empyrical 指标计算，返回含 sharpe/max_drawdown/calmar，无 NaN。"""
         dates = pd.date_range("2026-01-01", periods=300, freq="1H")
-        df = pd.DataFrame({
-            "ts": [int(d.timestamp() * 1000) for d in dates],
-            "open": np.linspace(100, 200, 300),
-            "high": np.linspace(105, 205, 300),
-            "low": np.linspace(95, 195, 300),
-            "close": np.linspace(100, 200, 300) + np.sin(np.arange(300) * 0.1) * 5,
-            "vol": np.random.rand(300) * 1000,
-        })
+        df = pd.DataFrame(
+            {
+                "ts": [int(d.timestamp() * 1000) for d in dates],
+                "open": np.linspace(100, 200, 300),
+                "high": np.linspace(105, 205, 300),
+                "low": np.linspace(95, 195, 300),
+                "close": np.linspace(100, 200, 300) + np.sin(np.arange(300) * 0.1) * 5,
+                "vol": np.random.rand(300) * 1000,
+            }
+        )
 
         os.environ["FUND_7ENGINES_BOOST"] = "1"
         os.environ["ODAILY_ENGINE_BOOST"] = "1"
         from five_domain_feature_computer import FiveDomainFeatureComputer
+
         computer = FiveDomainFeatureComputer(enable=True)
         computer._fetch_news_72h_limit200 = lambda *a, **kw: list(_MOCK_NEWS_LIST)
 
@@ -169,18 +183,21 @@ class TestP0BacktestEngine:
     def test_tc8_report_generation(self, tmp_path):
         """TC-8：报告生成，JSON 含全部指标 + CSV 净值曲线可读。"""
         dates = pd.date_range("2026-01-01", periods=300, freq="1H")
-        df = pd.DataFrame({
-            "ts": [int(d.timestamp() * 1000) for d in dates],
-            "open": np.linspace(100, 200, 300),
-            "high": np.linspace(105, 205, 300),
-            "low": np.linspace(95, 195, 300),
-            "close": np.linspace(100, 200, 300) + np.sin(np.arange(300) * 0.1) * 5,
-            "vol": np.random.rand(300) * 1000,
-        })
+        df = pd.DataFrame(
+            {
+                "ts": [int(d.timestamp() * 1000) for d in dates],
+                "open": np.linspace(100, 200, 300),
+                "high": np.linspace(105, 205, 300),
+                "low": np.linspace(95, 195, 300),
+                "close": np.linspace(100, 200, 300) + np.sin(np.arange(300) * 0.1) * 5,
+                "vol": np.random.rand(300) * 1000,
+            }
+        )
 
         os.environ["FUND_7ENGINES_BOOST"] = "1"
         os.environ["ODAILY_ENGINE_BOOST"] = "1"
         from five_domain_feature_computer import FiveDomainFeatureComputer
+
         computer = FiveDomainFeatureComputer(enable=True)
         computer._fetch_news_72h_limit200 = lambda *a, **kw: list(_MOCK_NEWS_LIST)
 
@@ -200,6 +217,7 @@ class TestP0BacktestEngine:
 
         # CSV 可读
         import glob
+
         csv_files = glob.glob(str(tmp_path / "*nav_curve*.csv"))
         assert len(csv_files) == 1, f"应生成 1 个 CSV，实际 {len(csv_files)}"
         nav_df = pd.read_csv(csv_files[0])

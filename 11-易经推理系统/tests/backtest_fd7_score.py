@@ -8,6 +8,7 @@
 - 生产注入红线 enable_fundamental_7engines_production_injection = False（不触碰）
 - mock news_list 保证 7 引擎 S 级可计算
 """
+
 from __future__ import annotations
 
 import json
@@ -15,7 +16,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
@@ -23,7 +24,7 @@ import requests
 
 # empyrical 指标
 try:
-    from empyrical import (
+    from empyrical import (  # noqa: I001
         sharpe_ratio,
         sortino_ratio,
         max_drawdown,
@@ -33,6 +34,7 @@ try:
         tail_ratio,
         omega_ratio,
     )
+
     HAS_EMPYRICAL = True
 except ImportError:
     HAS_EMPYRICAL = False
@@ -49,26 +51,46 @@ if str(_REPO) not in sys.path:
 
 # 固定 mock news_list（2正 + 2负 + 1中性，覆盖 BTC/ETH/SOL）
 _MOCK_NEWS_LIST: List[Dict[str, Any]] = [
-    {"source": "odaily", "category": "news", "sub_category": "btc",
-     "title": "BTC突破历史新高机构持续买入",
-     "content": "比特币今日大幅上涨突破关键阻力位，多家机构宣布增持BTC资产",
-     "timestamp_ms": 1700000000000},
-    {"source": "odaily", "category": "news", "sub_category": "eth",
-     "title": "ETH网络升级利好DeFi生态繁荣",
-     "content": "以太坊完成重要网络升级，Gas费用大幅降低，DeFi TVL创新高",
-     "timestamp_ms": 1700000001000},
-    {"source": "odaily", "category": "news", "sub_category": "sol",
-     "title": "SOL网络宕机引发市场恐慌",
-     "content": "Solana网络再次出现宕机，用户抱怨交易无法确认，价格大幅下挫",
-     "timestamp_ms": 1700000002000},
-    {"source": "odaily", "category": "news", "sub_category": "btc",
-     "title": "监管机构对加密货币展开新一轮调查",
-     "content": "某国监管机构宣布对主要加密货币交易所展开调查，市场情绪转冷",
-     "timestamp_ms": 1700000003000},
-    {"source": "odaily", "category": "news", "sub_category": "market",
-     "title": "加密市场横盘整理等待方向选择",
-     "content": "今日加密货币市场整体波动不大，各大标的横盘整理",
-     "timestamp_ms": 1700000004000},
+    {
+        "source": "odaily",
+        "category": "news",
+        "sub_category": "btc",
+        "title": "BTC突破历史新高机构持续买入",
+        "content": "比特币今日大幅上涨突破关键阻力位，多家机构宣布增持BTC资产",
+        "timestamp_ms": 1700000000000,
+    },
+    {
+        "source": "odaily",
+        "category": "news",
+        "sub_category": "eth",
+        "title": "ETH网络升级利好DeFi生态繁荣",
+        "content": "以太坊完成重要网络升级，Gas费用大幅降低，DeFi TVL创新高",
+        "timestamp_ms": 1700000001000,
+    },
+    {
+        "source": "odaily",
+        "category": "news",
+        "sub_category": "sol",
+        "title": "SOL网络宕机引发市场恐慌",
+        "content": "Solana网络再次出现宕机，用户抱怨交易无法确认，价格大幅下挫",
+        "timestamp_ms": 1700000002000,
+    },
+    {
+        "source": "odaily",
+        "category": "news",
+        "sub_category": "btc",
+        "title": "监管机构对加密货币展开新一轮调查",
+        "content": "某国监管机构宣布对主要加密货币交易所展开调查，市场情绪转冷",
+        "timestamp_ms": 1700000003000,
+    },
+    {
+        "source": "odaily",
+        "category": "news",
+        "sub_category": "market",
+        "title": "加密市场横盘整理等待方向选择",
+        "content": "今日加密货币市场整体波动不大，各大标的横盘整理",
+        "timestamp_ms": 1700000004000,
+    },
 ]
 
 
@@ -113,7 +135,20 @@ class FD7ScoreBacktester:
         if not all_candles:
             return pd.DataFrame()
         # OKX 返回最新在前，反转为时间正序
-        df = pd.DataFrame(all_candles, columns=["ts", "open", "high", "low", "close", "vol", "volCcy", "volCcyQuote", "confirm"])
+        df = pd.DataFrame(
+            all_candles,
+            columns=[
+                "ts",
+                "open",
+                "high",
+                "low",
+                "close",
+                "vol",
+                "volCcy",
+                "volCcyQuote",
+                "confirm",
+            ],
+        )
         df = df[["ts", "open", "high", "low", "close", "vol"]].copy()
         for col in ["open", "high", "low", "close", "vol"]:
             df[col] = pd.to_numeric(df[col], errors="coerce")
@@ -134,7 +169,9 @@ class FD7ScoreBacktester:
         return 100 - (100 / (1 + rs))
 
     @staticmethod
-    def _compute_macd(close: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> pd.Series:
+    def _compute_macd(
+        close: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9
+    ) -> pd.Series:
         ema_fast = close.ewm(span=fast, adjust=False).mean()
         ema_slow = close.ewm(span=slow, adjust=False).mean()
         macd_line = ema_fast - ema_slow
@@ -148,12 +185,17 @@ class FD7ScoreBacktester:
         return ma + std_mult * sd, ma - std_mult * sd
 
     @staticmethod
-    def _compute_atr(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> pd.Series:
-        tr = pd.concat([
-            high - low,
-            (high - close.shift(1)).abs(),
-            (low - close.shift(1)).abs(),
-        ], axis=1).max(axis=1)
+    def _compute_atr(
+        high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14
+    ) -> pd.Series:
+        tr = pd.concat(
+            [
+                high - low,
+                (high - close.shift(1)).abs(),
+                (low - close.shift(1)).abs(),
+            ],
+            axis=1,
+        ).max(axis=1)
         return tr.rolling(window=period).mean()
 
     # ── 3. coin_data / system_state 构造 ──
@@ -162,7 +204,7 @@ class FD7ScoreBacktester:
         """用 [0, t] 区间数据构造 coin_data（PIT 防泄漏）。"""
         if t < 60:
             return {}
-        sub = df.iloc[:t + 1].copy()
+        sub = df.iloc[: t + 1].copy()
         close = sub["close"]
         high = sub["high"]
         low = sub["low"]
@@ -194,12 +236,20 @@ class FD7ScoreBacktester:
             "stablecoin_mcap_bln": close_val * 0.3,
             "policy_sentiment_score": max(0.0, min(1.0, rsi_val / 100.0)),
             "stablecoin_change_rate": pct_24h_val,
-            "cycle4y_t_rel": max(0.0, min(1.0, (close_val - ma60_val) / ma60_val + 0.5)) if ma60_val > 0 else 0.5,
+            "cycle4y_t_rel": (
+                max(0.0, min(1.0, (close_val - ma60_val) / ma60_val + 0.5)) if ma60_val > 0 else 0.5
+            ),
             "atr": atr_val,
-            "atr_percentile": max(0.0, min(1.0, atr_val / (close_val * 0.05))) if close_val > 0 else 0.5,
-            "spring_force_score": max(0.0, min(1.0, (boll_u - boll_l) / close_val)) if close_val > 0 else 0.5,
+            "atr_percentile": (
+                max(0.0, min(1.0, atr_val / (close_val * 0.05))) if close_val > 0 else 0.5
+            ),
+            "spring_force_score": (
+                max(0.0, min(1.0, (boll_u - boll_l) / close_val)) if close_val > 0 else 0.5
+            ),
             "regime": 1 if ma20_val > ma60_val else (-1 if ma20_val < ma60_val else 0),
-            "price_amplitude": max(0.0, min(1.0, (boll_u - boll_l) / close_val * 10)) if close_val > 0 else 0.0,
+            "price_amplitude": (
+                max(0.0, min(1.0, (boll_u - boll_l) / close_val * 10)) if close_val > 0 else 0.0
+            ),
             # ── per-symbol 技术指标 ──
             symbol_key: {
                 "close": close_val,
@@ -221,7 +271,7 @@ class FD7ScoreBacktester:
         """用 [t-30, t-1] 窗口构造 system_state。"""
         if t < 31:
             return {"win_rate": 0.5, "profit_factor": 1.0, "factor_coverage_pct": 0.85}
-        window = df.iloc[t - 30:t]
+        window = df.iloc[t - 30 : t]
         returns = window["close"].pct_change().dropna()
         wins = returns[returns > 0]
         losses = returns[returns < 0]
@@ -258,6 +308,7 @@ class FD7ScoreBacktester:
         # 初始化 FiveDomainFeatureComputer
         if computer is None:
             from five_domain_feature_computer import FiveDomainFeatureComputer
+
             os.environ["FUND_7ENGINES_BOOST"] = "1"
             os.environ["ODAILY_ENGINE_BOOST"] = "1"
             computer = FiveDomainFeatureComputer(enable=True)
@@ -300,7 +351,7 @@ class FD7ScoreBacktester:
             nav_curve.append(nav_curve[-1] * (1.0 + bar_return))
 
         returns_arr = np.array(returns)
-        nav_arr = np.array(nav_curve)
+        nav_arr = np.array(nav_curve)  # noqa: F841
 
         # empyrical 指标
         emp_metrics = {}
@@ -374,17 +425,21 @@ class FD7ScoreBacktester:
         symbol_lower = self.symbol.lower()
 
         # JSON 报告（不含大数组，避免文件过大）
-        report = {k: v for k, v in results.items() if k not in ("nav_curve", "dao_scores", "signals")}
+        report = {
+            k: v for k, v in results.items() if k not in ("nav_curve", "dao_scores", "signals")
+        }
         json_path = os.path.join(output_dir, f"{symbol_lower}_backtest_{date_str}.json")
         with open(json_path, "w") as f:
             json.dump(report, f, indent=2, ensure_ascii=False)
 
         # CSV 净值曲线
         csv_path = os.path.join(output_dir, f"{symbol_lower}_nav_curve_{date_str}.csv")
-        nav_df = pd.DataFrame({
-            "bar": range(len(results.get("nav_curve", []))),
-            "nav": results.get("nav_curve", []),
-        })
+        nav_df = pd.DataFrame(
+            {
+                "bar": range(len(results.get("nav_curve", []))),
+                "nav": results.get("nav_curve", []),
+            }
+        )
         nav_df.to_csv(csv_path, index=False)
 
         return json_path

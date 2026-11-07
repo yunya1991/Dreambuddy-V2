@@ -11,15 +11,14 @@
 - optimization_log 记录每个信号的优化轨迹
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from typing import Any, Dict, List
 
-import pytest
 
 from dreamos.capabilities.trading.nodes.c5_param_optimize import C5ParamOptimizeNode
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 
 def _make_signal(

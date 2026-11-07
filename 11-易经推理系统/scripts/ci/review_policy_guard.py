@@ -7,7 +7,9 @@ from pathlib import Path
 from typing import Iterable, Tuple
 
 
-def review_policy_check(author_login: str, owner_login: str, review_states: Iterable[str]) -> Tuple[bool, str]:
+def review_policy_check(
+    author_login: str, owner_login: str, review_states: Iterable[str]
+) -> Tuple[bool, str]:
     if author_login == owner_login:
         return True, "owner bypass: no manual approval required"
 

@@ -25,12 +25,12 @@ TDD 覆盖:
   - T1 BTCRegimeDetector (本会话, 输出 3 态 regime)
   - 调研 spec VM-1791190210830 §方案 A 步骤 2
 """
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
-import numpy as np
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
@@ -48,9 +48,7 @@ def test_drift_net_init_supports_n_regimes():
     from dreambuddy_evolution.core.neural_sde_model import _PathSignatureDriftNet
 
     net = _PathSignatureDriftNet()
-    assert getattr(net, "n_regimes", None) == 3, (
-        "默认 n_regimes 应为 3 (bull/chop/bear)"
-    )
+    assert getattr(net, "n_regimes", None) == 3, "默认 n_regimes 应为 3 (bull/chop/bear)"
 
     net_custom = _PathSignatureDriftNet(n_regimes=5)
     assert net_custom.n_regimes == 5
@@ -68,8 +66,8 @@ def test_drift_net_in_dim_includes_regime():
     新: 3 + 15 + 3 = 21 (含 regime one-hot)
     """
     from dreambuddy_evolution.core.neural_sde_model import (
-        _PathSignatureDriftNet,
         DEFAULT_SIG_DIM,
+        _PathSignatureDriftNet,
     )
 
     net = _PathSignatureDriftNet()
@@ -198,7 +196,7 @@ def test_drift_net_save_load_preserves_n_regimes(tmp_path):
     新模型保存后 reload n_regimes 应保持.
     """
     try:
-        import torch
+        import torch  # noqa: F401
     except ImportError:
         pytest.skip("torch not available")
 
@@ -212,6 +210,4 @@ def test_drift_net_save_load_preserves_n_regimes(tmp_path):
     model2 = NeuralSDEModel(device="cpu")
     loaded = model2.load(str(save_path))
     assert loaded, "load 应成功"
-    assert getattr(model2.drift_net, "n_regimes", 0) == 3, (
-        "load 后 drift_net.n_regimes 应保留为 3"
-    )
+    assert getattr(model2.drift_net, "n_regimes", 0) == 3, "load 后 drift_net.n_regimes 应保留为 3"

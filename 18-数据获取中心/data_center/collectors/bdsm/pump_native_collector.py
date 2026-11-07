@@ -16,6 +16,7 @@ SSR 页面，requests 可直接获取 HTML 含完整数据（2MB，224 script ta
 
 FAIL-OPEN: 网络异常/解析失败 → 返回空列表，不抛异常。
 """
+
 from __future__ import annotations
 
 import logging
@@ -98,7 +99,7 @@ def _extract_metric(html: str, label: str, parser=_parse_money) -> float:
     idx = text.find(label)
     if idx < 0:
         return 0.0
-    snippet = text[idx: idx + 200]
+    snippet = text[idx : idx + 200]
     return parser(snippet)
 
 
@@ -119,11 +120,11 @@ def _parse_daily_table(text: str) -> list[dict]:
     timeseries = []
     row_re = re.compile(
         r"((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s*\d{4})\s+"
-        r"([\d.]+[MBK]?)\s+"   # PUMP burned
-        r"([\d.]+[MBK]?)\s+"   # SOL spent
+        r"([\d.]+[MBK]?)\s+"  # PUMP burned
+        r"([\d.]+[MBK]?)\s+"  # SOL spent
         r"\$\s*([\d.]+[MBK]?)\s+"  # USD
-        r"\$\s*([\d.]+)\s+"   # Price ($ 后可能有空格)
-        r"([\d.]+)\s*%",       # % of revenue
+        r"\$\s*([\d.]+)\s+"  # Price ($ 后可能有空格)
+        r"([\d.]+)\s*%",  # % of revenue
         re.IGNORECASE,
     )
     for m in row_re.finditer(text):
@@ -134,14 +135,16 @@ def _parse_daily_table(text: str) -> list[dict]:
             usd = _parse_money("$" + m.group(4))
             price = float(m.group(5))
             revenue_pct = float(m.group(6))
-            timeseries.append({
-                "date": date_str,
-                "pump_burned": pump_burned,
-                "sol_spent": sol_spent,
-                "usd": usd,
-                "price": price,
-                "revenue_pct": revenue_pct,
-            })
+            timeseries.append(
+                {
+                    "date": date_str,
+                    "pump_burned": pump_burned,
+                    "sol_spent": sol_spent,
+                    "usd": usd,
+                    "price": price,
+                    "revenue_pct": revenue_pct,
+                }
+            )
         except (ValueError, IndexError):
             continue
     return timeseries
@@ -159,9 +162,7 @@ class PumpNativeCollector(BaseCollector):
     def fetch(self, params: dict) -> list[DataRecord]:
         """爬取 pump.fun/pump-token，返回 DataRecord 列表。"""
         try:
-            resp = requests.get(
-                _PUMP_URL, headers=_HTTP_HEADERS, timeout=_HTTP_TIMEOUT
-            )
+            resp = requests.get(_PUMP_URL, headers=_HTTP_HEADERS, timeout=_HTTP_TIMEOUT)
             resp.raise_for_status()
             html = resp.text
         except Exception as exc:
@@ -181,9 +182,7 @@ class PumpNativeCollector(BaseCollector):
                 text, r"Annualized revenue\s+\$([\d.]+[KMB])"
             ),
             # ≈ $1.20M / day
-            "daily_revenue_avg_usd": _extract_by_pattern(
-                text, r"≈\s*\$([\d.]+[KMB])\s*/\s*day"
-            ),
+            "daily_revenue_avg_usd": _extract_by_pattern(text, r"≈\s*\$([\d.]+[KMB])\s*/\s*day"),
             # Cumulative buybacks $445.43M
             "total_buyback_burned_usd": _extract_by_pattern(
                 text, r"Cumulative buybacks\s+\$([\d.]+[KMB])"
@@ -194,17 +193,14 @@ class PumpNativeCollector(BaseCollector):
             ),
             # 16.354% (后跟 163.54B $PUMP removed)
             "total_supply_offset_pct": _extract_by_pattern(
-                text, r"([\d.]+)%\s*[\d.]+[BMK]?\s*\$?PUMP\s+removed",
+                text,
+                r"([\d.]+)%\s*[\d.]+[BMK]?\s*\$?PUMP\s+removed",
                 parser=lambda s: float(s) if s else 0.0,
             ),
             # $PUMP price $0.004391
-            "pump_price_usd": _extract_by_pattern(
-                text, r"\$PUMP\s+price\s+\$([\d.]+)"
-            ),
+            "pump_price_usd": _extract_by_pattern(text, r"\$PUMP\s+price\s+\$([\d.]+)"),
             # $PUMP FDV $4.72B
-            "pump_fdv_usd": _extract_by_pattern(
-                text, r"FDV\s+\$([\d.]+[KMB])"
-            ),
+            "pump_fdv_usd": _extract_by_pattern(text, r"FDV\s+\$([\d.]+[KMB])"),
             # Active wallets Solana 815.7K
             "daily_active_wallets_solana": _extract_by_pattern(
                 text, r"Solana\s+([\d.]+[KM])", parser=_parse_number

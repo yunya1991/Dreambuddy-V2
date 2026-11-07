@@ -9,9 +9,13 @@ SPEC v1.2-rc1 §3 Layer 1: Adjudication
 - FAIL-OPEN: 无 LLM 或异常时返回降级结果
 - 与 Verdict 共存 (m6): 在 Verdict 之后异步执行
 """
+
 from __future__ import annotations
-import json, os, sys, unittest
-from unittest.mock import MagicMock, patch
+
+import json
+import os
+import sys
+import unittest
 
 SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
 if SERVER_DIR not in sys.path:
@@ -20,41 +24,63 @@ if SERVER_DIR not in sys.path:
 
 # ── mock LLM ──────────────────────────────────────────────────
 
+
 def _make_adjudication_llm():
     """创建 mock LLM，返回6维评分 JSON。"""
-    score_json = json.dumps({
-        "bull": {
-            "clarity": 4, "arrangement": 3, "topic_relevance": 5,
-            "emotional_appeal": 3, "fact_authenticity": 4, "logical_validity": 4,
-        },
-        "bear": {
-            "clarity": 3, "arrangement": 4, "topic_relevance": 4,
-            "emotional_appeal": 2, "fact_authenticity": 3, "logical_validity": 3,
-        },
-        "rfd": "正方在事实真实性和话题切题维度领先，反方论点编排更优但情感诉求不足。",
-        "key_clash_points": ["稀缺性vs波动性", "数字黄金定义之争"],
-    })
+    score_json = json.dumps(
+        {
+            "bull": {
+                "clarity": 4,
+                "arrangement": 3,
+                "topic_relevance": 5,
+                "emotional_appeal": 3,
+                "fact_authenticity": 4,
+                "logical_validity": 4,
+            },
+            "bear": {
+                "clarity": 3,
+                "arrangement": 4,
+                "topic_relevance": 4,
+                "emotional_appeal": 2,
+                "fact_authenticity": 3,
+                "logical_validity": 3,
+            },
+            "rfd": "正方在事实真实性和话题切题维度领先，反方论点编排更优但情感诉求不足。",
+            "key_clash_points": ["稀缺性vs波动性", "数字黄金定义之争"],
+        }
+    )
 
     def llm_fn(prompt, max_tokens=600):
         return score_json
+
     return llm_fn
 
 
 def _make_transcript():
     """创建 mock 辩论 transcript。"""
     return [
-        {"speaker": "bull", "round": 1, "content": {
-            "thesis": "BTC 稀缺性决定长期价值",
-            "arguments": ["2100万枚上限", "减半周期", "机构采用"],
-            "quote": "数字黄金不是投机",
-            "confidence": 0.85,
-        }, "persona": "乐观分析师"},
-        {"speaker": "bear", "round": 1, "content": {
-            "thesis": "BTC 波动性远超黄金",
-            "arguments": ["单日波动可达20%", "与风险资产高相关"],
-            "quote": "黄金一天跌20%就不是黄金了",
-            "confidence": 0.72,
-        }, "persona": "谨慎风控师"},
+        {
+            "speaker": "bull",
+            "round": 1,
+            "content": {
+                "thesis": "BTC 稀缺性决定长期价值",
+                "arguments": ["2100万枚上限", "减半周期", "机构采用"],
+                "quote": "数字黄金不是投机",
+                "confidence": 0.85,
+            },
+            "persona": "乐观分析师",
+        },
+        {
+            "speaker": "bear",
+            "round": 1,
+            "content": {
+                "thesis": "BTC 波动性远超黄金",
+                "arguments": ["单日波动可达20%", "与风险资产高相关"],
+                "quote": "黄金一天跌20%就不是黄金了",
+                "confidence": 0.72,
+            },
+            "persona": "谨慎风控师",
+        },
     ]
 
 
@@ -69,6 +95,7 @@ def _make_verdict():
 
 
 # ── Tests ─────────────────────────────────────────────────────
+
 
 class TestImport(unittest.TestCase):
     """RED: adjudicator 模块可导入。"""
@@ -86,6 +113,7 @@ class TestAdjudicationResult(unittest.TestCase):
     def test_has_six_dimension_fields(self):
         """6维评分字段存在。"""
         from adjudicator import AdjudicationResult
+
         result = AdjudicationResult(
             topic="测试话题",
             bull_turn_scores=[],
@@ -108,6 +136,7 @@ class TestAdjudicationResult(unittest.TestCase):
     def test_to_dict_serializable(self):
         """AdjudicationResult 可序列化为 JSON。"""
         from adjudicator import AdjudicationResult
+
         result = AdjudicationResult(
             topic="测试",
             bull_turn_scores=[{"turn": 1, "clarity": 4}],
@@ -134,7 +163,8 @@ class TestAdjudicate(unittest.TestCase):
 
     def test_adjudicate_returns_result(self):
         """adjudicate 返回 AdjudicationResult。"""
-        from adjudicator import Adjudicator, AdjudicationResult
+        from adjudicator import AdjudicationResult, Adjudicator
+
         adj = Adjudicator(llm_fn=_make_adjudication_llm())
         result = adj.adjudicate(
             topic="BTC是数字黄金",
@@ -146,6 +176,7 @@ class TestAdjudicate(unittest.TestCase):
     def test_six_dimensions_scored(self):
         """6维评分均完成，每维 1-5 分。"""
         from adjudicator import Adjudicator
+
         adj = Adjudicator(llm_fn=_make_adjudication_llm())
         result = adj.adjudicate(
             topic="BTC是数字黄金",
@@ -154,8 +185,14 @@ class TestAdjudicate(unittest.TestCase):
         )
         # 6维应该都在 dimension_comparison 中
         dims = result.dimension_comparison
-        for dim in ["clarity", "arrangement", "topic_relevance",
-                     "emotional_appeal", "fact_authenticity", "logical_validity"]:
+        for dim in [
+            "clarity",
+            "arrangement",
+            "topic_relevance",
+            "emotional_appeal",
+            "fact_authenticity",
+            "logical_validity",
+        ]:
             self.assertIn(dim, dims, f"维度 {dim} 缺失")
             self.assertIn("bull", dims[dim])
             self.assertIn("bear", dims[dim])
@@ -165,6 +202,7 @@ class TestAdjudicate(unittest.TestCase):
     def test_winner_determined_by_total(self):
         """胜方由总分决定。"""
         from adjudicator import Adjudicator
+
         adj = Adjudicator(llm_fn=_make_adjudication_llm())
         result = adj.adjudicate(
             topic="BTC是数字黄金",
@@ -176,6 +214,7 @@ class TestAdjudicate(unittest.TestCase):
     def test_rfd_generated(self):
         """RFD (Reason for Decision) 已生成。"""
         from adjudicator import Adjudicator
+
         adj = Adjudicator(llm_fn=_make_adjudication_llm())
         result = adj.adjudicate(
             topic="BTC是数字黄金",
@@ -189,6 +228,7 @@ class TestAdjudicate(unittest.TestCase):
     def test_key_clash_points_extracted(self):
         """关键交锋点已提取。"""
         from adjudicator import Adjudicator
+
         adj = Adjudicator(llm_fn=_make_adjudication_llm())
         result = adj.adjudicate(
             topic="BTC是数字黄金",
@@ -201,6 +241,7 @@ class TestAdjudicate(unittest.TestCase):
     def test_bull_total_in_range(self):
         """总分在 6-30 范围内。"""
         from adjudicator import Adjudicator
+
         adj = Adjudicator(llm_fn=_make_adjudication_llm())
         result = adj.adjudicate(
             topic="BTC是数字黄金",
@@ -218,7 +259,8 @@ class TestFailOpen(unittest.TestCase):
 
     def test_no_llm_returns_degraded(self):
         """无 LLM 时返回降级结果。"""
-        from adjudicator import Adjudicator, AdjudicationResult
+        from adjudicator import AdjudicationResult, Adjudicator
+
         adj = Adjudicator(llm_fn=None)
         result = adj.adjudicate(
             topic="BTC是数字黄金",
@@ -231,7 +273,7 @@ class TestFailOpen(unittest.TestCase):
 
     def test_llm_exception_returns_degraded(self):
         """LLM 抛异常时返回降级结果。"""
-        from adjudicator import Adjudicator, AdjudicationResult
+        from adjudicator import AdjudicationResult, Adjudicator
 
         def bad_llm(prompt, max_tokens=600):
             raise RuntimeError("LLM 调用失败")
@@ -248,7 +290,7 @@ class TestFailOpen(unittest.TestCase):
 
     def test_llm_returns_garbage_returns_degraded(self):
         """LLM 返回无法解析的内容时降级。"""
-        from adjudicator import Adjudicator, AdjudicationResult
+        from adjudicator import AdjudicationResult, Adjudicator
 
         def garbage_llm(prompt, max_tokens=600):
             return "这不是JSON"
@@ -268,6 +310,7 @@ class TestBiasDeclaration(unittest.TestCase):
     def test_prompt_contains_bias_warning(self):
         """评分 Prompt 包含自评偏差声明。"""
         from adjudicator import ADJUDICATION_PROMPT
+
         self.assertIn("独立裁判", ADJUDICATION_PROMPT)
         self.assertIn("不是辩手", ADJUDICATION_PROMPT)
 
@@ -278,6 +321,7 @@ class TestVerdictCoexistence(unittest.TestCase):
     def test_uses_verdict_winner_as_fallback(self):
         """FAIL-OPEN 降级时使用 Verdict 的 winner。"""
         from adjudicator import Adjudicator
+
         adj = Adjudicator(llm_fn=None)
         result = adj.adjudicate(
             topic="BTC是数字黄金",

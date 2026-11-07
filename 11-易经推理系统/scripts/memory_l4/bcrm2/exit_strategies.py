@@ -11,9 +11,10 @@ Spec: docs/superpowers/specs/2026-08-20-exit-manager-design.md
   50: RankedTpStrategy           — 排名止盈 A/B/C 三档
   60: EvAdjustStrategy           — EV 雷达调整（移动止盈/收紧止损）
 """
+
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from .exit_manager import ExitContext, ExitDecision, ExitStrategy
 
@@ -28,6 +29,7 @@ except Exception:  # FAIL-OPEN: washout 模块不可用时降级
 # 原位置: polling_trader.py L5676-5732
 # 触发条件: early_exit_signal + 保护期浮亏阈值 + N次确认
 # ================================================================
+
 
 class P3EarlyExitStrategy(ExitStrategy):
     """P3 提前退出策略。
@@ -181,6 +183,7 @@ class WashoutHoldStrategy(ExitStrategy):
 # 触发条件: pos_side != direction + 置信度 >= threshold + 2次确认
 # ================================================================
 
+
 class SignalReverseStrategy(ExitStrategy):
     """信号反转策略。
 
@@ -220,8 +223,9 @@ class SignalReverseStrategy(ExitStrategy):
         self.protected_margin_multiplier = protected_margin_multiplier
         self._confirm_counts: Dict[str, int] = {}
 
-    def _reverse_threshold(self, in_protection: bool,
-                           effective_threshold: Optional[float] = None) -> float:
+    def _reverse_threshold(
+        self, in_protection: bool, effective_threshold: Optional[float] = None
+    ) -> float:
         """计算当前反转置信度阈值（含硬下限）。"""
         base = effective_threshold if effective_threshold is not None else self.base_threshold
         # Step 1: 应用保护期抬升（原逻辑）
@@ -243,13 +247,17 @@ class SignalReverseStrategy(ExitStrategy):
             return self.reverse_confidence_margin * self.protected_margin_multiplier
         return self.reverse_confidence_margin
 
-    def _is_reverse(self, pos_side: str, direction: str,
-                    confidence: float, threshold: float,
-                    in_protection: bool = False) -> bool:
+    def _is_reverse(
+        self,
+        pos_side: str,
+        direction: str,
+        confidence: float,
+        threshold: float,
+        in_protection: bool = False,
+    ) -> bool:
         """判断是否构成反转信号（含余量检查）。"""
-        opposite = (
-            (pos_side == "long" and direction == "DOWN")
-            or (pos_side == "short" and direction == "UP")
+        opposite = (pos_side == "long" and direction == "DOWN") or (
+            pos_side == "short" and direction == "UP"
         )
         if not opposite:
             return False
@@ -265,12 +273,11 @@ class SignalReverseStrategy(ExitStrategy):
         pos_side = ctx.pos_info.get("pos_side", "")
         direction = ctx.inference.get("direction", "")
         confidence = float(ctx.confidence or 0.0)
-        threshold = self._reverse_threshold(
-            ctx.in_protection, ctx.effective_threshold)
+        threshold = self._reverse_threshold(ctx.in_protection, ctx.effective_threshold)
 
-        if not self._is_reverse(pos_side, direction,
-                                confidence, threshold,
-                                in_protection=ctx.in_protection):
+        if not self._is_reverse(
+            pos_side, direction, confidence, threshold, in_protection=ctx.in_protection
+        ):
             # 反转条件不再满足：清除累计确认状态
             self._confirm_counts.pop(ctx.coin, None)
             return ExitDecision.pass_()
@@ -298,6 +305,7 @@ class SignalReverseStrategy(ExitStrategy):
 # 触发条件: ev < force_below + 非保护期 + 2次确认
 # BCRM2 spec: enabled = S2 (enable_ev_radar)
 # ================================================================
+
 
 class EvForceCloseStrategy(ExitStrategy):
     """EV 雷达强制离场策略。
@@ -354,6 +362,7 @@ class EvForceCloseStrategy(ExitStrategy):
 # 原位置: polling_trader.py L5887-5965
 # 触发条件: age > 29h + 盈利 + 有更强信号候选
 # ================================================================
+
 
 class TimeoutProfitSwitchStrategy(ExitStrategy):
     """超时止盈换仓策略。
@@ -443,6 +452,7 @@ class TimeoutProfitSwitchStrategy(ExitStrategy):
 # BCRM2 spec: enabled = S4 (enable_ranked_tp)
 # ================================================================
 
+
 class RankedTpStrategy(ExitStrategy):
     """排名止盈 A/B/C 三档策略。
 
@@ -485,9 +495,12 @@ class RankedTpStrategy(ExitStrategy):
             )
 
         # ── B 档：gap 不够但持仓老 + 有盈利 → 写 reduce_plan ──
-        if (not ctx.in_protection and upl > 0
-                and ctx.age_hours >= self.b_tier_age_threshold
-                and gap_ratio > 0):
+        if (
+            not ctx.in_protection
+            and upl > 0
+            and ctx.age_hours >= self.b_tier_age_threshold
+            and gap_ratio > 0
+        ):
             return ExitDecision(
                 action="adjust_sl_tp",
                 reason="ranked_tp_b",
@@ -511,6 +524,7 @@ class RankedTpStrategy(ExitStrategy):
 # 触发条件: T2 WARN(收紧) / T4 STRONG_HOLD(放宽) / T3 NORMAL(无动作)
 # BCRM2 spec: enabled = S2 (enable_ev_radar)
 # ================================================================
+
 
 class EvAdjustStrategy(ExitStrategy):
     """EV 雷达调整（移动止盈）策略。

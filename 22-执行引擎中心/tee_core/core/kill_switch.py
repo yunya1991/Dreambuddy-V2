@@ -24,14 +24,14 @@ exchange. Side effects (cancel orders + market close-out) are documented
 via ``REJECT_SLIPPAGE_TOO_HIGH`` / ``KILL_SWITCH_TRIGGERED`` sentinel
 reason strings that engine + algorithms match on.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, Tuple
 
+from ..core.contract import EstimateResult
 from . import config as _cfg
-from ..core.contract import EstimateResult, ParentRequest
-
 
 # ── sentinel reason strings shared with audit_cb log consumers ────────
 REJECT_SLIPPAGE_TOO_HIGH: str = "REJECT_SLIPPAGE_TOO_HIGH"
@@ -41,6 +41,7 @@ KILL_SWITCH_TRIGGERED: str = "KILL_SWITCH_TRIGGERED"
 @dataclass
 class CloseOutSuggestion:
     """Recommended close-out market order parameters."""
+
     ord_type: str = "market"
     tag: str = "tee_kill_closeout"
     reason: str = KILL_SWITCH_TRIGGERED
@@ -86,7 +87,7 @@ class KillSwitch:
     # ── Tier 1: pre-trade gate (AC-3) ─────────────────────────────────
     def check_pre(
         self,
-        parent_req: Any,   # ParentRequest or dict — both OK
+        parent_req: Any,  # ParentRequest or dict — both OK
         estimate_result: EstimateResult,
         max_bps: Optional[float] = None,
     ) -> Tuple[bool, Optional[str]]:
@@ -106,17 +107,18 @@ class KillSwitch:
 
         if effective_max <= 0:
             # Degenerate 0 / negative max — treat everything as reject.
-            return False, (
-                f"{REJECT_SLIPPAGE_TOO_HIGH}: max_bps={effective_max:.3f}"
-            )
+            return False, (f"{REJECT_SLIPPAGE_TOO_HIGH}: max_bps={effective_max:.3f}")
 
         if est_slip > effective_max + 1e-12:
             reason = (
                 f"{REJECT_SLIPPAGE_TOO_HIGH}: "
                 f"estimated_slippage={est_slip:.3f} bps > "
                 f"max_bps={effective_max:.3f} bps"
-                + (f" [fail_open={estimate_result.fail_open}]"
-                   if getattr(estimate_result, "fail_open", False) else "")
+                + (
+                    f" [fail_open={estimate_result.fail_open}]"
+                    if getattr(estimate_result, "fail_open", False)
+                    else ""
+                )
             )
             return False, reason
         return True, None
@@ -136,11 +138,7 @@ class KillSwitch:
         around the exact value. Strict greater-than only triggers kill.
         """
         effective_max = self._resolve_max_normal(max_bps)
-        effective_buf = (
-            float(buffer_mult)
-            if buffer_mult is not None
-            else self.default_buffer_mult
-        )
+        effective_buf = float(buffer_mult) if buffer_mult is not None else self.default_buffer_mult
         threshold = effective_max * max(0.0, effective_buf)
         slip = float(running_slippage_bps or 0.0)
 

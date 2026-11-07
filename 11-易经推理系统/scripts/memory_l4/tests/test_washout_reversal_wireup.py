@@ -22,11 +22,12 @@ TDD 测试清单:
   T6  / test_polling_trader_flag_false_no_injection        — flag=False→不注入候选
   T7  / test_zero_regression_evolution_report               — EvolutionReport 结构不变
 """
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -81,6 +82,7 @@ class TestEngineEvolveAppends:
         engine = EvolutionEngine()
         # 构造最小 history entries
         from dreamos.core.graph_store.types import HistoryEntry
+
         entries = [
             HistoryEntry(
                 cycle_id="test",
@@ -98,6 +100,7 @@ class TestEngineEvolveAppends:
         """T4: 基因组异常不阻塞 evolve()."""
         engine = EvolutionEngine()
         from dreamos.core.graph_store.types import HistoryEntry
+
         entries = [
             HistoryEntry(
                 cycle_id="test",
@@ -108,7 +111,8 @@ class TestEngineEvolveAppends:
         ]
         # mock get_washout_reversal_genome 抛异常
         with patch.object(
-            engine, "get_washout_reversal_genome",
+            engine,
+            "get_washout_reversal_genome",
             side_effect=RuntimeError("boom"),
         ):
             # 不应抛异常
@@ -124,6 +128,7 @@ class TestPollingTraderFlag:
         """T5: PollingTrader 类属性 ENABLE_WASHOUT_REVERSAL_GENOME 存在, 默认 False."""
         try:
             from scripts.memory_l4.polling_trader import PollingTrader
+
             assert hasattr(PollingTrader, "ENABLE_WASHOUT_REVERSAL_GENOME")
             assert PollingTrader.ENABLE_WASHOUT_REVERSAL_GENOME is False
         except ImportError:
@@ -133,6 +138,7 @@ class TestPollingTraderFlag:
         """T6: flag=False → 不注入候选 (字节等价)."""
         try:
             from scripts.memory_l4.polling_trader import PollingTrader
+
             assert PollingTrader.ENABLE_WASHOUT_REVERSAL_GENOME is False
         except ImportError:
             pytest.skip("PollingTrader 依赖未安装, 跳过")
@@ -146,6 +152,7 @@ class TestZeroRegression:
         """T7: EvolutionReport 结构不变."""
         engine = EvolutionEngine()
         from dreamos.core.graph_store.types import HistoryEntry
+
         entries = [
             HistoryEntry(
                 cycle_id="zr-test",

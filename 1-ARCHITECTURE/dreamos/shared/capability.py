@@ -20,32 +20,35 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
-
+from typing import Any, Dict, List
 
 # ============================================================
 # 枚举定义
 # ============================================================
 
+
 class ProviderType(str, Enum):
     """能力提供者类型"""
-    NODE = "node"              # DreamOS 节点 (BaseNode)
-    SUBAGENT = "subagent"      # DSH subagent
-    EXCHANGE = "exchange"      # 交易所/账户
-    SUBSYSTEM = "subsystem"    # 外部子系统（三屏/易经/V15）
-    STRATEGY = "strategy"      # 策略本身（声明需求）
+
+    NODE = "node"  # DreamOS 节点 (BaseNode)
+    SUBAGENT = "subagent"  # DSH subagent
+    EXCHANGE = "exchange"  # 交易所/账户
+    SUBSYSTEM = "subsystem"  # 外部子系统（三屏/易经/V15）
+    STRATEGY = "strategy"  # 策略本身（声明需求）
 
 
 class CapabilityStatus(str, Enum):
     """能力状态"""
-    AVAILABLE = "available"        # 可用
-    DEGRADED = "degraded"          # 降级可用
-    UNAVAILABLE = "unavailable"    # 不可用
+
+    AVAILABLE = "available"  # 可用
+    DEGRADED = "degraded"  # 降级可用
+    UNAVAILABLE = "unavailable"  # 不可用
 
 
 # ============================================================
 # 能力规格 — 提供者声明"能做什么"
 # ============================================================
+
 
 @dataclass
 class CapabilitySpec:
@@ -65,14 +68,15 @@ class CapabilitySpec:
             status=CapabilityStatus.AVAILABLE,
         )
     """
+
     capability_id: str
-    category: str                          # trading / data / analysis / execution / integration / governance
+    category: str  # trading / data / analysis / execution / integration / governance
     name: str = ""
     description: str = ""
     provider_id: str = ""
     provider_type: ProviderType = ProviderType.NODE
     properties: Dict[str, Any] = field(default_factory=dict)
-    requirements: List[str] = field(default_factory=list)   # 依赖的其他能力 ID
+    requirements: List[str] = field(default_factory=list)  # 依赖的其他能力 ID
     status: CapabilityStatus = CapabilityStatus.AVAILABLE
     degraded_reason: str = ""
     tags: List[str] = field(default_factory=list)
@@ -85,10 +89,16 @@ class CapabilitySpec:
             "name": self.name,
             "description": self.description,
             "provider_id": self.provider_id,
-            "provider_type": self.provider_type.value if isinstance(self.provider_type, ProviderType) else self.provider_type,
+            "provider_type": (
+                self.provider_type.value
+                if isinstance(self.provider_type, ProviderType)
+                else self.provider_type
+            ),
             "properties": dict(self.properties),
             "requirements": list(self.requirements),
-            "status": self.status.value if isinstance(self.status, CapabilityStatus) else self.status,
+            "status": (
+                self.status.value if isinstance(self.status, CapabilityStatus) else self.status
+            ),
             "degraded_reason": self.degraded_reason,
             "tags": list(self.tags),
             "version": self.version,
@@ -122,6 +132,7 @@ class CapabilitySpec:
 # 策略需求 — 消费者声明"需要什么"
 # ============================================================
 
+
 @dataclass
 class StrategyRequirement:
     """策略能力需求
@@ -137,6 +148,7 @@ class StrategyRequirement:
             min_properties={"trading.leverage": {"max": 5}},
         )
     """
+
     strategy_id: str
     required_capabilities: List[str] = field(default_factory=list)
     preferred_capabilities: List[str] = field(default_factory=list)
@@ -157,6 +169,7 @@ class StrategyRequirement:
 # 匹配结果
 # ============================================================
 
+
 @dataclass
 class MatchResult:
     """能力匹配结果
@@ -168,6 +181,7 @@ class MatchResult:
         conflicts:           冲突的能力 ID（excluded 但实际存在）
         degraded_suggestion: 降级建议文本（preferred 缺失时生成）
     """
+
     is_fulfilled: bool = False
     missing_required: List[str] = field(default_factory=list)
     missing_preferred: List[str] = field(default_factory=list)
@@ -188,6 +202,7 @@ class MatchResult:
 # 能力匹配引擎
 # ============================================================
 
+
 class CapabilityMatcher:
     """能力匹配引擎
 
@@ -202,8 +217,7 @@ class CapabilityMatcher:
     """
 
     @staticmethod
-    def match(requirement: StrategyRequirement,
-              available: List[CapabilitySpec]) -> MatchResult:
+    def match(requirement: StrategyRequirement, available: List[CapabilitySpec]) -> MatchResult:
         """执行能力匹配
 
         Args:
@@ -215,30 +229,23 @@ class CapabilityMatcher:
         """
         # 提取可用能力 ID 集合（仅 available 状态的能力才视为可用）
         available_ids = {
-            cap.capability_id
-            for cap in available
-            if cap.status == CapabilityStatus.AVAILABLE
+            cap.capability_id for cap in available if cap.status == CapabilityStatus.AVAILABLE
         }
         # 所有能力（含 degraded）用于冲突检测
         all_ids = {cap.capability_id for cap in available}
 
         # 1. 必需能力检查
         missing_required = [
-            cap_id for cap_id in requirement.required_capabilities
-            if cap_id not in available_ids
+            cap_id for cap_id in requirement.required_capabilities if cap_id not in available_ids
         ]
 
         # 2. 优先能力检查
         missing_preferred = [
-            cap_id for cap_id in requirement.preferred_capabilities
-            if cap_id not in available_ids
+            cap_id for cap_id in requirement.preferred_capabilities if cap_id not in available_ids
         ]
 
         # 3. 冲突能力检查（excluded 但实际存在）
-        conflicts = [
-            cap_id for cap_id in requirement.excluded_capabilities
-            if cap_id in all_ids
-        ]
+        conflicts = [cap_id for cap_id in requirement.excluded_capabilities if cap_id in all_ids]
 
         # 4. min_properties 下限校验
         prop_failures = []
@@ -270,14 +277,15 @@ class CapabilityMatcher:
 
         # 6. 综合判定
         is_fulfilled = (
-            len(missing_required) == 0
-            and len(conflicts) == 0
-            and len(prop_failures) == 0
+            len(missing_required) == 0 and len(conflicts) == 0 and len(prop_failures) == 0
         )
 
         if prop_failures:
-            degraded_suggestion = (degraded_suggestion + "；" if degraded_suggestion else "") + \
-                                  "属性不满足: " + "；".join(prop_failures)
+            degraded_suggestion = (
+                (degraded_suggestion + "；" if degraded_suggestion else "")
+                + "属性不满足: "
+                + "；".join(prop_failures)
+            )
 
         return MatchResult(
             is_fulfilled=is_fulfilled,

@@ -15,6 +15,7 @@ TDD：P2-2 di.py Shadow Read 机制
   3. 两端结果一致 → result=MATCH
   4. 两端结果不一致 → result=DIFF（但仍返回 legacy 结果，不抛异常）
 """
+
 from __future__ import annotations
 
 import os
@@ -31,11 +32,11 @@ from dreambuddy_dal.implementations.sqlite_unified.schema_init import init_db_sc
 def clean_env():
     """清理单例 + 环境变量，保证每个测试隔离。"""
     from dreambuddy_dal import di
+
     di._INSTANCES.clear()
     di._sqlite_schema_inited_paths.clear()
     old_vals = {
-        k: os.environ.pop(k, None)
-        for k in ("DB_BACKEND", "READ_SOURCE", "DATA_DIR", "DAL_DB_PATH")
+        k: os.environ.pop(k, None) for k in ("DB_BACKEND", "READ_SOURCE", "DATA_DIR", "DAL_DB_PATH")
     }
     yield
     di._INSTANCES.clear()
@@ -64,6 +65,7 @@ def db_paths():
 # ===========================================================================
 def test_no_shadow_read_when_env_unset(clean_env, db_paths):
     from dreambuddy_dal import di
+
     os.environ["DB_BACKEND"] = "dual_write"
     repo = di.get_trade_repo()
     # 做一次读操作
@@ -81,6 +83,7 @@ def test_no_shadow_read_when_env_unset(clean_env, db_paths):
 # ===========================================================================
 def test_shadow_read_writes_audit_when_enabled(clean_env, db_paths):
     from dreambuddy_dal import di
+
     os.environ["DB_BACKEND"] = "dual_write"
     os.environ["READ_SOURCE"] = "shadow"
     repo = di.get_trade_repo()
@@ -99,6 +102,7 @@ def test_shadow_read_writes_audit_when_enabled(clean_env, db_paths):
 # ===========================================================================
 def test_shadow_read_match_when_both_none(clean_env, db_paths):
     from dreambuddy_dal import di
+
     os.environ["DB_BACKEND"] = "dual_write"
     os.environ["READ_SOURCE"] = "shadow"
     repo = di.get_trade_repo()
@@ -115,10 +119,12 @@ def test_shadow_read_match_when_both_none(clean_env, db_paths):
 # 4. READ_SOURCE=next_gen → 读走新库（不走 legacy）
 # ===========================================================================
 def test_read_source_next_gen_uses_new_repo(clean_env, db_paths):
-    from dreambuddy_dal import di
-    from dreambuddy_dal.unified_models import TradeRecord, TradeDirection
-    from decimal import Decimal
     from datetime import datetime, timezone
+    from decimal import Decimal
+
+    from dreambuddy_dal import di
+    from dreambuddy_dal.unified_models import TradeDirection, TradeRecord
+
     os.environ["DB_BACKEND"] = "dual_write"
     os.environ["READ_SOURCE"] = "next_gen"
     # 先写入一条 trade（双写）

@@ -8,20 +8,20 @@
 所有函数为纯函数：输入 DataFrame + config，输出 dict。
 不依赖全局状态，可独立测试。
 """
+
 from __future__ import annotations
 
 import math
 from typing import Any, Dict, List, Optional
 
-import numpy as np
 import pandas as pd
 
 from classic_pipeline.core.utils import _clip
 
-
 # ---------------------------------------------------------------------------
 # 内部工具函数
 # ---------------------------------------------------------------------------
+
 
 def _ema(values: List[float], period: int) -> List[float]:
     """指数移动平均（纯 Python 实现，避免外部依赖）。"""
@@ -40,6 +40,7 @@ def _ema(values: List[float], period: int) -> List[float]:
 # ---------------------------------------------------------------------------
 # 5m 信号确认门
 # ---------------------------------------------------------------------------
+
 
 def confirm_gate(
     df: pd.DataFrame,
@@ -96,8 +97,8 @@ def confirm_gate(
         last_close = None
         if len(highs) >= (n + 2) and len(lows) >= (n + 2):
             try:
-                prev_high = max(highs[-(n + 2): -1])
-                prev_low = min(lows[-(n + 2): -1])
+                prev_high = max(highs[-(n + 2) : -1])
+                prev_low = min(lows[-(n + 2) : -1])
                 last_close = float(closes[-1])
                 if side == "long":
                     bos = float(last_close) > float(prev_high)
@@ -130,9 +131,13 @@ def confirm_gate(
                 s_now = float(efast[-1]) - float(efast[-2])
                 s_prev = float(efast[-2]) - float(efast[-3])
                 if side == "long":
-                    turn = (s_now > 0.0) and (s_prev <= 0.0) and (float(efast[-1]) > float(eslow[-1]))
+                    turn = (
+                        (s_now > 0.0) and (s_prev <= 0.0) and (float(efast[-1]) > float(eslow[-1]))
+                    )
                 else:
-                    turn = (s_now < 0.0) and (s_prev >= 0.0) and (float(efast[-1]) < float(eslow[-1]))
+                    turn = (
+                        (s_now < 0.0) and (s_prev >= 0.0) and (float(efast[-1]) < float(eslow[-1]))
+                    )
             except Exception:
                 turn = False
 
@@ -154,7 +159,7 @@ def confirm_gate(
             trs: List[float] = []
             for i in range(1, min(len(closes), 15)):
                 h = float(highs[-i])
-                l = float(lows[-i])
+                l = float(lows[-i])  # noqa: E741
                 pc = float(closes[-i - 1])
                 tr = max(h - l, abs(h - pc), abs(l - pc))
                 trs.append(float(tr))
@@ -190,6 +195,7 @@ def confirm_gate(
 # 日线方向判断
 # ---------------------------------------------------------------------------
 
+
 def daily_direction(df_daily: pd.DataFrame, config: Optional[Dict[str, Any]] = None) -> str:
     """判断日线趋势方向。
 
@@ -217,6 +223,7 @@ def daily_direction(df_daily: pd.DataFrame, config: Optional[Dict[str, Any]] = N
 # ---------------------------------------------------------------------------
 # 最终信号计算
 # ---------------------------------------------------------------------------
+
 
 def compute(
     df_5m: Optional[pd.DataFrame],

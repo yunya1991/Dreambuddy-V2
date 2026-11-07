@@ -11,9 +11,10 @@
 产出: spacetime_events.jsonl（追加流）+ 状态文件（断点续算）
 用法: python3 gen_spacetime_events.py
 """
+
 import json
-import sys
 import os
+import sys
 import urllib.request
 from datetime import datetime, timezone
 
@@ -25,7 +26,7 @@ OUT_PATH = os.path.join(_SYS_DIR, "spacetime_events.jsonl")
 STATE_PATH = os.path.join(_SYS_DIR, ".spacetime_state.json")
 
 sys.path.insert(0, _THIS_DIR)
-import dc_pg  # PostgreSQL 辅助模块（18 中心迁移后替代 SQLite）
+import dc_pg  # PostgreSQL 辅助模块（18 中心迁移后替代 SQLite）  # noqa: E402
 
 
 def _fetch_fundamental_context(symbol):
@@ -36,8 +37,9 @@ def _fetch_fundamental_context(symbol):
     # metrics 仅含 item_count，无实际费率值），故优先取 binance_funding_rate 来源
     # （metrics 含 funding_rate_pct / funding_rate_annualized_pct），取不到再回退。
     try:
-        row = dc_pg.fetch_latest_by_source("binance_funding_rate", "funding_rate") \
-            or dc_pg.fetch_latest("funding_rate")
+        row = dc_pg.fetch_latest_by_source(
+            "binance_funding_rate", "funding_rate"
+        ) or dc_pg.fetch_latest("funding_rate")
         if row:
             m = row.get("metrics") or {}
             if isinstance(m, str):
@@ -55,6 +57,7 @@ def _fetch_fundamental_context(symbol):
     try:
         sys.path.insert(0, os.path.join(_REPO, "34-前端应用训练系统"))
         from core.l0_foundation import get_l0
+
         snap = get_l0().fetch_context("yijing.bdsm")
         if not snap.get("degraded"):
             coins = (snap.get("data") or {}).get("coins") or {}
@@ -88,15 +91,16 @@ def _cross_validate_note(nature, ctx):
         lead = "交叉验证观察"
     return f"{lead}（{'，'.join(parts)}）"
 
+
 OKX_CANDLES_URL = "https://www.okx.com/api/v5/market/candles?instId={inst}&bar=1D&limit={limit}"
 SYMBOLS = ["BTC-USDT", "ETH-USDT"]
 
 # 盘整检测参数（预注册，叙事纪律：调整需回测校准）
-CONSOL_WINDOW = 30        # 检测窗口：近 30 日
-CONSOL_RANGE_PCT = 0.15   # 盘整判定：窗口内高低振幅 < 15%
+CONSOL_WINDOW = 30  # 检测窗口：近 30 日
+CONSOL_RANGE_PCT = 0.15  # 盘整判定：窗口内高低振幅 < 15%
 # 斐波那契回撤位
 FIB_LEVELS = [0.236, 0.382, 0.5, 0.618, 0.786]
-FIB_TOLERANCE = 0.008     # 触及容差：价格距关键位 < 0.8%
+FIB_TOLERANCE = 0.008  # 触及容差：价格距关键位 < 0.8%
 # 四年周期锚点：BTC 减半日（历史：2020-05-11, 2024-04-20；下次预估 2028）
 HALVING_ANCHORS = ["2020-05-11", "2024-04-20"]
 
@@ -124,12 +128,16 @@ def fetch_candles(inst, limit=100):
     candles = []
     for r in rows:
         # OKX 返回: [ts, o, h, l, c, vol, ...]（时间降序）
-        candles.append({
-            "ts": int(r[0]) / 1000,
-            "o": float(r[1]), "h": float(r[2]),
-            "l": float(r[3]), "c": float(r[4]),
-            "v": float(r[5]),
-        })
+        candles.append(
+            {
+                "ts": int(r[0]) / 1000,
+                "o": float(r[1]),
+                "h": float(r[2]),
+                "l": float(r[3]),
+                "c": float(r[4]),
+                "v": float(r[5]),
+            }
+        )
     candles.reverse()  # 升序
     return candles
 
@@ -179,23 +187,28 @@ def detect_consolidation(candles):
                 nature = "放量宽幅盘整（波动放大+放量，关注方向选择）"
             else:
                 nature = "普通盘整"
-        events.append({
-            "layer": "spacetime", "dim": "time",
-            "type": "consolidation",
-            "symbol": None,
-            "detail": {
-                "days": CONSOL_WINDOW, "range_pct": round(range_pct, 4),
-                "high": hi, "low": lo,
-                "atr_compress_ratio": atr_ratio,
-                "volume_ratio_20d": vol_ratio,
-                "nature": nature,
-            },
-            "note": f"近{CONSOL_WINDOW}日振幅 {range_pct:.1%} < {CONSOL_RANGE_PCT:.0%}，盘整状态（横有多长：{CONSOL_WINDOW}日）"
-                     + (f"；{nature}（ATR比 {atr_ratio}，量比 {vol_ratio}）" if nature else ""),
-        })
+        events.append(
+            {
+                "layer": "spacetime",
+                "dim": "time",
+                "type": "consolidation",
+                "symbol": None,
+                "detail": {
+                    "days": CONSOL_WINDOW,
+                    "range_pct": round(range_pct, 4),
+                    "high": hi,
+                    "low": lo,
+                    "atr_compress_ratio": atr_ratio,
+                    "volume_ratio_20d": vol_ratio,
+                    "nature": nature,
+                },
+                "note": f"近{CONSOL_WINDOW}日振幅 {range_pct:.1%} < {CONSOL_RANGE_PCT:.0%}，盘整状态（横有多长：{CONSOL_WINDOW}日）"
+                + (f"；{nature}（ATR比 {atr_ratio}，量比 {vol_ratio}）" if nature else ""),
+            }
+        )
     else:
         # 非盘整：检测是否刚从盘整突破（前窗口盘整 + 当前价出区间）
-        prev_win = candles[-(CONSOL_WINDOW + 1):-1]
+        prev_win = candles[-(CONSOL_WINDOW + 1) : -1]
         if prev_win:
             p_hi = max(c["h"] for c in prev_win)
             p_lo = min(c["l"] for c in prev_win)
@@ -204,17 +217,33 @@ def detect_consolidation(candles):
                 c = last["c"]
                 if c > p_hi or c < p_lo:
                     direction = "up" if c > p_hi else "down"
-                    events.append({
-                        "layer": "spacetime", "dim": "time",
-                        "type": "breakout",
-                        "symbol": None,
-                        "detail": {
-                            "consolidation_days": CONSOL_WINDOW,
-                            "direction": direction,
-                            "break_pct": round(abs(c - (p_hi if direction == "up" else p_lo)) / (p_hi - p_lo) * 100, 2) if p_hi > p_lo else 0,
-                        },
-                        "note": f"盘整{CONSOL_WINDOW}日后向上突破" if direction == "up" else f"盘整{CONSOL_WINDOW}日后向下突破",
-                    })
+                    events.append(
+                        {
+                            "layer": "spacetime",
+                            "dim": "time",
+                            "type": "breakout",
+                            "symbol": None,
+                            "detail": {
+                                "consolidation_days": CONSOL_WINDOW,
+                                "direction": direction,
+                                "break_pct": (
+                                    round(
+                                        abs(c - (p_hi if direction == "up" else p_lo))
+                                        / (p_hi - p_lo)
+                                        * 100,
+                                        2,
+                                    )
+                                    if p_hi > p_lo
+                                    else 0
+                                ),
+                            },
+                            "note": (
+                                f"盘整{CONSOL_WINDOW}日后向上突破"
+                                if direction == "up"
+                                else f"盘整{CONSOL_WINDOW}日后向下突破"
+                            ),
+                        }
+                    )
     return events
 
 
@@ -233,16 +262,22 @@ def detect_fibonacci(candles):
     for level in FIB_LEVELS:
         fib_price = hi - (hi - lo) * level
         if abs(last - fib_price) / fib_price < FIB_TOLERANCE:
-            events.append({
-                "layer": "spacetime", "dim": "space",
-                "type": "fib_touch",
-                "symbol": None,
-                "detail": {
-                    "level": level, "fib_price": round(fib_price, 2),
-                    "last": last, "swing_high": hi, "swing_low": lo,
-                },
-                "note": f"价格触及斐波那契 {level} 回撤位（{fib_price:.0f}）",
-            })
+            events.append(
+                {
+                    "layer": "spacetime",
+                    "dim": "space",
+                    "type": "fib_touch",
+                    "symbol": None,
+                    "detail": {
+                        "level": level,
+                        "fib_price": round(fib_price, 2),
+                        "last": last,
+                        "swing_high": hi,
+                        "swing_low": lo,
+                    },
+                    "note": f"价格触及斐波那契 {level} 回撤位（{fib_price:.0f}）",
+                }
+            )
             break  # 每次只记最接近的一个位
     return events
 
@@ -251,8 +286,9 @@ def detect_cycle_position():
     """四年周期位置（减半锚点，仅位置描述）。"""
     events = []
     now = datetime.now(timezone.utc)
-    anchors = [datetime.strptime(a, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-               for a in HALVING_ANCHORS]
+    anchors = [
+        datetime.strptime(a, "%Y-%m-%d").replace(tzinfo=timezone.utc) for a in HALVING_ANCHORS
+    ]
     current_anchor = None
     for a in anchors:
         if now >= a:
@@ -261,18 +297,21 @@ def detect_cycle_position():
         return events
     days_since = (now - current_anchor).days
     years_since = days_since / 365.25
-    events.append({
-        "layer": "spacetime", "dim": "cycle",
-        "type": "cycle_position",
-        "symbol": "BTC",
-        "detail": {
-            "halving_anchor": current_anchor.strftime("%Y-%m-%d"),
-            "days_since": days_since,
-            "years_since": round(years_since, 2),
-            "cycle_year": min(4, int(years_since) + 1),
-        },
-        "note": f"减半后第 {round(years_since, 1)} 年（四年周期第 {min(4, int(years_since) + 1)} 年）",
-    })
+    events.append(
+        {
+            "layer": "spacetime",
+            "dim": "cycle",
+            "type": "cycle_position",
+            "symbol": "BTC",
+            "detail": {
+                "halving_anchor": current_anchor.strftime("%Y-%m-%d"),
+                "days_since": days_since,
+                "years_since": round(years_since, 2),
+                "cycle_year": min(4, int(years_since) + 1),
+            },
+            "note": f"减半后第 {round(years_since, 1)} 年（四年周期第 {min(4, int(years_since) + 1)} 年）",
+        }
+    )
     return events
 
 

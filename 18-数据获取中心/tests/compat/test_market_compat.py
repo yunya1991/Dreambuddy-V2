@@ -3,6 +3,7 @@
 老 market_data.fetch_candles 用 OKX SDK 直连，compat 版用 ccxt 替换底层，
 inst_id/bar 格式自动转换，返回格式保持 {"ts","o","h","l","c","vol"} 不变。
 """
+
 from data_center.compat.market_compat import fetch_candles, resample_candles
 
 CCXT_MOD = "data_center.compat.market_compat.ccxt"
@@ -24,12 +25,12 @@ def test_fetch_candles_basic(mocker):
     mock_ccxt.okx.assert_called_once()
     mock_ex.fetch_ohlcv.assert_called_once()
     call_args = mock_ex.fetch_ohlcv.call_args
-    assert call_args[0][0] == "BTC/USDT"        # 位置参数
-    assert call_args[1]["timeframe"] == "1m"    # 关键字参数
+    assert call_args[0][0] == "BTC/USDT"  # 位置参数
+    assert call_args[1]["timeframe"] == "1m"  # 关键字参数
     assert call_args[1]["limit"] == 2
 
     assert len(candles) == 2
-    assert candles[0]["ts"] == 1700000000   # ms → s
+    assert candles[0]["ts"] == 1700000000  # ms → s
     assert candles[0]["o"] == 50000.0
     assert candles[0]["h"] == 50100.0
     assert candles[0]["l"] == 49900.0
@@ -71,7 +72,7 @@ def test_resample_candles_pure():
     """resample_candles 是纯数据变换，30m→1h 聚合 2 根为 1 根。"""
     # 30 分钟间隔的 ts（毫秒），4 根 → 2 组 → 2 根聚合
     candles = [
-        {"ts": 0,       "o": 10, "h": 15, "l": 8,  "c": 12, "vol": 100},
+        {"ts": 0, "o": 10, "h": 15, "l": 8, "c": 12, "vol": 100},
         {"ts": 1800000, "o": 12, "h": 18, "l": 11, "c": 16, "vol": 200},
         {"ts": 3600000, "o": 16, "h": 20, "l": 14, "c": 18, "vol": 150},
         {"ts": 5400000, "o": 18, "h": 22, "l": 17, "c": 21, "vol": 50},

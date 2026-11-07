@@ -32,8 +32,8 @@ Trading Memory — 交易记忆闭环系统
 
 import json
 import re
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 
@@ -44,6 +44,7 @@ def _now_iso() -> str:
 # ──────────────────────────────────────────────────────────────────────────────
 # 1. Suggestion Lifecycle — 建议生命周期管理
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class SuggestionLifecycle:
     """
@@ -109,41 +110,27 @@ class SuggestionLifecycle:
             ema50 = mkt.get("ema50", 0)
             ema200 = mkt.get("ema200", 0)
             if ema50 and price < ema50:
-                next_verifications.append(
-                    f"{coin} 能否突破 EMA50({ema50:.2f}) 并放量确认趋势"
-                )
+                next_verifications.append(f"{coin} 能否突破 EMA50({ema50:.2f}) 并放量确认趋势")
             if ema200 and price < ema200:
-                next_verifications.append(
-                    f"{coin} 能否站上 EMA200({ema200:.2f}) 打开中期空间"
-                )
+                next_verifications.append(f"{coin} 能否站上 EMA200({ema200:.2f}) 打开中期空间")
             if chain_result and getattr(chain_result, "stop_loss", None):
-                next_verifications.append(
-                    f"关注 {coin} 止损位 {chain_result.stop_loss} 是否有效"
-                )
+                next_verifications.append(f"关注 {coin} 止损位 {chain_result.stop_loss} 是否有效")
 
         if action in ("SELL", "SHORT"):
             ema20 = mkt.get("ema20", 0)
             if ema20 and price > ema20:
-                next_verifications.append(
-                    f"{coin} 能否跌破 EMA20({ema20:.2f}) 确认下行"
-                )
+                next_verifications.append(f"{coin} 能否跌破 EMA20({ema20:.2f}) 确认下行")
 
         if not next_verifications and action == "HOLD":
-            next_verifications.append(
-                f"观察 {coin} 在当前 {regime} 区间内的方向选择"
-            )
+            next_verifications.append(f"观察 {coin} 在当前 {regime} 区间内的方向选择")
 
         # ── 风险提示：基于市场环境的风险预警 ──
         vol_ratio = mkt.get("vol_ratio", 1)
         if vol_ratio < 0.6:
-            risk_warnings.append(
-                f"整体市场量能持续低迷（{vol_ratio:.1f}x），警惕假突破/假跌破"
-            )
+            risk_warnings.append(f"整体市场量能持续低迷（{vol_ratio:.1f}x），警惕假突破/假跌破")
 
         if regime == "RANGE":
-            risk_warnings.append(
-                "当前 RANGE 震荡市，突破信号可靠性降低，需严格止损"
-            )
+            risk_warnings.append("当前 RANGE 震荡市，突破信号可靠性降低，需严格止损")
 
         # ── BAC 调整：基于知行合一 gap 的架构优化建议 ──
         gap_score = abs(intent_confidence - confidence)
@@ -157,24 +144,19 @@ class SuggestionLifecycle:
         # ── D-Z-E 触发：基于系统健康度的向外学习建议 ──
         loss_streaks = memory.get("loss_streaks", 0)
         if loss_streaks >= 3:
-            dze_triggers.append(
-                f"连败{loss_streaks}次，触发向外学习，重新评估策略框架"
-            )
+            dze_triggers.append(f"连败{loss_streaks}次，触发向外学习，重新评估策略框架")
 
         recent = memory.get("recent_decisions", [])[-10:]
         hold_count = sum(1 for d in recent if d.get("action") == "HOLD")
         if hold_count >= 5:
             dze_triggers.append(
-                f"连续{hold_count}次HOLD的强迫性重复，"
-                f"建议触发向外学习优化意图识别"
+                f"连续{hold_count}次HOLD的强迫性重复，" f"建议触发向外学习优化意图识别"
             )
 
         recent_5 = memory.get("recent_decisions", [])[-5:]
         hold_5 = sum(1 for d in recent_5 if d.get("action") == "HOLD")
         if hold_5 >= 3 and confidence < 0.65:
-            dze_triggers.append(
-                f"近5轮{hold_5}次HOLD且置信度<65%，系统可能过度保守"
-            )
+            dze_triggers.append(f"近5轮{hold_5}次HOLD且置信度<65%，系统可能过度保守")
 
         sugg["next_verifications"] = next_verifications
         sugg["risk_warnings"] = risk_warnings
@@ -217,6 +199,7 @@ class SuggestionLifecycle:
 # 2. Verification Engine — 验证引擎
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class VerificationEngine:
     """
     验证引擎：本轮验证上轮建议
@@ -227,10 +210,10 @@ class VerificationEngine:
     这是交易记忆闭环的「验证」环节。
     """
 
-    VERIFY_STATUS_VERIFIED = "verified"       # 已验证（有明确结论）
-    VERIFY_STATUS_PARTIAL  = "partial"        # 部分验证
-    VERIFY_STATUS_PENDING  = "pending"        # 待验证（市场还没走到那一步）
-    VERIFY_STATUS_INVALID  = "invalid"        # 无效/不适用
+    VERIFY_STATUS_VERIFIED = "verified"  # 已验证（有明确结论）
+    VERIFY_STATUS_PARTIAL = "partial"  # 部分验证
+    VERIFY_STATUS_PENDING = "pending"  # 待验证（市场还没走到那一步）
+    VERIFY_STATUS_INVALID = "invalid"  # 无效/不适用
 
     @staticmethod
     def verify_suggestions(
@@ -257,31 +240,39 @@ class VerificationEngine:
 
         # 验证待验证假设
         for v in prior_sugg.get("next_verifications", []):
-            result = VerificationEngine._verify_verification(v, current_action, current_coin, current_price, mkt)
+            result = VerificationEngine._verify_verification(
+                v, current_action, current_coin, current_price, mkt
+            )
             results.append(result)
 
         # 验证风险提示（风险提示如果发生了就是验证了）
         for r in prior_sugg.get("risk_warnings", []):
-            result = VerificationEngine._verify_risk(r, current_action, current_coin, current_price, mkt)
+            result = VerificationEngine._verify_risk(
+                r, current_action, current_coin, current_price, mkt
+            )
             results.append(result)
 
         # BAC调整建议（基于 gap_score 变化判断）
         for b in prior_sugg.get("bac_adjustments", []):
-            results.append({
-                "type": "bac_adjustments",
-                "content": b,
-                "status": VerificationEngine.VERIFY_STATUS_PARTIAL,
-                "conclusion": "已纳入本轮 B 层蓝图输入，持续观察中",
-            })
+            results.append(
+                {
+                    "type": "bac_adjustments",
+                    "content": b,
+                    "status": VerificationEngine.VERIFY_STATUS_PARTIAL,
+                    "conclusion": "已纳入本轮 B 层蓝图输入，持续观察中",
+                }
+            )
 
         # D-Z-E 触发建议
         for d in prior_sugg.get("dze_triggers", []):
-            results.append({
-                "type": "dze_triggers",
-                "content": d,
-                "status": VerificationEngine.VERIFY_STATUS_PARTIAL,
-                "conclusion": "已记录，等待触发 D-Z-E 流程",
-            })
+            results.append(
+                {
+                    "type": "dze_triggers",
+                    "content": d,
+                    "status": VerificationEngine.VERIFY_STATUS_PARTIAL,
+                    "conclusion": "已记录，等待触发 D-Z-E 流程",
+                }
+            )
 
         return results
 
@@ -368,6 +359,7 @@ class VerificationEngine:
     def summary(verifications: List[Dict]) -> Dict:
         """生成验证结果摘要统计"""
         from collections import Counter
+
         counter = Counter(v["status"] for v in verifications)
         by_type = {}
         for v in verifications:
@@ -395,6 +387,7 @@ class VerificationEngine:
 # 3. Lesson Distiller — 教训提炼
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class LessonDistiller:
     """
     教训提炼引擎
@@ -420,40 +413,46 @@ class LessonDistiller:
                 continue
 
             if v["type"] == "next_verifications":
-                lessons.append({
-                    "id": f"lesson_{len(lessons) + 1}",
-                    "category": "market_pattern",
-                    "content": v["content"],
-                    "conclusion": v["conclusion"],
-                    "source_cycle": cycle_id,
-                    "confidence": 0.6,
-                    "verify_count": 1,
-                    "created_at": _now_iso(),
-                })
+                lessons.append(
+                    {
+                        "id": f"lesson_{len(lessons) + 1}",
+                        "category": "market_pattern",
+                        "content": v["content"],
+                        "conclusion": v["conclusion"],
+                        "source_cycle": cycle_id,
+                        "confidence": 0.6,
+                        "verify_count": 1,
+                        "created_at": _now_iso(),
+                    }
+                )
 
             elif v["type"] == "risk_warnings":
-                lessons.append({
-                    "id": f"lesson_{len(lessons) + 1}",
-                    "category": "risk_warning",
-                    "content": v["content"],
-                    "conclusion": v["conclusion"],
-                    "source_cycle": cycle_id,
-                    "confidence": 0.7,
-                    "verify_count": 1,
-                    "created_at": _now_iso(),
-                })
+                lessons.append(
+                    {
+                        "id": f"lesson_{len(lessons) + 1}",
+                        "category": "risk_warning",
+                        "content": v["content"],
+                        "conclusion": v["conclusion"],
+                        "source_cycle": cycle_id,
+                        "confidence": 0.7,
+                        "verify_count": 1,
+                        "created_at": _now_iso(),
+                    }
+                )
 
             elif v["type"] == "bac_adjustments":
-                lessons.append({
-                    "id": f"lesson_{len(lessons) + 1}",
-                    "category": "system_optimization",
-                    "content": v["content"],
-                    "conclusion": v["conclusion"],
-                    "source_cycle": cycle_id,
-                    "confidence": 0.5,
-                    "verify_count": 1,
-                    "created_at": _now_iso(),
-                })
+                lessons.append(
+                    {
+                        "id": f"lesson_{len(lessons) + 1}",
+                        "category": "system_optimization",
+                        "content": v["content"],
+                        "conclusion": v["conclusion"],
+                        "source_cycle": cycle_id,
+                        "confidence": 0.5,
+                        "verify_count": 1,
+                        "created_at": _now_iso(),
+                    }
+                )
 
         return lessons
 
@@ -473,7 +472,9 @@ class LessonDistiller:
             if not is_dup:
                 verified.append(nl)
 
-        verified.sort(key=lambda x: (x.get("confidence", 0), x.get("verify_count", 0)), reverse=True)
+        verified.sort(
+            key=lambda x: (x.get("confidence", 0), x.get("verify_count", 0)), reverse=True
+        )
         verified = verified[:30]
 
         if "suggestion_loop" not in memory:
@@ -485,6 +486,7 @@ class LessonDistiller:
 # ──────────────────────────────────────────────────────────────────────────────
 # 4. PR Feedback Loop — PR 评论反馈闭环
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class PRFeedbackLoop:
     """
@@ -504,6 +506,7 @@ class PRFeedbackLoop:
         if not self.gh_token:
             return []
         import requests
+
         url = f"https://api.github.com/repos/{self.repo}/issues/{self.pr_number}/comments"
         headers = {
             "Authorization": f"token {self.gh_token}",
@@ -580,7 +583,9 @@ class PRFeedbackLoop:
                     result["next_verifications"].append(m2.group(1).strip())
                 continue
 
-            if re.match(r"^\d+\.\s*\*\*风险提示\*\*", stripped) or ("风险提示" in stripped and "潜在机会" not in stripped):
+            if re.match(r"^\d+\.\s*\*\*风险提示\*\*", stripped) or (
+                "风险提示" in stripped and "潜在机会" not in stripped
+            ):
                 current_list = "risk_warnings"
                 m2 = re.search(r"[：:](.+)", stripped)
                 if m2 and m2.group(1).strip():
@@ -591,21 +596,31 @@ class PRFeedbackLoop:
                 current_list = None
                 continue
 
-            if re.match(r"^\d+\.\s*\*\*BAC", stripped) or ("BAC" in stripped and ("调整" in stripped or "链路" in stripped)):
+            if re.match(r"^\d+\.\s*\*\*BAC", stripped) or (
+                "BAC" in stripped and ("调整" in stripped or "链路" in stripped)
+            ):
                 current_list = "bac_adjustments"
                 m2 = re.search(r"[：:](.+)", stripped)
                 if m2 and m2.group(1).strip():
                     result["bac_adjustments"].append(m2.group(1).strip())
                 continue
 
-            if re.match(r"^\d+\.\s*\*\*D-Z-E", stripped) or re.match(r"^\d+\.\s*\*\*DZE", stripped) or ("D-Z-E" in stripped and "触发" in stripped):
+            if (
+                re.match(r"^\d+\.\s*\*\*D-Z-E", stripped)
+                or re.match(r"^\d+\.\s*\*\*DZE", stripped)
+                or ("D-Z-E" in stripped and "触发" in stripped)
+            ):
                 current_list = "dze_triggers"
                 m2 = re.search(r"[：:](.+)", stripped)
                 if m2 and m2.group(1).strip():
                     result["dze_triggers"].append(m2.group(1).strip())
                 continue
 
-            if stripped.startswith("-") or stripped.startswith("*") or re.match(r"^\d+[\.\)、]", stripped):
+            if (
+                stripped.startswith("-")
+                or stripped.startswith("*")
+                or re.match(r"^\d+[\.\)、]", stripped)
+            ):
                 item = re.sub(r"^[-*\d\.\)、]+\s*", "", stripped).strip()
                 if item and current_list and current_list in result:
                     if item.startswith("**") and item.endswith("**"):
@@ -628,6 +643,7 @@ class PRFeedbackLoop:
 # ──────────────────────────────────────────────────────────────────────────────
 # 5. TradingMemory — 统一入口类
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TradingMemory:
     """
@@ -739,12 +755,14 @@ class TradingMemory:
         summary = VerificationEngine.summary(verifications)
 
         history = self.memory["suggestion_loop"].get("verification_history", [])
-        history.append({
-            "cycle_id": prior.get("cycle_id"),
-            "verified_at": _now_iso(),
-            "summary": summary,
-            "details": verifications,
-        })
+        history.append(
+            {
+                "cycle_id": prior.get("cycle_id"),
+                "verified_at": _now_iso(),
+                "summary": summary,
+                "details": verifications,
+            }
+        )
         self.memory["suggestion_loop"]["verification_history"] = history[-50:]
         self.memory["suggestion_loop"]["verify_count"] = (
             self.memory["suggestion_loop"].get("verify_count", 0) + 1
@@ -782,8 +800,16 @@ class TradingMemory:
         2. 更新 suggestion_count 统计
         """
         sugg = SuggestionLifecycle.build_suggestions(
-            cycle_id, action, coin, price, confidence,
-            intent_confidence, regime, mkt, chain_result, self.memory,
+            cycle_id,
+            action,
+            coin,
+            price,
+            confidence,
+            intent_confidence,
+            regime,
+            mkt,
+            chain_result,
+            self.memory,
         )
 
         sl = self.memory["suggestion_loop"]
@@ -799,7 +825,7 @@ class TradingMemory:
         """获取经过验证的教训，可按类别过滤"""
         lessons = self.memory["suggestion_loop"].get("verified_lessons", [])
         if category:
-            lessons = [l for l in lessons if l.get("category") == category]
+            lessons = [l for l in lessons if l.get("category") == category]  # noqa: E741
         return lessons[:limit]
 
     def get_stats(self) -> Dict:

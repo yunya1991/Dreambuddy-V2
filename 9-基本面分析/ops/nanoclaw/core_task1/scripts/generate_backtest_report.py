@@ -11,6 +11,7 @@ from pathlib import Path
 HISTORICAL_DATA_DIR = "/workspace/ops/nanoclaw/core_task1/historical_data"
 OUTPUT_DIR = "/workspace/ops/nanoclaw/core_task1/outputs"
 
+
 def load_backtest_results():
     """加载历史回测结果"""
     files = [
@@ -20,18 +21,19 @@ def load_backtest_results():
         "backtest_result_ledger_v9_4.json",
         "backtest_result_ledger_v9_5.json",
         "backtest_result_ledger_v9_7.json",
-        "backtest_result_ledger_v9_8_onchain.json"
+        "backtest_result_ledger_v9_8_onchain.json",
     ]
 
     results = {}
     for filename in files:
         filepath = Path(HISTORICAL_DATA_DIR) / filename
         if filepath.exists():
-            with open(filepath, 'r', encoding='utf-8') as f:
+            with open(filepath, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 results[filename.replace("backtest_result_", "").replace(".json", "")] = data
 
     return results
+
 
 def analyze_equity_curve(equity_data):
     """分析权益曲线"""
@@ -39,7 +41,7 @@ def analyze_equity_curve(equity_data):
         return {}
 
     equities = [d.get("equity", 0) for d in equity_data]
-    prices = [d.get("price", 0) for d in equity_data]
+    prices = [d.get("price", 0) for d in equity_data]  # noqa: F841
     signals = [d.get("signal", 0) for d in equity_data]
     positions = [d.get("position", 0) for d in equity_data]
 
@@ -75,8 +77,9 @@ def analyze_equity_curve(equity_data):
         "negative_signal_days": negative_signals,
         "avg_signal": avg_signal,
         "avg_position": avg_position,
-        "trading_days": len(equity_data)
+        "trading_days": len(equity_data),
     }
+
 
 def generate_report(all_results):
     """生成回测分析报告"""
@@ -102,7 +105,9 @@ def generate_report(all_results):
             max_dd = results.get("max_drawdown", 0) * 100
             trades = results.get("total_trades", 0)
 
-            report.append(f"| {version} | {total_return:.2f}% | {ann_return:.2f}% | {sharpe:.2f} | {max_dd:.2f}% | {trades} |")
+            report.append(
+                f"| {version} | {total_return:.2f}% | {ann_return:.2f}% | {sharpe:.2f} | {max_dd:.2f}% | {trades} |"
+            )
 
     report.append("")
 
@@ -125,8 +130,8 @@ def generate_report(all_results):
 
         report.append("## 3. 核心绩效指标")
         report.append("")
-        report.append(f"| 指标 | 数值 | 评估 |")
-        report.append(f"|------|------|------|")
+        report.append("| 指标 | 数值 | 评估 |")
+        report.append("|------|------|------|")
 
         total_return = results.get("total_return", 0) * 100
         ann_return = results.get("annualized_return", 0) * 100
@@ -136,16 +141,26 @@ def generate_report(all_results):
 
         report.append(f"| 总收益 | {total_return:.2f}% | {'✅' if total_return > 0 else '❌'} |")
         report.append(f"| 年化收益 | {ann_return:.2f}% | {'✅' if ann_return > 0 else '❌'} |")
-        report.append(f"| 夏普比率 | {sharpe:.2f} | {'✅' if sharpe > 1 else '⚠️' if sharpe > 0 else '❌'} |")
-        report.append(f"| 最大回撤 | {max_dd:.2f}% | {'✅' if max_dd < 0.15 else '⚠️' if max_dd < 0.25 else '❌'} |")
-        report.append(f"| 胜率 | {win_rate:.1f}% | {'✅' if win_rate > 55 else '⚠️' if win_rate > 45 else '❌'} |")
+        report.append(
+            f"| 夏普比率 | {sharpe:.2f} | {'✅' if sharpe > 1 else '⚠️' if sharpe > 0 else '❌'} |"
+        )
+        report.append(
+            f"| 最大回撤 | {max_dd:.2f}% | {'✅' if max_dd < 0.15 else '⚠️' if max_dd < 0.25 else '❌'} |"
+        )
+        report.append(
+            f"| 胜率 | {win_rate:.1f}% | {'✅' if win_rate > 55 else '⚠️' if win_rate > 45 else '❌'} |"
+        )
         report.append("")
 
         report.append("## 4. 信号统计分析")
         report.append("")
         report.append(f"- **交易天数**: {stats.get('trading_days', 0)}")
-        report.append(f"- **正信号天数**: {stats.get('positive_signal_days', 0)} ({stats.get('positive_signal_days', 0)/stats.get('trading_days', 1)*100:.1f}%)")
-        report.append(f"- **负信号天数**: {stats.get('negative_signal_days', 0)} ({stats.get('negative_signal_days', 0)/stats.get('trading_days', 1)*100:.1f}%)")
+        report.append(
+            f"- **正信号天数**: {stats.get('positive_signal_days', 0)} ({stats.get('positive_signal_days', 0)/stats.get('trading_days', 1)*100:.1f}%)"
+        )
+        report.append(
+            f"- **负信号天数**: {stats.get('negative_signal_days', 0)} ({stats.get('negative_signal_days', 0)/stats.get('trading_days', 1)*100:.1f}%)"
+        )
         report.append(f"- **平均信号强度**: {stats.get('avg_signal', 0):.4f}")
         report.append(f"- **平均仓位**: {stats.get('avg_position', 0)*100:.1f}%")
         report.append("")
@@ -154,7 +169,9 @@ def generate_report(all_results):
         report.append("")
         report.append(f"- **初始资金**: ${stats.get('initial_capital'):,.0f}")
         report.append(f"- **期末资金**: ${stats.get('final_capital'):,.0f}")
-        report.append(f"- **绝对收益**: ${stats.get('final_capital', 0) - stats.get('initial_capital'):,.0f}")
+        report.append(
+            f"- **绝对收益**: ${stats.get('final_capital', 0) - stats.get('initial_capital'):,.0f}"
+        )
         report.append(f"- **收益率**: {stats.get('total_return', 0)*100:.2f}%")
         report.append(f"- **最大回撤**: {stats.get('max_drawdown', 0)*100:.2f}%")
         report.append("")
@@ -244,7 +261,7 @@ def generate_report(all_results):
     # 保存报告
     report_content = "\n".join(report)
     report_file = Path(OUTPUT_DIR) / "backtest_analysis_report.md"
-    with open(report_file, 'w', encoding='utf-8') as f:
+    with open(report_file, "w", encoding="utf-8") as f:
         f.write(report_content)
 
     print(f"回测分析报告已保存至：{report_file}")
@@ -253,6 +270,7 @@ def generate_report(all_results):
     print("=" * 70)
 
     return report_content
+
 
 if __name__ == "__main__":
     results = load_backtest_results()

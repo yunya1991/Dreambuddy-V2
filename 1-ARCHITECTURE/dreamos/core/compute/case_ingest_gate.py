@@ -29,26 +29,27 @@ from typing import Any, Callable, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 # ── 价值评估阈值 ────────────────────────────────────────
-NOVELTY_THRESHOLD = 0.6         # 新颖性 ≥ 0.6 → 高价值
-SIGNIFICANCE_THRESHOLD = 0.05   # 盈亏幅度 ≥ 5% → 显著
-ANOMALY_THRESHOLD = 0.7         # 异常度 ≥ 0.7 → 高价值
-REPRODUCIBILITY_PENALTY = 0.3   # 可复现性高 → 降低价值 (非新知识)
+NOVELTY_THRESHOLD = 0.6  # 新颖性 ≥ 0.6 → 高价值
+SIGNIFICANCE_THRESHOLD = 0.05  # 盈亏幅度 ≥ 5% → 显著
+ANOMALY_THRESHOLD = 0.7  # 异常度 ≥ 0.7 → 高价值
+REPRODUCIBILITY_PENALTY = 0.3  # 可复现性高 → 降低价值 (非新知识)
 
 
 class IngestDecision(str, Enum):
-    INGEST = "ingest"            # 高学习价值, 入库
-    SKIP = "skip"                # 低学习价值, 跳过
-    DEFERRED = "deferred"        # 需人工确认
+    INGEST = "ingest"  # 高学习价值, 入库
+    SKIP = "skip"  # 低学习价值, 跳过
+    DEFERRED = "deferred"  # 需人工确认
 
 
 @dataclass
 class LearningValue:
     """学习价值评估"""
-    novelty: float = 0.0             # 新颖性 0-1
-    significance: float = 0.0        # 显著性 0-1
-    anomaly: float = 0.0             # 异常度 0-1
-    reproducibility: float = 0.0     # 可复现性 0-1
-    overall_score: float = 0.0       # 综合评分
+
+    novelty: float = 0.0  # 新颖性 0-1
+    significance: float = 0.0  # 显著性 0-1
+    anomaly: float = 0.0  # 异常度 0-1
+    reproducibility: float = 0.0  # 可复现性 0-1
+    overall_score: float = 0.0  # 综合评分
     factors: List[str] = field(default_factory=list)  # 评分因子说明
 
     def to_dict(self) -> Dict[str, Any]:
@@ -65,14 +66,13 @@ class LearningValue:
 @dataclass
 class IngestReport:
     """案例入库报告"""
+
     decision: IngestDecision
     value: LearningValue
     ingested: bool = False
     case_id: Optional[str] = None
     reason: str = ""
-    evaluated_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z"
-    )
+    evaluated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z")
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -110,9 +110,7 @@ class CaseIngestGate:
 
     # ── 价值评估 ─────────────────────────────────────────
 
-    def _assess_novelty(
-        self, cycle_result: Dict[str, Any], recalled: List[Dict]
-    ) -> tuple:
+    def _assess_novelty(self, cycle_result: Dict[str, Any], recalled: List[Dict]) -> tuple:
         """评估新颖性 (与历史案例的差异)"""
         if not recalled:
             return 1.0, ["无历史相似案例 → 全新知识"]
@@ -196,9 +194,7 @@ class CaseIngestGate:
 
         return anomaly_score, factors
 
-    def _assess_reproducibility(
-        self, cycle_result: Dict[str, Any], recalled: List[Dict]
-    ) -> tuple:
+    def _assess_reproducibility(self, cycle_result: Dict[str, Any], recalled: List[Dict]) -> tuple:
         """评估可复现性 (高可复现 → 低新颖 → 降低价值)"""
         if not recalled:
             return 0.0, ["无历史对比"]
@@ -237,16 +233,11 @@ class CaseIngestGate:
         novelty, nov_factors = self._assess_novelty(cycle_result, recalled)
         significance, sig_factors = self._assess_significance(cycle_result)
         anomaly, anom_factors = self._assess_anomaly(cycle_result)
-        reproducibility, rep_factors = self._assess_reproducibility(
-            cycle_result, recalled
-        )
+        reproducibility, rep_factors = self._assess_reproducibility(cycle_result, recalled)
 
         # 综合评分: 新颖性 + 显著性 + 异常度 - 可复现性惩罚
         overall = (
-            novelty * 0.35
-            + significance * 0.30
-            + anomaly * 0.25
-            + (1 - reproducibility) * 0.10
+            novelty * 0.35 + significance * 0.30 + anomaly * 0.25 + (1 - reproducibility) * 0.10
         )
 
         all_factors = nov_factors + sig_factors + anom_factors + rep_factors

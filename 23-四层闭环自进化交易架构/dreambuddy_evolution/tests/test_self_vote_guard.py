@@ -1,4 +1,5 @@
 """B-08: 自票上限 / 独立矛盾证据 shadow 测试."""
+
 from __future__ import annotations
 
 import copy
@@ -28,9 +29,7 @@ class TestSelfVoteGuard:
             _path("p1", "l2_gene", "long", 0.8),
             _path("p2", "synthesized", "long", 0.7),
         ]
-        shadow = compute_self_vote_shadow(
-            paths, {"direction": "long"}, enabled=True
-        )
+        shadow = compute_self_vote_shadow(paths, {"direction": "long"}, enabled=True)
         assert shadow["available"] is True
         assert shadow["self_vote_ratio"] == 1.0
         assert shadow["independent_evidence"] is False
@@ -43,9 +42,7 @@ class TestSelfVoteGuard:
             _path("p2", "synthesized", "long", 0.7),
             _path("p3", "bcrm", "long", 0.7),
         ]
-        shadow = compute_self_vote_shadow(
-            paths, {"direction": "long"}, enabled=True
-        )
+        shadow = compute_self_vote_shadow(paths, {"direction": "long"}, enabled=True)
         assert shadow["independent_evidence"] is True
         assert shadow["would_cap"] is False
         assert shadow["external_sources"] == ["bcrm"]
@@ -56,9 +53,7 @@ class TestSelfVoteGuard:
             _path("p2", "synthesized", "long", 0.8),
             _path("p3", "bcrm", "short", 0.9),
         ]
-        shadow = compute_self_vote_shadow(
-            paths, {"direction": "long"}, enabled=True
-        )
+        shadow = compute_self_vote_shadow(paths, {"direction": "long"}, enabled=True)
         assert shadow["independent_evidence"] is False
         assert shadow["would_cap"] is True
 
@@ -67,17 +62,13 @@ class TestSelfVoteGuard:
             _path("p1", "l2_gene", "long", 0.2),
             _path("p2", "bcrm", "long", 0.9),
         ]
-        shadow = compute_self_vote_shadow(
-            paths, {"direction": "long"}, enabled=True
-        )
+        shadow = compute_self_vote_shadow(paths, {"direction": "long"}, enabled=True)
         assert shadow["self_vote_ratio"] < shadow["cap_ratio"]
         assert shadow["would_cap"] is False
 
     def test_neutral_primary_does_not_cap(self):
         paths = [_path("p1", "l2_gene", "long", 0.9)]
-        shadow = compute_self_vote_shadow(
-            paths, {"direction": "neutral"}, enabled=True
-        )
+        shadow = compute_self_vote_shadow(paths, {"direction": "neutral"}, enabled=True)
         assert shadow["would_cap"] is False
         assert "primary_direction_neutral" in shadow["reasons"]
 
@@ -97,9 +88,9 @@ class TestSelfVoteGuard:
     def test_custom_cap(self):
         paths = [_path("p1", "l2_gene", "long", 0.9)]
         assert (
-            compute_self_vote_shadow(
-                paths, {"direction": "long"}, enabled=True, cap_ratio=1.0
-            )["would_cap"]
+            compute_self_vote_shadow(paths, {"direction": "long"}, enabled=True, cap_ratio=1.0)[
+                "would_cap"
+            ]
             is False
         )
 
@@ -108,9 +99,7 @@ class TestSelfVoteGuard:
             _path("p1", "l2_gene", "long", 0.9),
             _path("p2", "mystery", "long", 0.8),
         ]
-        shadow = compute_self_vote_shadow(
-            paths, {"direction": "long"}, enabled=True
-        )
+        shadow = compute_self_vote_shadow(paths, {"direction": "long"}, enabled=True)
         assert "mystery" in shadow["external_sources"]
         assert shadow["independent_evidence"] is True
 

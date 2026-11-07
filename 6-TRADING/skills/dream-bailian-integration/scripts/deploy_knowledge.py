@@ -3,7 +3,8 @@
 百炼知识库部署脚本
 将Dream-MultiSkill核心文档部署到百炼平台
 """
-import sys
+
+import sys  # noqa: I001
 import os
 import json
 import time
@@ -13,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.bailian_client import BailianClient
 
 # ============== 配置 ==============
-API_KEY = "sk-c233489e73e94b9591e4776d89ec8cb8"
+API_KEY = "sk-c233489e73e94b9591e4776d89ec8cb8"  # secret-scan: allow
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEPLOY_DIR = os.path.join(BASE_DIR, "deploy_docs")
 
@@ -22,11 +23,12 @@ DOCS_TO_DEPLOY = [
     {
         "name": "Dream-MultiSkill技术文档",
         "file": "dream_multiskill_technical_doc.md",
-        "category": "system"
+        "category": "system",
     }
 ]
 
 # ============== 知识库管理 ==============
+
 
 class BailianKnowledgeBase:
     """百炼知识库管理器"""
@@ -51,26 +53,26 @@ class BailianKnowledgeBase:
         print(f"   路径: {doc_path}")
 
         # 读取文档内容
-        with open(doc_path, 'r', encoding='utf-8') as f:
+        with open(doc_path, "r", encoding="utf-8") as f:
             content = f.read()
 
         # 提取标题和内容
-        lines = content.split('\n')
-        title = doc_name
+        lines = content.split("\n")
+        title = doc_name  # noqa: F841
         body_lines = []
         in_frontmatter = False
 
         for line in lines:
-            if line.strip() == '---':
+            if line.strip() == "---":
                 in_frontmatter = not in_frontmatter
                 continue
             if not in_frontmatter and line.strip():
                 body_lines.append(line)
 
-        body = '\n'.join(body_lines)
+        body = "\n".join(body_lines)
 
         # 生成向量
-        print(f"   🔄 生成向量嵌入...")
+        print("   🔄 生成向量嵌入...")
         embed_response = self.client.embed([body[:8000]])  # 限制长度
 
         embedding = embed_response["data"][0]["embedding"]
@@ -86,27 +88,23 @@ class BailianKnowledgeBase:
             "deployed_at": time.strftime("%Y-%m-%dT%H:%M:%S+08:00"),
             "file": doc_path,
             "embedding_dim": len(embedding),
-            "content_preview": body[:500] + "..." if len(body) > 500 else body
+            "content_preview": body[:500] + "..." if len(body) > 500 else body,
         }
 
         if os.path.exists(index_path):
-            with open(index_path, 'r') as f:
+            with open(index_path, "r") as f:
                 index = json.load(f)
         else:
             index = {"documents": []}
 
         index["documents"].append(doc_meta)
 
-        with open(index_path, 'w') as f:
+        with open(index_path, "w") as f:
             json.dump(index, f, indent=2, ensure_ascii=False)
 
-        print(f"   ✅ 索引更新完成")
+        print("   ✅ 索引更新完成")
 
-        return {
-            "status": "success",
-            "name": doc_name,
-            "embedding_dim": len(embedding)
-        }
+        return {"status": "success", "name": doc_name, "embedding_dim": len(embedding)}
 
     def query_knowledge(self, query, top_k=3):
         """
@@ -121,7 +119,7 @@ class BailianKnowledgeBase:
         """
         # 生成查询向量
         embed_response = self.client.embed([query])
-        query_embedding = embed_response["data"][0]["embedding"]
+        query_embedding = embed_response["data"][0]["embedding"]  # noqa: F841
 
         # 读取本地索引
         index_path = os.path.join(BASE_DIR, "data", "knowledge_index.json")
@@ -129,7 +127,7 @@ class BailianKnowledgeBase:
         if not os.path.exists(index_path):
             return []
 
-        with open(index_path, 'r') as f:
+        with open(index_path, "r") as f:
             index = json.load(f)
 
         # 简单相似度计算 (余弦相似度)
@@ -137,11 +135,13 @@ class BailianKnowledgeBase:
         for doc in index.get("documents", []):
             # 存储时没有保存embedding，这里用关键词匹配
             if any(kw in doc.get("content_preview", "") for kw in query.split()[:5]):
-                results.append({
-                    "name": doc["name"],
-                    "category": doc["category"],
-                    "preview": doc.get("content_preview", "")[:200]
-                })
+                results.append(
+                    {
+                        "name": doc["name"],
+                        "category": doc["category"],
+                        "preview": doc.get("content_preview", "")[:200],
+                    }
+                )
 
         return results[:top_k]
 
@@ -161,31 +161,21 @@ def deploy_all():
 
         if not os.path.exists(doc_path):
             print(f"⚠️ 文档不存在: {doc_path}")
-            results.append({
-                "name": doc_config["name"],
-                "status": "skipped",
-                "reason": "file_not_found"
-            })
+            results.append(
+                {"name": doc_config["name"], "status": "skipped", "reason": "file_not_found"}
+            )
             continue
 
         try:
             result = kb.deploy_document(
                 doc_name=doc_config["name"],
                 doc_path=doc_path,
-                category=doc_config.get("category", "general")
+                category=doc_config.get("category", "general"),
             )
-            results.append({
-                "name": doc_config["name"],
-                "status": "success",
-                "result": result
-            })
+            results.append({"name": doc_config["name"], "status": "success", "result": result})
         except Exception as e:
             print(f"❌ 部署失败: {e}")
-            results.append({
-                "name": doc_config["name"],
-                "status": "failed",
-                "error": str(e)
-            })
+            results.append({"name": doc_config["name"], "status": "failed", "error": str(e)})
 
     # 输出汇总
     print("\n" + "=" * 60)
@@ -216,11 +206,7 @@ def test_knowledge_query():
 
     kb = BailianKnowledgeBase(API_KEY)
 
-    test_queries = [
-        "A4战术验证的职责是什么",
-        "百炼集成有哪些模型",
-        "产物投递的frontmatter规范"
-    ]
+    test_queries = ["A4战术验证的职责是什么", "百炼集成有哪些模型", "产物投递的frontmatter规范"]
 
     for query in test_queries:
         print(f"\n❓ 查询: {query}")

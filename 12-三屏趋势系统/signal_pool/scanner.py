@@ -17,11 +17,11 @@
   python3 signal_pool/scanner.py --daemon --interval 300
 """
 
+import argparse
+import json
 import os
 import sys
-import json
 import time
-import argparse
 from datetime import datetime, timezone
 from typing import Dict, List
 
@@ -55,15 +55,18 @@ def _get_candidate_coins() -> List[Dict]:
     """获取候选币种列表"""
     try:
         from core.config import CANDIDATE_COINS
+
         return CANDIDATE_COINS
     except ImportError:
         from config import CANDIDATE_COINS
+
         return CANDIDATE_COINS
 
 
 def _import_ml_trade_service():
     """import ml_trade_service 模块（不启动 Flask）"""
     import ml_trade_service
+
     return ml_trade_service
 
 
@@ -91,15 +94,34 @@ def _run_strategy_vote(ml_svc, coin: str, strategies: list) -> Dict:
                 votes[sig] += weight
                 details.append({"strategy": cls, "signal": sig, "weight": weight})
             else:
-                details.append({"strategy": cls, "signal": "HOLD", "weight": weight, "error": res.get("error", "no_signal")})
+                details.append(
+                    {
+                        "strategy": cls,
+                        "signal": "HOLD",
+                        "weight": weight,
+                        "error": res.get("error", "no_signal"),
+                    }
+                )
         except Exception as e:
-            details.append({"strategy": cls, "signal": "HOLD", "weight": weight, "error": str(e)[:100]})
+            details.append(
+                {"strategy": cls, "signal": "HOLD", "weight": weight, "error": str(e)[:100]}
+            )
 
     # 投票结果
     if votes["BUY"] > votes["SELL"] and votes["BUY"] > votes["HOLD"]:
-        return {"signal": "BUY", "confidence": int(votes["BUY"] * 100), "strategy": "Freqtrade_Vote", "details": details}
+        return {
+            "signal": "BUY",
+            "confidence": int(votes["BUY"] * 100),
+            "strategy": "Freqtrade_Vote",
+            "details": details,
+        }
     elif votes["SELL"] > votes["BUY"] and votes["SELL"] > votes["HOLD"]:
-        return {"signal": "SELL", "confidence": int(votes["SELL"] * 100), "strategy": "Freqtrade_Vote", "details": details}
+        return {
+            "signal": "SELL",
+            "confidence": int(votes["SELL"] * 100),
+            "strategy": "Freqtrade_Vote",
+            "details": details,
+        }
     else:
         return {"signal": "HOLD", "confidence": 0, "strategy": "Freqtrade_Vote", "details": details}
 
@@ -167,8 +189,18 @@ def scan_all_coins() -> Dict:
         except Exception as e:
             fail_count += 1
             signals[symbol] = {
-                "1h": {"signal": "HOLD", "confidence": 0, "strategy": "error", "error": str(e)[:100]},
-                "4h": {"signal": "HOLD", "confidence": 0, "strategy": "error", "error": str(e)[:100]},
+                "1h": {
+                    "signal": "HOLD",
+                    "confidence": 0,
+                    "strategy": "error",
+                    "error": str(e)[:100],
+                },
+                "4h": {
+                    "signal": "HOLD",
+                    "confidence": 0,
+                    "strategy": "error",
+                    "error": str(e)[:100],
+                },
             }
             print(f"  [{i+1}/{len(coins)}] {symbol:6s} ERROR: {str(e)[:80]}")
 

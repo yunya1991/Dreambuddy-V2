@@ -6,6 +6,7 @@ Bug 复盘：2026-09-05 实盘日志显示 BMNR/GOOGL 平仓时抛出
 导致平仓后记账全流程中断（无 trade_rec、无绩效、无 case、无增量学习）。
 根因：调用方传入 inference=，但函数签名未声明该参数。
 """
+
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock

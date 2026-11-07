@@ -70,8 +70,9 @@ class CriticLoop:
         self.pool = pool
         self.proposals: List[CriticProposal] = []
 
-    def propose(self, contradiction: str, hypothesis: str,
-                self_score: float = 0.5) -> CriticProposal:
+    def propose(
+        self, contradiction: str, hypothesis: str, self_score: float = 0.5
+    ) -> CriticProposal:
         """发现矛盾 → 提出假说（进入回放验证）。"""
         proposal = CriticProposal(
             proposal_id=f"cp_{len(self.proposals):04d}",
@@ -90,8 +91,9 @@ class CriticLoop:
         proposal.independently_verified = True
         return "observing"
 
-    def record_task(self, proposal_id: str, poe_score: float,
-                    evidence_completeness: float, cost_calls: int) -> Dict[str, Any]:
+    def record_task(
+        self, proposal_id: str, poe_score: float, evidence_completeness: float, cost_calls: int
+    ) -> Dict[str, Any]:
         """观察期内记录一个分析任务周期的指标，并执行客观回滚判定。
 
         返回 {status, rolled_back, reason}。
@@ -108,17 +110,26 @@ class CriticLoop:
         # 客观回滚条件
         if evidence_completeness < proposal.baseline["evidence_completeness"]:
             proposal.status = "rolled_back"
-            return {"status": "rolled_back", "rolled_back": True,
-                    "reason": "evidence completeness dropped"}
+            return {
+                "status": "rolled_back",
+                "rolled_back": True,
+                "reason": "evidence completeness dropped",
+            }
         if proposal.baseline["poe_score"] - poe_score > POE_DROP_ROLLBACK:
             proposal.status = "rolled_back"
-            return {"status": "rolled_back", "rolled_back": True,
-                    "reason": "poe_score dropped over threshold"}
+            return {
+                "status": "rolled_back",
+                "rolled_back": True,
+                "reason": "poe_score dropped over threshold",
+            }
         base_cost = proposal.baseline["cost_calls"]
         if base_cost > 0 and (cost_calls - base_cost) / base_cost > COST_RISE_ROLLBACK:
             proposal.status = "rolled_back"
-            return {"status": "rolled_back", "rolled_back": True,
-                    "reason": "cost rose over threshold"}
+            return {
+                "status": "rolled_back",
+                "rolled_back": True,
+                "reason": "cost rose over threshold",
+            }
         # 观察期推进
         proposal.observed_tasks += 1
         if proposal.observed_tasks >= OBSERVATION_PERIOD:

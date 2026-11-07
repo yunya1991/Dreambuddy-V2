@@ -20,15 +20,13 @@ TrailingStopComponent 单元测试
 from __future__ import annotations
 
 import json
-import os
 import sys
 import tempfile
-import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-_BASE_DIR = Path(__file__).resolve().parents[2]            # 16-调控系统
+_BASE_DIR = Path(__file__).resolve().parents[2]  # 16-调控系统
 _CORE_DIR = _BASE_DIR / "core"
 sys.path.insert(0, str(_CORE_DIR))
 
@@ -37,9 +35,7 @@ from trailing_stop.types import (  # noqa: E402
     TrailingStatus,
     calc_atr_trailing_price,
     calc_pnl_eff_pct,
-    TrailingState,
 )
-
 
 # =====================================================================
 # T1 ~ T4: 纯函数辅助
@@ -64,7 +60,7 @@ class TestHelperFunctions(unittest.TestCase):
     def test_atr_trailing_short_basic(self):
         price = calc_atr_trailing_price(
             is_long=False,
-            peak_price=100.0,        # 做空时的最低价
+            peak_price=100.0,  # 做空时的最低价
             atr_value=2.0,
             atr_multiplier=2.5,
             min_trail_pct=0.03,
@@ -77,7 +73,7 @@ class TestHelperFunctions(unittest.TestCase):
         price = calc_atr_trailing_price(
             is_long=True,
             peak_price=100.0,
-            atr_value=0.5,          # ATR×2.5=1.25 < 100×3%=3 → 取 3
+            atr_value=0.5,  # ATR×2.5=1.25 < 100×3%=3 → 取 3
             atr_multiplier=2.5,
             min_trail_pct=0.03,
         )
@@ -111,23 +107,25 @@ class TestTrailingStopComponent(unittest.TestCase):
         # 自定义配置
         self._cfg_file = Path(self._tmpdir) / "trailing_stop.json"
         self._cfg_file.write_text(
-            json.dumps({
-                "version": "1.0",
-                "mode": "atr_adaptive",
-                "enabled_systems": ["v15_martin", "yijing_bcrm"],
-                "cache_ttl_sec": 0,                 # 禁用缓存便于测试
-                "persist_enabled": True,
-                "persist_file": str(self._state_file),
-                "algorithm": {
-                    "arm_threshold_pct": 0.20,
-                    "atr_period": 14,
-                    "atr_multiplier": 2.5,
-                    "min_trail_pct": 0.03,
-                    "atr_fallback_pct": 0.02,        # 2% 默认 ATR
-                },
-                "trigger_cooldown_sec": 300,
-                "auto_close_after_sec": 1_000_000,  # 测试中不自动关闭
-            }),
+            json.dumps(
+                {
+                    "version": "1.0",
+                    "mode": "atr_adaptive",
+                    "enabled_systems": ["v15_martin", "yijing_bcrm"],
+                    "cache_ttl_sec": 0,  # 禁用缓存便于测试
+                    "persist_enabled": True,
+                    "persist_file": str(self._state_file),
+                    "algorithm": {
+                        "arm_threshold_pct": 0.20,
+                        "atr_period": 14,
+                        "atr_multiplier": 2.5,
+                        "min_trail_pct": 0.03,
+                        "atr_fallback_pct": 0.02,  # 2% 默认 ATR
+                    },
+                    "trigger_cooldown_sec": 300,
+                    "auto_close_after_sec": 1_000_000,  # 测试中不自动关闭
+                }
+            ),
             encoding="utf-8",
         )
         # 旧测试套件预设：param_center 调用强制 FAIL-OPEN 回退到配置默认 atr_multiplier=2.5
@@ -141,6 +139,7 @@ class TestTrailingStopComponent(unittest.TestCase):
 
     def tearDown(self):
         import shutil
+
         shutil.rmtree(self._tmpdir, ignore_errors=True)
 
     # ------------------------------------------------------------------
@@ -179,23 +178,25 @@ class TestTrailingStopComponent(unittest.TestCase):
     def test_t5_idle_no_arm(self):
         from trailing_stop.component import TrailingStopComponent
 
-        positions = self._mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "LONG",
-                    "size": 0.1,
-                    "entry_price": 50000.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.01,   # 1% 名义 = 5% 有效（<20%）
-                    "meta": {
-                        "current_price": 50500.0,
-                        "atr_pct": 0.02,
+        positions = self._mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "LONG",
+                        "size": 0.1,
+                        "entry_price": 50000.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.01,  # 1% 名义 = 5% 有效（<20%）
+                        "meta": {
+                            "current_price": 50500.0,
+                            "atr_pct": 0.02,
+                        },
                     },
-                },
-            ],
-        })
+                ],
+            }
+        )
         with patch(
             "trailing_stop.component.TrailingStopComponent._lazy_fetch_positions",
             return_value=positions,
@@ -219,23 +220,25 @@ class TestTrailingStopComponent(unittest.TestCase):
         from trailing_stop.component import TrailingStopComponent
 
         # 100 → 104 × 5x = 20% 有效收益
-        positions = self._mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "LONG",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.04,
-                    "meta": {
-                        "current_price": 104.0,
-                        "atr_pct": 0.02,        # ATR=2.08
+        positions = self._mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "LONG",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.04,
+                        "meta": {
+                            "current_price": 104.0,
+                            "atr_pct": 0.02,  # ATR=2.08
+                        },
                     },
-                },
-            ],
-        })
+                ],
+            }
+        )
         with patch(
             "trailing_stop.component.TrailingStopComponent._lazy_fetch_positions",
             return_value=positions,
@@ -259,35 +262,39 @@ class TestTrailingStopComponent(unittest.TestCase):
         from trailing_stop.component import TrailingStopComponent
 
         # 第一轮：ARM
-        positions_1 = self._mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "LONG",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.04,
-                    "meta": {"current_price": 104.0, "atr_pct": 0.02},
-                },
-            ],
-        })
+        positions_1 = self._mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "LONG",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.04,
+                        "meta": {"current_price": 104.0, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
         # 第二轮：价格继续上涨 108（有效盈利 = (108-100)/100*5=40%）
-        positions_2 = self._mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "LONG",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.08,
-                    "meta": {"current_price": 108.0, "atr_pct": 0.02},
-                },
-            ],
-        })
+        positions_2 = self._mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "LONG",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.08,
+                        "meta": {"current_price": 108.0, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
 
         comp = TrailingStopComponent(config_path=self._cfg_file)
         with patch.object(comp, "_lazy_fetch_positions", return_value=positions_1):
@@ -314,35 +321,39 @@ class TestTrailingStopComponent(unittest.TestCase):
         from trailing_stop.component import TrailingStopComponent
 
         # 第1轮 ARM 后 trail=98.8（peak=104）
-        positions_arm = self._mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "LONG",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.04,
-                    "meta": {"current_price": 104.0, "atr_pct": 0.02},
-                },
-            ],
-        })
+        positions_arm = self._mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "LONG",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.04,
+                        "meta": {"current_price": 104.0, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
         # 第2轮价格跌到 98（< trail 98.8）
-        positions_trig = self._mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "LONG",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": -0.02,
-                    "meta": {"current_price": 98.0, "atr_pct": 0.02},
-                },
-            ],
-        })
+        positions_trig = self._mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "LONG",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": -0.02,
+                        "meta": {"current_price": 98.0, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
 
         comp = TrailingStopComponent(config_path=self._cfg_file)
         with patch.object(comp, "_lazy_fetch_positions", return_value=positions_arm):
@@ -368,36 +379,40 @@ class TestTrailingStopComponent(unittest.TestCase):
         from trailing_stop.component import TrailingStopComponent
 
         # 轮1：104 → trail 98.8
-        p1 = self._mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "LONG",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.04,
-                    "meta": {"current_price": 104.0, "atr_pct": 0.02},
-                },
-            ],
-        })
+        p1 = self._mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "LONG",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.04,
+                        "meta": {"current_price": 104.0, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
         # 轮2：价格回落到 102（peak 仍=104，不更新），如果重算 trail 会 104-...
         # 本轮当前价=102 > trail(98.8)，不触发；trail 保持
-        p2 = self._mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "LONG",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.02,
-                    "meta": {"current_price": 102.0, "atr_pct": 0.02},
-                },
-            ],
-        })
+        p2 = self._mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "LONG",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.02,
+                        "meta": {"current_price": 102.0, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
 
         comp = TrailingStopComponent(config_path=self._cfg_file)
         with patch.object(comp, "_lazy_fetch_positions", return_value=p1):
@@ -419,20 +434,22 @@ class TestTrailingStopComponent(unittest.TestCase):
     def test_t10_state_persist_and_restore(self):
         from trailing_stop.component import TrailingStopComponent
 
-        p1 = self._mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "LONG",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.04,
-                    "meta": {"current_price": 104.0, "atr_pct": 0.02},
-                },
-            ],
-        })
+        p1 = self._mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "LONG",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.04,
+                        "meta": {"current_price": 104.0, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
 
         # 第1次实例化并 evaluate → ARM
         comp1 = TrailingStopComponent(config_path=self._cfg_file)
@@ -459,36 +476,40 @@ class TestTrailingStopComponent(unittest.TestCase):
         from trailing_stop.component import TrailingStopComponent
 
         # 做空：entry=100，价格跌到 96 → 名义 4% × 5x = 20% 盈利 → ARM
-        p_arm = self._mock_fetch({
-            "yijing_bcrm": [
-                {
-                    "system": "yijing_bcrm",
-                    "symbol": "ETH-USDT",
-                    "direction": "SHORT",
-                    "size": 1.0,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.04,
-                    "meta": {"current_price": 96.0, "atr_pct": 0.02},
-                },
-            ],
-        })
+        p_arm = self._mock_fetch(
+            {
+                "yijing_bcrm": [
+                    {
+                        "system": "yijing_bcrm",
+                        "symbol": "ETH-USDT",
+                        "direction": "SHORT",
+                        "size": 1.0,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.04,
+                        "meta": {"current_price": 96.0, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
         # 然后反弹到 101（> trail）→ 触发 TRIGGER
         # trail = 96 + max(96*0.02*2.5, 96*3%) = 96 + max(4.8, 2.88) = 96 + 4.8 = 100.8
-        p_trig = self._mock_fetch({
-            "yijing_bcrm": [
-                {
-                    "system": "yijing_bcrm",
-                    "symbol": "ETH-USDT",
-                    "direction": "SHORT",
-                    "size": 1.0,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": -0.01,
-                    "meta": {"current_price": 101.0, "atr_pct": 0.02},
-                },
-            ],
-        })
+        p_trig = self._mock_fetch(
+            {
+                "yijing_bcrm": [
+                    {
+                        "system": "yijing_bcrm",
+                        "symbol": "ETH-USDT",
+                        "direction": "SHORT",
+                        "size": 1.0,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": -0.01,
+                        "meta": {"current_price": 101.0, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
 
         comp = TrailingStopComponent(config_path=self._cfg_file)
         with patch.object(comp, "_lazy_fetch_positions", return_value=p_arm):
@@ -510,20 +531,22 @@ class TestTrailingStopComponent(unittest.TestCase):
         from trailing_stop.component import TrailingStopComponent
 
         # ATR 设得很小：0.5% → ATR*2.5 = 1.25% < 3% min
-        p_arm = self._mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "LONG",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.04,
-                    "meta": {"current_price": 104.0, "atr_pct": 0.005},  # 0.5%
-                },
-            ],
-        })
+        p_arm = self._mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "LONG",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.04,
+                        "meta": {"current_price": 104.0, "atr_pct": 0.005},  # 0.5%
+                    },
+                ],
+            }
+        )
         comp = TrailingStopComponent(config_path=self._cfg_file)
         with patch.object(comp, "_lazy_fetch_positions", return_value=p_arm):
             snap = comp.evaluate()
@@ -539,50 +562,56 @@ class TestTrailingStopComponent(unittest.TestCase):
         from trailing_stop.component import TrailingStopComponent
 
         # 轮1：ARM，价格 96，peak=96，trail=100.8
-        p1 = self._mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "SHORT",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.04,
-                    "meta": {"current_price": 96.0, "atr_pct": 0.02},
-                },
-            ],
-        })
+        p1 = self._mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "SHORT",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.04,
+                        "meta": {"current_price": 96.0, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
         # 轮2：价格反弹 98（空头未创新低，peak 保持 96，trail 应保持）
-        p2 = self._mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "SHORT",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.02,
-                    "meta": {"current_price": 98.0, "atr_pct": 0.02},
-                },
-            ],
-        })
+        p2 = self._mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "SHORT",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.02,
+                        "meta": {"current_price": 98.0, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
         # 轮3：价格继续下跌 90（空头创新低 peak=90，trail 下移 = 90+4.5=94.5）
-        p3 = self._mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "SHORT",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.10,
-                    "meta": {"current_price": 90.0, "atr_pct": 0.02},
-                },
-            ],
-        })
+        p3 = self._mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "SHORT",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.10,
+                        "meta": {"current_price": 90.0, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
 
         comp = TrailingStopComponent(config_path=self._cfg_file)
         with patch.object(comp, "_lazy_fetch_positions", return_value=p1):
@@ -610,20 +639,22 @@ class TestTrailingStopComponent(unittest.TestCase):
         from trailing_stop.component import TrailingStopComponent
 
         # 有持仓 ARM
-        p1 = self._mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "LONG",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.04,
-                    "meta": {"current_price": 104.0, "atr_pct": 0.02},
-                },
-            ],
-        })
+        p1 = self._mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "LONG",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.04,
+                        "meta": {"current_price": 104.0, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
         comp = TrailingStopComponent(config_path=self._cfg_file)
         with patch.object(comp, "_lazy_fetch_positions", return_value=p1):
             comp.evaluate()
@@ -644,6 +675,7 @@ class TestTrailingStopComponent(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_t15_health_check(self):
         from trailing_stop.component import TrailingStopComponent
+
         p = self._mock_fetch({"v15_martin": []})
         comp = TrailingStopComponent(config_path=self._cfg_file)
         with patch.object(comp, "_lazy_fetch_positions", return_value=p):
@@ -656,33 +688,36 @@ class TestTrailingStopComponent(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_t16_multi_system_aggregate(self):
         from trailing_stop.component import TrailingStopComponent
+
         # v15_martin BTC (ARM), yijing_bcrm ETH (IDLE)
-        p = self._mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "LONG",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.04,
-                    "meta": {"current_price": 104.0, "atr_pct": 0.02},
-                },
-            ],
-            "yijing_bcrm": [
-                {
-                    "system": "yijing_bcrm",
-                    "symbol": "ETH-USDT",
-                    "direction": "LONG",
-                    "size": 1.0,
-                    "entry_price": 2000.0,
-                    "leverage": 10.0,
-                    "upl_ratio": 0.005,    # 5% 有效，不够 20%
-                    "meta": {"current_price": 2010.0, "atr_pct": 0.02},
-                },
-            ],
-        })
+        p = self._mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "LONG",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.04,
+                        "meta": {"current_price": 104.0, "atr_pct": 0.02},
+                    },
+                ],
+                "yijing_bcrm": [
+                    {
+                        "system": "yijing_bcrm",
+                        "symbol": "ETH-USDT",
+                        "direction": "LONG",
+                        "size": 1.0,
+                        "entry_price": 2000.0,
+                        "leverage": 10.0,
+                        "upl_ratio": 0.005,  # 5% 有效，不够 20%
+                        "meta": {"current_price": 2010.0, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
         comp = TrailingStopComponent(config_path=self._cfg_file)
         with patch.object(comp, "_lazy_fetch_positions", return_value=p):
             snap = comp.evaluate()

@@ -15,9 +15,10 @@
 
 本测试覆盖修复点 1（根因修复），通过 mock _get 验证 cTime 透传。
 """
+
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 
@@ -28,6 +29,7 @@ sys.path.insert(0, str(_MEMORY_L4))
 def _make_client():
     """构造一个带假凭证的 OKXSimulatedClient（不走真实网络）。"""
     from okx_simulated import OKXSimulatedClient
+
     cfg = {
         "api_key": "fake_key",
         "secret_key": "fake_secret",

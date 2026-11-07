@@ -14,20 +14,20 @@
 - SHORT: 止损在上方，止盈在下方
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
-import math
 from enum import Enum
 from dataclasses import dataclass, field, asdict
 from typing import Dict, Any, Optional, Tuple, List
-
 
 # ============================================================
 # 策略枚举
 # ============================================================
 
+
 class StopLossStrategy(str, Enum):
     """止损策略类型"""
+
     ATR = "atr"
     FIXED_PCT = "fixed_pct"
     DYNAMIC = "dynamic"
@@ -37,6 +37,7 @@ class StopLossStrategy(str, Enum):
 
 class TakeProfitStrategy(str, Enum):
     """止盈策略类型"""
+
     ATR = "atr"
     FIXED_PCT = "fixed_pct"
     RATIO = "ratio"
@@ -46,6 +47,7 @@ class TakeProfitStrategy(str, Enum):
 
 class MarketRegime(str, Enum):
     """市场状态类型"""
+
     TREND_BULL = "trend_bull"
     TREND_BEAR = "trend_bear"
     RANGING = "ranging"
@@ -53,6 +55,7 @@ class MarketRegime(str, Enum):
 
 class SymbolVolatility(str, Enum):
     """币种波动率分类"""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -61,6 +64,7 @@ class SymbolVolatility(str, Enum):
 # ============================================================
 # 配置类
 # ============================================================
+
 
 @dataclass
 class StopTakeProfitConfig:
@@ -90,10 +94,10 @@ class StopTakeProfitConfig:
     trailing_activation_pct: float = 0.015
 
     # 动态调整配置（市场状态相关）
-    ranging_multiplier: float = 1.5       # 震荡市放大倍数
-    trend_multiplier: float = 0.8        # 趋势市缩小倍数
-    low_vol_multiplier: float = 0.8       # 低波动率缩小倍数
-    high_vol_multiplier: float = 1.3      # 高波动率放大倍数
+    ranging_multiplier: float = 1.5  # 震荡市放大倍数
+    trend_multiplier: float = 0.8  # 趋势市缩小倍数
+    low_vol_multiplier: float = 0.8  # 低波动率缩小倍数
+    high_vol_multiplier: float = 1.3  # 高波动率放大倍数
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -102,6 +106,7 @@ class StopTakeProfitConfig:
 @dataclass
 class StopTakeProfitResult:
     """止盈止损计算结果"""
+
     stop_loss: float
     take_profit: float
     rr_ratio: float
@@ -117,6 +122,7 @@ class StopTakeProfitResult:
 # ============================================================
 # 斐波那契工具
 # ============================================================
+
 
 class FibonacciCalculator:
     """斐波那契回调位计算"""
@@ -150,21 +156,24 @@ class FibonacciCalculator:
 # 止盈止损引擎
 # ============================================================
 
+
 class StopTakeProfitEngine:
     """专业止盈止损计算引擎"""
 
     def __init__(self, config: Optional[StopTakeProfitConfig] = None):
         self.config = config or StopTakeProfitConfig()
 
-    def calculate(self,
-                  direction: str,
-                  entry_price: float,
-                  atr_pct: float = 0.02,
-                  confidence: float = 0.5,
-                  swing_high: Optional[float] = None,
-                  swing_low: Optional[float] = None,
-                  market_regime: Optional[str] = None,
-                  symbol_volatility: Optional[str] = None) -> StopTakeProfitResult:
+    def calculate(
+        self,
+        direction: str,
+        entry_price: float,
+        atr_pct: float = 0.02,
+        confidence: float = 0.5,
+        swing_high: Optional[float] = None,
+        swing_low: Optional[float] = None,
+        market_regime: Optional[str] = None,
+        symbol_volatility: Optional[str] = None,
+    ) -> StopTakeProfitResult:
         """计算止盈止损
 
         Args:
@@ -199,14 +208,25 @@ class StopTakeProfitEngine:
 
         # 1. 计算止损
         stop_loss, stop_rationale = self._calculate_stop_loss(
-            direction, entry_price, atr_pct, confidence, swing_high, swing_low,
+            direction,
+            entry_price,
+            atr_pct,
+            confidence,
+            swing_high,
+            swing_low,
             dynamic_atr_multiplier=dynamic_atr_multiplier,
         )
         rationale.extend(stop_rationale)
 
         # 2. 计算止盈
         take_profit, take_rationale = self._calculate_take_profit(
-            direction, entry_price, stop_loss, atr_pct, confidence, swing_high, swing_low,
+            direction,
+            entry_price,
+            stop_loss,
+            atr_pct,
+            confidence,
+            swing_high,
+            swing_low,
             dynamic_atr_multiplier=dynamic_atr_multiplier,
         )
         rationale.extend(take_rationale)
@@ -235,9 +255,9 @@ class StopTakeProfitEngine:
             rationale=rationale,
         )
 
-    def _calculate_dynamic_atr_multiplier(self, market_regime: Optional[str],
-                                          symbol_volatility: Optional[str],
-                                          confidence: float) -> float:
+    def _calculate_dynamic_atr_multiplier(
+        self, market_regime: Optional[str], symbol_volatility: Optional[str], confidence: float
+    ) -> float:
         """根据市场状态和币种波动率动态计算 ATR 乘数
 
         设计逻辑:
@@ -263,15 +283,21 @@ class StopTakeProfitEngine:
 
         # 置信度调整（高置信度可适当缩小）
         if confidence > 0.7:
-            base_multiplier *= (1 - (confidence - 0.7) * 0.5)
+            base_multiplier *= 1 - (confidence - 0.7) * 0.5
 
         # 限制范围
         return max(0.5, min(3.0, base_multiplier))
 
-    def _calculate_stop_loss(self, direction: str, entry_price: float,
-                             atr_pct: float, confidence: float,
-                             swing_high: Optional[float], swing_low: Optional[float],
-                             dynamic_atr_multiplier: float = 1.0) -> Tuple[float, List[str]]:
+    def _calculate_stop_loss(
+        self,
+        direction: str,
+        entry_price: float,
+        atr_pct: float,
+        confidence: float,
+        swing_high: Optional[float],
+        swing_low: Optional[float],
+        dynamic_atr_multiplier: float = 1.0,
+    ) -> Tuple[float, List[str]]:
         """计算止损价格"""
         rationale: List[str] = []
         stop_loss = 0.0
@@ -285,7 +311,9 @@ class StopTakeProfitEngine:
                 stop_loss = entry_price - stop_distance
             else:
                 stop_loss = entry_price + stop_distance
-            rationale.append(f"ATR止损: {multiplier:.2f}x ATR ({(stop_distance / entry_price if entry_price else 0.0):.2%})")
+            rationale.append(
+                f"ATR止损: {multiplier:.2f}x ATR ({(stop_distance / entry_price if entry_price else 0.0):.2%})"
+            )
 
         elif strategy == StopLossStrategy.FIXED_PCT:
             pct = self.config.stop_fixed_pct * dynamic_atr_multiplier
@@ -310,7 +338,9 @@ class StopTakeProfitEngine:
 
         elif strategy == StopLossStrategy.FIBONACCI:
             if swing_high is None or swing_low is None:
-                return self._calculate_stop_loss(direction, entry_price, atr_pct, confidence, None, None)
+                return self._calculate_stop_loss(
+                    direction, entry_price, atr_pct, confidence, None, None
+                )
             fib_level = self.config.stop_fib_level
             fib_value = FibonacciCalculator.get_level_value(fib_level)
             if direction == "LONG":
@@ -328,14 +358,23 @@ class StopTakeProfitEngine:
             rationale.append(f"追踪止损: {pct:.2%}")
 
         else:
-            return self._calculate_stop_loss(direction, entry_price, atr_pct, confidence, None, None)
+            return self._calculate_stop_loss(
+                direction, entry_price, atr_pct, confidence, None, None
+            )
 
         return stop_loss, rationale
 
-    def _calculate_take_profit(self, direction: str, entry_price: float, stop_loss: float,
-                               atr_pct: float, confidence: float,
-                               swing_high: Optional[float], swing_low: Optional[float],
-                               dynamic_atr_multiplier: float = 1.0) -> Tuple[float, List[str]]:
+    def _calculate_take_profit(
+        self,
+        direction: str,
+        entry_price: float,
+        stop_loss: float,
+        atr_pct: float,
+        confidence: float,
+        swing_high: Optional[float],
+        swing_low: Optional[float],
+        dynamic_atr_multiplier: float = 1.0,
+    ) -> Tuple[float, List[str]]:
         """计算止盈价格"""
         rationale: List[str] = []
         take_profit = 0.0
@@ -349,7 +388,9 @@ class StopTakeProfitEngine:
                 take_profit = entry_price + take_distance
             else:
                 take_profit = entry_price - take_distance
-            rationale.append(f"ATR止盈: {multiplier:.2f}x ATR ({(take_distance / entry_price if entry_price else 0.0):.2%})")
+            rationale.append(
+                f"ATR止盈: {multiplier:.2f}x ATR ({(take_distance / entry_price if entry_price else 0.0):.2%})"
+            )
 
         elif strategy == TakeProfitStrategy.FIXED_PCT:
             pct = self.config.take_fixed_pct * dynamic_atr_multiplier
@@ -375,7 +416,9 @@ class StopTakeProfitEngine:
 
         elif strategy == TakeProfitStrategy.FIBONACCI:
             if swing_high is None or swing_low is None:
-                return self._calculate_take_profit(direction, entry_price, stop_loss, atr_pct, confidence, None, None)
+                return self._calculate_take_profit(
+                    direction, entry_price, stop_loss, atr_pct, confidence, None, None
+                )
             fib_level = self.config.take_fib_level
             fib_value = FibonacciCalculator.get_level_value(fib_level)
             if direction == "LONG":
@@ -393,12 +436,15 @@ class StopTakeProfitEngine:
             rationale.append(f"追踪止盈: 激活后{self.config.trailing_activation_pct:.2%}追踪")
 
         else:
-            return self._calculate_take_profit(direction, entry_price, stop_loss, atr_pct, confidence, None, None)
+            return self._calculate_take_profit(
+                direction, entry_price, stop_loss, atr_pct, confidence, None, None
+            )
 
         return take_profit, rationale
 
-    def _calculate_rr_ratio(self, direction: str, entry_price: float,
-                            stop_loss: float, take_profit: float) -> float:
+    def _calculate_rr_ratio(
+        self, direction: str, entry_price: float, stop_loss: float, take_profit: float
+    ) -> float:
         """计算风险回报比"""
         if direction == "LONG":
             risk = entry_price - stop_loss
@@ -418,8 +464,9 @@ class StopTakeProfitEngine:
         else:
             return (stop_loss - entry_price) / entry_price
 
-    def _adjust_take_profit_for_min_rr(self, direction: str, entry_price: float,
-                                        stop_loss: float, current_rr: float) -> float:
+    def _adjust_take_profit_for_min_rr(
+        self, direction: str, entry_price: float, stop_loss: float, current_rr: float
+    ) -> float:
         """调整止盈以满足最小风险回报比"""
         target_rr = self.config.min_rr_ratio
         if direction == "LONG":
@@ -436,6 +483,7 @@ class StopTakeProfitEngine:
 # 移动止盈追踪器
 # ============================================================
 
+
 class TrailingStopTracker:
     """移动止盈追踪器
 
@@ -446,8 +494,13 @@ class TrailingStopTracker:
         should_exit = tracker.should_exit(current_price=67600)
     """
 
-    def __init__(self, entry_price: float, direction: str, trail_pct: float = 0.015,
-                 activation_pct: float = 0.015):
+    def __init__(
+        self,
+        entry_price: float,
+        direction: str,
+        trail_pct: float = 0.015,
+        activation_pct: float = 0.015,
+    ):
         self.entry_price = entry_price
         self.direction = direction
         self.trail_pct = trail_pct
@@ -506,6 +559,7 @@ class TrailingStopTracker:
 # 入口函数
 # ============================================================
 
+
 def calculate_stop_take_profit(
     direction: str,
     entry_price: float,
@@ -515,7 +569,7 @@ def calculate_stop_take_profit(
     take_strategy: str = "ratio",
     market_regime: Optional[str] = None,
     symbol_volatility: Optional[str] = None,
-    **kwargs
+    **kwargs,
 ) -> Dict[str, Any]:
     """便捷计算止盈止损
 
@@ -570,6 +624,7 @@ def calculate_stop_take_profit(
 # 测试入口
 # ============================================================
 
+
 def main():
     """测试止盈止损计算"""
     import argparse
@@ -581,10 +636,16 @@ def main():
     parser.add_argument("--confidence", "-c", type=float, default=0.7, help="置信度")
     parser.add_argument("--stop-strategy", type=str, default="atr", help="止损策略")
     parser.add_argument("--take-strategy", type=str, default="ratio", help="止盈策略")
-    parser.add_argument("--market-regime", "-mr", type=str, default="ranging",
-                        help="市场状态: trend_bull/trend_bear/ranging")
-    parser.add_argument("--symbol-volatility", "-sv", type=str, default="high",
-                        help="币种波动率: low/medium/high")
+    parser.add_argument(
+        "--market-regime",
+        "-mr",
+        type=str,
+        default="ranging",
+        help="市场状态: trend_bull/trend_bear/ranging",
+    )
+    parser.add_argument(
+        "--symbol-volatility", "-sv", type=str, default="high", help="币种波动率: low/medium/high"
+    )
 
     args = parser.parse_args()
 
@@ -602,7 +663,7 @@ def main():
     )
 
     print(f"\n{'='*50}")
-    print(f"止盈止损计算结果")
+    print("止盈止损计算结果")
     print(f"{'='*50}")
     print(f"方向: {args.direction}")
     print(f"入场价: ${args.price:.4f}")
@@ -620,7 +681,7 @@ def main():
 
     # 测试移动止盈追踪器
     print(f"\n{'='*50}")
-    print(f"移动止盈追踪器测试")
+    print("移动止盈追踪器测试")
     print(f"{'='*50}")
     tracker = TrailingStopTracker(
         entry_price=args.price,
@@ -631,17 +692,35 @@ def main():
 
     test_prices = [args.price]
     if args.direction == "LONG":
-        test_prices.extend([args.price * 1.005, args.price * 1.01, args.price * 1.02,
-                           args.price * 1.015, args.price * 1.01, args.price * 1.005])
+        test_prices.extend(
+            [
+                args.price * 1.005,
+                args.price * 1.01,
+                args.price * 1.02,
+                args.price * 1.015,
+                args.price * 1.01,
+                args.price * 1.005,
+            ]
+        )
     else:
-        test_prices.extend([args.price * 0.995, args.price * 0.99, args.price * 0.98,
-                           args.price * 0.985, args.price * 0.99, args.price * 0.995])
+        test_prices.extend(
+            [
+                args.price * 0.995,
+                args.price * 0.99,
+                args.price * 0.98,
+                args.price * 0.985,
+                args.price * 0.99,
+                args.price * 0.995,
+            ]
+        )
 
     for idx, price in enumerate(test_prices):
         tracker.update(price)
         stop = tracker.get_stop_price()
         exit_flag = tracker.should_exit(price)
-        print(f"Step {idx}: 价格=${price:.2f}, 追踪止损=${stop:.2f}, 激活={tracker.activated}, 离场={exit_flag}")
+        print(
+            f"Step {idx}: 价格=${price:.2f}, 追踪止损=${stop:.2f}, 激活={tracker.activated}, 离场={exit_flag}"
+        )
 
 
 if __name__ == "__main__":

@@ -1,8 +1,9 @@
 """EventCaseLibrary 测试 — 案例存储/检索/分类。"""
+
 import os
 import tempfile
 
-from event_driven.event_case_library import EventCaseLibrary, EventCase
+from event_driven.event_case_library import EventCase, EventCaseLibrary
 
 
 def _make_lib():
@@ -30,8 +31,16 @@ def test_add_and_query_case():
 
 def test_dedup_same_date():
     lib, path = _make_lib()
-    lib.add_case(EventCase(event_date="2026-09-16", cycle_phase="event", decision="hike", hike_prob_before=0.88))
-    lib.add_case(EventCase(event_date="2026-09-16", cycle_phase="event", decision="hike", hike_prob_before=0.92))
+    lib.add_case(
+        EventCase(
+            event_date="2026-09-16", cycle_phase="event", decision="hike", hike_prob_before=0.88
+        )
+    )
+    lib.add_case(
+        EventCase(
+            event_date="2026-09-16", cycle_phase="event", decision="hike", hike_prob_before=0.92
+        )
+    )
     assert lib.size() == 1
     assert lib.all_cases()[0].hike_prob_before == 0.92
     os.unlink(path)
@@ -53,23 +62,58 @@ def test_classify_reaction_hike_reversal():
 
 def test_get_relief_ratio():
     lib, path = _make_lib()
-    lib.add_case(EventCase(event_date="2026-01-01", cycle_phase="event", decision="hike",
-                           hike_prob_before=0.9, relief_or_reversal="relief"))
-    lib.add_case(EventCase(event_date="2026-03-01", cycle_phase="event", decision="hike",
-                           hike_prob_before=0.9, relief_or_reversal="reversal"))
-    lib.add_case(EventCase(event_date="2026-06-01", cycle_phase="event", decision="hike",
-                           hike_prob_before=0.9, relief_or_reversal="relief"))
+    lib.add_case(
+        EventCase(
+            event_date="2026-01-01",
+            cycle_phase="event",
+            decision="hike",
+            hike_prob_before=0.9,
+            relief_or_reversal="relief",
+        )
+    )
+    lib.add_case(
+        EventCase(
+            event_date="2026-03-01",
+            cycle_phase="event",
+            decision="hike",
+            hike_prob_before=0.9,
+            relief_or_reversal="reversal",
+        )
+    )
+    lib.add_case(
+        EventCase(
+            event_date="2026-06-01",
+            cycle_phase="event",
+            decision="hike",
+            hike_prob_before=0.9,
+            relief_or_reversal="relief",
+        )
+    )
     ratio = lib.get_relief_ratio(cycle_phase="event")
-    assert abs(ratio - 2/3) < 1e-6
+    assert abs(ratio - 2 / 3) < 1e-6
     os.unlink(path)
 
 
 def test_get_avg_pnl():
     lib, path = _make_lib()
-    lib.add_case(EventCase(event_date="2026-01-01", cycle_phase="event", decision="hike",
-                           hike_prob_before=0.9, pnl_30d=0.05))
-    lib.add_case(EventCase(event_date="2026-03-01", cycle_phase="event", decision="hike",
-                           hike_prob_before=0.9, pnl_30d=-0.02))
+    lib.add_case(
+        EventCase(
+            event_date="2026-01-01",
+            cycle_phase="event",
+            decision="hike",
+            hike_prob_before=0.9,
+            pnl_30d=0.05,
+        )
+    )
+    lib.add_case(
+        EventCase(
+            event_date="2026-03-01",
+            cycle_phase="event",
+            decision="hike",
+            hike_prob_before=0.9,
+            pnl_30d=-0.02,
+        )
+    )
     avg = lib.get_avg_pnl(decision="hike")
     assert avg is not None
     assert abs(avg - 0.015) < 1e-6
@@ -78,7 +122,11 @@ def test_get_avg_pnl():
 
 def test_persistence():
     lib, path = _make_lib()
-    lib.add_case(EventCase(event_date="2026-09-16", cycle_phase="event", decision="hike", hike_prob_before=0.88))
+    lib.add_case(
+        EventCase(
+            event_date="2026-09-16", cycle_phase="event", decision="hike", hike_prob_before=0.88
+        )
+    )
     # 重新加载
     lib2 = EventCaseLibrary(storage_path=path)
     assert lib2.size() == 1

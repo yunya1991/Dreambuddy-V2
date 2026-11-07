@@ -14,6 +14,7 @@ SPEC §4.2: 6 因子加权置信度（0.0-1.0）
   0.70-0.85 → 软过滤（加权增强）
   < 0.70 → 不过滤
 """
+
 from __future__ import annotations
 
 import logging
@@ -54,7 +55,9 @@ class ConvictionScorer:
     HARD_THRESHOLD = 0.85
     SOFT_THRESHOLD = 0.70
 
-    def score(self, kline_data: dict[str, Any], event_signal: dict[str, Any] | None = None) -> ConvictionResult:
+    def score(
+        self, kline_data: dict[str, Any], event_signal: dict[str, Any] | None = None
+    ) -> ConvictionResult:
         """
         计算事件驱动置信度。
 
@@ -105,6 +108,7 @@ class ConvictionScorer:
             from dreambuddy_evolution.engines.conviction_position_mapper import (
                 ConvictionPositionMapper,
             )
+
             fomc_phase = (kline_data.get("event_context") or {}).get("cycle_phase")
             mapper = ConvictionPositionMapper()
             position_params = mapper.map(conviction, fomc_phase=fomc_phase)
@@ -238,8 +242,16 @@ class ConvictionScorer:
         数据完整度: 关键字段存在比例。
         """
         keys = (
-            "cpi_actual", "cpi_expected", "rate_hike_prob", "monetary_cycle",
-            "event_context", "capital_flow", "close", "high", "low", "open",
+            "cpi_actual",
+            "cpi_expected",
+            "rate_hike_prob",
+            "monetary_cycle",
+            "event_context",
+            "capital_flow",
+            "close",
+            "high",
+            "low",
+            "open",
         )
         present = sum(1 for k in keys if data.get(k) is not None)
         return round(present / len(keys), 3)

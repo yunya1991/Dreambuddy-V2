@@ -27,7 +27,7 @@ from urllib.request import Request, urlopen
 
 # 导入分析模块
 sys.path.insert(0, str(Path(__file__).parent))
-from traditional_finance_analyzer import TraditionalFinanceAnalyzer, SignalAnalysis
+from traditional_finance_analyzer import TraditionalFinanceAnalyzer, SignalAnalysis  # noqa: I001
 from market_data import get_market_snapshot
 from news_crawler import fetch_odaily_newsflash, fetch_wallstreetcn_breakfast
 from event_mapping_policy import POLICY_PATH, map_event_type, is_macro_topic, is_high_grade_event
@@ -133,24 +133,90 @@ def _load_window_profile() -> dict:
 WINDOW_PROFILE = _load_window_profile()
 
 FALLBACK_EVENT_WINDOW_PROFILE = {
-    "onchain_data": {"recommended_window_range": "[-48h,+48h]", "recommended_horizon_days": 7, "confidence": 0.65},
-    "kols_view": {"recommended_window_range": "[-24h,+24h]", "recommended_horizon_days": 3, "confidence": 0.5},
-    "kol_view": {"recommended_window_range": "[-24h,+24h]", "recommended_horizon_days": 3, "confidence": 0.5},
-    "project_update": {"recommended_window_range": "[-6h,+6h]", "recommended_horizon_days": 1, "confidence": 0.45},
-    "monetary_policy": {"recommended_window_range": "[-48h,+48h]", "recommended_horizon_days": 7, "confidence": 0.75},
-    "us_data": {"recommended_window_range": "[-48h,+48h]", "recommended_horizon_days": 7, "confidence": 0.75},
-    "geopolitics": {"recommended_window_range": "[-48h,+48h]", "recommended_horizon_days": 7, "confidence": 0.7},
-    "crypto_regulation": {"recommended_window_range": "[-24h,+24h]", "recommended_horizon_days": 3, "confidence": 0.65},
-    "protocol_tech": {"recommended_window_range": "[-24h,+24h]", "recommended_horizon_days": 3, "confidence": 0.55},
-    "security_incident": {"recommended_window_range": "[-24h,+24h]", "recommended_horizon_days": 3, "confidence": 0.7},
-    "meme_culture": {"recommended_window_range": "[0,+4h]", "recommended_horizon_days": 1, "confidence": 0.5},
-    "market_analysis": {"recommended_window_range": "[-48h,+48h]", "recommended_horizon_days": 7, "confidence": 0.6},
-    "us_policy": {"recommended_window_range": "[-24h,+24h]", "recommended_horizon_days": 3, "confidence": 0.6},
+    "onchain_data": {
+        "recommended_window_range": "[-48h,+48h]",
+        "recommended_horizon_days": 7,
+        "confidence": 0.65,
+    },
+    "kols_view": {
+        "recommended_window_range": "[-24h,+24h]",
+        "recommended_horizon_days": 3,
+        "confidence": 0.5,
+    },
+    "kol_view": {
+        "recommended_window_range": "[-24h,+24h]",
+        "recommended_horizon_days": 3,
+        "confidence": 0.5,
+    },
+    "project_update": {
+        "recommended_window_range": "[-6h,+6h]",
+        "recommended_horizon_days": 1,
+        "confidence": 0.45,
+    },
+    "monetary_policy": {
+        "recommended_window_range": "[-48h,+48h]",
+        "recommended_horizon_days": 7,
+        "confidence": 0.75,
+    },
+    "us_data": {
+        "recommended_window_range": "[-48h,+48h]",
+        "recommended_horizon_days": 7,
+        "confidence": 0.75,
+    },
+    "geopolitics": {
+        "recommended_window_range": "[-48h,+48h]",
+        "recommended_horizon_days": 7,
+        "confidence": 0.7,
+    },
+    "crypto_regulation": {
+        "recommended_window_range": "[-24h,+24h]",
+        "recommended_horizon_days": 3,
+        "confidence": 0.65,
+    },
+    "protocol_tech": {
+        "recommended_window_range": "[-24h,+24h]",
+        "recommended_horizon_days": 3,
+        "confidence": 0.55,
+    },
+    "security_incident": {
+        "recommended_window_range": "[-24h,+24h]",
+        "recommended_horizon_days": 3,
+        "confidence": 0.7,
+    },
+    "meme_culture": {
+        "recommended_window_range": "[0,+4h]",
+        "recommended_horizon_days": 1,
+        "confidence": 0.5,
+    },
+    "market_analysis": {
+        "recommended_window_range": "[-48h,+48h]",
+        "recommended_horizon_days": 7,
+        "confidence": 0.6,
+    },
+    "us_policy": {
+        "recommended_window_range": "[-24h,+24h]",
+        "recommended_horizon_days": 3,
+        "confidence": 0.6,
+    },
 }
 
 ASSET_BUCKET_EVENT_TYPES = {
-    "crypto_beta": {"onchain_data", "project_update", "protocol_tech", "meme_culture", "kols_view", "kol_view"},
-    "macro_policy": {"monetary_policy", "us_data", "geopolitics", "crypto_regulation", "market_analysis", "us_policy"},
+    "crypto_beta": {
+        "onchain_data",
+        "project_update",
+        "protocol_tech",
+        "meme_culture",
+        "kols_view",
+        "kol_view",
+    },
+    "macro_policy": {
+        "monetary_policy",
+        "us_data",
+        "geopolitics",
+        "crypto_regulation",
+        "market_analysis",
+        "us_policy",
+    },
     "security_defensive": {"security_incident"},
 }
 
@@ -189,8 +255,19 @@ DEFAULT_MARKET_STATE_CONFIG = {
     },
     "window_adjustment": MARKET_STATE_WINDOW_ADJUSTMENT,
     "security_defensive_keywords": [
-        "黑客", "被盗", "漏洞", "攻击", "exploit", "hack", "ransomware",
-        "清算", "爆仓", "杠杆", "穿仓", "暂停提现", "安全事件",
+        "黑客",
+        "被盗",
+        "漏洞",
+        "攻击",
+        "exploit",
+        "hack",
+        "ransomware",
+        "清算",
+        "爆仓",
+        "杠杆",
+        "穿仓",
+        "暂停提现",
+        "安全事件",
     ],
 }
 
@@ -230,11 +307,18 @@ WINDOW_POLICY_MAP = _build_window_policy_map()
 MARKET_STATE_CONFIG = _load_market_state_config()
 MARKET_STATE_THRESHOLDS = dict(DEFAULT_MARKET_STATE_CONFIG.get("thresholds", {}))
 MARKET_STATE_THRESHOLDS.update(dict((MARKET_STATE_CONFIG or {}).get("thresholds", {})))
-MARKET_STATE_WINDOW_ADJUSTMENT_RUNTIME = dict(DEFAULT_MARKET_STATE_CONFIG.get("window_adjustment", {}))
-MARKET_STATE_WINDOW_ADJUSTMENT_RUNTIME.update(dict((MARKET_STATE_CONFIG or {}).get("window_adjustment", {})))
+MARKET_STATE_WINDOW_ADJUSTMENT_RUNTIME = dict(
+    DEFAULT_MARKET_STATE_CONFIG.get("window_adjustment", {})
+)
+MARKET_STATE_WINDOW_ADJUSTMENT_RUNTIME.update(
+    dict((MARKET_STATE_CONFIG or {}).get("window_adjustment", {}))
+)
 SECURITY_DEFENSIVE_KEYWORDS = [
     str(x).lower()
-    for x in ((MARKET_STATE_CONFIG or {}).get("security_defensive_keywords") or DEFAULT_MARKET_STATE_CONFIG["security_defensive_keywords"])
+    for x in (
+        (MARKET_STATE_CONFIG or {}).get("security_defensive_keywords")
+        or DEFAULT_MARKET_STATE_CONFIG["security_defensive_keywords"]
+    )
     if str(x).strip()
 ]
 
@@ -247,6 +331,7 @@ def _window_range_to_max_age_hours(window_range: str) -> int:
         "[-48h,+48h]": 96,
     }
     return mapping.get(str(window_range or "").strip(), 48)
+
 
 DEFAULT_ENUMS = {
     "source_confidence": {"high", "medium", "low"},
@@ -307,11 +392,7 @@ def _schema_crypto_categories() -> set[str]:
     props = defs.get("CryptoItem", {}).get("allOf", [])
     for node in props:
         if isinstance(node, dict):
-            enum_values = (
-                node.get("properties", {})
-                .get("category", {})
-                .get("enum", [])
-            )
+            enum_values = node.get("properties", {}).get("category", {}).get("enum", [])
             if isinstance(enum_values, list) and enum_values:
                 return {str(v) for v in enum_values}
     return {"onchain_data", "kols_view", "project_update"}
@@ -322,11 +403,7 @@ def _schema_macro_topics() -> set[str]:
     props = defs.get("MacroItem", {}).get("allOf", [])
     for node in props:
         if isinstance(node, dict):
-            enum_values = (
-                node.get("properties", {})
-                .get("topic", {})
-                .get("enum", [])
-            )
+            enum_values = node.get("properties", {}).get("topic", {}).get("enum", [])
             if isinstance(enum_values, list) and enum_values:
                 return {str(v) for v in enum_values}
     return {"fed", "us_data", "geopolitics", "us_policy", "market_analysis"}
@@ -343,7 +420,9 @@ def _validate_item_schema(item: dict, item_kind: str, idx: int) -> list[str]:
         errs.append(f"{prefix}.title 不能为空字符串")
     if not _is_non_empty_str(item.get("source_url")):
         errs.append(f"{prefix}.source_url 不能为空字符串")
-    if not (_is_non_empty_str(item.get("published_at")) or _is_non_empty_str(item.get("fetched_at"))):
+    if not (
+        _is_non_empty_str(item.get("published_at")) or _is_non_empty_str(item.get("fetched_at"))
+    ):
         errs.append(f"{prefix} 需至少包含 published_at 或 fetched_at")
     if not _is_non_empty_str(item.get("analysis_text")):
         errs.append(f"{prefix}.analysis_text 不能为空字符串")
@@ -373,7 +452,12 @@ def _validate_item_schema(item: dict, item_kind: str, idx: int) -> list[str]:
         v = item.get("attention_score")
         if not isinstance(v, int) or v < 0 or v > 5:
             errs.append(f"{prefix}.attention_score 必须为 0-5 整数")
-    for field in ["community_base_score", "decay_factor", "community_effective_score", "source_quality_score"]:
+    for field in [
+        "community_base_score",
+        "decay_factor",
+        "community_effective_score",
+        "source_quality_score",
+    ]:
         if field in item and item.get(field) is not None:
             v = item.get(field)
             if not isinstance(v, (int, float)):
@@ -387,7 +471,10 @@ def _validate_contract_payload(payload: dict) -> list[str]:
         errs.append("payload.version 不能为空")
     if not _is_non_empty_str(payload.get("generated_at")):
         errs.append("payload.generated_at 不能为空")
-    if not isinstance(payload.get("time_window_hours"), int) or int(payload.get("time_window_hours")) < 1:
+    if (
+        not isinstance(payload.get("time_window_hours"), int)
+        or int(payload.get("time_window_hours")) < 1
+    ):
         errs.append("payload.time_window_hours 必须为 >=1 的整数")
     raw_crypto = payload.get("raw_crypto")
     raw_macro = payload.get("raw_macro")
@@ -495,7 +582,9 @@ def _source_quality_profiles(items: list) -> dict:
         body_text = str(item.get("summary") or item.get("key_fact") or "").strip()
         if body_text and "正文缺失，仅标题级信息" not in body_text:
             stats["body_ok"] += 1
-        stats["confidence_sum"] += _confidence_to_score(str(item.get("source_confidence") or "medium"))
+        stats["confidence_sum"] += _confidence_to_score(
+            str(item.get("source_confidence") or "medium")
+        )
     profiles: dict[str, dict] = {}
     for source, stats in source_stats.items():
         count = max(1, int(stats["count"]))
@@ -541,7 +630,13 @@ def _evidence_grade(item: dict) -> str:
     flags = [str(x) for x in (item.get("risk_flags") or [])]
     severe = {"数据不可复核", "正文缺失，仅标题级信息", "主备源不可用", "无数据支撑"}
     severe_hits = sum(1 for f in flags if f in severe)
-    if mention_count >= 2 and conf == "high" and quality >= 0.75 and analysis_text and severe_hits == 0:
+    if (
+        mention_count >= 2
+        and conf == "high"
+        and quality >= 0.75
+        and analysis_text
+        and severe_hits == 0
+    ):
         return "A"
     if mention_count >= 2 and conf in {"high", "medium"} and quality >= 0.6 and severe_hits <= 1:
         return "B"
@@ -579,15 +674,15 @@ def _coverage_report(crypto_news: list, macro_news: list) -> dict:
     all_news = (crypto_news or []) + (macro_news or [])
     total = len(all_news)
     analysis_non_empty = sum(1 for x in all_news if _is_non_empty_str(x.get("analysis_text")))
-    cross_market_non_empty = sum(1 for x in all_news if _is_non_empty_str(x.get("cross_market_map")))
+    cross_market_non_empty = sum(
+        1 for x in all_news if _is_non_empty_str(x.get("cross_market_map"))
+    )
     macro_total = len(macro_news or [])
     macro_expectation_known = sum(
-        1
-        for x in (macro_news or [])
-        if str(x.get("expectation_bucket") or "unknown") != "unknown"
+        1 for x in (macro_news or []) if str(x.get("expectation_bucket") or "unknown") != "unknown"
     )
     expectation_sources = {"explicit_numeric": 0, "implied_text": 0, "implied_market": 0, "none": 0}
-    for x in (macro_news or []):
+    for x in macro_news or []:
         src = str(x.get("expectation_source") or "none")
         if src not in expectation_sources:
             src = "none"
@@ -618,12 +713,18 @@ def _coverage_report(crypto_news: list, macro_news: list) -> dict:
         "ts": datetime.now().isoformat(),
         "sample_count": total,
         "analysis_text_non_empty_rate": round((analysis_non_empty / total) if total else 1.0, 4),
-        "cross_market_map_non_empty_rate": round((cross_market_non_empty / total) if total else 1.0, 4),
-        "macro_expectation_known_rate": round((macro_expectation_known / macro_total) if macro_total else 1.0, 4),
+        "cross_market_map_non_empty_rate": round(
+            (cross_market_non_empty / total) if total else 1.0, 4
+        ),
+        "macro_expectation_known_rate": round(
+            (macro_expectation_known / macro_total) if macro_total else 1.0, 4
+        ),
         "unknown_expectation_count_macro": macro_unknown_count,
         "unknown_expectation_rate_macro": round(macro_unknown_rate, 4),
         "unknown_expectation_target_rate_macro": MACRO_UNKNOWN_TARGET_RATE,
-        "unknown_expectation_target_hit_macro": bool(macro_unknown_rate < MACRO_UNKNOWN_TARGET_RATE) if macro_total else True,
+        "unknown_expectation_target_hit_macro": (
+            bool(macro_unknown_rate < MACRO_UNKNOWN_TARGET_RATE) if macro_total else True
+        ),
         "expectation_source_distribution_macro": expectation_sources,
         "dynamic_window_gate_open_rate": round((dynamic_gate_open / total) if total else 1.0, 4),
         "window_policy_source_distribution": window_policy_source,
@@ -634,21 +735,9 @@ def _coverage_report(crypto_news: list, macro_news: list) -> dict:
 
 
 def _apply_market_implied_expectation(items: list, market_snapshot: dict) -> list:
-    nasdaq_change = (
-        market_snapshot.get("traditional", {})
-        .get("nasdaq", {})
-        .get("change_24h", 0.0)
-    )
-    vix_value = (
-        market_snapshot.get("traditional", {})
-        .get("vix", {})
-        .get("value", 0.0)
-    )
-    btc_change = (
-        market_snapshot.get("crypto", {})
-        .get("btc", {})
-        .get("change_24h", 0.0)
-    )
+    nasdaq_change = market_snapshot.get("traditional", {}).get("nasdaq", {}).get("change_24h", 0.0)
+    vix_value = market_snapshot.get("traditional", {}).get("vix", {}).get("value", 0.0)
+    btc_change = market_snapshot.get("crypto", {}).get("btc", {}).get("change_24h", 0.0)
     try:
         nasdaq_change = float(nasdaq_change or 0.0)
     except Exception:
@@ -663,18 +752,20 @@ def _apply_market_implied_expectation(items: list, market_snapshot: dict) -> lis
         btc_change = 0.0
     market_signal = 0.0
     if abs(nasdaq_change) >= 0.4:
-        market_signal += (nasdaq_change / 3.0)
+        market_signal += nasdaq_change / 3.0
     if abs(btc_change) >= 0.8:
-        market_signal += (btc_change / 5.0)
+        market_signal += btc_change / 5.0
     if vix_value >= 1.0:
-        market_signal -= ((vix_value - 20.0) / 20.0)
+        market_signal -= (vix_value - 20.0) / 20.0
     market_signal = max(-1.0, min(1.0, market_signal))
     if abs(market_signal) < 0.2:
         return [dict(x) for x in (items or [])]
     out = []
     for item in items or []:
         merged = dict(item)
-        has_explicit = isinstance(merged.get("actual_value"), (int, float)) and isinstance(merged.get("expected_value"), (int, float))
+        has_explicit = isinstance(merged.get("actual_value"), (int, float)) and isinstance(
+            merged.get("expected_value"), (int, float)
+        )
         has_implied = merged.get("implied_surprise_score") is not None
         if has_explicit or has_implied:
             out.append(merged)
@@ -700,7 +791,9 @@ def _methodology_snapshot(
     coverage_report: dict,
     source_profiles: dict,
 ) -> dict:
-    source_scores = [float(v.get("source_quality_score", 0.0) or 0.0) for v in (source_profiles or {}).values()]
+    source_scores = [
+        float(v.get("source_quality_score", 0.0) or 0.0) for v in (source_profiles or {}).values()
+    ]
     source_mean = sum(source_scores) / len(source_scores) if source_scores else 0.0
     return {
         "contract_version": CONTRACT_VERSION,
@@ -724,14 +817,30 @@ def _methodology_snapshot(
             "market_trend_state_policy": {"asset": "BTC", "lookback_days": 20, "band": 0.05},
         },
         "coverage": {
-            "analysis_text_non_empty_rate": float(coverage_report.get("analysis_text_non_empty_rate", 0.0) or 0.0),
-            "cross_market_map_non_empty_rate": float(coverage_report.get("cross_market_map_non_empty_rate", 0.0) or 0.0),
-            "macro_expectation_known_rate": float(coverage_report.get("macro_expectation_known_rate", 0.0) or 0.0),
-            "expectation_source_distribution_macro": dict(coverage_report.get("expectation_source_distribution_macro") or {}),
-            "window_policy_source_distribution": dict(coverage_report.get("window_policy_source_distribution") or {}),
-            "window_policy_market_state_distribution": dict(coverage_report.get("window_policy_market_state_distribution") or {}),
-            "window_policy_asset_bucket_distribution": dict(coverage_report.get("window_policy_asset_bucket_distribution") or {}),
-            "window_policy_event_type_applied_count": int(coverage_report.get("window_policy_event_type_applied_count", 0) or 0),
+            "analysis_text_non_empty_rate": float(
+                coverage_report.get("analysis_text_non_empty_rate", 0.0) or 0.0
+            ),
+            "cross_market_map_non_empty_rate": float(
+                coverage_report.get("cross_market_map_non_empty_rate", 0.0) or 0.0
+            ),
+            "macro_expectation_known_rate": float(
+                coverage_report.get("macro_expectation_known_rate", 0.0) or 0.0
+            ),
+            "expectation_source_distribution_macro": dict(
+                coverage_report.get("expectation_source_distribution_macro") or {}
+            ),
+            "window_policy_source_distribution": dict(
+                coverage_report.get("window_policy_source_distribution") or {}
+            ),
+            "window_policy_market_state_distribution": dict(
+                coverage_report.get("window_policy_market_state_distribution") or {}
+            ),
+            "window_policy_asset_bucket_distribution": dict(
+                coverage_report.get("window_policy_asset_bucket_distribution") or {}
+            ),
+            "window_policy_event_type_applied_count": int(
+                coverage_report.get("window_policy_event_type_applied_count", 0) or 0
+            ),
         },
         "source_profile_summary": {
             "source_count": len(source_scores),
@@ -787,8 +896,8 @@ def _methodology_diff_summary(methodology_diff: dict, top_k: int = 8) -> dict:
                 "to": row.get("to"),
             }
         )
-    added_fields = sorted(list(added.keys()))
-    removed_fields = sorted(list(removed.keys()))
+    added_fields = sorted(list(added.keys()))  # noqa: C414
+    removed_fields = sorted(list(removed.keys()))  # noqa: C414
     preview = {
         "added_fields": added_fields[:top_k],
         "removed_fields": removed_fields[:top_k],
@@ -839,7 +948,7 @@ def _run_rolling_window_calibration(raw_dir: Path, file_ts: str) -> dict:
         }
     selected_files = ledger_files[-21:]
     try:
-        from event_ledger_backtester import EventLedgerBacktester, BacktestConfig
+        from event_ledger_backtester import EventLedgerBacktester, BacktestConfig  # noqa: I001
     except Exception as exc:
         return {
             "enabled": False,
@@ -922,7 +1031,9 @@ def _risk_action_events(items: list, now: datetime, file_ts: str) -> list:
         action = str(row.get("risk_action_proposal") or "hold")
         evidence = str(row.get("evidence_grade") or "C")
         gate_open = bool(row.get("dynamic_window_gate_open", True))
-        enforceable = action in {"reduce", "hedge", "stop_loss"} and evidence in {"A", "B"} and gate_open
+        enforceable = (
+            action in {"reduce", "hedge", "stop_loss"} and evidence in {"A", "B"} and gate_open
+        )
         events.append(
             {
                 "event_id": f"RAE-{file_ts}-{idx + 1:04d}",
@@ -932,12 +1043,20 @@ def _risk_action_events(items: list, now: datetime, file_ts: str) -> list:
                 "published_at": str(row.get("published_at") or row.get("fetched_at") or ""),
                 "event_type": str(row.get("event_type") or "unknown"),
                 "event_window_range": str(row.get("event_window_range") or "[-24h,+24h]"),
-                "window_policy_source": str(row.get("window_policy_source") or "default_impact_horizon"),
+                "window_policy_source": str(
+                    row.get("window_policy_source") or "default_impact_horizon"
+                ),
                 "window_policy_confidence": float(row.get("window_policy_confidence", 0.0) or 0.0),
                 "window_policy_horizon_days": int(row.get("window_policy_horizon_days", 1) or 1),
-                "window_policy_market_state": str(row.get("window_policy_market_state") or "neutral"),
-                "window_policy_asset_bucket": str(row.get("window_policy_asset_bucket") or "crypto_beta"),
-                "window_policy_base_range": str(row.get("window_policy_base_range") or "[-24h,+24h]"),
+                "window_policy_market_state": str(
+                    row.get("window_policy_market_state") or "neutral"
+                ),
+                "window_policy_asset_bucket": str(
+                    row.get("window_policy_asset_bucket") or "crypto_beta"
+                ),
+                "window_policy_base_range": str(
+                    row.get("window_policy_base_range") or "[-24h,+24h]"
+                ),
                 "event_age_hours": float(row.get("event_age_hours", 0.0) or 0.0),
                 "dynamic_window_gate_open": gate_open,
                 "expectation_bucket": str(row.get("expectation_bucket") or "unknown"),
@@ -967,7 +1086,7 @@ def _extract_json_object(text: str) -> dict:
         return json.loads(s)
     except Exception:
         pass
-    l = s.find("{")
+    l = s.find("{")  # noqa: E741
     r = s.rfind("}")
     if l >= 0 and r > l:
         try:
@@ -1079,11 +1198,15 @@ def _event_window_range(impact_horizon: str) -> str:
 
 def _market_state_bucket(market_snapshot: dict) -> str:
     try:
-        btc_change = float(market_snapshot.get("crypto", {}).get("btc", {}).get("change_24h", 0.0) or 0.0)
+        btc_change = float(
+            market_snapshot.get("crypto", {}).get("btc", {}).get("change_24h", 0.0) or 0.0
+        )
     except Exception:
         btc_change = 0.0
     try:
-        nasdaq_change = float(market_snapshot.get("traditional", {}).get("nasdaq", {}).get("change_24h", 0.0) or 0.0)
+        nasdaq_change = float(
+            market_snapshot.get("traditional", {}).get("nasdaq", {}).get("change_24h", 0.0) or 0.0
+        )
     except Exception:
         nasdaq_change = 0.0
     try:
@@ -1093,14 +1216,24 @@ def _market_state_bucket(market_snapshot: dict) -> str:
     high_vol_vix = float(MARKET_STATE_THRESHOLDS.get("high_vol_vix", 28.0) or 28.0)
     risk_off_vix = float(MARKET_STATE_THRESHOLDS.get("risk_off_vix", 22.0) or 22.0)
     risk_on_vix_max = float(MARKET_STATE_THRESHOLDS.get("risk_on_vix_max", 20.0) or 20.0)
-    risk_on_btc_change_min = float(MARKET_STATE_THRESHOLDS.get("risk_on_btc_change_min", 2.0) or 2.0)
-    risk_off_nasdaq_change_max = float(MARKET_STATE_THRESHOLDS.get("risk_off_nasdaq_change_max", 0.0) or 0.0)
-    risk_on_nasdaq_change_min = float(MARKET_STATE_THRESHOLDS.get("risk_on_nasdaq_change_min", 0.0) or 0.0)
+    risk_on_btc_change_min = float(
+        MARKET_STATE_THRESHOLDS.get("risk_on_btc_change_min", 2.0) or 2.0
+    )
+    risk_off_nasdaq_change_max = float(
+        MARKET_STATE_THRESHOLDS.get("risk_off_nasdaq_change_max", 0.0) or 0.0
+    )
+    risk_on_nasdaq_change_min = float(
+        MARKET_STATE_THRESHOLDS.get("risk_on_nasdaq_change_min", 0.0) or 0.0
+    )
     if vix >= high_vol_vix:
         return "high_vol"
     if vix >= risk_off_vix and nasdaq_change <= risk_off_nasdaq_change_max:
         return "risk_off"
-    if btc_change >= risk_on_btc_change_min and nasdaq_change >= risk_on_nasdaq_change_min and vix <= risk_on_vix_max:
+    if (
+        btc_change >= risk_on_btc_change_min
+        and nasdaq_change >= risk_on_nasdaq_change_min
+        and vix <= risk_on_vix_max
+    ):
         return "risk_on"
     return "neutral"
 
@@ -1341,7 +1474,9 @@ def _current_param_snapshot(all_news: list) -> dict:
         "high_risk_ratio": round(high_risk / total, 6),
         "active_narrative_ratio": round(active / total, 6),
         "window_gate_open_ratio": round(window_open / total, 6),
-        "expectation_unknown_ratio_macro": round((macro_unknown / macro_total) if macro_total else 0.0, 6),
+        "expectation_unknown_ratio_macro": round(
+            (macro_unknown / macro_total) if macro_total else 0.0, 6
+        ),
     }
 
 
@@ -1362,7 +1497,9 @@ def _event_map_snapshot(all_news: list) -> dict:
     return out
 
 
-def _resolve_update_mode(update_mode: str, anchor_date: str, anchor_key: str, force_anchor: bool) -> str:
+def _resolve_update_mode(
+    update_mode: str, anchor_date: str, anchor_key: str, force_anchor: bool
+) -> str:
     mode = str(update_mode or "auto").strip().lower()
     if force_anchor:
         return "anchor"
@@ -1458,13 +1595,19 @@ def _build_anchor_row(
     all_news: list,
 ) -> dict:
     event_map = _event_map_snapshot(all_news)
-    top_rows = sorted(all_news or [], key=lambda x: float(x.get("community_effective_score", 0.0) or 0.0), reverse=True)[:12]
+    top_rows = sorted(
+        all_news or [],
+        key=lambda x: float(x.get("community_effective_score", 0.0) or 0.0),
+        reverse=True,
+    )[:12]
     top_narratives = []
     for row in top_rows:
         top_narratives.append(
             {
                 "title": str(row.get("title") or ""),
-                "community_effective_score": float(row.get("community_effective_score", 0.0) or 0.0),
+                "community_effective_score": float(
+                    row.get("community_effective_score", 0.0) or 0.0
+                ),
                 "risk_action_proposal": str(row.get("risk_action_proposal") or "hold"),
                 "event_type": str(row.get("event_type") or "unknown"),
             }
@@ -1516,9 +1659,9 @@ def _build_delta_row(
     anchor_map = dict(anchor_row.get("event_map") or {})
     anchor_keys = set(anchor_map.keys())
     current_keys = set(current_map.keys())
-    added_keys = sorted(list(current_keys - anchor_keys))
-    resolved_keys = sorted(list(anchor_keys - current_keys))
-    retained_keys = sorted(list(current_keys & anchor_keys))
+    added_keys = sorted(list(current_keys - anchor_keys))  # noqa: C414
+    resolved_keys = sorted(list(anchor_keys - current_keys))  # noqa: C414
+    retained_keys = sorted(list(current_keys & anchor_keys))  # noqa: C414
     score_shifts = []
     action_changes = []
     adaptive = _adaptive_drift_thresholds()
@@ -1568,7 +1711,9 @@ def _build_delta_row(
         }
     row_anchor_date = str(anchor_row.get("anchor_date") or anchor_date or "")
     row_anchor_key = str(anchor_row.get("anchor_key") or anchor_key or "")
-    row_anchor_session = str(anchor_row.get("anchor_session") or anchor_session or "apac").strip().lower()
+    row_anchor_session = (
+        str(anchor_row.get("anchor_session") or anchor_session or "apac").strip().lower()
+    )
     if row_anchor_session not in {"apac", "eu", "us"}:
         row_anchor_session = str(anchor_session or "apac").strip().lower()
     if row_anchor_session not in {"apac", "eu", "us"}:
@@ -1596,8 +1741,12 @@ def _build_delta_row(
             "added_event_count": len(added_keys),
             "resolved_event_count": len(resolved_keys),
             "retained_event_count": len(retained_keys),
-            "added_events": [str((current_map.get(k) or {}).get("title") or "") for k in added_keys[:12]],
-            "resolved_events": [str((anchor_map.get(k) or {}).get("title") or "") for k in resolved_keys[:12]],
+            "added_events": [
+                str((current_map.get(k) or {}).get("title") or "") for k in added_keys[:12]
+            ],
+            "resolved_events": [
+                str((anchor_map.get(k) or {}).get("title") or "") for k in resolved_keys[:12]
+            ],
             "score_shifts": score_shifts[:12],
             "action_changes": action_changes[:12],
         },
@@ -1628,7 +1777,10 @@ def _apply_event_offset_chain(items: list, anchor_row: dict) -> tuple[list, list
         curr_action = str(merged.get("risk_action_proposal") or "hold")
         opposite = (
             (prev_action == "increase" and curr_action in {"reduce", "stop_loss", "hedge"})
-            or (prev_action in {"reduce", "stop_loss"} and curr_action in {"increase", "take_profit"})
+            or (
+                prev_action in {"reduce", "stop_loss"}
+                and curr_action in {"increase", "take_profit"}
+            )
             or (prev_score >= offset_score_threshold and curr_score <= -offset_score_threshold)
             or (prev_score <= -offset_score_threshold and curr_score >= offset_score_threshold)
         )
@@ -1652,7 +1804,9 @@ def _apply_event_offset_chain(items: list, anchor_row: dict) -> tuple[list, list
                 "current_action": curr_action,
                 "anchor_score": round(prev_score, 4),
                 "current_score_before": round(curr_score, 4),
-                "current_score_after": round(float(merged.get("community_effective_score", 0.0) or 0.0), 4),
+                "current_score_after": round(
+                    float(merged.get("community_effective_score", 0.0) or 0.0), 4
+                ),
             }
         )
         out.append(merged)
@@ -1704,7 +1858,9 @@ def _compute_market_trend_state(market_snapshot: dict, now: datetime) -> tuple[s
         except Exception:
             continue
     try:
-        current_price = float(market_snapshot.get("crypto", {}).get("btc", {}).get("price_usd", 0.0) or 0.0)
+        current_price = float(
+            market_snapshot.get("crypto", {}).get("btc", {}).get("price_usd", 0.0) or 0.0
+        )
     except Exception:
         current_price = 0.0
     if current_price > 0:
@@ -1955,11 +2111,18 @@ def _apply_doc_contract_fields(items: list, market_snapshot: dict | None = None)
             str(merged.get("summary") or merged.get("key_fact") or "正文缺失，仅标题级信息"),
             140,
         )
-        merged["fact_text"] = merged.get("fact_text") or str(merged.get("key_fact") or merged.get("summary_2lines") or "")
-        merged["analysis_text"] = merged.get("analysis_text") or str(
-            merged.get("possible_market_impact") or merged.get("market_impact") or merged.get("cross_market_map") or ""
+        merged["fact_text"] = merged.get("fact_text") or str(
+            merged.get("key_fact") or merged.get("summary_2lines") or ""
         )
-        merged["confidence"] = merged.get("confidence") or merged.get("source_confidence") or "medium"
+        merged["analysis_text"] = merged.get("analysis_text") or str(
+            merged.get("possible_market_impact")
+            or merged.get("market_impact")
+            or merged.get("cross_market_map")
+            or ""
+        )
+        merged["confidence"] = (
+            merged.get("confidence") or merged.get("source_confidence") or "medium"
+        )
         merged["source_confidence"] = merged.get("source_confidence") or merged["confidence"]
         merged["possible_market_impact"] = (
             merged.get("possible_market_impact")
@@ -1970,7 +2133,9 @@ def _apply_doc_contract_fields(items: list, market_snapshot: dict | None = None)
         merged["market_impact"] = merged.get("market_impact") or merged["possible_market_impact"]
         merged["attention_score"] = int(merged.get("attention_score", 0) or 0)
         merged["attention_score"] = max(0, min(5, merged["attention_score"]))
-        merged["attention_type"] = _normalize_attention_type(str(merged.get("attention_type") or "event"))
+        merged["attention_type"] = _normalize_attention_type(
+            str(merged.get("attention_type") or "event")
+        )
         merged["risk_flags"] = _normalize_risk_flags(merged.get("risk_flags") or [])
         merged["event_type"] = _event_type(merged)
         default_window = _event_window_range(merged.get("impact_horizon", "T1"))
@@ -1981,25 +2146,37 @@ def _apply_doc_contract_fields(items: list, market_snapshot: dict | None = None)
             merged["window_policy_source"] = "calibrated_v03"
             merged["window_policy_confidence"] = round(float(dynamic_policy["confidence"]), 4)
             merged["window_policy_horizon_days"] = int(dynamic_policy["horizon_days"])
-            merged["window_policy_market_state"] = str(dynamic_policy.get("market_state") or market_state)
-            merged["window_policy_asset_bucket"] = str(dynamic_policy.get("asset_bucket") or asset_bucket)
-            merged["window_policy_base_range"] = str(dynamic_policy.get("base_window_range") or default_window)
+            merged["window_policy_market_state"] = str(
+                dynamic_policy.get("market_state") or market_state
+            )
+            merged["window_policy_asset_bucket"] = str(
+                dynamic_policy.get("asset_bucket") or asset_bucket
+            )
+            merged["window_policy_base_range"] = str(
+                dynamic_policy.get("base_window_range") or default_window
+            )
         else:
             merged["event_window_range"] = default_window
             merged["window_policy_source"] = "default_impact_horizon"
             merged["window_policy_confidence"] = 0.0
-            merged["window_policy_horizon_days"] = max(1, int(_window_range_to_max_age_hours(default_window) / 24))
+            merged["window_policy_horizon_days"] = max(
+                1, int(_window_range_to_max_age_hours(default_window) / 24)
+            )
             merged["window_policy_market_state"] = market_state
             merged["window_policy_asset_bucket"] = asset_bucket
             merged["window_policy_base_range"] = default_window
         if not merged.get("expectation_source"):
-            if isinstance(merged.get("expected_value"), (int, float)) and isinstance(merged.get("actual_value"), (int, float)):
+            if isinstance(merged.get("expected_value"), (int, float)) and isinstance(
+                merged.get("actual_value"), (int, float)
+            ):
                 merged["expectation_source"] = "explicit_numeric"
             elif merged.get("implied_surprise_score") is not None:
                 merged["expectation_source"] = "implied_text"
             else:
                 merged["expectation_source"] = "none"
-        merged["expectation_bucket"] = merged.get("expectation_bucket") or _expectation_bucket(merged)
+        merged["expectation_bucket"] = merged.get("expectation_bucket") or _expectation_bucket(
+            merged
+        )
         if merged["expectation_bucket"] != "unknown":
             if str(merged.get("expectation_source")) == "explicit_numeric":
                 if "预期差使用显式数值" not in merged["risk_flags"]:
@@ -2018,29 +2195,41 @@ def _apply_doc_contract_fields(items: list, market_snapshot: dict | None = None)
             elif merged["source_confidence"] == "medium":
                 merged["source_confidence"] = "low"
             merged["confidence"] = merged["source_confidence"]
-        merged["risk_action_proposal"] = merged.get("risk_action_proposal") or _risk_action_proposal(merged)
+        merged["risk_action_proposal"] = merged.get(
+            "risk_action_proposal"
+        ) or _risk_action_proposal(merged)
         cluster_key = _cluster_key(merged)
-        mention_count = max(int(merged.get("mention_count", 0) or 0), cluster_mentions.get(cluster_key, 1))
+        mention_count = max(
+            int(merged.get("mention_count", 0) or 0), cluster_mentions.get(cluster_key, 1)
+        )
         source_diversity = max(1, len(cluster_sources.get(cluster_key, {"unknown"})))
         attention_norm = float(merged["attention_score"]) / 5.0
         mention_norm = min(1.0, float(mention_count) / 5.0)
         source_diversity_norm = min(1.0, float(source_diversity) / 4.0)
-        community_base_score = 0.5 * attention_norm + 0.3 * mention_norm + 0.2 * source_diversity_norm
+        community_base_score = (
+            0.5 * attention_norm + 0.3 * mention_norm + 0.2 * source_diversity_norm
+        )
         half_life_hours = _decay_half_life_hours(str(merged.get("attention_type") or "event"))
         hours_since = _hours_since_now(merged, now)
         merged["event_age_hours"] = round(hours_since, 4)
-        max_age_hours = _window_range_to_max_age_hours(str(merged.get("event_window_range") or "[-24h,+24h]"))
+        max_age_hours = _window_range_to_max_age_hours(
+            str(merged.get("event_window_range") or "[-24h,+24h]")
+        )
         merged["dynamic_window_gate_open"] = bool(hours_since <= max_age_hours)
         if not merged["dynamic_window_gate_open"]:
             if "超出动态窗口" not in merged["risk_flags"]:
                 merged["risk_flags"].append("超出动态窗口")
         decay_factor = _decay_factor(hours_since, half_life_hours)
-        credibility_adj = {"high": 1.0, "medium": 0.7, "low": 0.4}.get(str(merged["source_confidence"]), 0.7)
+        credibility_adj = {"high": 1.0, "medium": 0.7, "low": 0.4}.get(
+            str(merged["source_confidence"]), 0.7
+        )
         community_effective_score = community_base_score * decay_factor * credibility_adj
         merged["community_base_score"] = round(max(0.0, min(1.0, community_base_score)), 4)
         merged["decay_half_life_hours"] = int(half_life_hours)
         merged["decay_factor"] = round(decay_factor, 4)
-        merged["community_effective_score"] = round(max(0.0, min(1.0, community_effective_score)), 4)
+        merged["community_effective_score"] = round(
+            max(0.0, min(1.0, community_effective_score)), 4
+        )
         merged["narrative_status"] = _narrative_status(merged["community_effective_score"])
         if is_macro_topic(merged.get("topic")):
             merged["key_fact"] = merged.get("key_fact") or merged["fact_text"]
@@ -2059,7 +2248,9 @@ def _apply_doc_contract_fields(items: list, market_snapshot: dict | None = None)
                 gap_parts.append("正文缺失")
             if not str(merged.get("cross_market_map") or "").strip():
                 gap_parts.append("缺少跨市场传导路径")
-            if str(merged.get("expectation_bucket") or "unknown") == "unknown" and is_macro_topic(merged.get("topic")):
+            if str(merged.get("expectation_bucket") or "unknown") == "unknown" and is_macro_topic(
+                merged.get("topic")
+            ):
                 gap_parts.append("预期差不可计算")
             merged["analysis_text"] = (
                 "不确定性说明：当前证据不足，暂不形成方向性结论；证据缺口："
@@ -2097,23 +2288,39 @@ def _format_brief_v1(
     onchain = pick(crypto_news, lambda x: x.get("category") == "onchain_data", 5)
     kols = pick(crypto_news, lambda x: x.get("category") == "kols_view", 5)
     project = pick(crypto_news, lambda x: x.get("category") == "project_update", 5)
-    macro = pick(macro_news, lambda x: x.get("topic") in {"fed", "us_data", "geopolitics", "us_policy", "market_analysis"}, 8)
+    macro = pick(
+        macro_news,
+        lambda x: x.get("topic")
+        in {"fed", "us_data", "geopolitics", "us_policy", "market_analysis"},
+        8,
+    )
 
     def line(item: dict, kind: str) -> str:
         title = item.get("title", "")
         url = item.get("source_url", "")
         fact = item.get("key_fact") or item.get("summary") or ""
-        impact = item.get("possible_market_impact") or item.get("market_impact") or item.get("cross_market_map") or ""
+        impact = (
+            item.get("possible_market_impact")
+            or item.get("market_impact")
+            or item.get("cross_market_map")
+            or ""
+        )
         confidence = item.get("source_confidence") or item.get("confidence") or "medium"
         horizon = item.get("impact_horizon") or ""
         extra = f"可信度={confidence}, 时效={horizon}" if confidence or horizon else ""
         if kind == "kols":
-            uncertainty = "；反方/不确定性：" + ("；".join(item.get("risk_flags", [])) if isinstance(item.get("risk_flags"), list) and item.get("risk_flags") else "unknown")
+            uncertainty = "；反方/不确定性：" + (
+                "；".join(item.get("risk_flags", []))
+                if isinstance(item.get("risk_flags"), list) and item.get("risk_flags")
+                else "unknown"
+            )
             return f"- [{title}]：观点：{fact[:120]}{uncertainty}；来源：{url}（{extra}）"
         if kind == "onchain":
             return f"- [{title}]：事实：{fact[:120]}；影响：{impact[:120]}；来源：{url}（{extra}）"
         if kind == "project":
-            return f"- [{title}]：事件：{fact[:120]}；潜在影响：{impact[:120]}；来源：{url}（{extra}）"
+            return (
+                f"- [{title}]：事件：{fact[:120]}；潜在影响：{impact[:120]}；来源：{url}（{extra}）"
+            )
         return f"- [{title}]：关键事实：{fact[:120]}；资产影响路径：{impact[:120]}；来源：{url}（{extra}）"
 
     cross_market: list[str] = []
@@ -2247,7 +2454,9 @@ def generate_enhanced_briefing(
     resolved_anchor_date = _normalize_anchor_date(anchor_date, now)
     resolved_anchor_session = _resolve_anchor_session(now, anchor_session)
     resolved_anchor_key = _resolve_anchor_key(resolved_anchor_date, resolved_anchor_session)
-    resolved_update_mode = _resolve_update_mode(update_mode, resolved_anchor_date, resolved_anchor_key, force_anchor)
+    resolved_update_mode = _resolve_update_mode(
+        update_mode, resolved_anchor_date, resolved_anchor_key, force_anchor
+    )
 
     market_snapshot = get_market_snapshot()
     market_trend_state, market_trend_meta = _compute_market_trend_state(market_snapshot, now)
@@ -2265,6 +2474,7 @@ def generate_enhanced_briefing(
     base_dir = Path(__file__).parent.parent
     raw_dir = base_dir / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
+
     def _normalize_ledger_tag(tag: str) -> str:
         t = str(tag or "").strip().lower()
         mapping = {
@@ -2371,8 +2581,12 @@ def generate_enhanced_briefing(
                 continue
             row["market_trend_state"] = market_trend_state
             row["market_trend_ma20"] = float((market_trend_meta or {}).get("ma20") or 0.0)
-            row["market_trend_volatility_20d"] = float((market_trend_meta or {}).get("volatility_20d") or 0.0)
-            row["market_trend_price_vs_ma"] = float((market_trend_meta or {}).get("price_vs_ma") or 0.0)
+            row["market_trend_volatility_20d"] = float(
+                (market_trend_meta or {}).get("volatility_20d") or 0.0
+            )
+            row["market_trend_price_vs_ma"] = float(
+                (market_trend_meta or {}).get("price_vs_ma") or 0.0
+            )
         for row in crypto_news:
             if not isinstance(row, dict):
                 continue
@@ -2431,7 +2645,9 @@ def generate_enhanced_briefing(
                 "window_profile_path": str(WINDOW_PROFILE_PATH),
                 "window_policy_event_type_count": len(WINDOW_POLICY_MAP),
                 "market_state_config_path": str(MARKET_STATE_CONFIG_PATH),
-                "market_state_config_version": str((MARKET_STATE_CONFIG or {}).get("version") or "market_state_policy.v1"),
+                "market_state_config_version": str(
+                    (MARKET_STATE_CONFIG or {}).get("version") or "market_state_policy.v1"
+                ),
                 "macro_unknown_target_rate": MACRO_UNKNOWN_TARGET_RATE,
             },
             f,
@@ -2474,7 +2690,9 @@ def generate_enhanced_briefing(
         overlay_errs = _validate_ledger_entries(overlay_entries)
         if overlay_errs:
             raise RuntimeError("event_ledger_overlay 校验失败: " + " | ".join(overlay_errs[:20]))
-        overlay_ledger_path = raw_dir / f"event_ledger_overlay_{resolved_overlay_ledger_version}_{file_ts}.jsonl"
+        overlay_ledger_path = (
+            raw_dir / f"event_ledger_overlay_{resolved_overlay_ledger_version}_{file_ts}.jsonl"
+        )
         overlay.save_jsonl(overlay_entries, overlay_ledger_path)
     risk_action_events = _risk_action_events(all_news, now, file_ts)
     risk_action_path = raw_dir / f"risk_action_events_{file_ts}.json"
@@ -2519,16 +2737,22 @@ def generate_enhanced_briefing(
                         "brief_v1": f"outputs/brief_{file_ts}.md",
                         "brief_v2": f"outputs/brief_v2_{file_ts}.md",
                         "event_ledger": f"raw/event_ledger_{file_ts}.jsonl",
-                        "event_ledger_overlay": f"raw/event_ledger_overlay_{resolved_overlay_ledger_version}_{file_ts}.jsonl"
-                        if resolved_overlay_ledger_version
-                        else "",
+                        "event_ledger_overlay": (
+                            f"raw/event_ledger_overlay_{resolved_overlay_ledger_version}_{file_ts}.jsonl"
+                            if resolved_overlay_ledger_version
+                            else ""
+                        ),
                         "step_audit": f"raw/step_audit_{file_ts}.json",
                         "risk_action_events": f"raw/risk_action_events_{file_ts}.json",
                         "coverage_report": f"raw/coverage_report_{file_ts}.json",
                         "source_quality": f"raw/source_quality_{file_ts}.json",
                         "window_profile": str(WINDOW_PROFILE_PATH),
-                        "window_calibration": str(window_calibration_meta.get("window_calibration_path") or ""),
-                        "window_version_table": str(window_calibration_meta.get("window_version_table_path") or ""),
+                        "window_calibration": str(
+                            window_calibration_meta.get("window_calibration_path") or ""
+                        ),
+                        "window_version_table": str(
+                            window_calibration_meta.get("window_version_table_path") or ""
+                        ),
                         "market_state_config": str(MARKET_STATE_CONFIG_PATH),
                     },
                 },
@@ -2574,7 +2798,9 @@ def generate_enhanced_briefing(
                 "risk_action_proposal": str(n.get("risk_action_proposal") or "hold"),
             }
         )
-    top_narratives = sorted(current_rows, key=lambda x: x["community_effective_score"], reverse=True)[:20]
+    top_narratives = sorted(
+        current_rows, key=lambda x: x["community_effective_score"], reverse=True
+    )[:20]
     transitions = []
     for row in top_narratives:
         title = row["title"]
@@ -2609,7 +2835,11 @@ def generate_enhanced_briefing(
             + "\n"
         )
 
-    ref_anchor_for_delta = _latest_anchor(resolved_anchor_date, resolved_anchor_key) if resolved_update_mode == "delta" else {}
+    ref_anchor_for_delta = (
+        _latest_anchor(resolved_anchor_date, resolved_anchor_key)
+        if resolved_update_mode == "delta"
+        else {}
+    )
     offset_events: list[dict] = []
     if ref_anchor_for_delta:
         all_news, offset_events = _apply_event_offset_chain(all_news, ref_anchor_for_delta)
@@ -2650,7 +2880,9 @@ def generate_enhanced_briefing(
         linked_anchor_id = str(anchor_row.get("anchor_id") or "")
         anchor_row_obj = dict(anchor_row)
     elif resolved_update_mode == "delta":
-        ref_anchor = ref_anchor_for_delta or _latest_anchor(resolved_anchor_date, resolved_anchor_key)
+        ref_anchor = ref_anchor_for_delta or _latest_anchor(
+            resolved_anchor_date, resolved_anchor_key
+        )
         if ref_anchor:
             delta_row = _build_delta_row(
                 now=now,
@@ -2704,8 +2936,12 @@ def generate_enhanced_briefing(
         "mode": resolved_update_mode,
         "anchor_date": resolved_anchor_date,
         "anchor_id": str((anchor_row_obj or {}).get("anchor_id") or ""),
-        "added_event_count": int((((delta_row_obj or {}).get("changes") or {}).get("added_event_count") or 0)),
-        "resolved_event_count": int((((delta_row_obj or {}).get("changes") or {}).get("resolved_event_count") or 0)),
+        "added_event_count": int(
+            (((delta_row_obj or {}).get("changes") or {}).get("added_event_count") or 0)
+        ),
+        "resolved_event_count": int(
+            (((delta_row_obj or {}).get("changes") or {}).get("resolved_event_count") or 0)
+        ),
         "offset_events_count": len(offset_events),
     }
     briefing_md = generate_briefing_markdown(
@@ -2744,8 +2980,12 @@ def generate_enhanced_briefing(
         "risk_action_events_path": str(risk_action_path),
         "coverage_report_path": str(coverage_path),
         "source_quality_path": str(quality_path),
-        "window_calibration_path": str(window_calibration_meta.get("window_calibration_path") or ""),
-        "window_version_table_path": str(window_calibration_meta.get("window_version_table_path") or ""),
+        "window_calibration_path": str(
+            window_calibration_meta.get("window_calibration_path") or ""
+        ),
+        "window_version_table_path": str(
+            window_calibration_meta.get("window_version_table_path") or ""
+        ),
         "anchor_registry_path": str(anchor_registry_path),
         "delta_registry_path": str(delta_registry_path),
         "anchor_state_path": anchor_state_path,
@@ -2765,16 +3005,18 @@ def generate_enhanced_briefing(
             "industry_signal": signal_analysis.industry_signal,
             "company_signal": signal_analysis.company_signal,
             "immediate_signal": signal_analysis.immediate_signal,
-            "short_term_signal": signal_analysis.short_term_signal
+            "short_term_signal": signal_analysis.short_term_signal,
         },
         "investment_recommendation": signal_analysis.recommendation,
         "position_suggestion": signal_analysis.position_suggestion,
         "risk_flags": signal_analysis.risk_flags,
-        "timestamp": now.isoformat()
+        "timestamp": now.isoformat(),
     }
 
 
-def generate_news_data(hours: int, use_ollama: bool = False, ollama_model: str = "qwen2.5:7b-instruct") -> tuple:
+def generate_news_data(
+    hours: int, use_ollama: bool = False, ollama_model: str = "qwen2.5:7b-instruct"
+) -> tuple:
     crypto_news = fetch_odaily_newsflash(limit=30, hours=hours)
     macro_news = fetch_wallstreetcn_breakfast(limit=30, hours=hours)
     if use_ollama:
@@ -2912,25 +3154,47 @@ def generate_briefing_markdown(
     if not event_type_lines:
         event_type_lines.append("- 当前窗口暂无可用事件类型样本")
     pos_now = int(round(float(signal_analysis.position_suggestion or 0.5) * 100))
-    pos_next = max(10, min(80, pos_now + (10 if signal_analysis.composite_signal > 0.12 else -10 if signal_analysis.composite_signal < -0.12 else 0)))
+    pos_next = max(
+        10,
+        min(
+            80,
+            pos_now
+            + (
+                10
+                if signal_analysis.composite_signal > 0.12
+                else -10 if signal_analysis.composite_signal < -0.12 else 0
+            ),
+        ),
+    )
     btc_price, btc_24h = fmt_price(btc)
     eth_price, eth_24h = fmt_price(eth)
     nasdaq_price, nasdaq_24h = fmt_price(nasdaq)
     vix_value = float(vix.get("value", vix.get("price", 0)) or 0)
     vix_24h = float(vix.get("change_24h", vix.get("change_pct", 0)) or 0)
-    ma20 = float((market_snapshot.get("crypto", {}).get("btc_ma20") or market_snapshot.get("crypto", {}).get("ma20") or 0) or 0)
+    ma20 = float(
+        (
+            market_snapshot.get("crypto", {}).get("btc_ma20")
+            or market_snapshot.get("crypto", {}).get("ma20")
+            or 0
+        )
+        or 0
+    )
     price_vs_ma = ((float(btc.get("price_usd", 0) or 0) / ma20 - 1.0) * 100.0) if ma20 > 0 else 0.0
     market_state = "震荡市（Sideways）"
     if signal_analysis.composite_signal >= 0.15:
         market_state = "趋势偏多（Bullish）"
     elif signal_analysis.composite_signal <= -0.15:
         market_state = "风险偏空（Defensive）"
-    risk_lines = [f"- {x}" for x in (signal_analysis.risk_flags[:8] if signal_analysis.risk_flags else [])]
+    risk_lines = [
+        f"- {x}" for x in (signal_analysis.risk_flags[:8] if signal_analysis.risk_flags else [])
+    ]
     if not risk_lines:
         risk_lines = ["- 信息时效、样本偏差、非投资建议"]
     point_lines = []
     for idx, (_, txt) in enumerate(top_points[:12], start=1):
-        point_lines.append(f"{idx}. **[{txt.split(' - ')[0]}]** - {txt.split(' - ', 1)[1] if ' - ' in txt else txt}")
+        point_lines.append(
+            f"{idx}. **[{txt.split(' - ')[0]}]** - {txt.split(' - ', 1)[1] if ' - ' in txt else txt}"
+        )
     if not point_lines:
         point_lines.append("1. **[样本不足]** - 当前窗口暂无可用新闻样本")
 
@@ -3091,23 +3355,43 @@ def main():
     """主函数"""
     import argparse
 
-    parser = argparse.ArgumentParser(description='生成优化版新闻简报（V2.0 传统金融框架）')
-    parser.add_argument('--hours', '-H', type=int, default=24, help='时间窗口（小时）')
-    parser.add_argument('--output', '-o', type=str, default=None, help='输出文件名')
-    parser.add_argument('--json', action='store_true', help='同时输出 JSON')
-    parser.add_argument('--use-ollama', action='store_true', help='使用本地 Ollama 做结构化抽取')
-    parser.add_argument('--ollama-model', type=str, default='qwen2.5:7b-instruct', help='Ollama 模型名称')
-    parser.add_argument('--ledger-version', type=str, default='auto', choices=['auto', '9.3', '9.5', '9.7_direct', '9.8_onchain'], help='事件账本生成器版本')
-    parser.add_argument('--update-mode', type=str, default='auto', choices=['auto', 'anchor', 'delta', 'reset'], help='更新模式（auto=有锚点则增量，无锚点则锚点）')
-    parser.add_argument('--anchor-date', type=str, default='', help='锚点日期 YYYY-MM-DD，默认今天')
-    parser.add_argument('--anchor-session', type=str, default='auto', choices=['auto', 'apac', 'eu', 'us'], help='锚点交易时段')
-    parser.add_argument('--force-anchor', action='store_true', help='强制以锚点模式运行')
+    parser = argparse.ArgumentParser(description="生成优化版新闻简报（V2.0 传统金融框架）")
+    parser.add_argument("--hours", "-H", type=int, default=24, help="时间窗口（小时）")
+    parser.add_argument("--output", "-o", type=str, default=None, help="输出文件名")
+    parser.add_argument("--json", action="store_true", help="同时输出 JSON")
+    parser.add_argument("--use-ollama", action="store_true", help="使用本地 Ollama 做结构化抽取")
+    parser.add_argument(
+        "--ollama-model", type=str, default="qwen2.5:7b-instruct", help="Ollama 模型名称"
+    )
+    parser.add_argument(
+        "--ledger-version",
+        type=str,
+        default="auto",
+        choices=["auto", "9.3", "9.5", "9.7_direct", "9.8_onchain"],
+        help="事件账本生成器版本",
+    )
+    parser.add_argument(
+        "--update-mode",
+        type=str,
+        default="auto",
+        choices=["auto", "anchor", "delta", "reset"],
+        help="更新模式（auto=有锚点则增量，无锚点则锚点）",
+    )
+    parser.add_argument("--anchor-date", type=str, default="", help="锚点日期 YYYY-MM-DD，默认今天")
+    parser.add_argument(
+        "--anchor-session",
+        type=str,
+        default="auto",
+        choices=["auto", "apac", "eu", "us"],
+        help="锚点交易时段",
+    )
+    parser.add_argument("--force-anchor", action="store_true", help="强制以锚点模式运行")
     args = parser.parse_args()
 
     now = datetime.now()
     file_ts = now.strftime("%Y%m%d_%H%M")
 
-    print(f"=== 生成优化版新闻简报（V2.0）===")
+    print("=== 生成优化版新闻简报（V2.0）===")
     print(f"时间窗口：最近 {args.hours} 小时")
 
     # 生成简报
@@ -3132,33 +3416,38 @@ def main():
         md_path = output_dir / f"brief_v3_{file_ts.split('_')[0]}_optimized.md"
 
     # 保存 Markdown
-    with open(md_path, 'w', encoding='utf-8') as f:
+    with open(md_path, "w", encoding="utf-8") as f:
         f.write(result["briefing_md"])
     print(f"[✓] 简报已保存：{md_path}")
 
     # JSON 输出（可选）
     if args.json:
-        json_path = md_path.with_suffix('.json')
-        with open(json_path, 'w', encoding='utf-8') as f:
-            json.dump({
-                "timestamp": result["timestamp"],
-                "signal_analysis": result["signal_analysis"],
-                "recommendation": result["investment_recommendation"],
-                "position": result["position_suggestion"],
-                "risk_flags": result["risk_flags"]
-            }, f, indent=2, ensure_ascii=False)
+        json_path = md_path.with_suffix(".json")
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "timestamp": result["timestamp"],
+                    "signal_analysis": result["signal_analysis"],
+                    "recommendation": result["investment_recommendation"],
+                    "position": result["position_suggestion"],
+                    "risk_flags": result["risk_flags"],
+                },
+                f,
+                indent=2,
+                ensure_ascii=False,
+            )
         print(f"[✓] JSON 已保存：{json_path}")
 
     # 打印摘要
-    print(f"\n【信号分析】")
+    print("\n【信号分析】")
     sa = result["signal_analysis"]
     print(f"  综合信号：{sa['composite_signal']:+.3f}")
     print(f"  宏观信号：{sa['macro_signal']:+.3f}")
     print(f"  行业信号：{sa['industry_signal']:+.3f}")
-    print(f"\n【投资建议】")
+    print("\n【投资建议】")
     print(f"  建议：{result['investment_recommendation'].upper()}")
     print(f"  仓位：{result['position_suggestion']:.0%}")
-    print(f"\n【状态更新】")
+    print("\n【状态更新】")
     print(f"  模式：{result['update_mode']}")
     print(f"  锚点日：{result['anchor_date']}")
     print(f"  时段：{result.get('anchor_session', '')}")

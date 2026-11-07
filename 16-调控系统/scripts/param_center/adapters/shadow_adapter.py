@@ -3,6 +3,7 @@
 依赖: 11-易经推理系统/scripts/memory_l4/bcrm2/shadow_logger.py + storage.py
 输出: 从 shadow_param_log 查询最近 N 条 effective 参数的均值
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -24,6 +25,7 @@ class ShadowAdapter(BaseAdapter):
     ) -> Optional[AlgoObservation]:
         try:
             from memory_l4.bcrm2.storage import Storage
+
             storage = Storage()
             # 查询最近 N 天 effective 参数均值（接口签名按实际 storage 实现）
             records = storage.query_shadow_log(

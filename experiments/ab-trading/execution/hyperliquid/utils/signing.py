@@ -2,6 +2,7 @@
 Hyperliquid signing utilities (local fallback)
 当 hyperliquid>=1.0.0 不可用时使用此模块
 """
+
 from decimal import Decimal
 
 

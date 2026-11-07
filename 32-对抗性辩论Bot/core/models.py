@@ -8,6 +8,7 @@
 - DebateQualityScore: 质量评分（overall/grade/dimensions/rule_score/llm_score/highlights/suggestions）
 - DebateResult: 辩论完整结果（topic/transcript/verdict/material/quality_score/status）
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -18,11 +19,12 @@ from typing import Union
 @dataclass
 class Argument:
     """辩手结构化输出契约。"""
-    thesis: str           # 核心论点
+
+    thesis: str  # 核心论点
     arguments: list[str]  # 论据列表
-    quote: str            # 金句（用于营销提取）
-    confidence: float     # 本方置信度（0-1）
-    raw: str              # 原始 LLM 输出
+    quote: str  # 金句（用于营销提取）
+    confidence: float  # 本方置信度（0-1）
+    raw: str  # 原始 LLM 输出
 
     @classmethod
     def fallback(cls) -> "Argument":
@@ -43,11 +45,12 @@ class CrossExamination:
     交叉质询不是 Argument，是独立的问答数据类型。
     questioner 和 respondent 互为对方（bull/bear）。
     """
-    questioner: str          # 提问方: 'bull' | 'bear'
-    respondent: str          # 回答方: 'bull' | 'bear'（与 questioner 相反）
-    questions: list[str]     # 提问列表（2-3 个）
-    answers: list[str]       # 回答列表（与 questions 一一对应）
-    raw: str                 # 原始 LLM 输出
+
+    questioner: str  # 提问方: 'bull' | 'bear'
+    respondent: str  # 回答方: 'bull' | 'bear'（与 questioner 相反）
+    questions: list[str]  # 提问列表（2-3 个）
+    answers: list[str]  # 回答列表（与 questions 一一对应）
+    raw: str  # 原始 LLM 输出
 
 
 @dataclass
@@ -58,6 +61,7 @@ class Turn:
     round: 第几轮（inject 记为 0）
     content: 辩手为 Argument，交叉质询为 CrossExamination，inject 为纯文本
     """
+
     speaker: str
     round: int
     content: Union[Argument, CrossExamination, str]
@@ -67,32 +71,35 @@ class Turn:
 @dataclass
 class Verdict:
     """裁判裁决。"""
-    summary: str              # 辩论总结
-    winner: str | None        # 'bull' | 'bear' | None(平局)
-    key_insights: list[str]   # 核心洞察
-    topic_angle: str          # 话题升华角度（用于营销）
+
+    summary: str  # 辩论总结
+    winner: str | None  # 'bull' | 'bear' | None(平局)
+    key_insights: list[str]  # 核心洞察
+    topic_angle: str  # 话题升华角度（用于营销）
 
 
 @dataclass
 class MarketingMaterial:
     """营销素材。"""
-    quotes: list[str]              # 金句摘录
-    hashtags: list[str]            # 话题标签（#xxx）
-    highlight_paragraph: str       # 精华段落
-    short_copy: list[str]          # 短文案（3-5 条）
-    debate_title: str              # 辩论标题
+
+    quotes: list[str]  # 金句摘录
+    hashtags: list[str]  # 话题标签（#xxx）
+    highlight_paragraph: str  # 精华段落
+    short_copy: list[str]  # 短文案（3-5 条）
+    debate_title: str  # 辩论标题
 
 
 @dataclass
 class DebateQualityScore:
     """辩论质量评分。"""
-    overall: float              # 综合分 0-10
-    grade: str                  # S/A/B/C
-    dimensions: dict            # 各维度分
-    rule_score: float           # 规则分
-    llm_score: float            # LLM 分
-    highlights: list[str]       # 质量亮点
-    suggestions: list[str]      # 改进建议
+
+    overall: float  # 综合分 0-10
+    grade: str  # S/A/B/C
+    dimensions: dict  # 各维度分
+    rule_score: float  # 规则分
+    llm_score: float  # LLM 分
+    highlights: list[str]  # 质量亮点
+    suggestions: list[str]  # 改进建议
 
     @staticmethod
     def grade_from_score(overall: float) -> str:
@@ -116,6 +123,7 @@ class DebateQualityScore:
 @dataclass
 class DebateResult:
     """辩论完整结果。"""
+
     topic: str
     transcript: list[Turn]
     verdict: Verdict | None
@@ -131,9 +139,13 @@ class DebateResult:
                 {
                     "speaker": t.speaker,
                     "round": t.round,
-                    "content": t.content if isinstance(t.content, str)
-                    else t.content.__dict__ if hasattr(t.content, "__dict__")
-                    else str(t.content),
+                    "content": (
+                        t.content
+                        if isinstance(t.content, str)
+                        else (
+                            t.content.__dict__ if hasattr(t.content, "__dict__") else str(t.content)
+                        )
+                    ),
                     "timestamp": t.timestamp.isoformat(),
                 }
                 for t in self.transcript

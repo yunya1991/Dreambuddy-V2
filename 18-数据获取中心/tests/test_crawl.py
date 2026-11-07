@@ -3,15 +3,14 @@
 _fetch_web 走 CrawlerRunner → DataRecord(category=web)；
 CLI crawl --config sites.yaml 端到端输出 JSON。
 """
+
 import json
 from datetime import datetime, timezone
-
-import pytest
-from typer.testing import CliRunner
 
 from data_center.cli.app import app
 from data_center.core.contract import DataRecord
 from data_center.core.dispatcher import DataCenter
+from typer.testing import CliRunner
 
 RUNNER_MOD = "data_center.crawler.runner.CrawlerRunner"
 
@@ -40,9 +39,14 @@ def test_fetch_web_routes_to_crawler(mocker, tmp_path):
     mock_runner = mock_runner_cls.return_value
     mock_runner.run.return_value = [
         DataRecord(
-            source="test", category="web", sub_category="page",
+            source="test",
+            category="web",
+            sub_category="page",
             timestamp=datetime.now(timezone.utc).isoformat(),
-            metrics={"title": "hello"}, events=[], timeseries=[], raw={},
+            metrics={"title": "hello"},
+            events=[],
+            timeseries=[],
+            raw={},
         )
     ]
     dc = DataCenter()
@@ -78,9 +82,14 @@ def test_cli_crawl_outputs_json(mocker, tmp_path):
     mock_runner = mock_runner_cls.return_value
     mock_runner.run.return_value = [
         DataRecord(
-            source="test", category="web", sub_category="page",
+            source="test",
+            category="web",
+            sub_category="page",
             timestamp=datetime.now(timezone.utc).isoformat(),
-            metrics={"title": "hello"}, events=[], timeseries=[], raw={},
+            metrics={"title": "hello"},
+            events=[],
+            timeseries=[],
+            raw={},
         )
     ]
 
@@ -102,9 +111,7 @@ def test_cli_crawl_with_site_option(mocker, tmp_path):
     mock_runner = mock_runner_cls.return_value
     mock_runner.run.return_value = []
 
-    result = cli_runner.invoke(
-        app, ["crawl", "--config", config_path, "--site", "test_site"]
-    )
+    result = cli_runner.invoke(app, ["crawl", "--config", config_path, "--site", "test_site"])
     assert result.exit_code == 0, result.stdout
     mock_runner.run.assert_called_once_with("test_site")
 
@@ -117,9 +124,7 @@ def test_cli_crawl_list_sites(mocker, tmp_path):
     mock_runner = mock_runner_cls.return_value
     mock_runner.list_sites.return_value = ["test_site", "other_site"]
 
-    result = cli_runner.invoke(
-        app, ["crawl", "--config", config_path, "--list-sites"]
-    )
+    result = cli_runner.invoke(app, ["crawl", "--config", config_path, "--list-sites"])
     assert result.exit_code == 0, result.stdout
     assert "test_site" in result.stdout
     assert "other_site" in result.stdout

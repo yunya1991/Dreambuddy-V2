@@ -13,6 +13,7 @@
 
 状态流转：pending → running → passed/failed/skipped
 """
+
 from __future__ import annotations
 
 import json
@@ -180,7 +181,7 @@ def _pipeline_update_stage(
         # 找下一个 pending 阶段
         idx = PIPELINE_STAGES.index(stage)
         next_stage = None
-        for s in PIPELINE_STAGES[idx + 1:]:
+        for s in PIPELINE_STAGES[idx + 1 :]:
             if stages.get(s, {}).get("state") == "pending":
                 next_stage = s
                 break

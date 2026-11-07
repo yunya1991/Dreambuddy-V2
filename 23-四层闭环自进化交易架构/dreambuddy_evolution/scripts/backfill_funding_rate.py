@@ -14,11 +14,11 @@ FAIL-OPEN: 网络/API 异常 → 记录日志跳过该批次, 不中断整体补
 用法:
   python backfill_funding_rate.py [--start 2019-09-01] [--end 2025-01-01] [--symbol BTCUSDT]
 """
+
 from __future__ import annotations
 
 import argparse
 import logging
-import sys
 import time
 from datetime import datetime, timezone
 
@@ -66,6 +66,7 @@ def write_to_dal(records: list[dict]) -> int:
         return 0
     try:
         from dreambuddy_dal import get_market_macro_repo
+
         repo = get_market_macro_repo(backend="sqlite_unified")
     except Exception as exc:
         logger.error("无法获取 DAL repo: %s", exc)
@@ -112,7 +113,8 @@ def backfill(symbol: str, start: datetime, end: datetime) -> None:
             logger.info(
                 "批次 [%s] 写入 %d 条 (累计 %d), 最后时间 %s",
                 datetime.fromtimestamp(cursor / 1000, tz=timezone.utc).date(),
-                written, total_written,
+                written,
+                total_written,
                 datetime.fromtimestamp(last_ts / 1000, tz=timezone.utc).isoformat(),
             )
             cursor = last_ts + 1  # 下一页从最后一条之后开始

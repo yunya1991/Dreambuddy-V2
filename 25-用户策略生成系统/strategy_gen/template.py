@@ -4,6 +4,7 @@
 基于 10-经典指标系统/Bot2StrategyTrend 的成熟结构，
 提供标准化的 Freqtrade 策略骨架，供 LLM 填充具体逻辑。
 """
+
 from __future__ import annotations
 
 # ── 策略骨架模板 ──────────────────────────────────────────────────────────

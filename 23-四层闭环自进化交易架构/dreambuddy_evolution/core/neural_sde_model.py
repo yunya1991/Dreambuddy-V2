@@ -18,6 +18,7 @@ FAIL-OPEN (4 级 + 2.5/2.7 降级点):
 
 参考模式: exit_rl_policy.py CQLTrainer 的延迟导入 / _available 标志 / save-load
 """
+
 from __future__ import annotations
 
 import logging
@@ -55,9 +56,9 @@ except Exception:  # noqa: BLE001
 # 从 SignatureEngine 导入三级降级签名计算 + 标志暴露 (TDD-004 monkeypatch 用)
 try:
     from dreambuddy_evolution.core.signature_engine import (
-        SignatureEngine,
-        _SIGNATORY_AVAILABLE,
         _ESIG_AVAILABLE,
+        _SIGNATORY_AVAILABLE,
+        SignatureEngine,
     )
 except Exception:  # noqa: BLE001
     SignatureEngine = None  # type: ignore
@@ -80,9 +81,9 @@ DEFAULT_DIFFUSION_FLOOR = 0.001
 #   - esig (当前环境): 15 维 (2D 增广 depth=3 几何级数 1+2+4+8)
 #   - signatory logsignature: 9 维 (free Lie algebra)
 # 不截断: DEFAULT_SIG_DIM 取上限 15, 兼容所有后端 (numpy 6 维时 pad zeros)
-DEFAULT_SIG_DIM = 15      # log-signature 维度 (不截断 SignatureEngine 输出)
-DEFAULT_N_STEP = 32       # 最近窗口长度
-DEFAULT_SIG_DEPTH = 3     # 签名深度 (HC-AGI-11 ≤5)
+DEFAULT_SIG_DIM = 15  # log-signature 维度 (不截断 SignatureEngine 输出)
+DEFAULT_N_STEP = 32  # 最近窗口长度
+DEFAULT_SIG_DEPTH = 3  # 签名深度 (HC-AGI-11 ≤5)
 
 
 class _DriftNet(nn.Module if _TORCH_AVAILABLE else object):
@@ -107,7 +108,9 @@ class _DriftNet(nn.Module if _TORCH_AVAILABLE else object):
             return torch.zeros(y.size(0), 1)
         # 时间特征
         t_batch = torch.full((y.size(0), 1), float(t), device=y.device)
-        time_features = torch.cat([torch.sin(2 * math.pi * t_batch), torch.cos(2 * math.pi * t_batch)], dim=-1)
+        time_features = torch.cat(
+            [torch.sin(2 * math.pi * t_batch), torch.cos(2 * math.pi * t_batch)], dim=-1
+        )
         x = torch.cat([y, time_features], dim=-1)
         out = self.net(x)
         return torch.tanh(out) * self.clip  # tanh 裁剪防爆炸
@@ -167,6 +170,7 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
                 FactorEncoder,
                 MultiHeadCrossAttention,
             )
+
             self.factor_encoder = FactorEncoder(factor_dim=1, d_model=self.cross_attn_dim)
             self.cross_attn = MultiHeadCrossAttention(
                 d_model=self.cross_attn_dim,
@@ -186,10 +190,12 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         ]
         if self.dropout > 0:
             layers.append(nn.Dropout(self.dropout))
-        layers.extend([
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.Tanh(),
-        ])
+        layers.extend(
+            [
+                nn.Linear(hidden_dim, hidden_dim),
+                nn.Tanh(),
+            ]
+        )
         if self.dropout > 0:
             layers.append(nn.Dropout(self.dropout))
         layers.append(nn.Linear(hidden_dim, 1))
@@ -314,7 +320,9 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
                 kv = self.factor_encoder(ef)  # (B, N, cross_attn_dim)
                 # Phase 5: per-head impact multiplier 耦合
                 # head_multipliers 来自 ImpactMultiplier.get_multiplier(cycle_phase, dim)
-                ctx = self.cross_attn(q, kv, kv, head_multipliers=head_multipliers)  # (B, cross_attn_dim)
+                ctx = self.cross_attn(
+                    q, kv, kv, head_multipliers=head_multipliers
+                )  # (B, cross_attn_dim)
                 # B-03: 缓存最新 attention weights，供 A_dim shadow 对比（FAIL-OPEN）
                 try:
                     from dreambuddy_evolution.core.attention_shadow import (
@@ -387,19 +395,25 @@ class _MoEDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         self.use_cross_attention = bool(use_cross_attention)
         self.exogenous_factor_dim = int(exogenous_factor_dim) if self.use_cross_attention else 0
         # 每个 expert 独立 drift net, n_regimes=0 (regime 由 router 处理, 不拼到 expert 输入)
-        self.experts = nn.ModuleList([
-            _PathSignatureDriftNet(
-                hidden_dim=hidden_dim, sig_dim=self.sig_dim, clip=clip,
-                n_regimes=0, n_transition=self.n_transition, dropout=dropout,
-                exogenous_dim=self.exogenous_dim,
-                use_cross_attention=self.use_cross_attention,
-                exogenous_factor_dim=self.exogenous_factor_dim,
-                cross_attn_dim=cross_attn_dim,
-                cross_attn_heads=cross_attn_heads,
-                factor_head_mask=factor_head_mask,
-            )
-            for _ in range(self.n_experts)
-        ])
+        self.experts = nn.ModuleList(
+            [
+                _PathSignatureDriftNet(
+                    hidden_dim=hidden_dim,
+                    sig_dim=self.sig_dim,
+                    clip=clip,
+                    n_regimes=0,
+                    n_transition=self.n_transition,
+                    dropout=dropout,
+                    exogenous_dim=self.exogenous_dim,
+                    use_cross_attention=self.use_cross_attention,
+                    exogenous_factor_dim=self.exogenous_factor_dim,
+                    cross_attn_dim=cross_attn_dim,
+                    cross_attn_heads=cross_attn_heads,
+                    factor_head_mask=factor_head_mask,
+                )
+                for _ in range(self.n_experts)
+            ]
+        )
         # router: regime one-hot (n_experts) + transition vector (n_transition) → 权重
         router_in = self.n_experts + self.n_transition
         self.router = nn.Sequential(
@@ -542,7 +556,9 @@ class _DiffusionNet(nn.Module if _TORCH_AVAILABLE else object):
         if not _TORCH_AVAILABLE:
             return torch.ones(y.size(0), 1) * self.floor
         t_batch = torch.full((y.size(0), 1), float(t), device=y.device)
-        time_features = torch.cat([torch.sin(2 * math.pi * t_batch), torch.cos(2 * math.pi * t_batch)], dim=-1)
+        time_features = torch.cat(
+            [torch.sin(2 * math.pi * t_batch), torch.cos(2 * math.pi * t_batch)], dim=-1
+        )
         x = torch.cat([y, time_features], dim=-1)
         out = self.net(x)
         return torch.nn.functional.softplus(out) + self.floor  # 确保正值
@@ -658,8 +674,11 @@ class NeuralSDEModel:
                 # P2.1: MoE-SDE — 每 regime 独立 expert + router
                 self.drift_net = _MoEDriftNet(
                     n_experts=self.n_regimes,
-                    hidden_dim=hidden_dim, sig_dim=self.sig_dim, clip=drift_clip,
-                    n_transition=self.n_transition, dropout=self.dropout,
+                    hidden_dim=hidden_dim,
+                    sig_dim=self.sig_dim,
+                    clip=drift_clip,
+                    n_transition=self.n_transition,
+                    dropout=self.dropout,
                     routing=self.moe_routing,
                     exogenous_dim=self.exogenous_dim,
                     use_cross_attention=self.use_cross_attention,
@@ -671,8 +690,11 @@ class NeuralSDEModel:
             else:
                 # 路径依赖 + regime one-hot T2 + transition P0.2 + exogenous P1
                 self.drift_net = _PathSignatureDriftNet(
-                    hidden_dim=hidden_dim, sig_dim=self.sig_dim, clip=drift_clip,
-                    n_regimes=self.n_regimes, n_transition=self.n_transition,
+                    hidden_dim=hidden_dim,
+                    sig_dim=self.sig_dim,
+                    clip=drift_clip,
+                    n_regimes=self.n_regimes,
+                    n_transition=self.n_transition,
                     dropout=self.dropout,
                     exogenous_dim=self.exogenous_dim,
                     use_cross_attention=self.use_cross_attention,
@@ -708,7 +730,8 @@ class NeuralSDEModel:
         if len(history) < self.n_step:
             logger.debug(
                 "[FO-AGI-02] history 长度 %d < N_step %d, log_sig pad zeros (Level 2.7)",
-                len(history), self.n_step,
+                len(history),
+                self.n_step,
             )
             return zeros
 
@@ -718,7 +741,7 @@ class NeuralSDEModel:
             return zeros
 
         try:
-            window = history[-self.n_step:]
+            window = history[-self.n_step :]
             log_sig = self._signature_engine.log_signature(window)
             log_sig = np.asarray(log_sig, dtype=np.float64).ravel()
 
@@ -765,7 +788,8 @@ class NeuralSDEModel:
         self._log_sig_std = std
         logger.debug(
             "[NeuralSDE] log_sig z-score 拟合: mean=%s std=%s",
-            np.round(mean, 4), np.round(std, 4),
+            np.round(mean, 4),
+            np.round(std, 4),
         )
 
     def _normalize_log_sig(self, raw_log_sig: np.ndarray) -> np.ndarray:
@@ -783,8 +807,16 @@ class NeuralSDEModel:
             arr = np.concatenate([arr, np.zeros(self.sig_dim - len(arr))])
         elif len(arr) > self.sig_dim:
             arr = arr[: self.sig_dim]
-        mean = self._log_sig_mean[: self.sig_dim] if len(self._log_sig_mean) >= self.sig_dim else self._log_sig_mean
-        std = self._log_sig_std[: self.sig_dim] if len(self._log_sig_std) >= self.sig_dim else self._log_sig_std
+        mean = (
+            self._log_sig_mean[: self.sig_dim]
+            if len(self._log_sig_mean) >= self.sig_dim
+            else self._log_sig_mean
+        )
+        std = (
+            self._log_sig_std[: self.sig_dim]
+            if len(self._log_sig_std) >= self.sig_dim
+            else self._log_sig_std
+        )
         normed = (arr - mean) / np.maximum(std, 1e-8)
         return normed
 
@@ -819,7 +851,8 @@ class NeuralSDEModel:
             self._activated = True
             logger.info(
                 "[NeuralSDE] 自动激活: 样本 %d >= %d (HC-AGI-01)",
-                self._sample_count, MIN_SAMPLES_FOR_ACTIVATION,
+                self._sample_count,
+                MIN_SAMPLES_FOR_ACTIVATION,
             )
 
     def maybe_activate(self, sample_count: int) -> bool:
@@ -850,8 +883,12 @@ class NeuralSDEModel:
         兼容 torchsde.sdeint 的 f(t, y) 签名.
         """
         return self.drift_net(
-            t, y, self._current_log_sig, self._current_regime,
-            self._current_transition, self._current_exogenous,
+            t,
+            y,
+            self._current_log_sig,
+            self._current_regime,
+            self._current_transition,
+            self._current_exogenous,
             self._current_exogenous_factors,
             self._current_head_multipliers,
         )
@@ -1240,8 +1277,12 @@ class NeuralSDEModel:
         try:
             if self._torchsde_available:
                 return self.forecast_torchsde(
-                    np.array([init_price]), horizon, n_paths,
-                    log_sig=log_sig, regime=regime, transition=transition,
+                    np.array([init_price]),
+                    horizon,
+                    n_paths,
+                    log_sig=log_sig,
+                    regime=regime,
+                    transition=transition,
                     exogenous_snapshot=exogenous_snapshot,
                     exogenous_factors=exogenous_factors,
                     head_multipliers=head_multipliers,
@@ -1251,8 +1292,12 @@ class NeuralSDEModel:
 
         try:
             return self.forecast_euler_maruyama(
-                np.array([init_price]), horizon, n_paths,
-                log_sig=log_sig, regime=regime, transition=transition,
+                np.array([init_price]),
+                horizon,
+                n_paths,
+                log_sig=log_sig,
+                regime=regime,
+                transition=transition,
                 exogenous_snapshot=exogenous_snapshot,
                 exogenous_factors=exogenous_factors,
                 head_multipliers=head_multipliers,
@@ -1270,35 +1315,38 @@ class NeuralSDEModel:
             return
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        self._torch.save({
-            "drift_net_state_dict": self.drift_net.state_dict(),
-            "diffusion_net_state_dict": self.diffusion_net.state_dict(),
-            "price_mean": self._price_mean,
-            "price_std": self._price_std,
-            "log_sig_mean": np.asarray(self._log_sig_mean, dtype=np.float64),
-            "log_sig_std": np.asarray(self._log_sig_std, dtype=np.float64),
-            "hidden_dim": self.hidden_dim,
-            "diffusion_hidden": self.diffusion_hidden,
-            "drift_clip": self.drift_clip,
-            "diffusion_floor": self.diffusion_floor,
-            "sig_dim": self.sig_dim,
-            "n_step": self.n_step,
-            "sig_depth": self.sig_depth,
-            "n_regimes": self.n_regimes,  # T2: regime-conditional SDE
-            "use_transition": self.use_transition,  # P0.2: transition-aware SDE
-            "dropout": self.dropout,  # P3: drift_net dropout
-            "use_moe": self.use_moe,  # P2.1: MoE-SDE
-            "moe_routing": self.moe_routing,  # P2.1: soft/hard routing
-            "use_exogenous": self.use_exogenous,  # P1: exogenous drift 输入
-            "exogenous_dim": self.exogenous_dim,  # P1: 维度 (0 = 关闭)
-            "use_cross_attention": self.use_cross_attention,  # P1+: Cross-Attention
-            "cross_attn_dim": self.cross_attn_dim,  # P1+: cross-attention dim
-            "cross_attn_heads": self.cross_attn_heads,  # P1+: cross-attention heads
-            "exogenous_factor_dim": self.exogenous_factor_dim,  # P1+: 外生因子维度
-            "factor_head_mask": self.factor_head_mask,  # Phase 3+4: 维度对齐 mask
-            "sample_count": self._sample_count,
-            "activated": self._activated,
-        }, str(path))
+        self._torch.save(
+            {
+                "drift_net_state_dict": self.drift_net.state_dict(),
+                "diffusion_net_state_dict": self.diffusion_net.state_dict(),
+                "price_mean": self._price_mean,
+                "price_std": self._price_std,
+                "log_sig_mean": np.asarray(self._log_sig_mean, dtype=np.float64),
+                "log_sig_std": np.asarray(self._log_sig_std, dtype=np.float64),
+                "hidden_dim": self.hidden_dim,
+                "diffusion_hidden": self.diffusion_hidden,
+                "drift_clip": self.drift_clip,
+                "diffusion_floor": self.diffusion_floor,
+                "sig_dim": self.sig_dim,
+                "n_step": self.n_step,
+                "sig_depth": self.sig_depth,
+                "n_regimes": self.n_regimes,  # T2: regime-conditional SDE
+                "use_transition": self.use_transition,  # P0.2: transition-aware SDE
+                "dropout": self.dropout,  # P3: drift_net dropout
+                "use_moe": self.use_moe,  # P2.1: MoE-SDE
+                "moe_routing": self.moe_routing,  # P2.1: soft/hard routing
+                "use_exogenous": self.use_exogenous,  # P1: exogenous drift 输入
+                "exogenous_dim": self.exogenous_dim,  # P1: 维度 (0 = 关闭)
+                "use_cross_attention": self.use_cross_attention,  # P1+: Cross-Attention
+                "cross_attn_dim": self.cross_attn_dim,  # P1+: cross-attention dim
+                "cross_attn_heads": self.cross_attn_heads,  # P1+: cross-attention heads
+                "exogenous_factor_dim": self.exogenous_factor_dim,  # P1+: 外生因子维度
+                "factor_head_mask": self.factor_head_mask,  # Phase 3+4: 维度对齐 mask
+                "sample_count": self._sample_count,
+                "activated": self._activated,
+            },
+            str(path),
+        )
         logger.info("[NeuralSDE] 模型保存到 %s", path)
 
     def load(self, path: str) -> bool:
@@ -1361,9 +1409,12 @@ class NeuralSDEModel:
                 logger.debug(
                     "[NeuralSDE] load: drift_net config 不一致 (n_regimes ckpt=%d/cur=%d, "
                     "use_moe ckpt=%s/cur=%s, cross_attn ckpt=%s/cur=%s), 重建 drift_net",
-                    ckpt_n_regimes, self.n_regimes,
-                    ckpt_use_moe, self.use_moe,
-                    ckpt_use_cross_attn, self.use_cross_attention,
+                    ckpt_n_regimes,
+                    self.n_regimes,
+                    ckpt_use_moe,
+                    self.use_moe,
+                    ckpt_use_cross_attn,
+                    self.use_cross_attention,
                 )
                 self.n_regimes = ckpt_n_regimes
                 self.use_transition = ckpt_use_transition
@@ -1379,10 +1430,13 @@ class NeuralSDEModel:
                 self.exogenous_factor_dim = ckpt_exog_factor_dim if self.use_cross_attention else 0
                 self.factor_head_mask = ckpt_factor_head_mask
                 if self._available:
-                    base_kwargs = dict(
-                        hidden_dim=self.hidden_dim, sig_dim=self.sig_dim,
-                        clip=self.drift_clip, n_transition=self.n_transition,
-                        dropout=self.dropout, exogenous_dim=self.exogenous_dim,
+                    base_kwargs = dict(  # noqa: C408
+                        hidden_dim=self.hidden_dim,
+                        sig_dim=self.sig_dim,
+                        clip=self.drift_clip,
+                        n_transition=self.n_transition,
+                        dropout=self.dropout,
+                        exogenous_dim=self.exogenous_dim,
                     )
                     if self.use_cross_attention and self.exogenous_factor_dim > 0:
                         base_kwargs.update(
@@ -1394,12 +1448,14 @@ class NeuralSDEModel:
                         )
                     if self.use_moe and self.n_regimes > 0:
                         self.drift_net = _MoEDriftNet(
-                            n_experts=self.n_regimes, routing=self.moe_routing,
+                            n_experts=self.n_regimes,
+                            routing=self.moe_routing,
                             **base_kwargs,
                         ).to(self.device)
                     else:
                         self.drift_net = _PathSignatureDriftNet(
-                            n_regimes=self.n_regimes, **base_kwargs,
+                            n_regimes=self.n_regimes,
+                            **base_kwargs,
                         ).to(self.device)
             self.drift_net.load_state_dict(ckpt["drift_net_state_dict"])
             self.diffusion_net.load_state_dict(ckpt["diffusion_net_state_dict"])
@@ -1416,14 +1472,19 @@ class NeuralSDEModel:
             if len(self._log_sig_mean) < self.sig_dim:
                 pad = np.zeros(self.sig_dim - len(self._log_sig_mean))
                 self._log_sig_mean = np.concatenate([self._log_sig_mean, pad])
-                self._log_sig_std = np.concatenate([self._log_sig_std, np.ones(self.sig_dim - len(self._log_sig_std))])
+                self._log_sig_std = np.concatenate(
+                    [self._log_sig_std, np.ones(self.sig_dim - len(self._log_sig_std))]
+                )
             self._sample_count = int(ckpt.get("sample_count", 0))
             self._activated = bool(ckpt.get("activated", False))
             self.drift_net.eval()
             self.diffusion_net.eval()
             logger.info(
                 "[NeuralSDE] 模型加载成功: %s (activated=%s, samples=%d, n_regimes=%d)",
-                path, self._activated, self._sample_count, self.n_regimes,
+                path,
+                self._activated,
+                self._sample_count,
+                self.n_regimes,
             )
             return True
         except Exception as e:  # noqa: BLE001
@@ -1484,14 +1545,15 @@ class NeuralSDETrainer:
         self._torch = torch if self.model.is_available else None
 
         if self.model.is_available:
-            params = (
-                list(self.model.drift_net.parameters()) +
-                list(self.model.diffusion_net.parameters())
+            params = list(self.model.drift_net.parameters()) + list(
+                self.model.diffusion_net.parameters()
             )
             # P3: weight_decay>0 用 AdamW (解耦权重衰减), 否则 Adam (向后兼容)
             if self.weight_decay > 0:
                 self._optimizer = torch.optim.AdamW(
-                    params, lr=lr, weight_decay=self.weight_decay,
+                    params,
+                    lr=lr,
+                    weight_decay=self.weight_decay,
                 )
             else:
                 self._optimizer = torch.optim.Adam(params, lr=lr)
@@ -1603,10 +1665,7 @@ class NeuralSDETrainer:
             and n_windows_total > max_windows
             and len(unique_regimes) > 1
         )
-        use_oversample = (
-            regime_balance == "oversample"
-            and len(unique_regimes) > 1
-        )
+        use_oversample = regime_balance == "oversample" and len(unique_regimes) > 1
         if use_balanced:
             per_regime_quota = max(1, max_windows // len(unique_regimes))
             indices = []
@@ -1644,7 +1703,7 @@ class NeuralSDETrainer:
         # 第一阶段: 累积 raw log_sig (TDD-010)
         raw_log_sigs = []
         for i in indices:
-            raw_window = closes[i:i + self.seq_len]
+            raw_window = closes[i : i + self.seq_len]
             raw_log_sig = self.model._compute_log_sig_raw(raw_window)
             raw_log_sigs.append(raw_log_sig)
 
@@ -1655,8 +1714,8 @@ class NeuralSDETrainer:
         # 第二阶段: 生成归一化 windows (5-tuple 含 regime_label + exo_vec)
         windows = []
         for idx, i in enumerate(indices):
-            inp = normed[i:i + self.seq_len]
-            tgt = normed[i + self.seq_len:i + self.seq_len + self.horizon]
+            inp = normed[i : i + self.seq_len]
+            tgt = normed[i + self.seq_len : i + self.seq_len + self.horizon]
             log_sig = self.model._normalize_log_sig(raw_log_sigs[idx])
             reg = int(per_window_regime[i])
             # P1+: 取窗口末尾点的外生因子向量
@@ -1710,7 +1769,7 @@ class NeuralSDETrainer:
         sqrt_dt = math.sqrt(dt)
 
         for i in range(0, len(windows), self.batch_size):
-            batch = windows[i:i + self.batch_size]
+            batch = windows[i : i + self.batch_size]
             if not batch:
                 continue
             bs = len(batch)
@@ -1722,11 +1781,11 @@ class NeuralSDETrainer:
             sample = batch[0]
             n_fields = len(sample)
             has_regime = n_fields >= 4
-            has_exo = n_fields >= 5 and not (n_fields == 5 and exo_dim == 0)
+            has_exo = n_fields >= 5 and not (n_fields == 5 and exo_dim == 0)  # noqa: F841
             # 6-tuple: (inp, tgt, log_sig, reg, exo_vec, factor_vec) — 有 exo + factors
             # 5-tuple with exo_dim>0: (inp, tgt, log_sig, reg, exo_vec) — 有 exo, 无 factors
             # 5-tuple with exo_dim==0: (inp, tgt, log_sig, reg, factor_vec) — 无 exo, 有 factors
-            has_factors = n_fields >= 6 or (n_fields == 5 and exo_dim == 0)
+            has_factors = n_fields >= 6 or (n_fields == 5 and exo_dim == 0)  # noqa: F841
             if n_fields >= 6:
                 s0_arr = np.array([[inp[-1]] for inp, _, _, _, _, _ in batch], dtype=np.float32)
                 tgt_arr = np.array([tgt for _, tgt, _, _, _, _ in batch], dtype=np.float32)
@@ -1773,7 +1832,9 @@ class NeuralSDETrainer:
                 regime_onehot = torch.zeros(bs, n_regimes, device=self.model.device)
                 # 在线 one-hot: regime_arr[k] 应 ∈ [0, n_regimes), 否则 clamp
                 regime_clamped = np.clip(regime_arr, 0, n_regimes - 1)
-                regime_onehot.scatter_(1, torch.tensor(regime_clamped, device=self.model.device).unsqueeze(1), 1.0)
+                regime_onehot.scatter_(
+                    1, torch.tensor(regime_clamped, device=self.model.device).unsqueeze(1), 1.0
+                )
             else:
                 regime_onehot = None
 
@@ -1784,7 +1845,9 @@ class NeuralSDETrainer:
                 # regime_clamped ∈ [0, n_regimes-1], 取 Q 对应行
                 transition_vec = Q[regime_clamped]  # (bs, n_regimes)
                 transition_t = torch.tensor(
-                    transition_vec, dtype=torch.float32, device=self.model.device,
+                    transition_vec,
+                    dtype=torch.float32,
+                    device=self.model.device,
                 )
             else:
                 transition_t = None
@@ -1826,9 +1889,9 @@ class NeuralSDETrainer:
             path = torch.zeros(bs, self.horizon, device=self.model.device)
             for t_step in range(self.horizon):
                 t_val = float(t_step)
-                drift = self.model.f(t_val, y)       # (bs, 1)
-                diff = self.model.g(t_val, y)         # (bs, 1)
-                z = self._torch.randn_like(y)         # (bs, 1)
+                drift = self.model.f(t_val, y)  # (bs, 1)
+                diff = self.model.g(t_val, y)  # (bs, 1)
+                z = self._torch.randn_like(y)  # (bs, 1)
                 y = y + drift * dt + diff * sqrt_dt * z
                 path[:, t_step] = y.squeeze(-1)
 
@@ -1871,17 +1934,17 @@ class NeuralSDETrainer:
         if self.loss_type == "qlike":
             eps = 1e-8
             actual_returns = torch.diff(targets, dim=1)
-            actual_var = actual_returns ** 2
+            actual_var = actual_returns**2
             pred_returns = torch.diff(path, dim=1)
-            pred_var = pred_returns ** 2
+            pred_var = pred_returns**2
             qlike = torch.mean(torch.log(pred_var + eps) + actual_var / (pred_var + eps))
             return qlike
         if self.loss_type == "multitask":
             eps = 1e-8
             actual_returns = torch.diff(targets, dim=1)
-            actual_var = actual_returns ** 2
+            actual_var = actual_returns**2
             pred_returns = torch.diff(path, dim=1)
-            pred_var = pred_returns ** 2
+            pred_var = pred_returns**2
             qlike = torch.mean(torch.log(pred_var + eps) + actual_var / (pred_var + eps))
             mse = torch.nn.functional.mse_loss(path, targets)
             return 0.7 * mse + 0.3 * qlike
@@ -1928,6 +1991,7 @@ class NeuralSDETrainer:
         if getattr(self.model, "use_transition", False) and regime_labels is not None:
             try:
                 from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
+
                 detector = BTCRegimeDetector(n_regimes=self.model.n_regimes)
                 self._transition_matrix = detector.estimate_transition_matrix(regime_labels)
                 logger.info(
@@ -1941,13 +2005,17 @@ class NeuralSDETrainer:
             self._transition_matrix = None
 
         windows = self.prepare_data(
-            closes, regime_labels=regime_labels, regime_balance=regime_balance,
-            exogenous_series=exogenous_series, exogenous_factors=exogenous_factors,
+            closes,
+            regime_labels=regime_labels,
+            regime_balance=regime_balance,
+            exogenous_series=exogenous_series,
+            exogenous_factors=exogenous_factors,
         )
         if len(windows) < MIN_SAMPLES_FOR_ACTIVATION:
             logger.warning(
                 "[NeuralSDE] 训练样本 %d < %d, 无法激活 (HC-AGI-13)",
-                len(windows), MIN_SAMPLES_FOR_ACTIVATION,
+                len(windows),
+                MIN_SAMPLES_FOR_ACTIVATION,
             )
             return {"status": "insufficient_samples", "n_windows": len(windows)}
 
@@ -1988,7 +2056,9 @@ class NeuralSDETrainer:
                     if patience_counter >= self.patience:
                         logger.info(
                             "[NeuralSDE] Early stopping at epoch %d (val_loss=%.6f, patience=%d)",
-                            epoch + 1, val_loss, self.patience,
+                            epoch + 1,
+                            val_loss,
+                            self.patience,
                         )
                         early_stopped = True
                         break
@@ -2033,7 +2103,7 @@ class NeuralSDETrainer:
 
         with torch.no_grad():
             for i in range(0, len(val_windows), bs):
-                batch = val_windows[i:i + bs]
+                batch = val_windows[i : i + bs]
                 if not batch:
                     continue
                 batch_size = len(batch)

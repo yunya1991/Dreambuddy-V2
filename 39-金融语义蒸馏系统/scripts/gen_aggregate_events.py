@@ -13,6 +13,7 @@
   --backfill  回填模式：全量聚合历史事件
   --live      增量模式：只聚合上次处理窗口之后的事件
 """
+
 import argparse
 import json
 import os
@@ -82,7 +83,7 @@ def _dispersion(counts):
     if mean == 0:
         return 0.0
     var = sum((v - mean) ** 2 for v in vals) / n
-    return round((var ** 0.5) / mean, 4)
+    return round((var**0.5) / mean, 4)
 
 
 def main():
@@ -110,21 +111,25 @@ def main():
         total_semantic = sum(s_counts.values())
         active_factors = len(a_counts) + len(s_counts)
         # 3) 多因子聚合离散度（全部因子活跃度的变异系数）
-        merged = {**{f"atomic:{k}": v for k, v in a_counts.items()},
-                  **{f"semantic:{k}": v for k, v in s_counts.items()}}
+        merged = {
+            **{f"atomic:{k}": v for k, v in a_counts.items()},
+            **{f"semantic:{k}": v for k, v in s_counts.items()},
+        }
         disp = _dispersion(merged)
-        events.append({
-            "layer": "aggregate",
-            "window": w,
-            "window_hours": WINDOW_HOURS,
-            "atomic_factor_counts": a_counts,
-            "semantic_term_counts": s_counts,
-            "total_atomic": total_atomic,
-            "total_semantic": total_semantic,
-            "active_factors": active_factors,
-            "factor_dispersion_cv": disp,
-            "source": "aggregate_of_atomic_and_semantic",
-        })
+        events.append(
+            {
+                "layer": "aggregate",
+                "window": w,
+                "window_hours": WINDOW_HOURS,
+                "atomic_factor_counts": a_counts,
+                "semantic_term_counts": s_counts,
+                "total_atomic": total_atomic,
+                "total_semantic": total_semantic,
+                "active_factors": active_factors,
+                "factor_dispersion_cv": disp,
+                "source": "aggregate_of_atomic_and_semantic",
+            }
+        )
         processed_last = w
 
     if events:
@@ -133,14 +138,18 @@ def main():
                 f.write(json.dumps(e, ensure_ascii=False) + "\n")
     _save_state({"last_window": processed_last})
 
-    print(f"[OK] 模式={'backfill' if args.backfill else 'live'} "
-          f"聚合 {len(events)} 个窗口 → {OUT_PATH}")
+    print(
+        f"[OK] 模式={'backfill' if args.backfill else 'live'} "
+        f"聚合 {len(events)} 个窗口 → {OUT_PATH}"
+    )
     if events:
         # 抽样展示最近窗口
         last = events[-1]
-        print(f"     最近窗口 {last['window']}: "
-              f"原子事件 {last['total_atomic']}, 分子事件 {last['total_semantic']}, "
-              f"活跃因子 {last['active_factors']}, 离散度CV {last['factor_dispersion_cv']}")
+        print(
+            f"     最近窗口 {last['window']}: "
+            f"原子事件 {last['total_atomic']}, 分子事件 {last['total_semantic']}, "
+            f"活跃因子 {last['active_factors']}, 离散度CV {last['factor_dispersion_cv']}"
+        )
 
 
 if __name__ == "__main__":

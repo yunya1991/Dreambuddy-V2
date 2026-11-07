@@ -8,12 +8,12 @@
   5. 采集报告正确统计
   6. FAIL-OPEN：单个 Provider 失败不影响其他
 """
+
 import os
 import sys
 import tempfile
-import time
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _ADAPTERS_DIR = os.path.join(os.path.dirname(_THIS_DIR), "adapters")
@@ -37,11 +37,13 @@ class ActiveTrainingCollectorTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import shutil
+
         shutil.rmtree(cls._tmpdir, ignore_errors=True)
         os.environ.pop("SPL_DB_DIR", None)
 
     def setUp(self):
         from case_bank_server import _connect
+
         conn = _connect()
         conn.execute("DELETE FROM solution_cases")
         conn.commit()
@@ -57,6 +59,7 @@ class ActiveTrainingCollectorTest(unittest.TestCase):
 
     def _make_test_case(self, source="test", quality="B", intent="test_case"):
         from interfaces.training_data_provider import TrainingCase
+
         return TrainingCase(
             intent=intent,
             actions=["a1"],
@@ -110,9 +113,7 @@ class ActiveTrainingCollectorTest(unittest.TestCase):
         """增量采集：使用 since 时间戳。"""
         from active_training_collector import ActiveTrainingCollector
 
-        provider = self._make_mock_provider(
-            "skill", [self._make_test_case("skill", "B", "s1")]
-        )
+        provider = self._make_mock_provider("skill", [self._make_test_case("skill", "B", "s1")])
 
         collector = ActiveTrainingCollector()
         collector.register_provider(provider)
@@ -125,7 +126,10 @@ class ActiveTrainingCollectorTest(unittest.TestCase):
         # 验证 fetch_cases 被调用时传入 since 参数
         call_args = provider.fetch_cases.call_args
         self.assertIsNotNone(call_args)
-        self.assertEqual(call_args[1].get("since") or (call_args[0][1] if len(call_args[0]) > 1 else None), "1000")
+        self.assertEqual(
+            call_args[1].get("since") or (call_args[0][1] if len(call_args[0]) > 1 else None),
+            "1000",
+        )
 
     def test_fail_open_single_provider_failure(self):
         """单个 Provider 失败不影响其他。"""
@@ -136,9 +140,7 @@ class ActiveTrainingCollectorTest(unittest.TestCase):
         bad_provider.get_quality_threshold.return_value = "B"
         bad_provider.fetch_cases.side_effect = Exception("DB error")
 
-        good_provider = self._make_mock_provider(
-            "tdr", [self._make_test_case("tdr", "B", "ok")]
-        )
+        good_provider = self._make_mock_provider("tdr", [self._make_test_case("tdr", "B", "ok")])
 
         collector = ActiveTrainingCollector()
         collector.register_provider(bad_provider)
@@ -175,9 +177,7 @@ class ActiveTrainingCollectorTest(unittest.TestCase):
         """采集报告包含正确的统计结构。"""
         from active_training_collector import ActiveTrainingCollector
 
-        provider = self._make_mock_provider(
-            "tdr", [self._make_test_case("tdr", "B", "r1")]
-        )
+        provider = self._make_mock_provider("tdr", [self._make_test_case("tdr", "B", "r1")])
 
         collector = ActiveTrainingCollector()
         collector.register_provider(provider)

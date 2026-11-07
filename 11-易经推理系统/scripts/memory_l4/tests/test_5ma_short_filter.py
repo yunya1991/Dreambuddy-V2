@@ -11,6 +11,7 @@ RED → GREEN 路径:
     cd 11-易经推理系统
     python -m pytest scripts/memory_l4/tests/test_5ma_short_filter.py -v -s
 """
+
 import sys
 import unittest
 from pathlib import Path
@@ -32,7 +33,7 @@ def _make_trader():
     # 做空仓位规模分层（类属性已定义）
     # 动态弹簧力场参数（类属性已定义）
     t.short_confidence_threshold = 0.70  # 基础做空阈值
-    t.confidence_threshold = 0.70       # 基础做多阈值
+    t.confidence_threshold = 0.70  # 基础做多阈值
     return t
 
 
@@ -47,6 +48,7 @@ def _build_closes_5ma(targets, seed=42):
       - 调整 MA 时仅调整尾部 N 根（避免影响趋势方向）
     """
     import random
+
     random.seed(seed)
     # 1. 构造整体基底：从 ma1400 缓慢过渡到 ma200（old→new 单调）
     #    indices 0..1399 对应 newest→oldest，所以 closes[1399] = ma1400 附近
@@ -64,11 +66,12 @@ def _build_closes_5ma(targets, seed=42):
 
     # 2. 调整前 N 根的均值到目标 MA（仅微调，保持趋势方向）
     def _adjust_ma(arr, n, target, start=0):
-        cur = sum(arr[start:start+n]) / n
+        cur = sum(arr[start : start + n]) / n
         delta = target - cur
         # 只调整该区间内的值，避免影响其他区间
-        for i in range(start, start+n):
+        for i in range(start, start + n):
             arr[i] += delta
+
     # 按周期从长到短调整（避免短周期调整被长周期覆盖）
     _adjust_ma(closes, 1400, targets["ma1400"], 0)
     _adjust_ma(closes, 200, targets["ma200"], 0)
@@ -80,8 +83,9 @@ def _build_closes_5ma(targets, seed=42):
     return closes  # newest-first, len=1500
 
 
-def _build_trend_closes_5ma(direction="bear", start_price=100000,
-                            daily_change=0.005, n_trend_bars=250, n_total=1500):
+def _build_trend_closes_5ma(
+    direction="bear", start_price=100000, daily_change=0.005, n_trend_bars=250, n_total=1500
+):
     """构造真趋势日K数据（newest-first），MA排列和斜率自然正确。
 
     原理：价格持续单调变化 → 短周期MA比长周期MA变化更快 →
@@ -96,24 +100,25 @@ def _build_trend_closes_5ma(direction="bear", start_price=100000,
     返回: newest-first list, len=n_total
     """
     import random
+
     random.seed(42)
 
     if direction == "bear":
         change = -abs(daily_change)  # 每日跌
     else:
-        change = abs(daily_change)   # 每日涨
+        change = abs(daily_change)  # 每日涨
 
     # 构造 oldest-first 序列（更直观），最后反转为 newest-first
     closes_of = []
 
     # 1. Pre-trend flat period (平稳期，价格围绕 start_price 波动)
-    for i in range(n_total - n_trend_bars):
+    for i in range(n_total - n_trend_bars):  # noqa: B007
         noise = 0.001 * start_price * random.uniform(-1, 1)
         closes_of.append(start_price + noise)
 
     # 2. Trend period (趋势期，价格单调变化)
     p = start_price
-    for i in range(n_trend_bars):
+    for i in range(n_trend_bars):  # noqa: B007
         p = p * (1 + change)
         noise = 0.001 * p * random.uniform(-1, 1)
         closes_of.append(p + noise)
@@ -138,21 +143,30 @@ class TestFiveMASpringForce(unittest.TestCase):
         注：此测试仅验证弹簧力场计算正确（F_net 应为负），不验证过滤行为
         """
         t = _make_trader()
-        closes = _build_closes_5ma({
-            "ma30": 150000, "ma65": 142000, "ma128": 135000,
-            "ma200": 125000, "ma1400": 100000,
-        })
+        closes = _build_closes_5ma(
+            {
+                "ma30": 150000,
+                "ma65": 142000,
+                "ma128": 135000,
+                "ma200": 125000,
+                "ma1400": 100000,
+            }
+        )
         price = 152000  # 略高于 MA30
-        for i in range(3): closes[i] = price
+        for i in range(3):
+            closes[i] = price
         t._btc_trend_cache = {"ts": 0, "result": None}
-        with patch("scripts.memory_l4.polling_trader._load_kline_from_okx",
-                   return_value=[{"c": c} for c in closes]):
+        with patch(
+            "scripts.memory_l4.polling_trader._load_kline_from_okx",
+            return_value=[{"c": c} for c in closes],
+        ):
             bearish, reason = t._check_btc_trend()
 
         # 无过滤方案：允许做空，但日志中应能识别为多头形态（F_net 为负）
         self.assertTrue(bearish, f"无过滤应允许做空: {reason}")
         self.assertIn("F_net=", reason)
         import re
+
         m = re.search(r"F_net=([+-]?[\d.]+)", reason)
         self.assertTrue(m)
         f = float(m.group(1))
@@ -165,15 +179,23 @@ class TestFiveMASpringForce(unittest.TestCase):
         偏离 1.6% → U_short 很小（< 0.003）→ 不触发超卖过滤 → 允许做空。
         """
         t = _make_trader()
-        closes = _build_closes_5ma({
-            "ma30": 95000, "ma65": 95500, "ma128": 96000,
-            "ma200": 96500, "ma1400": 97000,
-        })
+        closes = _build_closes_5ma(
+            {
+                "ma30": 95000,
+                "ma65": 95500,
+                "ma128": 96000,
+                "ma200": 96500,
+                "ma1400": 97000,
+            }
+        )
         price = 93500  # 偏离 MA30 约 1.6%
-        for i in range(3): closes[i] = price + i * 100  # 3日继续跌
+        for i in range(3):
+            closes[i] = price + i * 100  # 3日继续跌
         t._btc_trend_cache = {"ts": 0, "result": None}
-        with patch("scripts.memory_l4.polling_trader._load_kline_from_okx",
-                   return_value=[{"c": c} for c in closes]):
+        with patch(
+            "scripts.memory_l4.polling_trader._load_kline_from_okx",
+            return_value=[{"c": c} for c in closes],
+        ):
             bearish, reason = t._check_btc_trend()
 
         # RANGING + 低U + 3日跌破 → 允许做空（优化后放宽）
@@ -190,8 +212,10 @@ class TestFiveMASpringForce(unittest.TestCase):
         # 构造真趋势数据：均线空头发散 + 持续下跌
         closes = _build_trend_closes_5ma(direction="bear")
         t._btc_trend_cache = {"ts": 0, "result": None}
-        with patch("scripts.memory_l4.polling_trader._load_kline_from_okx",
-                   return_value=[{"c": c} for c in closes]):
+        with patch(
+            "scripts.memory_l4.polling_trader._load_kline_from_okx",
+            return_value=[{"c": c} for c in closes],
+        ):
             bearish, reason = t._check_btc_trend()
 
         self.assertTrue(bearish, f"真趋势早期(均线发散+斜率向下)应允许做空: {reason}")
@@ -205,15 +229,17 @@ class TestFiveMASpringForce(unittest.TestCase):
         t = _make_trader()
         closes = _build_trend_closes_5ma(direction="bear")
         t._btc_trend_cache = {"ts": 0, "result": None}
-        with patch("scripts.memory_l4.polling_trader._load_kline_from_okx",
-                   return_value=[{"c": c} for c in closes]):
+        with patch(
+            "scripts.memory_l4.polling_trader._load_kline_from_okx",
+            return_value=[{"c": c} for c in closes],
+        ):
             bearish, reason = t._check_btc_trend()
 
         self.assertTrue(bearish, f"真趋势+3日确认应允许做空: {reason}")
         # TREND_BEAR 或 STRONG_TREND_BEAR 形态下允许做空
         self.assertTrue(
             "regime=TREND_BEAR" in reason or "regime=STRONG_TREND_BEAR" in reason,
-            f"应判定为TREND_BEAR或STRONG_TREND_BEAR: {reason}"
+            f"应判定为TREND_BEAR或STRONG_TREND_BEAR: {reason}",
         )
 
     def test_5ma_full_bearish_tier(self):
@@ -222,15 +248,23 @@ class TestFiveMASpringForce(unittest.TestCase):
         回测显示 RANGING 胜率 68.6% 最高，优化后放宽 score 允许档位（全档位）。
         """
         t = _make_trader()
-        closes = _build_closes_5ma({
-            "ma30": 95000, "ma65": 95500, "ma128": 96000,
-            "ma200": 96500, "ma1400": 97000,
-        })
+        closes = _build_closes_5ma(
+            {
+                "ma30": 95000,
+                "ma65": 95500,
+                "ma128": 96000,
+                "ma200": 96500,
+                "ma1400": 97000,
+            }
+        )
         price = 93500
-        for i in range(3): closes[i] = price + i * 500  # 3日全低于MA30
+        for i in range(3):
+            closes[i] = price + i * 500  # 3日全低于MA30
         t._btc_trend_cache = {"ts": 0, "result": None}
-        with patch("scripts.memory_l4.polling_trader._load_kline_from_okx",
-                   return_value=[{"c": c} for c in closes]):
+        with patch(
+            "scripts.memory_l4.polling_trader._load_kline_from_okx",
+            return_value=[{"c": c} for c in closes],
+        ):
             bearish, reason = t._check_btc_trend()
         # RANGING + 低U + 3日跌破 → 允许做空（优化后放宽）
         self.assertTrue(bearish, f"RANGING+低U应允许做空: {reason}")
@@ -254,8 +288,10 @@ class TestShortConfidenceTiers(unittest.TestCase):
         # 用真趋势数据构造，保证 regime 判定为 TREND_BEAR
         closes = _build_trend_closes_5ma(direction="bear")
         t._btc_trend_cache = {"ts": 0, "result": None}
-        with patch("scripts.memory_l4.polling_trader._load_kline_from_okx",
-                   return_value=[{"c": c} for c in closes]):
+        with patch(
+            "scripts.memory_l4.polling_trader._load_kline_from_okx",
+            return_value=[{"c": c} for c in closes],
+        ):
             bearish, reason = t._check_btc_trend()
 
         self.assertTrue(bearish, f"TREND_BEAR应允许做空: {reason}")
@@ -269,15 +305,23 @@ class TestShortConfidenceTiers(unittest.TestCase):
         """RED: WEAK档 ×1.1765 → 抬高门槛（弱趋势要求更高置信度避免诱空）"""
         t = _make_trader()
         # 构造 WEAK: 仅短中期空头，长期多头
-        closes = _build_closes_5ma({
-            "ma30": 130000, "ma65": 134000, "ma128": 138000,
-            "ma200": 125000, "ma1400": 100000,
-        })
+        closes = _build_closes_5ma(
+            {
+                "ma30": 130000,
+                "ma65": 134000,
+                "ma128": 138000,
+                "ma200": 125000,
+                "ma1400": 100000,
+            }
+        )
         price = 132000  # 在 MA65 和 MA128 之间
-        for i in range(3): closes[i] = price - i * 500
+        for i in range(3):
+            closes[i] = price - i * 500
         t._btc_trend_cache = {"ts": 0, "result": None}
-        with patch("scripts.memory_l4.polling_trader._load_kline_from_okx",
-                   return_value=[{"c": c} for c in closes]):
+        with patch(
+            "scripts.memory_l4.polling_trader._load_kline_from_okx",
+            return_value=[{"c": c} for c in closes],
+        ):
             bearish, reason = t._check_btc_trend()
 
         if bearish and "score=WEAK" in reason:
@@ -359,12 +403,12 @@ class TestIntegrationShortFilter(unittest.TestCase):
             "df_prices": closes[:200],
         }
         t._btc_trend_cache = {"ts": 0, "result": None}
-        with patch("scripts.memory_l4.polling_trader._load_kline_from_okx",
-                   return_value=[{"c": c} for c in closes]):
+        with patch(
+            "scripts.memory_l4.polling_trader._load_kline_from_okx",
+            return_value=[{"c": c} for c in closes],
+        ):
             # 同时 mock 美股指数（非看空 → 不额外限制）
-            t._us_index_trend_cache = {
-                "ts": 1e18, "result": (False, "mock 美股多头")
-            }
+            t._us_index_trend_cache = {"ts": 1e18, "result": (False, "mock 美股多头")}
             ok, reason, multi = t._check_short_trend_filter("BTC", inference)
 
         self.assertTrue(ok, f"TREND_BEAR+高置信+美股多头 = 应允许做空: {reason}")
@@ -405,12 +449,18 @@ class TestDynamicSpringForce(unittest.TestCase):
     def test_inter_ma_force_exists(self):
         """RED: F_inter_net 和 inter_ma_details 应存在"""
         t = _make_trader()
-        closes = _build_closes_5ma({
-            "ma30": 95000, "ma65": 97000, "ma128": 99000,
-            "ma200": 102000, "ma1400": 108000,
-        })
+        closes = _build_closes_5ma(
+            {
+                "ma30": 95000,
+                "ma65": 97000,
+                "ma128": 99000,
+                "ma200": 102000,
+                "ma1400": 108000,
+            }
+        )
         price = 93500  # 偏离 MA30 约 1.6%，趋势早期
-        for i in range(3): closes[i] = price
+        for i in range(3):
+            closes[i] = price
         res = t._calc_5ma_spring_force(closes, tier="daily_btc")
         self.assertIn("F_inter_net", res)
         self.assertIn("inter_ma_details", res)
@@ -420,12 +470,18 @@ class TestDynamicSpringForce(unittest.TestCase):
     def test_inter_ma_force_bullish_direction(self):
         """RED: 多头排列 → F_inter < 0（做多方向力）"""
         t = _make_trader()
-        closes = _build_closes_5ma({
-            "ma30": 150000, "ma65": 142000, "ma128": 135000,
-            "ma200": 125000, "ma1400": 100000,
-        })
+        closes = _build_closes_5ma(
+            {
+                "ma30": 150000,
+                "ma65": 142000,
+                "ma128": 135000,
+                "ma200": 125000,
+                "ma1400": 100000,
+            }
+        )
         price = 152000
-        for i in range(3): closes[i] = price
+        for i in range(3):
+            closes[i] = price
         res = t._calc_5ma_spring_force(closes, tier="daily_btc")
         # 多头排列（短>长）→ inter_dist > 0 → F_inter < 0（做多方向力）
         self.assertLess(res["F_inter_net"], 0, "多头排列 inter-MA 力应为负（做多方向）")
@@ -433,24 +489,33 @@ class TestDynamicSpringForce(unittest.TestCase):
     def test_f_total_equals_f_net_plus_f_inter(self):
         """RED: F_total = F_net + F_inter_net"""
         t = _make_trader()
-        closes = _build_closes_5ma({
-            "ma30": 95000, "ma65": 97000, "ma128": 99000,
-            "ma200": 102000, "ma1400": 108000,
-        })
-        price = 93500  # 偏离 MA30 约 1.6%，趋势早期
-        for i in range(3): closes[i] = price
-        res = t._calc_5ma_spring_force(closes, tier="daily_btc")
-        self.assertAlmostEqual(
-            res["F_total"], res["F_net"] + res["F_inter_net"], places=6
+        closes = _build_closes_5ma(
+            {
+                "ma30": 95000,
+                "ma65": 97000,
+                "ma128": 99000,
+                "ma200": 102000,
+                "ma1400": 108000,
+            }
         )
+        price = 93500  # 偏离 MA30 约 1.6%，趋势早期
+        for i in range(3):
+            closes[i] = price
+        res = t._calc_5ma_spring_force(closes, tier="daily_btc")
+        self.assertAlmostEqual(res["F_total"], res["F_net"] + res["F_inter_net"], places=6)
 
     def test_ma_slope_exists(self):
         """RED: ma_slopes 应存在且为数"""
         t = _make_trader()
-        closes = _build_closes_5ma({
-            "ma30": 95000, "ma65": 97000, "ma128": 99000,
-            "ma200": 102000, "ma1400": 108000,
-        })
+        closes = _build_closes_5ma(
+            {
+                "ma30": 95000,
+                "ma65": 97000,
+                "ma128": 99000,
+                "ma200": 102000,
+                "ma1400": 108000,
+            }
+        )
         res = t._calc_5ma_spring_force(closes, tier="daily_btc")
         self.assertIn("ma_slopes", res)
         self.assertIn("slope_avg", res)
@@ -459,12 +524,18 @@ class TestDynamicSpringForce(unittest.TestCase):
     def test_potential_energy_exists(self):
         """RED: U_potential 应存在且恒正（势能 U=½kx² ≥ 0）"""
         t = _make_trader()
-        closes = _build_closes_5ma({
-            "ma30": 95000, "ma65": 97000, "ma128": 99000,
-            "ma200": 102000, "ma1400": 108000,
-        })
+        closes = _build_closes_5ma(
+            {
+                "ma30": 95000,
+                "ma65": 97000,
+                "ma128": 99000,
+                "ma200": 102000,
+                "ma1400": 108000,
+            }
+        )
         price = 93500  # 偏离 MA30 约 1.6%，趋势早期
-        for i in range(3): closes[i] = price
+        for i in range(3):
+            closes[i] = price
         res = t._calc_5ma_spring_force(closes, tier="daily_btc")
         self.assertIn("U_potential", res)
         self.assertGreaterEqual(res["U_potential"], 0, "势能 U=½kx² 应恒非负")
@@ -472,10 +543,15 @@ class TestDynamicSpringForce(unittest.TestCase):
     def test_k_eff_modulated_by_slope(self):
         """RED: k_eff 应受斜率调制（≠ 原 k=2.0）"""
         t = _make_trader()
-        closes = _build_closes_5ma({
-            "ma30": 95000, "ma65": 97000, "ma128": 99000,
-            "ma200": 102000, "ma1400": 108000,
-        })
+        closes = _build_closes_5ma(
+            {
+                "ma30": 95000,
+                "ma65": 97000,
+                "ma128": 99000,
+                "ma200": 102000,
+                "ma1400": 108000,
+            }
+        )
         res = t._calc_5ma_spring_force(closes, tier="daily_btc")
         self.assertIn("k_eff", res)
         # 斜率不为0时 k_eff ≠ 2.0
@@ -486,28 +562,43 @@ class TestDynamicSpringForce(unittest.TestCase):
         """RED: 价格在 MA30 和 MA65 之间时，inter-MA 力能正确辨别方向"""
         t = _make_trader()
         # MA30=80000 < price=82000 < MA65=90000，其余均线更高
-        closes = _build_closes_5ma({
-            "ma30": 80000, "ma65": 90000, "ma128": 110000,
-            "ma200": 130000, "ma1400": 150000,
-        })
+        closes = _build_closes_5ma(
+            {
+                "ma30": 80000,
+                "ma65": 90000,
+                "ma128": 110000,
+                "ma200": 130000,
+                "ma1400": 150000,
+            }
+        )
         price = 82000  # 在 MA30 和 MA65 之间
-        for i in range(3): closes[i] = price
+        for i in range(3):
+            closes[i] = price
         res = t._calc_5ma_spring_force(closes, tier="daily_btc")
         # MA30 < MA65 → inter_dist < 0 → F_inter > 0（空头方向力）
         # 即使价格在两条均线之间，inter-MA 力仍正确判别为空头方向
-        self.assertGreater(res["F_inter_net"], 0,
-                           "MA30<MA65 空头排列，inter-MA 力应为正（做空方向），即使价格在两线之间")
+        self.assertGreater(
+            res["F_inter_net"],
+            0,
+            "MA30<MA65 空头排列，inter-MA 力应为正（做空方向），即使价格在两线之间",
+        )
         # F_total 也应偏正（做空方向）
-        self.assertGreater(res["F_total"], 0,
-                           "价格在 MA30-MA65 之间但整体空头排列，F_total 应偏正（做空方向）")
+        self.assertGreater(
+            res["F_total"], 0, "价格在 MA30-MA65 之间但整体空头排列，F_total 应偏正（做空方向）"
+        )
 
     def test_spring_details_has_slope_and_potential(self):
         """RED: spring_details 每条均线应含 slope% 和 U"""
         t = _make_trader()
-        closes = _build_closes_5ma({
-            "ma30": 95000, "ma65": 97000, "ma128": 99000,
-            "ma200": 102000, "ma1400": 108000,
-        })
+        closes = _build_closes_5ma(
+            {
+                "ma30": 95000,
+                "ma65": 97000,
+                "ma128": 99000,
+                "ma200": 102000,
+                "ma1400": 108000,
+            }
+        )
         res = t._calc_5ma_spring_force(closes, tier="daily_btc")
         sd = res.get("spring_details", {})
         for key, detail in sd.items():
@@ -530,10 +621,15 @@ class TestMarketRegimeClassification(unittest.TestCase):
     def test_regime_outputs_exist(self):
         """RED: _calc_5ma_spring_force 应输出 regime 相关字段"""
         t = _make_trader()
-        closes = _build_closes_5ma({
-            "ma30": 95000, "ma65": 97000, "ma128": 99000,
-            "ma200": 102000, "ma1400": 108000,
-        })
+        closes = _build_closes_5ma(
+            {
+                "ma30": 95000,
+                "ma65": 97000,
+                "ma128": 99000,
+                "ma200": 102000,
+                "ma1400": 108000,
+            }
+        )
         res = t._calc_5ma_spring_force(closes, tier="daily_btc")
         self.assertIn("trend_ratio", res)
         self.assertIn("cv_dispersion", res)
@@ -551,8 +647,10 @@ class TestMarketRegimeClassification(unittest.TestCase):
         # 用真趋势数据构造多头趋势
         closes = _build_trend_closes_5ma(direction="bull")
         t._btc_trend_cache = {"ts": 0, "result": None}
-        with patch("scripts.memory_l4.polling_trader._load_kline_from_okx",
-                   return_value=[{"c": c} for c in closes]):
+        with patch(
+            "scripts.memory_l4.polling_trader._load_kline_from_okx",
+            return_value=[{"c": c} for c in closes],
+        ):
             bearish, reason = t._check_btc_trend()
         # 无过滤方案：允许做空，但日志中应能识别为 TREND_BULL 形态
         self.assertTrue(bearish, f"无过滤应允许做空: {reason}")
@@ -563,13 +661,15 @@ class TestMarketRegimeClassification(unittest.TestCase):
         t = _make_trader()
         closes = _build_trend_closes_5ma(direction="bear")
         t._btc_trend_cache = {"ts": 0, "result": None}
-        with patch("scripts.memory_l4.polling_trader._load_kline_from_okx",
-                   return_value=[{"c": c} for c in closes]):
+        with patch(
+            "scripts.memory_l4.polling_trader._load_kline_from_okx",
+            return_value=[{"c": c} for c in closes],
+        ):
             bearish, reason = t._check_btc_trend()
         self.assertTrue(bearish, f"TREND_BEAR应允许做空: {reason}")
         self.assertTrue(
             "regime=TREND_BEAR" in reason or "regime=STRONG_TREND_BEAR" in reason,
-            f"应判定为TREND_BEAR: {reason}"
+            f"应判定为TREND_BEAR: {reason}",
         )
 
     def test_regime_ranging_blocks_high_u(self):
@@ -608,18 +708,26 @@ class TestMarketRegimeClassification(unittest.TestCase):
         t = _make_trader()
         # 构造 TR 低 + F_dot 收敛的场景：
         # 价格偏离小（F_net 小）+ 均线纠缠（CV低）+ 价格反弹中（F_dot<0）
-        closes = _build_closes_5ma({
-            "ma30": 95000, "ma65": 95100, "ma128": 95200,
-            "ma200": 95300, "ma1400": 95400,
-        })
+        closes = _build_closes_5ma(
+            {
+                "ma30": 95000,
+                "ma65": 95100,
+                "ma128": 95200,
+                "ma200": 95300,
+                "ma1400": 95400,
+            }
+        )
         # 价格从下方反弹回均线附近 → F_dot 为负（偏离在收敛）
         price = 94800
         # 构造前几日价格更低，最近反弹
-        for i in range(5): closes[i] = price - (5 - i) * 50
+        for i in range(5):
+            closes[i] = price - (5 - i) * 50
         closes[0] = price  # 最新价格回到均线附近
         t._btc_trend_cache = {"ts": 0, "result": None}
-        with patch("scripts.memory_l4.polling_trader._load_kline_from_okx",
-                   return_value=[{"c": c} for c in closes]):
+        with patch(
+            "scripts.memory_l4.polling_trader._load_kline_from_okx",
+            return_value=[{"c": c} for c in closes],
+        ):
             bearish, reason = t._check_btc_trend()
         # 均值回归市禁止做空
         self.assertFalse(bearish, f"MEAN_REVERTING应禁止做空: {reason}")
@@ -635,13 +743,13 @@ class TestMarketRegimeClassification(unittest.TestCase):
         # STRONG_TREND_BEAR 的 U 阈值最大（最宽松）
         self.assertGreater(
             t.FMA_U_THRESHOLD_STRONG_TREND,  # 0.010
-            t.FMA_U_THRESHOLD_TREND,        # 0.003
-            "强趋势市应最宽松"
+            t.FMA_U_THRESHOLD_TREND,  # 0.003
+            "强趋势市应最宽松",
         )
         self.assertGreater(
             t.FMA_U_THRESHOLD_STRONG_TREND,  # 0.010
-            t.FMA_U_THRESHOLD_RANGE,         # 0.003
-            "强趋势市应比震荡市宽松"
+            t.FMA_U_THRESHOLD_RANGE,  # 0.003
+            "强趋势市应比震荡市宽松",
         )
         # MEAN_REVERTING 的 score 限制最严（仅WEAK）
         self.assertEqual(t.FMA_ALLOW_SCORE_REVERT, ("WEAK",))
@@ -653,10 +761,15 @@ class TestMarketRegimeClassification(unittest.TestCase):
     def test_regime_trend_ratio_calculation(self):
         """GREEN: TR = |F_inter| / (|F_net| + |F_inter| + ε) 应在 [0, 1] 区间"""
         t = _make_trader()
-        closes = _build_closes_5ma({
-            "ma30": 95000, "ma65": 97000, "ma128": 99000,
-            "ma200": 102000, "ma1400": 108000,
-        })
+        closes = _build_closes_5ma(
+            {
+                "ma30": 95000,
+                "ma65": 97000,
+                "ma128": 99000,
+                "ma200": 102000,
+                "ma1400": 108000,
+            }
+        )
         res = t._calc_5ma_spring_force(closes, tier="daily_btc")
         tr = res["trend_ratio"]
         self.assertGreaterEqual(tr, 0.0, "TR应≥0")
@@ -665,10 +778,15 @@ class TestMarketRegimeClassification(unittest.TestCase):
     def test_regime_cv_dispersion_calculation(self):
         """GREEN: CV = std(MA30/65/128/200) / mean 应非负"""
         t = _make_trader()
-        closes = _build_closes_5ma({
-            "ma30": 95000, "ma65": 97000, "ma128": 99000,
-            "ma200": 102000, "ma1400": 108000,
-        })
+        closes = _build_closes_5ma(
+            {
+                "ma30": 95000,
+                "ma65": 97000,
+                "ma128": 99000,
+                "ma200": 102000,
+                "ma1400": 108000,
+            }
+        )
         res = t._calc_5ma_spring_force(closes, tier="daily_btc")
         cv = res["cv_dispersion"]
         self.assertGreaterEqual(cv, 0.0, "CV应≥0")
@@ -803,10 +921,15 @@ class TestDualTrackFilter(unittest.TestCase):
     def test_valid_breakdown_ma128_field_exists(self):
         """_calc_5ma_spring_force 应输出 valid_breakdown_ma128 字段"""
         t = _make_trader()
-        closes = _build_closes_5ma({
-            "ma30": 95000, "ma65": 97000, "ma128": 99000,
-            "ma200": 102000, "ma1400": 108000,
-        })
+        closes = _build_closes_5ma(
+            {
+                "ma30": 95000,
+                "ma65": 97000,
+                "ma128": 99000,
+                "ma200": 102000,
+                "ma1400": 108000,
+            }
+        )
         res = t._calc_5ma_spring_force(closes, tier="daily_btc")
         self.assertIn("valid_breakdown_ma128", res)
         self.assertIsInstance(res["valid_breakdown_ma128"], bool)
@@ -892,9 +1015,14 @@ class TestRegimeShortConfMultiplier(unittest.TestCase):
         combined = score_multi * regime_multi
         # 1.1765 × 0.90 ≈ 1.0589 > 1.0 → 仍略抬高（WEAK 本身就需要更高置信度）
         # 但相比 WEAK + TREND_BEAR (1.1765 × 1.15 = 1.353)，已明显放宽
-        trend_bear_combined = t._compute_short_conf_multiplier("WEAK") * t._get_regime_short_multiplier("TREND_BEAR")
-        self.assertLess(combined, trend_bear_combined,
-                        f"RANGING+WEAK组合({combined})应<TREND_BEAR+WEAK组合({trend_bear_combined})")
+        trend_bear_combined = t._compute_short_conf_multiplier(
+            "WEAK"
+        ) * t._get_regime_short_multiplier("TREND_BEAR")
+        self.assertLess(
+            combined,
+            trend_bear_combined,
+            f"RANGING+WEAK组合({combined})应<TREND_BEAR+WEAK组合({trend_bear_combined})",
+        )
 
 
 if __name__ == "__main__":

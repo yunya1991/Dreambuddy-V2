@@ -95,7 +95,7 @@ def _synth_candles(
         spread = abs(c - o) * 0.35 + 0.0004 * prices[i]
         w1, w2 = rng.random(2)
         h = max(o, c) + spread * w1
-        l = min(o, c) - spread * w2
+        l = min(o, c) - spread * w2  # noqa: E741
         base_vol = prices[i] * ann_vol / math.sqrt(bars_per_year) * 3
         v = max(1e-6, rng.exponential(base_vol))
         candles.append({"o": float(o), "h": float(h), "l": float(l), "c": float(c), "v": float(v)})
@@ -127,7 +127,7 @@ def _atr_from_ohlcv(candles, p=14):
         return abs(candles[-1]["h"] - candles[-1]["l"]) if candles else 0.0
     trs = []
     for i in range(len(candles) - p, len(candles)):
-        h, l, pc = candles[i]["h"], candles[i]["l"], candles[i - 1]["c"]
+        h, l, pc = candles[i]["h"], candles[i]["l"], candles[i - 1]["c"]  # noqa: E741
         tr = max(h - l, abs(h - pc), abs(l - pc))
         trs.append(tr)
     return float(sum(trs)) / len(trs)
@@ -218,7 +218,11 @@ def _simulate_martingale_labels(
         # ---- max drawdown 跟踪 (按收盘价 vs 开仓后峰值) ----
         close_here = bar["c"]
         peak_price_after_open = max(peak_price_after_open, close_here)
-        dd = (close_here - peak_price_after_open) / peak_price_after_open if peak_price_after_open > 0 else 0.0
+        dd = (
+            (close_here - peak_price_after_open) / peak_price_after_open
+            if peak_price_after_open > 0
+            else 0.0
+        )
         if dd < max_drawdown_frac:
             max_drawdown_frac = dd
     # ---- 结束仍未 TP ----
@@ -238,25 +242,35 @@ def generate_single_trajectory_sample(seed: int = 42):
     """
     rng = random.Random(seed)
     coin = rng.choice(DEFAULT_COINS)
-    n_1h = PATCHTST_1H_LEN + PATCHTST_HORIZON + 24 * 14  # PatchTST 历史 + 未来 24h（打标签） + 2 周模拟
+    n_1h = (
+        PATCHTST_1H_LEN + PATCHTST_HORIZON + 24 * 14
+    )  # PatchTST 历史 + 未来 24h（打标签） + 2 周模拟
     # v3: 加宽 vol/drift 范围，增加 bust 场景比例
     ann_vol = rng.uniform(0.35, 1.20)
     drift = rng.uniform(-0.002, 0.0012)
     start_price = float(np.exp(rng.uniform(np.log(5), np.log(5000))))
 
     candles_1h = _synth_candles(
-        n_bars=n_1h, tf_steps_per_day=24, start_price=start_price,
-        ann_vol=ann_vol, drift=drift, seed=seed,
+        n_bars=n_1h,
+        tf_steps_per_day=24,
+        start_price=start_price,
+        ann_vol=ann_vol,
+        drift=drift,
+        seed=seed,
     )
     # 4H OHLCV = 每隔 4 根 1H 聚合
     candles_4h: List[Dict[str, float]] = []
     for i in range(0, len(candles_1h) - 3, 4):
         b1, b2, b3, b4 = candles_1h[i : i + 4]
-        candles_4h.append({
-            "o": b1["o"], "h": max(b1["h"], b2["h"], b3["h"], b4["h"]),
-            "l": min(b1["l"], b2["l"], b3["l"], b4["l"]),
-            "c": b4["c"], "v": b1["v"] + b2["v"] + b3["v"] + b4["v"],
-        })
+        candles_4h.append(
+            {
+                "o": b1["o"],
+                "h": max(b1["h"], b2["h"], b3["h"], b4["h"]),
+                "l": min(b1["l"], b2["l"], b3["l"], b4["l"]),
+                "c": b4["c"],
+                "v": b1["v"] + b2["v"] + b3["v"] + b4["v"],
+            }
+        )
 
     # ---- 采样一个起点（确保有足够历史 + 未来 horizon） ----
     start_1h_idx = PATCHTST_1H_LEN + 24 * 3  # 给前面 3 天初始化
@@ -267,7 +281,11 @@ def generate_single_trajectory_sample(seed: int = 42):
     p_slice = candles_1h[p_start:start_1h_idx]
     if len(p_slice) < PATCHTST_1H_LEN:
         # 长度不够：前面用首根重复填充
-        pad = [p_slice[0]] * (PATCHTST_1H_LEN - len(p_slice)) if p_slice else [candles_1h[0]] * PATCHTST_1H_LEN
+        pad = (
+            [p_slice[0]] * (PATCHTST_1H_LEN - len(p_slice))
+            if p_slice
+            else [candles_1h[0]] * PATCHTST_1H_LEN
+        )
         p_slice = pad + p_slice
     patchtst_in = np.array(
         [[b["o"], b["h"], b["l"], b["c"], b["v"]] for b in p_slice[-PATCHTST_1H_LEN:]],
@@ -275,9 +293,13 @@ def generate_single_trajectory_sample(seed: int = 42):
     )
 
     # ---- BiLSTM 输入 60×5 (4H) + 7 标量 ----
-    corresponding_4h_start = len(candles_4h) - max(1, len(candles_4h) - (start_1h_idx // 4))
-    take4h = candles_4h[-BI_LSTM_4H_LEN:] if len(candles_4h) >= BI_LSTM_4H_LEN else (
-        [candles_4h[0]] * (BI_LSTM_4H_LEN - len(candles_4h)) + candles_4h
+    corresponding_4h_start = len(candles_4h) - max(  # noqa: F841
+        1, len(candles_4h) - (start_1h_idx // 4)
+    )  # noqa: F841
+    take4h = (
+        candles_4h[-BI_LSTM_4H_LEN:]
+        if len(candles_4h) >= BI_LSTM_4H_LEN
+        else ([candles_4h[0]] * (BI_LSTM_4H_LEN - len(candles_4h)) + candles_4h)
     )
     ohlcv_4h = np.array(
         [[b["o"], b["h"], b["l"], b["c"], b["v"]] for b in take4h[-BI_LSTM_4H_LEN:]],
@@ -287,9 +309,13 @@ def generate_single_trajectory_sample(seed: int = 42):
     closes_1h_last30 = [b["c"] for b in candles_1h[max(0, start_1h_idx - 30 * 24) : start_1h_idx]]
     if len(closes_1h_last30) < 30:
         closes_1h_last30 = list(closes_4h)
-    atr_14 = _atr_from_ohlcv([{"h": h, "l": l, "c": c} for h, l, c in zip(
-        ohlcv_4h[:, 1], ohlcv_4h[:, 2], ohlcv_4h[:, 3]
-    )], p=14)
+    atr_14 = _atr_from_ohlcv(
+        [
+            {"h": h, "l": l, "c": c}
+            for h, l, c in zip(ohlcv_4h[:, 1], ohlcv_4h[:, 2], ohlcv_4h[:, 3])  # noqa: B905, E741
+        ],
+        p=14,
+    )
     price_now = closes_4h[-1]
     # 简单 ATR z-score：对最近 30 根 4H 窗口
     atrs_rolling = []
@@ -302,7 +328,10 @@ def generate_single_trajectory_sample(seed: int = 42):
     )
     atr_z = max(-3.0, min(3.0, atr_z))
     # 30 日已实现波动率
-    rets = [math.log(closes_1h_last30[i] / closes_1h_last30[i - 1]) for i in range(1, len(closes_1h_last30))]
+    rets = [
+        math.log(closes_1h_last30[i] / closes_1h_last30[i - 1])
+        for i in range(1, len(closes_1h_last30))
+    ]
     vol_30 = float(np.std(rets)) * math.sqrt(365) if len(rets) >= 10 else ann_vol
     # vol zscore 60 近似：默认 1.0（中性）
     vol_z = min(2.5, max(-2.5, (vol_30 - ann_vol) / max(ann_vol * 0.3, 1e-4)))
@@ -320,20 +349,24 @@ def generate_single_trajectory_sample(seed: int = 42):
         "ohlcv": ohlcv_4h,
         "scalar_features": np.array(
             [
-                float(level) / 4.0,     # 0: level (归一化 0~1)
-                pnl_pct,                # 1: 未实现盈亏比 [-0.5, 0.1]
-                atr_z / 3.0,            # 2: atr_14 zscore (归一化)
-                vol_z / 2.5,            # 3: vol_z (归一化)
-                0.70,                   # 4: structure_match 默认 (TimingGate 软评分占位)
-                0.65,                   # 5: retrace_quality 占位
-                0.75,                   # 6: extension_chase 占位
+                float(level) / 4.0,  # 0: level (归一化 0~1)
+                pnl_pct,  # 1: 未实现盈亏比 [-0.5, 0.1]
+                atr_z / 3.0,  # 2: atr_14 zscore (归一化)
+                vol_z / 2.5,  # 3: vol_z (归一化)
+                0.70,  # 4: structure_match 默认 (TimingGate 软评分占位)
+                0.65,  # 5: retrace_quality 占位
+                0.75,  # 6: extension_chase 占位
             ],
             dtype=np.float32,
         ),
         "_meta": {
-            "coin": coin, "seed": seed,
-            "start_price": price_now, "vol_30_ann": vol_30, "atr_14": atr_14,
-            "level": level, "pnl_pct": pnl_pct,
+            "coin": coin,
+            "seed": seed,
+            "start_price": price_now,
+            "vol_30_ann": vol_30,
+            "atr_14": atr_14,
+            "level": level,
+            "pnl_pct": pnl_pct,
         },
     }
     return (bilstm_in, patchtst_in, int(label_bust), float(label_maxdd))
@@ -460,10 +493,14 @@ def build_dataset(
     n_pos = sum(1 for s in all_samples if s[2] == 1)
     n_neg = len(all_samples) - n_pos
     if progress:
-        print(f"[dataset] 总样本={len(all_samples)}  正样本(bust)={n_pos} ({n_pos/max(1,len(all_samples)):.1%})  负样本={n_neg}")
+        print(
+            f"[dataset] 总样本={len(all_samples)}  正样本(bust)={n_pos} ({n_pos/max(1,len(all_samples)):.1%})  负样本={n_neg}"
+        )
 
     # v3: 分层 WF 切分
-    wf_segments_data = _stratified_wf_split(all_samples, n_segments=walk_forward_segments, min_pos_per_seg=3, seed=seed)
+    wf_segments_data = _stratified_wf_split(
+        all_samples, n_segments=walk_forward_segments, min_pos_per_seg=3, seed=seed
+    )
     paths: Dict[str, Path] = {}
     for seg_i in range(walk_forward_segments):
         seg = wf_segments_data[seg_i]
@@ -485,7 +522,9 @@ def build_dataset(
         paths[f"wf{seg_i+1}_test"] = te_path
 
     # v3: 分层 train/test 9:1 split
-    tr_list, te_list = _stratified_train_test_split(all_samples, train_ratio=0.9, seed=seed + 10_000)
+    tr_list, te_list = _stratified_train_test_split(
+        all_samples, train_ratio=0.9, seed=seed + 10_000
+    )
     tr = _collate(tr_list)
     te = _collate(te_list)
     tr_all = out_dir / "phase_d_train_all.npz"
@@ -497,7 +536,9 @@ def build_dataset(
     if progress:
         tr_pos = sum(1 for s in tr_list if s[2] == 1)
         te_pos = sum(1 for s in te_list if s[2] == 1)
-        print(f"  train_all: {len(tr_list)} (pos={tr_pos})  test_all: {len(te_list)} (pos={te_pos})")
+        print(
+            f"  train_all: {len(tr_list)} (pos={tr_pos})  test_all: {len(te_list)} (pos={te_pos})"
+        )
 
     (out_dir / "phase_d_meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2))
     paths["meta"] = out_dir / "phase_d_meta.json"
@@ -535,17 +576,23 @@ def _fetch_real_1h_klines(coin: str, limit: int = 1500) -> List[Dict[str, float]
         count = min(batch, limit - len(all_candles))
         start_ms = end_ms - interval_ms * count
         try:
-            raw = _info({
-                "type": "candleSnapshot",
-                "req": {"coin": coin, "interval": "1h",
-                        "startTime": start_ms, "endTime": end_ms}
-            })
+            raw = _info(
+                {
+                    "type": "candleSnapshot",
+                    "req": {
+                        "coin": coin,
+                        "interval": "1h",
+                        "startTime": start_ms,
+                        "endTime": end_ms,
+                    },
+                }
+            )
             raw = raw if isinstance(raw, list) else []
         except Exception as e:
             if all_candles:
                 print(f"[dataset] {coin} 翻页中断 ({e}), 已获取 {len(all_candles)} 根")
                 break
-            raise RuntimeError(f"Hyperliquid API {coin} 失败: {e}")
+            raise RuntimeError(f"Hyperliquid API {coin} 失败: {e}")  # noqa: B904
         if not raw:
             break
         new_added = 0
@@ -554,13 +601,15 @@ def _fetch_real_1h_klines(coin: str, limit: int = 1500) -> List[Dict[str, float]
             if ts in seen_ts or ts == 0:
                 continue
             seen_ts.add(ts)
-            all_candles.append({
-                "o": float(d.get("o", 0)),
-                "h": float(d.get("h", 0)),
-                "l": float(d.get("l", 0)),
-                "c": float(d.get("c", 0)),
-                "v": float(d.get("v", 0)),
-            })
+            all_candles.append(
+                {
+                    "o": float(d.get("o", 0)),
+                    "h": float(d.get("h", 0)),
+                    "l": float(d.get("l", 0)),
+                    "c": float(d.get("c", 0)),
+                    "v": float(d.get("v", 0)),
+                }
+            )
             new_added += 1
         if new_added == 0:
             break
@@ -587,18 +636,25 @@ def _build_sample_from_1h_candles(
     标签: 从 start_1h_idx 开始模拟马丁 → (bust, maxdd)
     """
     # 4H 聚合（start_1h_idx 之前 240 根 1H = 60 根 4H）
-    hist_1h_for_4h = candles_1h[max(0, start_1h_idx - 240):start_1h_idx]
+    hist_1h_for_4h = candles_1h[max(0, start_1h_idx - 240) : start_1h_idx]
     candles_4h: List[Dict[str, float]] = []
     for i in range(0, len(hist_1h_for_4h) - 3, 4):
-        b1, b2, b3, b4 = hist_1h_for_4h[i:i + 4]
-        candles_4h.append({
-            "o": b1["o"], "h": max(b1["h"], b2["h"], b3["h"], b4["h"]),
-            "l": min(b1["l"], b2["l"], b3["l"], b4["l"]),
-            "c": b4["c"], "v": b1["v"] + b2["v"] + b3["v"] + b4["v"],
-        })
+        b1, b2, b3, b4 = hist_1h_for_4h[i : i + 4]
+        candles_4h.append(
+            {
+                "o": b1["o"],
+                "h": max(b1["h"], b2["h"], b3["h"], b4["h"]),
+                "l": min(b1["l"], b2["l"], b3["l"], b4["l"]),
+                "c": b4["c"],
+                "v": b1["v"] + b2["v"] + b3["v"] + b4["v"],
+            }
+        )
     if len(candles_4h) < BI_LSTM_4H_LEN:
-        pad = [candles_4h[0]] * (BI_LSTM_4H_LEN - len(candles_4h)) if candles_4h else \
-            [{"o": 1.0, "h": 1.0, "l": 1.0, "c": 1.0, "v": 0.0}] * BI_LSTM_4H_LEN
+        pad = (
+            [candles_4h[0]] * (BI_LSTM_4H_LEN - len(candles_4h))
+            if candles_4h
+            else [{"o": 1.0, "h": 1.0, "l": 1.0, "c": 1.0, "v": 0.0}] * BI_LSTM_4H_LEN
+        )
         candles_4h = pad + candles_4h
     take4h = candles_4h[-BI_LSTM_4H_LEN:]
     ohlcv_4h = np.array(
@@ -608,10 +664,13 @@ def _build_sample_from_1h_candles(
 
     # PatchTST 输入 120×5 (1H)
     p_start = start_1h_idx - PATCHTST_1H_LEN
-    p_slice = candles_1h[max(0, p_start):start_1h_idx]
+    p_slice = candles_1h[max(0, p_start) : start_1h_idx]
     if len(p_slice) < PATCHTST_1H_LEN:
-        pad = [p_slice[0]] * (PATCHTST_1H_LEN - len(p_slice)) if p_slice else \
-            [{"o": 1.0, "h": 1.0, "l": 1.0, "c": 1.0, "v": 0.0}] * PATCHTST_1H_LEN
+        pad = (
+            [p_slice[0]] * (PATCHTST_1H_LEN - len(p_slice))
+            if p_slice
+            else [{"o": 1.0, "h": 1.0, "l": 1.0, "c": 1.0, "v": 0.0}] * PATCHTST_1H_LEN
+        )
         p_slice = pad + p_slice
     patchtst_in = np.array(
         [[b["o"], b["h"], b["l"], b["c"], b["v"]] for b in p_slice[-PATCHTST_1H_LEN:]],
@@ -620,18 +679,20 @@ def _build_sample_from_1h_candles(
 
     # 标量特征
     closes_4h = [b["c"] for b in take4h]
-    closes_1h_last30 = [b["c"] for b in candles_1h[max(0, start_1h_idx - 30 * 24):start_1h_idx]]
+    closes_1h_last30 = [b["c"] for b in candles_1h[max(0, start_1h_idx - 30 * 24) : start_1h_idx]]
     if len(closes_1h_last30) < 30:
         closes_1h_last30 = list(closes_4h)
     atr_14 = _atr_from_ohlcv(
-        [{"h": h, "l": l, "c": c} for h, l, c in zip(
-            ohlcv_4h[:, 1], ohlcv_4h[:, 2], ohlcv_4h[:, 3]
-        )], p=14,
+        [
+            {"h": h, "l": l, "c": c}
+            for h, l, c in zip(ohlcv_4h[:, 1], ohlcv_4h[:, 2], ohlcv_4h[:, 3])  # noqa: B905, E741
+        ],
+        p=14,
     )
     price_now = closes_4h[-1] if closes_4h else 1.0
     atrs_rolling = []
     for w in range(max(0, len(closes_4h) - 60), len(closes_4h)):
-        seg = take4h[max(0, w - 15): w + 1]
+        seg = take4h[max(0, w - 15) : w + 1]
         if len(seg) >= 14:
             atrs_rolling.append(_atr_from_ohlcv(seg, 14))
     atr_z = (atr_14 - (sum(atrs_rolling) / len(atrs_rolling) if atrs_rolling else atr_14)) / (
@@ -648,7 +709,9 @@ def _build_sample_from_1h_candles(
 
     # 标签
     label_bust, label_maxdd = _simulate_martingale_labels(
-        candles_1h, start_idx=start_1h_idx, max_addons=4,
+        candles_1h,
+        start_idx=start_1h_idx,
+        max_addons=4,
         addon_budgets=(5.0, 10.0, 20.0, 35.0),
     )
     rng = random.Random(seed)
@@ -662,9 +725,13 @@ def _build_sample_from_1h_candles(
             dtype=np.float32,
         ),
         "_meta": {
-            "coin": coin, "seed": seed,
-            "start_price": price_now, "vol_30_ann": vol_30, "atr_14": atr_14,
-            "level": level, "pnl_pct": pnl_pct,
+            "coin": coin,
+            "seed": seed,
+            "start_price": price_now,
+            "vol_30_ann": vol_30,
+            "atr_14": atr_14,
+            "level": level,
+            "pnl_pct": pnl_pct,
         },
     }
     return (bilstm_in, patchtst_in, int(label_bust), float(label_maxdd))
@@ -720,7 +787,10 @@ def build_dataset_from_real(
                 break
             try:
                 sample = _build_sample_from_1h_candles(
-                    candles_1h, coin, start, seed=seed + s_idx,
+                    candles_1h,
+                    coin,
+                    start,
+                    seed=seed + s_idx,
                 )
                 all_samples.append(sample)
                 n_done += 1
@@ -733,10 +803,14 @@ def build_dataset_from_real(
         raise RuntimeError("真实 K 线数据集生成失败：无有效样本")
 
     n_pos = sum(1 for s in all_samples if s[2] == 1)
-    print(f"[dataset] 总样本数: {len(all_samples)}  正样本(bust)={n_pos} ({n_pos/max(1,len(all_samples)):.1%})")
+    print(
+        f"[dataset] 总样本数: {len(all_samples)}  正样本(bust)={n_pos} ({n_pos/max(1,len(all_samples)):.1%})"
+    )
 
     # v3: 分层 WF 切分（同 build_dataset 逻辑）
-    wf_segments_data = _stratified_wf_split(all_samples, n_segments=walk_forward_segments, min_pos_per_seg=3, seed=seed)
+    wf_segments_data = _stratified_wf_split(
+        all_samples, n_segments=walk_forward_segments, min_pos_per_seg=3, seed=seed
+    )
     paths: Dict[str, Path] = {}
     for seg_i in range(walk_forward_segments):
         seg = wf_segments_data[seg_i]
@@ -756,7 +830,9 @@ def build_dataset_from_real(
         paths[f"wf{seg_i+1}_test"] = te_path
 
     # v3: 分层 train/test 9:1 split
-    tr_list, te_list = _stratified_train_test_split(all_samples, train_ratio=0.9, seed=seed + 10_000)
+    tr_list, te_list = _stratified_train_test_split(
+        all_samples, train_ratio=0.9, seed=seed + 10_000
+    )
     tr = _collate(tr_list)
     te = _collate(te_list)
     tr_all = out_dir / "phase_d_train_all.npz"
@@ -776,23 +852,29 @@ def build_dataset_from_real(
 
 def main(argv=None):
     ap = argparse.ArgumentParser("phase_d_dataset_generator")
-    ap.add_argument("--source", choices=["synthetic", "real"], default="real",
-                    help="数据源: real=真实OKX K线, synthetic=合成GBM")
-    ap.add_argument("--n-trajectories", type=int, default=5000,
-                    help="合成模式样本数（v3: 默认 5000）")
-    ap.add_argument("--limit-1h", type=int, default=1500,
-                    help="真实模式每币种拉取 1H K 线数")
-    ap.add_argument("--samples-per-coin", type=int, default=50,
-                    help="真实模式每币种采样起点数")
+    ap.add_argument(
+        "--source",
+        choices=["synthetic", "real"],
+        default="real",
+        help="数据源: real=真实OKX K线, synthetic=合成GBM",
+    )
+    ap.add_argument(
+        "--n-trajectories", type=int, default=5000, help="合成模式样本数（v3: 默认 5000）"
+    )
+    ap.add_argument("--limit-1h", type=int, default=1500, help="真实模式每币种拉取 1H K 线数")
+    ap.add_argument("--samples-per-coin", type=int, default=50, help="真实模式每币种采样起点数")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--out-dir", type=str, default="data/ai_datasets")
     ap.add_argument("--wf", type=int, default=5)
     args = ap.parse_args(argv)
     if args.source == "real":
         paths = build_dataset_from_real(
-            coins=DEFAULT_COINS, limit_1h=args.limit_1h,
-            samples_per_coin=args.samples_per_coin, seed=args.seed,
-            walk_forward_segments=args.wf, out_dir=args.out_dir,
+            coins=DEFAULT_COINS,
+            limit_1h=args.limit_1h,
+            samples_per_coin=args.samples_per_coin,
+            seed=args.seed,
+            walk_forward_segments=args.wf,
+            out_dir=args.out_dir,
         )
     else:
         paths = build_dataset(args.n_trajectories, args.seed, args.wf, args.out_dir)

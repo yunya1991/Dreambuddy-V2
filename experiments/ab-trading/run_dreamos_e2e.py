@@ -12,11 +12,12 @@ Usage:
     cd experiments/ab-trading
     python3 run_dreamos_e2e.py
 """
+
 import sys
-import json
-import requests
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
+
+import requests
 
 # 路径设置
 BASE_DIR = Path(__file__).resolve().parent
@@ -27,7 +28,8 @@ sys.path.insert(0, str(BASE_DIR))
 sys.path.insert(0, str(ARCH_DIR))
 sys.path.insert(0, str(BCRM_DIR))
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
+
 load_dotenv(BASE_DIR / "config" / ".env")
 
 
@@ -38,8 +40,9 @@ def fetch_hl_market_data(symbol="BTC"):
     session.proxies = {"http": None, "https": None}
 
     # 获取最新价格
-    r = session.post("https://api.hyperliquid.xyz/info",
-                     json={"type": "allMids"}, timeout=10).json()
+    r = session.post(
+        "https://api.hyperliquid.xyz/info", json={"type": "allMids"}, timeout=10
+    ).json()
     # allMids 返回 {"BTC": "63441.0", ...}，值是字符串
     raw_price = r.get(symbol, "0")
     if isinstance(raw_price, dict):
@@ -48,10 +51,19 @@ def fetch_hl_market_data(symbol="BTC"):
         price = float(raw_price)
 
     # 获取 K 线数据
-    r2 = session.post("https://api.hyperliquid.xyz/info",
-                      json={"type": "candleSnapshot",
-                            "req": {"coin": symbol, "interval": "1h", "startTime": int((datetime.now(timezone.utc).timestamp() - 86400) * 1000), "endTime": int(datetime.now(timezone.utc).timestamp() * 1000)}},
-                      timeout=10).json()
+    r2 = session.post(
+        "https://api.hyperliquid.xyz/info",
+        json={
+            "type": "candleSnapshot",
+            "req": {
+                "coin": symbol,
+                "interval": "1h",
+                "startTime": int((datetime.now(timezone.utc).timestamp() - 86400) * 1000),
+                "endTime": int(datetime.now(timezone.utc).timestamp() * 1000),
+            },
+        },
+        timeout=10,
+    ).json()
 
     candles = r2 if isinstance(r2, list) else []
     closes = [float(c.get("c", 0)) for c in candles if c.get("c")]
@@ -194,7 +206,7 @@ def main():
     # Errors
     errors = result.get("errors", [])
     if errors:
-        print(f"\n⚠️ 错误:")
+        print("\n⚠️ 错误:")
         for e in errors:
             print(f"  - {e}")
 

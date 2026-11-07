@@ -9,6 +9,7 @@ funding/OI 取自 USDT 本位永续合约；K 线分页拉取 400 根（OKX 单�
 触发门 MA200 检查要求 ≥200 根）。
 产出：washout_verdicts.json
 """
+
 import json
 import os
 import sys
@@ -26,15 +27,21 @@ OUT = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "washout_ver
 
 sys.path.insert(0, BCRM2)
 
+from bcrm2.washout_classifier import EnhancedWashoutClassifier  # noqa: E402
 from bcrm2.washout_detector import WashoutDetector  # noqa: E402
 from bcrm2.washout_features import WashoutFeatureExtractor  # noqa: E402
-from bcrm2.washout_classifier import EnhancedWashoutClassifier  # noqa: E402
 
 # 传导链资产（与 sector_transmission.json 对齐）
 ASSETS = [
-    "BTC/USDT", "ETH/USDT", "SOL/USDT",
-    "AVAX/USDT", "LINK/USDT", "ADA/USDT",
-    "DOGE/USDT", "PEPE/USDT", "WIF/USDT",
+    "BTC/USDT",
+    "ETH/USDT",
+    "SOL/USDT",
+    "AVAX/USDT",
+    "LINK/USDT",
+    "ADA/USDT",
+    "DOGE/USDT",
+    "PEPE/USDT",
+    "WIF/USDT",
 ]
 
 DAY_MS = 86400000
@@ -56,9 +63,7 @@ def fetch_ohlcv_all(ex, symbol, total=400):
     rows = [candles[k] for k in sorted(candles)][-total:]
     if not rows:
         return None
-    df = pd.DataFrame(
-        rows, columns=["ts", "open", "high", "low", "close", "volume"]
-    )
+    df = pd.DataFrame(rows, columns=["ts", "open", "high", "low", "close", "volume"])
     return df[["open", "high", "low", "close", "volume"]].astype(float)
 
 
@@ -73,14 +78,14 @@ def fetch_funding_series(ex, swap_symbol):
 def fetch_oi_series(ex, swap_symbol):
     try:
         oi = ex.fetch_open_interest_history(swap_symbol, "1d", limit=30)
-        return [r.get("openInterestAmount") for r in oi
-                if r.get("openInterestAmount") is not None]
+        return [r.get("openInterestAmount") for r in oi if r.get("openInterestAmount") is not None]
     except Exception:
         return None
 
 
 def main():
     import ccxt
+
     ex = ccxt.okx({"enableRateLimit": True})
 
     detector = WashoutDetector(
@@ -114,8 +119,10 @@ def main():
             d = v.to_dict()
             d["samples"] = len(df)
             verdicts[sym] = d
-            print(f"{sym:<12} {d['label']:<8} conf={d['confidence']:.2f} "
-                  f"trigger={d['trigger_activated']} reason={d['reason']}")
+            print(
+                f"{sym:<12} {d['label']:<8} conf={d['confidence']:.2f} "
+                f"trigger={d['trigger_activated']} reason={d['reason']}"
+            )
         except Exception as e:
             verdicts[sym] = {"error": str(e)[:120]}
             print(f"{sym:<12} ERROR {e}")

@@ -12,6 +12,7 @@
 
 预期: 558 个会话 → 40-80 条 (过滤无 recall 的会话)
 """
+
 import json
 import os
 import sys
@@ -25,8 +26,7 @@ for _p in [_THIS_DIR, _34_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
-
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 # 默认会话目录
 _DEFAULT_SESSIONS_DIR = os.path.join(_PROJECT_ROOT, ".cognitive", "sessions")
@@ -47,9 +47,7 @@ class CognitiveSessionCollector(TrainingDataProvider):
     def get_quality_threshold(self) -> str:
         return "B"
 
-    def fetch_cases(
-        self, limit: int = 100, since: Optional[str] = None
-    ) -> List[TrainingCase]:
+    def fetch_cases(self, limit: int = 100, since: Optional[str] = None) -> List[TrainingCase]:
         """从认知会话目录采集训练案例。
 
         Args:
@@ -65,11 +63,13 @@ class CognitiveSessionCollector(TrainingDataProvider):
             return cases
 
         try:
-            session_dirs = sorted([
-                os.path.join(self.sessions_dir, d)
-                for d in os.listdir(self.sessions_dir)
-                if d.startswith("CS-") and os.path.isdir(os.path.join(self.sessions_dir, d))
-            ])
+            session_dirs = sorted(
+                [
+                    os.path.join(self.sessions_dir, d)
+                    for d in os.listdir(self.sessions_dir)
+                    if d.startswith("CS-") and os.path.isdir(os.path.join(self.sessions_dir, d))
+                ]
+            )
         except Exception:
             return cases
 

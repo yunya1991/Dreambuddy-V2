@@ -9,15 +9,18 @@ try:
     from . import config
     from .embedder import _embedder
 except ImportError:  # 直接以脚本运行时
-    import config
+    import config  # noqa: I001
     from embedder import _embedder
 
 
-def search(query: str, top_k: int = 5,
-           domain_filter: Optional[List[str]] = None,
-           score_threshold: float = 0.3,
-           db_path: str = None,
-           collection_name: str = None) -> List[Dict]:
+def search(
+    query: str,
+    top_k: int = 5,
+    domain_filter: Optional[List[str]] = None,
+    score_threshold: float = 0.3,
+    db_path: str = None,
+    collection_name: str = None,
+) -> List[Dict]:
     """对 query 进行语义检索，返回排序后的结果列表。
 
     Args:
@@ -66,21 +69,23 @@ def search(query: str, top_k: int = 5,
     docs = res.get("documents", [[]])[0]
     metas = res.get("metadatas", [[]])[0]
 
-    for _id, dist, doc, meta in zip(ids, dists, docs, metas):
+    for _id, dist, doc, meta in zip(ids, dists, docs, metas):  # noqa: B905
         # cosine 距离 → 相似度：score = 1 - distance
         score = 1.0 - float(dist)
         if score < score_threshold:
             continue
         tags_str = meta.get("tags", "") if meta else ""
         tags = [t for t in tags_str.split(",") if t] if tags_str else []
-        results.append({
-            "content": doc,
-            "source_file": meta.get("source_file", "") if meta else "",
-            "domain": meta.get("domain", "") if meta else "",
-            "heading": meta.get("heading", "") if meta else "",
-            "score": round(score, 4),
-            "tags": tags,
-        })
+        results.append(
+            {
+                "content": doc,
+                "source_file": meta.get("source_file", "") if meta else "",
+                "domain": meta.get("domain", "") if meta else "",
+                "heading": meta.get("heading", "") if meta else "",
+                "score": round(score, 4),
+                "tags": tags,
+            }
+        )
 
     return results
 

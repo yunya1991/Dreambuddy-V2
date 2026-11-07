@@ -9,6 +9,7 @@
   - GARCH 更稳健, 在高熵 regime 下作为兜底
   - 熵加权自动调节两个模型的权重, 无需手动调参
 """
+
 from __future__ import annotations
 
 import math

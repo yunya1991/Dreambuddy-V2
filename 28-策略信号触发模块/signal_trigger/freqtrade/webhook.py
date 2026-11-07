@@ -25,13 +25,14 @@ Freqtrade webhook 配置示例（user_data/config.json）：
 
 本模块只做事件接收与转发，不直接执行交易。
 """
+
 from __future__ import annotations
 
 import json
 import os
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -65,7 +66,13 @@ def _http_get_json(url: str, timeout: float = 3.0) -> Optional[Dict[str, Any]]:
                 return None
             data = json.loads(resp.read().decode("utf-8"))
             return data if isinstance(data, dict) else None
-    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, OSError, ValueError):
+    except (
+        urllib.error.URLError,
+        urllib.error.HTTPError,
+        json.JSONDecodeError,
+        OSError,
+        ValueError,
+    ):
         return None
 
 
@@ -218,22 +225,24 @@ def route_event(event: Dict[str, Any]) -> Dict[str, Any]:
     attr = _resolve_strategy_attribution(strategy_name)
 
     # 记录到日志
-    _append_event({
-        "type": etype,
-        "pair": event.get("pair"),
-        "action": event.get("action"),
-        "price": event.get("price"),
-        "amount": event.get("amount"),
-        "profit": event.get("profit"),
-        "pnl": event.get("pnl"),
-        "strategy_name": strategy_name,
-        "strategy_id": attr["strategy_id"],
-        "bundle_id": attr["bundle_id"],
-        "eval_policy_hash": attr["eval_policy_hash"],
-        "tag": event.get("tag"),
-        "ts": event.get("ts"),
-        "route": target,
-    })
+    _append_event(
+        {
+            "type": etype,
+            "pair": event.get("pair"),
+            "action": event.get("action"),
+            "price": event.get("price"),
+            "amount": event.get("amount"),
+            "profit": event.get("profit"),
+            "pnl": event.get("pnl"),
+            "strategy_name": strategy_name,
+            "strategy_id": attr["strategy_id"],
+            "bundle_id": attr["bundle_id"],
+            "eval_policy_hash": attr["eval_policy_hash"],
+            "tag": event.get("tag"),
+            "ts": event.get("ts"),
+            "route": target,
+        }
+    )
 
     # 36-通信系统层：开/平仓事件上报（FAIL-OPEN，失败不影响主流程）
     _emit_to_signal_bus(etype, event, strategy_name)
@@ -333,6 +342,8 @@ def _emit_to_signal_bus(etype: str, event: Dict[str, Any], strategy_name: str) -
         )
         with urllib.request.urlopen(req, timeout=3.0) as resp:
             if resp.status != 200:
-                _append_event({"type": "signal_bus_emit_failed", "status": resp.status, "ts": _now_ms()})
+                _append_event(
+                    {"type": "signal_bus_emit_failed", "status": resp.status, "ts": _now_ms()}
+                )
     except Exception as exc:
         _append_event({"type": "signal_bus_emit_failed", "error": str(exc), "ts": _now_ms()})

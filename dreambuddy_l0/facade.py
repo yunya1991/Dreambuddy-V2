@@ -2,8 +2,9 @@
 
 不一次性迁移 34 的 11 个 scope——本包提供注册框架，34 薄壳 re-export 保持行为零变化。
 """
-from typing import Any, Dict, List, Optional
-from .envelope import envelope, degraded
+
+from typing import Any, Dict, List, Optional  # noqa: I001
+from .envelope import degraded
 
 
 class L0Foundation:
@@ -50,10 +51,14 @@ def get_l0() -> L0Foundation:
 
 def load_cle():
     """公有化入口（原 34 _load_cle，SPEC-C C1：转公有并给弃用期）。"""
-    import os, sys
-    cog_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                            "4-MEMORY", "9-工具与接口")
+    import os
+    import sys
+
+    cog_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "4-MEMORY", "9-工具与接口"
+    )
     if cog_path not in sys.path:
         sys.path.insert(0, cog_path)
     from cognitive_loop_entry import get_cle
+
     return get_cle()

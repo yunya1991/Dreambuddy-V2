@@ -8,12 +8,12 @@ Usage:
   python 49-交易框架协议/scripts/check_git_consistency.py
   python 49-交易框架协议/scripts/check_git_consistency.py --json-only
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import subprocess
-import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path

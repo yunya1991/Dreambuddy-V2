@@ -11,10 +11,10 @@
 生产接线（P2-1a）: polling_trader.py 检测 → _fds.three_factor_long_signal →
 engines/bdsm_signal_level.BdsmSignalLevelClassifier.classify_long 做多三层判定。
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,7 @@ class ThreeFactorLongDetector:
         try:
             # 开关检查
             from dreambuddy_evolution.agi_config import get_switch
+
             if not get_switch("enable_three_factor_long"):
                 return False
         except Exception:

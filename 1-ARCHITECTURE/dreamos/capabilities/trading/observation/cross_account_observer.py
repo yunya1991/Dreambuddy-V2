@@ -15,7 +15,7 @@
 - 单次执行超时 60s
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import json
 import logging
@@ -27,8 +27,7 @@ from typing import Dict, List, Any, Optional
 
 # 设置日志
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("cross_account_observer")
 
@@ -39,7 +38,7 @@ while BASE_DIR.name != "dreambuddy-v2":
 REGULATION_DIR = BASE_DIR / "16-调控系统"
 
 # 导入依赖
-import sys
+import sys  # noqa: E402
 
 # 添加 16-调控系统/core 到路径
 _reg_core_path = str(REGULATION_DIR / "core")
@@ -47,7 +46,8 @@ if _reg_core_path not in sys.path:
     sys.path.insert(0, _reg_core_path)
 
 try:
-    from unified_position_query import fetch_all_positions, get_position_summary
+    from unified_position_query import fetch_all_positions, get_position_summary  # noqa: F401
+
     HAS_UNIFIED_QUERY = True
 except ImportError as e:
     HAS_UNIFIED_QUERY = False
@@ -59,7 +59,8 @@ if _sense_path not in sys.path:
     sys.path.insert(0, _sense_path)
 
 try:
-    from scenario_classifier import ScenarioClassifier, ScenarioResult
+    from scenario_classifier import ScenarioClassifier, ScenarioResult  # noqa: F401
+
     HAS_SCENARIO_CLASSIFIER = True
 except ImportError as e:
     HAS_SCENARIO_CLASSIFIER = False
@@ -69,28 +70,30 @@ except ImportError as e:
 @dataclass
 class ExposureMetrics:
     """单个币种的暴露指标"""
+
     symbol: str
-    total_long_size: float        # 总做多数量
-    total_short_size: float       # 总做空数量
-    net_size: float               # 净敞口 (做多-做空)
-    net_direction: str            # 净方向 LONG/SHORT/NEUTRAL
-    long_systems: List[str]       # 做多的系统列表
-    short_systems: List[str]      # 做空的系统列表
-    system_count: int             # 参与系统数
-    exposure_ratio: float         # 暴露比率 (|净敞口| / 总持仓)
-    conflict_detected: bool       # 是否检测到冲突
+    total_long_size: float  # 总做多数量
+    total_short_size: float  # 总做空数量
+    net_size: float  # 净敞口 (做多-做空)
+    net_direction: str  # 净方向 LONG/SHORT/NEUTRAL
+    long_systems: List[str]  # 做多的系统列表
+    short_systems: List[str]  # 做空的系统列表
+    system_count: int  # 参与系统数
+    exposure_ratio: float  # 暴露比率 (|净敞口| / 总持仓)
+    conflict_detected: bool  # 是否检测到冲突
 
 
 @dataclass
 class ObservationReport:
     """观察报告"""
+
     timestamp: str
     total_systems: int
     total_positions: int
     total_unrealized_pnl: float
     overall_status: str
     system_status: Dict[str, str]
-    exposures: Dict[str, Dict]           # symbol -> ExposureMetrics
+    exposures: Dict[str, Dict]  # symbol -> ExposureMetrics
     conflicts: List[Dict]
     scenario_classification: Optional[Dict]  # 场景分类结果（如果可用）
 
@@ -118,8 +121,8 @@ class CrossAccountObserver:
     """
 
     # 冲突检测阈值
-    EXPOSURE_THRESHOLD = 0.6      # 暴露比率超过60%视为集中风险
-    CONFLICT_THRESHOLD = 0.5      # 多空系统各占50%视为方向冲突
+    EXPOSURE_THRESHOLD = 0.6  # 暴露比率超过60%视为集中风险
+    CONFLICT_THRESHOLD = 0.5  # 多空系统各占50%视为方向冲突
 
     def __init__(self, exposure_threshold: float = None, conflict_threshold: float = None):
         """初始化观察器
@@ -147,7 +150,13 @@ class CrossAccountObserver:
                 overall_status="failed",
                 system_status={},
                 exposures={},
-                conflicts=[{"type": "system_error", "severity": "critical", "description": "unified_position_query 不可用"}],
+                conflicts=[
+                    {
+                        "type": "system_error",
+                        "severity": "critical",
+                        "description": "unified_position_query 不可用",
+                    }
+                ],
                 scenario_classification=None,
             )
 
@@ -197,12 +206,14 @@ class CrossAccountObserver:
     def _calculate_exposures(self, all_positions: List[Dict]) -> Dict[str, ExposureMetrics]:
         """计算各币种的跨账户暴露"""
         # 按币种聚合
-        symbol_data = defaultdict(lambda: {
-            "long_size": 0.0,
-            "short_size": 0.0,
-            "long_systems": set(),
-            "short_systems": set(),
-        })
+        symbol_data = defaultdict(
+            lambda: {
+                "long_size": 0.0,
+                "short_size": 0.0,
+                "long_systems": set(),
+                "short_systems": set(),
+            }
+        )
 
         for pos in all_positions:
             symbol = pos.get("symbol", "")
@@ -243,9 +254,9 @@ class CrossAccountObserver:
 
             # 多空系统各占50%左右视为冲突
             conflict_detected = (
-                len(data["long_systems"]) > 0 and
-                len(data["short_systems"]) > 0 and
-                abs(long_ratio - short_ratio) < 0.3  # 比例接近
+                len(data["long_systems"]) > 0
+                and len(data["short_systems"]) > 0
+                and abs(long_ratio - short_ratio) < 0.3  # 比例接近
             )
 
             exposures[symbol] = ExposureMetrics(
@@ -270,27 +281,31 @@ class CrossAccountObserver:
         for symbol, metrics in exposures.items():
             # 冲突1: 方向极度不一致（多空同时存在且比例接近）
             if metrics.conflict_detected:
-                conflicts.append({
-                    "type": "direction_conflict",
-                    "symbol": symbol,
-                    "severity": "high",
-                    "description": f"方向冲突: {len(metrics.long_systems)}个系统做多, {len(metrics.short_systems)}个系统做空",
-                    "long_systems": metrics.long_systems,
-                    "short_systems": metrics.short_systems,
-                    "net_direction": metrics.net_direction,
-                })
+                conflicts.append(
+                    {
+                        "type": "direction_conflict",
+                        "symbol": symbol,
+                        "severity": "high",
+                        "description": f"方向冲突: {len(metrics.long_systems)}个系统做多, {len(metrics.short_systems)}个系统做空",
+                        "long_systems": metrics.long_systems,
+                        "short_systems": metrics.short_systems,
+                        "net_direction": metrics.net_direction,
+                    }
+                )
 
             # 冲突2: 暴露过度集中
             if metrics.exposure_ratio > self.exposure_threshold and metrics.system_count >= 2:
-                conflicts.append({
-                    "type": "concentrated_exposure",
-                    "symbol": symbol,
-                    "severity": "medium",
-                    "description": f"暴露集中: 净敞口占比{metrics.exposure_ratio:.1%}, 涉及{metrics.system_count}个系统",
-                    "exposure_ratio": metrics.exposure_ratio,
-                    "net_direction": metrics.net_direction,
-                    "net_size": metrics.net_size,
-                })
+                conflicts.append(
+                    {
+                        "type": "concentrated_exposure",
+                        "symbol": symbol,
+                        "severity": "medium",
+                        "description": f"暴露集中: 净敞口占比{metrics.exposure_ratio:.1%}, 涉及{metrics.system_count}个系统",
+                        "exposure_ratio": metrics.exposure_ratio,
+                        "net_direction": metrics.net_direction,
+                        "net_size": metrics.net_size,
+                    }
+                )
 
         return conflicts
 
@@ -306,7 +321,15 @@ class CrossAccountObserver:
         meta = first_pos.get("meta", {})
 
         # 如果没有完整的市场数据，跳过场景分类
-        required_fields = ["price", "ema20", "ema50", "change_24h", "change_4h", "change_1h", "atr_pct"]
+        required_fields = [
+            "price",
+            "ema20",
+            "ema50",
+            "change_24h",
+            "change_4h",
+            "change_1h",
+            "atr_pct",
+        ]
         if not all(field in meta or field in first_pos for field in required_fields):
             logger.debug("市场数据不完整，跳过场景分类")
             return None
@@ -359,17 +382,8 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="跨账户持仓观察器")
-    parser.add_argument(
-        "--output", "-o",
-        type=str,
-        default=None,
-        help="输出文件路径（JSON格式）"
-    )
-    parser.add_argument(
-        "--summary",
-        action="store_true",
-        help="仅输出摘要，不包含完整持仓列表"
-    )
+    parser.add_argument("--output", "-o", type=str, default=None, help="输出文件路径（JSON格式）")
+    parser.add_argument("--summary", action="store_true", help="仅输出摘要，不包含完整持仓列表")
 
     args = parser.parse_args()
 

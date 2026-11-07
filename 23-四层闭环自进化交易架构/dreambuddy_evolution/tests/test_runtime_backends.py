@@ -5,6 +5,7 @@ SPEC-本地远端双写分叉治理与torch可用性 §2.2③④ / PLAN 阶段1 
 治理目标：消除"有/无 torch、有/无 torchsde"的隐性静默降级，
 启动时可观测后端状态（_TORCH_AVAILABLE / _TORCHSDE_AVAILABLE / status / backend）。
 """
+
 from __future__ import annotations
 
 import logging

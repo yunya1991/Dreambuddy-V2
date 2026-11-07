@@ -1,4 +1,5 @@
 """T3 · Outlier3LFilter：三级异常过滤（①3σ 粗筛(仅标记) → ②IQR×1.5 中筛 clip → ③14-ATR×k 精筛 clip/事件命中保留）。"""
+
 from __future__ import annotations
 
 from typing import Iterable, Mapping
@@ -12,12 +13,12 @@ class Outlier3LFilter:
     def __init__(
         self,
         *,
-        z_threshold: float = 3.0,                    # B1
-        iqr_coef: float = 1.5,                       # B2 (宏观 1.3× 走查)
+        z_threshold: float = 3.0,  # B1
+        iqr_coef: float = 1.5,  # B2 (宏观 1.3× 走查)
         category_iqr_coef: Mapping[str, float] | None = None,  # 如 {"macro": 1.3}
-        default_atr_k: float = 3.0,                  # B3
-        asset_atr_k_map: Mapping[str, float] | None = None,    # 如 {"XAU": 2.5, "COIN": 2.8}
-        atr_period: int = 14,                        # Wilder 14
+        default_atr_k: float = 3.0,  # B3
+        asset_atr_k_map: Mapping[str, float] | None = None,  # 如 {"XAU": 2.5, "COIN": 2.8}
+        atr_period: int = 14,  # Wilder 14
         price_col: str = "close",
     ) -> None:
         self.z = z_threshold
@@ -36,7 +37,9 @@ class Outlier3LFilter:
         *,
         asset: str = "",
         category: str = "",
-        event_hits: Iterable[int] | None = None,  # 被巨鲸/新闻事件命中的行号（命中则ATR异常保留原值）
+        event_hits: (
+            Iterable[int] | None
+        ) = None,  # 被巨鲸/新闻事件命中的行号（命中则ATR异常保留原值）
         **_: object,
     ) -> tuple[pd.DataFrame, CleanAction]:
         input_rows = len(df)
@@ -49,8 +52,12 @@ class Outlier3LFilter:
         # 仅对数值列操作
         numeric_cols = out.select_dtypes(include=[np.number]).columns.tolist()
         if not numeric_cols:
-            act = CleanAction(step="Outlier3LFilter", input_rows=input_rows,
-                              output_rows=len(out), note="no_numeric_cols")
+            act = CleanAction(
+                step="Outlier3LFilter",
+                input_rows=input_rows,
+                output_rows=len(out),
+                note="no_numeric_cols",
+            )
             trace.append(act)
             return out, act
 
@@ -89,7 +96,11 @@ class Outlier3LFilter:
             lower = q1 - iqr_coef * iqr
             upper = q3 + iqr_coef * iqr
             # 对非事件行 clip，事件行保留
-            row_mask = out.index.isin([i for i in out.index if i not in event_rows]) if event_rows else slice(None)
+            row_mask = (
+                out.index.isin([i for i in out.index if i not in event_rows])
+                if event_rows
+                else slice(None)
+            )
             before = out[col].copy()
             if isinstance(row_mask, slice):
                 out.loc[:, col] = out[col].clip(lower=lower, upper=upper)
@@ -133,7 +144,9 @@ class Outlier3LFilter:
                         atr_clip += 1
         clipped += atr_clip
         if atr_clip or True:
-            note_parts.append(f"ATR{self.atr_period}×k={atr_k}_clip={atr_clip}_eventHit={len(event_rows)}")
+            note_parts.append(
+                f"ATR{self.atr_period}×k={atr_k}_clip={atr_clip}_eventHit={len(event_rows)}"
+            )
 
         action = CleanAction(
             step="Outlier3LFilter",
@@ -155,5 +168,7 @@ class Outlier3LFilter:
         # Wilder's smoothing（一步近似：足够用于粗筛阈值）
         for i in range(period + 1, len(atr)):
             if pd.notna(atr.iloc[i - 1]):
-                atr.iloc[i] = (atr.iloc[i - 1] * (period - 1) + (tr.iloc[i] if pd.notna(tr.iloc[i]) else 0)) / period
+                atr.iloc[i] = (
+                    atr.iloc[i - 1] * (period - 1) + (tr.iloc[i] if pd.notna(tr.iloc[i]) else 0)
+                ) / period
         return atr

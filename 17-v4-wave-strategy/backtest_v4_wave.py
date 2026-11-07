@@ -16,10 +16,11 @@
 评估指标：年化收益、夏普比率、最大回撤、Calmar比率、胜率、均仓
 """
 
+import json
 import os
 import sys
-import json
 import time
+
 import numpy as np
 import pandas as pd
 
@@ -29,9 +30,8 @@ SANPING_DIR = os.path.join(PROJECT_ROOT, "12-三屏趋势系统")
 sys.path.insert(0, MODULE_DIR)
 sys.path.insert(1, SANPING_DIR)
 
-from halving_top_exit_strategy import HalvingTopExitStrategy
-from ewave_recognizer import ElliottWaveRecognizer
-from ewave_strategy_adapter import EWaveStrategyAdapter, WaveConfig
+from ewave_recognizer import ElliottWaveRecognizer  # noqa: E402
+from halving_top_exit_strategy import HalvingTopExitStrategy  # noqa: E402
 
 
 def load_coin_data(symbol: str) -> pd.DataFrame:
@@ -97,8 +97,10 @@ def calc_metrics(prices, position_arr, valid_start=0, cost_pct=0.001):
 
     avg_pos = np.mean(np.abs(position_arr[valid_start:]))
 
-    entries = np.sum((np.abs(position_arr[valid_start:]) > 0.01) &
-                     (np.abs(np.concatenate([[0], position_arr[valid_start:-1]])) <= 0.01))
+    entries = np.sum(
+        (np.abs(position_arr[valid_start:]) > 0.01)
+        & (np.abs(np.concatenate([[0], position_arr[valid_start:-1]])) <= 0.01)
+    )
 
     return {
         "total_return": float(total_return),
@@ -118,7 +120,7 @@ def compute_v4_positions(prices, symbol="BTC"):
     print(f"  [V4] 计算 {symbol} V4减半周期策略...")
     t0 = time.time()
 
-    is_btc = (symbol == "BTC")
+    is_btc = symbol == "BTC"
     strategy = HalvingTopExitStrategy(
         symbol=symbol,
         is_btc=is_btc,
@@ -126,7 +128,9 @@ def compute_v4_positions(prices, symbol="BTC"):
     )
 
     position_series = strategy.generate_signals(prices)
-    position_arr = position_series.values if hasattr(position_series, 'values') else np.array(position_series)
+    position_arr = (
+        position_series.values if hasattr(position_series, "values") else np.array(position_series)
+    )
 
     print(f"    耗时: {time.time()-t0:.1f}s, 平均仓位: {np.mean(np.abs(position_arr)):.3f}")
     return position_arr
@@ -152,7 +156,7 @@ def generate_wave_signals(prices, zigzag_threshold=0.05):
         if i % 500 == 0 and i > 0:
             print(f"    波浪识别进度 {i}/{n} ({i/n*100:.1f}%)")
 
-        slice_df = prices.iloc[:i + 1]
+        slice_df = prices.iloc[: i + 1]
         try:
             ws = recognizer.identify_waves(slice_df)
             signals.append(ws.signal)
@@ -173,10 +177,17 @@ def parse_wave_direction(signal: str) -> str:
     return "NEUTRAL"
 
 
-def compute_v4_wave_fusion(prices, v4_positions, wave_signals, wave_confs,
-                           wave_weight=0.6, confirm_threshold=0.6,
-                           bottom_position_cap=0.5, total_position_cap=1.0,
-                           keep_v4_dip_buy=True):
+def compute_v4_wave_fusion(
+    prices,
+    v4_positions,
+    wave_signals,
+    wave_confs,
+    wave_weight=0.6,
+    confirm_threshold=0.6,
+    bottom_position_cap=0.5,
+    total_position_cap=1.0,
+    keep_v4_dip_buy=True,
+):
     """V4+波浪互斥融合（与 EWaveStrategyAdapter._fuse_positions 一致的规则）
 
     融合规则：
@@ -192,8 +203,15 @@ def compute_v4_wave_fusion(prices, v4_positions, wave_signals, wave_confs,
     n = len(prices)
     fused_positions = np.zeros(n)
 
-    stats = {"bull_add": 0, "bull_keep": 0, "empty_bottom": 0, "empty_keep_dip": 0,
-             "empty_wait": 0, "bear_reduce": 0, "bear_keep": 0}
+    stats = {
+        "bull_add": 0,
+        "bull_keep": 0,
+        "empty_bottom": 0,
+        "empty_keep_dip": 0,
+        "empty_wait": 0,
+        "bear_reduce": 0,
+        "bear_keep": 0,
+    }
 
     for i in range(n):
         v4_pos = v4_positions[i]
@@ -235,16 +253,25 @@ def compute_v4_wave_fusion(prices, v4_positions, wave_signals, wave_confs,
 
         fused_positions[i] = fused
 
-    print(f"    [融合统计] 多头+加仓={stats['bull_add']} | 多头+保持={stats['bull_keep']} | "
-          f"空仓+抄底={stats['empty_bottom']} | 空仓+保留dip={stats['empty_keep_dip']} | "
-          f"空仓+观望={stats['empty_wait']} | 空头+减半={stats['bear_reduce']} | 空头+保持={stats['bear_keep']}")
+    print(
+        f"    [融合统计] 多头+加仓={stats['bull_add']} | 多头+保持={stats['bull_keep']} | "
+        f"空仓+抄底={stats['empty_bottom']} | 空仓+保留dip={stats['empty_keep_dip']} | "
+        f"空仓+观望={stats['empty_wait']} | 空头+减半={stats['bear_reduce']} | 空头+保持={stats['bear_keep']}"
+    )
 
     return fused_positions
 
 
-def compute_v4_wave_fusion_with_physics(prices, v4_positions, wave_signals, wave_confs,
-                                        wave_weight=0.6, confirm_threshold=0.6,
-                                        bottom_position_cap=0.5, keep_v4_dip_buy=True):
+def compute_v4_wave_fusion_with_physics(
+    prices,
+    v4_positions,
+    wave_signals,
+    wave_confs,
+    wave_weight=0.6,
+    confirm_threshold=0.6,
+    bottom_position_cap=0.5,
+    keep_v4_dip_buy=True,
+):
     """V4+波浪互斥融合 + 物理引擎增强
 
     物理增强：
@@ -252,15 +279,15 @@ def compute_v4_wave_fusion_with_physics(prices, v4_positions, wave_signals, wave
     - 宽追踪止损：jerk反转信号触发止盈保护
     - 动能止盈：动能峰值触发提前止盈
     """
-    from ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
-    from ml.pitd_kinematics_engineer import KinematicsEngineer
+    from ml.pitd_confidence_scorer import ConfidenceWeights, PhysicsConfidenceScorer
     from ml.pitd_dynamics_engineer import DynamicsEngineer
+    from ml.pitd_kinematics_engineer import KinematicsEngineer
 
-    print(f"  [物理增强] 计算物理特征...")
+    print("  [物理增强] 计算物理特征...")
     t0 = time.time()
 
     n = len(prices)
-    closes = prices["close"].values
+    closes = prices["close"].values  # noqa: F841
 
     # 物理特征（pandas兼容性处理）
     try:
@@ -272,17 +299,28 @@ def compute_v4_wave_fusion_with_physics(prices, v4_positions, wave_signals, wave
         eta_series = dyn_feats["dyn_coupling_eta"].values
 
         weights = ConfidenceWeights(
-            w_eta=0.211, w_reversal=0.368,
-            w_support=0.211, w_kinetic=0.211,
-            position_lower=0.6, position_scale=1.0,
+            w_eta=0.211,
+            w_reversal=0.368,
+            w_support=0.211,
+            w_kinetic=0.211,
+            position_lower=0.6,
+            position_scale=1.0,
         )
         scorer = PhysicsConfidenceScorer(weights)
         ml_pred_neutral = np.full(n, 0.5)
         phys_conf, _ = scorer.score_signals(prices=prices, ml_predictions=ml_pred_neutral)
 
         # jerk 反转信号
-        jerk_series = kin_feats.get("jerk", pd.Series(np.zeros(n))).values if hasattr(kin_feats.get("jerk"), 'values') else np.zeros(n)
-        kinetic_series = kin_feats.get("kinetic_score", pd.Series(np.full(n, 0.5))).values if hasattr(kin_feats.get("kinetic_score"), 'values') else np.full(n, 0.5)
+        jerk_series = (
+            kin_feats.get("jerk", pd.Series(np.zeros(n))).values
+            if hasattr(kin_feats.get("jerk"), "values")
+            else np.zeros(n)
+        )
+        kinetic_series = (
+            kin_feats.get("kinetic_score", pd.Series(np.full(n, 0.5))).values
+            if hasattr(kin_feats.get("kinetic_score"), "values")
+            else np.full(n, 0.5)
+        )
 
         print(f"    物理特征计算完成，耗时 {time.time()-t0:.1f}s")
     except Exception as e:
@@ -294,7 +332,10 @@ def compute_v4_wave_fusion_with_physics(prices, v4_positions, wave_signals, wave
 
     # 基础融合
     fused = compute_v4_wave_fusion(
-        prices, v4_positions, wave_signals, wave_confs,
+        prices,
+        v4_positions,
+        wave_signals,
+        wave_confs,
         wave_weight=wave_weight,
         confirm_threshold=confirm_threshold,
         bottom_position_cap=bottom_position_cap,
@@ -317,7 +358,11 @@ def compute_v4_wave_fusion_with_physics(prices, v4_positions, wave_signals, wave
             enhanced[i] = pos * multiplier
 
         # 2. jerk反转止盈保护：jerk突然增大时减仓
-        if i > 0 and not np.isnan(jerk_series[i]) and abs(jerk_series[i]) > np.nanpercentile(np.abs(jerk_series), 95):
+        if (
+            i > 0
+            and not np.isnan(jerk_series[i])
+            and abs(jerk_series[i]) > np.nanpercentile(np.abs(jerk_series), 95)
+        ):
             if pos > 0.3:
                 enhanced[i] = pos * 0.7  # 减仓30%
 
@@ -333,7 +378,7 @@ def run_backtest(symbol="BTC"):
     """运行9年完整回测对比"""
     print(f"\n{'='*90}")
     print(f"  V4+波浪策略独立模块 9年回测验证 - {symbol}")
-    print(f"  模块: 17-v4-wave-strategy (完全独立)")
+    print("  模块: 17-v4-wave-strategy (完全独立)")
     print(f"{'='*90}")
 
     prices = load_coin_data(symbol)
@@ -354,68 +399,100 @@ def run_backtest(symbol="BTC"):
 
     # ===== 含交易成本（0.1%/侧）=====
     print(f"\n{'='*90}")
-    print(f"  9年期回测 — 含交易成本 (valid_start={valid_start}, 有效{valid_days}天/{valid_years:.1f}年)")
+    print(
+        f"  9年期回测 — 含交易成本 (valid_start={valid_start}, 有效{valid_days}天/{valid_years:.1f}年)"
+    )
     print(f"{'='*90}")
-    print(f"{'策略':<36} {'年化':>8} {'总收益':>10} {'夏普':>8} {'回撤':>10} {'Calmar':>8} {'胜率':>8} {'均仓':>7}")
+    print(
+        f"{'策略':<36} {'年化':>8} {'总收益':>10} {'夏普':>8} {'回撤':>10} {'Calmar':>8} {'胜率':>8} {'均仓':>7}"
+    )
     print(f"{'-'*100}")
 
     results_cost = {}
 
     m = calc_metrics(prices, v4_positions, valid_start, cost_pct=0.001)
     results_cost["纯V4"] = m
-    print(f"{'纯V4减半周期':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'纯V4减半周期':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
-    print(f"\n  --- V4+波浪互斥融合（默认参数 wave_weight=0.3, threshold=0.6, cap=0.3）---")
+    print("\n  --- V4+波浪互斥融合（默认参数 wave_weight=0.3, threshold=0.6, cap=0.3）---")
     fused_default = compute_v4_wave_fusion(
-        prices, v4_positions, wave_signals, wave_confs,
-        wave_weight=0.3, confirm_threshold=0.6, bottom_position_cap=0.3,
+        prices,
+        v4_positions,
+        wave_signals,
+        wave_confs,
+        wave_weight=0.3,
+        confirm_threshold=0.6,
+        bottom_position_cap=0.3,
     )
     m = calc_metrics(prices, fused_default, valid_start, cost_pct=0.001)
     results_cost["V4+波浪(默认)"] = m
-    print(f"{'V4+波浪(默认参数)':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'V4+波浪(默认参数)':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
-    print(f"\n  --- V4+波浪互斥融合（优化参数 wave_weight=0.6, threshold=0.6, cap=0.5）---")
+    print("\n  --- V4+波浪互斥融合（优化参数 wave_weight=0.6, threshold=0.6, cap=0.5）---")
     fused_opt = compute_v4_wave_fusion(
-        prices, v4_positions, wave_signals, wave_confs,
-        wave_weight=0.6, confirm_threshold=0.6, bottom_position_cap=0.5,
+        prices,
+        v4_positions,
+        wave_signals,
+        wave_confs,
+        wave_weight=0.6,
+        confirm_threshold=0.6,
+        bottom_position_cap=0.5,
     )
     m = calc_metrics(prices, fused_opt, valid_start, cost_pct=0.001)
     results_cost["V4+波浪(优化)"] = m
-    print(f"{'V4+波浪(优化参数)':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'V4+波浪(优化参数)':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     bh_pos = np.ones(n)
     m = calc_metrics(prices, bh_pos, valid_start, cost_pct=0.001)
     results_cost["买入持有"] = m
-    print(f"{'买入持有':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'买入持有':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     # ===== 无交易成本 =====
     print(f"\n{'='*90}")
-    print(f"  9年期回测 — 无交易成本 (理论参考)")
+    print("  9年期回测 — 无交易成本 (理论参考)")
     print(f"{'='*90}")
-    print(f"{'策略':<36} {'年化':>8} {'总收益':>10} {'夏普':>8} {'回撤':>10} {'Calmar':>8} {'胜率':>8} {'均仓':>7}")
+    print(
+        f"{'策略':<36} {'年化':>8} {'总收益':>10} {'夏普':>8} {'回撤':>10} {'Calmar':>8} {'胜率':>8} {'均仓':>7}"
+    )
     print(f"{'-'*100}")
 
     results_nocost = {}
 
     m = calc_metrics(prices, v4_positions, valid_start, cost_pct=0.0)
     results_nocost["纯V4"] = m
-    print(f"{'纯V4减半周期':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'纯V4减半周期':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     m = calc_metrics(prices, fused_default, valid_start, cost_pct=0.0)
     results_nocost["V4+波浪(默认)"] = m
-    print(f"{'V4+波浪(默认参数)':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'V4+波浪(默认参数)':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     m = calc_metrics(prices, fused_opt, valid_start, cost_pct=0.0)
     results_nocost["V4+波浪(优化)"] = m
-    print(f"{'V4+波浪(优化参数)':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'V4+波浪(优化参数)':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     m = calc_metrics(prices, bh_pos, valid_start, cost_pct=0.0)
     results_nocost["买入持有"] = m
-    print(f"{'买入持有':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'买入持有':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     # ===== 增量分析 =====
     print(f"\n{'='*90}")
-    print(f"  相对纯V4的增量价值（9年期，含成本）")
+    print("  相对纯V4的增量价值（9年期，含成本）")
     print(f"{'='*90}")
     print(f"{'策略':<36} {'年化增量':>10} {'夏普增量':>10} {'回撤改善':>10} {'Calmar增量':>10}")
     print(f"{'-'*80}")
@@ -423,15 +500,17 @@ def run_backtest(symbol="BTC"):
     for name, metrics in results_cost.items():
         if name == "纯V4":
             continue
-        ann_delta = (metrics['annualized'] - v4_base['annualized']) * 100
-        sharpe_delta = metrics['sharpe'] - v4_base['sharpe']
-        mdd_delta = (metrics['max_drawdown'] - v4_base['max_drawdown']) * 100
-        calmar_delta = metrics['calmar'] - v4_base['calmar']
+        ann_delta = (metrics["annualized"] - v4_base["annualized"]) * 100
+        sharpe_delta = metrics["sharpe"] - v4_base["sharpe"]
+        mdd_delta = (metrics["max_drawdown"] - v4_base["max_drawdown"]) * 100
+        calmar_delta = metrics["calmar"] - v4_base["calmar"]
         mark = " ✅" if ann_delta > 0 and calmar_delta > 0 else ""
-        print(f"{name:<36} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {calmar_delta:>+10.4f}{mark}")
+        print(
+            f"{name:<36} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {calmar_delta:>+10.4f}{mark}"
+        )
 
     print(f"\n{'='*90}")
-    print(f"  相对纯V4的增量价值（9年期，无成本）")
+    print("  相对纯V4的增量价值（9年期，无成本）")
     print(f"{'='*90}")
     print(f"{'策略':<36} {'年化增量':>10} {'夏普增量':>10} {'回撤改善':>10} {'Calmar增量':>10}")
     print(f"{'-'*80}")
@@ -439,84 +518,112 @@ def run_backtest(symbol="BTC"):
     for name, metrics in results_nocost.items():
         if name == "纯V4":
             continue
-        ann_delta = (metrics['annualized'] - v4_base_nc['annualized']) * 100
-        sharpe_delta = metrics['sharpe'] - v4_base_nc['sharpe']
-        mdd_delta = (metrics['max_drawdown'] - v4_base_nc['max_drawdown']) * 100
-        calmar_delta = metrics['calmar'] - v4_base_nc['calmar']
+        ann_delta = (metrics["annualized"] - v4_base_nc["annualized"]) * 100
+        sharpe_delta = metrics["sharpe"] - v4_base_nc["sharpe"]
+        mdd_delta = (metrics["max_drawdown"] - v4_base_nc["max_drawdown"]) * 100
+        calmar_delta = metrics["calmar"] - v4_base_nc["calmar"]
         mark = " ✅" if ann_delta > 0 and calmar_delta > 0 else ""
-        print(f"{name:<36} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {calmar_delta:>+10.4f}{mark}")
+        print(
+            f"{name:<36} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {calmar_delta:>+10.4f}{mark}"
+        )
 
     # ===== 4年期样本外 =====
     valid_start_4y = max(365, n - 1460)
     print(f"\n{'='*90}")
     print(f"  4年期样本外回测 — 含交易成本 (valid_start={valid_start_4y})")
     print(f"{'='*90}")
-    print(f"{'策略':<36} {'年化':>8} {'总收益':>10} {'夏普':>8} {'回撤':>10} {'Calmar':>8} {'胜率':>8} {'均仓':>7}")
+    print(
+        f"{'策略':<36} {'年化':>8} {'总收益':>10} {'夏普':>8} {'回撤':>10} {'Calmar':>8} {'胜率':>8} {'均仓':>7}"
+    )
     print(f"{'-'*100}")
 
     results_4y = {}
 
     m = calc_metrics(prices, v4_positions, valid_start_4y, cost_pct=0.001)
     results_4y["纯V4"] = m
-    print(f"{'纯V4减半周期':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'纯V4减半周期':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     m = calc_metrics(prices, fused_default, valid_start_4y, cost_pct=0.001)
     results_4y["V4+波浪(默认)"] = m
-    print(f"{'V4+波浪(默认参数)':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'V4+波浪(默认参数)':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     m = calc_metrics(prices, fused_opt, valid_start_4y, cost_pct=0.001)
     results_4y["V4+波浪(优化)"] = m
-    print(f"{'V4+波浪(优化参数)':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'V4+波浪(优化参数)':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     m = calc_metrics(prices, bh_pos, valid_start_4y, cost_pct=0.001)
     results_4y["买入持有"] = m
-    print(f"{'买入持有':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'买入持有':<36} {m['annualized']*100:>7.2f}% {m['total_return']*100:>9.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
-    print(f"\n  --- 相对纯V4的增量价值（4年期/样本外）---")
+    print("\n  --- 相对纯V4的增量价值（4年期/样本外）---")
     v4_base_4y = results_4y["纯V4"]
     print(f"{'策略':<36} {'年化增量':>10} {'夏普增量':>10} {'回撤改善':>10} {'Calmar增量':>10}")
     print(f"{'-'*80}")
     for name, metrics in results_4y.items():
         if name == "纯V4":
             continue
-        ann_delta = (metrics['annualized'] - v4_base_4y['annualized']) * 100
-        sharpe_delta = metrics['sharpe'] - v4_base_4y['sharpe']
-        mdd_delta = (metrics['max_drawdown'] - v4_base_4y['max_drawdown']) * 100
-        calmar_delta = metrics['calmar'] - v4_base_4y['calmar']
+        ann_delta = (metrics["annualized"] - v4_base_4y["annualized"]) * 100
+        sharpe_delta = metrics["sharpe"] - v4_base_4y["sharpe"]
+        mdd_delta = (metrics["max_drawdown"] - v4_base_4y["max_drawdown"]) * 100
+        calmar_delta = metrics["calmar"] - v4_base_4y["calmar"]
         mark = " ✅" if ann_delta > 0 and calmar_delta > 0 else ""
-        print(f"{name:<36} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {calmar_delta:>+10.4f}{mark}")
+        print(
+            f"{name:<36} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {calmar_delta:>+10.4f}{mark}"
+        )
 
     # ===== 总结 =====
     print(f"\n{'='*90}")
-    print(f"  9年回测总结")
+    print("  9年回测总结")
     print(f"{'='*90}")
     print(f"  数据: {n}天 ({years:.2f}年), {prices.index[0].date()} ~ {prices.index[-1].date()}")
     print(f"  有效: {valid_days}天 ({valid_years:.1f}年), valid_start={valid_start}")
     print()
-    print(f"  含成本(0.1%/侧):")
-    print(f"    纯V4:        年化={results_cost['纯V4']['annualized']*100:.2f}%, 夏普={results_cost['纯V4']['sharpe']:.4f}, Calmar={results_cost['纯V4']['calmar']:.4f}")
-    print(f"    V4+波浪(优化): 年化={results_cost['V4+波浪(优化)']['annualized']*100:.2f}%, 夏普={results_cost['V4+波浪(优化)']['sharpe']:.4f}, Calmar={results_cost['V4+波浪(优化)']['calmar']:.4f}")
-    print(f"    买入持有:     年化={results_cost['买入持有']['annualized']*100:.2f}%, 夏普={results_cost['买入持有']['sharpe']:.4f}, Calmar={results_cost['买入持有']['calmar']:.4f}")
+    print("  含成本(0.1%/侧):")
+    print(
+        f"    纯V4:        年化={results_cost['纯V4']['annualized']*100:.2f}%, 夏普={results_cost['纯V4']['sharpe']:.4f}, Calmar={results_cost['纯V4']['calmar']:.4f}"
+    )
+    print(
+        f"    V4+波浪(优化): 年化={results_cost['V4+波浪(优化)']['annualized']*100:.2f}%, 夏普={results_cost['V4+波浪(优化)']['sharpe']:.4f}, Calmar={results_cost['V4+波浪(优化)']['calmar']:.4f}"
+    )
+    print(
+        f"    买入持有:     年化={results_cost['买入持有']['annualized']*100:.2f}%, 夏普={results_cost['买入持有']['sharpe']:.4f}, Calmar={results_cost['买入持有']['calmar']:.4f}"
+    )
     print()
-    print(f"  无成本(理论):")
-    print(f"    纯V4:        年化={results_nocost['纯V4']['annualized']*100:.2f}%, 夏普={results_nocost['纯V4']['sharpe']:.4f}, Calmar={results_nocost['纯V4']['calmar']:.4f}")
-    print(f"    V4+波浪(优化): 年化={results_nocost['V4+波浪(优化)']['annualized']*100:.2f}%, 夏普={results_nocost['V4+波浪(优化)']['sharpe']:.4f}, Calmar={results_nocost['V4+波浪(优化)']['calmar']:.4f}")
+    print("  无成本(理论):")
+    print(
+        f"    纯V4:        年化={results_nocost['纯V4']['annualized']*100:.2f}%, 夏普={results_nocost['纯V4']['sharpe']:.4f}, Calmar={results_nocost['纯V4']['calmar']:.4f}"
+    )
+    print(
+        f"    V4+波浪(优化): 年化={results_nocost['V4+波浪(优化)']['annualized']*100:.2f}%, 夏普={results_nocost['V4+波浪(优化)']['sharpe']:.4f}, Calmar={results_nocost['V4+波浪(优化)']['calmar']:.4f}"
+    )
 
     # 原始贝叶斯优化结果对比
     print()
-    print(f"  原始贝叶斯优化结果（无成本，含计算差异）:")
-    print(f"    纯V4:        年化=62.89%, 夏普=1.374, Calmar=1.418")
-    print(f"    V4+波浪(优化): 年化=70.31%, 夏普=1.455, Calmar=1.654")
-    print(f"    注: 原始计算用 cum_ret[-1]-cum_ret[vs] 代替 prod(1+ret[vs:])-1, 导致数值偏高")
+    print("  原始贝叶斯优化结果（无成本，含计算差异）:")
+    print("    纯V4:        年化=62.89%, 夏普=1.374, Calmar=1.418")
+    print("    V4+波浪(优化): 年化=70.31%, 夏普=1.455, Calmar=1.654")
+    print("    注: 原始计算用 cum_ret[-1]-cum_ret[vs] 代替 prod(1+ret[vs:])-1, 导致数值偏高")
 
     v4_9y = results_cost["纯V4"]["annualized"]
     fused_9y = results_cost["V4+波浪(优化)"]["annualized"]
     v4_4y_val = results_4y["纯V4"]["annualized"]
     fused_4y_val = results_4y["V4+波浪(优化)"]["annualized"]
 
-    print(f"\n  优势验证:")
-    print(f"    9年期: V4+波浪 {fused_9y*100:.2f}% vs 纯V4 {v4_9y*100:.2f}% → {'✅ 优势保持' if fused_9y > v4_9y else '⚠ 波浪未增强（V4本身已强）'}")
-    print(f"    4年期: V4+波浪 {fused_4y_val*100:.2f}% vs 纯V4 {v4_4y_val*100:.2f}% → {'✅ 优势保持' if fused_4y_val > v4_4y_val else '⚠ 波浪未增强'}")
+    print("\n  优势验证:")
+    print(
+        f"    9年期: V4+波浪 {fused_9y*100:.2f}% vs 纯V4 {v4_9y*100:.2f}% → {'✅ 优势保持' if fused_9y > v4_9y else '⚠ 波浪未增强（V4本身已强）'}"
+    )
+    print(
+        f"    4年期: V4+波浪 {fused_4y_val*100:.2f}% vs 纯V4 {v4_4y_val*100:.2f}% → {'✅ 优势保持' if fused_4y_val > v4_4y_val else '⚠ 波浪未增强'}"
+    )
 
     # 保存结果
     os.makedirs(os.path.join(MODULE_DIR, "backtest_results"), exist_ok=True)
@@ -543,6 +650,7 @@ def run_backtest(symbol="BTC"):
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(description="V4+波浪策略独立模块回测验证")
     parser.add_argument("--symbol", type=str, default="BTC", help="交易对")
     args = parser.parse_args()

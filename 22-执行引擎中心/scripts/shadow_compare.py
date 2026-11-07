@@ -14,6 +14,7 @@ Functions (testable):
 Improvement bps = baseline(DM) − actual(TEE) slip. Positive means
 the TEE path beat the direct-market baseline.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -22,15 +23,18 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
-
 BIN_LABELS: tuple = (
-    "< 0 (loss)", "[0, 1)", "[1, 2)", "[2, 5)", "≥ 5",
+    "< 0 (loss)",
+    "[0, 1)",
+    "[1, 2)",
+    "[2, 5)",
+    "≥ 5",
 )
 
 
-def _iter_audit_lines(audit_dir: str | Path,
-                       shadow_suffix: Optional[str] = "_shadow"
-                       ) -> Iterable[Dict[str, Any]]:
+def _iter_audit_lines(
+    audit_dir: str | Path, shadow_suffix: Optional[str] = "_shadow"
+) -> Iterable[Dict[str, Any]]:
     d = Path(audit_dir)
     if not d.is_dir():
         return
@@ -154,12 +158,18 @@ def improvement_bin_rubric(
 def run_cli(argv: Optional[List[str]] = None) -> int:
     p = argparse.ArgumentParser(description="TEE shadow-vs-baseline report.")
     p.add_argument("--audit-dir", required=True)
-    p.add_argument("--shadow-suffix", default="_shadow",
-                   help="Glob suffix (default _shadow). Use '' to use real "
-                        "audit stream.")
-    p.add_argument("--bps-threshold", type=float, default=[2.0, 5.0],
-                   action="append",
-                   help="Improvement beat threshold (repeatable).")
+    p.add_argument(
+        "--shadow-suffix",
+        default="_shadow",
+        help="Glob suffix (default _shadow). Use '' to use real " "audit stream.",
+    )
+    p.add_argument(
+        "--bps-threshold",
+        type=float,
+        default=[2.0, 5.0],
+        action="append",
+        help="Improvement beat threshold (repeatable).",
+    )
     args = p.parse_args(argv)
     summary = compute_summary(
         audit_dir=args.audit_dir,

@@ -15,6 +15,7 @@ B. FLAT_HETEROGENEOUS（news/macro/按 sub_category 或 asset 语义拆分的一
      · 不对缺失数值列做 ffill / linear / fillna(50) 的跨记录插值（跨 sub_category 无意义）
      · 数值列仅对本记录内部 NaN → fail-open_50 兜底（不互相污染）
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -38,14 +39,14 @@ class DedupAlignCleaner:
         self,
         *,
         target_freq: str = "1h",
-        dedup_subset: Optional[list[str]] = None,       # None → 自动选 [timestamp, asset, key]
+        dedup_subset: Optional[list[str]] = None,  # None → 自动选 [timestamp, asset, key]
         ffill_limit: int = 5,
         timestamp_col: str = "timestamp",
         asset_col: str = "asset",
         key_col: str = "key",
         sub_category_col: str = "sub_category",
         fail_open_value: float = 50.0,
-        category: Optional[str] = None,                 # Dispatcher 注入 category（news/macro/finance/chain）
+        category: Optional[str] = None,  # Dispatcher 注入 category（news/macro/finance/chain）
     ) -> None:
         self.target_freq = target_freq
         self._dedup_subset = dedup_subset
@@ -60,7 +61,9 @@ class DedupAlignCleaner:
     # ------------------------------------------------------------------
     # 对外：clean(df, trace) → (df, CleanAction)
     # ------------------------------------------------------------------
-    def clean(self, df: pd.DataFrame, trace: CleaningTrace, **ctx: object) -> tuple[pd.DataFrame, CleanAction]:
+    def clean(
+        self, df: pd.DataFrame, trace: CleaningTrace, **ctx: object
+    ) -> tuple[pd.DataFrame, CleanAction]:
         input_rows = len(df)
         clipped = 0
         imputed = 0
@@ -91,8 +94,9 @@ class DedupAlignCleaner:
                 out[self.timestamp_col] = pd.to_datetime(out[self.timestamp_col])
             numeric_cols = out.select_dtypes(include=[np.number]).columns.tolist()
             if numeric_cols:
-                _cross_sub = ("sub_category" in out.columns
-                              and out["sub_category"].nunique(dropna=True) > 1)
+                _cross_sub = (
+                    "sub_category" in out.columns and out["sub_category"].nunique(dropna=True) > 1
+                )
                 if _cross_sub:
                     # FIX 2026-11-05: 跨板块防串染 — 按 sub_category 分组填充：
                     # 组内整列 NaN 的列（属于其他板块）保留 NaN，
@@ -102,8 +106,9 @@ class DedupAlignCleaner:
                     _filled = 0
                     for _sub, _grp in out.groupby("sub_category", dropna=False):
                         _grp = _grp.copy()
-                        _cols = [c for c in numeric_cols
-                                 if c in _grp.columns and _grp[c].notna().any()]
+                        _cols = [
+                            c for c in numeric_cols if c in _grp.columns and _grp[c].notna().any()
+                        ]
                         if _cols:
                             _mask = _grp[_cols].isna()
                             if _mask.any().any():
@@ -140,7 +145,8 @@ class DedupAlignCleaner:
                 resampled_num = pd.DataFrame(index=resampler.asfreq().index)
             resampled_nonnum = (
                 resampler[non_numeric_cols].ffill()
-                if non_numeric_cols else pd.DataFrame(index=resampled_num.index)
+                if non_numeric_cols
+                else pd.DataFrame(index=resampled_num.index)
             )
             out = resampled_num.join(resampled_nonnum, how="left")
             # 保证完整时间网格（丢失的小时条目生成 NaN 行，供后续 ffill/linear/fallback50 责任链节点处理）
@@ -159,7 +165,9 @@ class DedupAlignCleaner:
             # --- ④ 超过 ffill 仍空 → 线性插值 ---
             if numeric_cols:
                 before_interp = out[numeric_cols].isna().sum().sum()
-                out[numeric_cols] = out[numeric_cols].interpolate(method="linear", limit_direction="both")
+                out[numeric_cols] = out[numeric_cols].interpolate(
+                    method="linear", limit_direction="both"
+                )
                 after_interp = out[numeric_cols].isna().sum().sum()
                 filled_by_interp = int(before_interp - after_interp)
                 imputed += filled_by_interp
@@ -176,7 +184,12 @@ class DedupAlignCleaner:
 
             out = out.reset_index()  # timestamp 回到列
         return self._emit(
-            out, trace, input_rows, clipped, imputed, note_parts,
+            out,
+            trace,
+            input_rows,
+            clipped,
+            imputed,
+            note_parts,
             f"TIMESERIES resample({self.target_freq})",
         )
 
@@ -244,4 +257,3 @@ class DedupAlignCleaner:
         if not cols:
             return []
         return cols
-

@@ -3,14 +3,13 @@
 使用 classic_pipeline.signals 模块的纯函数进行回测，
 保证回测-实盘一致性。
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
-
-from classic_pipeline.core.utils import _sf0
 
 
 def run_backtest(
@@ -51,7 +50,9 @@ def run_backtest(
             window = df.iloc[: i + 1]
             try:
                 result = signal_fn(window, cfg)
-                direction = str(result.get("direction") or result.get("dominant_direction") or "neutral").lower()
+                direction = str(
+                    result.get("direction") or result.get("dominant_direction") or "neutral"
+                ).lower()
                 signals.append(direction)
             except Exception:
                 signals.append("neutral")
@@ -59,7 +60,7 @@ def run_backtest(
         # 计算收益
         equity = initial_capital
         equity_curve: List[float] = [initial_capital]
-        positions: List[str] = []  # "long", "short", "flat"
+        positions: List[str] = []  # "long", "short", "flat"  # noqa: F841
         trades: List[float] = []  # 每笔交易收益率
 
         current_pos = "flat"
@@ -80,7 +81,7 @@ def run_backtest(
                     # 平仓
                     ret = (price - entry_price) / entry_price
                     trades.append(ret)
-                    equity *= (1 + ret)
+                    equity *= 1 + ret
                     current_pos = "flat"
                     if sig == "short":
                         current_pos = "short"
@@ -89,7 +90,7 @@ def run_backtest(
                 if sig == "long" or sig == "neutral":
                     ret = (entry_price - price) / entry_price
                     trades.append(ret)
-                    equity *= (1 + ret)
+                    equity *= 1 + ret
                     current_pos = "flat"
                     if sig == "long":
                         current_pos = "long"

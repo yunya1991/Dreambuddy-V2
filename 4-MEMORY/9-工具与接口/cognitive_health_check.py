@@ -19,7 +19,7 @@
     因此统计行动链长度应读 action_count 字段，切勿读 action_chain 数组。
 """
 
-import os
+import os  # noqa: I001
 import sys
 import sqlite3
 import json
@@ -84,20 +84,28 @@ def check_l1_memory():
             flg = "  ARC"
         else:
             flg = ""
-        print("   {q:10s} x {c:>4}  avg_conf={cf:.2f}  avg_vc={vc:.1f}{flg}".format(
-            q=str(q), c=c, cf=float(avg_conf or 0), vc=float(avg_vc or 0), flg=flg))
+        print(
+            "   {q:10s} x {c:>4}  avg_conf={cf:.2f}  avg_vc={vc:.1f}{flg}".format(
+                q=str(q), c=c, cf=float(avg_conf or 0), vc=float(avg_vc or 0), flg=flg
+            )
+        )
         if q in ("S", "A", "B", "C"):
             valid_total += c
     archived_list = [c for q, c, _, _ in q_rows if q == "archived"]
     archived = archived_list[0] if archived_list else 0
     snr = valid_total * 100 // max(1, total)
-    tag = _tag(snr >= 30, ok="OK", low="LOW", bad="BAD") if snr < 15 else "OK" if snr >= 30 else "LOW"
+    tag = (
+        _tag(snr >= 30, ok="OK", low="LOW", bad="BAD") if snr < 15 else "OK" if snr >= 30 else "LOW"
+    )
     print("   有效(S/A/B/C)      : {} 条".format(valid_total))
     print("   已归档(archived)   : {} 条 (P2b 清理结果)".format(archived))
     print("   信噪比             : {}/{} = {}%  [{}]".format(valid_total, total, snr, tag))
-    has_vm = conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='vec_memories'"
-    ).fetchone() is not None
+    has_vm = (
+        conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='vec_memories'"
+        ).fetchone()
+        is not None
+    )
     print("   vec_memories遗留   : {}".format("是 (已做保护不访问)" if has_vm else "否 正常"))
     conn.close()
 
@@ -107,9 +115,13 @@ def check_solution_paths():
     print()
     print("2/6  Solution Paths (应用记忆层)")
     sp_dir = ROOT / "4-MEMORY/1-开发记忆单元/solution_paths"
-    active_files = sorted([f for f in os.listdir(sp_dir) if f.endswith(".json")]) if sp_dir.exists() else []
+    active_files = (
+        sorted([f for f in os.listdir(sp_dir) if f.endswith(".json")]) if sp_dir.exists() else []
+    )
     arch_dir = sp_dir / "_archived"
-    archived_count = len([f for f in os.listdir(arch_dir) if f.endswith(".json")]) if arch_dir.exists() else 0
+    archived_count = (
+        len([f for f in os.listdir(arch_dir) if f.endswith(".json")]) if arch_dir.exists() else 0
+    )
     qc = Counter()
     rebuilt_ids = 0
     for f in active_files:
@@ -128,7 +140,11 @@ def check_solution_paths():
     print("   原始总数           : {} 个".format(len(active_files) + archived_count))
     print("   质量分布           : {}".format(dict(qc)))
     if active_files:
-        print("   B+级占比           : {}/{} = {}%  [{}]".format(b_plus, len(active_files), bpr, bp_tag))
+        print(
+            "   B+级占比           : {}/{} = {}%  [{}]".format(
+                b_plus, len(active_files), bpr, bp_tag
+            )
+        )
         print("   含rebuild_version  : {} 个 (P4b重建产物)".format(rebuilt_ids))
 
 
@@ -137,7 +153,11 @@ def check_sessions():
     print()
     print("3/6  会话状态")
     sess_dir = ROOT / ".cognitive/sessions"
-    subdirs = sorted([d for d in os.listdir(sess_dir) if os.path.isdir(sess_dir / d)]) if sess_dir.exists() else []
+    subdirs = (
+        sorted([d for d in os.listdir(sess_dir) if os.path.isdir(sess_dir / d)])
+        if sess_dir.exists()
+        else []
+    )
     sessions = [d for d in subdirs if (sess_dir / d / "session.json").exists()]
     total_sessions = len(sessions)
     with_sug = 0
@@ -164,9 +184,12 @@ def check_sessions():
                 pass
         actions = _action_count_of(sess_dir / d, sdata)
         entry = {
-            "id": d, "task": sdata.get("task_type", "?"),
-            "actions": actions, "status": sdata.get("status", "?"),
-            "rcount": rcount, "has_sug": sug,
+            "id": d,
+            "task": sdata.get("task_type", "?"),
+            "actions": actions,
+            "status": sdata.get("status", "?"),
+            "rcount": rcount,
+            "has_sug": sug,
         }
         latest_list.append(entry)
         if sdata.get("status") == "active":
@@ -190,8 +213,11 @@ def check_sessions():
     print("   Top-5 最长会话:")
     for e in latest_list[:5]:
         tag = " refresh {}次".format(e["rcount"]) if e["rcount"] else ""
-        print("     {}  task={:15s}  actions={:>5}  status={:10s}{}".format(
-            e["id"], e["task"], e["actions"], e["status"], tag))
+        print(
+            "     {}  task={:15s}  actions={:>5}  status={:10s}{}".format(
+                e["id"], e["task"], e["actions"], e["status"], tag
+            )
+        )
 
 
 def check_recall():
@@ -200,6 +226,7 @@ def check_recall():
     print("4/6  召回/闭环验证 (实际search 3个典型query)")
     try:
         from vector_memory_interface import VectorMemoryInterface
+
         vmi = VectorMemoryInterface(
             storage_path=str(ROOT / "4-MEMORY/data/cognitive_memory.db"), engine="auto"
         )
@@ -239,7 +266,10 @@ def check_log_errors():
             for line in f:
                 total_lines += 1
                 low = line.lower()
-                if any(k in low for k in ["error", "exception", "traceback", "operationalerror", "nameerror"]):
+                if any(
+                    k in low
+                    for k in ["error", "exception", "traceback", "operationalerror", "nameerror"]
+                ):
                     err_count += 1
                     if "vec0" in low:
                         vec0_count += 1
@@ -266,8 +296,11 @@ def check_test_suite():
     for name, count, desc in tests:
         p = Path(__file__).parent / name
         exists = p.exists()
-        print("   {st}  {name:40s} {c}项  {d}".format(
-            st="OK" if exists else "--", name=name, c=count, d=desc))
+        print(
+            "   {st}  {name:40s} {c}项  {d}".format(
+                st="OK" if exists else "--", name=name, c=count, d=desc
+            )
+        )
     print("   (手动执行: cd 4-MEMORY/9-工具与接口 && python3 test_cognitive_daemon.py ...)")
 
 

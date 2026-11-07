@@ -24,7 +24,9 @@ def test_compute_distill_y_and_append_migration():
         "TC_2": {"outcome": {"unrealized_pnl_pct": -1.0}},
     }
 
-    out = update_distill_with_migration(distill, episodes_by_case_id, snapshot_ts="2026-05-10T00:00:00+08:00")
+    out = update_distill_with_migration(
+        distill, episodes_by_case_id, snapshot_ts="2026-05-10T00:00:00+08:00"
+    )
     q = out["quadrant"]
     assert 0.0 <= q["y"] <= 1.0
     assert q["evidence"]["y_perf"] <= 0.4

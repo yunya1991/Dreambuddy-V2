@@ -11,13 +11,14 @@
 - 趋势延续理论：特征必须可解释，符合趋势三要素
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import pandas as pd
+import pandas as pd  # noqa: I001
 import numpy as np
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional
 
 from backtest import (
     BacktestEngine,
@@ -31,13 +32,12 @@ from backtest import (
 )
 
 from ml.feature_engineer import TrendFeatureEngineer
-from ml.models import MLModel, create_model, LightGBMModel
+from ml.models import create_model
 from ml.tuner import ModelTuner
 from ml.ml_strategy import MLTrendStrategy
 
 
-def load_data(use_real: bool = True, symbol: str = "BTC-USDT",
-              n_days: int = 500) -> pd.DataFrame:
+def load_data(use_real: bool = True, symbol: str = "BTC-USDT", n_days: int = 500) -> pd.DataFrame:
     """加载数据"""
     if use_real:
         try:
@@ -52,9 +52,9 @@ def load_data(use_real: bool = True, symbol: str = "BTC-USDT",
     return df
 
 
-def feature_selection(X_train: pd.DataFrame, y_train: pd.Series,
-                      model_type: str = 'lightgbm',
-                      top_k: int = 20) -> List[str]:
+def feature_selection(
+    X_train: pd.DataFrame, y_train: pd.Series, model_type: str = "lightgbm", top_k: int = 20
+) -> List[str]:
     """基于特征重要性的特征选择
 
     减少特征数量 = 降低过拟合风险
@@ -62,15 +62,15 @@ def feature_selection(X_train: pd.DataFrame, y_train: pd.Series,
     """
     # 用较温和的参数训练，确保特征重要性有意义
     fs_params = {
-        'n_estimators': 100,
-        'early_stopping_rounds': None,
-        'verbose': -1,
-        'num_leaves': 31,
-        'learning_rate': 0.05,
-        'feature_fraction': 0.9,
-        'lambda_l1': 0.1,
-        'lambda_l2': 0.1,
-        'min_data_in_leaf': 10,
+        "n_estimators": 100,
+        "early_stopping_rounds": None,
+        "verbose": -1,
+        "num_leaves": 31,
+        "learning_rate": 0.05,
+        "feature_fraction": 0.9,
+        "lambda_l1": 0.1,
+        "lambda_l2": 0.1,
+        "min_data_in_leaf": 10,
     }
     model = create_model(model_type, fs_params)
     model.fit(X_train, y_train)
@@ -99,7 +99,7 @@ def feature_selection(X_train: pd.DataFrame, y_train: pd.Series,
 def walk_forward_evaluation(
     X: pd.DataFrame,
     y: pd.Series,
-    model_type: str = 'lightgbm',
+    model_type: str = "lightgbm",
     params: Optional[Dict] = None,
     train_window: int = 180,
     test_window: int = 30,
@@ -111,7 +111,7 @@ def walk_forward_evaluation(
     """
     n = len(X)
     if n <= train_window + test_window:
-        return {'accuracy': 0.5, 'roc_auc': 0.5, 'n_folds': 0}
+        return {"accuracy": 0.5, "roc_auc": 0.5, "n_folds": 0}
 
     from sklearn.metrics import accuracy_score, roc_auc_score
 
@@ -153,23 +153,23 @@ def walk_forward_evaluation(
             fold_y_true.extend(y_test_fold.values)
 
             fold_idx += 1
-        except Exception as e:
+        except Exception as e:  # noqa: F841
             pass
 
         start += step_size
 
     result = {
-        'accuracy': np.mean(accuracies) if accuracies else 0.5,
-        'roc_auc': np.mean(roc_aucs) if roc_aucs else 0.5,
-        'n_folds': len(accuracies),
-        'accuracy_std': np.std(accuracies) if accuracies else 0.0,
+        "accuracy": np.mean(accuracies) if accuracies else 0.5,
+        "roc_auc": np.mean(roc_aucs) if roc_aucs else 0.5,
+        "n_folds": len(accuracies),
+        "accuracy_std": np.std(accuracies) if accuracies else 0.0,
     }
     return result
 
 
 def run_tuning_experiment(
     df: pd.DataFrame,
-    model_type: str = 'lightgbm',
+    model_type: str = "lightgbm",
     label_lookahead: int = 7,
     n_trials: int = 30,
     use_feature_selection: bool = True,
@@ -204,19 +204,23 @@ def run_tuning_experiment(
     print(f"  Walk-Forward窗口: train={train_window}, test={test_window}, step={step_size}")
 
     X = valid[feature_names]
-    y = valid['label']
+    y = valid["label"]
 
     # 2. 基准模型（默认参数，禁用early stopping避免训练不足）
     print("\n[2/6] 基准模型评估（默认参数，全部特征）...")
     default_params = {
-        'n_estimators': 100,
-        'early_stopping_rounds': None,
-        'verbose': -1,
+        "n_estimators": 100,
+        "early_stopping_rounds": None,
+        "verbose": -1,
     }
     baseline_result = walk_forward_evaluation(
-        X, y, model_type=model_type,
+        X,
+        y,
+        model_type=model_type,
         params=default_params,
-        train_window=train_window, test_window=test_window, step_size=step_size
+        train_window=train_window,
+        test_window=test_window,
+        step_size=step_size,
     )
     print(f"  准确率: {baseline_result['accuracy']:.4f} ± {baseline_result['accuracy_std']:.4f}")
     print(f"  ROC-AUC: {baseline_result['roc_auc']:.4f}")
@@ -231,12 +235,15 @@ def run_tuning_experiment(
 
     model_check = create_model(model_type, default_params)
     model_check.fit(X_train_full, y_train_full)
-    from sklearn.metrics import accuracy_score, roc_auc_score
+    from sklearn.metrics import accuracy_score
+
     train_pred = model_check.predict_proba(X_train_full)
     test_pred = model_check.predict_proba(X_test_full)
     train_acc = accuracy_score(y_train_full, train_pred > 0.5)
     test_acc = accuracy_score(y_test_full, test_pred > 0.5)
-    print(f"  过拟合检测: 训练集准确率={train_acc:.4f}, 测试集准确率={test_acc:.4f}, gap={train_acc-test_acc:.4f}")
+    print(
+        f"  过拟合检测: 训练集准确率={train_acc:.4f}, 测试集准确率={test_acc:.4f}, gap={train_acc-test_acc:.4f}"
+    )
 
     # 3. 特征选择
     selected_features = feature_names
@@ -244,18 +251,23 @@ def run_tuning_experiment(
     if use_feature_selection:
         print(f"\n[3/6] 特征选择（Top {top_k_features}）...")
         selected_features = feature_selection(
-            X_train_full, y_train_full,
-            model_type=model_type, top_k=top_k_features
+            X_train_full, y_train_full, model_type=model_type, top_k=top_k_features
         )
 
         # 特征选择后的基准
-        print(f"  特征选择后模型评估...")
+        print("  特征选择后模型评估...")
         fs_baseline_result = walk_forward_evaluation(
-            X[selected_features], y, model_type=model_type,
+            X[selected_features],
+            y,
+            model_type=model_type,
             params=default_params,
-            train_window=train_window, test_window=test_window, step_size=step_size
+            train_window=train_window,
+            test_window=test_window,
+            step_size=step_size,
         )
-        print(f"  准确率: {fs_baseline_result['accuracy']:.4f} ± {fs_baseline_result['accuracy_std']:.4f}")
+        print(
+            f"  准确率: {fs_baseline_result['accuracy']:.4f} ± {fs_baseline_result['accuracy_std']:.4f}"
+        )
         print(f"  ROC-AUC: {fs_baseline_result['roc_auc']:.4f}")
 
     # 4. Optuna超参调优
@@ -265,8 +277,8 @@ def run_tuning_experiment(
     tuner = ModelTuner(
         model_type=model_type,
         n_trials=n_trials,
-        direction='maximize',
-        metric='roc_auc',
+        direction="maximize",
+        metric="roc_auc",
         train_window=train_window,
         test_window=test_window,
         step_size=step_size,
@@ -276,22 +288,34 @@ def run_tuning_experiment(
 
     tune_result = tuner.tune(X_tune, y)
     print(f"  最佳 ROC-AUC: {tune_result['best_score']:.4f}")
-    print(f"  最佳参数:")
-    for k, v in tune_result['best_params'].items():
-        if k not in ['n_estimators', 'early_stopping_rounds', 'verbose', 'objective', 'metric', 'boosting_type', 'random_state']:
+    print("  最佳参数:")
+    for k, v in tune_result["best_params"].items():
+        if k not in [
+            "n_estimators",
+            "early_stopping_rounds",
+            "verbose",
+            "objective",
+            "metric",
+            "boosting_type",
+            "random_state",
+        ]:
             print(f"    {k}: {v}")
 
     # 5. 调优后模型评估
     print("\n[5/6] 调优后模型 Walk-Forward 评估...")
     best_params = dict(tuner.best_params)
-    best_params['n_estimators'] = 100
-    best_params['early_stopping_rounds'] = None
-    best_params['verbose'] = -1
+    best_params["n_estimators"] = 100
+    best_params["early_stopping_rounds"] = None
+    best_params["verbose"] = -1
 
     tuned_result = walk_forward_evaluation(
-        X_tune, y, model_type=model_type,
+        X_tune,
+        y,
+        model_type=model_type,
         params=best_params,
-        train_window=train_window, test_window=test_window, step_size=step_size
+        train_window=train_window,
+        test_window=test_window,
+        step_size=step_size,
     )
     print(f"  准确率: {tuned_result['accuracy']:.4f} ± {tuned_result['accuracy_std']:.4f}")
     print(f"  ROC-AUC: {tuned_result['roc_auc']:.4f}")
@@ -304,7 +328,9 @@ def run_tuning_experiment(
     test_pred_t = model_tuned.predict_proba(X_test_full[selected_features])
     train_acc_t = accuracy_score(y_train_full, train_pred_t > 0.5)
     test_acc_t = accuracy_score(y_test_full, test_pred_t > 0.5)
-    print(f"  调优后过拟合检测: 训练集={train_acc_t:.4f}, 测试集={test_acc_t:.4f}, gap={train_acc_t-test_acc_t:.4f}")
+    print(
+        f"  调优后过拟合检测: 训练集={train_acc_t:.4f}, 测试集={test_acc_t:.4f}, gap={train_acc_t-test_acc_t:.4f}"
+    )
 
     # 6. 训练最终模型（用全部训练数据）
     print("\n[6/6] 训练最终模型（全部训练数据）...")
@@ -317,33 +343,45 @@ def run_tuning_experiment(
     print("=" * 70)
     print(f"{'指标':<20} {'基准(默认)':>12} {'特征选择':>12} {'调优后':>12}")
     print("-" * 70)
-    fs_acc = fs_baseline_result['accuracy'] if fs_baseline_result else 0
-    fs_auc = fs_baseline_result['roc_auc'] if fs_baseline_result else 0
-    print(f"{'准确率':<20} {baseline_result['accuracy']:>12.4f} {fs_acc:>12.4f} {tuned_result['accuracy']:>12.4f}")
-    print(f"{'ROC-AUC':<20} {baseline_result['roc_auc']:>12.4f} {fs_auc:>12.4f} {tuned_result['roc_auc']:>12.4f}")
-    if baseline_result['accuracy'] > 0:
-        acc_improve = (tuned_result['accuracy'] - baseline_result['accuracy']) / baseline_result['accuracy'] * 100
-        auc_improve = (tuned_result['roc_auc'] - baseline_result['roc_auc']) / baseline_result['roc_auc'] * 100
+    fs_acc = fs_baseline_result["accuracy"] if fs_baseline_result else 0
+    fs_auc = fs_baseline_result["roc_auc"] if fs_baseline_result else 0
+    print(
+        f"{'准确率':<20} {baseline_result['accuracy']:>12.4f} {fs_acc:>12.4f} {tuned_result['accuracy']:>12.4f}"
+    )
+    print(
+        f"{'ROC-AUC':<20} {baseline_result['roc_auc']:>12.4f} {fs_auc:>12.4f} {tuned_result['roc_auc']:>12.4f}"
+    )
+    if baseline_result["accuracy"] > 0:
+        acc_improve = (
+            (tuned_result["accuracy"] - baseline_result["accuracy"])
+            / baseline_result["accuracy"]
+            * 100
+        )
+        auc_improve = (
+            (tuned_result["roc_auc"] - baseline_result["roc_auc"])
+            / baseline_result["roc_auc"]
+            * 100
+        )
         print(f"{'准确率提升':<20} {'':>12} {'':>12} {acc_improve:>+11.1f}%")
         print(f"{'AUC提升':<20} {'':>12} {'':>12} {auc_improve:>+11.1f}%")
 
     return {
-        'feature_names': feature_names,
-        'selected_features': selected_features,
-        'best_params': best_params,
-        'best_score': tune_result['best_score'],
-        'baseline_result': baseline_result,
-        'fs_baseline_result': fs_baseline_result,
-        'tuned_result': tuned_result,
-        'feature_engineer': fe,
-        'final_model': final_model,
+        "feature_names": feature_names,
+        "selected_features": selected_features,
+        "best_params": best_params,
+        "best_score": tune_result["best_score"],
+        "baseline_result": baseline_result,
+        "fs_baseline_result": fs_baseline_result,
+        "tuned_result": tuned_result,
+        "feature_engineer": fe,
+        "final_model": final_model,
     }
 
 
 def run_backtest_comparison(
     df: pd.DataFrame,
     tune_result: Dict,
-    model_type: str = 'lightgbm',
+    model_type: str = "lightgbm",
     label_lookahead: int = 7,
 ) -> Dict:
     """策略回测对比：传统三屏 vs 默认ML vs 调优后ML"""
@@ -360,9 +398,9 @@ def run_backtest_comparison(
     base_strategy = TrendScreenStrategy(min_confidence=45.0, update_step=7)
 
     # 用调优后的模型和特征创建策略
-    selected_features = tune_result['selected_features']
-    final_model = tune_result['final_model']
-    fe = tune_result['feature_engineer']
+    selected_features = tune_result["selected_features"]
+    final_model = tune_result["final_model"]
+    fe = tune_result["feature_engineer"]
 
     # 创建使用选定特征的feature engineer
     class SelectedFeatureEngineer:
@@ -376,7 +414,7 @@ def run_backtest_comparison(
             return result
 
         def get_valid_data(self, features_df):
-            return features_df.dropna(subset=self.selected + ['label'])
+            return features_df.dropna(subset=self.selected + ["label"])
 
         def get_feature_names(self):
             return self.selected
@@ -413,13 +451,16 @@ def run_backtest_comparison(
             signals = strategy.generate_signals(df)
             result = engine.run(df["close"], signals, symbol=name)
             results[name] = BacktestResult(result)
-            print(f"  收益: {results[name].total_return_pct:>8.2f}%  "
-                  f"夏普: {results[name].sharpe_ratio:>6.2f}  "
-                  f"回撤: {results[name].max_drawdown_pct:>7.2f}%  "
-                  f"胜率: {results[name].win_rate_pct:>5.1f}%")
+            print(
+                f"  收益: {results[name].total_return_pct:>8.2f}%  "
+                f"夏普: {results[name].sharpe_ratio:>6.2f}  "
+                f"回撤: {results[name].max_drawdown_pct:>7.2f}%  "
+                f"胜率: {results[name].win_rate_pct:>5.1f}%"
+            )
         except Exception as e:
             print(f"  失败: {e}")
             import traceback
+
             traceback.print_exc()
 
     if results:
@@ -445,7 +486,7 @@ def main():
     # 运行调优实验
     tune_result = run_tuning_experiment(
         df,
-        model_type='lightgbm',
+        model_type="lightgbm",
         label_lookahead=7,
         n_trials=30,
         use_feature_selection=True,
@@ -453,10 +494,10 @@ def main():
     )
 
     # 策略回测对比
-    backtest_results = run_backtest_comparison(
+    backtest_results = run_backtest_comparison(  # noqa: F841
         df,
         tune_result,
-        model_type='lightgbm',
+        model_type="lightgbm",
         label_lookahead=7,
     )
 
@@ -465,21 +506,21 @@ def main():
     print("  特征重要性分析（趋势理论视角）")
     print("=" * 70)
 
-    fe = tune_result['feature_engineer']
+    fe = tune_result["feature_engineer"]
     groups = fe.get_feature_groups()
-    selected = tune_result['selected_features']
+    selected = tune_result["selected_features"]
 
     # 用皮尔逊相关系数作为特征重要性的代理
     valid_data = fe.get_valid_data(fe.create_features(df, label_lookahead=7))
     correlations = []
     for col in selected:
-        corr = abs(np.corrcoef(valid_data[col].values, valid_data['label'].values)[0, 1])
+        corr = abs(np.corrcoef(valid_data[col].values, valid_data["label"].values)[0, 1])
         if np.isnan(corr):
             corr = 0
         correlations.append((col, corr))
     correlations.sort(key=lambda x: x[1], reverse=True)
 
-    print(f"\n各理论维度特征重要性分布（按平均相关系数）:")
+    print("\n各理论维度特征重要性分布（按平均相关系数）:")
     for group, feats in groups.items():
         group_feats = [f for f in feats if f in selected]
         if group_feats:
@@ -487,7 +528,7 @@ def main():
             avg_corr = np.mean(group_corrs) if group_corrs else 0
             print(f"  {group:<15} {len(group_feats):>3} 个特征, 平均相关系数: {avg_corr:.4f}")
 
-    print(f"\nTop 15 最重要特征（按与标签的相关系数）:")
+    print("\nTop 15 最重要特征（按与标签的相关系数）:")
     for i, (feat, corr) in enumerate(correlations[:15]):
         group_name = "other"
         for g, feats in groups.items():
@@ -500,9 +541,13 @@ def main():
     print("  调优实验完成")
     print("=" * 70)
     print("关键发现:")
-    print(f"  1. 调优后ROC-AUC: {tune_result['tuned_result']['roc_auc']:.4f} "
-          f"(提升 {(tune_result['tuned_result']['roc_auc'] - tune_result['baseline_result']['roc_auc'])/tune_result['baseline_result']['roc_auc']*100:+.1f}%)")
-    print(f"  2. 特征选择: {len(tune_result['feature_names'])} → {len(tune_result['selected_features'])} 个")
+    print(
+        f"  1. 调优后ROC-AUC: {tune_result['tuned_result']['roc_auc']:.4f} "
+        f"(提升 {(tune_result['tuned_result']['roc_auc'] - tune_result['baseline_result']['roc_auc'])/tune_result['baseline_result']['roc_auc']*100:+.1f}%)"
+    )
+    print(
+        f"  2. 特征选择: {len(tune_result['feature_names'])} → {len(tune_result['selected_features'])} 个"
+    )
     print(f"  3. 验证方式: Walk-Forward ({tune_result['tuned_result']['n_folds']} 折滚动验证)")
     print("\n下一步: 将调优后的模型参数固化，用于实盘推理")
 

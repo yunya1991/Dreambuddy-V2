@@ -16,10 +16,6 @@ from __future__ import annotations
 
 # 从新位置重新导出所有公开 API
 from dreamos.capabilities.trading.nodes import (
-    register_all,
-    register_node,
-    list_available_nodes,
-    get_all_node_classes,
     # A 链节点
     A0ContradictionNode,
     A1DeepResearchNode,
@@ -45,6 +41,10 @@ from dreamos.capabilities.trading.nodes import (
     # G 链节点
     G1RiskControlNode,
     G2GovernanceNode,
+    get_all_node_classes,
+    list_available_nodes,
+    register_all,
+    register_node,
 )
 
 __all__ = [

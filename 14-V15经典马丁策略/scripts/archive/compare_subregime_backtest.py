@@ -12,22 +12,23 @@
 
 落地门槛：avg Calmar + 胜率 同比提升，且 max_dd 不恶化 >2pp，否则回退 Phase A+
 """
-import sys
+
 import json
-from pathlib import Path
+import sys
 from collections import Counter
+from pathlib import Path
 
 BASE_DIR = Path(__file__).parent
 sys.path.insert(0, str(BASE_DIR / "core"))
 sys.path.insert(0, str(BASE_DIR / "lib"))
 
-from v15_backtest import run_backtest, fetch_klines
+from v15_backtest import fetch_klines, run_backtest  # noqa: E402
 
 coins = ["BTC", "ETH", "SOL"]
 limit = 1500
 
 # Phase A+ 智能参数基线（来自 data/phase_a_plus_result.json）
-COMMON_KW = dict(
+COMMON_KW = dict(  # noqa: C408
     use_atr=True,
     use_trailing_tp=True,
     use_direction_gate=True,
@@ -73,14 +74,26 @@ for coin in coins:
     m_bp = r_bp["metrics"]
 
     print(f"\n  {coin} 详细对比:")
-    print(f"    指标            BASE(A+)       B+(子形态)       差值")
+    print("    指标            BASE(A+)       B+(子形态)       差值")
     print(f"    {'-'*68}")
-    print(f"    总收益:     {m_base['total_return_pct']:>+10.2f}%    {m_bp['total_return_pct']:>+10.2f}%    {m_bp['total_return_pct'] - m_base['total_return_pct']:>+9.2f}%")
-    print(f"    交易数:     {m_base['total_trades']:>10}      {m_bp['total_trades']:>10}      {m_bp['total_trades'] - m_base['total_trades']:>+8}")
-    print(f"    胜率:       {m_base['win_rate']*100:>9.2f}%     {m_bp['win_rate']*100:>9.2f}%     {m_bp['win_rate']*100 - m_base['win_rate']*100:>+9.2f}%")
-    print(f"    盈亏比:     {m_base['profit_factor']:>10.2f}     {m_bp['profit_factor']:>10.2f}     {m_bp['profit_factor'] - m_base['profit_factor']:>+9.2f}")
-    print(f"    最大回撤:   {m_base['max_drawdown_pct']:>9.2f}%     {m_bp['max_drawdown_pct']:>9.2f}%     {m_bp['max_drawdown_pct'] - m_base['max_drawdown_pct']:>+9.2f}%")
-    print(f"    夏普比:     {m_base['sharpe_ratio']:>10.4f}     {m_bp['sharpe_ratio']:>10.4f}     {m_bp['sharpe_ratio'] - m_base['sharpe_ratio']:>+9.4f}")
+    print(
+        f"    总收益:     {m_base['total_return_pct']:>+10.2f}%    {m_bp['total_return_pct']:>+10.2f}%    {m_bp['total_return_pct'] - m_base['total_return_pct']:>+9.2f}%"
+    )
+    print(
+        f"    交易数:     {m_base['total_trades']:>10}      {m_bp['total_trades']:>10}      {m_bp['total_trades'] - m_base['total_trades']:>+8}"
+    )
+    print(
+        f"    胜率:       {m_base['win_rate']*100:>9.2f}%     {m_bp['win_rate']*100:>9.2f}%     {m_bp['win_rate']*100 - m_base['win_rate']*100:>+9.2f}%"
+    )
+    print(
+        f"    盈亏比:     {m_base['profit_factor']:>10.2f}     {m_bp['profit_factor']:>10.2f}     {m_bp['profit_factor'] - m_base['profit_factor']:>+9.2f}"
+    )
+    print(
+        f"    最大回撤:   {m_base['max_drawdown_pct']:>9.2f}%     {m_bp['max_drawdown_pct']:>9.2f}%     {m_bp['max_drawdown_pct'] - m_base['max_drawdown_pct']:>+9.2f}%"
+    )
+    print(
+        f"    夏普比:     {m_base['sharpe_ratio']:>10.4f}     {m_bp['sharpe_ratio']:>10.4f}     {m_bp['sharpe_ratio'] - m_base['sharpe_ratio']:>+9.4f}"
+    )
 
     # 子形态分布统计
     bp_trades = r_bp.get("trades", [])
@@ -91,8 +104,10 @@ for coin in coins:
 print("\n" + "=" * 110)
 print("  Phase B+ 子形态微调 对比汇总")
 print("=" * 110)
-print(f"  {'币种':>6}  {'模式':>8}  {'总收益':>10}  {'交易数':>6}  {'胜率':>7}  "
-      f"{'盈亏比':>7}  {'最大回撤':>9}  {'夏普':>9}  {'Calmar':>8}")
+print(
+    f"  {'币种':>6}  {'模式':>8}  {'总收益':>10}  {'交易数':>6}  {'胜率':>7}  "
+    f"{'盈亏比':>7}  {'最大回撤':>9}  {'夏普':>9}  {'Calmar':>8}"
+)
 print("-" * 110)
 
 valid = [(c, b, p) for c, b, p in all_results if "error" not in b and "error" not in p]
@@ -100,9 +115,11 @@ for coin, r_base, r_bp in valid:
     for label, r in [("A+", r_base), ("B+", r_bp)]:
         m = r["metrics"]
         calmar = (m["total_return_pct"] / m["max_drawdown_pct"]) if m["max_drawdown_pct"] > 0 else 0
-        print(f"  {coin:>6}  {label:>8}  {m['total_return_pct']:>+9.2f}%  {m['total_trades']:>6}  "
-              f"{m['win_rate']*100:>6.2f}%  {m['profit_factor']:>7.2f}  "
-              f"{m['max_drawdown_pct']:>8.2f}%  {m['sharpe_ratio']:>9.4f}  {calmar:>8.2f}")
+        print(
+            f"  {coin:>6}  {label:>8}  {m['total_return_pct']:>+9.2f}%  {m['total_trades']:>6}  "
+            f"{m['win_rate']*100:>6.2f}%  {m['profit_factor']:>7.2f}  "
+            f"{m['max_drawdown_pct']:>8.2f}%  {m['sharpe_ratio']:>9.4f}  {calmar:>8.2f}"
+        )
     print("-" * 110)
 
 # ── 均值对比与决策 ──
@@ -110,8 +127,10 @@ if not valid:
     print("\n  无有效回测结果，退出")
     sys.exit(1)
 
+
 def avg(rs, key):
     return sum(r["metrics"][key] for r in rs) / len(rs)
+
 
 base_rs = [b for _, b, _ in valid]
 bp_rs = [p for _, _, p in valid]
@@ -130,11 +149,21 @@ calmar_p = avg_ret_p / avg_dd_p if avg_dd_p > 0 else 0
 print(f"\n  均值对比 (n={len(valid)} 币种):")
 print(f"  {'指标':>12}  {'BASE(A+)':>12}  {'B+(子形态)':>12}  {'差值':>10}  {'判定':>8}")
 print(f"  {'-'*68}")
-print(f"  {'平均收益':>12}  {avg_ret_b:>11.2f}%  {avg_ret_p:>11.2f}%  {avg_ret_p-avg_ret_b:>+9.2f}%  {'✅' if avg_ret_p>avg_ret_b else '❌'}")
-print(f"  {'平均胜率':>12}  {avg_wr_b*100:>11.2f}%  {avg_wr_p*100:>11.2f}%  {(avg_wr_p-avg_wr_b)*100:>+9.2f}%  {'✅' if avg_wr_p>avg_wr_b else '❌'}")
-print(f"  {'平均回撤':>12}  {avg_dd_b:>11.2f}%  {avg_dd_p:>11.2f}%  {avg_dd_p-avg_dd_b:>+9.2f}%  {'✅' if avg_dd_p<=avg_dd_b+2 else '❌'}")
-print(f"  {'平均夏普':>12}  {avg_sh_b:>12.4f}  {avg_sh_p:>12.4f}  {avg_sh_p-avg_sh_b:>+10.4f}  {'✅' if avg_sh_p>avg_sh_b else '❌'}")
-print(f"  {'Calmar':>12}  {calmar_b:>12.2f}  {calmar_p:>12.2f}  {calmar_p-calmar_b:>+10.2f}  {'✅' if calmar_p>calmar_b else '❌'}")
+print(
+    f"  {'平均收益':>12}  {avg_ret_b:>11.2f}%  {avg_ret_p:>11.2f}%  {avg_ret_p-avg_ret_b:>+9.2f}%  {'✅' if avg_ret_p>avg_ret_b else '❌'}"
+)
+print(
+    f"  {'平均胜率':>12}  {avg_wr_b*100:>11.2f}%  {avg_wr_p*100:>11.2f}%  {(avg_wr_p-avg_wr_b)*100:>+9.2f}%  {'✅' if avg_wr_p>avg_wr_b else '❌'}"
+)
+print(
+    f"  {'平均回撤':>12}  {avg_dd_b:>11.2f}%  {avg_dd_p:>11.2f}%  {avg_dd_p-avg_dd_b:>+9.2f}%  {'✅' if avg_dd_p<=avg_dd_b+2 else '❌'}"
+)
+print(
+    f"  {'平均夏普':>12}  {avg_sh_b:>12.4f}  {avg_sh_p:>12.4f}  {avg_sh_p-avg_sh_b:>+10.4f}  {'✅' if avg_sh_p>avg_sh_b else '❌'}"
+)
+print(
+    f"  {'Calmar':>12}  {calmar_b:>12.2f}  {calmar_p:>12.2f}  {calmar_p-calmar_b:>+10.2f}  {'✅' if calmar_p>calmar_b else '❌'}"
+)
 print(f"  {'-'*68}")
 
 # ── 落地决策 ──
@@ -143,7 +172,7 @@ wr_up = avg_wr_p > avg_wr_b
 dd_ok = avg_dd_p <= avg_dd_b + 2.0
 calmar_up = calmar_p > calmar_b
 
-print(f"\n  落地门槛校验:")
+print("\n  落地门槛校验:")
 print(f"    1. 平均收益提升:   {'✅' if ret_up else '❌'} ({avg_ret_p-avg_ret_b:+.2f}%)")
 print(f"    2. 平均胜率提升:   {'✅' if wr_up else '❌'} ({(avg_wr_p-avg_wr_b)*100:+.2f}%)")
 print(f"    3. 回撤不恶化>2pp: {'✅' if dd_ok else '❌'} ({avg_dd_p-avg_dd_b:+.2f}%)")
@@ -151,7 +180,9 @@ print(f"    4. Calmar 提升:    {'✅' if calmar_up else '❌'} ({calmar_p-calm
 
 # 门槛：Calmar + 胜率 同比提升，且回撤不恶化 >2pp
 pass_gate = calmar_up and wr_up and dd_ok
-print(f"\n  最终决策: {'✅ 通过 → 可部署 Phase B+ 到实盘' if pass_gate else '❌ 未通过 → 回退 Phase A+'}")
+print(
+    f"\n  最终决策: {'✅ 通过 → 可部署 Phase B+ 到实盘' if pass_gate else '❌ 未通过 → 回退 Phase A+'}"
+)
 
 # 保存结果
 output_file = BASE_DIR / "data" / "phase_b_plus_result.json"
@@ -159,7 +190,11 @@ output = {
     "date": "2026-08-06",
     "phase": "B+",
     "description": "Phase A+ + 宏观二分下Elder-ray子形态 TP/holding 小幅微调",
-    "config": {**COMMON_KW, "subregime_enabled": True, "subregime_mults": "DEFAULT_SUBREGIME_MULTS"},
+    "config": {
+        **COMMON_KW,
+        "subregime_enabled": True,
+        "subregime_mults": "DEFAULT_SUBREGIME_MULTS",
+    },
     "summary": {
         "avg_return_pct": round(avg_ret_p, 2),
         "avg_max_drawdown_pct": round(avg_dd_p, 2),

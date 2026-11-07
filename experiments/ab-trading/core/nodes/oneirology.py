@@ -5,7 +5,7 @@
 SKILL.md 调用路径: experiments/ab-trading/core/nodes/oneirology
 """
 
-from typing import Dict, Any, List
+from typing import Any, Dict
 
 
 def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
@@ -59,7 +59,7 @@ def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
     if compulsive:
         reasoning.append(f"⚠️ [强迫性重复] 连续{hold_streak}次HOLD，系统在回避什么？")
     else:
-        reasoning.append(f"✅ 无强迫性重复模式")
+        reasoning.append("✅ 无强迫性重复模式")
 
     # ── Step 3: 反事实推演 ───────────────────────────────────────────
     suggestions = []
@@ -72,23 +72,23 @@ def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
         rsi = mkt.get("rsi14", 50)
         price = mkt.get("price", 0)
         ema20 = mkt.get("ema20", price)
-        ema50 = mkt.get("ema50", price)
+        ema50 = mkt.get("ema50", price)  # noqa: F841
 
         if regime == "TREND_UP":
             suggestions.append("市场处于上升趋势，但系统连续HOLD，可能错失机会")
             if price > ema20:
                 direction = "LONG"
                 confidence = min(0.50 + hold_streak * 0.03, 0.75)
-                reasoning.append(f"  → 反事实建议: 在上升趋势中应做多，当前价格>EMA20")
+                reasoning.append("  → 反事实建议: 在上升趋势中应做多，当前价格>EMA20")
         elif regime == "TREND_DOWN":
             suggestions.append("市场处于下降趋势，但系统连续HOLD，可能是抄底冲动")
             if price < ema20:
                 direction = "SHORT"
                 confidence = min(0.50 + hold_streak * 0.03, 0.75)
-                reasoning.append(f"  → 反事实建议: 在下降趋势中应做空，当前价格<EMA20")
+                reasoning.append("  → 反事实建议: 在下降趋势中应做空，当前价格<EMA20")
         else:
             suggestions.append("震荡市中连续HOLD可能是合理的，但应关注突破信号")
-            reasoning.append(f"  → 建议: 降低门禁门槛或切换策略类型")
+            reasoning.append("  → 建议: 降低门禁门槛或切换策略类型")
 
         # RSI 分析
         if rsi > 60 and regime != "TREND_DOWN":

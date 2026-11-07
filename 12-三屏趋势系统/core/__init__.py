@@ -62,7 +62,7 @@ try:
         calc_trend_direction_dynamic,
     )
 except ImportError:
-    from composite_predictor import (
+    from composite_predictor import (  # noqa: I001
         CompositePredictor,
         create_composite_predictor,
         predict_from_dataframes,

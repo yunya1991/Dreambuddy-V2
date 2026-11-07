@@ -35,10 +35,10 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, asdict, field
+from collections import Counter, defaultdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from collections import defaultdict, Counter
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +47,11 @@ logger = logging.getLogger(__name__)
 # 数据类型定义
 # ============================================================
 
+
 @dataclass
 class TradeAnalysisResult:
     """单笔交易分析结果"""
+
     trade_id: str
     symbol: str
     direction: str
@@ -81,6 +83,7 @@ class TradeAnalysisResult:
 @dataclass
 class ModuleCapability:
     """模块能力评估结果"""
+
     module_id: str
     module_name: str
     total_trades: int
@@ -88,10 +91,10 @@ class ModuleCapability:
     avg_pnl: float
     max_win: float
     max_loss: float
-    accuracy: float          # 方向判断准确率
-    success_rate: float      # 交易胜率
-    profit_factor: float     # 盈亏比
-    stability_score: float   # 稳定性评分
+    accuracy: float  # 方向判断准确率
+    success_rate: float  # 交易胜率
+    profit_factor: float  # 盈亏比
+    stability_score: float  # 稳定性评分
     timeliness_score: float  # 时效性评分
 
     # 场景细分表现
@@ -104,6 +107,7 @@ class ModuleCapability:
 @dataclass
 class BacktestModuleResult:
     """模块回测结果"""
+
     module_ids: List[str]
     scenario: str
     period: str
@@ -123,6 +127,7 @@ class BacktestModuleResult:
 @dataclass
 class OrchestrationRecommendation:
     """编排推荐结果"""
+
     scenario: str
     recommended_chain: str
     recommended_nodes: List[str]
@@ -138,6 +143,7 @@ class OrchestrationRecommendation:
 @dataclass
 class TradingAnalysisReport:
     """交易分析评估报告"""
+
     report_id: str
     generated_at: str
     analyzed_trades: int
@@ -155,47 +161,53 @@ class TradingAnalysisReport:
     backtest_results: List[BacktestModuleResult] = field(default_factory=list)
 
     # 编排推荐
-    orchestration_recommendations: Dict[str, OrchestrationRecommendation] = field(default_factory=dict)
+    orchestration_recommendations: Dict[str, OrchestrationRecommendation] = field(
+        default_factory=dict
+    )
 
     # 改进建议
     improvement_suggestions: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         result = asdict(self)
-        result["module_capabilities"] = {k: v.to_dict() for k, v in self.module_capabilities.items()}
+        result["module_capabilities"] = {
+            k: v.to_dict() for k, v in self.module_capabilities.items()
+        }
         result["backtest_results"] = [r.to_dict() for r in self.backtest_results]
-        result["orchestration_recommendations"] = {k: v.to_dict() for k, v in self.orchestration_recommendations.items()}
+        result["orchestration_recommendations"] = {
+            k: v.to_dict() for k, v in self.orchestration_recommendations.items()
+        }
         return result
 
     def to_markdown(self) -> str:
         """生成 Markdown 格式报告"""
         lines = []
-        lines.append(f"# 交易分析评估报告")
+        lines.append("# 交易分析评估报告")
         lines.append(f"**报告ID**: {self.report_id}")
         lines.append(f"**生成时间**: {self.generated_at}")
-        lines.append(f"\n## 概览")
+        lines.append("\n## 概览")
         lines.append(f"- 分析交易数: {self.analyzed_trades}")
         lines.append(f"- 盈利交易数: {self.profitable_trades}")
         lines.append(f"- 胜率: {self.profitable_trades/self.analyzed_trades*100:.1f}%")
         lines.append(f"- 平均盈亏: {self.avg_pnl:.2f}%")
 
-        lines.append(f"\n## 亏损原因分布")
+        lines.append("\n## 亏损原因分布")
         for reason, count in self.top_loss_reasons:
             rate = count / self.analyzed_trades * 100
             lines.append(f"- **{reason}**: {count} 次 ({rate:.1f}%)")
 
-        lines.append(f"\n## 模块能力评估")
+        lines.append("\n## 模块能力评估")
         for mid, cap in self.module_capabilities.items():
             lines.append(f"\n### {mid} - {cap.module_name}")
-            lines.append(f"| 指标 | 值 |")
-            lines.append(f"|------|-----|")
+            lines.append("| 指标 | 值 |")
+            lines.append("|------|-----|")
             lines.append(f"| 交易数 | {cap.total_trades} |")
             lines.append(f"| 胜率 | {cap.success_rate*100:.1f}% |")
             lines.append(f"| 准确率 | {cap.accuracy*100:.1f}% |")
             lines.append(f"| 盈亏比 | {cap.profit_factor:.2f} |")
             lines.append(f"| 稳定性 | {cap.stability_score:.2f} |")
 
-        lines.append(f"\n## 编排推荐")
+        lines.append("\n## 编排推荐")
         for scenario, rec in self.orchestration_recommendations.items():
             lines.append(f"\n### {scenario}")
             lines.append(f"- **推荐链路**: {rec.recommended_chain}")
@@ -204,7 +216,7 @@ class TradingAnalysisReport:
             lines.append(f"- **预期改进**: {rec.expected_improvement*100:.1f}%")
             lines.append(f"- **理由**: {rec.reasoning}")
 
-        lines.append(f"\n## 改进建议")
+        lines.append("\n## 改进建议")
         for i, suggestion in enumerate(self.improvement_suggestions, 1):
             lines.append(f"{i}. {suggestion}")
 
@@ -214,6 +226,7 @@ class TradingAnalysisReport:
 # ============================================================
 # 核心评估器
 # ============================================================
+
 
 class TradingAnalysisEvaluator:
     """交易分析评估器 — Dream OS 交易系统的核心组件
@@ -251,8 +264,9 @@ class TradingAnalysisEvaluator:
         },
         "TREND_FILTER": {
             "description": "趋势过滤失效",
-            "detect": lambda trade: (trade.get("scenario", "").startswith("NEUTRAL") and
-                                     trade.get("pnl_percent", 0) < -2),
+            "detect": lambda trade: (
+                trade.get("scenario", "").startswith("NEUTRAL") and trade.get("pnl_percent", 0) < -2
+            ),
             "weight": 0.15,
         },
         "SIGNAL_QUALITY": {
@@ -267,22 +281,27 @@ class TradingAnalysisEvaluator:
         },
         "STOP_LOSS": {
             "description": "止损设置不合理",
-            "detect": lambda trade: (trade.get("pnl_percent", 0) < -3 and
-                                     trade.get("stop_loss_hit", False)),
+            "detect": lambda trade: (
+                trade.get("pnl_percent", 0) < -3 and trade.get("stop_loss_hit", False)
+            ),
             "weight": 0.1,
         },
         "TAKE_PROFIT": {
             "description": "止盈设置不合理",
-            "detect": lambda trade: (trade.get("pnl_percent", 0) > 0 and
-                                     trade.get("pnl_percent", 0) < 1 and
-                                     trade.get("take_profit_hit", False)),
+            "detect": lambda trade: (
+                trade.get("pnl_percent", 0) > 0
+                and trade.get("pnl_percent", 0) < 1
+                and trade.get("take_profit_hit", False)
+            ),
             "weight": 0.08,
         },
         "VOLATILITY": {
             "description": "波动率估计偏差",
-            "detect": lambda trade: abs(trade.get("actual_volatility", 0) -
-                                        trade.get("estimated_volatility", 0)) /
-                                    max(trade.get("estimated_volatility", 1), 0.001) > 0.5,
+            "detect": lambda trade: abs(
+                trade.get("actual_volatility", 0) - trade.get("estimated_volatility", 0)
+            )
+            / max(trade.get("estimated_volatility", 1), 0.001)
+            > 0.5,
             "weight": 0.08,
         },
         "MOMENTUM": {
@@ -321,7 +340,9 @@ class TradingAnalysisEvaluator:
 
     # ── 1. 亏损原因分析 ──────────────────────────────────────
 
-    def analyze_loss_reasons(self, trade_history: Optional[List[Dict[str, Any]]] = None) -> List[TradeAnalysisResult]:
+    def analyze_loss_reasons(
+        self, trade_history: Optional[List[Dict[str, Any]]] = None
+    ) -> List[TradeAnalysisResult]:
         """分析交易亏损原因
 
         Args:
@@ -374,7 +395,9 @@ class TradingAnalysisEvaluator:
                 loss_reason_scores[reason_code] = rule["weight"]
 
         result.loss_reason_scores = loss_reason_scores
-        result.loss_reasons = sorted(loss_reason_scores.keys(), key=lambda x: -loss_reason_scores[x])
+        result.loss_reasons = sorted(
+            loss_reason_scores.keys(), key=lambda x: -loss_reason_scores[x]
+        )
 
         if result.loss_reasons:
             result.root_cause = result.loss_reasons[0]
@@ -383,7 +406,9 @@ class TradingAnalysisEvaluator:
 
         return result
 
-    def _identify_module_issues(self, trade: Dict[str, Any], loss_scores: Dict[str, float]) -> List[str]:
+    def _identify_module_issues(
+        self, trade: Dict[str, Any], loss_scores: Dict[str, float]
+    ) -> List[str]:
         """根据亏损原因识别问题模块"""
         issues = []
         reason_to_modules = {
@@ -408,8 +433,9 @@ class TradingAnalysisEvaluator:
 
     # ── 2. 模块能力评估 ──────────────────────────────────────
 
-    def evaluate_module_capabilities(self,
-                                     trade_history: Optional[List[Dict[str, Any]]] = None) -> Dict[str, ModuleCapability]:
+    def evaluate_module_capabilities(
+        self, trade_history: Optional[List[Dict[str, Any]]] = None
+    ) -> Dict[str, ModuleCapability]:
         """评估各模块的能力
 
         Returns:
@@ -419,7 +445,7 @@ class TradingAnalysisEvaluator:
         if not history:
             return {}
 
-        closed_trades = self._filter_closed_trades(history)
+        closed_trades = self._filter_closed_trades(history)  # noqa: F841
         all_trades = history
 
         module_trades = defaultdict(list)
@@ -436,18 +462,32 @@ class TradingAnalysisEvaluator:
         self._module_cache = capabilities
         return capabilities
 
-    def _evaluate_single_module(self, module_id: str, 
-                                all_trades: List[Dict[str, Any]],
-                                closed_trades: List[Dict[str, Any]]) -> ModuleCapability:
+    def _evaluate_single_module(
+        self, module_id: str, all_trades: List[Dict[str, Any]], closed_trades: List[Dict[str, Any]]
+    ) -> ModuleCapability:
         """评估单个模块的能力，融合实际交易和编排记忆数据"""
         module_names = {
-            "A0": "矛盾论分析", "A1": "深度调研", "A2": "综合分析",
-            "A3": "策略制定", "A4": "决策门禁", "A5": "执行规划",
-            "A6": "市态监控", "A7": "实践门禁", "A8": "统一升华", "A9": "离场策略",
-            "C1": "技术扫描", "C2": "动量分析", "C3": "波动率分析", "C5": "离场系统",
-            "F1": "新闻分析", "F2": "资金流分析", "F3": "估值分析",
-            "F4": "链上数据", "F5": "宏观分析",
-            "G1": "风控", "G2": "治理",
+            "A0": "矛盾论分析",
+            "A1": "深度调研",
+            "A2": "综合分析",
+            "A3": "策略制定",
+            "A4": "决策门禁",
+            "A5": "执行规划",
+            "A6": "市态监控",
+            "A7": "实践门禁",
+            "A8": "统一升华",
+            "A9": "离场策略",
+            "C1": "技术扫描",
+            "C2": "动量分析",
+            "C3": "波动率分析",
+            "C5": "离场系统",
+            "F1": "新闻分析",
+            "F2": "资金流分析",
+            "F3": "估值分析",
+            "F4": "链上数据",
+            "F5": "宏观分析",
+            "G1": "风控",
+            "G2": "治理",
         }
 
         memory_stats = self._get_module_memory_stats(module_id)
@@ -467,7 +507,9 @@ class TradingAnalysisEvaluator:
             losses = [abs(p) for p in pnls if p < 0]
             profit_factor = sum(wins) / sum(losses) if losses else 1.0
         elif memory_stats:
-            winning_trades = int(memory_stats.get("sample_count", 0) * memory_stats.get("win_rate", 0.5))
+            winning_trades = int(
+                memory_stats.get("sample_count", 0) * memory_stats.get("win_rate", 0.5)
+            )
             avg_pnl = memory_stats.get("return", 0) * 100
             max_win = avg_pnl * 2 if avg_pnl > 0 else 0
             max_loss = avg_pnl * 1.5 if avg_pnl < 0 else 0
@@ -486,7 +528,9 @@ class TradingAnalysisEvaluator:
         timeliness_score = self._calculate_timeliness(all_trades)
 
         if memory_stats:
-            stability_score = max(stability_score, min(1.0, 0.5 + memory_stats.get("sharpe", 0) * 0.05))
+            stability_score = max(
+                stability_score, min(1.0, 0.5 + memory_stats.get("sharpe", 0) * 0.05)
+            )
 
         scenario_performance = self._calculate_scenario_performance(module_id, all_trades)
 
@@ -512,7 +556,7 @@ class TradingAnalysisEvaluator:
         stats = {"sample_count": 0, "win_rate": 0, "return": 0, "sharpe": 0, "profit_factor": 1.0}
 
         total_weight = 0
-        for scenario, info in scenarios.items():
+        for scenario, info in scenarios.items():  # noqa: B007
             nodes = info.get("nodes", [])
             if module_id in nodes:
                 metrics = info.get("metrics", {})
@@ -541,7 +585,9 @@ class TradingAnalysisEvaluator:
         for trade in trades:
             direction = trade.get("direction", "")
             actual_move = trade.get("exit_price", 0) - trade.get("entry_price", 0)
-            if (direction == "LONG" and actual_move > 0) or (direction == "SHORT" and actual_move < 0):
+            if (direction == "LONG" and actual_move > 0) or (
+                direction == "SHORT" and actual_move < 0
+            ):
                 correct += 1
         return correct / len(trades)
 
@@ -580,7 +626,9 @@ class TradingAnalysisEvaluator:
         ratio = abs(avg_holding - optimal_holding) / optimal_holding
         return max(0.1, min(1.0, 1.0 - ratio * 0.5))
 
-    def _calculate_scenario_performance(self, module_id: str, trades: List[Dict[str, Any]]) -> Dict[str, Dict[str, float]]:
+    def _calculate_scenario_performance(
+        self, module_id: str, trades: List[Dict[str, Any]]
+    ) -> Dict[str, Dict[str, float]]:
         """计算模块在不同场景下的表现"""
         by_scenario = defaultdict(list)
         for trade in trades:
@@ -604,11 +652,13 @@ class TradingAnalysisEvaluator:
 
     # ── 3. 模块回测 ──────────────────────────────────────────
 
-    def backtest_modules(self,
-                         module_ids: List[str],
-                         scenario: str,
-                         period: str = "90d",
-                         price_data: Optional[List[Dict[str, Any]]] = None) -> BacktestModuleResult:
+    def backtest_modules(
+        self,
+        module_ids: List[str],
+        scenario: str,
+        period: str = "90d",
+        price_data: Optional[List[Dict[str, Any]]] = None,
+    ) -> BacktestModuleResult:
         """回测指定模块组合在特定场景下的表现
 
         Args:
@@ -648,8 +698,13 @@ class TradingAnalysisEvaluator:
             profit_factor=round(profit_factor, 4),
         )
 
-    def _generate_backtest_trades(self, module_ids: List[str], scenario: str,
-                                   period: str, price_data: Optional[List[Dict[str, Any]]]) -> List[float]:
+    def _generate_backtest_trades(
+        self,
+        module_ids: List[str],
+        scenario: str,
+        period: str,
+        price_data: Optional[List[Dict[str, Any]]],
+    ) -> List[float]:
         """生成回测交易序列
 
         优先使用真实交易记录；无记录时基于模块能力指标生成确定性序列。
@@ -662,7 +717,7 @@ class TradingAnalysisEvaluator:
         real_trades: List[float] = []
         for mid in module_ids:
             cap = self._module_cache.get(mid)
-            if cap and hasattr(cap, 'recent_trades') and cap.recent_trades:
+            if cap and hasattr(cap, "recent_trades") and cap.recent_trades:
                 real_trades.extend(cap.recent_trades)
 
         if real_trades:
@@ -678,16 +733,21 @@ class TradingAnalysisEvaluator:
                 base_avg_pnl = (base_avg_pnl + cap.avg_pnl) / 2
 
         scenario_factor = {
-            "BULL": 1.1, "BEAR": 1.1, "NEUTRAL": 0.8,
+            "BULL": 1.1,
+            "BEAR": 1.1,
+            "NEUTRAL": 0.8,
         }.get(scenario.split("_")[0], 1.0)
 
         num_trades = {
-            "30d": 10, "60d": 20, "90d": 30, "180d": 60,
+            "30d": 10,
+            "60d": 20,
+            "90d": 30,
+            "180d": 60,
         }.get(period, 30)
 
         # 确定性序列：使用均匀分布的逆CDF替代 random.random()
         # 这确保相同输入始终产生相同输出（可复现）
-        import math
+
         trades = []
         adjusted_win_rate = min(0.95, base_win_rate * scenario_factor)
         for i in range(num_trades):
@@ -708,27 +768,31 @@ class TradingAnalysisEvaluator:
     def _calculate_max_drawdown(self, trades: List[float]) -> float:
         """计算最大回撤"""
         from dreamos.capabilities.trading.stats_utils import calculate_metrics
+
         metrics = calculate_metrics(trades, periods_per_year=365)
         return metrics.max_drawdown
 
     def _calculate_sharpe(self, pnls: List[float]) -> float:
         """计算年化夏普比率"""
         from dreamos.capabilities.trading.stats_utils import calculate_metrics
+
         metrics = calculate_metrics(pnls, periods_per_year=365)
         return metrics.sharpe_ratio
 
     def _calculate_sortino(self, pnls: List[float]) -> float:
         """计算年化 Sortino 比率"""
         from dreamos.capabilities.trading.stats_utils import calculate_metrics
+
         metrics = calculate_metrics(pnls, periods_per_year=365)
         return metrics.sortino_ratio
 
     # ── 4. 编排推荐 ──────────────────────────────────────────
 
-    def recommend_orchestration(self,
-                                scenarios: Optional[List[str]] = None,
-                                module_capabilities: Optional[Dict[str, ModuleCapability]] = None) -> \
-            Dict[str, OrchestrationRecommendation]:
+    def recommend_orchestration(
+        self,
+        scenarios: Optional[List[str]] = None,
+        module_capabilities: Optional[Dict[str, ModuleCapability]] = None,
+    ) -> Dict[str, OrchestrationRecommendation]:
         """推荐最优节点编排
 
         Args:
@@ -752,8 +816,9 @@ class TradingAnalysisEvaluator:
 
         return recommendations
 
-    def _generate_recommendation(self, scenario: str,
-                                  module_capabilities: Dict[str, ModuleCapability]) -> OrchestrationRecommendation:
+    def _generate_recommendation(
+        self, scenario: str, module_capabilities: Dict[str, ModuleCapability]
+    ) -> OrchestrationRecommendation:
         """为单个场景生成编排推荐，融合模块能力评估和编排记忆数据"""
         parts = scenario.split("_")
         trend = parts[0]
@@ -767,18 +832,20 @@ class TradingAnalysisEvaluator:
 
         module_scores = {}
         for mid, cap in module_capabilities.items():
-            base_score = (cap.accuracy * self.CAPABILITY_WEIGHTS["accuracy"] +
-                          cap.success_rate * self.CAPABILITY_WEIGHTS["success_rate"] +
-                          cap.profit_factor * self.CAPABILITY_WEIGHTS["profit_factor"] +
-                          cap.stability_score * self.CAPABILITY_WEIGHTS["stability_score"] +
-                          cap.timeliness_score * self.CAPABILITY_WEIGHTS["timeliness_score"])
+            base_score = (
+                cap.accuracy * self.CAPABILITY_WEIGHTS["accuracy"]
+                + cap.success_rate * self.CAPABILITY_WEIGHTS["success_rate"]
+                + cap.profit_factor * self.CAPABILITY_WEIGHTS["profit_factor"]
+                + cap.stability_score * self.CAPABILITY_WEIGHTS["stability_score"]
+                + cap.timeliness_score * self.CAPABILITY_WEIGHTS["timeliness_score"]
+            )
 
             scenario_pf = cap.scenario_performance.get(scenario)
             if scenario_pf and scenario_pf["win_rate"] > 0.5:
-                base_score *= (1 + scenario_pf["win_rate"] * 0.2)
+                base_score *= 1 + scenario_pf["win_rate"] * 0.2
 
             if mid in memory_nodes:
-                base_score *= (1 + memory_score * 0.3)
+                base_score *= 1 + memory_score * 0.3
 
             module_scores[mid] = base_score
 
@@ -811,8 +878,12 @@ class TradingAnalysisEvaluator:
             selected_nodes = template
 
         avg_score = sum(module_scores.get(mid, 0.5) for mid in selected_nodes) / len(selected_nodes)
-        
-        memory_confidence = min(1.0, memory_score + memory_metrics.get("win_rate", 0.5) * 0.2) if memory_score > 0 else 0
+
+        memory_confidence = (
+            min(1.0, memory_score + memory_metrics.get("win_rate", 0.5) * 0.2)
+            if memory_score > 0
+            else 0
+        )
         confidence = min(1.0, avg_score * 0.5 + memory_confidence * 0.5)
 
         strong_modules = [mid for mid, score in scored_nodes[:3] if score > 0.6]
@@ -836,7 +907,9 @@ class TradingAnalysisEvaluator:
             reasoning=reasoning,
             expected_improvement=round((confidence - 0.5) * 0.5, 4),
             evidence={
-                "module_scores": {mid: round(module_scores.get(mid, 0), 4) for mid in selected_nodes},
+                "module_scores": {
+                    mid: round(module_scores.get(mid, 0), 4) for mid in selected_nodes
+                },
                 "chain_template": template,
                 "memory_best_pattern": memory_pattern,
                 "memory_score": memory_score,
@@ -846,8 +919,9 @@ class TradingAnalysisEvaluator:
 
     # ── 5. 生成完整报告 ──────────────────────────────────────
 
-    def generate_report(self, trade_history: List[Dict[str, Any]],
-                        scenarios: Optional[List[str]] = None) -> TradingAnalysisReport:
+    def generate_report(
+        self, trade_history: List[Dict[str, Any]], scenarios: Optional[List[str]] = None
+    ) -> TradingAnalysisReport:
         """生成完整的交易分析评估报告"""
         self._trade_history = trade_history
 
@@ -892,9 +966,9 @@ class TradingAnalysisEvaluator:
             improvement_suggestions=suggestions,
         )
 
-    def _generate_improvement_suggestions(self,
-                                           loss_reasons: Counter,
-                                           capabilities: Dict[str, ModuleCapability]) -> List[str]:
+    def _generate_improvement_suggestions(
+        self, loss_reasons: Counter, capabilities: Dict[str, ModuleCapability]
+    ) -> List[str]:
         """生成改进建议"""
         suggestions = []
 
@@ -914,9 +988,13 @@ class TradingAnalysisEvaluator:
         # 根据模块能力生成建议
         for mid, cap in capabilities.items():
             if cap.success_rate < 0.4:
-                suggestions.append(f"模块 {mid} 胜率偏低 ({cap.success_rate*100:.1f}%)，建议检查逻辑或考虑替换")
+                suggestions.append(
+                    f"模块 {mid} 胜率偏低 ({cap.success_rate*100:.1f}%)，建议检查逻辑或考虑替换"
+                )
             if cap.stability_score < 0.3:
-                suggestions.append(f"模块 {mid} 稳定性不足 ({cap.stability_score:.2f})，建议增加风控")
+                suggestions.append(
+                    f"模块 {mid} 稳定性不足 ({cap.stability_score:.2f})，建议增加风控"
+                )
 
         return suggestions[:10]
 

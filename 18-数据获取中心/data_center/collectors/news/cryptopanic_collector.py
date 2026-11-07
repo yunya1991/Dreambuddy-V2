@@ -9,6 +9,7 @@
   GET /api/v1/posts/?auth_token=KEY&kind=news
   GET /api/v1/posts/?auth_token=KEY&currencies=BTC
 """
+
 from __future__ import annotations
 
 import os
@@ -34,10 +35,7 @@ class CryptoPanicCollector(BaseCollector):
 
     def __init__(self, config: dict | None = None):
         super().__init__(config)
-        self._api_key: str = (
-            self.config.get("api_key")
-            or os.environ.get("CRYPTOPANIC_API_KEY", "")
-        )
+        self._api_key: str = self.config.get("api_key") or os.environ.get("CRYPTOPANIC_API_KEY", "")
 
     def is_available(self) -> bool:
         return bool(self._api_key)
@@ -78,16 +76,22 @@ class CryptoPanicCollector(BaseCollector):
                 bearish_count += 1
             if votes.get("important"):
                 important_count += 1
-            events.append({
-                "title": post.get("title", "")[:200],
-                "url": post.get("url", ""),
-                "published": post.get("published_at", ""),
-                "source": post.get("source", {}).get("name", ""),
-                "bullish": votes.get("liked", 0),
-                "bearish": votes.get("disliked", 0),
-            })
+            events.append(
+                {
+                    "title": post.get("title", "")[:200],
+                    "url": post.get("url", ""),
+                    "published": post.get("published_at", ""),
+                    "source": post.get("source", {}).get("name", ""),
+                    "bullish": votes.get("liked", 0),
+                    "bearish": votes.get("disliked", 0),
+                }
+            )
 
-        sentiment = "bullish" if bullish_count > bearish_count else "bearish" if bearish_count > bullish_count else "neutral"
+        sentiment = (
+            "bullish"
+            if bullish_count > bearish_count
+            else "bearish" if bearish_count > bullish_count else "neutral"
+        )
         total = bullish_count + bearish_count
         bull_ratio = bullish_count / total if total > 0 else 0
 

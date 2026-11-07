@@ -9,8 +9,9 @@
 核心原则：底部只加不减，方向向上。
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import numpy as np
@@ -81,10 +82,12 @@ class BottomConfirmStrategy(EnhancedMA200Strategy):
         self.confirm_above_mid_days = confirm_above_mid_days
         self.confirm_boost_pct = confirm_boost_pct
 
-        self.stats.update({
-            "bb_accel_days": 0,
-            "bottom_confirmed_days": 0,
-        })
+        self.stats.update(
+            {
+                "bb_accel_days": 0,
+                "bottom_confirmed_days": 0,
+            }
+        )
 
     def _compute_bollinger_bands(self, close: np.ndarray) -> tuple:
         n = len(close)
@@ -92,7 +95,7 @@ class BottomConfirmStrategy(EnhancedMA200Strategy):
         mid = np.full(n, np.nan)
         lower = np.full(n, np.nan)
         for i in range(self.bb_period - 1, n):
-            window = close[i - self.bb_period + 1:i + 1]
+            window = close[i - self.bb_period + 1 : i + 1]
             m = np.mean(window)
             s = np.std(window)
             mid[i] = m
@@ -105,7 +108,9 @@ class BottomConfirmStrategy(EnhancedMA200Strategy):
         positions = np.zeros(n)
         close = prices["close"].values
 
-        ma_series = pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        ma_series = (
+            pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        )
         ma = ma_series.values
 
         ma_slope = np.zeros(n)
@@ -113,10 +118,20 @@ class BottomConfirmStrategy(EnhancedMA200Strategy):
             if not np.isnan(ma[i]) and not np.isnan(ma[i - self.slope_period]):
                 ma_slope[i] = (ma[i] / ma[i - self.slope_period] - 1) * 100
 
-        weekly_ma200 = self._compute_weekly_ma200(prices) if (self.is_btc and self.weekly_ma200_dip_buy) else None
-        btc_regime = self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        weekly_ma200 = (
+            self._compute_weekly_ma200(prices)
+            if (self.is_btc and self.weekly_ma200_dip_buy)
+            else None
+        )
+        btc_regime = (
+            self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        )
 
-        bb_upper, bb_mid, bb_lower = self._compute_bollinger_bands(close) if (self.use_bb_accel or self.use_bottom_confirm) else (None, None, None)
+        bb_upper, bb_mid, bb_lower = (
+            self._compute_bollinger_bands(close)
+            if (self.use_bb_accel or self.use_bottom_confirm)
+            else (None, None, None)
+        )
 
         last_state = "init"
         short_entry_price = None
@@ -140,15 +155,20 @@ class BottomConfirmStrategy(EnhancedMA200Strategy):
             if self.is_btc:
                 # 计算基础抄底仓位
                 base_dip_pos = 0.0
-                if self.weekly_ma200_dip_buy and not np.isnan(weekly_ma200[i]) and weekly_ma200[i] > 0:
+                if (
+                    self.weekly_ma200_dip_buy
+                    and not np.isnan(weekly_ma200[i])
+                    and weekly_ma200[i] > 0
+                ):
                     weekly_below_pct = (weekly_ma200[i] - close[i]) / weekly_ma200[i] * 100
                     if weekly_below_pct > 0:
                         levels_filled = min(
-                            int(weekly_below_pct / self.dip_buy_step_pct),
-                            self.dip_buy_levels
+                            int(weekly_below_pct / self.dip_buy_step_pct), self.dip_buy_levels
                         )
                         if levels_filled > 0:
-                            base_dip_pos = (levels_filled / self.dip_buy_levels) * self.dip_buy_max_position
+                            base_dip_pos = (
+                                levels_filled / self.dip_buy_levels
+                            ) * self.dip_buy_max_position
 
                 if price_above and slope_pos:
                     # 牛市满仓
@@ -174,7 +194,11 @@ class BottomConfirmStrategy(EnhancedMA200Strategy):
                                 self.stats["bb_accel_days"] += 1
 
                         # 底部确认：站稳布林带中轨N天
-                        if self.use_bottom_confirm and bb_mid is not None and not np.isnan(bb_mid[i]):
+                        if (
+                            self.use_bottom_confirm
+                            and bb_mid is not None
+                            and not np.isnan(bb_mid[i])
+                        ):
                             if close[i] > bb_mid[i]:
                                 above_mid_count += 1
                                 if above_mid_count >= self.confirm_above_mid_days:
@@ -188,7 +212,9 @@ class BottomConfirmStrategy(EnhancedMA200Strategy):
 
                         target_pos = min(
                             base_dip_pos + extra_pos,
-                            self.dip_buy_max_position + self.bb_lower_accel_pct + self.confirm_boost_pct
+                            self.dip_buy_max_position
+                            + self.bb_lower_accel_pct
+                            + self.confirm_boost_pct,
                         )
 
                         self.stats["dip_buy_days"] += 1
@@ -211,7 +237,11 @@ class BottomConfirmStrategy(EnhancedMA200Strategy):
                         if base_short > 0 and short_entry_price is None:
                             short_entry_price = close[i]
 
-                        if base_short > 0 and short_entry_price is not None and self.fib_take_profit:
+                        if (
+                            base_short > 0
+                            and short_entry_price is not None
+                            and self.fib_take_profit
+                        ):
                             fib_pos = self._calc_fib_tp_position(
                                 close[i], short_entry_price, True, base_short
                             )
@@ -230,7 +260,7 @@ class BottomConfirmStrategy(EnhancedMA200Strategy):
                             extra_pos += self.confirm_boost_pct
                         target_pos = min(
                             base_dip_pos + extra_pos,
-                            self.dip_buy_max_position + self.confirm_boost_pct
+                            self.dip_buy_max_position + self.confirm_boost_pct,
                         )
                         self.stats["dip_buy_days"] += 1
                     else:
@@ -278,7 +308,7 @@ class BottomConfirmStrategy(EnhancedMA200Strategy):
 
 
 if __name__ == "__main__":
-    import json
+    import json  # noqa: I001
     from ml.scenario_backtest_engine import ScenarioBacktestEngine
 
     with open("data/historical/BTC_1D_730d.json") as f:
@@ -295,7 +325,9 @@ if __name__ == "__main__":
     print("v2 基线...")
     v2 = EnhancedMA200Strategy(is_btc=True)
     v2_r = engine.run_scenario_backtest(prices, v2, "v2", symbol="BTC", experiment_name="v35_v2")
-    print(f"  夏普 {v2_r.overall_sharpe:.3f} | 收益 {v2_r.overall_total_return:.1%} | 评分 {v2_r.composite_score:.3f}")
+    print(
+        f"  夏普 {v2_r.overall_sharpe:.3f} | 收益 {v2_r.overall_total_return:.1%} | 评分 {v2_r.composite_score:.3f}"
+    )
 
     print()
     print("v3.5 底部确认抄底...")
@@ -307,8 +339,12 @@ if __name__ == "__main__":
         confirm_above_mid_days=5,
         confirm_boost_pct=0.2,
     )
-    v35_r = engine.run_scenario_backtest(prices, v35, "v35", symbol="BTC", experiment_name="v35_bottom_confirm")
-    print(f"  夏普 {v35_r.overall_sharpe:.3f} | 收益 {v35_r.overall_total_return:.1%} | 评分 {v35_r.composite_score:.3f}")
+    v35_r = engine.run_scenario_backtest(
+        prices, v35, "v35", symbol="BTC", experiment_name="v35_bottom_confirm"
+    )
+    print(
+        f"  夏普 {v35_r.overall_sharpe:.3f} | 收益 {v35_r.overall_total_return:.1%} | 评分 {v35_r.composite_score:.3f}"
+    )
 
     print()
     print("状态统计:")

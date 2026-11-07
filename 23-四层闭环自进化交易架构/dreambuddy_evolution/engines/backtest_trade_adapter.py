@@ -12,10 +12,11 @@ BacktestTradeAdapter — 回测交易记录适配层
 - 来源隔离：source_system="backtest"，与真实交易区分
 - 折扣机制：由 ReflectionScanner 对 backtest 来源打折扣（缓解 sim-to-real gap）
 """
+
 import json
 import logging
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ def trade_to_index_record(
         if isinstance(trade, dict):
             g = trade.get
         else:
-            g = lambda k, d=None: getattr(trade, k, d)
+            g = lambda k, d=None: getattr(trade, k, d)  # noqa: E731
 
         direction_raw = g("direction")
         direction = _DIRECTION_MAP.get(direction_raw, "long" if direction_raw == 1 else "short")

@@ -14,6 +14,7 @@ P1-2 拆分委托给:
 
 FAIL-OPEN: crash → 返回 WAIT + 不崩溃
 """
+
 import logging
 from typing import Any
 
@@ -58,12 +59,12 @@ class KlineEventHandler:
         self._pipeline = pipeline
         self._project_root = project_root
 
-        from dreambuddy_evolution.core.resistance_vector import ResistanceVector
         from dreambuddy_evolution.core.level0_path_cost import compute_d_star
-        from dreambuddy_evolution.engines.ripple_engine import RippleEngine
+        from dreambuddy_evolution.core.resistance_vector import ResistanceVector
         from dreambuddy_evolution.engines.engine_router import EngineRouter
         from dreambuddy_evolution.engines.event_receiver import EventReceiver
         from dreambuddy_evolution.engines.result_aggregator import ResultAggregator
+        from dreambuddy_evolution.engines.ripple_engine import RippleEngine
 
         self._rv = ResistanceVector()
         self._compute_d_star = compute_d_star
@@ -153,17 +154,29 @@ class KlineEventHandler:
         self._router.attach_trader(trader)
         self._aggregator.attach_trader(trader)
 
-    def _store_pre_trade_snapshot(self, symbol: str, action: str, d_star: str,
-                                  ess_dir: str, ri: float,
-                                  position_mult: float = 1.0) -> None:
+    def _store_pre_trade_snapshot(
+        self,
+        symbol: str,
+        action: str,
+        d_star: str,
+        ess_dir: str,
+        ri: float,
+        position_mult: float = 1.0,
+    ) -> None:
         self._aggregator.store_pre_trade_snapshot(
             symbol, action, d_star, ess_dir, ri, position_mult
         )
 
-    def _trigger_build_position(self, symbol: str, action: str, d_star: str,
-                                ri: float, position_mult: float = 1.0,
-                                tier: str = "standard",
-                                source_tag: str | None = None) -> None:
+    def _trigger_build_position(
+        self,
+        symbol: str,
+        action: str,
+        d_star: str,
+        ri: float,
+        position_mult: float = 1.0,
+        tier: str = "standard",
+        source_tag: str | None = None,
+    ) -> None:
         self._aggregator.trigger_build_position(
             symbol, action, d_star, ri, position_mult, tier, source_tag
         )
@@ -180,8 +193,12 @@ class KlineEventHandler:
         return self._aggregator.get_evolution_feedback()
 
     def _run_path_discovery(
-        self, symbol: str, r_vector: dict[str, Any],
-        d_star: str, ri: float, kline_data: dict[str, Any],
+        self,
+        symbol: str,
+        r_vector: dict[str, Any],
+        d_star: str,
+        ri: float,
+        kline_data: dict[str, Any],
     ) -> tuple[str, float, dict[str, Any]]:
         """路径发现层 — 委托给 EngineRouter 并适配返回格式."""
         # 转发 handler 级状态到 router（测试兼容：测试直接设 handler._evolution_pipeline）
@@ -192,8 +209,12 @@ class KlineEventHandler:
         self._router._trader = self._trader
 
         result = self._router.run_path_discovery(
-            symbol=symbol, d_star=d_star, r_vector=r_vector,
-            kline_data=kline_data, mode=self.mode, ri=ri,
+            symbol=symbol,
+            d_star=d_star,
+            r_vector=r_vector,
+            kline_data=kline_data,
+            mode=self.mode,
+            ri=ri,
             event_driven_strategy_cls=EventDrivenStrategy,  # 模块级变量（支持测试 monkeypatch）
         )
         self._last_dimension_predictions = self._router._last_dimension_predictions
@@ -217,8 +238,14 @@ class KlineEventHandler:
         """K线收盘 → L1 R 向量 → 修饰子 → Level0 d* → RippleEngine RI."""
         try:
             # 同步 handler 级 AGI 状态到 router（测试兼容：测试直接设 handler._sig_engine 等）
-            for _a in ("_sig_engine", "_pattern_detector", "_regime_classifier",
-                       "_path_integral_engine", "_uncertainty_quant", "_meta_cognition_gate"):
+            for _a in (
+                "_sig_engine",
+                "_pattern_detector",
+                "_regime_classifier",
+                "_path_integral_engine",
+                "_uncertainty_quant",
+                "_meta_cognition_gate",
+            ):
                 _v = getattr(self, _a, None)
                 if _v is not None:
                     setattr(self._router, _a, _v)
@@ -245,20 +272,26 @@ class KlineEventHandler:
 
                         def _run_path_integral():
                             paths = pi_engine.sample_paths(
-                                start_price=start_price, horizon=horizon,
-                                volatility=vol, drift=0.0,
+                                start_price=start_price,
+                                horizon=horizon,
+                                volatility=vol,
+                                drift=0.0,
                             )
                             best_idx, best_action = pi_engine.find_least_resistance_path(paths)
                             exp_path = pi_engine.expected_path(paths, temperature=1.0)
                             return {
-                                "n_paths": len(paths), "horizon": horizon,
+                                "n_paths": len(paths),
+                                "horizon": horizon,
                                 "volatility": round(vol, 6),
                                 "min_resistance_action": round(float(best_action), 6),
                                 "expected_end_price": round(float(exp_path[-1]), 6),
                                 "start_price": round(start_price, 6),
                             }
+
                         agi_path_integral = self._agi_enhance(
-                            "enable_path_integral", fn=_run_path_integral, fallback=None,
+                            "enable_path_integral",
+                            fn=_run_path_integral,
+                            fallback=None,
                         )
             except Exception as e:
                 logger.debug("[FO-AGI-B] path_integral fail: %s", e)
@@ -267,16 +300,25 @@ class KlineEventHandler:
             modifiers_applied = False
             if alpha > 0 or beta > 0 or gamma > 0:
                 from dreambuddy_evolution.engines.modifiers import apply_all_modifiers
+
                 sentiment = kline_data.get("sentiment")
                 capital_flow = kline_data.get("capital_flow")
                 narrative = kline_data.get("narrative")
                 if any(v is not None for v in [sentiment, capital_flow, narrative]):
                     r_vector_mod = apply_all_modifiers(
-                        {"R_up": r_vector["R_up"], "R_down": r_vector["R_down"],
-                         "R_smooth": r_vector["R_smooth"], "R_flow": r_vector["R_flow"],
-                         "R_reflexivity": r_vector["R_reflexivity"]},
-                        sentiment=sentiment, capital_flow=capital_flow, narrative=narrative,
-                        alpha=alpha, beta=beta, gamma=gamma,
+                        {
+                            "R_up": r_vector["R_up"],
+                            "R_down": r_vector["R_down"],
+                            "R_smooth": r_vector["R_smooth"],
+                            "R_flow": r_vector["R_flow"],
+                            "R_reflexivity": r_vector["R_reflexivity"],
+                        },
+                        sentiment=sentiment,
+                        capital_flow=capital_flow,
+                        narrative=narrative,
+                        alpha=alpha,
+                        beta=beta,
+                        gamma=gamma,
                     )
                     r_vector = {**r_vector, **r_vector_mod}
                     modifiers_applied = True
@@ -287,14 +329,21 @@ class KlineEventHandler:
 
             # ============ 3b. 路径发现层 ============
             path_info: dict[str, Any] = {
-                "path_count": 0, "optimal_source": None, "optimal_score": 0.0,
-                "validated": False, "low_conviction": False,
-                "d_star_original": d_star, "d_star_adjusted": d_star,
+                "path_count": 0,
+                "optimal_source": None,
+                "optimal_score": 0.0,
+                "validated": False,
+                "low_conviction": False,
+                "d_star_original": d_star,
+                "d_star_adjusted": d_star,
                 "primary_contradiction": None,
             }
             try:
-                if (r_vector and r_vector.get("R_up") is not None
-                        and r_vector.get("R_down") is not None):
+                if (
+                    r_vector
+                    and r_vector.get("R_up") is not None
+                    and r_vector.get("R_down") is not None
+                ):
                     if d_star in ("long", "short"):
                         d_star, ri_path_adjusted, path_info = self._run_path_discovery(
                             symbol, r_vector, d_star, 0.5, kline_data
@@ -309,7 +358,8 @@ class KlineEventHandler:
             # ============ 4. RippleEngine RI 检测 ============
             ess_dir = str(kline_data.get("ess_top_direction", "")).lower()
             source = {
-                "symbol": symbol, "r_vector": r_vector,
+                "symbol": symbol,
+                "r_vector": r_vector,
                 "ess_top_direction": ess_dir,
                 "vol_5": kline_data.get("vol_5", 0),
                 "vol_20": kline_data.get("vol_20", 1e-9),
@@ -317,7 +367,9 @@ class KlineEventHandler:
                 "scale_class": kline_data.get("scale_class", ""),
             }
             is_source = self._ripple.detect_ripple_source(source)
-            ripple_ri = self._ripple.compute_ri(kline_data.get("ripples", {})) if is_source else 0.50
+            ripple_ri = (
+                self._ripple.compute_ri(kline_data.get("ripples", {})) if is_source else 0.50
+            )
 
             # ============ 4b. ReflectionScanner ============
             reflection_ri = 0.50
@@ -342,9 +394,13 @@ class KlineEventHandler:
                     ensemble_std = abs(ripple_ri - reflection_ri)
                     feature_noise = max(0.0, 1.0 - ri)
                     agi_uncertainty = self._agi_enhance(
-                        "enable_uncertainty_quant", fn=uq_inst.quantify_uncertainty,
-                        fallback=None, prediction=ri, ensemble_std=ensemble_std,
-                        conformal_width=None, feature_noise=feature_noise,
+                        "enable_uncertainty_quant",
+                        fn=uq_inst.quantify_uncertainty,
+                        fallback=None,
+                        prediction=ri,
+                        ensemble_std=ensemble_std,
+                        conformal_width=None,
+                        feature_noise=feature_noise,
                     )
             except Exception as e:
                 logger.debug("[FO-AGI-C] uncertainty fail: %s", e)
@@ -356,9 +412,13 @@ class KlineEventHandler:
                 if mcg_inst is not None and agi_uncertainty is not None:
                     unc_score = agi_uncertainty.get("uncertainty_score", 0.5)
                     agi_gate_decision = self._agi_enhance(
-                        "enable_meta_cognition", fn=mcg_inst.gate_decision,
-                        fallback=None, uncertainty_score=unc_score,
-                        base_confidence=ri, strategy_sharpe=None, position_size=1.0,
+                        "enable_meta_cognition",
+                        fn=mcg_inst.gate_decision,
+                        fallback=None,
+                        uncertainty_score=unc_score,
+                        base_confidence=ri,
+                        strategy_sharpe=None,
+                        position_size=1.0,
                     )
             except Exception as e:
                 logger.debug("[FO-AGI-D] gate_decision fail: %s", e)
@@ -412,12 +472,14 @@ class KlineEventHandler:
                         agi_pattern = self._agi_enhance(
                             "enable_pattern_detection",
                             fn=pd_inst.bcrm_technical_assessment,
-                            fallback=None, klines=klines_for_pattern,
+                            fallback=None,
+                            klines=klines_for_pattern,
                         )
                         if agi_pattern and agi_pattern.get("is_reversal_signal"):
                             logger.info(
                                 "[AGI-E] %s pattern=%s dir=%s conf=%.2f factor=%.2f",
-                                symbol, agi_pattern.get("pattern"),
+                                symbol,
+                                agi_pattern.get("pattern"),
                                 agi_pattern.get("direction"),
                                 agi_pattern.get("confidence", 0),
                                 agi_pattern.get("pattern_factor", 0),
@@ -428,8 +490,11 @@ class KlineEventHandler:
                     rc_inst = self._get_regime_classifier()
                     if rc_inst is not None:
                         agi_btc_regime = self._agi_enhance(
-                            "enable_btc_regime_classifier", fn=rc_inst.classify,
-                            fallback="NEUTRAL", btc_returns=btc_rets, spy_returns=spy_rets,
+                            "enable_btc_regime_classifier",
+                            fn=rc_inst.classify,
+                            fallback="NEUTRAL",
+                            btc_returns=btc_rets,
+                            spy_returns=spy_rets,
                         )
                         if agi_btc_regime and agi_btc_regime != "NEUTRAL":
                             _bridge = self._get_subsystem_bridge()
@@ -451,6 +516,7 @@ class KlineEventHandler:
             if _macro_info.get("active"):
                 try:
                     from dreambuddy_evolution.agi_config import is_enabled as _is_en
+
                     if _is_en("enable_conviction_position_mapper"):
                         _pp = _macro_info.get("position_params") or {}
                         _macro_tier = str(_pp.get("tier", "") or "").lower()
@@ -472,9 +538,16 @@ class KlineEventHandler:
                     action = d_star
                     if self.mode == "Phase2":
                         auto_execute = True
-                        self._store_pre_trade_snapshot(symbol, action, d_star, ess_dir, ri, position_mult)
+                        self._store_pre_trade_snapshot(
+                            symbol, action, d_star, ess_dir, ri, position_mult
+                        )
                         self._trigger_build_position(
-                            symbol, action, d_star, ri, position_mult, tier,
+                            symbol,
+                            action,
+                            d_star,
+                            ri,
+                            position_mult,
+                            tier,
                             source_tag=_macro_source_tag,
                         )
                     if self.mode == "MVP" and ri >= 0.75:
@@ -489,19 +562,29 @@ class KlineEventHandler:
                 _pipeline = self._get_evolution_pipeline()
                 if _pipeline is not None:
                     _l3_state = {
-                        "R_up": r_vector.get("R_up"), "R_down": r_vector.get("R_down"),
-                        "R_smooth": r_vector.get("R_smooth"), "R_flow": r_vector.get("R_flow"),
+                        "R_up": r_vector.get("R_up"),
+                        "R_down": r_vector.get("R_down"),
+                        "R_smooth": r_vector.get("R_smooth"),
+                        "R_flow": r_vector.get("R_flow"),
                         "R_reflexivity": r_vector.get("R_reflexivity"),
                         "quality_score": r_vector.get("quality_score"),
                     }
                     _pipeline.shadow_rl.record(
-                        symbol=symbol, state=_l3_state, action=action,
-                        reward=0.0, next_state={},
+                        symbol=symbol,
+                        state=_l3_state,
+                        action=action,
+                        reward=0.0,
+                        next_state={},
                     )
                     l3_sample_count = _pipeline.shadow_rl.sample_count()
                     try:
                         _last_pc = getattr(_pipeline, "_last_primary_contradiction", None)
-                        _dir_map = {"bull": "long", "bear": "short", "long": "long", "short": "short"}
+                        _dir_map = {
+                            "bull": "long",
+                            "bear": "short",
+                            "long": "long",
+                            "short": "short",
+                        }
                         _pc_dir = _dir_map.get((_last_pc or {}).get("direction", ""), "")
                         if _last_pc and _pc_dir in ("long", "short"):
                             _open_raw = kline_data.get("open", 0)
@@ -520,8 +603,9 @@ class KlineEventHandler:
                                 _close_px = float(_close_raw or 0)
                             if _open_px > 0:
                                 _pct = (_close_px - _open_px) / _open_px
-                                _aligned = (_pct > 0 and _pc_dir == "long") or \
-                                           (_pct < 0 and _pc_dir == "short")
+                                _aligned = (_pct > 0 and _pc_dir == "long") or (
+                                    _pct < 0 and _pc_dir == "short"
+                                )
                                 _pipeline._incremental_feedback(_last_pc, _aligned, _pct)
                     except Exception as e:
                         logger.debug("[FO] 主矛盾增量反馈 fail: %s", e)
@@ -533,8 +617,10 @@ class KlineEventHandler:
                             _c_rets = kline_data.get("control_returns", [])
                             if _s_rets and _t_rets and _c_rets:
                                 agi_transfer = self._agi_enhance(
-                                    "enable_transfer_learning", fn=_tl.transfer_pattern,
-                                    fallback=None, source_asset=kline_data.get("source_asset", "BTC"),
+                                    "enable_transfer_learning",
+                                    fn=_tl.transfer_pattern,
+                                    fallback=None,
+                                    source_asset=kline_data.get("source_asset", "BTC"),
                                     target_asset=symbol,
                                     source_returns=np.array(_s_rets, dtype=float),
                                     target_returns=np.array(_t_rets, dtype=float),
@@ -549,7 +635,8 @@ class KlineEventHandler:
                             _c_rets = kline_data.get("control_returns", [])
                             if _t_rets and _c_rets:
                                 agi_counterfactual = self._agi_enhance(
-                                    "enable_counterfactual", fn=_cf.what_if_no_trade,
+                                    "enable_counterfactual",
+                                    fn=_cf.what_if_no_trade,
                                     fallback=None,
                                     target_returns=np.array(_t_rets, dtype=float),
                                     control_returns=np.array(_c_rets, dtype=float),
@@ -571,20 +658,34 @@ class KlineEventHandler:
                 logger.warning("[EventDriven] shadow integration crash (FAIL-OPEN): %s", _e)
 
             return {
-                "symbol": symbol, "r_vector": r_vector, "d_star": d_star,
-                "action": action, "ri": ri, "ripple_ri": ripple_ri,
-                "reflection_ri": reflection_ri, "reflection_eligible": reflection_eligible,
-                "signal_source": signal_source, "tier": tier,
-                "position_mult": round(position_mult, 4), "regime": regime,
+                "symbol": symbol,
+                "r_vector": r_vector,
+                "d_star": d_star,
+                "action": action,
+                "ri": ri,
+                "ripple_ri": ripple_ri,
+                "reflection_ri": reflection_ri,
+                "reflection_eligible": reflection_eligible,
+                "signal_source": signal_source,
+                "tier": tier,
+                "position_mult": round(position_mult, 4),
+                "regime": regime,
                 "regime_position_mult": round(_regime_position_mult, 4),
                 "modifiers_applied": modifiers_applied,
-                "auto_execute": auto_execute, "inference_formed": inference_formed,
-                "is_ripple_source": is_source, "agi_signature": agi_signature,
-                "agi_pattern": agi_pattern, "agi_btc_regime": agi_btc_regime,
-                "agi_path_integral": agi_path_integral, "agi_uncertainty": agi_uncertainty,
-                "agi_gate_decision": agi_gate_decision, "path_info": path_info,
-                "l3_sample_count": l3_sample_count, "l4_v": round(l4_v, 6),
-                "agi_transfer": agi_transfer, "agi_counterfactual": agi_counterfactual,
+                "auto_execute": auto_execute,
+                "inference_formed": inference_formed,
+                "is_ripple_source": is_source,
+                "agi_signature": agi_signature,
+                "agi_pattern": agi_pattern,
+                "agi_btc_regime": agi_btc_regime,
+                "agi_path_integral": agi_path_integral,
+                "agi_uncertainty": agi_uncertainty,
+                "agi_gate_decision": agi_gate_decision,
+                "path_info": path_info,
+                "l3_sample_count": l3_sample_count,
+                "l4_v": round(l4_v, 6),
+                "agi_transfer": agi_transfer,
+                "agi_counterfactual": agi_counterfactual,
                 "elastic_position_mult": path_info.get("elastic_position_mult"),
                 "structural_break": path_info.get("structural_break"),
                 "shift_result": path_info.get("shift_result"),
@@ -593,16 +694,30 @@ class KlineEventHandler:
             logger.warning("[FO] on_kline_close crash: %s", e)
             return {
                 "symbol": str(kline_data.get("symbol", "UNKNOWN")),
-                "r_vector": {}, "d_star": "WAIT", "action": "WAIT", "ri": 0.50,
-                "ripple_ri": 0.50, "reflection_ri": 0.50, "reflection_eligible": False,
-                "signal_source": "none", "modifiers_applied": False,
-                "auto_execute": False, "inference_formed": False,
-                "is_ripple_source": False, "agi_signature": None,
-                "agi_pattern": None, "agi_btc_regime": None,
-                "agi_path_integral": None, "agi_uncertainty": None,
-                "agi_gate_decision": None, "path_info": {},
-                "l3_sample_count": 0, "l4_v": 0.0,
-                "agi_transfer": None, "agi_counterfactual": None,
-                "elastic_position_mult": None, "structural_break": None,
+                "r_vector": {},
+                "d_star": "WAIT",
+                "action": "WAIT",
+                "ri": 0.50,
+                "ripple_ri": 0.50,
+                "reflection_ri": 0.50,
+                "reflection_eligible": False,
+                "signal_source": "none",
+                "modifiers_applied": False,
+                "auto_execute": False,
+                "inference_formed": False,
+                "is_ripple_source": False,
+                "agi_signature": None,
+                "agi_pattern": None,
+                "agi_btc_regime": None,
+                "agi_path_integral": None,
+                "agi_uncertainty": None,
+                "agi_gate_decision": None,
+                "path_info": {},
+                "l3_sample_count": 0,
+                "l4_v": 0.0,
+                "agi_transfer": None,
+                "agi_counterfactual": None,
+                "elastic_position_mult": None,
+                "structural_break": None,
                 "shift_result": None,
             }

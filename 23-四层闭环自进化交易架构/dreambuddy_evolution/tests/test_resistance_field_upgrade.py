@@ -7,14 +7,13 @@ SPEC-矛盾论实现断裂修复与阻力场升级 测试
   4. FREEZE 双候选
   5. Bellman 二维状态空间
 """
-import pytest
-import numpy as np
-from unittest.mock import patch
 
+from unittest.mock import patch  # noqa: I001
 
 # =====================================================================
 # 改造 1: 阻力向量微观结构升级
 # =====================================================================
+
 
 class TestMicrostructureResistance:
     """测试 6 组件微观阻力向量."""
@@ -22,10 +21,12 @@ class TestMicrostructureResistance:
     def test_microstructure_disabled_by_default(self):
         """默认关闭，使用 3 组件."""
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
+
         rv = ResistanceVector()
         data = {
             "okx_positions": {"long": 0.6, "short": 0.4},
-            "liquidation_buy": [100], "liquidation_sell": [50],
+            "liquidation_buy": [100],
+            "liquidation_sell": [50],
             "close": [100.0] * 50,
             "ma_200": 95.0,
             "funding_rate": 0.0005,  # 有数据但开关关
@@ -42,11 +43,13 @@ class TestMicrostructureResistance:
     def test_microstructure_enabled_6_components(self):
         """开关开启后使用 6 组件."""
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
+
         with patch("dreambuddy_evolution.core.resistance_vector.get_switch", return_value=False):
             rv = ResistanceVector()
             data_3 = {
                 "okx_positions": {"long": 0.6, "short": 0.4},
-                "liquidation_buy": [100], "liquidation_sell": [50],
+                "liquidation_buy": [100],
+                "liquidation_sell": [50],
                 "close": [100.0] * 50,
                 "ma_200": 95.0,
             }
@@ -55,13 +58,15 @@ class TestMicrostructureResistance:
         with patch("dreambuddy_evolution.core.resistance_vector.get_switch", return_value=True):
             rv2 = ResistanceVector()
             data_6 = dict(data_3)
-            data_6.update({
-                "funding_rate": 0.0008,     # 高正费率 → 做多拥挤
-                "bids_depth": 1200.0,       # 买盘深
-                "asks_depth": 300.0,       # 卖盘浅
-                "oi_current": 1500.0,      # OI 大增
-                "oi_prev": 900.0,
-            })
+            data_6.update(
+                {
+                    "funding_rate": 0.0008,  # 高正费率 → 做多拥挤
+                    "bids_depth": 1200.0,  # 买盘深
+                    "asks_depth": 300.0,  # 卖盘浅
+                    "oi_current": 1500.0,  # OI 大增
+                    "oi_prev": 900.0,
+                }
+            )
             result_6 = rv2.calculate("BTCUSDT", data_6)
 
         # 6 组件应该改变阻力值（正费率+OI增加 → 做多拥挤 → R_up↑）
@@ -72,6 +77,7 @@ class TestMicrostructureResistance:
     def test_funding_pressure_positive(self):
         """正资金费率 → 做多拥挤 → R_up↑."""
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
+
         rv = ResistanceVector()
         flags = {}
         val = rv._calc_funding_pressure({"funding_rate": 0.0005}, flags)
@@ -80,6 +86,7 @@ class TestMicrostructureResistance:
     def test_funding_pressure_negative(self):
         """负资金费率 → 做空拥挤."""
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
+
         rv = ResistanceVector()
         flags = {}
         val = rv._calc_funding_pressure({"funding_rate": -0.0005}, flags)
@@ -88,6 +95,7 @@ class TestMicrostructureResistance:
     def test_funding_pressure_missing(self):
         """资金费率缺失 → FAIL-OPEN 0.0."""
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
+
         rv = ResistanceVector()
         flags = {}
         val = rv._calc_funding_pressure({}, flags)
@@ -97,6 +105,7 @@ class TestMicrostructureResistance:
     def test_orderbook_imbalance(self):
         """订单簿不平衡."""
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
+
         rv = ResistanceVector()
         flags = {}
         val = rv._calc_orderbook_imbalance({"bids_depth": 800.0, "asks_depth": 200.0}, flags)
@@ -105,6 +114,7 @@ class TestMicrostructureResistance:
     def test_orderbook_missing(self):
         """订单簿缺失 → FAIL-OPEN."""
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
+
         rv = ResistanceVector()
         flags = {}
         val = rv._calc_orderbook_imbalance({}, flags)
@@ -113,6 +123,7 @@ class TestMicrostructureResistance:
     def test_oi_divergence(self):
         """OI 增加 → 拥挤↑."""
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
+
         rv = ResistanceVector()
         flags = {}
         val = rv._calc_oi_divergence({"oi_current": 1100.0, "oi_prev": 1000.0}, flags)
@@ -121,6 +132,7 @@ class TestMicrostructureResistance:
     def test_oi_missing(self):
         """OI 缺失 → FAIL-OPEN."""
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
+
         rv = ResistanceVector()
         flags = {}
         val = rv._calc_oi_divergence({}, flags)
@@ -131,18 +143,20 @@ class TestMicrostructureResistance:
 # 改造 3: RV 层矛盾调制
 # =====================================================================
 
+
 class TestRVContradictionModulation:
     """测试矛盾调制扩展到 RV 层."""
 
     def test_modulation_disabled_by_default(self):
         """开关关闭时（patch=False），primary_contradiction 不影响 R 值."""
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
-        with patch("dreambuddy_evolution.core.resistance_vector.get_switch",
-                    return_value=False):
+
+        with patch("dreambuddy_evolution.core.resistance_vector.get_switch", return_value=False):
             rv = ResistanceVector()
             data = {
                 "okx_positions": {"long": 0.6, "short": 0.4},
-                "liquidation_buy": [100], "liquidation_sell": [50],
+                "liquidation_buy": [100],
+                "liquidation_sell": [50],
                 "close": [100.0] * 50,
                 "ma_200": 100.0,
             }
@@ -155,12 +169,13 @@ class TestRVContradictionModulation:
     def test_modulation_enabled_by_default(self):
         """W3: 开关启用后，primary_contradiction 影响 R 值."""
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
-        with patch("dreambuddy_evolution.core.resistance_vector.get_switch",
-                    return_value=True):
+
+        with patch("dreambuddy_evolution.core.resistance_vector.get_switch", return_value=True):
             rv = ResistanceVector()
             data = {
                 "okx_positions": {"long": 0.6, "short": 0.4},
-                "liquidation_buy": [100], "liquidation_sell": [50],
+                "liquidation_buy": [100],
+                "liquidation_sell": [50],
                 "close": [100.0] * 50,
                 "ma_200": 100.0,
             }
@@ -173,12 +188,13 @@ class TestRVContradictionModulation:
     def test_modulation_long_direction(self):
         """矛盾方向 long → R_up↓, R_down↑."""
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
-        with patch("dreambuddy_evolution.core.resistance_vector.get_switch",
-                    return_value=True):
+
+        with patch("dreambuddy_evolution.core.resistance_vector.get_switch", return_value=True):
             rv = ResistanceVector()
             data = {
                 "okx_positions": {"long": 0.5, "short": 0.5},
-                "liquidation_buy": [100], "liquidation_sell": [100],
+                "liquidation_buy": [100],
+                "liquidation_sell": [100],
                 "close": [100.0] * 50,
                 "ma_200": 100.0,
             }
@@ -192,12 +208,13 @@ class TestRVContradictionModulation:
     def test_modulation_short_direction(self):
         """矛盾方向 short → R_up↑, R_down↓."""
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
-        with patch("dreambuddy_evolution.core.resistance_vector.get_switch",
-                    return_value=True):
+
+        with patch("dreambuddy_evolution.core.resistance_vector.get_switch", return_value=True):
             rv = ResistanceVector()
             data = {
                 "okx_positions": {"long": 0.5, "short": 0.5},
-                "liquidation_buy": [100], "liquidation_sell": [100],
+                "liquidation_buy": [100],
+                "liquidation_sell": [100],
                 "close": [100.0] * 50,
                 "ma_200": 100.0,
             }
@@ -210,12 +227,13 @@ class TestRVContradictionModulation:
     def test_modulation_none_pc(self):
         """primary_contradiction=None → 无调制."""
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
-        with patch("dreambuddy_evolution.core.resistance_vector.get_switch",
-                    return_value=True):
+
+        with patch("dreambuddy_evolution.core.resistance_vector.get_switch", return_value=True):
             rv = ResistanceVector()
             data = {
                 "okx_positions": {"long": 0.5, "short": 0.5},
-                "liquidation_buy": [100], "liquidation_sell": [100],
+                "liquidation_buy": [100],
+                "liquidation_sell": [100],
                 "close": [100.0] * 50,
                 "ma_200": 100.0,
             }
@@ -226,12 +244,13 @@ class TestRVContradictionModulation:
     def test_modulation_zero_strength(self):
         """strength=0 → 无调制."""
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
-        with patch("dreambuddy_evolution.core.resistance_vector.get_switch",
-                    return_value=True):
+
+        with patch("dreambuddy_evolution.core.resistance_vector.get_switch", return_value=True):
             rv = ResistanceVector()
             data = {
                 "okx_positions": {"long": 0.5, "short": 0.5},
-                "liquidation_buy": [100], "liquidation_sell": [100],
+                "liquidation_buy": [100],
+                "liquidation_sell": [100],
                 "close": [100.0] * 50,
                 "ma_200": 100.0,
             }
@@ -245,12 +264,14 @@ class TestRVContradictionModulation:
 # 改造 2: HJB 权重提升
 # =====================================================================
 
+
 class TestHJBDominantMode:
     """测试 HJB 权重提升."""
 
     def test_default_30_weight(self):
         """W2: HJB 主导模式已启用（0.70 权重）."""
         from dreambuddy_evolution.agi_config import get_switch
+
         assert get_switch("enable_hjb_dominant", False) is True
 
     def test_hjb_weight_formula(self):
@@ -271,17 +292,19 @@ class TestHJBDominantMode:
 # 改造 4: FREEZE 双候选
 # =====================================================================
 
+
 class TestFreezeDualCandidate:
     """测试 FREEZE 双候选竞争."""
 
     def test_freeze_produces_two_paths(self):
         """FREEZE 状态产出 short + neutral 两条路径."""
         from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
-        pipeline = EvolutionPipeline.__new__(EvolutionPipeline)
+
+        pipeline = EvolutionPipeline.__new__(EvolutionPipeline)  # noqa: F841
         # 直接调用路径发现中的 FREEZE 逻辑
         paths = []
         war_state = "FREEZE"
-        dir_state = "NEUTRAL"
+        dir_state = "NEUTRAL"  # noqa: F841
         # 模拟 FREEZE 分支
         if war_state == "FREEZE":
             paths.append({"path_id": "strategic_freeze_defensive_short", "direction": "short"})
@@ -296,12 +319,14 @@ class TestFreezeDualCandidate:
 # 改造 5: Bellman 二维状态空间
 # =====================================================================
 
+
 class TestBellmanRegimeSpace:
     """测试 Bellman (symbol, regime) 二维 V 值."""
 
     def test_backward_compatible_1d(self):
         """regime=None 时退化为一维（向后兼容）."""
         from dreambuddy_evolution.core.bellman_tracker import BellmanVTracker
+
         tracker = BellmanVTracker()
         v = tracker.td_update("BTCUSDT", 0.1, "ETHUSDT")
         assert v != 0.0
@@ -313,6 +338,7 @@ class TestBellmanRegimeSpace:
     def test_2d_regime_update(self):
         """二维 regime 模式."""
         from dreambuddy_evolution.core.bellman_tracker import BellmanVTracker
+
         tracker = BellmanVTracker()
         v = tracker.td_update("BTCUSDT", 0.1, "ETHUSDT", regime="bull", next_regime="bull")
         assert v != 0.0
@@ -323,6 +349,7 @@ class TestBellmanRegimeSpace:
     def test_regime_specific_v(self):
         """不同 regime 有不同 V 值."""
         from dreambuddy_evolution.core.bellman_tracker import BellmanVTracker
+
         tracker = BellmanVTracker()
         tracker.td_update("BTCUSDT", 0.2, regime="bull", next_regime="bull")
         tracker.td_update("BTCUSDT", -0.1, regime="bear", next_regime="bear")
@@ -333,6 +360,7 @@ class TestBellmanRegimeSpace:
     def test_ess_adjustment_with_regime(self):
         """ESS 调整支持 regime 参数."""
         from dreambuddy_evolution.core.bellman_tracker import BellmanVTracker
+
         tracker = BellmanVTracker()
         tracker.td_update("BTCUSDT", 0.15, regime="bull", next_regime="bull")
         ess = tracker.get_ess_adjustment("BTCUSDT", regime="bull")
@@ -342,6 +370,7 @@ class TestBellmanRegimeSpace:
     def test_fallback_to_1d_when_regime_missing(self):
         """regime 查询时 fallback 到一维."""
         from dreambuddy_evolution.core.bellman_tracker import BellmanVTracker
+
         tracker = BellmanVTracker()
         tracker.td_update("BTCUSDT", 0.1, "ETHUSDT")  # 一维更新
         # 查 regime 模式但无 regime 数据 → fallback 到一维

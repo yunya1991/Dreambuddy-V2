@@ -3,12 +3,10 @@
 生成策略对比报告，可视化绩效差异。
 """
 
-import json
-import sys
+import json  # noqa: I001
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
-import pandas as pd
 
 
 class ValidationReport:
@@ -92,13 +90,15 @@ class ValidationReport:
         # 对比分析
         if len(report["strategies"]) > 1:
             sorted_strategies = sorted(
-                report["strategies"].values(),
-                key=lambda x: x["final_return"],
-                reverse=True
+                report["strategies"].values(), key=lambda x: x["final_return"], reverse=True
             )
             report["comparison"]["ranking"] = [s["name"] for s in sorted_strategies]
-            report["comparison"]["best"] = sorted_strategies[0]["name"] if sorted_strategies else None
-            report["comparison"]["best_return"] = sorted_strategies[0]["final_return"] if sorted_strategies else 0
+            report["comparison"]["best"] = (
+                sorted_strategies[0]["name"] if sorted_strategies else None
+            )
+            report["comparison"]["best_return"] = (
+                sorted_strategies[0]["final_return"] if sorted_strategies else 0
+            )
 
         return report
 

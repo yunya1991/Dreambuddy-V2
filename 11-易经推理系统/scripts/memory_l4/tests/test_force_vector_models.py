@@ -4,23 +4,25 @@
 对应 Spec §二 ForceVector / §三 FeatureCorrelation / PrimaryContradiction / PCAResonance /
 §四 CycleComparison / §三-A ElasticityBeta / ContradictionTransform / StrategicLayerOutput。
 """
-import pytest
+
 import sys
 from pathlib import Path
+
+import pytest
 
 # 将 force_vector 加入 sys.path
 _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.models import (
-    ForceVector,
-    FeatureCorrelation,
-    PrimaryContradiction,
-    PCAResonance,
+from force_vector.models import (  # noqa: E402
+    ContradictionTransform,
     CycleComparison,
     ElasticityBeta,
-    ContradictionTransform,
+    FeatureCorrelation,
+    ForceVector,
+    PCAResonance,
+    PrimaryContradiction,
     StrategicLayerOutput,
 )
 
@@ -50,10 +52,16 @@ class TestForceVector:
 
     def test_force_vector_negative_direction(self):
         fv = ForceVector(
-            dimension="tian", direction=-0.8, magnitude=1.2,
-            confidence=0.3, velocity=-0.2, acceleration=0.0,
-            kalman_direction=-0.75, kalman_magnitude=1.1,
-            dominant=False, weight=0.15,
+            dimension="tian",
+            direction=-0.8,
+            magnitude=1.2,
+            confidence=0.3,
+            velocity=-0.2,
+            acceleration=0.0,
+            kalman_direction=-0.75,
+            kalman_magnitude=1.1,
+            dominant=False,
+            weight=0.15,
         )
         assert -1.0 <= fv.direction <= 1.0
         assert fv.direction < 0
@@ -61,10 +69,16 @@ class TestForceVector:
     def test_force_vector_all_dimensions(self):
         for dim in ("dao", "tian", "di", "jiang", "fa"):
             fv = ForceVector(
-                dimension=dim, direction=0.0, magnitude=0.0,
-                confidence=0.0, velocity=0.0, acceleration=0.0,
-                kalman_direction=0.0, kalman_magnitude=0.0,
-                dominant=False, weight=0.0,
+                dimension=dim,
+                direction=0.0,
+                magnitude=0.0,
+                confidence=0.0,
+                velocity=0.0,
+                acceleration=0.0,
+                kalman_direction=0.0,
+                kalman_magnitude=0.0,
+                dominant=False,
+                weight=0.0,
             )
             assert fv.dimension == dim
 
@@ -142,7 +156,12 @@ class TestCycleComparison:
         )
         assert -1.0 <= cc.direction_7d <= 1.0
         assert cc.resonance_state in (
-            "resonance", "emerging", "divergence", "persistent", "turning", "observation"
+            "resonance",
+            "emerging",
+            "divergence",
+            "persistent",
+            "turning",
+            "observation",
         )
 
 
@@ -178,8 +197,13 @@ class TestContradictionTransform:
         )
         assert ct.transforming is True
         assert ct.transform_type in (
-            "elasticity_decay", "elasticity_amplification", "dominant_shift",
-            "resonance_break", "cbr_divergence", "data_quality_warning", "none",
+            "elasticity_decay",
+            "elasticity_amplification",
+            "dominant_shift",
+            "resonance_break",
+            "cbr_divergence",
+            "data_quality_warning",
+            "none",
         )
         assert 0.0 <= ct.confidence <= 1.0
         assert 0.0 <= ct.data_quality_factor <= 1.0

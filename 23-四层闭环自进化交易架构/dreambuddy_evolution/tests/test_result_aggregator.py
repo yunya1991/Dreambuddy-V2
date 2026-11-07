@@ -9,9 +9,8 @@ P1-2 RED: ResultAggregator 组件契约测试
 - get_evolution_feedback()->dict (L3/L4 反馈)
 - attach_trader(trader)->None
 """
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations  # noqa: I001
 
 
 class TestResultAggregatorContract:
@@ -22,6 +21,7 @@ class TestResultAggregatorContract:
 
     def test_class_instantiates_with_defaults(self):
         from dreambuddy_evolution.engines.result_aggregator import ResultAggregator
+
         aggregator = ResultAggregator()
         assert aggregator is not None
 
@@ -31,6 +31,7 @@ class TestGetEvolutionFeedback:
 
     def test_returns_dict_with_required_keys(self):
         from dreambuddy_evolution.engines.result_aggregator import ResultAggregator
+
         aggregator = ResultAggregator()
         feedback = aggregator.get_evolution_feedback()
         assert isinstance(feedback, dict)
@@ -45,6 +46,7 @@ class TestApplyMacroEventFilter:
 
     def test_returns_tuple_when_no_filter_data(self):
         from dreambuddy_evolution.engines.result_aggregator import ResultAggregator
+
         aggregator = ResultAggregator()
         kline_data = {"symbol": "BTC-USDT-SWAP"}
         result = aggregator.apply_macro_event_filter(

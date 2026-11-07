@@ -12,28 +12,46 @@
 体量×四象 = 参数空间 → 八八六十四卦
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, Any, Tuple
 import math
+from dataclasses import dataclass
+from typing import Any, Dict, Tuple
 
 from ._constants import (
-    FORCE_WEIGHT_CORE, FORCE_WEIGHT_SURFACE,
-    FORCE_WEIGHT_TIME, FORCE_WEIGHT_SPACE, FORCE_WEIGHT_LIQUIDITY,
-    SCALE_VOLATILITY_BASE, SCALE_VOLATILITY_RANGE,
-    SCALE_TIME_SHORT, SCALE_TIME_MID, SCALE_TIME_LONG,
-    SCALE_SPACE_SENSITIVITY_SMALL, SCALE_SPACE_SENSITIVITY_LARGE,
-    SCALE_SURFACE_WEIGHT_SMALL, SCALE_SURFACE_WEIGHT_LARGE,
-    SCALE_CORE_WEIGHT_SMALL, SCALE_CORE_WEIGHT_LARGE,
-    SCALE_MASS_SMALL, SCALE_MASS_LARGE,
-    SCALE_DECAY_SMALL, SCALE_DECAY_LARGE,
-    SCALE_CONFIDENCE_THRESHOLD_SMALL, SCALE_CONFIDENCE_THRESHOLD_LARGE,
-    SCALE_REVERSAL_THRESHOLD_SMALL, SCALE_REVERSAL_THRESHOLD_LARGE,
-    MARKET_MASS_BASE,
-    VELOCITY_DECAY,
-    REVERSAL_WARNING_THRESHOLD,
-    GUA_QIAN, GUA_KUN, GUA_ZHEN, GUA_XUN,
-    GUA_KAN, GUA_LI, GUA_GEN, GUA_DUI,
+    FORCE_WEIGHT_CORE,
+    FORCE_WEIGHT_LIQUIDITY,
+    FORCE_WEIGHT_SPACE,
+    FORCE_WEIGHT_SURFACE,
+    FORCE_WEIGHT_TIME,
+    GUA_DUI,
+    GUA_GEN,
+    GUA_KAN,
+    GUA_KUN,
+    GUA_LI,
     GUA_NAMES_CN,
+    GUA_QIAN,
+    GUA_XUN,
+    GUA_ZHEN,
+    MARKET_MASS_BASE,
+    REVERSAL_WARNING_THRESHOLD,
+    SCALE_CONFIDENCE_THRESHOLD_LARGE,
+    SCALE_CONFIDENCE_THRESHOLD_SMALL,
+    SCALE_CORE_WEIGHT_LARGE,
+    SCALE_CORE_WEIGHT_SMALL,
+    SCALE_DECAY_LARGE,
+    SCALE_DECAY_SMALL,
+    SCALE_MASS_LARGE,
+    SCALE_MASS_SMALL,
+    SCALE_REVERSAL_THRESHOLD_LARGE,
+    SCALE_REVERSAL_THRESHOLD_SMALL,
+    SCALE_SPACE_SENSITIVITY_LARGE,
+    SCALE_SPACE_SENSITIVITY_SMALL,
+    SCALE_SURFACE_WEIGHT_LARGE,
+    SCALE_SURFACE_WEIGHT_SMALL,
+    SCALE_TIME_LONG,
+    SCALE_TIME_MID,
+    SCALE_TIME_SHORT,
+    SCALE_VOLATILITY_RANGE,
+    VELOCITY_DECAY,
 )
 
 
@@ -44,6 +62,7 @@ class ScaleParams:
 
     每个参数随体量系数连续变化，通过线性插值或非线性映射。
     """
+
     scale: float = 0.5  # 体量系数 [0, 1]
 
     # 五象权重（随体量变化）
@@ -86,10 +105,12 @@ class ScaleParams:
         }
 
 
-def compute_scale(market_cap: float = None,
-                  volume: float = None,
-                  float_shares: float = None,
-                  explicit: float = None) -> float:
+def compute_scale(
+    market_cap: float = None,
+    volume: float = None,
+    float_shares: float = None,
+    explicit: float = None,
+) -> float:
     """
     计算连续体量系数 scale ∈ [0, 1]。
 
@@ -158,15 +179,12 @@ def scale_to_params(scale: float) -> ScaleParams:
     # --- 力学参数插值 ---
     mass_base = _lerp(SCALE_MASS_SMALL, SCALE_MASS_LARGE, s)
     decay = _lerp(SCALE_DECAY_SMALL, SCALE_DECAY_LARGE, s)
-    conf_threshold = _lerp(SCALE_CONFIDENCE_THRESHOLD_SMALL,
-                            SCALE_CONFIDENCE_THRESHOLD_LARGE, s)
-    reversal_thresh = _lerp(SCALE_REVERSAL_THRESHOLD_SMALL,
-                             SCALE_REVERSAL_THRESHOLD_LARGE, s)
+    conf_threshold = _lerp(SCALE_CONFIDENCE_THRESHOLD_SMALL, SCALE_CONFIDENCE_THRESHOLD_LARGE, s)
+    reversal_thresh = _lerp(SCALE_REVERSAL_THRESHOLD_SMALL, SCALE_REVERSAL_THRESHOLD_LARGE, s)
 
     # --- 时空参数 ---
     time_horizon = _lerp(SCALE_TIME_SHORT, SCALE_TIME_LONG, s)
-    space_sensitivity = _lerp(SCALE_SPACE_SENSITIVITY_SMALL,
-                               SCALE_SPACE_SENSITIVITY_LARGE, s)
+    space_sensitivity = _lerp(SCALE_SPACE_SENSITIVITY_SMALL, SCALE_SPACE_SENSITIVITY_LARGE, s)
     # 波动率调整：小体量+0.2，大体量-0.2
     vol_adj = (0.5 - s) * SCALE_VOLATILITY_RANGE
 
@@ -208,21 +226,21 @@ def scale_to_gua(scale: float) -> str:
     s = max(0.0, min(1.0, scale))
 
     if s >= 0.875:
-        return GUA_QIAN   # 超大盘
+        return GUA_QIAN  # 超大盘
     elif s >= 0.75:
-        return GUA_DUI    # 大盘偏大
+        return GUA_DUI  # 大盘偏大
     elif s >= 0.625:
-        return GUA_LI     # 中大盘
+        return GUA_LI  # 中大盘
     elif s >= 0.5:
-        return GUA_ZHEN   # 中盘
+        return GUA_ZHEN  # 中盘
     elif s >= 0.375:
-        return GUA_XUN    # 中小盘
+        return GUA_XUN  # 中小盘
     elif s >= 0.25:
-        return GUA_KAN    # 小盘
+        return GUA_KAN  # 小盘
     elif s >= 0.125:
-        return GUA_GEN    # 微盘偏大
+        return GUA_GEN  # 微盘偏大
     else:
-        return GUA_KUN    # 微盘
+        return GUA_KUN  # 微盘
 
 
 def gua_to_scale_params(gua: str) -> ScaleParams:
@@ -233,13 +251,13 @@ def gua_to_scale_params(gua: str) -> ScaleParams:
     """
     gua_scale_map = {
         GUA_QIAN: 0.95,  # 超大盘
-        GUA_DUI: 0.80,   # 大盘
-        GUA_LI: 0.70,    # 中大盘
+        GUA_DUI: 0.80,  # 大盘
+        GUA_LI: 0.70,  # 中大盘
         GUA_ZHEN: 0.55,  # 中盘
-        GUA_XUN: 0.40,   # 中小盘
-        GUA_KAN: 0.30,   # 小盘
-        GUA_GEN: 0.15,   # 微盘偏大
-        GUA_KUN: 0.05,   # 微盘
+        GUA_XUN: 0.40,  # 中小盘
+        GUA_KAN: 0.30,  # 小盘
+        GUA_GEN: 0.15,  # 微盘偏大
+        GUA_KUN: 0.05,  # 微盘
     }
     s = gua_scale_map.get(gua, 0.5)
     return scale_to_params(s)
@@ -270,8 +288,8 @@ def smooth_scale_to_params(scale: float) -> ScaleParams:
 # 体量×四象 = 六十四卦参数空间
 # ============================================================
 
-def compute_hexagram_params(scale: float,
-                              force_directions: Dict[str, float]) -> Dict[str, Any]:
+
+def compute_hexagram_params(scale: float, force_directions: Dict[str, float]) -> Dict[str, Any]:
     """
     体量×四象方向 → 六十四卦参数组合。
 
@@ -297,14 +315,16 @@ def compute_hexagram_params(scale: float,
     # 内卦：里（core）+ 表（surface）
     inner_yao1 = 1 if force_directions.get("core", 0) > 0 else 0
     inner_yao2 = 1 if force_directions.get("surface", 0) > 0 else 0
-    inner_yao3 = 1 if (force_directions.get("core", 0) *
-                       force_directions.get("surface", 0)) > 0 else 0
+    inner_yao3 = (
+        1 if (force_directions.get("core", 0) * force_directions.get("surface", 0)) > 0 else 0
+    )
 
     # 外卦：时（time）+ 空（space）
     outer_yao1 = 1 if force_directions.get("time", 0) > 0 else 0
     outer_yao2 = 1 if force_directions.get("space", 0) > 0 else 0
-    outer_yao3 = 1 if (force_directions.get("time", 0) *
-                       force_directions.get("space", 0)) > 0 else 0
+    outer_yao3 = (
+        1 if (force_directions.get("time", 0) * force_directions.get("space", 0)) > 0 else 0
+    )
 
     # 计算变化阈值（体量调整后）
     change_threshold = params.confidence_threshold
@@ -357,8 +377,9 @@ class ScaleEngine:
             explicit=market_snapshot.get("market_scale"),
         )
 
-    def adapt_snapshot(self, market_snapshot: Dict[str, Any],
-                       scale: float = None) -> Tuple[Dict[str, Any], ScaleParams]:
+    def adapt_snapshot(
+        self, market_snapshot: Dict[str, Any], scale: float = None
+    ) -> Tuple[Dict[str, Any], ScaleParams]:
         """
         根据体量调整市场快照。
 
@@ -372,8 +393,7 @@ class ScaleEngine:
         # 调整波动率
         adjusted = dict(market_snapshot)
         vol = adjusted.get("volatility", 0.5)
-        adjusted["volatility"] = max(0.05, min(0.95,
-            vol + params.volatility_adjustment))
+        adjusted["volatility"] = max(0.05, min(0.95, vol + params.volatility_adjustment))
 
         # 调整价格位置敏感度
         pp = adjusted.get("price_position", 0.5)

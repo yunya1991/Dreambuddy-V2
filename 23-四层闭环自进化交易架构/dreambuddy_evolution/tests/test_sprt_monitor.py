@@ -6,13 +6,12 @@
 - α=0.05, β=0.10, 边界 A=(1-β)/α=18, B=β/(1-α)≈0.1053
 - ASN ≈ 73 期做出决策
 """
-import math
-import pytest
 
 
 def test_module_importable():
     """SPRTMonitor 可导入。"""
     from dreambuddy_evolution.core.sprt_monitor import SPRTMonitor
+
     assert SPRTMonitor is not None
 
 
@@ -70,6 +69,7 @@ def test_asn_approx_73():
     for _ in range(200):
         m = SPRTMonitor(p0=0.75, p1=0.50, alpha=0.05, beta=0.10)
         import random
+
         random.seed()
         for i in range(500):
             consistent = random.random() < 0.625

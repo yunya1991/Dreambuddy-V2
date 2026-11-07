@@ -1,16 +1,8 @@
-import numpy as np
-import pandas as pd
-from datetime import datetime, timedelta, timezone
-from pandas import DataFrame
-from typing import Dict, Optional, Union, Tuple
-
-from freqtrade.strategy import IStrategy
-from freqtrade.persistence import Trade
-
 import talib.abstract as ta
-from technical import qtpylib
-
 from BottomConfirmationModule import BottomConfirmationModule
+from freqtrade.strategy import IStrategy
+from pandas import DataFrame
+from technical import qtpylib
 
 
 class BottomConfirmationStrategy(IStrategy):
@@ -20,11 +12,7 @@ class BottomConfirmationStrategy(IStrategy):
 
     can_short: bool = False
 
-    minimal_roi = {
-        "60": 0.01,
-        "30": 0.02,
-        "0": 0.04
-    }
+    minimal_roi = {"60": 0.01, "30": 0.02, "0": 0.04}
 
     stoploss = -0.10
 
@@ -45,13 +33,10 @@ class BottomConfirmationStrategy(IStrategy):
         "entry": "limit",
         "exit": "limit",
         "stoploss": "market",
-        "stoploss_on_exchange": False
+        "stoploss_on_exchange": False,
     }
 
-    order_time_in_force = {
-        "entry": "GTC",
-        "exit": "GTC"
-    }
+    order_time_in_force = {"entry": "GTC", "exit": "GTC"}
 
     def __init__(self, config: dict) -> None:
         super().__init__(config)
@@ -75,7 +60,7 @@ class BottomConfirmationStrategy(IStrategy):
                 "BottomConfirm": {
                     "bottom_confirmation_score": {"color": "green"},
                 },
-            }
+            },
         }
 
     def informative_pairs(self):
@@ -107,23 +92,25 @@ class BottomConfirmationStrategy(IStrategy):
 
         dataframe.loc[
             (
-                bottom_cond &
-                (dataframe["rsi"] < self.buy_rsi) &
-                (dataframe["tema"] <= dataframe["bb_middleband"]) &
-                (dataframe["tema"] > dataframe["tema"].shift(1)) &
-                (dataframe["volume"] > 0)
+                bottom_cond
+                & (dataframe["rsi"] < self.buy_rsi)
+                & (dataframe["tema"] <= dataframe["bb_middleband"])
+                & (dataframe["tema"] > dataframe["tema"].shift(1))
+                & (dataframe["volume"] > 0)
             ),
-            "enter_long"] = 1
+            "enter_long",
+        ] = 1
 
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
-                (dataframe["rsi"] > self.sell_rsi) &
-                (dataframe["tema"] > dataframe["bb_middleband"]) &
-                (dataframe["tema"] < dataframe["tema"].shift(1)) &
-                (dataframe["volume"] > 0)
+                (dataframe["rsi"] > self.sell_rsi)
+                & (dataframe["tema"] > dataframe["bb_middleband"])
+                & (dataframe["tema"] < dataframe["tema"].shift(1))
+                & (dataframe["volume"] > 0)
             ),
-            "exit_long"] = 1
+            "exit_long",
+        ] = 1
         return dataframe

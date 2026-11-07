@@ -11,6 +11,7 @@
   dreambuddy_evolution/data/neural_sde_v1.pt
   dreambuddy_evolution/data/neural_sde_v1.training_report.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -18,7 +19,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import numpy as np
 
@@ -26,15 +27,16 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
-from dreambuddy_evolution.core.garch_fallback import GARCHFallback
-from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
+from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector  # noqa: E402, I001
+from dreambuddy_evolution.core.garch_fallback import GARCHFallback  # noqa: E402
+from dreambuddy_evolution.core.neural_sde_model import (  # noqa: E402
+    NeuralSDEModel,
+    NeuralSDETrainer,
+)  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_OUTPUT_PATH = str(
-    Path(__file__).resolve().parents[1] / "data" / "neural_sde_v1.pt"
-)
+DEFAULT_OUTPUT_PATH = str(Path(__file__).resolve().parents[1] / "data" / "neural_sde_v1.pt")
 
 
 def generate_synthetic_closes(n: int = 2000) -> np.ndarray:
@@ -72,8 +74,8 @@ def evaluate_mae(
 
     # 用最后 horizon 个点做评估
     test_start = n - horizon - 1
-    history = closes[:test_start + 1]
-    actual = closes[test_start + 1:test_start + 1 + horizon]
+    history = closes[: test_start + 1]
+    actual = closes[test_start + 1 : test_start + 1 + horizon]
     init_price = float(history[-1])
     returns = np.diff(np.log(history))
     init_vol = float(np.std(returns)) if len(returns) > 2 else 0.02
@@ -110,31 +112,54 @@ def main():
     parser.add_argument("--horizon", type=int, default=20, help="预测步数")
     # P2/P4 最优架构超参
     parser.add_argument("--n-regimes", type=int, default=3, help="regime 数量")
-    parser.add_argument("--use-moe", action="store_true", default=True,
-                        help="启用 MoE-SDE (每 regime 独立 expert)")
-    parser.add_argument("--no-moe", action="store_false", dest="use_moe",
-                        help="禁用 MoE-SDE (回退共享 drift_net)")
-    parser.add_argument("--moe-routing", choices=["soft", "hard"], default="hard",
-                        help="MoE 路由模式 (P2 最优: hard)")
-    parser.add_argument("--loss-type", choices=["mse", "huber", "return_mse"],
-                        default="return_mse", help="损失函数 (P4 最优: return_mse)")
-    parser.add_argument("--dropout", type=float, default=0.05,
-                        help="dropout 概率 (P4 最优: 0.05)")
-    parser.add_argument("--weight-decay", type=float, default=1e-4,
-                        help="AdamW weight_decay (P4 最优: 1e-4)")
-    parser.add_argument("--regime-balance", choices=["natural", "balanced", "oversample"],
-                        default="natural", help="regime 均衡策略 (P2 最优: natural)")
+    parser.add_argument(
+        "--use-moe", action="store_true", default=True, help="启用 MoE-SDE (每 regime 独立 expert)"
+    )
+    parser.add_argument(
+        "--no-moe", action="store_false", dest="use_moe", help="禁用 MoE-SDE (回退共享 drift_net)"
+    )
+    parser.add_argument(
+        "--moe-routing",
+        choices=["soft", "hard"],
+        default="hard",
+        help="MoE 路由模式 (P2 最优: hard)",
+    )
+    parser.add_argument(
+        "--loss-type",
+        choices=["mse", "huber", "return_mse"],
+        default="return_mse",
+        help="损失函数 (P4 最优: return_mse)",
+    )
+    parser.add_argument("--dropout", type=float, default=0.05, help="dropout 概率 (P4 最优: 0.05)")
+    parser.add_argument(
+        "--weight-decay", type=float, default=1e-4, help="AdamW weight_decay (P4 最优: 1e-4)"
+    )
+    parser.add_argument(
+        "--regime-balance",
+        choices=["natural", "balanced", "oversample"],
+        default="natural",
+        help="regime 均衡策略 (P2 最优: natural)",
+    )
     parser.add_argument("--patience", type=int, default=10, help="early stopping patience")
     parser.add_argument("--val-split", type=float, default=0.1, help="验证集比例")
     # P1+ Cross-Attention 外生因子
-    parser.add_argument("--use-cross-attention", action="store_true", default=False,
-                        help="启用 Cross-Attention 外生因子注入")
-    parser.add_argument("--cross-attn-dim", type=int, default=16,
-                        help="Cross-Attention 隐藏维度 (默认 16)")
-    parser.add_argument("--cross-attn-heads", type=int, default=2,
-                        help="Cross-Attention 注意力头数 (默认 2)")
-    parser.add_argument("--exogenous-factors-file", default=None,
-                        help="外生因子时序 JSON 文件 (N, F) 数组, 启用 cross-attention 时使用")
+    parser.add_argument(
+        "--use-cross-attention",
+        action="store_true",
+        default=False,
+        help="启用 Cross-Attention 外生因子注入",
+    )
+    parser.add_argument(
+        "--cross-attn-dim", type=int, default=16, help="Cross-Attention 隐藏维度 (默认 16)"
+    )
+    parser.add_argument(
+        "--cross-attn-heads", type=int, default=2, help="Cross-Attention 注意力头数 (默认 2)"
+    )
+    parser.add_argument(
+        "--exogenous-factors-file",
+        default=None,
+        help="外生因子时序 JSON 文件 (N, F) 数组, 启用 cross-attention 时使用",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -157,12 +182,16 @@ def main():
         detector = BTCRegimeDetector()
         regime_labels = detector.detect(closes)
         counts = np.bincount(regime_labels, minlength=args.n_regimes)
-        logger.info("regime 分布: %s",
-                    ", ".join(f"r{i}={counts[i]} ({100*counts[i]/len(closes):.1f}%)"
-                              for i in range(min(args.n_regimes, len(counts)))))
+        logger.info(
+            "regime 分布: %s",
+            ", ".join(
+                f"r{i}={counts[i]} ({100*counts[i]/len(closes):.1f}%)"
+                for i in range(min(args.n_regimes, len(counts)))
+            ),
+        )
 
     # 初始化模型 (P2+P4 最优配置 + P1+ Cross-Attention)
-    model_kwargs = dict(
+    model_kwargs = dict(  # noqa: C408
         device="cpu",
         n_regimes=args.n_regimes,
         use_moe=args.use_moe,
@@ -176,8 +205,9 @@ def main():
             cross_attn_heads=args.cross_attn_heads,
             exogenous_factor_dim=36,  # C1-C8 矛盾维度 36 个因子，覆盖全部 10 模块
         )
-        logger.info("启用 Cross-Attention: dim=%d heads=%d",
-                    args.cross_attn_dim, args.cross_attn_heads)
+        logger.info(
+            "启用 Cross-Attention: dim=%d heads=%d", args.cross_attn_dim, args.cross_attn_heads
+        )
     model = NeuralSDEModel(**model_kwargs)
     if not model.is_available:
         logger.error("torch 不可用，无法训练 Neural SDE")
@@ -197,9 +227,14 @@ def main():
     )
 
     # 训练
-    logger.info("=== 开始训练: epochs=%d batch_size=%d moe=%s routing=%s ===",
-                args.epochs, args.batch_size, args.use_moe, args.moe_routing)
-    train_kwargs = dict(
+    logger.info(
+        "=== 开始训练: epochs=%d batch_size=%d moe=%s routing=%s ===",
+        args.epochs,
+        args.batch_size,
+        args.use_moe,
+        args.moe_routing,
+    )
+    train_kwargs = dict(  # noqa: C408
         epochs=args.epochs,
         regime_labels=regime_labels,
         regime_balance=args.regime_balance,
@@ -211,7 +246,7 @@ def main():
             factors = factors.reshape(-1, 1)
         # 截断或 pad 到 closes 长度
         if len(factors) > len(closes):
-            factors = factors[:len(closes)]
+            factors = factors[: len(closes)]
         elif len(factors) < len(closes):
             pad = np.zeros((len(closes) - len(factors), factors.shape[1]))
             factors = np.concatenate([pad, factors], axis=0)
@@ -228,13 +263,14 @@ def main():
         logger.error("训练失败: %s", report)
         return 1
 
-    logger.info("训练完成: final_loss=%.6f, n_windows=%d", report["final_loss"], report["n_windows"])
+    logger.info(
+        "训练完成: final_loss=%.6f, n_windows=%d", report["final_loss"], report["n_windows"]
+    )
 
     # 评估 (取最后一个点的 regime)
     garch = GARCHFallback()
     test_regime = int(regime_labels[-1]) if regime_labels is not None else None
-    mae_report = evaluate_mae(model, garch, closes, horizon=args.horizon,
-                              regime=test_regime)
+    mae_report = evaluate_mae(model, garch, closes, horizon=args.horizon, regime=test_regime)
     logger.info(
         "MAE 对比: NeuralSDE=%.6f vs GARCH=%.6f (improvement=%.6f)",
         mae_report["neural_sde_mae"],
@@ -290,7 +326,7 @@ def select_best_version(current_model_path: Path) -> Path:
         最优版本的路径
     """
     data_dir = current_model_path.parent
-    stem = current_model_path.stem  # e.g. neural_sde_v1_real
+    stem = current_model_path.stem  # e.g. neural_sde_v1_real  # noqa: F841
 
     # 收集所有版本
     versions: list[tuple[str, float, Path]] = []  # (tag, mae, model_path)
@@ -333,6 +369,7 @@ def select_best_version(current_model_path: Path) -> Path:
     main_path = data_dir / "neural_sde_v1.pt"
     if best_path != main_path:
         import shutil
+
         shutil.copy2(best_path, main_path)
         # 复制对应的 training_report
         best_report = best_path.with_suffix(".training_report.json")

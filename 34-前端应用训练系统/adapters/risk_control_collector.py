@@ -10,6 +10,7 @@
 生成 (message, intent_type='risk_control') 训练案例。
 FAIL-OPEN: 日志缺失/解析失败返回空列表。
 """
+
 import glob
 import os
 import re
@@ -19,7 +20,7 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
 _PROJECT_ROOT = os.path.dirname(_34_DIR)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 _LOG_DIR = os.path.join(_PROJECT_ROOT, "16-调控系统", "logs")
 
@@ -85,29 +86,33 @@ class RiskControlCollector(TrainingDataProvider):
             return []
 
         state_summary = "/".join(
-            f"{_STATE_DESC.get(k, k)}{v}" for k, v in latest.items() if k != "total" and k != "history_triggered"
+            f"{_STATE_DESC.get(k, k)}{v}"
+            for k, v in latest.items()
+            if k != "total" and k != "history_triggered"
         )
         cases: List[TrainingCase] = []
-        for idx, tpl in enumerate(_TEMPLATES):
+        for idx, tpl in enumerate(_TEMPLATES):  # noqa: B007
             if len(cases) >= limit:
                 break
             message = tpl
-            cases.append(TrainingCase(
-                intent="risk_control",
-                actions=["risk_control:trailing", f"total:{latest['total']}"],
-                outcome_text=message,
-                learned=[
-                    f"风控状态: 总持仓{latest['total']} {state_summary} 历史触发{latest['history_triggered']}"
-                ],
-                layer_tags=["S"],
-                quality="B",
-                confidence=0.6,
-                source="risk_control",
-                metadata={
-                    "positions": latest,
-                    "engine_hint": "16-调控系统/移动止盈",
-                },
-            ))
+            cases.append(
+                TrainingCase(
+                    intent="risk_control",
+                    actions=["risk_control:trailing", f"total:{latest['total']}"],
+                    outcome_text=message,
+                    learned=[
+                        f"风控状态: 总持仓{latest['total']} {state_summary} 历史触发{latest['history_triggered']}"
+                    ],
+                    layer_tags=["S"],
+                    quality="B",
+                    confidence=0.6,
+                    source="risk_control",
+                    metadata={
+                        "positions": latest,
+                        "engine_hint": "16-调控系统/移动止盈",
+                    },
+                )
+            )
         # 补充变体问法
         variants = [
             f"现在有{latest['ARMED']}个仓位武装了吗",
@@ -117,15 +122,17 @@ class RiskControlCollector(TrainingDataProvider):
         for message in variants:
             if len(cases) >= limit:
                 break
-            cases.append(TrainingCase(
-                intent="risk_control",
-                actions=["risk_control:variant"],
-                outcome_text=message,
-                learned=[f"风控状态查询: {state_summary}"],
-                layer_tags=["S"],
-                quality="B",
-                confidence=0.5,
-                source="risk_control",
-                metadata={"positions": latest, "engine_hint": "16-调控系统"},
-            ))
+            cases.append(
+                TrainingCase(
+                    intent="risk_control",
+                    actions=["risk_control:variant"],
+                    outcome_text=message,
+                    learned=[f"风控状态查询: {state_summary}"],
+                    layer_tags=["S"],
+                    quality="B",
+                    confidence=0.5,
+                    source="risk_control",
+                    metadata={"positions": latest, "engine_hint": "16-调控系统"},
+                )
+            )
         return cases

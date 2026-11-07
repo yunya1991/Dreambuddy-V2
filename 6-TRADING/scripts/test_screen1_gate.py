@@ -24,14 +24,14 @@ Screen 1 门禁压力测试 v1.0
 运行: python test_screen1_gate.py
 """
 
-import json
+import json  # noqa: I001
 import os
 import sys
 import io
 import tempfile
 import traceback
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 if sys.platform == "win32":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
@@ -39,18 +39,15 @@ if sys.platform == "win32":
 # ── 导入被测模块 ──────────────────────────────────────────────────────────────
 sys.path.insert(0, r"C:\tmp")
 
-from annotation_freshness_gate import (
+from annotation_freshness_gate import (  # noqa: I001
     check_annotation_freshness,
     format_gate_report,
-    VALID_REGIMES,
     CORE_DIMS,
     DIMENSION_META,
     STATUS_FRESH,
     STATUS_STALE,
-    STATUS_MISSING,
 )
-from cross_asset_allocator import calc_cross_asset_allocation, format_screen1_a_summary
-
+from cross_asset_allocator import calc_cross_asset_allocation
 
 # ── 测试基础设施 ──────────────────────────────────────────────────────────────
 
@@ -103,6 +100,7 @@ def assert_false(name: str, cond: bool, msg: str = ""):
 
 # ── 注释文件生成工具 ──────────────────────────────────────────────────────────
 
+
 def _make_annotation(dim: str, days_ago: int, extra: Optional[Dict] = None) -> Dict:
     """生成指定维度的 mock annotation（days_ago 天前更新）."""
     today = datetime.now()
@@ -111,43 +109,44 @@ def _make_annotation(dim: str, days_ago: int, extra: Optional[Dict] = None) -> D
     base: Dict = {"updated": updated, "final_signal": "NEUTRAL", "confidence": 0.70}
 
     if dim == "cross_market":
-        base["clock_stage"]     = "STAGFLATION_LITE"
-        base["final_signal"]    = "NEUTRAL"
-        base["score"]           = 0
+        base["clock_stage"] = "STAGFLATION_LITE"
+        base["final_signal"] = "NEUTRAL"
+        base["score"] = 0
         base["data_completeness"] = "full"
     elif dim == "cycle":
-        base["stage"]           = 6
-        base["stage_name"]      = "去库存期"
+        base["stage"] = 6
+        base["stage_name"] = "去库存期"
         base["days_since_halving"] = 772
-        base["baseline_score"]  = -15
-        base["final_signal"]    = "BEAR"
+        base["baseline_score"] = -15
+        base["final_signal"] = "BEAR"
     elif dim == "miner":
-        base["current_price"]   = 73500
-        base["final_signal"]    = "NEUTRAL"
-        base["code_score"]      = -10
+        base["current_price"] = 73500
+        base["final_signal"] = "NEUTRAL"
+        base["code_score"] = -10
     elif dim == "onchain":
-        base["mvrv_z"]          = 1.0
-        base["nupl"]            = 0.23
-        base["rhodl_ratio"]     = 4.5
-        base["sth_mvrv"]        = 0.76
-        base["final_signal"]    = "BULL"
+        base["mvrv_z"] = 1.0
+        base["nupl"] = 0.23
+        base["rhodl_ratio"] = 4.5
+        base["sth_mvrv"] = 0.76
+        base["final_signal"] = "BULL"
     elif dim == "macro":
-        base["m2_yoy_pct"]      = 12.0
-        base["dxy_trend"]       = "FALLING"
-        base["yield_10y_pct"]   = 4.3
-        base["final_signal"]    = "NEUTRAL"
+        base["m2_yoy_pct"] = 12.0
+        base["dxy_trend"] = "FALLING"
+        base["yield_10y_pct"] = 4.3
+        base["final_signal"] = "NEUTRAL"
     elif dim == "cross_asset":
-        base["clock_stage"]     = "STAGFLATION_LITE"
-        base["btc_role"]        = "high_beta_short"
-        base["skill_regime"]    = "STRONG_BEAR"
+        base["clock_stage"] = "STAGFLATION_LITE"
+        base["btc_role"] = "high_beta_short"
+        base["skill_regime"] = "STRONG_BEAR"
 
     if extra:
         base.update(extra)
     return base
 
 
-def _write_annotations(tmpdir: str, specs: Dict[str, Optional[int]],
-                        extras: Optional[Dict[str, Dict]] = None) -> None:
+def _write_annotations(
+    tmpdir: str, specs: Dict[str, Optional[int]], extras: Optional[Dict[str, Dict]] = None
+) -> None:
     """
     往 tmpdir 写入指定维度的 mock annotation 文件。
     specs: {dim_key: days_ago} — None 表示不写（缺失）
@@ -159,14 +158,13 @@ def _write_annotations(tmpdir: str, specs: Dict[str, Optional[int]],
         if days is None:
             continue  # 不写 = 文件缺失
         fname = DIMENSION_META[dim]["file"]
-        path  = os.path.join(tmpdir, fname)
-        data  = _make_annotation(dim, days, extras.get(dim))
+        path = os.path.join(tmpdir, fname)
+        data = _make_annotation(dim, days, extras.get(dim))
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def _run_gate(tmpdir: str, today: Optional[datetime] = None,
-              is_btc: bool = True) -> Dict:
+def _run_gate(tmpdir: str, today: Optional[datetime] = None, is_btc: bool = True) -> Dict:
     return check_annotation_freshness(base=tmpdir, today=today, is_btc=is_btc)
 
 
@@ -186,7 +184,7 @@ def scenario(name: str):
 # ─────────────────────────────────────────────────────────────────────────────
 scenario("S01 — 所有 annotation 新鲜 → FULL")
 with tempfile.TemporaryDirectory() as td:
-    _write_annotations(td, {dim: 1 for dim in CORE_DIMS})
+    _write_annotations(td, dict.fromkeys(CORE_DIMS, 1))
     g = _run_gate(td)
     assert_eq("gate_level", g["gate_level"], "FULL")
     assert_true("gate_pass", g["gate_pass"])
@@ -235,10 +233,16 @@ with tempfile.TemporaryDirectory() as td:
 # ─────────────────────────────────────────────────────────────────────────────
 scenario("S04 — 4/5 新鲜（仅 B 过期 15天 > max_days 14）→ PARTIAL")
 with tempfile.TemporaryDirectory() as td:
-    _write_annotations(td, {
-        "cycle": 15,   # 超过 max_days=14 → STALE
-        "miner": 1, "onchain": 1, "macro": 1, "cross_market": 1,
-    })
+    _write_annotations(
+        td,
+        {
+            "cycle": 15,  # 超过 max_days=14 → STALE
+            "miner": 1,
+            "onchain": 1,
+            "macro": 1,
+            "cross_market": 1,
+        },
+    )
     g = _run_gate(td)
     assert_eq("gate_level", g["gate_level"], "PARTIAL")
     assert_in("cycle stale", "cycle", g["stale_dims"])
@@ -253,7 +257,7 @@ with tempfile.TemporaryDirectory() as td:
 # ─────────────────────────────────────────────────────────────────────────────
 scenario("S05 — B cycle 12天前更新（max_days=14）→ FRESH（边界验证）")
 with tempfile.TemporaryDirectory() as td:
-    _write_annotations(td, {dim: 1 for dim in CORE_DIMS})
+    _write_annotations(td, dict.fromkeys(CORE_DIMS, 1))
     # 覆盖 cycle 为 12 天前
     _write_annotations(td, {"cycle": 12})
     g = _run_gate(td)
@@ -267,11 +271,16 @@ with tempfile.TemporaryDirectory() as td:
 # ─────────────────────────────────────────────────────────────────────────────
 scenario("S06 — E(macro) 过期 + F(cross_market) 新鲜 → 依赖违规")
 with tempfile.TemporaryDirectory() as td:
-    _write_annotations(td, {
-        "cycle": 1, "miner": 1, "onchain": 1,
-        "macro": 10,         # STALE（>7天）
-        "cross_market": 1,   # FRESH → 但依赖 E 已过期
-    })
+    _write_annotations(
+        td,
+        {
+            "cycle": 1,
+            "miner": 1,
+            "onchain": 1,
+            "macro": 10,  # STALE（>7天）
+            "cross_market": 1,  # FRESH → 但依赖 E 已过期
+        },
+    )
     g = _run_gate(td)
     assert_true("dep_violations not empty", bool(g["dependency_violations"]))
     assert_in("macro in stale", "macro", g["stale_dims"])
@@ -288,11 +297,16 @@ with tempfile.TemporaryDirectory() as td:
 # ─────────────────────────────────────────────────────────────────────────────
 scenario("S07 — E 缺失 + F 新鲜 → 依赖违规（缺失比过期更严重）")
 with tempfile.TemporaryDirectory() as td:
-    _write_annotations(td, {
-        "cycle": 1, "miner": 1, "onchain": 1,
-        # macro 不写 = 缺失
-        "cross_market": 1,
-    })
+    _write_annotations(
+        td,
+        {
+            "cycle": 1,
+            "miner": 1,
+            "onchain": 1,
+            # macro 不写 = 缺失
+            "cross_market": 1,
+        },
+    )
     g = _run_gate(td)
     assert_true("dep_violations not empty", bool(g["dependency_violations"]))
     viol_text = " ".join(g["dependency_violations"])
@@ -305,9 +319,10 @@ with tempfile.TemporaryDirectory() as td:
 # ─────────────────────────────────────────────────────────────────────────────
 scenario("S08 — skill_regime=STRONG_BEAR 写入 cross_asset → 正确读取")
 with tempfile.TemporaryDirectory() as td:
-    _write_annotations(td, {dim: 1 for dim in CORE_DIMS})
-    _write_annotations(td, {"cross_asset": 1},
-                       extras={"cross_asset": {"skill_regime": "STRONG_BEAR"}})
+    _write_annotations(td, dict.fromkeys(CORE_DIMS, 1))
+    _write_annotations(
+        td, {"cross_asset": 1}, extras={"cross_asset": {"skill_regime": "STRONG_BEAR"}}
+    )
     g = _run_gate(td)
     assert_eq("skill_regime", g["skill_regime"], "STRONG_BEAR")
     assert_eq("gate_level FULL", g["gate_level"], "FULL")
@@ -318,12 +333,14 @@ with tempfile.TemporaryDirectory() as td:
 # ─────────────────────────────────────────────────────────────────────────────
 scenario("S09 — skill_regime='INVALID_VALUE' → 被忽略")
 with tempfile.TemporaryDirectory() as td:
-    _write_annotations(td, {dim: 1 for dim in CORE_DIMS})
-    _write_annotations(td, {"cross_asset": 1},
-                       extras={"cross_asset": {"skill_regime": "INVALID_VALUE"}})
+    _write_annotations(td, dict.fromkeys(CORE_DIMS, 1))
+    _write_annotations(
+        td, {"cross_asset": 1}, extras={"cross_asset": {"skill_regime": "INVALID_VALUE"}}
+    )
     g = _run_gate(td)
-    assert_false("skill_regime is None/empty", bool(g["skill_regime"]),
-                 f"got: {g['skill_regime']!r}")
+    assert_false(
+        "skill_regime is None/empty", bool(g["skill_regime"]), f"got: {g['skill_regime']!r}"
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -332,8 +349,11 @@ with tempfile.TemporaryDirectory() as td:
 scenario("S10 — clock_stage 从 F annotation 提取")
 for expected_clock in ["RECOVERY", "OVERHEAT", "STAGFLATION", "STAGFLATION_LITE", "REFLATION"]:
     with tempfile.TemporaryDirectory() as td:
-        _write_annotations(td, {dim: 1 for dim in CORE_DIMS},
-                           extras={"cross_market": {"clock_stage": expected_clock}})
+        _write_annotations(
+            td,
+            dict.fromkeys(CORE_DIMS, 1),
+            extras={"cross_market": {"clock_stage": expected_clock}},
+        )
         g = _run_gate(td)
         assert_eq(f"clock_stage={expected_clock}", g["clock_stage"], expected_clock)
 
@@ -344,7 +364,7 @@ for expected_clock in ["RECOVERY", "OVERHEAT", "STAGFLATION", "STAGFLATION_LITE"
 scenario("S11 — is_btc=False → BTC-only 维度 SKIPPED")
 with tempfile.TemporaryDirectory() as td:
     # 即使写入了文件，btc_only 维度也应该被跳过
-    _write_annotations(td, {dim: 1 for dim in CORE_DIMS})
+    _write_annotations(td, dict.fromkeys(CORE_DIMS, 1))
     g = _run_gate(td, is_btc=False)
     btc_only_dims = [d for d in DIMENSION_META if DIMENSION_META[d]["btc_only"]]
     for dim in btc_only_dims:
@@ -360,14 +380,14 @@ with tempfile.TemporaryDirectory() as td:
 # ─────────────────────────────────────────────────────────────────────────────
 scenario("S12 — E macro 刚好 7 天前 → FRESH（边界 max_days=7）")
 with tempfile.TemporaryDirectory() as td:
-    _write_annotations(td, {dim: 7 for dim in CORE_DIMS})
+    _write_annotations(td, dict.fromkeys(CORE_DIMS, 7))
     g = _run_gate(td)
     macro_status = g["dimensions"]["macro"]["status"]
     assert_eq("macro FRESH at exactly max_days=7", macro_status, STATUS_FRESH)
 
 scenario("S12b — E macro 8 天前 → STALE（刚超边界）")
 with tempfile.TemporaryDirectory() as td:
-    _write_annotations(td, {dim: 1 for dim in CORE_DIMS})
+    _write_annotations(td, dict.fromkeys(CORE_DIMS, 1))
     _write_annotations(td, {"macro": 8})
     g = _run_gate(td)
     macro_status = g["dimensions"]["macro"]["status"]
@@ -393,11 +413,15 @@ for clock in clocks:
             assert r["ml_clock_phase"] == clock, f"clock mismatch: {r['ml_clock_phase']}"
             # 验证配置完整性
             alloc = r["allocation"]
-            total = (sum(x["weight"] for x in alloc["long"]) +
-                     sum(x["weight"] for x in alloc["short"]) +
-                     alloc["cash"])
+            total = (
+                sum(x["weight"] for x in alloc["long"])
+                + sum(x["weight"] for x in alloc["short"])
+                + alloc["cash"]
+            )
             assert abs(total - 1.0) < 1e-6, f"权重之和 {total:.4f} ≠ 1.0"
-            _ok(f"{clock} Phase{'1' if phase1 else '2'}: weights sum=1.0, {len(alloc['long'])}L/{len(alloc['short'])}S")
+            _ok(
+                f"{clock} Phase{'1' if phase1 else '2'}: weights sum=1.0, {len(alloc['long'])}L/{len(alloc['short'])}S"
+            )
         except Exception as e:
             _fail(f"{clock} Phase{'1' if phase1 else '2'}", str(e))
 
@@ -416,10 +440,10 @@ assert_true("btc_role correct", r["btc_role"] == "high_beta_short")
 # ─────────────────────────────────────────────────────────────────────────────
 scenario("S15 — format_gate_report 在各种状态下均可渲染")
 for state_name, specs in [
-    ("FULL",     {dim: 1 for dim in CORE_DIMS}),
-    ("PARTIAL",  {"cycle": 1, "miner": 1, "onchain": 1}),
+    ("FULL", dict.fromkeys(CORE_DIMS, 1)),
+    ("PARTIAL", {"cycle": 1, "miner": 1, "onchain": 1}),
     ("BASELINE", {}),
-    ("STALE_E",  {dim: 1 for dim in CORE_DIMS if dim != "macro"} | {"macro": 10}),
+    ("STALE_E", {dim: 1 for dim in CORE_DIMS if dim != "macro"} | {"macro": 10}),
 ]:
     with tempfile.TemporaryDirectory() as td:
         _write_annotations(td, specs)
@@ -439,32 +463,35 @@ scenario("S16 — 完整工作流集成: 门禁输出直接驱动 cross_asset_al
 
 WORKFLOW_CASES = [
     # (说明, specs, extra_cross_market, expected_clock, expected_btc_role)
-    ("FULL+Recovery",
-     {**{dim: 1 for dim in CORE_DIMS}},
-     {"clock_stage": "RECOVERY"},
-     "RECOVERY", "high_beta_long"),
-
-    ("FULL+Stagflation_Lite",
-     {**{dim: 1 for dim in CORE_DIMS}},
-     {"clock_stage": "STAGFLATION_LITE"},
-     "STAGFLATION_LITE", "high_beta_short"),
-
-    ("FULL+Reflation",
-     {**{dim: 1 for dim in CORE_DIMS}},
-     {"clock_stage": "REFLATION"},
-     "REFLATION", "accumulation_lhs"),
-
-    ("PARTIAL_no_F",
-     {"cycle": 1, "miner": 1, "onchain": 1, "macro": 1},
-     None,
-     "STAGFLATION_LITE",   # F 缺失 → 使用代码默认值
-     "high_beta_short"),
-
-    ("BASELINE",
-     {},
-     None,
-     "STAGFLATION_LITE",   # 全缺失 → 默认
-     "high_beta_short"),
+    (
+        "FULL+Recovery",
+        {**dict.fromkeys(CORE_DIMS, 1)},
+        {"clock_stage": "RECOVERY"},
+        "RECOVERY",
+        "high_beta_long",
+    ),
+    (
+        "FULL+Stagflation_Lite",
+        {**dict.fromkeys(CORE_DIMS, 1)},
+        {"clock_stage": "STAGFLATION_LITE"},
+        "STAGFLATION_LITE",
+        "high_beta_short",
+    ),
+    (
+        "FULL+Reflation",
+        {**dict.fromkeys(CORE_DIMS, 1)},
+        {"clock_stage": "REFLATION"},
+        "REFLATION",
+        "accumulation_lhs",
+    ),
+    (
+        "PARTIAL_no_F",
+        {"cycle": 1, "miner": 1, "onchain": 1, "macro": 1},
+        None,
+        "STAGFLATION_LITE",  # F 缺失 → 使用代码默认值
+        "high_beta_short",
+    ),
+    ("BASELINE", {}, None, "STAGFLATION_LITE", "high_beta_short"),  # 全缺失 → 默认
 ]
 
 for case_name, specs, extra_cm, exp_clock, exp_role in WORKFLOW_CASES:
@@ -482,15 +509,17 @@ for case_name, specs, extra_cm, exp_clock, exp_role in WORKFLOW_CASES:
                 clock_stage=clock, regime="STRONG_BEAR", phase1_only=True
             )
             assert_eq(f"[{case_name}] clock_stage", r["ml_clock_phase"], exp_clock)
-            assert_eq(f"[{case_name}] btc_role",    r["btc_role"],       exp_role)
+            assert_eq(f"[{case_name}] btc_role", r["btc_role"], exp_role)
             # 权重完整性
             alloc = r["allocation"]
-            total = (sum(x["weight"] for x in alloc["long"]) +
-                     sum(x["weight"] for x in alloc["short"]) +
-                     alloc["cash"])
-            assert_true(f"[{case_name}] weights sum ≈ 1.0",
-                        abs(total - 1.0) < 1e-6,
-                        f"total={total:.4f}")
+            total = (
+                sum(x["weight"] for x in alloc["long"])
+                + sum(x["weight"] for x in alloc["short"])
+                + alloc["cash"]
+            )
+            assert_true(
+                f"[{case_name}] weights sum ≈ 1.0", abs(total - 1.0) < 1e-6, f"total={total:.4f}"
+            )
         except Exception as e:
             _fail(f"[{case_name}] workflow exception", str(e))
             traceback.print_exc()
@@ -498,11 +527,11 @@ for case_name, specs, extra_cm, exp_clock, exp_role in WORKFLOW_CASES:
 
 # ── 汇总 ──────────────────────────────────────────────────────────────────────
 print(f"\n{'═'*60}")
-print(f"  压力测试汇总")
+print("  压力测试汇总")
 print(f"{'═'*60}")
 print(f"  通过: {PASS_COUNT}  失败: {FAIL_COUNT}  总计: {PASS_COUNT + FAIL_COUNT}")
 if ERRORS:
-    print(f"\n  失败明细:")
+    print("\n  失败明细:")
     for e in ERRORS:
         print(f"  {e}")
 print(f"{'═'*60}")

@@ -14,6 +14,7 @@ Spec: docs/superpowers/specs/2026-09-22-washout-reversal-genome-design.md §3.2
   - FAIL-OPEN: knn_search 异常 → 返回空列表, 不抛错
   - 禁用 LLM, 纯数值计算
 """
+
 from __future__ import annotations
 
 import json

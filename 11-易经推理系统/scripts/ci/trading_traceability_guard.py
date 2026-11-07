@@ -7,7 +7,6 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
-
 REQUIRED_FIELDS = (
     "stage_id",
     "trace_id",
@@ -65,7 +64,9 @@ def audit_artifacts(artifacts_dir: Path, min_files: int = 1) -> List[str]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Audit trading artifacts contract traceability fields.")
+    parser = argparse.ArgumentParser(
+        description="Audit trading artifacts contract traceability fields."
+    )
     parser.add_argument("--artifacts-dir", default="artifacts/trading")
     parser.add_argument("--min-files", type=int, default=1)
     args = parser.parse_args()

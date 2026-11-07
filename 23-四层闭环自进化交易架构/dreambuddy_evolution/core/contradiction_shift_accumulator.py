@@ -9,16 +9,15 @@ v3.0 修正: 比较 old_primary 的当前力量 vs new_primary 的当前力量
   质变 = 矛盾力量排序变化 AND (波动率制度转换 OR 相关性结构断裂 OR 市场形态转换)
   仅排序变化（无结构性断裂）= 量变，不触发质变流程
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import json
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +30,7 @@ STRUCTURAL_BREAK_THRESHOLD: float = 0.4
 @dataclass
 class ContradictionSnapshot:
     """单个时刻的矛盾矩阵快照."""
+
     timestamp: float
     contradictions: list[dict]  # [{dimension, timeframe, direction, normalized_strength, ...}]
 
@@ -56,8 +56,12 @@ class ContradictionShiftAccumulator:
     质变: 排序变化 + 结构性断裂 → 触发质变流程
     """
 
-    def __init__(self, persistence: int = 14, dominance_gap: float = 0.15,
-                 quality_change_log_path: str | None = None):
+    def __init__(
+        self,
+        persistence: int = 14,
+        dominance_gap: float = 0.15,
+        quality_change_log_path: str | None = None,
+    ):
         """
         Args:
             persistence: 连续 persistence 次评估中排序变化才考虑质变
@@ -83,8 +87,7 @@ class ContradictionShiftAccumulator:
         if len(self._history) > max_history:
             self._history = self._history[-max_history:]
 
-    def detect_shift(self,
-                     structural_break: dict[str, Any] | None = None) -> dict[str, Any] | None:
+    def detect_shift(self, structural_break: dict[str, Any] | None = None) -> dict[str, Any] | None:
         """
         检测主要矛盾是否发生转移（修正算法）.
 
@@ -109,7 +112,7 @@ class ContradictionShiftAccumulator:
         if len(self._history) < self._persistence:
             return None
 
-        recent = self._history[-self._persistence:]
+        recent = self._history[-self._persistence :]
         init_snapshot = recent[0]
         init_primary = init_snapshot.get_primary()
         if init_primary is None:
@@ -143,7 +146,7 @@ class ContradictionShiftAccumulator:
             current_dir = current_primary.get("direction", "neutral")
 
             # 检查是否有新矛盾超越旧矛盾（比较的都是当前力量）
-            is_new_primary = (current_dim != init_dim or current_tf != init_tf)
+            is_new_primary = current_dim != init_dim or current_tf != init_tf
             gap = current_strength - old_current_strength
 
             if is_new_primary and gap > self._dominance_gap and current_dir != init_dir:
@@ -177,7 +180,9 @@ class ContradictionShiftAccumulator:
                 "dimension": init_dim,
                 "timeframe": init_tf,
                 "direction": init_dir,
-                "strength": best_old_current.get("normalized_strength", 0.0) if best_old_current else 0.0,
+                "strength": (
+                    best_old_current.get("normalized_strength", 0.0) if best_old_current else 0.0
+                ),
             },
             "shifted_to": {
                 "dimension": best_new_primary.get("dimension", ""),

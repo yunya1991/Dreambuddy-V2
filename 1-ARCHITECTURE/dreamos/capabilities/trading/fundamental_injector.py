@@ -16,21 +16,19 @@ P0 修复：Dream OS F链（F1-F5）定义了 30+ 个基本面指标字段的读
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
 import time
-import logging
-from typing import Dict, Any, Optional
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
 # data_collector 所在目录（9-基本面分析/）
 # fundamental_injector.py → trading/ → capabilities/ → dreamos/ → 1-ARCHITECTURE/ → dreambuddy-v2/
-_DATA_COLLECTOR_DIR = str(
-    Path(__file__).parent.parent.parent.parent.parent / "9-基本面分析"
-)
+_DATA_COLLECTOR_DIR = str(Path(__file__).parent.parent.parent.parent.parent / "9-基本面分析")
 
 
 # ============================================================
@@ -150,6 +148,7 @@ class FundamentalDataInjector:
             if _DATA_COLLECTOR_DIR not in sys.path:
                 sys.path.insert(0, _DATA_COLLECTOR_DIR)
             from data_collector import DataCollector
+
             self._collector = DataCollector()
 
             # P0-2: 验证 Tavily Key 是否实际有效（而非仅检查是否存在）
@@ -179,6 +178,7 @@ class FundamentalDataInjector:
             if _DATA_COLLECTOR_DIR not in sys.path:
                 sys.path.insert(0, _DATA_COLLECTOR_DIR)
             from data_collector import _get_tavily_client
+
             client = _get_tavily_client()
             if client is None:
                 return False
@@ -199,6 +199,7 @@ class FundamentalDataInjector:
             from dreamos.capabilities.trading.free_fundamental_provider import (
                 FreeFundamentalProvider,
             )
+
             self._free_provider = FreeFundamentalProvider()
             logger.info("免费基本面数据源加载成功（Hyperliquid/CoinGecko/FGI/Blockchain.info）")
             return self._free_provider
@@ -305,7 +306,8 @@ class FundamentalDataInjector:
                     free_injected = self._inject_free_fields(flat_data, free_data)
                     free_sources = free_data.get("_free_fundamental_sources", {})
                     free_sources_summary = "+".join(
-                        k for k, v in free_sources.items()
+                        k
+                        for k, v in free_sources.items()
                         if not v.endswith("_failed") and not v.startswith("skipped_")
                     )
                     logger.info(
@@ -325,18 +327,16 @@ class FundamentalDataInjector:
         elif mock_count > 0 and tavily_count > 0:
             source_summary = f"mixed({tavily_count}real/{mock_count}mock)"
         elif blockchain_count > 0 and mock_count > 0:
-            source_summary = f"blockchain+mock"
+            source_summary = "blockchain+mock"
         elif free_injected > 0:
             source_summary = f"free_only({free_sources_summary})"
         else:
-            source_summary = f"mock_or_error"
+            source_summary = "mock_or_error"
 
         flat_data["_fundamental_source"] = source_summary
         flat_data["_fundamental_module_sources"] = module_sources
         flat_data["_fundamental_injected_at"] = datetime.now().isoformat()
-        flat_data["_fundamental_field_count"] = len(
-            [k for k in flat_data if not k.startswith("_")]
-        )
+        flat_data["_fundamental_field_count"] = len([k for k in flat_data if not k.startswith("_")])
         flat_data["_fundamental_free_field_count"] = free_injected
 
         # 注入到 market_data
@@ -457,7 +457,16 @@ class FundamentalDataInjector:
         - onchain: 依赖 Blockchain.info
         - sentiment: 依赖 alternative.me
         """
-        tavily_modules = {"flow", "valuation", "macro", "news", "breadth", "intermarket", "calendar", "narrative"}
+        tavily_modules = {
+            "flow",
+            "valuation",
+            "macro",
+            "news",
+            "breadth",
+            "intermarket",
+            "calendar",
+            "narrative",
+        }
         if module_name in tavily_modules:
             # P0-2: 使用 _tavily_valid（实际验证过 Key 有效性）而非 _tavily_available（仅检查存在）
             return "tavily" if getattr(self, "_tavily_valid", False) else "mock"

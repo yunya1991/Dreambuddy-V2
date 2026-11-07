@@ -8,8 +8,9 @@
 只优化抄底模块，其他逻辑完全沿用v2。
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import numpy as np
@@ -86,12 +87,14 @@ class BBSHeadShoulderBottomStrategy(EnhancedMA200Strategy):
         self.hs_neckline_break_pct = hs_neckline_break_pct
         self.hs_max_position = hs_max_position
 
-        self.stats.update({
-            "bb_buy_days": 0,
-            "bb_sell_days": 0,
-            "hs_confirmed_days": 0,
-            "dip_bb_days": 0,
-        })
+        self.stats.update(
+            {
+                "bb_buy_days": 0,
+                "bb_sell_days": 0,
+                "hs_confirmed_days": 0,
+                "dip_bb_days": 0,
+            }
+        )
 
     def _compute_bollinger_bands(self, close: np.ndarray) -> tuple:
         """计算布林带"""
@@ -101,7 +104,7 @@ class BBSHeadShoulderBottomStrategy(EnhancedMA200Strategy):
         lower = np.full(n, np.nan)
 
         for i in range(self.bb_period - 1, n):
-            window = close[i - self.bb_period + 1:i + 1]
+            window = close[i - self.bb_period + 1 : i + 1]
             m = np.mean(window)
             s = np.std(window)
             mid[i] = m
@@ -110,9 +113,7 @@ class BBSHeadShoulderBottomStrategy(EnhancedMA200Strategy):
 
         return upper, mid, lower
 
-    def _detect_head_shoulder_bottom(
-        self, close: np.ndarray, i: int
-    ) -> bool:
+    def _detect_head_shoulder_bottom(self, close: np.ndarray, i: int) -> bool:
         """简化版头肩底/双底检测
 
         简化逻辑：在lookback窗口内，找到两个明显的低点（左右肩/双底），
@@ -123,8 +124,8 @@ class BBSHeadShoulderBottomStrategy(EnhancedMA200Strategy):
         if i < self.hs_lookback:
             return False
 
-        window = close[i - self.hs_lookback + 1:i + 1]
-        n = len(window)
+        window = close[i - self.hs_lookback + 1 : i + 1]
+        n = len(window)  # noqa: F841
 
         # 找最低点（头部）
         low_idx = np.argmin(window)
@@ -137,14 +138,14 @@ class BBSHeadShoulderBottomStrategy(EnhancedMA200Strategy):
             return False
 
         # 找左半部分的低点（左肩/左底）
-        left_half = window[:max(1, low_idx)]
+        left_half = window[: max(1, low_idx)]
         if len(left_half) < 3:
             return False
         left_low_idx = np.argmin(left_half)
         left_low = left_half[left_low_idx]
 
         # 找右半部分的低点（右肩/右底）
-        right_half = window[low_idx + 1:]
+        right_half = window[low_idx + 1 :]
         if len(right_half) < 3:
             return False
         right_low_idx = low_idx + 1 + np.argmin(right_half)
@@ -158,7 +159,7 @@ class BBSHeadShoulderBottomStrategy(EnhancedMA200Strategy):
         # 颈线 = 两个低点之间的高点
         if right_low_idx <= low_idx + 1:
             return False
-        mid_segment = window[low_idx + 1:right_low_idx]
+        mid_segment = window[low_idx + 1 : right_low_idx]
         if len(mid_segment) < 2:
             return False
         neckline = np.max(mid_segment)
@@ -174,11 +175,13 @@ class BBSHeadShoulderBottomStrategy(EnhancedMA200Strategy):
         n = len(prices)
         positions = np.zeros(n)
         close = prices["close"].values
-        high = prices["high"].values
-        low = prices["low"].values
+        high = prices["high"].values  # noqa: F841
+        low = prices["low"].values  # noqa: F841
 
         # 计算指标
-        ma_series = pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        ma_series = (
+            pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        )
         ma = ma_series.values
 
         ma_slope = np.zeros(n)
@@ -186,8 +189,14 @@ class BBSHeadShoulderBottomStrategy(EnhancedMA200Strategy):
             if not np.isnan(ma[i]) and not np.isnan(ma[i - self.slope_period]):
                 ma_slope[i] = (ma[i] / ma[i - self.slope_period] - 1) * 100
 
-        weekly_ma200 = self._compute_weekly_ma200(prices) if (self.is_btc and self.weekly_ma200_dip_buy) else None
-        btc_regime = self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        weekly_ma200 = (
+            self._compute_weekly_ma200(prices)
+            if (self.is_btc and self.weekly_ma200_dip_buy)
+            else None
+        )
+        btc_regime = (
+            self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        )
 
         # 布林带
         bb_upper, bb_mid, bb_lower = self._compute_bollinger_bands(close)
@@ -235,9 +244,11 @@ class BBSHeadShoulderBottomStrategy(EnhancedMA200Strategy):
                     dip_base_position = 0.0
 
                     # 第一层：周线MA200判断是否在抄底区域
-                    if (self.weekly_ma200_dip_buy
+                    if (
+                        self.weekly_ma200_dip_buy
                         and not np.isnan(weekly_ma200[i])
-                        and weekly_ma200[i] > 0):
+                        and weekly_ma200[i] > 0
+                    ):
 
                         weekly_below_pct = (weekly_ma200[i] - close[i]) / weekly_ma200[i] * 100
 
@@ -261,7 +272,7 @@ class BBSHeadShoulderBottomStrategy(EnhancedMA200Strategy):
                             if close[i] <= bb_lower[i]:
                                 bb_position = min(
                                     bb_position + self.bb_buy_position,
-                                    self.dip_buy_max_position * 0.6
+                                    self.dip_buy_max_position * 0.6,
                                 )
                                 self.stats["bb_buy_days"] += 1
 
@@ -283,8 +294,7 @@ class BBSHeadShoulderBottomStrategy(EnhancedMA200Strategy):
                             target_pos = hs_position
                         else:
                             target_pos = min(
-                                dip_base_position + bb_position,
-                                self.dip_buy_max_position * 0.7
+                                dip_base_position + bb_position, self.dip_buy_max_position * 0.7
                             )
 
                         self.stats["dip_buy_days"] += 1
@@ -311,7 +321,11 @@ class BBSHeadShoulderBottomStrategy(EnhancedMA200Strategy):
                         if base_short > 0 and short_entry_price is None:
                             short_entry_price = close[i]
 
-                        if base_short > 0 and short_entry_price is not None and self.fib_take_profit:
+                        if (
+                            base_short > 0
+                            and short_entry_price is not None
+                            and self.fib_take_profit
+                        ):
                             fib_pos = self._calc_fib_tp_position(
                                 close[i], short_entry_price, True, base_short
                             )
@@ -369,9 +383,8 @@ class BBSHeadShoulderBottomStrategy(EnhancedMA200Strategy):
 
 
 if __name__ == "__main__":
-    import json
+    import json  # noqa: I001
     from backtest.engine import BacktestEngine
-    from ml.scenario_backtest_engine import ScenarioBacktestEngine
 
     with open("data/historical/BTC_1D_730d.json") as f:
         data = json.load(f)

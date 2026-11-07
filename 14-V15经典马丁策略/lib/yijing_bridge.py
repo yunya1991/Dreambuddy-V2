@@ -23,6 +23,7 @@
   # 实盘单次
   result = bridge.infer_current(klines)  # dict
 """
+
 import importlib.util
 import sys
 import types
@@ -32,7 +33,7 @@ from typing import Dict, List, Optional
 # ── 跨目录加载 YijingEngine ──────────────────────────────────────────────
 
 _V15_DIR = Path(__file__).resolve().parent.parent  # 14-V15经典马丁策略/
-_PROJECT_ROOT = _V15_DIR.parent                     # dreambuddy-v2/
+_PROJECT_ROOT = _V15_DIR.parent  # dreambuddy-v2/
 _BCRM_DIR = _PROJECT_ROOT / "11-易经推理系统" / "scripts" / "memory_l4" / "bcrm"
 
 
@@ -106,7 +107,7 @@ def _atr(klines: List[Dict], period: int = 14) -> float:
     trs = []
     for i in range(1, len(klines)):
         h = float(klines[i].get("h", 0))
-        l = float(klines[i].get("l", 0))
+        l = float(klines[i].get("l", 0))  # noqa: E741
         prev_c = float(klines[i - 1].get("c", 0))
         tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
         trs.append(tr)
@@ -164,9 +165,13 @@ class YijingBridge:
     # risk_level 文本 → 基础锚点（连续化计算的起点，非最终值）
     # 降低"高"档锚点：加密货币普遍高波动，0.75 过度惩罚
     _RISK_BASE = {
-        "高": 0.62, "high": 0.62,
-        "中": 0.42, "medium": 0.42, "med": 0.42,
-        "低": 0.22, "low": 0.22,
+        "高": 0.62,
+        "high": 0.62,
+        "中": 0.42,
+        "medium": 0.42,
+        "med": 0.42,
+        "低": 0.22,
+        "low": 0.22,
     }
     # 向后兼容
     _RISK_MAP = _RISK_BASE
@@ -204,13 +209,17 @@ class YijingBridge:
         """
         if idx < 5 or idx >= len(klines):
             return {
-                "supply_demand_score": 0.5, "technical_score": 0.5,
-                "capital_flow_score": 0.5, "sentiment_score": 0.5,
-                "trend_strength": 0.5, "volatility": 0.3,
-                "volume_ratio": 1.0, "price_position": 0.5,
+                "supply_demand_score": 0.5,
+                "technical_score": 0.5,
+                "capital_flow_score": 0.5,
+                "sentiment_score": 0.5,
+                "trend_strength": 0.5,
+                "volatility": 0.3,
+                "volume_ratio": 1.0,
+                "price_position": 0.5,
             }
 
-        window = klines[max(0, idx - lookback + 1): idx + 1]
+        window = klines[max(0, idx - lookback + 1) : idx + 1]
         closes = [float(k["c"]) for k in window]
         highs = [float(k["h"]) for k in window]
         lows = [float(k["l"]) for k in window]
@@ -326,9 +335,7 @@ class YijingBridge:
             连续 risk_score (0.05-0.95)
         """
         # 基础锚点
-        base = YijingBridge._RISK_BASE.get(
-            risk_level.lower().strip() if risk_level else "中", 0.42
-        )
+        base = YijingBridge._RISK_BASE.get(risk_level.lower().strip() if risk_level else "中", 0.42)
 
         vol = scores.get("volatility", 0.5)
         pos = scores.get("price_position", 0.5)
@@ -431,9 +438,12 @@ class YijingBridge:
         """
         if not self.available:
             return {
-                "hexagram": "", "direction_hint": "FLAT",
-                "risk_level": "中", "risk_score": 0.5,
-                "value_score": 0.5, "confidence": 0.5,
+                "hexagram": "",
+                "direction_hint": "FLAT",
+                "risk_level": "中",
+                "risk_score": 0.5,
+                "value_score": 0.5,
+                "confidence": 0.5,
                 "development_stage": "",
             }
         scores = self.klines_to_scores(klines, idx)

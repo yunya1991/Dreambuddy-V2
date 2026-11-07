@@ -2,9 +2,11 @@
 """
 获取最新 BTC 价格数据
 """
+
 import json
 import urllib.request
 from datetime import datetime, timezone
+
 
 def fetch_binance_btc_prices(limit=90):
     """从 Binance 获取 BTC/USDT 日线数据"""
@@ -25,13 +27,14 @@ def fetch_binance_btc_prices(limit=90):
                 "low": float(candle[3]),
                 "close": float(candle[4]),
                 "volume": float(candle[5]),
-                "source": "Binance"
+                "source": "Binance",
             }
 
         return prices
     except Exception as e:
         print(f"[ERROR] Fetch failed: {e}")
         return {}
+
 
 if __name__ == "__main__":
     prices = fetch_binance_btc_prices(90)

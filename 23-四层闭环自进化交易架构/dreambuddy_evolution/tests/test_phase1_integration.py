@@ -6,6 +6,7 @@ Phase 1 集成测试: T10d + T10e + T10f 三模块联动 + 开关关断等价验
   2. 开关关断时三模块都返回中性默认，字节等价"新模块不存在"
   3. 开关启用时三模块正常工作
 """
+
 from __future__ import annotations
 
 import pytest
@@ -13,7 +14,8 @@ import pytest
 
 @pytest.fixture
 def enable_phase1(monkeypatch):
-    from dreambuddy_evolution.agi_config import set_switch, reset_switches
+    from dreambuddy_evolution.agi_config import reset_switches, set_switch
+
     reset_switches()
     set_switch("enable_agi_core", True)
     set_switch("enable_contradiction_driven_layer", True)
@@ -29,9 +31,11 @@ class TestPhase1Integration:
 
     def test_pipeline_detect_adjust_bias(self, enable_phase1):
         """完整流水线：识别主要矛盾 → 调整参数 → 计算资产偏置"""
-        from dreambuddy_evolution.engines.primary_contradiction_detector import PrimaryContradictionDetector
-        from dreambuddy_evolution.engines.parameter_adjuster import ParameterAdjuster
         from dreambuddy_evolution.engines.asset_bias_resolver import AssetBiasResolver
+        from dreambuddy_evolution.engines.parameter_adjuster import ParameterAdjuster
+        from dreambuddy_evolution.engines.primary_contradiction_detector import (
+            PrimaryContradictionDetector,
+        )
 
         # 1. 识别主要矛盾
         detector = PrimaryContradictionDetector()
@@ -52,8 +56,12 @@ class TestPhase1Integration:
         # 2. 根据 FOMC 阶段调整参数
         adjuster = ParameterAdjuster()
         base_params = {
-            "conf_threshold": 0.65, "position_scale": 1.0, "sl_distance_mult": 1.0,
-            "tp_distance_mult": 1.0, "macro_weight": 0.30, "tech_weight": 0.40,
+            "conf_threshold": 0.65,
+            "position_scale": 1.0,
+            "sl_distance_mult": 1.0,
+            "tp_distance_mult": 1.0,
+            "macro_weight": 0.30,
+            "tech_weight": 0.40,
             "max_hold_hours": 48,
         }
         adjusted = adjuster.adjust(contradiction.cycle_phase, base_params)
@@ -70,10 +78,12 @@ class TestPhase1Integration:
 
     def test_switch_off_all_neutral(self):
         """HC: 总开关关断时三模块都返回中性默认"""
-        from dreambuddy_evolution.agi_config import set_switch, reset_switches
-        from dreambuddy_evolution.engines.primary_contradiction_detector import PrimaryContradictionDetector
-        from dreambuddy_evolution.engines.parameter_adjuster import ParameterAdjuster
+        from dreambuddy_evolution.agi_config import reset_switches, set_switch
         from dreambuddy_evolution.engines.asset_bias_resolver import AssetBiasResolver
+        from dreambuddy_evolution.engines.parameter_adjuster import ParameterAdjuster
+        from dreambuddy_evolution.engines.primary_contradiction_detector import (
+            PrimaryContradictionDetector,
+        )
 
         reset_switches()
         set_switch("enable_agi_core", True)
@@ -85,8 +95,10 @@ class TestPhase1Integration:
 
         kline_data = {
             "event_context": {
-                "in_fomc_cycle": True, "cycle_phase": "expectation_jump",
-                "hike_prob": 0.85, "probability_trend": "rising",
+                "in_fomc_cycle": True,
+                "cycle_phase": "expectation_jump",
+                "hike_prob": 0.85,
+                "probability_trend": "rising",
             },
         }
 
@@ -110,9 +122,11 @@ class TestPhase1Integration:
 
     def test_partial_switch_on(self):
         """HC: 部分开关启用时仅对应模块激活"""
-        from dreambuddy_evolution.agi_config import set_switch, reset_switches
-        from dreambuddy_evolution.engines.primary_contradiction_detector import PrimaryContradictionDetector
+        from dreambuddy_evolution.agi_config import reset_switches, set_switch
         from dreambuddy_evolution.engines.parameter_adjuster import ParameterAdjuster
+        from dreambuddy_evolution.engines.primary_contradiction_detector import (
+            PrimaryContradictionDetector,
+        )
 
         reset_switches()
         set_switch("enable_agi_core", True)
@@ -122,8 +136,10 @@ class TestPhase1Integration:
 
         kline_data = {
             "event_context": {
-                "in_fomc_cycle": True, "cycle_phase": "expectation_jump",
-                "hike_prob": 0.85, "probability_trend": "rising",
+                "in_fomc_cycle": True,
+                "cycle_phase": "expectation_jump",
+                "hike_prob": 0.85,
+                "probability_trend": "rising",
             },
         }
 

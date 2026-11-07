@@ -1,20 +1,22 @@
 """test_subsystem_bridge.py — SubSystemBridge 单元测试
 覆盖: war_state读取+温度映射, BCRM direction, scale_class, shadow优先, trader=None FO
 """
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations  # noqa: I001
+
 
 from dreambuddy_evolution.adapters.subsystem_bridge import SubSystemBridge
 
 
 class MockFiveDomainState:
     """模拟五计庙算状态"""
+
     war_state = {"crypto_usdt": "ALLOW", "crypto_us_stock": "FREEZE"}
 
 
 class MockTrader:
     """模拟 polling_trader 实例"""
+
     def __init__(self, war_state=None, bcrm_result=None, bdsm_snapshot=None):
         if war_state:
             self._five_domain_state_shadow = MockFiveDomainState()
@@ -51,26 +53,20 @@ class TestSubSystemBridge:
 
     def test_bcrm_direction_up(self):
         """BCRM direction=UP → 'long'"""
-        trader = MockTrader(bcrm_result={
-            "next_state": {"direction": "UP", "confidence": 0.85}
-        })
+        trader = MockTrader(bcrm_result={"next_state": {"direction": "UP", "confidence": 0.85}})
         bridge = SubSystemBridge(trader)
         assert bridge.get_bcrm_direction() == "long"
         assert bridge.get_bcrm_confidence() == 0.85
 
     def test_bcrm_direction_down(self):
         """BCRM direction=DOWN → 'short'"""
-        trader = MockTrader(bcrm_result={
-            "next_state": {"direction": "DOWN", "confidence": 0.7}
-        })
+        trader = MockTrader(bcrm_result={"next_state": {"direction": "DOWN", "confidence": 0.7}})
         bridge = SubSystemBridge(trader)
         assert bridge.get_bcrm_direction() == "short"
 
     def test_bcrm_direction_flat(self):
         """BCRM direction=FLAT → ''"""
-        trader = MockTrader(bcrm_result={
-            "next_state": {"direction": "FLAT", "confidence": 0.3}
-        })
+        trader = MockTrader(bcrm_result={"next_state": {"direction": "FLAT", "confidence": 0.3}})
         bridge = SubSystemBridge(trader)
         assert bridge.get_bcrm_direction() == ""
 
@@ -111,6 +107,7 @@ class TestSubSystemBridge:
 
     def test_war_state_shadow_priority(self):
         """影子模式优先读 _five_domain_state_shadow"""
+
         class DualTrader:
             def __init__(self):
                 self._five_domain_state_shadow = MockFiveDomainState()

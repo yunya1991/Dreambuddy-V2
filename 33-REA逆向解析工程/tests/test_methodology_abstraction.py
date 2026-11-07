@@ -3,15 +3,14 @@
 Task 4 of PoE 工程实践复现器 SPEC。
 依据：TASKS-工程实践复现器.md TR-4.1 / TR-4.2 / TR-4.3
 """
-import sys
-from pathlib import Path
 
-import pytest
+import sys  # noqa: I001
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # RED: 模块尚未实现，import 应失败
-from core.methodology_abstraction import (
+from core.methodology_abstraction import (  # noqa: I001
     MethodologyAbstractor,
     abstract_methodology,
 )
@@ -28,7 +27,7 @@ def _make_mvc_investigation(project: str, matched_dirs: list[str]) -> dict:
                 "pattern": "MVC",
                 "matched_dirs": matched_dirs,
                 "evidence": Evidence(
-                    result=f"检测到 MVC 架构模式",
+                    result="检测到 MVC 架构模式",
                     level=EvidenceLevel.DERIVATION,
                     provenance={"target": f"/mock/{project}", "matched_dirs": matched_dirs},
                     confidence=0.85,
@@ -41,7 +40,7 @@ def _make_mvc_investigation(project: str, matched_dirs: list[str]) -> dict:
                 "decision": f"{project} 采用 MVC 架构",
                 "context": "目录结构匹配 MVC",
                 "evidence": Evidence(
-                    result=f"MVC 模式决策",
+                    result="MVC 模式决策",
                     level=EvidenceLevel.DERIVATION,
                     provenance={"target": f"/mock/{project}"},
                     confidence=0.8,
@@ -70,8 +69,10 @@ def test_abstract_methodology_mvc_template():
     assert len(methodologies) >= 1, "应至少输出 1 条方法论模板"
 
     mvc_templates = [
-        m for m in methodologies
-        if "MVC" in str(m.get("problem_pattern", "")) or "mvc" in str(m.get("problem_pattern", "")).lower()
+        m
+        for m in methodologies
+        if "MVC" in str(m.get("problem_pattern", ""))
+        or "mvc" in str(m.get("problem_pattern", "")).lower()
     ]
     assert len(mvc_templates) >= 1, "应输出含 MVC 的方法论模板 (TR-4.1)"
 
@@ -98,9 +99,9 @@ def test_abstract_methodology_level_derivation():
     result = abstract_methodology(investigations)
     for m in result["methodologies"]:
         ev = m["evidence"]
-        assert ev.level.value == "derivation", (
-            f"方法论模板 level 应为 derivation (TR-4.2)，实际 {ev.level}"
-        )
+        assert (
+            ev.level.value == "derivation"
+        ), f"方法论模板 level 应为 derivation (TR-4.2)，实际 {ev.level}"
 
 
 def test_abstract_methodology_empty_input():

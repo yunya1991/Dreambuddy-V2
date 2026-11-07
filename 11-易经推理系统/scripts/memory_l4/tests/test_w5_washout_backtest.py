@@ -12,11 +12,11 @@
 
 运行: python3 -m pytest tests/backtest_w5_washout.py -v -p no:warnings
 """
+
 from __future__ import annotations
 
 import sys
 import unittest
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
 from unittest.mock import MagicMock
@@ -27,15 +27,19 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 
-from scripts.memory_l4.bcrm2.washout_detector import (  # noqa: E402
-    WashoutDetector, WashoutLabel, WashoutVerdict,
-)
-from scripts.memory_l4.bcrm2.washout_trigger_gate import WashoutTriggerGate  # noqa: E402
-from scripts.memory_l4.bcrm2.washout_features import WashoutFeatureExtractor  # noqa: E402
+from scripts.memory_l4.bcrm2.exit_manager import ExitContext  # noqa: E402
 from scripts.memory_l4.bcrm2.exit_strategies import (  # noqa: E402
-    P3EarlyExitStrategy, WashoutHoldStrategy, TrailingStopStrategy,
+    P3EarlyExitStrategy,
+    TrailingStopStrategy,
+    WashoutHoldStrategy,
 )
-from scripts.memory_l4.bcrm2.exit_manager import ExitContext, ExitDecision  # noqa: E402
+from scripts.memory_l4.bcrm2.washout_detector import (  # noqa: E402
+    WashoutDetector,
+    WashoutLabel,
+    WashoutVerdict,
+)
+from scripts.memory_l4.bcrm2.washout_features import WashoutFeatureExtractor  # noqa: E402
+from scripts.memory_l4.bcrm2.washout_trigger_gate import WashoutTriggerGate  # noqa: E402
 
 
 # ============================================================
@@ -82,13 +86,16 @@ def _make_ohlcv(
     volume = rng.uniform(1000, 5000, n_days)
 
     dates = pd.date_range("2025-01-01", periods=n_days, freq="1h")
-    return pd.DataFrame({
-        "open": prices,
-        "high": high,
-        "low": low,
-        "close": prices,
-        "volume": volume,
-    }, index=dates)
+    return pd.DataFrame(
+        {
+            "open": prices,
+            "high": high,
+            "low": low,
+            "close": prices,
+            "volume": volume,
+        },
+        index=dates,
+    )
 
 
 def _make_washout_pattern() -> pd.DataFrame:
@@ -135,10 +142,16 @@ def _make_washout_pattern() -> pd.DataFrame:
     low[n - 8] = prices[n - 8] * 0.994
 
     dates = pd.date_range("2025-01-01", periods=n, freq="1h")
-    return pd.DataFrame({
-        "open": prices, "high": high, "low": low,
-        "close": prices, "volume": volume,
-    }, index=dates)
+    return pd.DataFrame(
+        {
+            "open": prices,
+            "high": high,
+            "low": low,
+            "close": prices,
+            "volume": volume,
+        },
+        index=dates,
+    )
 
 
 def _make_weakness_pattern() -> pd.DataFrame:
@@ -177,10 +190,16 @@ def _make_weakness_pattern() -> pd.DataFrame:
         low[i] = low[i] * 0.998
 
     dates = pd.date_range("2025-01-01", periods=n, freq="1h")
-    return pd.DataFrame({
-        "open": prices, "high": high, "low": low,
-        "close": prices, "volume": volume,
-    }, index=dates)
+    return pd.DataFrame(
+        {
+            "open": prices,
+            "high": high,
+            "low": low,
+            "close": prices,
+            "volume": volume,
+        },
+        index=dates,
+    )
 
 
 def _make_no_trigger_pattern() -> pd.DataFrame:
@@ -193,10 +212,16 @@ def _make_no_trigger_pattern() -> pd.DataFrame:
     low = prices * 0.995
     volume = rng.uniform(2000, 4000, n)
     dates = pd.date_range("2025-01-01", periods=n, freq="1h")
-    return pd.DataFrame({
-        "open": prices, "high": high, "low": low,
-        "close": prices, "volume": volume,
-    }, index=dates)
+    return pd.DataFrame(
+        {
+            "open": prices,
+            "high": high,
+            "low": low,
+            "close": prices,
+            "volume": volume,
+        },
+        index=dates,
+    )
 
 
 def _make_below_ma200_pattern() -> pd.DataFrame:
@@ -211,10 +236,16 @@ def _make_below_ma200_pattern() -> pd.DataFrame:
     low = prices * 0.995
     volume = rng.uniform(2000, 4000, n)
     dates = pd.date_range("2025-01-01", periods=n, freq="1h")
-    return pd.DataFrame({
-        "open": prices, "high": high, "low": low,
-        "close": prices, "volume": volume,
-    }, index=dates)
+    return pd.DataFrame(
+        {
+            "open": prices,
+            "high": high,
+            "low": low,
+            "close": prices,
+            "volume": volume,
+        },
+        index=dates,
+    )
 
 
 # ============================================================
@@ -280,26 +311,22 @@ class TestWashoutTriggerGateAccuracy(unittest.TestCase):
     def test_washout_pattern_triggers(self):
         df = _make_washout_pattern()
         gate = WashoutTriggerGate()
-        self.assertTrue(gate.should_activate(df),
-                        "洗盘 pattern 应满足触发条件")
+        self.assertTrue(gate.should_activate(df), "洗盘 pattern 应满足触发条件")
 
     def test_no_runup_does_not_trigger(self):
         df = _make_no_trigger_pattern()
         gate = WashoutTriggerGate()
-        self.assertFalse(gate.should_activate(df),
-                         "无涨幅 pattern 不应触发")
+        self.assertFalse(gate.should_activate(df), "无涨幅 pattern 不应触发")
 
     def test_below_ma200_does_not_trigger(self):
         df = _make_below_ma200_pattern()
         gate = WashoutTriggerGate()
-        self.assertFalse(gate.should_activate(df),
-                         "低于 MA200 不应触发")
+        self.assertFalse(gate.should_activate(df), "低于 MA200 不应触发")
 
     def test_insufficient_data_does_not_trigger(self):
         df = _make_washout_pattern().iloc[:20]
         gate = WashoutTriggerGate()
-        self.assertFalse(gate.should_activate(df),
-                         "数据不足不应触发")
+        self.assertFalse(gate.should_activate(df), "数据不足不应触发")
 
 
 class TestWashoutFeatureExtractorAccuracy(unittest.TestCase):
@@ -313,8 +340,9 @@ class TestWashoutFeatureExtractorAccuracy(unittest.TestCase):
 
         # 洗盘 pattern: 缩量
         self.assertLess(
-            feats.get("volume_ratio_20d", 1.0), 0.8,
-            f"洗盘 pattern volume_ratio 应 < 0.8, 实际={feats.get('volume_ratio_20d')}"
+            feats.get("volume_ratio_20d", 1.0),
+            0.8,
+            f"洗盘 pattern volume_ratio 应 < 0.8, 实际={feats.get('volume_ratio_20d')}",
         )
         # 振幅特征存在
         self.assertIn("atr_compress_ratio", feats)
@@ -329,15 +357,15 @@ class TestWashoutFeatureExtractorAccuracy(unittest.TestCase):
 
         # 真弱势 pattern: 放量
         self.assertGreater(
-            feats.get("volume_ratio_20d", 1.0), 1.5,
-            f"真弱势 pattern volume_ratio 应 > 1.5, 实际={feats.get('volume_ratio_20d')}"
+            feats.get("volume_ratio_20d", 1.0),
+            1.5,
+            f"真弱势 pattern volume_ratio 应 > 1.5, 实际={feats.get('volume_ratio_20d')}",
         )
 
     def test_feature_extraction_fail_open_on_none(self):
         ext = WashoutFeatureExtractor()
         feats = ext.extract_all(None, None)
-        self.assertEqual(feats, {},
-                         "None 输入应返回空 dict（FAIL-OPEN）")
+        self.assertEqual(feats, {}, "None 输入应返回空 dict（FAIL-OPEN）")
 
     def test_all_13_features_present(self):
         """所有 13 维特征在正常数据下都应该出现。"""
@@ -346,15 +374,25 @@ class TestWashoutFeatureExtractorAccuracy(unittest.TestCase):
         ext = WashoutFeatureExtractor()
         feats = ext.extract_all(df, macro)
         expected_keys = {
-            "volume_ratio_20d", "support_holds_count", "atr_compress_ratio",
-            "oi_change_rate_7d", "cycle_position_365d", "rebound_ratio_5d",
-            "news_negative_score", "btc_correlation_30d",
-            "oi_price_quadrant", "funding_rate_zscore",
-            "cvd_price_divergence", "ofi_std_20d",
+            "volume_ratio_20d",
+            "support_holds_count",
+            "atr_compress_ratio",
+            "oi_change_rate_7d",
+            "cycle_position_365d",
+            "rebound_ratio_5d",
+            "news_negative_score",
+            "btc_correlation_30d",
+            "oi_price_quadrant",
+            "funding_rate_zscore",
+            "cvd_price_divergence",
+            "ofi_std_20d",
             "wyckoff_climax_stage",
         }
-        self.assertEqual(set(feats.keys()), expected_keys,
-                         f"特征 key 不匹配: 缺={expected_keys - set(feats.keys())}")
+        self.assertEqual(
+            set(feats.keys()),
+            expected_keys,
+            f"特征 key 不匹配: 缺={expected_keys - set(feats.keys())}",
+        )
 
 
 class TestWashoutDetectorAccuracy(unittest.TestCase):
@@ -371,37 +409,34 @@ class TestWashoutDetectorAccuracy(unittest.TestCase):
         """注入 mock classifier → washout pattern 判定为 WASHOUT。"""
         ext = WashoutFeatureExtractor()
         clf = MockWashoutClassifier()
-        det = WashoutDetector(
-            enable=True, classifier=clf, feature_extractor=ext
-        )
+        det = WashoutDetector(enable=True, classifier=clf, feature_extractor=ext)
         df = _make_washout_pattern()
         v = det.run("BTC", df, {})
-        self.assertEqual(v.label, WashoutLabel.WASHOUT,
-                         f"washout pattern 应判定为 WASHOUT, 实际={v.label}")
-        self.assertGreaterEqual(v.confidence, 0.80,
-                                f"WASHOUT 置信度应 >= 0.80, 实际={v.confidence}")
+        self.assertEqual(
+            v.label, WashoutLabel.WASHOUT, f"washout pattern 应判定为 WASHOUT, 实际={v.label}"
+        )
+        self.assertGreaterEqual(
+            v.confidence, 0.80, f"WASHOUT 置信度应 >= 0.80, 实际={v.confidence}"
+        )
         self.assertTrue(v.trigger_activated)
 
     def test_weakness_pattern_detected_as_weakness(self):
         """注入 mock classifier → weakness pattern 判定为 WEAKNESS。"""
         ext = WashoutFeatureExtractor()
         clf = MockWashoutClassifier()
-        det = WashoutDetector(
-            enable=True, classifier=clf, feature_extractor=ext
-        )
+        det = WashoutDetector(enable=True, classifier=clf, feature_extractor=ext)
         df = _make_weakness_pattern()
         v = det.run("BTC", df, {})
-        self.assertEqual(v.label, WashoutLabel.WEAKNESS,
-                         f"weakness pattern 应判定为 WEAKNESS, 实际={v.label}")
+        self.assertEqual(
+            v.label, WashoutLabel.WEAKNESS, f"weakness pattern 应判定为 WEAKNESS, 实际={v.label}"
+        )
         self.assertGreaterEqual(v.confidence, 0.70)
 
     def test_no_trigger_returns_unknown(self):
         """无触发 pattern → trigger_activated=False。"""
         ext = WashoutFeatureExtractor()
         clf = MockWashoutClassifier()
-        det = WashoutDetector(
-            enable=True, classifier=clf, feature_extractor=ext
-        )
+        det = WashoutDetector(enable=True, classifier=clf, feature_extractor=ext)
         df = _make_no_trigger_pattern()
         v = det.run("BTC", df, {})
         self.assertEqual(v.label, WashoutLabel.UNKNOWN)
@@ -426,9 +461,12 @@ class TestWashoutHoldStrategyAccuracy(unittest.TestCase):
 
     def test_washout_label_returns_hold(self):
         v = WashoutVerdict(
-            label=WashoutLabel.WASHOUT, confidence=0.85,
-            trigger_activated=True, feature_snapshot={},
-            reason="test", timestamp="",
+            label=WashoutLabel.WASHOUT,
+            confidence=0.85,
+            trigger_activated=True,
+            feature_snapshot={},
+            reason="test",
+            timestamp="",
         )
         strat = WashoutHoldStrategy(washout_detector=self._make_det_with_verdict(v))
         ctx = _make_ctx(age_hours=10)
@@ -438,9 +476,12 @@ class TestWashoutHoldStrategyAccuracy(unittest.TestCase):
 
     def test_weakness_high_conf_returns_force_close(self):
         v = WashoutVerdict(
-            label=WashoutLabel.WEAKNESS, confidence=0.75,
-            trigger_activated=True, feature_snapshot={},
-            reason="test", timestamp="",
+            label=WashoutLabel.WEAKNESS,
+            confidence=0.75,
+            trigger_activated=True,
+            feature_snapshot={},
+            reason="test",
+            timestamp="",
         )
         strat = WashoutHoldStrategy(washout_detector=self._make_det_with_verdict(v))
         ctx = _make_ctx()
@@ -450,9 +491,12 @@ class TestWashoutHoldStrategyAccuracy(unittest.TestCase):
 
     def test_weakness_low_conf_returns_pass(self):
         v = WashoutVerdict(
-            label=WashoutLabel.WEAKNESS, confidence=0.65,
-            trigger_activated=True, feature_snapshot={},
-            reason="test", timestamp="",
+            label=WashoutLabel.WEAKNESS,
+            confidence=0.65,
+            trigger_activated=True,
+            feature_snapshot={},
+            reason="test",
+            timestamp="",
         )
         strat = WashoutHoldStrategy(washout_detector=self._make_det_with_verdict(v))
         ctx = _make_ctx()
@@ -477,9 +521,12 @@ class TestWashoutHoldStrategyAccuracy(unittest.TestCase):
     def test_washout_timeout_48h_still_hold(self):
         """超过 48h 的 washout hold → 仍 hold（但 reason 标记 timeout）。"""
         v = WashoutVerdict(
-            label=WashoutLabel.WASHOUT, confidence=0.85,
-            trigger_activated=True, feature_snapshot={},
-            reason="test", timestamp="",
+            label=WashoutLabel.WASHOUT,
+            confidence=0.85,
+            trigger_activated=True,
+            feature_snapshot={},
+            reason="test",
+            timestamp="",
         )
         strat = WashoutHoldStrategy(washout_detector=self._make_det_with_verdict(v))
         ctx = _make_ctx(age_hours=50.0)
@@ -501,9 +548,12 @@ class TestP3EarlyExitWashoutSuppression(unittest.TestCase):
     def test_washout_high_conf_suppresses_p3_exit(self):
         """WASHOUT + conf≥0.80 → 抑制 P3 退出（返回 hold）。"""
         v = WashoutVerdict(
-            label=WashoutLabel.WASHOUT, confidence=0.85,
-            trigger_activated=True, feature_snapshot={},
-            reason="test", timestamp="",
+            label=WashoutLabel.WASHOUT,
+            confidence=0.85,
+            trigger_activated=True,
+            feature_snapshot={},
+            reason="test",
+            timestamp="",
         )
         det = MagicMock()
         det.run = MagicMock(return_value=v)
@@ -513,7 +563,7 @@ class TestP3EarlyExitWashoutSuppression(unittest.TestCase):
         )
         ctx = self._make_ctx_with_p3_signal()
         # 触发 2 次以通过确认
-        d1 = strat.evaluate(ctx)
+        d1 = strat.evaluate(ctx)  # noqa: F841
         d2 = strat.evaluate(ctx)
         self.assertEqual(d2.action, "hold")
         self.assertIn("suppressed_by_washout", d2.reason)
@@ -521,9 +571,12 @@ class TestP3EarlyExitWashoutSuppression(unittest.TestCase):
     def test_washout_low_conf_does_not_suppress(self):
         """WASHOUT + conf<0.80 → 不抑制（走原 P3 force_close）。"""
         v = WashoutVerdict(
-            label=WashoutLabel.WASHOUT, confidence=0.75,
-            trigger_activated=True, feature_snapshot={},
-            reason="test", timestamp="",
+            label=WashoutLabel.WASHOUT,
+            confidence=0.75,
+            trigger_activated=True,
+            feature_snapshot={},
+            reason="test",
+            timestamp="",
         )
         det = MagicMock()
         det.run = MagicMock(return_value=v)
@@ -539,9 +592,12 @@ class TestP3EarlyExitWashoutSuppression(unittest.TestCase):
     def test_weakness_does_not_suppress_p3(self):
         """WEAKNESS → 不抑制 P3（force_close）。"""
         v = WashoutVerdict(
-            label=WashoutLabel.WEAKNESS, confidence=0.90,
-            trigger_activated=True, feature_snapshot={},
-            reason="test", timestamp="",
+            label=WashoutLabel.WEAKNESS,
+            confidence=0.90,
+            trigger_activated=True,
+            feature_snapshot={},
+            reason="test",
+            timestamp="",
         )
         det = MagicMock()
         det.run = MagicMock(return_value=v)
@@ -556,9 +612,7 @@ class TestP3EarlyExitWashoutSuppression(unittest.TestCase):
 
     def test_none_detector_uses_original_p3(self):
         """detector=None → 走原 P3 逻辑。"""
-        strat = P3EarlyExitStrategy(
-            exit_confirm_required=2, washout_detector=None
-        )
+        strat = P3EarlyExitStrategy(exit_confirm_required=2, washout_detector=None)
         ctx = self._make_ctx_with_p3_signal()
         strat.evaluate(ctx)
         d = strat.evaluate(ctx)
@@ -606,8 +660,7 @@ class TestTrailingStopStrategyAccuracy(unittest.TestCase):
         ctx2 = _make_ctx(pos_info={"upl_ratio": 0.03})
         d2 = strat.evaluate(ctx2)
         self.assertEqual(d2.action, "adjust_sl_tp")
-        self.assertEqual(d2.params["peak"], 0.05,
-                         "peak 应保持 5%（只升不降）")
+        self.assertEqual(d2.params["peak"], 0.05, "peak 应保持 5%（只升不降）")
 
     def test_reset_peak_after_close(self):
         """平仓后 reset_peak → 下次开仓不继承旧 peak。"""
@@ -655,9 +708,7 @@ class TestFailOpenSafety(unittest.TestCase):
     def test_p3_exception_uses_original_logic(self):
         det = MagicMock()
         det.run = MagicMock(side_effect=RuntimeError("boom"))
-        strat = P3EarlyExitStrategy(
-            exit_confirm_required=2, washout_detector=det
-        )
+        strat = P3EarlyExitStrategy(exit_confirm_required=2, washout_detector=det)
         ctx = _make_ctx(
             inference={"early_exit_signal": True},
             pos_info={"upl_ratio": -0.10},
@@ -690,9 +741,12 @@ class TestFullChainIntegration(unittest.TestCase):
     def test_washout_suppresses_p3_and_hold(self):
         """全链路: WASHOUT+conf≥0.80 → P3 被抑制 → WashoutHold hold。"""
         v = WashoutVerdict(
-            label=WashoutLabel.WASHOUT, confidence=0.85,
-            trigger_activated=True, feature_snapshot={},
-            reason="test", timestamp="",
+            label=WashoutLabel.WASHOUT,
+            confidence=0.85,
+            trigger_activated=True,
+            feature_snapshot={},
+            reason="test",
+            timestamp="",
         )
         det = MagicMock()
         det.run = MagicMock(return_value=v)
@@ -719,9 +773,12 @@ class TestFullChainIntegration(unittest.TestCase):
     def test_weakness_triggers_force_close_in_chain(self):
         """全链路: WEAKNESS+conf≥0.70 → WashoutHold force_close。"""
         v = WashoutVerdict(
-            label=WashoutLabel.WEAKNESS, confidence=0.75,
-            trigger_activated=True, feature_snapshot={},
-            reason="test", timestamp="",
+            label=WashoutLabel.WEAKNESS,
+            confidence=0.75,
+            trigger_activated=True,
+            feature_snapshot={},
+            reason="test",
+            timestamp="",
         )
         det = MagicMock()
         det.run = MagicMock(return_value=v)
@@ -754,8 +811,7 @@ class TestFullChainIntegration(unittest.TestCase):
         ctx = _make_ctx(pos_info={"upl_ratio": -0.01})
         for s in chain:
             d = s.evaluate(ctx)
-            self.assertEqual(d.action, "pass",
-                             f"{s.name} 应返回 pass, 实际={d.action}")
+            self.assertEqual(d.action, "pass", f"{s.name} 应返回 pass, 实际={d.action}")
 
 
 if __name__ == "__main__":

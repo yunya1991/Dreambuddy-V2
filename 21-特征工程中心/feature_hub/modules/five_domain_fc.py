@@ -9,6 +9,7 @@
 
 每域输出 0-100 原始分 → RobustScaler 标准化 ≈ [-3, 3]
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -66,10 +67,16 @@ class FiveDomainFcAdapter(BaseAdapter):
         vol_z = (volume - vol_ma) / (vol_std + 1e-10)
         fa = ((vol_z + 3) / 6 * 100).clip(0, 100)
 
-        raw = pd.DataFrame({
-            "dao": dao, "tian": tian, "di": di,
-            "jiang": jiang, "fa": fa,
-        }, index=df.index)
+        raw = pd.DataFrame(
+            {
+                "dao": dao,
+                "tian": tian,
+                "di": di,
+                "jiang": jiang,
+                "fa": fa,
+            },
+            index=df.index,
+        )
 
         # RobustScaler：每列 (x - median) / IQR
         out = pd.DataFrame(index=df.index)

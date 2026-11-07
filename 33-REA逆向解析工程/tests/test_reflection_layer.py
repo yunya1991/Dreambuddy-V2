@@ -4,7 +4,7 @@
 观察期推进、客观回滚条件。
 """
 
-import os
+import os  # noqa: I001
 import tempfile
 import unittest
 

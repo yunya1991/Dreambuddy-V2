@@ -9,13 +9,14 @@
 
 指标: 样本外夏普 / DSR / PBO + Holm-Bonferroni 配对校正
 """
+
 import numpy as np
-import pytest
 
 
 def test_module_importable():
     """FrameworkComparison 可导入。"""
     from dreambuddy_evolution.core.framework_comparison import FrameworkComparison
+
     assert FrameworkComparison is not None
 
 
@@ -40,7 +41,7 @@ def test_all_frameworks_produce_signals():
     fc = FrameworkComparison(prices)
     signals = fc.generate_all_signals()
     assert len(signals) == 5
-    for name, sig in signals.items():
+    for name, sig in signals.items():  # noqa: B007
         assert sig.shape[0] == len(prices)
         assert set(np.unique(sig)).issubset({-1.0, 0.0, 1.0})
 
@@ -54,7 +55,7 @@ def test_sharpe_ratio_range():
     fc = FrameworkComparison(prices)
     returns = np.diff(prices) / prices[:-1]
     signals = fc.generate_all_signals()
-    for name, sig in signals.items():
+    for name, sig in signals.items():  # noqa: B007
         sr = fc.sharpe_ratio(sig[:-1] * returns)
         assert np.isfinite(sr)
 

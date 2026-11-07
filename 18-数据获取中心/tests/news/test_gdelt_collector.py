@@ -2,6 +2,7 @@
 
 GDELT DOC 2.0 API 直连（requests），无 Key 需求，query -> articles -> DataRecord。
 """
+
 from data_center.collectors.news.gdelt_collector import GdeltCollector
 from data_center.core.contract import DataRecord
 
@@ -10,15 +11,19 @@ REQ_MOD = "data_center.collectors.news.gdelt_collector.requests"
 
 def _fake_response(articles=None):
     """模拟 requests.Response。"""
+
     class _Resp:
         def __init__(self, data):
             self._data = data
             self.status_code = 200
+
         def json(self):
             return self._data
+
         @property
         def text(self):
             return ""
+
     return _Resp({"articles": articles or []})
 
 
@@ -34,24 +39,26 @@ def test_is_available_always_true():
 
 def test_fetch_articles(mocker):
     mock_req = mocker.patch(REQ_MOD)
-    mock_req.get.return_value = _fake_response(articles=[
-        {
-            "url": "https://example.com/1",
-            "title": "BTC surge",
-            "seendate": "20240101T120000Z",
-            "domain": "coindesk.com",
-            "sourcecountry": "US",
-            "language": "English",
-        },
-        {
-            "url": "https://example.com/2",
-            "title": "ETH update",
-            "seendate": "20240102T120000Z",
-            "domain": "cointelegraph.com",
-            "sourcecountry": "UK",
-            "language": "English",
-        },
-    ])
+    mock_req.get.return_value = _fake_response(
+        articles=[
+            {
+                "url": "https://example.com/1",
+                "title": "BTC surge",
+                "seendate": "20240101T120000Z",
+                "domain": "coindesk.com",
+                "sourcecountry": "US",
+                "language": "English",
+            },
+            {
+                "url": "https://example.com/2",
+                "title": "ETH update",
+                "seendate": "20240102T120000Z",
+                "domain": "cointelegraph.com",
+                "sourcecountry": "UK",
+                "language": "English",
+            },
+        ]
+    )
     c = GdeltCollector()
     recs = c.fetch({"query": "bitcoin", "max_records": 5})
 
@@ -95,6 +102,7 @@ def test_non_json_response_returns_empty(mocker):
     class _EmptyResp:
         status_code = 200
         text = ""
+
         def json(self):
             raise ValueError("No JSON")
 

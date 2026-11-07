@@ -3,6 +3,7 @@
 dedupe_key = sha256(source|category|sub_category|stable_id)
 stable_id 按类别：news/web 取 url；chain 取 tx_hash/symbol；macro/finance 取 sub_category+date。
 """
+
 from __future__ import annotations
 
 import hashlib

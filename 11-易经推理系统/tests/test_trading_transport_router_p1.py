@@ -1,7 +1,6 @@
 import importlib.util
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -17,7 +16,10 @@ def _load_module(rel_path: str):
 def test_transport_router_routes_execution_and_governance_to_http():
     mod = _load_module("workflows/trading-decision/transports/adapters.py")
     router = mod.TransportRouter(
-        http=mod.HTTPTransport(base_url="http://example", sender=lambda url, payload, timeout_ms, headers=None: {"url": url, "headers": headers}),
+        http=mod.HTTPTransport(
+            base_url="http://example",
+            sender=lambda url, payload, timeout_ms, headers=None: {"url": url, "headers": headers},
+        ),
         mq=mod.MockTransport(),
     )
     envelope = {
@@ -55,4 +57,3 @@ def test_transport_router_routes_intelligence_to_redis():
     router.send_envelope(envelope)
     assert sent
     assert sent[0][0] == "dream.intelligence.a6.L1"
-

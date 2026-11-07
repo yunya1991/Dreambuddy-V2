@@ -12,13 +12,12 @@
 - 胜率作为"该币种趋势性强弱"的弱信号，对 reflection 层有参考价值
 - 回测数据由 ReflectionScanner 打 0.85 折扣（sim-to-real gap）
 """
+
+import logging
 import sys
 import time
-import logging
 from pathlib import Path
-from datetime import datetime, timezone
 
-import numpy as np
 import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -30,19 +29,84 @@ logger = logging.getLogger(__name__)
 
 # 扫描池币种（基础 24 + 常见扫描币 + 小币种）
 SCAN_COINS = [
-    "UNI", "PUMP", "HYPE", "AAVE", "SOL", "CRCL", "ETH", "BTC", "ZEC", "ARB",
-    "MU", "SKHYNIX", "XAU", "XAG", "GOOGL", "NVDA", "AMZN", "OKB", "SNDK", "SPCX",
-    "COIN", "BMNR", "MSTR", "BNB", "LINK", "DOGE", "XRP", "ADA", "DOT", "AVAX",
-    "MATIC", "LTC", "TRX", "ATOM", "NEAR", "APT", "OP", "INJ", "PEPE", "WIF",
-    "SHIB", "TON", "SUI", "FIL", "ETC", "IMX", "SEI", "TIA", "JUP", "RUNE",
+    "UNI",
+    "PUMP",
+    "HYPE",
+    "AAVE",
+    "SOL",
+    "CRCL",
+    "ETH",
+    "BTC",
+    "ZEC",
+    "ARB",
+    "MU",
+    "SKHYNIX",
+    "XAU",
+    "XAG",
+    "GOOGL",
+    "NVDA",
+    "AMZN",
+    "OKB",
+    "SNDK",
+    "SPCX",
+    "COIN",
+    "BMNR",
+    "MSTR",
+    "BNB",
+    "LINK",
+    "DOGE",
+    "XRP",
+    "ADA",
+    "DOT",
+    "AVAX",
+    "MATIC",
+    "LTC",
+    "TRX",
+    "ATOM",
+    "NEAR",
+    "APT",
+    "OP",
+    "INJ",
+    "PEPE",
+    "WIF",
+    "SHIB",
+    "TON",
+    "SUI",
+    "FIL",
+    "ETC",
+    "IMX",
+    "SEI",
+    "TIA",
+    "JUP",
+    "RUNE",
     # 额外小币种（无真实交易记录，补充 backtest_only 覆盖）
-    "VET", "FTM", "ALGO", "HBAR", "ICP", "VET", "EGLD", "XTZ", "XLM", "EOS",
-    "AAVE", "CRO", "QNT", "GRT", "SNX", "COMP", "MKR", "DYDX", "GMX", "RDNT",
+    "VET",
+    "FTM",
+    "ALGO",
+    "HBAR",
+    "ICP",
+    "VET",
+    "EGLD",
+    "XTZ",
+    "XLM",
+    "EOS",
+    "AAVE",
+    "CRO",
+    "QNT",
+    "GRT",
+    "SNX",
+    "COMP",
+    "MKR",
+    "DYDX",
+    "GMX",
+    "RDNT",
 ]
 
-from scripts.memory_l4.bcrm2.data_fetcher import get_klines
-from dreambuddy_evolution.engines.backtest_trade_adapter import (
-    trade_to_index_record, write_backtest_trades,
+from scripts.memory_l4.bcrm2.data_fetcher import get_klines  # noqa: E402
+
+from dreambuddy_evolution.engines.backtest_trade_adapter import (  # noqa: E402
+    trade_to_index_record,
+    write_backtest_trades,
 )
 
 TIMEFRAME = "1H"
@@ -92,17 +156,19 @@ def backtest_coin(coin: str) -> list[dict]:
             pnl_pct = (exit_price - entry_price) / entry_price
             pnl_pct -= FEE_RATE * 2 + SLIPPAGE_RATE * 2
 
-            trades.append({
-                "entry_bar": i - HOLD_BARS,
-                "exit_bar": i,
-                "direction": 1,
-                "entry_price": float(entry_price),
-                "exit_price": float(exit_price),
-                "pnl_pct": float(pnl_pct),
-                "hold_bars": HOLD_BARS,
-                "exit_reason": "time",
-                "confidence": 0.6,
-            })
+            trades.append(
+                {
+                    "entry_bar": i - HOLD_BARS,
+                    "exit_bar": i,
+                    "direction": 1,
+                    "entry_price": float(entry_price),
+                    "exit_price": float(exit_price),
+                    "pnl_pct": float(pnl_pct),
+                    "hold_bars": HOLD_BARS,
+                    "exit_reason": "time",
+                    "confidence": 0.6,
+                }
+            )
             i += ENTRY_INTERVAL
 
         if not trades:
@@ -144,13 +210,19 @@ def main():
         if records:
             success_coins += 1
             all_records.extend(records)
-        logger.info("[%d/%d] %s: %d 笔 (%.1fs)", i + 1, len(SCAN_COINS), coin, len(records), elapsed)
+        logger.info(
+            "[%d/%d] %s: %d 笔 (%.1fs)", i + 1, len(SCAN_COINS), coin, len(records), elapsed
+        )
 
     written = write_backtest_trades(all_records, OUTPUT_PATH)
     total_elapsed = time.time() - start
     logger.info(
         "完成: 成功 %d/%d 币种, %d 笔交易, 耗时 %.1fmin, 输出 %s",
-        success_coins, len(SCAN_COINS), written, total_elapsed / 60, OUTPUT_PATH,
+        success_coins,
+        len(SCAN_COINS),
+        written,
+        total_elapsed / 60,
+        OUTPUT_PATH,
     )
 
 

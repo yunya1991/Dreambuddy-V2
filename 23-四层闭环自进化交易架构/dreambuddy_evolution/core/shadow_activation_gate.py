@@ -10,6 +10,7 @@ SPEC-Shadow验证自动放量门禁.md §3-§9
 
 硬约束: HC-AGI-02（异常→中性兜底）、HC-AGI-07（满足条件才放量）、HC-AGI-08（min_n=500 不得下调）。
 """
+
 from __future__ import annotations
 
 import json
@@ -138,8 +139,11 @@ class ShadowActivationGate:
                 "source": str(obs.get("source", "")),
                 "n": int(obs.get("n", 0)),
             }
-            kept = [o for o in (state.get("observations") or [])
-                    if str(o.get("date")) != persisted["date"]]
+            kept = [
+                o
+                for o in (state.get("observations") or [])
+                if str(o.get("date")) != persisted["date"]
+            ]
             kept.append(persisted)
             state["observations"] = kept
             state["switch"] = self.switch_name
@@ -167,8 +171,7 @@ class ShadowActivationGate:
 
     def today_has_valid_obs(self) -> bool:
         t = self._today()
-        return any(str(o.get("date")) == t
-                   for o in (self._load().get("observations") or []))
+        return any(str(o.get("date")) == t for o in (self._load().get("observations") or []))
 
     def last_eval_attempt_date(self) -> str | None:
         return self._load().get("last_eval_attempt_date")
@@ -191,7 +194,9 @@ class ShadowActivationGate:
         try:
             subprocess.run(
                 [sys.executable, str(self._eval_script), "--switch", self.switch_name],
-                timeout=self._spawn_timeout, check=False, capture_output=True,
+                timeout=self._spawn_timeout,
+                check=False,
+                capture_output=True,
             )
             return True
         except Exception as e:  # noqa: BLE001
@@ -241,8 +246,11 @@ class ShadowActivationGate:
             state = self._load()
             if state.get("activated_at") and not get_switch(self.switch_name, False):
                 set_switch(self.switch_name, True)
-                logger.info("[ShadowGate] reconcile: %s → True (activated_at=%s)",
-                            self.switch_name, state.get("activated_at"))
+                logger.info(
+                    "[ShadowGate] reconcile: %s → True (activated_at=%s)",
+                    self.switch_name,
+                    state.get("activated_at"),
+                )
                 return True
             return False
         except Exception as e:  # noqa: BLE001
@@ -252,6 +260,7 @@ class ShadowActivationGate:
     def is_activated(self) -> bool:
         try:
             from dreambuddy_evolution.agi_config import get_switch
+
             return bool(get_switch(self.switch_name, False))
         except Exception:  # noqa: BLE001
             return False
@@ -261,6 +270,7 @@ class ShadowActivationGate:
         """自动放量事件 → 认知记忆（B 级，FAIL-OPEN，best-effort）."""
         try:
             from dreambuddy_evolution.adapters.cognitive_bridge import CognitiveBridge
+
             entry = CognitiveBridge()._get_entry()
             if entry is None:
                 return

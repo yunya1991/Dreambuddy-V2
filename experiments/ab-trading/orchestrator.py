@@ -14,24 +14,32 @@ AB-Trading 记忆与SKILL驱动调度器 — Orchestrator
 - 加载 SKILL Registry 状态，检查 SKILL 可用性
 - 执行后更新双方记忆（记录调度决策、触发原因）
 """
-import os, sys, json, time, subprocess, requests, warnings
-from datetime import datetime, timezone, timedelta
+
+import os  # noqa: I001
+import sys
+import json
+import time
+import subprocess
+import requests
+import warnings
+from datetime import datetime, timezone
 from pathlib import Path
 
 warnings.filterwarnings("ignore")
-BASE_DIR  = Path(__file__).parent
-ENV_FILE  = BASE_DIR / "config" / ".env"
+BASE_DIR = Path(__file__).parent
+ENV_FILE = BASE_DIR / "config" / ".env"
 SCHED_FILE = BASE_DIR / "data" / "self_schedule.json"
 STATE_FILE = BASE_DIR / "data" / "orchestrator_state.json"
-LOG_FILE   = BASE_DIR / "logs" / "orchestrator.log"
+LOG_FILE = BASE_DIR / "logs" / "orchestrator.log"
 
-NORMAL_INTERVAL_H = 4          # 常规间隔：4H
-EVENT_WINDOW_H    = 0.5        # 重要事件前后触发窗口（30分钟）
-VOLATILITY_PCT    = 2.0        # BTC 1H 波动触发阈值
+NORMAL_INTERVAL_H = 4  # 常规间隔：4H
+EVENT_WINDOW_H = 0.5  # 重要事件前后触发窗口（30分钟）
+VOLATILITY_PCT = 2.0  # BTC 1H 波动触发阈值
 
 TAVILY_KEY = None
 try:
     from dotenv import load_dotenv
+
     load_dotenv(ENV_FILE)
     TAVILY_KEY = os.environ.get("TAVILY_API_KEY")
 except Exception:
@@ -48,6 +56,7 @@ def log(msg: str):
 
 
 # ── 状态管理 ──────────────────────────────────────────────────────────────
+
 
 def load_state() -> dict:
     if STATE_FILE.exists():
@@ -66,6 +75,7 @@ def save_state(state: dict):
 
 
 # ── Agent 自主调度请求 ────────────────────────────────────────────────────
+
 
 def load_schedule_requests() -> list:
     """读取 agents 写入的自主调度申请"""
@@ -92,13 +102,15 @@ def clear_expired_requests():
 def request_early_run(reason: str, run_at_ts: float, priority: str = "normal"):
     """供 agents 调用：申请在指定时间提前触发"""
     reqs = load_schedule_requests()
-    reqs.append({
-        "reason":     reason,
-        "run_at_ts":  run_at_ts,
-        "expires_ts": run_at_ts + 3600,  # 1H 后过期
-        "priority":   priority,
-        "created_ts": time.time(),
-    })
+    reqs.append(
+        {
+            "reason": reason,
+            "run_at_ts": run_at_ts,
+            "expires_ts": run_at_ts + 3600,  # 1H 后过期
+            "priority": priority,
+            "created_ts": time.time(),
+        }
+    )
     SCHED_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(SCHED_FILE, "w") as f:
         json.dump(reqs, f, indent=2)
@@ -112,11 +124,12 @@ KNOWN_EVENTS = [
     # 每月更新一次（由 agents 通过 Tavily 自动更新）
 ]
 
+
 def check_upcoming_events_local() -> list:
     """本地已知事件检测（零Token）"""
     now = datetime.now(timezone.utc)
     upcoming = []
-    for (month, day, hour, minute, name) in KNOWN_EVENTS:
+    for month, day, hour, minute, name in KNOWN_EVENTS:
         event_dt = now.replace(month=month, day=day, hour=hour, minute=minute, second=0)
         delta = (event_dt - now).total_seconds() / 3600
         if -EVENT_WINDOW_H <= delta <= EVENT_WINDOW_H:
@@ -133,16 +146,31 @@ def fetch_upcoming_events_tavily() -> list:
     if time.time() - last_event_check < 20 * 3600:  # 20H 内不重复查
         return state.get("cached_events", [])
     try:
-        s = requests.Session(); s.trust_env = False
-        r = s.post("https://api.tavily.com/search", json={
-            "api_key": TAVILY_KEY,
-            "query":   "US economic events today CPI NFP FOMC Fed meeting crypto market impact",
-            "search_depth": "basic",
-            "max_results": 5,
-        }, timeout=10)
+        s = requests.Session()
+        s.trust_env = False
+        r = s.post(
+            "https://api.tavily.com/search",
+            json={
+                "api_key": TAVILY_KEY,
+                "query": "US economic events today CPI NFP FOMC Fed meeting crypto market impact",
+                "search_depth": "basic",
+                "max_results": 5,
+            },
+            timeout=10,
+        )
         results = r.json().get("results", [])
         events = []
-        keywords = ["CPI", "NFP", "FOMC", "Fed", "GDP", "PCE", "inflation", "employment", "rate decision"]
+        keywords = [
+            "CPI",
+            "NFP",
+            "FOMC",
+            "Fed",
+            "GDP",
+            "PCE",
+            "inflation",
+            "employment",
+            "rate decision",
+        ]
         for res in results:
             title = res.get("title", "")
             if any(k.lower() in title.lower() for k in keywords):
@@ -160,29 +188,39 @@ def fetch_upcoming_events_tavily() -> list:
 
 # ── 市场波动检测 ─────────────────────────────────────────────────────────
 
+
 def check_market_volatility() -> dict:
     """检测 BTC 1H 波动（零Token，直接调 Hyperliquid）"""
     try:
-        s = requests.Session(); s.trust_env = False
+        s = requests.Session()
+        s.trust_env = False
         now_ms = int(time.time() * 1000)
         start_ms = now_ms - 3600000  # 1H ago
-        r = s.post("https://api.hyperliquid.xyz/info", json={
-            "type": "candleSnapshot",
-            "req": {"coin": "BTC", "interval": "1h", "startTime": start_ms, "endTime": now_ms}
-        }, timeout=8)
+        r = s.post(
+            "https://api.hyperliquid.xyz/info",
+            json={
+                "type": "candleSnapshot",
+                "req": {"coin": "BTC", "interval": "1h", "startTime": start_ms, "endTime": now_ms},
+            },
+            timeout=8,
+        )
         candles = r.json()
         if candles and len(candles) >= 1:
             last = candles[-1]
-            open_px  = float(last["o"])
+            open_px = float(last["o"])
             close_px = float(last["c"])
             change_pct = abs((close_px - open_px) / open_px * 100)
-            return {"change_pct": round(change_pct, 2), "direction": "UP" if close_px > open_px else "DOWN"}
+            return {
+                "change_pct": round(change_pct, 2),
+                "direction": "UP" if close_px > open_px else "DOWN",
+            }
     except Exception:
         pass
     return {"change_pct": 0, "direction": "NEUTRAL"}
 
 
 # ── 触发决策 ─────────────────────────────────────────────────────────────
+
 
 def should_trigger(state: dict) -> tuple[bool, str]:
     """
@@ -219,6 +257,7 @@ def should_trigger(state: dict) -> tuple[bool, str]:
 
 # ── 记忆与SKILL集成 ─────────────────────────────────────────────────────
 
+
 def load_agent_memories() -> dict:
     """
     加载 Agent A/B 记忆模块，生成调度决策参考摘要
@@ -230,6 +269,7 @@ def load_agent_memories() -> dict:
     try:
         sys.path.insert(0, str(BASE_DIR))
         from core.agent_a_memory import load_memory as load_a_memory
+
         a_mem = load_a_memory()
         memories["agent_a"] = {
             "current_master": a_mem.get("current_master", "N/A"),
@@ -289,6 +329,7 @@ def check_skill_registry() -> dict:
     try:
         sys.path.insert(0, str(BASE_DIR))
         from core.modules.skill_loader import SkillLoader
+
         loader = SkillLoader(str(BASE_DIR.parent.parent))
         result = {"available": [], "unavailable": [], "total": 0}
         for skill_name in SkillLoader.SKILL_PATHS:
@@ -318,6 +359,7 @@ def update_orchestrator_memory(reason: str, memories: dict, skill_status: dict):
 
 # ── 执行 agents ───────────────────────────────────────────────────────────
 
+
 def run_agents(reason: str, memories: dict = None, skill_status: dict = None):
     """
     执行 Agent A/B，传递记忆上下文和 SKILL 状态
@@ -342,13 +384,33 @@ def run_agents(reason: str, memories: dict = None, skill_status: dict = None):
             result = subprocess.run(
                 [sys.executable, str(script_path)],
                 cwd=str(BASE_DIR),
-                capture_output=True, text=True, timeout=180
+                capture_output=True,
+                text=True,
+                timeout=180,
             )
             # 提取关键输出行
-            key_lines = [l for l in result.stdout.split("\n")
-                         if any(kw in l for kw in ["决策", "执行", "拦截", "通过", "权益", "USDC", "错误",
-                                                     "记忆", "SKILL", "模式", "离场", "经典"])
-                         and "Warning" not in l]
+            key_lines = [
+                l
+                for l in result.stdout.split("\n")  # noqa: E741
+                if any(
+                    kw in l
+                    for kw in [
+                        "决策",
+                        "执行",
+                        "拦截",
+                        "通过",
+                        "权益",
+                        "USDC",
+                        "错误",
+                        "记忆",
+                        "SKILL",
+                        "模式",
+                        "离场",
+                        "经典",
+                    ]
+                )
+                and "Warning" not in l
+            ]
             for line in key_lines[:6]:
                 log(f"  [{agent_label}] {line.strip()}")
             if result.returncode != 0:
@@ -361,13 +423,14 @@ def run_agents(reason: str, memories: dict = None, skill_status: dict = None):
 
 # ── 记忆蒸馏与跨Agent同步 ───────────────────────────────────────────────
 
+
 def sync_cross_agent_memory(memories: dict):
     """
     跨 Agent 记忆同步：将 A/B 双方的关键记忆互相注入
     实现「建议→验证→提炼→进化」闭环的跨系统传递
     """
-    a_lessons = memories.get("agent_a", {}).get("lessons_count", 0)
-    b_lessons = len(memories.get("agent_b", {}).get("lessons", []))
+    a_lessons = memories.get("agent_a", {}).get("lessons_count", 0)  # noqa: F841
+    b_lessons = len(memories.get("agent_b", {}).get("lessons", []))  # noqa: F841
 
     # 加载 Agent B 的 verified_lessons（交易记忆闭环产物）
     b_mem_path = BASE_DIR / "data" / "agent_b_memory.json"
@@ -388,12 +451,12 @@ def sync_cross_agent_memory(memories: dict):
             with open(a_mem_path) as f:
                 a_mem = json.load(f)
             top_lessons = sorted(
-                a_mem.get("lessons", []),
-                key=lambda x: x.get("score", 0),
-                reverse=True
+                a_mem.get("lessons", []), key=lambda x: x.get("score", 0), reverse=True
             )[:3]
             if top_lessons:
-                lesson_summary = "; ".join(l.get("content", "")[:40] for l in top_lessons)
+                lesson_summary = "; ".join(
+                    l.get("content", "")[:40] for l in top_lessons  # noqa: E741
+                )  # noqa: E741
                 log(f"🔄 跨Agent同步: A侧Top教训: {lesson_summary}")
         except Exception:
             pass
@@ -407,6 +470,7 @@ def run_memory_distillation():
     try:
         sys.path.insert(0, str(BASE_DIR))
         from memory.app_memory_interface import ExperimentMemoryInterface
+
         mem = ExperimentMemoryInterface()
 
         # 获取蒸馏候选（质量≥B级）
@@ -414,20 +478,25 @@ def run_memory_distillation():
         if candidates:
             log(f"🧪 记忆蒸馏: {len(candidates)} 条候选可上升为全局经验")
             for c in candidates[:3]:
-                log(f"   [{c['quality_level']}] conf={c['confidence']:.0%} verify={c.get('verify_count',0)} "
-                    f"ready={'✅' if c.get('ready_for_global') else '⏳'}")
+                log(
+                    f"   [{c['quality_level']}] conf={c['confidence']:.0%} verify={c.get('verify_count',0)} "
+                    f"ready={'✅' if c.get('ready_for_global') else '⏳'}"
+                )
 
         # 健康检查
         health = mem.healthcheck()
         stats = health.get("stats", {})
-        log(f"💊 记忆系统健康: {health['status']} | "
+        log(
+            f"💊 记忆系统健康: {health['status']} | "
             f"lessons={stats.get('lessons_count',0)} verified={stats.get('verified_lessons_count',0)} "
-            f"trades={stats.get('trades_count',0)}")
+            f"trades={stats.get('trades_count',0)}"
+        )
     except Exception as e:
         log(f"⚠️ 记忆蒸馏失败: {e}")
 
 
 # ── 主函数 ───────────────────────────────────────────────────────────────
+
 
 def run_once():
     """单次执行：检查触发条件 → 加载记忆+SKILL → 执行Agent → 更新状态"""
@@ -449,8 +518,8 @@ def run_once():
         run_memory_distillation()
 
         # 更新调度器状态
-        state["last_run_ts"]       = time.time()
-        state["run_count"]         = state.get("run_count", 0) + 1
+        state["last_run_ts"] = time.time()
+        state["run_count"] = state.get("run_count", 0) + 1
         state["last_trigger_reason"] = reason
         save_state(state)
 
@@ -472,6 +541,7 @@ def run_once():
         if hours_since_update > 23 and 1 <= utc_hour <= 3:
             log("🔄 触发 Agent B 策略参数更新（每日调度）")
             from agents.agent_b_runner import update_classic_strategy_params
+
             update_classic_strategy_params()
             state["last_strategy_update_ts"] = time.time()
             save_state(state)
@@ -512,6 +582,7 @@ def main(daemon: bool = False):
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(description="AB-Trading 记忆与SKILL驱动调度器")
     parser.add_argument("--daemon", action="store_true", help="守护进程模式：持续循环执行")
     args = parser.parse_args()

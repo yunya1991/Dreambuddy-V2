@@ -6,25 +6,28 @@
 - 清理本地残留（OKX已无持仓但本地有的记录）
 - 补全 risk_state.json 关键字段
 """
+
 import os
 import sys
-import json
 from datetime import datetime
 from pathlib import Path
 
 # 关键修复：把标准库路径放在最前，避免 scripts/memory_l4/inspect.py 掩盖标准库 inspect
-_stdlib_paths = [p for p in sys.path if "site-packages" in p or "Frameworks/Python3" in p or p == ""]
+_stdlib_paths = [
+    p for p in sys.path if "site-packages" in p or "Frameworks/Python3" in p or p == ""
+]
 _project_root = str(Path(__file__).resolve().parent.parent.parent)
 # 重组：先标准库 + site-packages，最后再加项目根（避免 inspect.py 先被找到）
 sys.path = _stdlib_paths + [_project_root]
 
 # 加载环境变量
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
+
 env_path = Path(_project_root) / ".env"
 load_dotenv(env_path)
 
-from scripts.memory_l4.okx_simulated import OKXSimulatedClient
-from scripts.memory_l4.trading_utils import PositionTracker, RiskManager
+from scripts.memory_l4.okx_simulated import OKXSimulatedClient  # noqa: E402
+from scripts.memory_l4.trading_utils import PositionTracker, RiskManager  # noqa: E402
 
 
 def main():
@@ -33,7 +36,9 @@ def main():
     print("=" * 60)
 
     # 配置币种列表
-    coins_str = os.environ.get("POLLING_COINS", "UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB")
+    coins_str = os.environ.get(
+        "POLLING_COINS", "UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB"
+    )
     coins = [c.strip() for c in coins_str.split(",") if c.strip()]
     print(f"[持仓同步] 待检查币种: {len(coins)} 个 -> {coins}")
     print()
@@ -105,7 +110,9 @@ def main():
         if not pos_result.get("ok"):
             print(f"  ? {coin:<8} API查询失败，暂保留本地")
             continue
-        okx_positions = [pp for pp in pos_result.get("positions", []) if float(pp.get("pos", 0)) > 0]
+        okx_positions = [
+            pp for pp in pos_result.get("positions", []) if float(pp.get("pos", 0)) > 0
+        ]
         if not okx_positions:
             position_tracker.close_position(
                 inst_id,
@@ -121,7 +128,7 @@ def main():
     # ── 3. 汇总报告 ──────────────────────────────────────────────────
     open_positions = position_tracker.all_open_positions()
     print("=" * 60)
-    print(f"[持仓同步] 完成！汇总报告：")
+    print("[持仓同步] 完成！汇总报告：")
     print(f"  新增同步:   {synced_count} 个")
     print(f"  已存在跳过: {skipped_count} 个")
     print(f"  清理残留:   {cleaned_count} 个")
@@ -130,20 +137,26 @@ def main():
         print("  持仓明细:")
         for p in open_positions:
             sz = p.scale_params.get("okx_actual_sz", "?")
-            print(f"    - {p.coin:<8} {p.direction:<5} @ {p.entry_price:<10} sz={sz} src={p.strategy_source}")
+            print(
+                f"    - {p.coin:<8} {p.direction:<5} @ {p.entry_price:<10} sz={sz} src={p.strategy_source}"
+            )
     else:
         print("  当前无持仓（系统从零开始 ✓）")
 
     print()
-    print(f"[风控状态] daily_pnl={risk_manager.state.daily_pnl:.2f} "
-          f"consecutive_losses={risk_manager.state.current_consecutive_losses} "
-          f"halted={risk_manager.state.trading_halted}")
+    print(
+        f"[风控状态] daily_pnl={risk_manager.state.daily_pnl:.2f} "
+        f"consecutive_losses={risk_manager.state.current_consecutive_losses} "
+        f"halted={risk_manager.state.trading_halted}"
+    )
     initial_equity = float(os.environ.get("INITIAL_EQUITY", 200.0))
     trading_budget = initial_equity * 0.75  # 默认75%作为交易预算
     risk_threshold = trading_budget * 0.20
-    print(f"[风控参数] initial_equity={initial_equity:.2f}U "
-          f"trading_budget≈{trading_budget:.2f}U "
-          f"risk20%_threshold≈{risk_threshold:.2f}U")
+    print(
+        f"[风控参数] initial_equity={initial_equity:.2f}U "
+        f"trading_budget≈{trading_budget:.2f}U "
+        f"risk20%_threshold≈{risk_threshold:.2f}U"
+    )
 
     print()
     print("=" * 60)

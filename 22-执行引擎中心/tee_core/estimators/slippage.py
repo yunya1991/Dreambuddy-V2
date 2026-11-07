@@ -38,6 +38,7 @@ Algorithm (FR-0.1 / AC-1):
    single-level fill anchor so avg_fill_px / impact still come out
    consistent.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
@@ -124,25 +125,30 @@ class SlippageEstimator:
         last = _parse_float(ticker.get("last")) if ticker else None
         bid = _parse_float(ticker.get("bid")) if ticker else None
         ask = _parse_float(ticker.get("ask")) if ticker else None
-        mid = (
-            (bid + ask) / 2.0 if (bid is not None and ask is not None)
-            else last or 0.0
-        )
+        mid = (bid + ask) / 2.0 if (bid is not None and ask is not None) else last or 0.0
         decision_anchor = float(decision_px) if decision_px else mid
         if not decision_anchor:
             decision_anchor = 1.0  # avoid div-by-zero if no data at all
 
         # 4. Derive want_coin (base coin size).
         want_coin = self._derive_want_coin(
-            sz_contracts=sz_contracts, notional_usdt=notional_usdt,
-            lot_sz=lot_sz, ct_val=ct_val, decision_px=decision_anchor,
+            sz_contracts=sz_contracts,
+            notional_usdt=notional_usdt,
+            lot_sz=lot_sz,
+            ct_val=ct_val,
+            decision_px=decision_anchor,
         )
 
         # 5. FAIL-OPEN branch — if book failed → use MEDIAN bps fallback.
         if book_exception or (book and (not book.get("ok"))) or (not book):
             return self._median_fallback(
-                inst_id=inst_id, side=side, want_coin=want_coin,
-                decision_px=decision_anchor, bid=bid, ask=ask, mid=mid,
+                inst_id=inst_id,
+                side=side,
+                want_coin=want_coin,
+                decision_px=decision_anchor,
+                bid=bid,
+                ask=ask,
+                mid=mid,
                 fallback_reason=(
                     book_exception
                     or (book.get("error") if book else "book is None")
@@ -152,7 +158,9 @@ class SlippageEstimator:
 
         # 6. Primary path — walk the ladder.
         return self._walk_ladder(
-            book=book, side=side, want_coin=want_coin,
+            book=book,
+            side=side,
+            want_coin=want_coin,
             decision_px=decision_anchor,
             ts_ms=book.get("ts"),
         )
@@ -194,9 +202,7 @@ class SlippageEstimator:
         ts_ms: Any,
     ) -> EstimateResult:
         is_buy = (side or "buy").lower() == "buy"
-        raw_levels: List[List[Any]] = (
-            list(book.get("asks", []) if is_buy else book.get("bids", []))
-        )
+        raw_levels: List[List[Any]] = list(book.get("asks", []) if is_buy else book.get("bids", []))
         # Parse to floats once. Order: best first (OKX convention).
         levels: List[Tuple[float, float]] = []
         for row in raw_levels:
@@ -210,7 +216,7 @@ class SlippageEstimator:
 
         total_level_coin = sum(sz for _, sz in levels)
         remaining = max(want_coin, 0.0)
-        paid = 0.0            # USDT paid (buy) / USDT received (sell)
+        paid = 0.0  # USDT paid (buy) / USDT received (sell)
         filled_coin = 0.0
         depth_reached = 0
         consumed_records_bids: List[Dict[str, Any]] = []
@@ -224,8 +230,7 @@ class SlippageEstimator:
             filled_coin += take
             remaining -= take
             depth_reached = idx + 1
-            rec = {"level": idx, "px": px, "coin_taken": take,
-                   "level_total_coin": sz_coin}
+            rec = {"level": idx, "px": px, "coin_taken": take, "level_total_coin": sz_coin}
             (consumed_records_asks if is_buy else consumed_records_bids).append(rec)
 
         thin_warning = want_coin > total_level_coin + 1e-12
@@ -246,7 +251,8 @@ class SlippageEstimator:
                 avg_fill_px=float(avg_px),
                 slippage_bps=float(slip_bps),
                 market_impact_cost_usd=float(impact),
-                walk_depth_level=0, thin_book_warning=bool(thin_warning),
+                walk_depth_level=0,
+                thin_book_warning=bool(thin_warning),
                 fail_open=False,
                 orderbook_ts_ms=int(ts_ms) if str(ts_ms).isdigit() else None,
                 bids_consumed=consumed_records_bids,

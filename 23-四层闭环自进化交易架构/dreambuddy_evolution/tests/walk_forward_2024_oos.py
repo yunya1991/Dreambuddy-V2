@@ -11,6 +11,7 @@
 
 输出: dreambuddy_evolution/data/walk_forward_2024_oos.json
 """
+
 from __future__ import annotations
 
 import json
@@ -25,9 +26,12 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
-from dreambuddy_evolution.core.garch_fallback import GARCHFallback
-from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
+from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector  # noqa: E402, I001
+from dreambuddy_evolution.core.garch_fallback import GARCHFallback  # noqa: E402
+from dreambuddy_evolution.core.neural_sde_model import (  # noqa: E402
+    NeuralSDEModel,
+    NeuralSDETrainer,
+)  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -61,8 +65,8 @@ def evaluate_on_windows(
     for ts in test_starts:
         if ts + horizon >= len(closes):
             continue
-        history = closes[:ts + 1]
-        actual = closes[ts + 1:ts + 1 + horizon]
+        history = closes[: ts + 1]
+        actual = closes[ts + 1 : ts + 1 + horizon]
         init_price = float(history[-1])
         returns = np.diff(np.log(history))
         init_vol = float(np.std(returns)) if len(returns) > 2 else 0.02
@@ -83,16 +87,18 @@ def evaluate_on_windows(
             sde_pred = np.mean(sde_paths[:, 1:], axis=0)
             sde_mae = float(np.mean(np.abs(sde_pred - actual)))
 
-        results.append({
-            "test_start_idx": int(ts),
-            "test_price_start": round(float(closes[ts]), 2),
-            "test_regime": test_regime,
-            "horizon": horizon,
-            "sde_mae": round(sde_mae, 4),
-            "garch_mae": round(garch_mae, 4),
-            "ratio": round(sde_mae / garch_mae, 4) if garch_mae > 0 else float("inf"),
-            "improvement": round(garch_mae - sde_mae, 4),
-        })
+        results.append(
+            {
+                "test_start_idx": int(ts),
+                "test_price_start": round(float(closes[ts]), 2),
+                "test_regime": test_regime,
+                "horizon": horizon,
+                "sde_mae": round(sde_mae, 4),
+                "garch_mae": round(garch_mae, 4),
+                "ratio": round(sde_mae / garch_mae, 4) if garch_mae > 0 else float("inf"),
+                "improvement": round(garch_mae - sde_mae, 4),
+            }
+        )
     return results
 
 
@@ -113,8 +119,11 @@ def main():
     train_end = len(closes_full) - N_TEST_2024
     closes_train = closes_full[:train_end].copy()
     closes_test = closes_full[train_end:].copy()
-    logger.info("Walk-forward 切分: train=%d (2017-2023), test=%d (2024)",
-                len(closes_train), len(closes_test))
+    logger.info(
+        "Walk-forward 切分: train=%d (2017-2023), test=%d (2024)",
+        len(closes_train),
+        len(closes_test),
+    )
     logger.info("  train 末尾: $%.2f", closes_train[-1])
     logger.info("  test 首点: $%.2f, 末点: $%.2f", closes_test[0], closes_test[-1])
 
@@ -123,39 +132,57 @@ def main():
     detector = BTCRegimeDetector()
     regime_labels_train = detector.detect(closes_train)
     counts = np.bincount(regime_labels_train, minlength=3)
-    logger.info("训练集 regime 分布: bull=%d (%.1f%%) chop=%d (%.1f%%) bear=%d (%.1f%%)",
-                counts[0], 100*counts[0]/len(closes_train),
-                counts[1], 100*counts[1]/len(closes_train),
-                counts[2], 100*counts[2]/len(closes_train))
+    logger.info(
+        "训练集 regime 分布: bull=%d (%.1f%%) chop=%d (%.1f%%) bear=%d (%.1f%%)",
+        counts[0],
+        100 * counts[0] / len(closes_train),
+        counts[1],
+        100 * counts[1] / len(closes_train),
+        counts[2],
+        100 * counts[2] / len(closes_train),
+    )
 
     # 训练 NeuralSDE (P2+P4 最优: MoE hard routing + return_mse + dropout0.05 + wd1e-4 + 250ep)
     import torch
+
     torch.manual_seed(42)
     model = NeuralSDEModel(
-        device="cpu", n_regimes=3,
-        use_moe=True, moe_routing="hard",
+        device="cpu",
+        n_regimes=3,
+        use_moe=True,
+        moe_routing="hard",
         dropout=0.05,
     )
     if not model.is_available:
         logger.error("torch 不可用")
         return 1
     trainer = NeuralSDETrainer(
-        model=model, lr=1e-4, seq_len=64, horizon=20,
-        batch_size=64, loss_type="return_mse",
+        model=model,
+        lr=1e-4,
+        seq_len=64,
+        horizon=20,
+        batch_size=64,
+        loss_type="return_mse",
         weight_decay=1e-4,
-        patience=10, val_split=0.1,
+        patience=10,
+        val_split=0.1,
     )
 
     t0 = time.time()
     report = trainer.train(
-        closes_train, epochs=250,
+        closes_train,
+        epochs=250,
         regime_labels=regime_labels_train,
         regime_balance="natural",
     )
     train_time = time.time() - t0
-    logger.info("训练完成: status=%s, n_windows=%d, final_loss=%.6f, 耗时=%.1fs",
-                report.get("status"), report.get("n_windows", 0),
-                report.get("final_loss", 0.0), train_time)
+    logger.info(
+        "训练完成: status=%s, n_windows=%d, final_loss=%.6f, 耗时=%.1fs",
+        report.get("status"),
+        report.get("n_windows", 0),
+        report.get("final_loss", 0.0),
+        train_time,
+    )
 
     if report.get("status") != "ok":
         logger.error("训练未完成: %s", report)
@@ -202,11 +229,15 @@ def main():
 
     # regime 分布在测试窗口
     test_regimes = [r["test_regime"] for r in results if r["test_regime"] is not None]
-    regime_counts = {
-        "bull": int(test_regimes.count(0)),
-        "chop": int(test_regimes.count(1)),
-        "bear": int(test_regimes.count(2)),
-    } if test_regimes else {}
+    regime_counts = (
+        {
+            "bull": int(test_regimes.count(0)),
+            "chop": int(test_regimes.count(1)),
+            "bear": int(test_regimes.count(2)),
+        }
+        if test_regimes
+        else {}
+    )
 
     out = {
         "tdd": "T7-walk-forward",
@@ -267,10 +298,8 @@ def main():
     logger.info("GARCH MAE:     mean=%.2f", mean_garch_mae)
     logger.info("ratio:         mean=%.4f (越低越好)", mean_ratio)
     logger.info("测试 regime 分布: %s", regime_counts)
-    logger.info("OOS 闸门 1.2x:   %s (NeuralSDE ≤ 1.2×GARCH)",
-                "PASS" if oos_gate_1_2x else "FAIL")
-    logger.info("OOS 闸门 strict: %s (NeuralSDE < GARCH)",
-                "PASS" if oos_gate_strict else "FAIL")
+    logger.info("OOS 闸门 1.2x:   %s (NeuralSDE ≤ 1.2×GARCH)", "PASS" if oos_gate_1_2x else "FAIL")
+    logger.info("OOS 闸门 strict: %s (NeuralSDE < GARCH)", "PASS" if oos_gate_strict else "FAIL")
     logger.info("报告: %s", out_path)
 
     # 闸门: 至少通过 1.2x (不显著差于 GARCH)

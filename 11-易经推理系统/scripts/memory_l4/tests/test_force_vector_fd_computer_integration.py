@@ -7,16 +7,21 @@
      但五维评分（dao/tian/di/jiang/fa）不变
   4. Shadow 接入异常全部被吞，不影响五维评分（FAIL-OPEN 铁律）
 """
-import pytest
+
 import sys
-import os
 from pathlib import Path
+
+import pytest
 
 _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from five_domain_feature_computer import FiveDomainFeatureComputer, ASSET_CLASSES, DEFAULT_NEUTRAL_SCORES
+from five_domain_feature_computer import (  # noqa: E402
+    ASSET_CLASSES,
+    DEFAULT_NEUTRAL_SCORES,
+    FiveDomainFeatureComputer,
+)
 
 
 @pytest.fixture
@@ -68,11 +73,17 @@ class TestForceVectorByteEquivalence:
         for cls in ASSET_CLASSES:
             keys = set(result[cls].keys())
             # 关闭时只有 dao/tian/di/jiang/fa 5 个评分键
-            assert keys == {"dao", "tian", "di", "jiang", "fa"}, (
-                f"{cls} 输出键集合与接入前不一致: {keys}"
-            )
+            assert keys == {
+                "dao",
+                "tian",
+                "di",
+                "jiang",
+                "fa",
+            }, f"{cls} 输出键集合与接入前不一致: {keys}"
 
-    def test_closed_scores_equivalent_to_no_init(self, simple_coin_data, simple_system_state, monkeypatch):
+    def test_closed_scores_equivalent_to_no_init(
+        self, simple_coin_data, simple_system_state, monkeypatch
+    ):
         """FORCE_VECTOR_SHADOW 未设置 vs 显式关闭：评分完全一致。"""
         monkeypatch.delenv("FORCE_VECTOR_SHADOW", raising=False)
         fvc1 = FiveDomainFeatureComputer()
@@ -89,7 +100,9 @@ class TestForceVectorByteEquivalence:
 class TestForceVectorShadowOpen:
     """开启时：五维评分不变，附加字段存在。"""
 
-    def test_scores_preserved_when_shadow_on(self, simple_coin_data, simple_system_state, monkeypatch):
+    def test_scores_preserved_when_shadow_on(
+        self, simple_coin_data, simple_system_state, monkeypatch
+    ):
         """开启前后，五维评分完全一致。"""
         monkeypatch.setenv("FORCE_VECTOR_SHADOW", "0")
         fvc_off = FiveDomainFeatureComputer()
@@ -102,9 +115,9 @@ class TestForceVectorShadowOpen:
         # 五维评分必须完全一致
         for cls in ASSET_CLASSES:
             for dom in ("dao", "tian", "di", "jiang", "fa"):
-                assert r_on[cls][dom] == r_off[cls][dom], (
-                    f"{cls}/{dom} 评分被 Shadow 改动: {r_on[cls][dom]} vs {r_off[cls][dom]}"
-                )
+                assert (
+                    r_on[cls][dom] == r_off[cls][dom]
+                ), f"{cls}/{dom} 评分被 Shadow 改动: {r_on[cls][dom]} vs {r_off[cls][dom]}"
 
     def test_force_vector_attachments_present_when_on(
         self, simple_coin_data, simple_system_state, monkeypatch
@@ -131,6 +144,7 @@ class TestForceVectorFailOpen:
     ):
         """即便 force_vector 模块完全不可导入，开启开关也不能影响评分。"""
         import builtins
+
         original_import = builtins.__import__
 
         def mock_import(name, *args, **kwargs):

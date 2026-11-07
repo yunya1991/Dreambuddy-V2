@@ -3,6 +3,7 @@
 按 YAML 配置的 CSS 选择器提取字段，支持 HTML 和 RSS。
 Scrapy Selector (parsel) 是成熟的 CSS/XPath 解析引擎，薄封装避免造轮子。
 """
+
 from __future__ import annotations
 
 import requests

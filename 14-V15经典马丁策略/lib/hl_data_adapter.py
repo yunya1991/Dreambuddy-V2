@@ -18,10 +18,11 @@ HL API 在本机可达，且 V15 执行层已切 HL，数据源统一到 HL 消�
 
 只读公共数据，不持有任何凭据。
 """
+
 import os
 import sys
 import time
-from typing import Dict, Optional
+from typing import Dict
 
 # aster_spot 所在目录：repo_root/experiments/ab-trading/execution
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -29,13 +30,30 @@ _ASTER_DIR = os.path.join(_REPO_ROOT, "experiments", "ab-trading", "execution")
 
 # OKX bar -> HL interval 映射（HL 官方: 1m 3m 5m 15m 30m 1h 2h 4h 8h 12h 1d 3d 1w 1M）
 BAR_MAP = {
-    "1m": "1m", "3m": "3m", "5m": "5m", "15m": "15m", "30m": "30m",
-    "1H": "1h", "1h": "1h", "1Hutc": "1h",
-    "2H": "2h", "2h": "2h", "4H": "4h", "4h": "4h",
-    "6H": "6h", "6h": "6h", "12H": "12h", "12h": "12h",
-    "1D": "1d", "1d": "1d", "1Dutc": "1d",
-    "1W": "1w", "1w": "1w", "1Wutc": "1w",
-    "1M": "1M", "1mUtc": "1M",
+    "1m": "1m",
+    "3m": "3m",
+    "5m": "5m",
+    "15m": "15m",
+    "30m": "30m",
+    "1H": "1h",
+    "1h": "1h",
+    "1Hutc": "1h",
+    "2H": "2h",
+    "2h": "2h",
+    "4H": "4h",
+    "4h": "4h",
+    "6H": "6h",
+    "6h": "6h",
+    "12H": "12h",
+    "12h": "12h",
+    "1D": "1d",
+    "1d": "1d",
+    "1Dutc": "1d",
+    "1W": "1w",
+    "1w": "1w",
+    "1Wutc": "1w",
+    "1M": "1M",
+    "1mUtc": "1M",
 }
 
 
@@ -60,6 +78,7 @@ class HLDataAdapter:
     def _ensure_aster(self):
         if self._aster is None:
             import aster_spot  # noqa: 延迟导入（依赖 requests）
+
             self._aster = aster_spot
         return self._aster
 
@@ -69,8 +88,7 @@ class HLDataAdapter:
 
     # ── OKX 兼容接口 ──────────────────────────────────────
 
-    def get_kline(self, inst_id: str = None, bar: str = "1H",
-                  limit: int = 100) -> Dict:
+    def get_kline(self, inst_id: str = None, bar: str = "1H", limit: int = 100) -> Dict:
         """拉取 K 线，返回 OKX get_kline 格式（candles 新→旧）"""
         coin = _coin_from_inst_id(inst_id or "BTC-USDT")
         if not coin:
@@ -87,14 +105,16 @@ class HLDataAdapter:
             candles = []
             for c in raw:
                 try:
-                    candles.append({
-                        "ts": int(c["t"]),        # HL: t=K线起始时间(ms)
-                        "o": float(c["o"]),
-                        "h": float(c["h"]),
-                        "l": float(c["l"]),
-                        "c": float(c["c"]),
-                        "vol": float(c.get("v", 0)),
-                    })
+                    candles.append(
+                        {
+                            "ts": int(c["t"]),  # HL: t=K线起始时间(ms)
+                            "o": float(c["o"]),
+                            "h": float(c["h"]),
+                            "l": float(c["l"]),
+                            "c": float(c["c"]),
+                            "vol": float(c.get("v", 0)),
+                        }
+                    )
                 except (KeyError, TypeError, ValueError):
                     continue
             if not candles:
@@ -146,22 +166,35 @@ class HLDataAdapter:
         params = params or {}
         try:
             if path == "/api/v5/market/candles":
-                r = self.get_kline(params.get("instId"),
-                                   bar=params.get("bar", "1H"),
-                                   limit=int(params.get("limit", 100)))
+                r = self.get_kline(
+                    params.get("instId"),
+                    bar=params.get("bar", "1H"),
+                    limit=int(params.get("limit", 100)),
+                )
                 if not r.get("ok"):
                     return {"code": "1", "msg": r.get("error", "")}
                 # candles 已是新→旧；补零对齐 OKX 10 列格式
-                data = [[str(c["ts"]), str(c["o"]), str(c["h"]), str(c["l"]),
-                         str(c["c"]), str(c["vol"]), "0", "0", "0", "0"]
-                        for c in r["candles"]]
+                data = [
+                    [
+                        str(c["ts"]),
+                        str(c["o"]),
+                        str(c["h"]),
+                        str(c["l"]),
+                        str(c["c"]),
+                        str(c["vol"]),
+                        "0",
+                        "0",
+                        "0",
+                        "0",
+                    ]
+                    for c in r["candles"]
+                ]
                 return {"code": "0", "data": data}
             if path == "/api/v5/market/ticker":
                 r = self.get_ticker(params.get("instId"))
                 if not r.get("ok"):
                     return {"code": "1", "msg": r.get("error", "")}
-                return {"code": "0", "data": [
-                    {"last": str(r["last"]), "ts": r["ts"]}]}
+                return {"code": "0", "data": [{"last": str(r["last"]), "ts": r["ts"]}]}
         except Exception as e:
             return {"code": "1", "msg": str(e)}
         return {"code": "1", "msg": f"HL适配器不支持该端点: {path}"}
@@ -171,7 +204,11 @@ if __name__ == "__main__":
     # 自检：python hl_data_adapter.py
     a = HLDataAdapter()
     r = a.get_kline("BTC-USDT-SWAP", bar="1D", limit=5)
-    print("get_kline BTC 1D x5:", {k: v for k, v in r.items() if k != "candles"},
-          "| first:", r["candles"][0] if r.get("ok") else None)
+    print(
+        "get_kline BTC 1D x5:",
+        {k: v for k, v in r.items() if k != "candles"},
+        "| first:",
+        r["candles"][0] if r.get("ok") else None,
+    )
     t = a.get_ticker("BTC-USDT-SWAP")
     print("get_ticker BTC:", t)

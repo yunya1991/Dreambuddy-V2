@@ -5,6 +5,7 @@
 ③ VIFDropper      : VIF>10 从高到低剔除, 样本<1000 自动跳过
 ④ IVDropper       : IV<0.02 剔除, 无标签 y 自动跳过
 """
+
 from __future__ import annotations
 
 import logging
@@ -112,7 +113,9 @@ class VIFDropper:
         if self.dropped_cols:
             logger.info(
                 "VIFDropper: dropped %d cols (VIF>%s): %s",
-                len(self.dropped_cols), self.threshold, self.dropped_cols,
+                len(self.dropped_cols),
+                self.threshold,
+                self.dropped_cols,
             )
         return out
 
@@ -172,6 +175,8 @@ class IVDropper:
         if self.dropped_cols:
             logger.info(
                 "IVDropper: dropped %d cols (IV<%s): %s",
-                len(self.dropped_cols), self.threshold, self.dropped_cols,
+                len(self.dropped_cols),
+                self.threshold,
+                self.dropped_cols,
             )
         return out

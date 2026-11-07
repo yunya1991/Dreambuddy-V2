@@ -12,11 +12,13 @@
 """
 
 from __future__ import annotations
-import json, math, logging
-from pathlib import Path
-from typing import Dict, Any, List
-from datetime import datetime
+
+import json
+import logging
 from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +26,14 @@ logger = logging.getLogger(__name__)
 class LossDiagnoser:
     def __init__(self, data_dir: str = None):
         if data_dir is None:
-            data_dir = str(Path(__file__).parent.parent.parent.parent.parent
-                           / "10-经典指标系统" / "user_data" / "data" / "aggregated" / "futures")
+            data_dir = str(
+                Path(__file__).parent.parent.parent.parent.parent
+                / "10-经典指标系统"
+                / "user_data"
+                / "data"
+                / "aggregated"
+                / "futures"
+            )
         self.data_dir = data_dir
         self._agent = None
         self._classifier = None
@@ -34,18 +42,21 @@ class LossDiagnoser:
     def get_agent(self):
         if self._agent is None:
             from dreamos.apps.trading_agent.agent import TradingAgent
+
             self._agent = TradingAgent(budget_mode="lean")
         return self._agent
 
     def get_classifier(self):
         if self._classifier is None:
             from dreamos.core.sense.scenario_classifier import ScenarioClassifier
+
             self._classifier = ScenarioClassifier()
         return self._classifier
 
     def get_memory(self):
         if self._memory is None:
             from dreamos.core.memory.orchestration_memory import OrchestrationMemory
+
             self._memory = OrchestrationMemory()
             self._memory.load()
         return self._memory
@@ -60,7 +71,9 @@ class LossDiagnoser:
         klines = []
         for k in data:
             if isinstance(k, list) and len(k) >= 6:
-                klines.append([int(k[0]), float(k[1]), float(k[2]), float(k[3]), float(k[4]), float(k[5])])
+                klines.append(
+                    [int(k[0]), float(k[1]), float(k[2]), float(k[3]), float(k[4]), float(k[5])]
+                )
         klines.sort(key=lambda x: x[0])
         return klines
 
@@ -81,9 +94,10 @@ class LossDiagnoser:
                 e = v * k + e * (1 - k)
             return e
 
-        def atr_pct(h, l, c, p):
+        def atr_pct(h, l, c, p):  # noqa: E741
             p = min(p, len(c) - 1)
-            if p <= 0: return 0.02
+            if p <= 0:
+                return 0.02
             trs = []
             for i in range(-p, 0):
                 tr = max(h[i] - l[i], abs(h[i] - c[i - 1]), abs(l[i] - c[i - 1]))
@@ -92,13 +106,15 @@ class LossDiagnoser:
 
         def rsi(c, p=14):
             p = min(p, len(c) - 1)
-            if p <= 0: return 50
+            if p <= 0:
+                return 50
             dels = [c[i] - c[i - 1] for i in range(-p, 0)]
             g = [max(d, 0) for d in dels]
             lo = [max(-d, 0) for d in dels]
             ag = sum(g) / p
             al = sum(lo) / p
-            if al == 0: return 100
+            if al == 0:
+                return 100
             return 100 - 100 / (1 + ag / al)
 
         vol_ratio = 1.0
@@ -108,18 +124,26 @@ class LossDiagnoser:
             vol_ratio = recent_vol / avg_vol if avg_vol > 0 else 1.0
 
         return {
-            "symbol": symbol, "price": price,
-            "ema20": ema(closes, 20), "ema50": ema(closes, 50), "ema200": ema(closes, 200),
-            "change_1h": self._pct(closes, 1), "change_4h": self._pct(closes, 4),
+            "symbol": symbol,
+            "price": price,
+            "ema20": ema(closes, 20),
+            "ema50": ema(closes, 50),
+            "ema200": ema(closes, 200),
+            "change_1h": self._pct(closes, 1),
+            "change_4h": self._pct(closes, 4),
             "change_24h": self._pct(closes, min(24, len(closes) - 1)),
             "atr_pct": atr_pct(highs, lows, closes, 14),
             "rsi14": rsi(closes, 14),
-            "high_24h": max(highs[-24:]), "low_24h": min(lows[-24:]),
-            "vol_ratio": vol_ratio, "fgi": 50, "funding_rate": 0.0,
+            "high_24h": max(highs[-24:]),
+            "low_24h": min(lows[-24:]),
+            "vol_ratio": vol_ratio,
+            "fgi": 50,
+            "funding_rate": 0.0,
         }
 
     def _pct(self, values, periods):
-        if len(values) <= periods or periods <= 0: return 0
+        if len(values) <= periods or periods <= 0:
+            return 0
         old = values[-periods - 1]
         new = values[-1]
         return (new - old) / old * 100 if old != 0 else 0
@@ -143,8 +167,8 @@ class LossDiagnoser:
                 continue
 
             for i in range(0, len(klines) - window_size - hold_periods, step):
-                window = klines[i:i + window_size]
-                future = klines[i + window_size:i + window_size + hold_periods]
+                window = klines[i : i + window_size]
+                future = klines[i + window_size : i + window_size + hold_periods]
 
                 market_data = self.build_market_data(window, symbol)
                 if market_data is None:
@@ -160,8 +184,16 @@ class LossDiagnoser:
                         market_data=market_data,
                         context={
                             "symbol": symbol,
-                            "scenario": scenario.to_dict() if hasattr(scenario, "to_dict") else {"scenario_id": sid},
-                            "recommended_orchestration": choice.to_dict() if hasattr(choice, "to_dict") else {"pattern": choice.pattern},
+                            "scenario": (
+                                scenario.to_dict()
+                                if hasattr(scenario, "to_dict")
+                                else {"scenario_id": sid}
+                            ),
+                            "recommended_orchestration": (
+                                choice.to_dict()
+                                if hasattr(choice, "to_dict")
+                                else {"pattern": choice.pattern}
+                            ),
                         },
                     )
                 except Exception:
@@ -171,7 +203,11 @@ class LossDiagnoser:
                 a5_out = outputs.get("A5", {})
                 trade_order = a5_out.get("trade_order", {})
 
-                if not trade_order or trade_order.get("action") == "HOLD" or not trade_order.get("entry_price"):
+                if (
+                    not trade_order
+                    or trade_order.get("action") == "HOLD"
+                    or not trade_order.get("entry_price")
+                ):
                     continue
 
                 direction = trade_order.get("action", "HOLD")
@@ -233,25 +269,31 @@ class LossDiagnoser:
                             sl_premature = True
                             sl_recover_pct = (entry_price - min_after) / entry_price * 100
 
-                trades.append({
-                    "symbol": symbol,
-                    "direction": direction,
-                    "confidence": round(confidence, 3),
-                    "scenario": sid,
-                    "entry_price": entry_price,
-                    "exit_price": exit_price,
-                    "stop_loss": stop_loss,
-                    "take_profit": take_profit,
-                    "atr_pct": atr_pct,
-                    "return": round(ret, 6),
-                    "win": ret > 0,
-                    "exit_reason": exit_reason,
-                    "exit_bar": exit_bar,
-                    "sl_premature": sl_premature,
-                    "sl_recover_pct": round(sl_recover_pct, 2),
-                    "rr_ratio": round(abs(take_profit - entry_price) / max(abs(entry_price - stop_loss), 0.0001), 2),
-                    "timestamp": window[-1][0],
-                })
+                trades.append(
+                    {
+                        "symbol": symbol,
+                        "direction": direction,
+                        "confidence": round(confidence, 3),
+                        "scenario": sid,
+                        "entry_price": entry_price,
+                        "exit_price": exit_price,
+                        "stop_loss": stop_loss,
+                        "take_profit": take_profit,
+                        "atr_pct": atr_pct,
+                        "return": round(ret, 6),
+                        "win": ret > 0,
+                        "exit_reason": exit_reason,
+                        "exit_bar": exit_bar,
+                        "sl_premature": sl_premature,
+                        "sl_recover_pct": round(sl_recover_pct, 2),
+                        "rr_ratio": round(
+                            abs(take_profit - entry_price)
+                            / max(abs(entry_price - stop_loss), 0.0001),
+                            2,
+                        ),
+                        "timestamp": window[-1][0],
+                    }
+                )
 
         # === 分析 ===
         total = len(trades)
@@ -285,15 +327,17 @@ class LossDiagnoser:
                 continue
             sw = [t for t in st if t["win"]]
             sl_trades = [t for t in st if t["exit_reason"] == "stop_loss"]
-            scenario_report.append({
-                "scenario": sid,
-                "count": len(st),
-                "win_rate": round(len(sw) / len(st), 4),
-                "total_return": round(sum(t["return"] for t in st), 4),
-                "long_count": len([t for t in st if t["direction"] == "LONG"]),
-                "short_count": len([t for t in st if t["direction"] == "SHORT"]),
-                "sl_hit_rate": round(len(sl_trades) / len(st), 4),
-            })
+            scenario_report.append(
+                {
+                    "scenario": sid,
+                    "count": len(st),
+                    "win_rate": round(len(sw) / len(st), 4),
+                    "total_return": round(sum(t["return"] for t in st), 4),
+                    "long_count": len([t for t in st if t["direction"] == "LONG"]),
+                    "short_count": len([t for t in st if t["direction"] == "SHORT"]),
+                    "sl_hit_rate": round(len(sl_trades) / len(st), 4),
+                }
+            )
         report["scenario_analysis"] = scenario_report
 
         # 3. 出场原因分布
@@ -302,8 +346,10 @@ class LossDiagnoser:
         for t in trades:
             exit_reasons[t["exit_reason"]] += 1
             exit_reason_returns[t["exit_reason"]].append(t["return"])
-        report["exit_reasons"] = {k: {"count": v, "avg_return": round(sum(exit_reason_returns[k]) / v, 6)}
-                                  for k, v in exit_reasons.items()}
+        report["exit_reasons"] = {
+            k: {"count": v, "avg_return": round(sum(exit_reason_returns[k]) / v, 6)}
+            for k, v in exit_reasons.items()
+        }
 
         # 4. 止损过早问题
         sl_trades = [t for t in trades if t["exit_reason"] == "stop_loss"]
@@ -312,7 +358,9 @@ class LossDiagnoser:
         report["stop_loss_premature"] = len(sl_premature)
         report["stop_loss_premature_rate"] = round(len(sl_premature) / max(len(sl_trades), 1), 4)
         if sl_premature:
-            report["sl_premature_avg_recover"] = round(sum(t["sl_recover_pct"] for t in sl_premature) / len(sl_premature), 2)
+            report["sl_premature_avg_recover"] = round(
+                sum(t["sl_recover_pct"] for t in sl_premature) / len(sl_premature), 2
+            )
 
         # 5. 止损过早 - 按多空分
         for d in ["LONG", "SHORT"]:
@@ -340,12 +388,14 @@ class LossDiagnoser:
         for bk in sorted(conf_bins.keys()):
             bt = conf_bins[bk]
             bw = [t for t in bt if t["win"]]
-            report["confidence_analysis"].append({
-                "confidence": bk,
-                "count": len(bt),
-                "win_rate": round(len(bw) / len(bt), 4),
-                "avg_return": round(sum(t["return"] for t in bt) / len(bt), 6),
-            })
+            report["confidence_analysis"].append(
+                {
+                    "confidence": bk,
+                    "count": len(bt),
+                    "win_rate": round(len(bw) / len(bt), 4),
+                    "avg_return": round(sum(t["return"] for t in bt) / len(bt), 6),
+                }
+            )
 
         # 8. 最大连亏
         max_consec_loss = 0
@@ -361,17 +411,26 @@ class LossDiagnoser:
         # 9. 盈亏幅度分析
         win_returns = [t["return"] for t in wins]
         loss_returns = [t["return"] for t in losses]
-        report["avg_win"] = round(sum(win_returns) / max(len(win_returns), 1), 6) if win_returns else 0
-        report["avg_loss"] = round(sum(loss_returns) / max(len(loss_returns), 1), 6) if loss_returns else 0
-        report["profit_factor"] = round(abs(sum(win_returns) / max(sum(loss_returns), 0.0001)), 4) if loss_returns else 0
+        report["avg_win"] = (
+            round(sum(win_returns) / max(len(win_returns), 1), 6) if win_returns else 0
+        )
+        report["avg_loss"] = (
+            round(sum(loss_returns) / max(len(loss_returns), 1), 6) if loss_returns else 0
+        )
+        report["profit_factor"] = (
+            round(abs(sum(win_returns) / max(sum(loss_returns), 0.0001)), 4) if loss_returns else 0
+        )
 
         # 10. 止损过早的Top场景
         sl_premature_by_scenario = defaultdict(list)
         for t in sl_premature:
             sl_premature_by_scenario[t["scenario"]].append(t)
         report["sl_premature_top_scenarios"] = [
-            {"scenario": sid, "count": len(st),
-             "avg_recover_pct": round(sum(t["sl_recover_pct"] for t in st) / len(st), 2)}
+            {
+                "scenario": sid,
+                "count": len(st),
+                "avg_recover_pct": round(sum(t["sl_recover_pct"] for t in st) / len(st), 2),
+            }
             for sid, st in sorted(sl_premature_by_scenario.items(), key=lambda x: -len(x[1]))[:5]
         ]
 
@@ -380,6 +439,7 @@ class LossDiagnoser:
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="回测亏损诊断")
     parser.add_argument("--symbols", default="BTC,ETH,SOL")
     parser.add_argument("--interval", default="1h")
@@ -391,7 +451,7 @@ def main():
     diagnoser = LossDiagnoser()
 
     logger.info("开始亏损诊断分析...")
-    t0 = datetime.now()
+    t0 = datetime.now()  # noqa: F841
     report = diagnoser.diagnose(symbols, interval=args.interval)
 
     # 格式化输出
@@ -399,7 +459,9 @@ def main():
     print("  回测亏损诊断报告")
     print("=" * 60)
     print(f"\n币种: {', '.join(symbols)} | 周期: {args.interval}")
-    print(f"总交易: {report['total_trades']} | 胜率: {report['win_rate']:.1%} | 总收益: {report['total_return']:.2%}")
+    print(
+        f"总交易: {report['total_trades']} | 胜率: {report['win_rate']:.1%} | 总收益: {report['total_return']:.2%}"
+    )
 
     # 1. 多空分析
     print("\n── 1. 多空分维度 ──")
@@ -414,8 +476,10 @@ def main():
     print("\n── 2. 场景维度（>=3笔交易）──")
     print(f"  {'场景':<35} {'笔数':>4} {'胜率':>6} {'总收益':>8} {'多/空':>8} {'止损率':>6}")
     for s in report["scenario_analysis"]:
-        print(f"  {s['scenario']:<35} {s['count']:>4} {s['win_rate']:>5.1%} {s['total_return']:>7.2%} "
-              f"{s['long_count']:>3}/{s['short_count']:<3} {s['sl_hit_rate']:>5.1%}")
+        print(
+            f"  {s['scenario']:<35} {s['count']:>4} {s['win_rate']:>5.1%} {s['total_return']:>7.2%} "
+            f"{s['long_count']:>3}/{s['short_count']:<3} {s['sl_hit_rate']:>5.1%}"
+        )
 
     # 3. 出场原因
     print("\n── 3. 出场原因分布 ──")
@@ -425,7 +489,9 @@ def main():
     # 4. 止损过早
     print("\n── 4. 止损过早分析 ──")
     print(f"  止损触发: {report['stop_loss_total']}笔")
-    print(f"  止损过早（价格又回来）: {report['stop_loss_premature']}笔 ({report['stop_loss_premature_rate']:.1%})")
+    print(
+        f"  止损过早（价格又回来）: {report['stop_loss_premature']}笔 ({report['stop_loss_premature_rate']:.1%})"
+    )
     if "sl_premature_avg_recover" in report:
         print(f"  过早止损后平均恢复幅度: {report['sl_premature_avg_recover']:.2f}%")
     for d in ["LONG", "SHORT"]:
@@ -442,7 +508,9 @@ def main():
     # 6. 置信度
     print("\n── 6. 置信度vs收益 ──")
     for c in report["confidence_analysis"]:
-        print(f"  置信度{c['confidence']}: {c['count']}笔 | 胜率={c['win_rate']:.1%} | 平均收益={c['avg_return']:.3%}")
+        print(
+            f"  置信度{c['confidence']}: {c['count']}笔 | 胜率={c['win_rate']:.1%} | 平均收益={c['avg_return']:.3%}"
+        )
 
     # 7. 盈亏比
     print("\n── 7. 盈亏幅度 ──")

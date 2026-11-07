@@ -1,16 +1,16 @@
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Any, Dict, List
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+import plotly.graph_objects as go  # noqa: E402
+from plotly.subplots import make_subplots  # noqa: E402
 
-from scripts.memory_l4.paths import artifacts_memory_l4_dir, memory_l4_stats_dir
+from scripts.memory_l4.paths import artifacts_memory_l4_dir, memory_l4_stats_dir  # noqa: E402
 
 
 def _load_latest_bandit_rollup() -> Dict[str, Any]:
@@ -65,7 +65,12 @@ def render_dashboard_html(stats: Dict[str, Any], out_path: Path) -> None:
         rows=2,
         cols=2,
         specs=[[{}, {}], [{}, {"secondary_y": True}]],
-        subplot_titles=("Quadrant Scatter", "Migration Trends", "Performance Facets", "Bandit Reason Trends"),
+        subplot_titles=(
+            "Quadrant Scatter",
+            "Migration Trends",
+            "Performance Facets",
+            "Bandit Reason Trends",
+        ),
         vertical_spacing=0.18,
         horizontal_spacing=0.12,
     )
@@ -76,7 +81,7 @@ def render_dashboard_html(stats: Dict[str, Any], out_path: Path) -> None:
             y=[p.get("y", 0.0) for p in case_points],
             mode="markers",
             name="case",
-            marker=dict(color="#1f77b4", size=9),
+            marker=dict(color="#1f77b4", size=9),  # noqa: C408
             text=[f"case:{p.get('id')}" for p in case_points],
             hovertemplate="%{text}<br>x=%{x:.2f}<br>y=%{y:.2f}<extra></extra>",
         ),
@@ -89,7 +94,7 @@ def render_dashboard_html(stats: Dict[str, Any], out_path: Path) -> None:
             y=[p.get("y", 0.0) for p in distill_points],
             mode="markers",
             name="distill",
-            marker=dict(color="#d62728", size=9),
+            marker=dict(color="#d62728", size=9),  # noqa: C408
             text=[f"distill:{p.get('id')}" for p in distill_points],
             hovertemplate="%{text}<br>x=%{x:.2f}<br>y=%{y:.2f}<extra></extra>",
         ),
@@ -118,7 +123,7 @@ def render_dashboard_html(stats: Dict[str, Any], out_path: Path) -> None:
             x=perf_keys,
             y=[perf.get(k) or 0.0 for k in perf_keys],
             name="performance",
-            marker=dict(color="#2ca02c"),
+            marker=dict(color="#2ca02c"),  # noqa: C408
         ),
         row=2,
         col=1,
@@ -131,7 +136,7 @@ def render_dashboard_html(stats: Dict[str, Any], out_path: Path) -> None:
                 x=[row.get("date") for row in daily_reason_series],
                 y=[float(row.get("total_updates") or 0.0) for row in daily_reason_series],
                 name="bandit_total_updates_7d",
-                marker=dict(color="#c7c7c7"),
+                marker=dict(color="#c7c7c7"),  # noqa: C408
                 opacity=0.45,
             ),
             row=2,
@@ -149,7 +154,10 @@ def render_dashboard_html(stats: Dict[str, Any], out_path: Path) -> None:
             fig.add_trace(
                 go.Scatter(
                     x=[row.get("date") for row in daily_reason_series],
-                    y=[((row.get("reason_counts") or {}).get(reason) or 0) for row in daily_reason_series],
+                    y=[
+                        ((row.get("reason_counts") or {}).get(reason) or 0)
+                        for row in daily_reason_series
+                    ],
                     mode="lines+markers",
                     name=f"bandit:{reason}",
                 ),
@@ -166,8 +174,10 @@ def render_dashboard_html(stats: Dict[str, Any], out_path: Path) -> None:
                         ((row.get("reason_counts") or {}).get(realized_key) or 0)
                         / max(
                             1,
-                            (((row.get("reason_counts") or {}).get(realized_key) or 0)
-                             + ((row.get("reason_counts") or {}).get(estimated_key) or 0)),
+                            (
+                                ((row.get("reason_counts") or {}).get(realized_key) or 0)
+                                + ((row.get("reason_counts") or {}).get(estimated_key) or 0)
+                            ),
                         )
                     )
                     * 100.0
@@ -175,7 +185,7 @@ def render_dashboard_html(stats: Dict[str, Any], out_path: Path) -> None:
                 ],
                 mode="lines+markers",
                 name="bandit:realized_ratio_7d",
-                line=dict(color="#111111", dash="dash"),
+                line=dict(color="#111111", dash="dash"),  # noqa: C408
             ),
             row=2,
             col=2,
@@ -197,22 +207,25 @@ def render_dashboard_html(stats: Dict[str, Any], out_path: Path) -> None:
                 y=alert_points,
                 mode="markers",
                 name="bandit:realized_ratio_alert",
-                marker=dict(color="#d62728", size=9, symbol="circle"),
+                marker=dict(color="#d62728", size=9, symbol="circle"),  # noqa: C408
             ),
             row=2,
             col=2,
             secondary_y=True,
         )
     else:
-        reason_counts = (bandit_rollup.get("reason_counts") or {})
+        reason_counts = bandit_rollup.get("reason_counts") or {}
         if reason_counts:
-            total_updates = float(bandit_rollup.get("total_updates") or sum(float(v or 0.0) for v in reason_counts.values()))
+            total_updates = float(
+                bandit_rollup.get("total_updates")
+                or sum(float(v or 0.0) for v in reason_counts.values())
+            )
             fig.add_trace(
                 go.Bar(
                     x=["latest"],
                     y=[total_updates],
                     name="bandit_total_updates_7d",
-                    marker=dict(color="#c7c7c7"),
+                    marker=dict(color="#c7c7c7"),  # noqa: C408
                     opacity=0.45,
                 ),
                 row=2,
@@ -224,7 +237,7 @@ def render_dashboard_html(stats: Dict[str, Any], out_path: Path) -> None:
                     x=list(reason_counts.keys()),
                     y=[reason_counts[k] for k in reason_counts.keys()],
                     name="bandit_reason_counts",
-                    marker=dict(color="#9467bd"),
+                    marker=dict(color="#9467bd"),  # noqa: C408
                 ),
                 row=2,
                 col=2,
@@ -238,7 +251,7 @@ def render_dashboard_html(stats: Dict[str, Any], out_path: Path) -> None:
                     y=[ratio * 100.0],
                     mode="lines+markers",
                     name="bandit:realized_ratio_7d",
-                    line=dict(color="#111111", dash="dash"),
+                    line=dict(color="#111111", dash="dash"),  # noqa: C408
                 ),
                 row=2,
                 col=2,
@@ -252,7 +265,7 @@ def render_dashboard_html(stats: Dict[str, Any], out_path: Path) -> None:
                     y=alert_y,
                     mode="markers",
                     name="bandit:realized_ratio_alert",
-                    marker=dict(color="#d62728", size=9, symbol="circle"),
+                    marker=dict(color="#d62728", size=9, symbol="circle"),  # noqa: C408
                 ),
                 row=2,
                 col=2,
@@ -270,17 +283,57 @@ def render_dashboard_html(stats: Dict[str, Any], out_path: Path) -> None:
                 "xanchor": "left",
                 "yanchor": "top",
                 "buttons": [
-                    {"label": "All", "method": "update", "args": [{"visible": [True, True] + [True] * max(0, len(fig.data) - 2)}]},
-                    {"label": "Case Only", "method": "update", "args": [{"visible": [True, False] + [True] * max(0, len(fig.data) - 2)}]},
-                    {"label": "Distill Only", "method": "update", "args": [{"visible": [False, True] + [True] * max(0, len(fig.data) - 2)}]},
+                    {
+                        "label": "All",
+                        "method": "update",
+                        "args": [{"visible": [True, True] + [True] * max(0, len(fig.data) - 2)}],
+                    },
+                    {
+                        "label": "Case Only",
+                        "method": "update",
+                        "args": [{"visible": [True, False] + [True] * max(0, len(fig.data) - 2)}],
+                    },
+                    {
+                        "label": "Distill Only",
+                        "method": "update",
+                        "args": [{"visible": [False, True] + [True] * max(0, len(fig.data) - 2)}],
+                    },
                 ],
             }
         ],
         annotations=[
-            {"text": "Filter Kind", "xref": "paper", "yref": "paper", "x": 0.0, "y": 1.27, "showarrow": False},
-            {"text": "Migration Trends", "xref": "paper", "yref": "paper", "x": 0.73, "y": 1.06, "showarrow": False},
-            {"text": "Performance Facets", "xref": "paper", "yref": "paper", "x": 0.23, "y": 0.42, "showarrow": False},
-            {"text": "Bandit Reason Trends", "xref": "paper", "yref": "paper", "x": 0.73, "y": 0.42, "showarrow": False},
+            {
+                "text": "Filter Kind",
+                "xref": "paper",
+                "yref": "paper",
+                "x": 0.0,
+                "y": 1.27,
+                "showarrow": False,
+            },
+            {
+                "text": "Migration Trends",
+                "xref": "paper",
+                "yref": "paper",
+                "x": 0.73,
+                "y": 1.06,
+                "showarrow": False,
+            },
+            {
+                "text": "Performance Facets",
+                "xref": "paper",
+                "yref": "paper",
+                "x": 0.23,
+                "y": 0.42,
+                "showarrow": False,
+            },
+            {
+                "text": "Bandit Reason Trends",
+                "xref": "paper",
+                "yref": "paper",
+                "x": 0.73,
+                "y": 0.42,
+                "showarrow": False,
+            },
             {
                 "text": f"Alert <{int(alert_threshold_pct)}%",
                 "xref": "paper",
@@ -291,11 +344,19 @@ def render_dashboard_html(stats: Dict[str, Any], out_path: Path) -> None:
             },
         ],
     )
-    fig.update_xaxes(title_text="Harm (−1) ↔ Benefit (+1)", range=[-1, 1], zeroline=True, row=1, col=1)
-    fig.update_yaxes(title_text="Certainty Strength (0) → (1)", range=[0, 1], zeroline=True, row=1, col=1)
+    fig.update_xaxes(
+        title_text="Harm (−1) ↔ Benefit (+1)", range=[-1, 1], zeroline=True, row=1, col=1
+    )
+    fig.update_yaxes(
+        title_text="Certainty Strength (0) → (1)", range=[0, 1], zeroline=True, row=1, col=1
+    )
     fig.update_yaxes(title_text="Count", row=2, col=2, secondary_y=False)
-    fig.update_yaxes(title_text="Realized Ratio (%)", range=[0, 100], row=2, col=2, secondary_y=True)
-    fig.add_annotation(text="Filter Kind", xref="paper", yref="paper", x=0.0, y=1.27, showarrow=False)
+    fig.update_yaxes(
+        title_text="Realized Ratio (%)", range=[0, 100], row=2, col=2, secondary_y=True
+    )
+    fig.add_annotation(
+        text="Filter Kind", xref="paper", yref="paper", x=0.0, y=1.27, showarrow=False
+    )
     threshold_meta = bandit_rollup.get("threshold_meta") or {}
     if threshold_meta:
         p = int(threshold_meta.get("percentile") or 25)

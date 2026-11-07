@@ -17,9 +17,9 @@ DreamOS A层 — 预算分配器
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List
 
-from .types import NodeMeta, BudgetAllocation
+from .types import BudgetAllocation, NodeMeta
 
 
 class BudgetAllocator:
@@ -37,8 +37,7 @@ class BudgetAllocator:
     # 节点最小预算保底
     MIN_TOKENS_PER_NODE = 200
 
-    def __init__(self, total: int = 6000, mode: str = "standard",
-                 reserve_ratio: float = None):
+    def __init__(self, total: int = 6000, mode: str = "standard", reserve_ratio: float = None):
         self._total = total
         self._mode = mode
         self._reserve_ratio = reserve_ratio if reserve_ratio is not None else self.RESERVE_RATIO
@@ -97,9 +96,9 @@ class BudgetAllocator:
             mode=self._mode,
         )
 
-    def reallocate(self, allocation: BudgetAllocation,
-                   completed_node_id: str,
-                   actual_tokens_used: int) -> BudgetAllocation:
+    def reallocate(
+        self, allocation: BudgetAllocation, completed_node_id: str, actual_tokens_used: int
+    ) -> BudgetAllocation:
         """节点执行后回收/重分配预算
 
         如果节点用得比分配的少，多出的预算回流到 reserved 池。
@@ -123,7 +122,6 @@ class BudgetAllocator:
 
         return allocation
 
-    def can_add_node(self, allocation: BudgetAllocation,
-                     estimated_tokens: int) -> bool:
+    def can_add_node(self, allocation: BudgetAllocation, estimated_tokens: int) -> bool:
         """检查是否还能添加一个新节点"""
         return allocation.remaining >= estimated_tokens

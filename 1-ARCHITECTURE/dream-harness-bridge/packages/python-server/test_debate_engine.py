@@ -8,9 +8,14 @@ SPEC v2.0-rc3 第六节：C-Drive 内部辩论引擎。
 - _record_debate: 存储辩论经验
 - _inject_debate_memories: B+级过滤 + prompt 注入格式
 """
+
 from __future__ import annotations
-import json, os, sys, unittest
-from unittest.mock import MagicMock, AsyncMock
+
+import json
+import os
+import sys
+import unittest
+from unittest.mock import MagicMock
 
 SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
 if SERVER_DIR not in sys.path:
@@ -19,26 +24,33 @@ if SERVER_DIR not in sys.path:
 
 # ── mock LLM ──────────────────────────────────────────────────
 
+
 def _make_llm(bull_resp=None, bear_resp=None, judge_resp=None):
     """创建 mock LLM 函数，按 prompt 内容返回不同响应。"""
-    bull_json = bull_resp or json.dumps({
-        "thesis": "BTC 稀缺性决定长期价值",
-        "arguments": ["2100万枚上限", "减半周期", "机构采用"],
-        "quote": "数字黄金不是投机",
-        "confidence": 0.85,
-    })
-    bear_json = bear_resp or json.dumps({
-        "thesis": "BTC 波动性远超黄金",
-        "arguments": ["单日波动可达20%", "与风险资产高相关"],
-        "quote": "黄金一天跌20%就不是黄金了",
-        "confidence": 0.72,
-    })
-    judge_json = judge_resp or json.dumps({
-        "summary": "正方论据更充分",
-        "winner": "bull",
-        "key_insights": ["稀缺性是核心", "波动性需时间验证"],
-        "topic_angle": "数字黄金的进化论",
-    })
+    bull_json = bull_resp or json.dumps(
+        {
+            "thesis": "BTC 稀缺性决定长期价值",
+            "arguments": ["2100万枚上限", "减半周期", "机构采用"],
+            "quote": "数字黄金不是投机",
+            "confidence": 0.85,
+        }
+    )
+    bear_json = bear_resp or json.dumps(
+        {
+            "thesis": "BTC 波动性远超黄金",
+            "arguments": ["单日波动可达20%", "与风险资产高相关"],
+            "quote": "黄金一天跌20%就不是黄金了",
+            "confidence": 0.72,
+        }
+    )
+    judge_json = judge_resp or json.dumps(
+        {
+            "summary": "正方论据更充分",
+            "winner": "bull",
+            "key_insights": ["稀缺性是核心", "波动性需时间验证"],
+            "topic_angle": "数字黄金的进化论",
+        }
+    )
 
     def llm_fn(prompt, max_tokens=600):
         pl = prompt.lower()
@@ -49,10 +61,12 @@ def _make_llm(bull_resp=None, bear_resp=None, judge_resp=None):
         if "裁判" in prompt or "judge" in pl or "中立" in prompt:
             return judge_json
         return bull_json  # 默认
+
     return llm_fn
 
 
 # ── mock cognitive adapter ────────────────────────────────────
+
 
 def _make_cognitive(memories=None):
     """创建 mock 认知适配器。"""
@@ -73,8 +87,10 @@ class TestRunFast(unittest.TestCase):
 
     def test_returns_expected_keys(self):
         from debate_engine import DebateEngine
+
         engine = DebateEngine(llm_fn=_make_llm(), config={})
         import asyncio
+
         result = asyncio.run(engine.run_fast("BTC 是数字黄金"))
         self.assertIn("bull_thesis", result)
         self.assertIn("bull_confidence", result)
@@ -83,16 +99,20 @@ class TestRunFast(unittest.TestCase):
 
     def test_confidence_values(self):
         from debate_engine import DebateEngine
+
         engine = DebateEngine(llm_fn=_make_llm(), config={})
         import asyncio
+
         result = asyncio.run(engine.run_fast("BTC 是数字黄金"))
         self.assertAlmostEqual(result["bull_confidence"], 0.85)
         self.assertAlmostEqual(result["bear_confidence"], 0.72)
 
     def test_thesis_not_empty(self):
         from debate_engine import DebateEngine
+
         engine = DebateEngine(llm_fn=_make_llm(), config={})
         import asyncio
+
         result = asyncio.run(engine.run_fast("BTC 是数字黄金"))
         self.assertTrue(len(result["bull_thesis"]) > 0)
         self.assertTrue(len(result["bear_thesis"]) > 0)
@@ -100,9 +120,11 @@ class TestRunFast(unittest.TestCase):
     def test_llm_failure_fallback(self):
         """LLM 返回无效 JSON 时 fallback。"""
         from debate_engine import DebateEngine
-        bad_llm = lambda p, m=600: "这不是JSON"
+
+        bad_llm = lambda p, m=600: "这不是JSON"  # noqa: E731
         engine = DebateEngine(llm_fn=bad_llm, config={})
         import asyncio
+
         result = asyncio.run(engine.run_fast("测试"))
         # fallback confidence = 0.0
         self.assertEqual(result["bull_confidence"], 0.0)
@@ -114,12 +136,14 @@ class TestRunDeep(unittest.TestCase):
 
     def test_returns_dict_with_transcript(self):
         from debate_engine import DebateEngine
+
         engine = DebateEngine(
             llm_fn=_make_llm(),
             config={},
             cognitive_adapter=_make_cognitive(),
         )
         import asyncio
+
         result = asyncio.run(engine.run_deep("BTC 是数字黄金"))
         self.assertIn("topic", result)
         self.assertIn("transcript", result)
@@ -129,23 +153,27 @@ class TestRunDeep(unittest.TestCase):
     def test_transcript_has_multiple_turns(self):
         """2轮辩论 → transcript 至少 4 条（bull+bear × 2轮）。"""
         from debate_engine import DebateEngine
+
         engine = DebateEngine(
             llm_fn=_make_llm(),
             config={},
             cognitive_adapter=_make_cognitive(),
         )
         import asyncio
+
         result = asyncio.run(engine.run_deep("BTC 是数字黄金"))
         self.assertGreaterEqual(len(result["transcript"]), 4)
 
     def test_verdict_present(self):
         from debate_engine import DebateEngine
+
         engine = DebateEngine(
             llm_fn=_make_llm(),
             config={},
             cognitive_adapter=_make_cognitive(),
         )
         import asyncio
+
         result = asyncio.run(engine.run_deep("BTC 是数字黄金"))
         self.assertIsNotNone(result["verdict"])
         self.assertIn("winner", result["verdict"])
@@ -153,30 +181,40 @@ class TestRunDeep(unittest.TestCase):
     def test_cognitive_record_called(self):
         """run_deep 后应调用 cognitive.record。"""
         from debate_engine import DebateEngine
+
         cog = _make_cognitive()
         engine = DebateEngine(
-            llm_fn=_make_llm(), config={}, cognitive_adapter=cog,
+            llm_fn=_make_llm(),
+            config={},
+            cognitive_adapter=cog,
         )
         import asyncio
+
         asyncio.run(engine.run_deep("BTC 是数字黄金"))
         self.assertTrue(cog.record.called)
 
     def test_cognitive_recall_called(self):
         """run_deep 前应调用 cognitive.recall。"""
         from debate_engine import DebateEngine
+
         cog = _make_cognitive()
         engine = DebateEngine(
-            llm_fn=_make_llm(), config={}, cognitive_adapter=cog,
+            llm_fn=_make_llm(),
+            config={},
+            cognitive_adapter=cog,
         )
         import asyncio
+
         asyncio.run(engine.run_deep("BTC 是数字黄金"))
         self.assertTrue(cog.recall.called)
 
     def test_fail_open_without_cognitive(self):
         """无 cognitive_adapter 时 FAIL-OPEN，不崩溃。"""
         from debate_engine import DebateEngine
+
         engine = DebateEngine(llm_fn=_make_llm(), config={})
         import asyncio
+
         result = asyncio.run(engine.run_deep("测试话题"))
         self.assertIn("transcript", result)
 
@@ -186,6 +224,7 @@ class TestInjectMemories(unittest.TestCase):
 
     def test_empty_memories(self):
         from debate_engine import DebateEngine
+
         engine = DebateEngine(llm_fn=lambda p, m=600: "{}", config={})
         result = engine._inject_debate_memories("BTC", [])
         self.assertEqual(result, "")
@@ -193,9 +232,14 @@ class TestInjectMemories(unittest.TestCase):
     def test_filter_below_b_quality(self):
         """C 级（<0.40）记忆不注入。"""
         from debate_engine import DebateEngine
+
         memories = [
-            {"content": json.dumps({"thesis": "弱论点", "side": "bull", "confidence": 0.3}),
-             "quality": "C", "quality_score": 0.2, "verified": False},
+            {
+                "content": json.dumps({"thesis": "弱论点", "side": "bull", "confidence": 0.3}),
+                "quality": "C",
+                "quality_score": 0.2,
+                "verified": False,
+            },
         ]
         engine = DebateEngine(llm_fn=lambda p, m=600: "{}", config={})
         result = engine._inject_debate_memories("BTC", memories)
@@ -204,9 +248,14 @@ class TestInjectMemories(unittest.TestCase):
     def test_b_quality_injected(self):
         """B 级（≥0.40）记忆注入。"""
         from debate_engine import DebateEngine
+
         memories = [
-            {"content": json.dumps({"thesis": "BTC稀缺性", "side": "bull", "confidence": 0.85}),
-             "quality": "B", "quality_score": 0.45, "verified": True},
+            {
+                "content": json.dumps({"thesis": "BTC稀缺性", "side": "bull", "confidence": 0.85}),
+                "quality": "B",
+                "quality_score": 0.45,
+                "verified": True,
+            },
         ]
         engine = DebateEngine(llm_fn=lambda p, m=600: "{}", config={})
         result = engine._inject_debate_memories("BTC", memories)
@@ -218,9 +267,14 @@ class TestInjectMemories(unittest.TestCase):
     def test_verified_label(self):
         """已验证记忆标注"已验证"。"""
         from debate_engine import DebateEngine
+
         memories = [
-            {"content": json.dumps({"thesis": "测试", "side": "bull", "confidence": 0.8}),
-             "quality": "B", "quality_score": 0.5, "verified": True},
+            {
+                "content": json.dumps({"thesis": "测试", "side": "bull", "confidence": 0.8}),
+                "quality": "B",
+                "quality_score": 0.5,
+                "verified": True,
+            },
         ]
         engine = DebateEngine(llm_fn=lambda p, m=600: "{}", config={})
         result = engine._inject_debate_memories("BTC", memories)
@@ -229,9 +283,14 @@ class TestInjectMemories(unittest.TestCase):
     def test_max_5_memories(self):
         """最多注入 5 条记忆。"""
         from debate_engine import DebateEngine
+
         memories = [
-            {"content": json.dumps({"thesis": f"论点{i}", "side": "bull", "confidence": 0.8}),
-             "quality": "B", "quality_score": 0.5, "verified": True}
+            {
+                "content": json.dumps({"thesis": f"论点{i}", "side": "bull", "confidence": 0.8}),
+                "quality": "B",
+                "quality_score": 0.5,
+                "verified": True,
+            }
             for i in range(10)
         ]
         engine = DebateEngine(llm_fn=lambda p, m=600: "{}", config={})

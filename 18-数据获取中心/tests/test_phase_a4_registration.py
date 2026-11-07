@@ -7,15 +7,14 @@
   - coingecko_info_{coin_id}（6h）
   - yfinance_stock_info_{symbol}（6h）
 """
-import pytest
 
 from data_center.core.dispatcher import DataCenter
-from data_center.scheduler import CollectionScheduler, CollectionTask
-
+from data_center.scheduler import CollectionScheduler
 
 # ---------------------------------------------------------------------------
 # Dispatcher 注册
 # ---------------------------------------------------------------------------
+
 
 def test_dispatcher_registers_coingecko():
     """DataCenter 默认 registry 应包含 ("coin", "coingecko")。"""
@@ -34,6 +33,7 @@ def test_dispatcher_registers_protocol_category_for_defillama():
 # ---------------------------------------------------------------------------
 # Scheduler 新任务
 # ---------------------------------------------------------------------------
+
 
 def test_scheduler_includes_defillama_protocols_task():
     """default_tasks 包含 defillama_protocols 任务（6h）。"""

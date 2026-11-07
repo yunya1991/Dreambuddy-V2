@@ -10,6 +10,7 @@ RED 契约（当前实现缺失，断言应失败）：
   - recall 不测量 latency / 不记录 cache hit / 不告警 SLA 超限
   - 无 get_recall_stats() 方法
 """
+
 from __future__ import annotations
 
 import logging
@@ -30,6 +31,7 @@ def isolated_cle(tmp_path):
     """构造隔离的 CognitiveLoopEntry 实例（独立 SQLite + 独立缓存）。"""
     try:
         import cognitive_loop_entry as cle_mod
+
         cle_mod.reset_cle()
     except Exception:
         pass
@@ -38,6 +40,7 @@ def isolated_cle(tmp_path):
     cache_path = tmp_path / "test_b3_recall_cache.json"
 
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(
         storage_path=storage_path,
         enable_distill=False,
@@ -46,6 +49,7 @@ def isolated_cle(tmp_path):
     # 注入测试用 RecallMemoryCache（隔离缓存）
     try:
         from recall_memory_cache import RecallMemoryCache
+
         cle.recall_cache = RecallMemoryCache(cache_path=cache_path)
     except ImportError:
         pass
@@ -102,6 +106,7 @@ class TestRecallSLAWarning:
 
     def test_recall_sla_warning_on_slow(self, isolated_cle, caplog):
         """RED: recall 延迟 >200ms 时记录 SLA 告警（检查日志 + 计数）。"""
+
         def slow_search(*args, **kwargs):
             time.sleep(0.25)  # 250ms，超过 200ms SLA
             return []
@@ -114,10 +119,7 @@ class TestRecallSLAWarning:
         stats = isolated_cle.get_recall_stats()
         assert stats["sla_breaches"] >= 1
         # 日志应含 SLA 告警
-        assert any(
-            "SLA" in r.getMessage() or "200ms" in r.getMessage()
-            for r in caplog.records
-        )
+        assert any("SLA" in r.getMessage() or "200ms" in r.getMessage() for r in caplog.records)
 
     def test_recall_sla_no_warning_on_fast(self, isolated_cle, caplog):
         """RED: 延迟 <200ms 时不触发 SLA 告警。"""

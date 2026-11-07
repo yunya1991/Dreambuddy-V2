@@ -15,8 +15,7 @@
 四要素是聚合输出而非模型直出（模型管判别，战略层管聚合，23 管门禁）。
 """
 
-import json
-import os
+import json  # noqa: I001
 from typing import Any, Dict, List, Optional
 
 from strategic_extension.five_domain_feature_computer import (
@@ -47,9 +46,20 @@ def derive_asset_allocation(five_scores_by_class: Dict[str, Dict[str, int]]) -> 
         totals = {}
         for cls in ASSET_CLASSES:
             s = five_scores_by_class.get(cls) or {}
-            totals[cls] = int(round(sum(s.get(d, 50) * w for d, w in {
-                "dao": 0.30, "tian": 0.15, "di": 0.25, "jiang": 0.15, "fa": 0.15,
-            }.items())))
+            totals[cls] = int(
+                round(
+                    sum(
+                        s.get(d, 50) * w
+                        for d, w in {
+                            "dao": 0.30,
+                            "tian": 0.15,
+                            "di": 0.25,
+                            "jiang": 0.15,
+                            "fa": 0.15,
+                        }.items()
+                    )
+                )
+            )
         # 总分 → 权重：50 分基准，每高 10 分权重 ×1.5（温和放大差异）
         raw = {cls: max(0.01, 1.5 ** ((t - 50) / 10.0)) for cls, t in totals.items()}
         total_raw = sum(raw.values())
@@ -62,8 +72,11 @@ def derive_asset_allocation(five_scores_by_class: Dict[str, Dict[str, int]]) -> 
             "note": "资金在哪种资产上更容易赚钱：配比基于五维总分横向归一",
         }
     except Exception:  # noqa: BLE001
-        return {"allocation": {cls: round(1.0 / len(ASSET_CLASSES), 4) for cls in ASSET_CLASSES},
-                "leader": None, "fail_open": True}
+        return {
+            "allocation": {cls: round(1.0 / len(ASSET_CLASSES), 4) for cls in ASSET_CLASSES},
+            "leader": None,
+            "fail_open": True,
+        }
 
 
 # ────────────────────────────────────────────────
@@ -75,9 +88,20 @@ def derive_direction_bias(five_scores_by_class: Dict[str, Dict[str, int]]) -> Di
         per_class = {}
         for cls in ASSET_CLASSES:
             s = five_scores_by_class.get(cls) or {}
-            total = int(round(sum(s.get(d, 50) * w for d, w in {
-                "dao": 0.30, "tian": 0.15, "di": 0.25, "jiang": 0.15, "fa": 0.15,
-            }.items())))
+            total = int(
+                round(
+                    sum(
+                        s.get(d, 50) * w
+                        for d, w in {
+                            "dao": 0.30,
+                            "tian": 0.15,
+                            "di": 0.25,
+                            "jiang": 0.15,
+                            "fa": 0.15,
+                        }.items()
+                    )
+                )
+            )
             # 总分 50 中性；65+ 全多；45- 全空；线性过渡
             long_w = max(0.0, min(1.0, (total - 50) / 15.0))
             short_w = max(0.0, min(1.0, (50 - total) / 15.0))
@@ -86,15 +110,24 @@ def derive_direction_bias(five_scores_by_class: Dict[str, Dict[str, int]]) -> Di
             if s.get("dao", 50) < 40:
                 long_w, short_w, neutral_w = 0.0, 0.0, 1.0
             per_class[cls] = {
-                "long": round(long_w, 4), "short": round(short_w, 4),
+                "long": round(long_w, 4),
+                "short": round(short_w, 4),
                 "neutral": round(neutral_w, 4),
-                "dominant": "long" if long_w > max(short_w, neutral_w) else (
-                    "short" if short_w > max(long_w, neutral_w) else "neutral"),
+                "dominant": (
+                    "long"
+                    if long_w > max(short_w, neutral_w)
+                    else ("short" if short_w > max(long_w, neutral_w) else "neutral")
+                ),
             }
         return {"per_class": per_class, "note": "在哪种资产上做多/做空更容易盈利"}
     except Exception:  # noqa: BLE001
-        return {"per_class": {cls: {"long": 0.0, "short": 0.0, "neutral": 1.0, "dominant": "neutral"}
-                               for cls in ASSET_CLASSES}, "fail_open": True}
+        return {
+            "per_class": {
+                cls: {"long": 0.0, "short": 0.0, "neutral": 1.0, "dominant": "neutral"}
+                for cls in ASSET_CLASSES
+            },
+            "fail_open": True,
+        }
 
 
 # ────────────────────────────────────────────────
@@ -116,9 +149,20 @@ def derive_capital_posture(
         ma200_score = int(round(ma200_pct * 100)) if isinstance(ma200_pct, (int, float)) else 50
         # crypto_usdt 总分四档
         s = five_scores_by_class.get("crypto_usdt") or {}
-        total = int(round(sum(s.get(d, 50) * w for d, w in {
-            "dao": 0.30, "tian": 0.15, "di": 0.25, "jiang": 0.15, "fa": 0.15,
-        }.items())))
+        total = int(
+            round(
+                sum(
+                    s.get(d, 50) * w
+                    for d, w in {
+                        "dao": 0.30,
+                        "tian": 0.15,
+                        "di": 0.25,
+                        "jiang": 0.15,
+                        "fa": 0.15,
+                    }.items()
+                )
+            )
+        )
         # 三因子等权融合
         fused = (phase_score + ma200_score + total) / 3.0
         if fused >= 65:
@@ -166,7 +210,7 @@ def derive_target_ranking(bridge_inputs: Optional[Dict[str, Any]] = None) -> Dic
 
         # 资金面：L1-L4 板块轮动（龙头动量 + 层级中位动量）
         ff = csa.load_fund_flow()
-        layers = (((ff or {}).get("intra_sector_flow") or {}).get("layers") or {})
+        layers = ((ff or {}).get("intra_sector_flow") or {}).get("layers") or {}
         for layer_name, layer in layers.items():
             if not isinstance(layer, dict):
                 continue
@@ -188,14 +232,16 @@ def derive_target_ranking(bridge_inputs: Optional[Dict[str, Any]] = None) -> Dic
             tech = entry.get("tech_score", 50)
             fund = entry.get("fund_score", 50)
             composite = tech * 0.40 + fund * 0.40 + sent_score * 0.20
-            ranking.append({
-                "symbol": sym,
-                "composite": round(composite, 2),
-                "tech_score": tech,
-                "fund_score": fund,
-                "sentiment_score": sent_score,
-                "layer": entry.get("layer"),
-            })
+            ranking.append(
+                {
+                    "symbol": sym,
+                    "composite": round(composite, 2),
+                    "tech_score": tech,
+                    "fund_score": fund,
+                    "sentiment_score": sent_score,
+                    "layer": entry.get("layer"),
+                }
+            )
         ranking.sort(key=lambda x: x["composite"], reverse=True)
         return {
             "ranking": ranking[:10],
@@ -242,9 +288,13 @@ def element_comparison(
         phase = bi.get("merrill_phase")
         branch_phase_score = phase_scores.get(phase, 50) if phase else 50
         ma200_pct = bi.get("ma200_distance_percentile")
-        branch_ma200_score = int(round(ma200_pct * 100)) if isinstance(ma200_pct, (int, float)) else 50
+        branch_ma200_score = (
+            int(round(ma200_pct * 100)) if isinstance(ma200_pct, (int, float)) else 50
+        )
         liquidity = bi.get("liquidity_score")
-        branch_liquidity_score = int(round(liquidity * 100)) if isinstance(liquidity, (int, float)) else 50
+        branch_liquidity_score = (
+            int(round(liquidity * 100)) if isinstance(liquidity, (int, float)) else 50
+        )
         branch_fused = (branch_phase_score + branch_ma200_score + branch_liquidity_score) / 3.0
         if branch_fused >= 65:
             branch_posture = "aggressive"
@@ -270,12 +320,18 @@ def element_comparison(
         strategic_posture = (strategic.get("capital_posture") or {}).get("posture")
         divergences = []
         if strategic_posture and branch_posture and strategic_posture != branch_posture:
-            divergences.append({
-                "element": "capital_posture",
-                "strategic": strategic_posture,
-                "branch": branch_posture,
-                "severity": "high" if {strategic_posture, branch_posture} >= {"aggressive", "defensive"} else "medium",
-            })
+            divergences.append(
+                {
+                    "element": "capital_posture",
+                    "strategic": strategic_posture,
+                    "branch": branch_posture,
+                    "severity": (
+                        "high"
+                        if {strategic_posture, branch_posture} >= {"aggressive", "defensive"}
+                        else "medium"
+                    ),
+                }
+            )
 
         return {
             "strategic_view": strategic,
@@ -285,8 +341,13 @@ def element_comparison(
             "note": "分歧即是否需要矛盾系统介入的触发依据（SPEC §12.2）",
         }
     except Exception:  # noqa: BLE001
-        return {"strategic_view": None, "branch_view": None, "divergences": [],
-                "contradiction_trigger": False, "fail_open": True}
+        return {
+            "strategic_view": None,
+            "branch_view": None,
+            "divergences": [],
+            "contradiction_trigger": False,
+            "fail_open": True,
+        }
 
 
 if __name__ == "__main__":

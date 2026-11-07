@@ -11,6 +11,7 @@ Mood Board 情绪板生成器 (F7.3)
 持久化到 scheduler_data/mood_boards/{date}.json
 前端通过 /api/mood-board 读取，复用 SynthesisChart 渲染。
 """
+
 from __future__ import annotations
 
 import json
@@ -22,6 +23,7 @@ from typing import Any, Dict, List
 # F7.5: 产物中台归一存储 (FAIL-OPEN)
 try:
     from dreamos.core.artifact import ArtifactStore, ArtifactType
+
     _ARTIFACT_STORE = ArtifactStore()
 except Exception:
     _ARTIFACT_STORE = None
@@ -83,7 +85,9 @@ class MoodBoardGenerator:
         try:
             bdsm_dir = (
                 Path(__file__).resolve().parent.parent.parent.parent
-                / "11-易经推理系统" / ".workbuddy" / "bdsm"
+                / "11-易经推理系统"
+                / ".workbuddy"
+                / "bdsm"
             )
             snapshots = sorted(bdsm_dir.glob("bdsm_snapshot_*.json"), reverse=True)
             if not snapshots:
@@ -98,7 +102,11 @@ class MoodBoardGenerator:
         try:
             stats_file = (
                 Path(__file__).resolve().parent.parent.parent.parent
-                / "11-易经推理系统" / ".workbuddy" / "memory_l4" / "stats" / "daily_stats.json"
+                / "11-易经推理系统"
+                / ".workbuddy"
+                / "memory_l4"
+                / "stats"
+                / "daily_stats.json"
             )
             if not stats_file.exists():
                 return {}

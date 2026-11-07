@@ -2,7 +2,6 @@ import importlib.util
 import json
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -33,15 +32,21 @@ def test_policy_regression_matrix_runner_reports_all_cases(tmp_path):
     _write_json(candidate_path, candidate)
 
     reports_approve = []
-    for i, stage in enumerate(["audit", "sandbox", "stress", "scenario", "backtest"]):
+    for i, stage in enumerate(["audit", "sandbox", "stress", "scenario", "backtest"]):  # noqa: B007
         path = tmp_path / f"approve-{stage}.json"
-        _write_json(path, {"candidate_id": "cand-matrix-001", "stage": stage, "pass": True, "violations": []})
+        _write_json(
+            path,
+            {"candidate_id": "cand-matrix-001", "stage": stage, "pass": True, "violations": []},
+        )
         reports_approve.append(path)
 
     reports_reject = []
-    for i, stage in enumerate(["audit", "sandbox", "stress", "scenario"]):
+    for i, stage in enumerate(["audit", "sandbox", "stress", "scenario"]):  # noqa: B007
         path = tmp_path / f"reject-{stage}.json"
-        _write_json(path, {"candidate_id": "cand-matrix-001", "stage": stage, "pass": True, "violations": []})
+        _write_json(
+            path,
+            {"candidate_id": "cand-matrix-001", "stage": stage, "pass": True, "violations": []},
+        )
         reports_reject.append(path)
     backtest_reject = tmp_path / "reject-backtest.json"
     _write_json(

@@ -6,11 +6,12 @@
 """
 
 import json
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 DATA_DIR = Path("/workspace/ops/nanoclaw/core_task1/historical_data")
 OUTPUT_DIR = Path("/workspace/ops/nanoclaw/core_task1/outputs")
+
 
 def load_all_backtest_results():
     """加载所有回测结果"""
@@ -28,10 +29,11 @@ def load_all_backtest_results():
     for name, filename in files.items():
         filepath = DATA_DIR / filename
         if filepath.exists():
-            with open(filepath, 'r', encoding='utf-8') as f:
+            with open(filepath, "r", encoding="utf-8") as f:
                 results[name] = json.load(f)
 
     return results
+
 
 def generate_optimization_report(results):
     """生成优化策略报告"""
@@ -67,7 +69,9 @@ def generate_optimization_report(results):
         else:
             status = "❌ 需优化"
 
-        report.append(f"| {name} | {total_return:.2f}% | {ann_return:.2f}% | {sharpe:.2f} | {max_dd:.2f}% | {win_rate:.1f}% | {trades} | {status} |")
+        report.append(
+            f"| {name} | {total_return:.2f}% | {ann_return:.2f}% | {sharpe:.2f} | {max_dd:.2f}% | {win_rate:.1f}% | {trades} | {status} |"
+        )
 
     report.append("")
 
@@ -77,13 +81,15 @@ def generate_optimization_report(results):
 
     if "v9_3_ledger" in results:
         v93 = results["v9_3_ledger"]
-        config = v93.get("backtest_config", {})
+        config = v93.get("backtest_config", {})  # noqa: F841
         r = v93.get("results", {})
         event_stats = v93.get("event_stats", {})
 
         report.append("### V9.3 核心优势")
         report.append("")
-        report.append(f"- **总收益**: +{r.get('total_return', 0)*100:.2f}%（跑赢基准 {r.get('total_return', 0)*100 - results.get('baseline', {}).get('results', {}).get('total_return', 0)*100:.2f}%）")
+        report.append(
+            f"- **总收益**: +{r.get('total_return', 0)*100:.2f}%（跑赢基准 {r.get('total_return', 0)*100 - results.get('baseline', {}).get('results', {}).get('total_return', 0)*100:.2f}%）"
+        )
         report.append(f"- **年化收益**: {r.get('annualized_return', 0)*100:.2f}%")
         report.append(f"- **夏普比率**: {r.get('sharpe_ratio', 0):.2f}（风险调整后收益为正）")
         report.append(f"- **最大回撤**: {r.get('max_drawdown', 0)*100:.2f}%（低于 20% 警戒线）")
@@ -136,7 +142,9 @@ def generate_optimization_report(results):
     report.append("")
     report.append("```python")
     report.append("# 1. 事件账本信号计算（V9.3）")
-    report.append("signal = Σ(base_sentiment × type_weight × window_weight × surprise_weight × confidence)")
+    report.append(
+        "signal = Σ(base_sentiment × type_weight × window_weight × surprise_weight × confidence)"
+    )
     report.append("")
     report.append("# 2. 市场状态识别")
     report.append("if price > MA20 * 1.05: market_state = 'bull'")
@@ -149,7 +157,9 @@ def generate_optimization_report(results):
     report.append("else: threshold = 0.15, position_mult = 0.8")
     report.append("")
     report.append("# 4. 仓位确定")
-    report.append("if signal > threshold: position = min_position + (signal - threshold) × position_mult")
+    report.append(
+        "if signal > threshold: position = min_position + (signal - threshold) × position_mult"
+    )
     report.append("elif signal < -threshold: position = min_position × 0.5  # 减仓")
     report.append("else: position = min_position × 2  # 中性")
     report.append("```")
@@ -164,11 +174,21 @@ def generate_optimization_report(results):
     baseline_r = results.get("baseline", {}).get("results", {})
     v93_r = results.get("v9_3_ledger", {}).get("results", {})
 
-    report.append(f"| 总收益 | {baseline_r.get('total_return', 0)*100:.1f}% | {v93_r.get('total_return', 0)*100:.1f}% | +8~12% |")
-    report.append(f"| 年化收益 | {baseline_r.get('annualized_return', 0)*100:.1f}% | {v93_r.get('annualized_return', 0)*100:.1f}% | +30~40% |")
-    report.append(f"| 夏普比率 | {baseline_r.get('sharpe_ratio', 0):.2f} | {v93_r.get('sharpe_ratio', 0):.2f} | 0.8~1.2 |")
-    report.append(f"| 最大回撤 | {baseline_r.get('max_drawdown', 0)*100:.1f}% | {v93_r.get('max_drawdown', 0)*100:.1f}% | <15% |")
-    report.append(f"| 胜率 | {baseline_r.get('win_rate', 0)*100:.1f}% | {v93_r.get('win_rate', 0)*100:.1f}% | >55% |")
+    report.append(
+        f"| 总收益 | {baseline_r.get('total_return', 0)*100:.1f}% | {v93_r.get('total_return', 0)*100:.1f}% | +8~12% |"
+    )
+    report.append(
+        f"| 年化收益 | {baseline_r.get('annualized_return', 0)*100:.1f}% | {v93_r.get('annualized_return', 0)*100:.1f}% | +30~40% |"
+    )
+    report.append(
+        f"| 夏普比率 | {baseline_r.get('sharpe_ratio', 0):.2f} | {v93_r.get('sharpe_ratio', 0):.2f} | 0.8~1.2 |"
+    )
+    report.append(
+        f"| 最大回撤 | {baseline_r.get('max_drawdown', 0)*100:.1f}% | {v93_r.get('max_drawdown', 0)*100:.1f}% | <15% |"
+    )
+    report.append(
+        f"| 胜率 | {baseline_r.get('win_rate', 0)*100:.1f}% | {v93_r.get('win_rate', 0)*100:.1f}% | >55% |"
+    )
     report.append("")
 
     # 6. 下一步行动
@@ -200,6 +220,7 @@ def generate_optimization_report(results):
 
     return "\n".join(report)
 
+
 def main():
     print("=" * 70)
     print("加密新闻技能 - V9.3/V9.8 优化策略分析")
@@ -212,13 +233,14 @@ def main():
 
     # 保存报告
     report_file = OUTPUT_DIR / "optimization_strategy_report.md"
-    with open(report_file, 'w', encoding='utf-8') as f:
+    with open(report_file, "w", encoding="utf-8") as f:
         f.write(report)
 
     print(f"\n报告已保存至：{report_file}")
     print("\n" + "=" * 70)
     print(report)
     print("=" * 70)
+
 
 if __name__ == "__main__":
     main()

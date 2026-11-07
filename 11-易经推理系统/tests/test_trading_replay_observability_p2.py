@@ -1,7 +1,6 @@
 import importlib.util
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -19,7 +18,12 @@ def test_trace_index_and_replay_summary():
     events = [
         {"trace_id": "trace-r1", "stage_id": "A1", "timestamp": "2026-05-11T14:00:00+00:00"},
         {"trace_id": "trace-r1", "stage_id": "A2", "timestamp": "2026-05-11T14:00:01+00:00"},
-        {"trace_id": "trace-r1", "stage_id": "A4", "timestamp": "2026-05-11T14:00:03+00:00", "retry": True},
+        {
+            "trace_id": "trace-r1",
+            "stage_id": "A4",
+            "timestamp": "2026-05-11T14:00:03+00:00",
+            "retry": True,
+        },
     ]
     idx = mod.build_trace_index(events)
     assert "trace-r1" in idx

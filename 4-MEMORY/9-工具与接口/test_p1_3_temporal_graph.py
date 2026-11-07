@@ -18,10 +18,10 @@ RED 契约:
 
 参考: SPEC-CognitiveSystem-Evolution.md §2.3.2 P1-3
 """
+
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import pytest
@@ -179,9 +179,7 @@ class TestTemporalMemoryGraph:
 
         graph_path = tmp_path / "graph.json"
         graph = TemporalMemoryGraph(graph_path=graph_path)
-        graph.add_temporal_memory(
-            "VM-001", "测试", "2024-01-01", "2024-12-31"
-        )
+        graph.add_temporal_memory("VM-001", "测试", "2024-01-01", "2024-12-31")
         graph.persist()
 
         graph2 = TemporalMemoryGraph(graph_path=graph_path)
@@ -195,10 +193,12 @@ class TestCognitiveLoopEntryTemporal:
     def test_temporal_graph_attribute_exists(self):
         """RED: CognitiveLoopEntry 应有 temporal_graph 属性。"""
         from cognitive_loop_entry import CognitiveLoopEntry
+
         # 类级别检查（不实例化避免 DB 依赖）
         assert hasattr(CognitiveLoopEntry, "__init__")
         # 实例化后检查
         import cognitive_loop_entry as cle_mod
+
         cle_mod.reset_cle()
         try:
             cle = cle_mod.CognitiveLoopEntry(enable_distill=False)

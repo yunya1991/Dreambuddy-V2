@@ -11,6 +11,7 @@ FAIL-OPEN:
   - factors=None → MultiHeadCrossAttention 返回零向量
   - 单因子 → 退化为直接投影
 """
+
 from __future__ import annotations
 
 import math
@@ -134,9 +135,9 @@ class MultiHeadCrossAttention(nn.Module):
         N = key.size(1)
 
         # 投影
-        q = self.q_proj(query)   # (B, 1, d_model)
-        k = self.k_proj(key)     # (B, N, d_model)
-        v = self.v_proj(value)   # (B, N, d_model)
+        q = self.q_proj(query)  # (B, 1, d_model)
+        k = self.k_proj(key)  # (B, N, d_model)
+        v = self.v_proj(value)  # (B, N, d_model)
 
         # reshape 为多头: (B, n_heads, seq_len, head_dim)
         q = q.view(B, 1, self.n_heads, self.head_dim).transpose(1, 2)

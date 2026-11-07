@@ -109,15 +109,19 @@ def _normalize_items(raw: Any, key_to_base: Dict[str, str]) -> List[Dict[str, An
             bind_base = str(key_to_base.get(k) or "").strip()
         if not bind_base:
             continue
-        out.append({
-            "bindBase": bind_base,
-            "value": row.get("value"),
-            "source": str(row.get("source") or row.get("skill") or "").strip(),
-            "latency_sec": row.get("latency_sec"),
-            "revision": (row.get("revision") if isinstance(row.get("revision"), dict) else None),
-            "quality": _quality_obj(row.get("quality")),
-            "generated_at": str(row.get("generated_at") or _now_iso()),
-        })
+        out.append(
+            {
+                "bindBase": bind_base,
+                "value": row.get("value"),
+                "source": str(row.get("source") or row.get("skill") or "").strip(),
+                "latency_sec": row.get("latency_sec"),
+                "revision": (
+                    row.get("revision") if isinstance(row.get("revision"), dict) else None
+                ),
+                "quality": _quality_obj(row.get("quality")),
+                "generated_at": str(row.get("generated_at") or _now_iso()),
+            }
+        )
     return out
 
 
@@ -182,71 +186,132 @@ def _gate_info_research_items(raw: Any) -> List[Dict[str, Any]]:
         or _now_iso()
     )
     rows = [
-        ("stablecoin_usdt_exchange_inflow_usd__all__all__all", [
-            "stablecoin_exchange_inflow_usd",
-            "stablecoin_exchange_netflow_usd",
-            "stablecoin_netflow_usd",
-            "stablecoin_inflow_usd",
-            "exchange_stablecoin_inflow_usd",
-        ]),
-        ("stablecoin_usdt_exchange_balance_usd__all__all__all", [
-            "stablecoin_exchange_balance_usd",
-            "exchange_stablecoin_balance_usd",
-            "stablecoin_balance_on_exchange_usd",
-            "stablecoin_cex_balance_usd",
-        ]),
-        ("spot_etf_netflow_usd__btc__all__na", [
-            "btc_etf_netflow_usd",
-            "bitcoin_etf_netflow_usd",
-            "btc_spot_etf_netflow_usd",
-            "spot_etf_btc_netflow_usd",
-        ]),
-        ("spot_etf_netflow_usd__eth__all__na", [
-            "eth_etf_netflow_usd",
-            "ethereum_etf_netflow_usd",
-            "eth_spot_etf_netflow_usd",
-            "spot_etf_eth_netflow_usd",
-        ]),
-        ("cex_exchange_reserve_usd__all__all__all", [
-            "cex_exchange_reserve_usd",
-            "exchange_reserve_usd",
-            "cex_reserve_usd",
-            "exchange_total_reserve_usd",
-        ]),
+        (
+            "stablecoin_usdt_exchange_inflow_usd__all__all__all",
+            [
+                "stablecoin_exchange_inflow_usd",
+                "stablecoin_exchange_netflow_usd",
+                "stablecoin_netflow_usd",
+                "stablecoin_inflow_usd",
+                "exchange_stablecoin_inflow_usd",
+            ],
+        ),
+        (
+            "stablecoin_usdt_exchange_balance_usd__all__all__all",
+            [
+                "stablecoin_exchange_balance_usd",
+                "exchange_stablecoin_balance_usd",
+                "stablecoin_balance_on_exchange_usd",
+                "stablecoin_cex_balance_usd",
+            ],
+        ),
+        (
+            "spot_etf_netflow_usd__btc__all__na",
+            [
+                "btc_etf_netflow_usd",
+                "bitcoin_etf_netflow_usd",
+                "btc_spot_etf_netflow_usd",
+                "spot_etf_btc_netflow_usd",
+            ],
+        ),
+        (
+            "spot_etf_netflow_usd__eth__all__na",
+            [
+                "eth_etf_netflow_usd",
+                "ethereum_etf_netflow_usd",
+                "eth_spot_etf_netflow_usd",
+                "spot_etf_eth_netflow_usd",
+            ],
+        ),
+        (
+            "cex_exchange_reserve_usd__all__all__all",
+            [
+                "cex_exchange_reserve_usd",
+                "exchange_reserve_usd",
+                "cex_reserve_usd",
+                "exchange_total_reserve_usd",
+            ],
+        ),
     ]
     out: List[Dict[str, Any]] = []
     for bind_base, aliases in rows:
         val = _search_numeric_by_aliases(obj, aliases)
         if val is None:
-            quality = {"status": "missing", "reasons": ["gate_info_research_field_missing"], "error": "value_unavailable"}
+            quality = {
+                "status": "missing",
+                "reasons": ["gate_info_research_field_missing"],
+                "error": "value_unavailable",
+            }
         else:
             quality = {"status": "ok", "reasons": [], "error": ""}
-        out.append({
-            "bindBase": bind_base,
-            "value": val,
-            "source": "gate-info-research",
-            "latency_sec": None,
-            "revision": {"provider_revision_ts": generated_at},
-            "quality": quality,
-            "generated_at": generated_at,
-        })
+        out.append(
+            {
+                "bindBase": bind_base,
+                "value": val,
+                "source": "gate-info-research",
+                "latency_sec": None,
+                "revision": {"provider_revision_ts": generated_at},
+                "quality": quality,
+                "generated_at": generated_at,
+            }
+        )
     return out
 
 
 def _coinanalysis_items(raw: Any) -> List[Dict[str, Any]]:
     obj = raw if isinstance(raw, dict) else {}
-    market = _get(obj, [["market_snapshot"], ["data", "market_snapshot"], ["market"], ["report", "market_snapshot"]])
-    social = _get(obj, [["social_sentiment"], ["data", "social_sentiment"], ["sentiment"], ["report", "social_sentiment"]])
+    market = _get(
+        obj,
+        [
+            ["market_snapshot"],
+            ["data", "market_snapshot"],
+            ["market"],
+            ["report", "market_snapshot"],
+        ],
+    )
+    social = _get(
+        obj,
+        [
+            ["social_sentiment"],
+            ["data", "social_sentiment"],
+            ["sentiment"],
+            ["report", "social_sentiment"],
+        ],
+    )
     generated_at = str(_get(obj, [["generated_at"], ["ts"], ["timestamp"]]) or _now_iso())
-    funding = _to_num(_get(market, [["funding_rate_bps"], ["funding_rate"], ["funding", "rate_bps"], ["funding", "rate"]]))
+    funding = _to_num(
+        _get(
+            market,
+            [["funding_rate_bps"], ["funding_rate"], ["funding", "rate_bps"], ["funding", "rate"]],
+        )
+    )
     if funding is not None and abs(funding) < 1.0:
         funding = funding * 10000.0
     oi_usd = _to_num(_get(market, [["oi_usd"], ["open_interest_usd"], ["open_interest"], ["oi"]]))
-    spread_bps = _to_num(_get(market, [["spread_bps"], ["orderbook", "spread_bps"], ["micro", "spread_bps"]]))
-    impact_cost_bps = _to_num(_get(market, [["impact_cost_bps"], ["orderbook", "impact_cost_bps"], ["micro", "impact_cost_bps"]]))
-    slippage_proxy = _to_num(_get(market, [["slippage_proxy"], ["orderbook", "slippage_proxy"], ["micro", "slippage_proxy"]]))
-    orderbook_depth_pct = _to_num(_get(market, [["orderbook_depth_pct"], ["orderbook", "depth_pct"], ["micro", "orderbook_depth_pct"]]))
-    sentiment_score = _to_num(_get(social, [["sentiment_score"], ["score"], ["kol_sentiment_score"]]))
+    spread_bps = _to_num(
+        _get(market, [["spread_bps"], ["orderbook", "spread_bps"], ["micro", "spread_bps"]])
+    )
+    impact_cost_bps = _to_num(
+        _get(
+            market,
+            [["impact_cost_bps"], ["orderbook", "impact_cost_bps"], ["micro", "impact_cost_bps"]],
+        )
+    )
+    slippage_proxy = _to_num(
+        _get(
+            market,
+            [["slippage_proxy"], ["orderbook", "slippage_proxy"], ["micro", "slippage_proxy"]],
+        )
+    )
+    orderbook_depth_pct = _to_num(
+        _get(
+            market,
+            [["orderbook_depth_pct"], ["orderbook", "depth_pct"], ["micro", "orderbook_depth_pct"]],
+        )
+    )
+    sentiment_score = _to_num(
+        _get(social, [["sentiment_score"], ["score"], ["kol_sentiment_score"]])
+    )
     discussion_level = _to_num(_get(social, [["discussion_volume"], ["discussion_level"]]))
     social_heat = sentiment_score if sentiment_score is not None else discussion_level
     rows = [
@@ -261,18 +326,24 @@ def _coinanalysis_items(raw: Any) -> List[Dict[str, Any]]:
     out: List[Dict[str, Any]] = []
     for bind_base, val in rows:
         if val is None:
-            quality = {"status": "missing", "reasons": ["coinanalysis_field_missing"], "error": "value_unavailable"}
+            quality = {
+                "status": "missing",
+                "reasons": ["coinanalysis_field_missing"],
+                "error": "value_unavailable",
+            }
         else:
             quality = {"status": "ok", "reasons": [], "error": ""}
-        out.append({
-            "bindBase": bind_base,
-            "value": val,
-            "source": "gate-info-coinanalysis",
-            "latency_sec": None,
-            "revision": {"provider_revision_ts": generated_at},
-            "quality": quality,
-            "generated_at": generated_at,
-        })
+        out.append(
+            {
+                "bindBase": bind_base,
+                "value": val,
+                "source": "gate-info-coinanalysis",
+                "latency_sec": None,
+                "revision": {"provider_revision_ts": generated_at},
+                "quality": quality,
+                "generated_at": generated_at,
+            }
+        )
     return out
 
 
@@ -293,53 +364,71 @@ def _marketoverview_items(raw: Any) -> List[Dict[str, Any]]:
         or _now_iso()
     )
     rows = [
-        ("market_breadth_score__all__all__na", [
-            "market_breadth_score",
-            "breadth_score",
-            "gainer_loser_ratio",
-            "adv_decline_ratio",
-            "advance_decline_ratio",
-            "market_width_score",
-        ]),
-        ("dominance_shift_score__btc__all__na", [
-            "dominance_shift_score",
-            "btc_dominance_change",
-            "btc_dominance_delta",
-            "dominance_delta",
-            "dominance_shift",
-        ]),
-        ("defi_tvl_momentum_score__all__defi__na", [
-            "defi_tvl_momentum_score",
-            "defi_tvl_change_pct",
-            "defi_tvl_growth",
-            "tvl_momentum",
-            "tvl_change_24h",
-            "tvl_change_pct",
-        ]),
-        ("macro_event_pressure_score__all__all__na", [
-            "macro_event_pressure_score",
-            "macro_risk_score",
-            "event_risk_score",
-            "fear_greed_index",
-            "fear_greed_score",
-        ]),
+        (
+            "market_breadth_score__all__all__na",
+            [
+                "market_breadth_score",
+                "breadth_score",
+                "gainer_loser_ratio",
+                "adv_decline_ratio",
+                "advance_decline_ratio",
+                "market_width_score",
+            ],
+        ),
+        (
+            "dominance_shift_score__btc__all__na",
+            [
+                "dominance_shift_score",
+                "btc_dominance_change",
+                "btc_dominance_delta",
+                "dominance_delta",
+                "dominance_shift",
+            ],
+        ),
+        (
+            "defi_tvl_momentum_score__all__defi__na",
+            [
+                "defi_tvl_momentum_score",
+                "defi_tvl_change_pct",
+                "defi_tvl_growth",
+                "tvl_momentum",
+                "tvl_change_24h",
+                "tvl_change_pct",
+            ],
+        ),
+        (
+            "macro_event_pressure_score__all__all__na",
+            [
+                "macro_event_pressure_score",
+                "macro_risk_score",
+                "event_risk_score",
+                "fear_greed_index",
+                "fear_greed_score",
+            ],
+        ),
     ]
     out: List[Dict[str, Any]] = []
     for bind_base, aliases in rows:
         val = _search_numeric_by_aliases(obj, aliases)
         if val is None:
-            quality = {"status": "missing", "reasons": ["marketoverview_field_missing"], "error": "value_unavailable"}
+            quality = {
+                "status": "missing",
+                "reasons": ["marketoverview_field_missing"],
+                "error": "value_unavailable",
+            }
         else:
             quality = {"status": "ok", "reasons": [], "error": ""}
-        out.append({
-            "bindBase": bind_base,
-            "value": val,
-            "source": "gate-info-marketoverview",
-            "latency_sec": None,
-            "revision": {"provider_revision_ts": generated_at},
-            "quality": quality,
-            "generated_at": generated_at,
-        })
+        out.append(
+            {
+                "bindBase": bind_base,
+                "value": val,
+                "source": "gate-info-marketoverview",
+                "latency_sec": None,
+                "revision": {"provider_revision_ts": generated_at},
+                "quality": quality,
+                "generated_at": generated_at,
+            }
+        )
     return out
 
 
@@ -360,32 +449,46 @@ def _okx_generated_at(obj: Dict[str, Any]) -> str:
     )
 
 
-def _okx_items_from_rows(raw: Any, source: str, rows: List[tuple[str, List[str]]], missing_reason: str) -> List[Dict[str, Any]]:
+def _okx_items_from_rows(
+    raw: Any, source: str, rows: List[tuple[str, List[str]]], missing_reason: str
+) -> List[Dict[str, Any]]:
     obj = raw if isinstance(raw, dict) else {}
     generated_at = _okx_generated_at(obj)
     out: List[Dict[str, Any]] = []
     for bind_base, aliases in rows:
         val = _search_numeric_by_aliases(obj, aliases)
         if val is None:
-            quality = {"status": "missing", "reasons": [missing_reason], "error": "value_unavailable"}
+            quality = {
+                "status": "missing",
+                "reasons": [missing_reason],
+                "error": "value_unavailable",
+            }
         else:
             quality = {"status": "ok", "reasons": [], "error": ""}
-        out.append({
-            "bindBase": bind_base,
-            "value": val,
-            "source": source,
-            "latency_sec": None,
-            "revision": {"provider_revision_ts": generated_at},
-            "quality": quality,
-            "generated_at": generated_at,
-        })
+        out.append(
+            {
+                "bindBase": bind_base,
+                "value": val,
+                "source": source,
+                "latency_sec": None,
+                "revision": {"provider_revision_ts": generated_at},
+                "quality": quality,
+                "generated_at": generated_at,
+            }
+        )
     return out
 
 
 def _okx_cmc_okx_items(raw: Any) -> List[Dict[str, Any]]:
     rows = [
-        ("funding_rate_bps__btc__okx__perp", ["funding_rate_bps", "funding_rate", "okx_funding_rate_bps", "okx_funding_rate"]),
-        ("oi_usd__btc__okx__perp", ["oi_usd", "open_interest_usd", "okx_oi_usd", "okx_open_interest_usd"]),
+        (
+            "funding_rate_bps__btc__okx__perp",
+            ["funding_rate_bps", "funding_rate", "okx_funding_rate_bps", "okx_funding_rate"],
+        ),
+        (
+            "oi_usd__btc__okx__perp",
+            ["oi_usd", "open_interest_usd", "okx_oi_usd", "okx_open_interest_usd"],
+        ),
         ("spread_bps__btc__okx__spot", ["spread_bps", "okx_spread_bps", "orderbook_spread_bps"]),
     ]
     return _okx_items_from_rows(raw, "okx:cmc-okx", rows, "okx_cmc_okx_field_missing")
@@ -393,23 +496,43 @@ def _okx_cmc_okx_items(raw: Any) -> List[Dict[str, Any]]:
 
 def _okx_market_intel_items(raw: Any) -> List[Dict[str, Any]]:
     rows = [
-        ("social_heat_event_score__btc__okx__na", ["social_heat_event_score", "social_heat_score", "market_intel_heat", "narrative_heat"]),
+        (
+            "social_heat_event_score__btc__okx__na",
+            ["social_heat_event_score", "social_heat_score", "market_intel_heat", "narrative_heat"],
+        ),
     ]
     return _okx_items_from_rows(raw, "okx:market-intel", rows, "okx_market_intel_field_missing")
 
 
 def _okx_alpha_vantage_items(raw: Any) -> List[Dict[str, Any]]:
     rows = [
-        ("macro_event_pressure_score__btc__macro__na", ["macro_event_pressure_score", "macro_risk_score", "alpha_vantage_macro_pressure", "event_risk_score"]),
+        (
+            "macro_event_pressure_score__btc__macro__na",
+            [
+                "macro_event_pressure_score",
+                "macro_risk_score",
+                "alpha_vantage_macro_pressure",
+                "event_risk_score",
+            ],
+        ),
     ]
     return _okx_items_from_rows(raw, "okx:alpha-vantage", rows, "okx_alpha_vantage_field_missing")
 
 
 def _okx_hyperliquid_analyzer_items(raw: Any) -> List[Dict[str, Any]]:
     rows = [
-        ("whale_position_delta_usd__btc__hyperliquid__perp", ["whale_position_delta_usd", "hyperliquid_whale_position_delta_usd", "whale_position_change_usd"]),
+        (
+            "whale_position_delta_usd__btc__hyperliquid__perp",
+            [
+                "whale_position_delta_usd",
+                "hyperliquid_whale_position_delta_usd",
+                "whale_position_change_usd",
+            ],
+        ),
     ]
-    return _okx_items_from_rows(raw, "okx:hyperliquid-analyzer", rows, "okx_hyperliquid_field_missing")
+    return _okx_items_from_rows(
+        raw, "okx:hyperliquid-analyzer", rows, "okx_hyperliquid_field_missing"
+    )
 
 
 def main() -> int:
@@ -435,7 +558,19 @@ def main() -> int:
     if not input_path.exists():
         raise SystemExit(f"input_not_found: {input_path}")
     root = _root_from_script()
-    out_path = Path(args.output).resolve() if str(args.output).strip() else (root / "ops" / "nanoclaw" / "core_task1" / "flow" / "outputs" / "web3_skill_snapshot_latest.json")
+    out_path = (
+        Path(args.output).resolve()
+        if str(args.output).strip()
+        else (
+            root
+            / "ops"
+            / "nanoclaw"
+            / "core_task1"
+            / "flow"
+            / "outputs"
+            / "web3_skill_snapshot_latest.json"
+        )
+    )
     key_to_base = _schema_map(root)
     raw = _load_json(input_path)
     if str(args.mode) == "coinanalysis":
@@ -466,7 +601,12 @@ def main() -> int:
     payload = {"generated_at": _now_iso(), "items": items}
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(json.dumps({"ok": True, "input": str(input_path), "output": str(out_path), "count": len(items)}, ensure_ascii=False))
+    print(
+        json.dumps(
+            {"ok": True, "input": str(input_path), "output": str(out_path), "count": len(items)},
+            ensure_ascii=False,
+        )
+    )
     return 0
 
 

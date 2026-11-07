@@ -2,7 +2,6 @@ import importlib.util
 import json
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -295,7 +294,9 @@ def test_decision_gate_stage_policy_blocks_high_severity(tmp_path):
         ]
     )
     assert rc == 1
-    payload = json.loads((tmp_path / "decision" / "decision-20260512T100500Z.json").read_text(encoding="utf-8"))
+    payload = json.loads(
+        (tmp_path / "decision" / "decision-20260512T100500Z.json").read_text(encoding="utf-8")
+    )
     assert "REPORT_SEVERITY_BLOCKED" in payload["reason_codes"]
 
 
@@ -334,7 +335,9 @@ def test_decision_gate_default_required_stages_include_stress_scenario_backtest(
         ]
     )
     assert rc == 1
-    payload = json.loads((tmp_path / "decision" / "decision-20260512T101000Z.json").read_text(encoding="utf-8"))
+    payload = json.loads(
+        (tmp_path / "decision" / "decision-20260512T101000Z.json").read_text(encoding="utf-8")
+    )
     assert payload["required_stages"] == ["audit", "sandbox", "stress", "scenario", "backtest"]
     assert "REPORT_STAGE_MISSING" in payload["reason_codes"]
 
@@ -399,7 +402,9 @@ def test_decision_gate_uses_policy_version_from_template_library(tmp_path):
         ]
     )
     assert rc == 0
-    payload = json.loads((tmp_path / "decision" / "decision-20260512T102000Z.json").read_text(encoding="utf-8"))
+    payload = json.loads(
+        (tmp_path / "decision" / "decision-20260512T102000Z.json").read_text(encoding="utf-8")
+    )
     assert payload["policy_version"] == "p1.relaxed-scenario.v1"
     assert payload["policy_source"].endswith("p1.relaxed-scenario.v1.json")
 
@@ -457,7 +462,7 @@ def test_decision_gate_rejects_when_policy_version_mismatch(tmp_path):
                 "2026-05-12T10:25:00Z",
             ]
         )
-        assert False, "expected ValueError for policy version mismatch"
+        assert False, "expected ValueError for policy version mismatch"  # noqa: B011
     except ValueError as exc:
         assert "policy_version mismatch" in str(exc)
 
@@ -506,7 +511,9 @@ def test_decision_gate_rejects_when_approval_required_but_ticket_missing(tmp_pat
         ]
     )
     assert rc == 1
-    payload = json.loads((tmp_path / "decision" / "decision-20260512T103000Z.json").read_text(encoding="utf-8"))
+    payload = json.loads(
+        (tmp_path / "decision" / "decision-20260512T103000Z.json").read_text(encoding="utf-8")
+    )
     assert payload["decision"] == "reject"
     assert "APPROVAL_TICKET_REQUIRED" in payload["reason_codes"]
     assert not (tmp_path / "decision" / "promotion-20260512T103000Z.json").exists()
@@ -575,10 +582,16 @@ def test_decision_gate_approves_with_valid_approval_ticket(tmp_path):
         ]
     )
     assert rc == 0
-    payload = json.loads((tmp_path / "decision" / "decision-20260512T103500Z.json").read_text(encoding="utf-8"))
+    payload = json.loads(
+        (tmp_path / "decision" / "decision-20260512T103500Z.json").read_text(encoding="utf-8")
+    )
     assert payload["decision"] == "approve"
     assert payload["approval"]["decision"] == "approve"
-    approval_payload = json.loads((tmp_path / "approval" / "approval-result-20260512T103500Z.json").read_text(encoding="utf-8"))
+    approval_payload = json.loads(
+        (tmp_path / "approval" / "approval-result-20260512T103500Z.json").read_text(
+            encoding="utf-8"
+        )
+    )
     assert approval_payload["ticket_id"] == "appr-010"
 
 
@@ -642,5 +655,7 @@ def test_decision_gate_allows_promotion_when_approval_not_required(tmp_path):
         ]
     )
     assert rc == 0
-    payload = json.loads((tmp_path / "decision" / "decision-20260512T104000Z.json").read_text(encoding="utf-8"))
+    payload = json.loads(
+        (tmp_path / "decision" / "decision-20260512T104000Z.json").read_text(encoding="utf-8")
+    )
     assert payload["decision"] == "approve"

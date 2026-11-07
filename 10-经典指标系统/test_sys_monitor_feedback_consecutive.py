@@ -19,7 +19,12 @@ def test_sys_monitor_feedback_requires_consecutive_hits(monkeypatch):
         if path.startswith("/gating/state"):
             return {"ok": True}
         if path.startswith("/universe/status"):
-            return {"core": [], "shadow": [], "watchlist": [], "last_update": int(now_ms - 2 * 3600 * 1000)}
+            return {
+                "core": [],
+                "shadow": [],
+                "watchlist": [],
+                "last_update": int(now_ms - 2 * 3600 * 1000),
+            }
         if path.startswith("/quant/pairs/btcalt/candidates"):
             return {"ok": True, "alts": []}
         if path.startswith("/quant/pairs/btcalt/orders/recent"):

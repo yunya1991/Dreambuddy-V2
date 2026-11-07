@@ -14,6 +14,7 @@ Protocol ↔ schema_init 的字段映射：
 另外：Protocol 说"全局同一时刻只有 1 条 is_active=1"，但触发器是 `per config_family`；
       我们在 activate_version 显式取消同 family 所有旧激活即可满足"全局单激活 per family"语义。
 """
+
 from __future__ import annotations
 
 import json
@@ -76,6 +77,7 @@ class SqliteConfigRepository(ConfigRepository):
         # 处理 Decimal → JSON 可序列化：用 default=str
         def _default(o):
             from decimal import Decimal
+
             if isinstance(o, Decimal):
                 return str(o)
             if isinstance(o, datetime):
@@ -160,9 +162,7 @@ class SqliteConfigRepository(ConfigRepository):
             return None
 
     # ================================================================ 读指定历史版
-    def get_specific_version(
-        self, config_name: str, version: int
-    ) -> Optional[Dict]:
+    def get_specific_version(self, config_name: str, version: int) -> Optional[Dict]:
         ver_str = _ver_int_to_str(version)
         with get_sqlite_connection(self.db_path) as conn:
             row = conn.execute(

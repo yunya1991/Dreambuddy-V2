@@ -3,17 +3,18 @@
 承接单体 universe 路由的核心计算签名，委托给 classic_pipeline.c1_universe 纯函数。
 路由的 I/O（请求解析、缓存、响应格式化）保留在单体中。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
 from classic_pipeline.c1_universe.universe import (
     _compute_btc_corr_from_closes,
+    _universe_ari_nmi,
     _universe_beta_from_ret,
+    _universe_kmeans_assign,
     _universe_pearson_corr,
     _universe_spearman_corr,
-    _universe_kmeans_assign,
-    _universe_ari_nmi,
 )
 
 
@@ -43,6 +44,7 @@ def compute_btc_corr(
 def compute_beta(x: List[float], y: List[float]) -> Optional[float]:
     """计算 Beta。"""
     import numpy as np
+
     return _universe_beta_from_ret(np.array(x), np.array(y))
 
 
@@ -56,6 +58,7 @@ def compute_corr(xs: List[float], ys: List[float], method: str = "pearson") -> O
 def kmeans_cluster(X: List[List[float]], k: int) -> List[int]:
     """K-Means 聚类。"""
     import numpy as np
+
     return _universe_kmeans_assign(np.array(X), k).tolist()
 
 

@@ -29,6 +29,7 @@ _SYSTEM_DEFAULT = "dreamos"
 try:
     import psycopg2
     from psycopg2.extras import Json as PgJson
+
     _PG_AVAILABLE = True
 except ImportError:
     _PG_AVAILABLE = False
@@ -62,8 +63,7 @@ def _get_pg_conn():
         return None
 
     database_url = os.environ.get(
-        "DATABASE_URL",
-        "postgresql://postgres:dreambuddy@127.0.0.1:5432/dreambuddy"
+        "DATABASE_URL", "postgresql://postgres:dreambuddy@127.0.0.1:5432/dreambuddy"
     )
 
     try:
@@ -98,7 +98,8 @@ def _pg_emit_event(record: Dict[str, Any]) -> None:
                     status = "completed" if record.get("status") == "ok" else "failed"
 
                 with conn.cursor() as cur:
-                    cur.execute("""
+                    cur.execute(
+                        """
                         INSERT INTO dreamos_sessions (
                             trace_id, session_id, graph_name, status,
                             start_ts, end_ts, duration_ms,
@@ -123,26 +124,29 @@ def _pg_emit_event(record: Dict[str, Any]) -> None:
                             used_tokens = COALESCE(EXCLUDED.used_tokens, dreamos_sessions.used_tokens),
                             termination_reason = COALESCE(EXCLUDED.termination_reason, dreamos_sessions.termination_reason),
                             updated_at = NOW()
-                    """, (
-                        trace_id,
-                        record.get("meta", {}).get("cycle_id", trace_id),
-                        record.get("meta", {}).get("graph_name", "trading_agent"),
-                        status,
-                        record.get("ts"),
-                        record.get("ts") if event_type == "graph_execute.end" else None,
-                        record.get("duration_ms"),
-                        record.get("meta", {}).get("total_nodes"),
-                        record.get("meta", {}).get("executed_nodes"),
-                        record.get("meta", {}).get("budget_tokens"),
-                        record.get("meta", {}).get("used_tokens"),
-                        record.get("meta", {}).get("termination_reason"),
-                        PgJson(record.get("meta", {})),
-                    ))
+                    """,
+                        (
+                            trace_id,
+                            record.get("meta", {}).get("cycle_id", trace_id),
+                            record.get("meta", {}).get("graph_name", "trading_agent"),
+                            status,
+                            record.get("ts"),
+                            record.get("ts") if event_type == "graph_execute.end" else None,
+                            record.get("duration_ms"),
+                            record.get("meta", {}).get("total_nodes"),
+                            record.get("meta", {}).get("executed_nodes"),
+                            record.get("meta", {}).get("budget_tokens"),
+                            record.get("meta", {}).get("used_tokens"),
+                            record.get("meta", {}).get("termination_reason"),
+                            PgJson(record.get("meta", {})),
+                        ),
+                    )
             else:
                 # Span 级
                 status_map = {"ok": "ok", "fail": "fail", "skip": "skip"}
                 with conn.cursor() as cur:
-                    cur.execute("""
+                    cur.execute(
+                        """
                         INSERT INTO dreamos_spans (
                             trace_id, span_id, parent_span_id,
                             node_id, node_type, status,
@@ -156,26 +160,29 @@ def _pg_emit_event(record: Dict[str, Any]) -> None:
                             %s, %s,
                             %s, %s, %s
                         )
-                    """, (
-                        trace_id,
-                        record.get("span_id", ""),
-                        record.get("parent_span_id"),
-                        record.get("node", ""),
-                        record.get("meta", {}).get("node_type", "compute"),
-                        status_map.get(record.get("status", "ok"), "ok"),
-                        record.get("ts"),
-                        record.get("ts"),
-                        record.get("duration_ms"),
-                        record.get("meta", {}).get("allocated_tokens"),
-                        record.get("meta", {}).get("tokens_used"),
-                        record.get("meta", {}).get("confidence"),
-                        record.get("error"),
-                        PgJson(record.get("meta", {})),
-                    ))
+                    """,
+                        (
+                            trace_id,
+                            record.get("span_id", ""),
+                            record.get("parent_span_id"),
+                            record.get("node", ""),
+                            record.get("meta", {}).get("node_type", "compute"),
+                            status_map.get(record.get("status", "ok"), "ok"),
+                            record.get("ts"),
+                            record.get("ts"),
+                            record.get("duration_ms"),
+                            record.get("meta", {}).get("allocated_tokens"),
+                            record.get("meta", {}).get("tokens_used"),
+                            record.get("meta", {}).get("confidence"),
+                            record.get("error"),
+                            PgJson(record.get("meta", {})),
+                        ),
+                    )
 
         elif system == "dsh":
             with conn.cursor() as cur:
-                cur.execute("""
+                cur.execute(
+                    """
                     INSERT INTO dsh_subagent_calls (
                         trace_id, subagent_type,
                         request_payload, response_payload,
@@ -185,21 +192,23 @@ def _pg_emit_event(record: Dict[str, Any]) -> None:
                         %s, %s,
                         %s, %s, %s
                     )
-                """, (
-                    trace_id,
-                    record.get("meta", {}).get("subagent_type", "unknown"),
-                    PgJson(record.get("meta", {}).get("request", {})),
-                    PgJson(record.get("meta", {}).get("response", {})),
-                    "ok" if record.get("status") == "ok" else "fail",
-                    record.get("duration_ms"),
-                    record.get("error"),
-                ))
+                """,
+                    (
+                        trace_id,
+                        record.get("meta", {}).get("subagent_type", "unknown"),
+                        PgJson(record.get("meta", {}).get("request", {})),
+                        PgJson(record.get("meta", {}).get("response", {})),
+                        "ok" if record.get("status") == "ok" else "fail",
+                        record.get("duration_ms"),
+                        record.get("error"),
+                    ),
+                )
 
     except Exception as e:
         logger.warning(f"[event_writer] PG write failed: {e}")
         # 连接异常时重置连接，下次重试
         try:
-            if _pg_conn and not _pg_conn.closed:
+            if _pg_conn and not _pg_conn.closed:  # noqa: F823
                 _pg_conn.close()
         except Exception:
             pass
@@ -228,7 +237,7 @@ def emit_event(
     layer: str = "",
     node: str = "",
     event_type: str = "",
-    status: str = "ok",           # ok | fail | skip
+    status: str = "ok",  # ok | fail | skip
     span_id: Optional[str] = None,
     parent_span_id: Optional[str] = None,
     duration_ms: Optional[float] = None,

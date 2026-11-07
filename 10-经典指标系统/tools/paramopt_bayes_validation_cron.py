@@ -1,7 +1,6 @@
 import argparse
 import datetime as dt
 import json
-import os
 import shutil
 import subprocess
 import sys
@@ -66,7 +65,9 @@ def _safe_json_loads(s: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def _run_validation(python_exe: str, script_path: Path, args_list: List[str], cwd: Path) -> Dict[str, Any]:
+def _run_validation(
+    python_exe: str, script_path: Path, args_list: List[str], cwd: Path
+) -> Dict[str, Any]:
     cmd = [str(python_exe), str(script_path)] + list(args_list)
     p = subprocess.run(cmd, cwd=str(cwd), capture_output=True, text=True)
     out = _safe_json_loads(p.stdout)
@@ -148,13 +149,17 @@ def main() -> None:
     result = _run_validation(str(args.python_exe), script_path, extra_args, project_dir)
     parsed = result.get("parsed") if isinstance(result.get("parsed"), dict) else {}
     report_path_s = _extract_report_path(parsed)
-    report_path = Path(report_path_s).resolve() if isinstance(report_path_s, str) and report_path_s else None
+    report_path = (
+        Path(report_path_s).resolve() if isinstance(report_path_s, str) and report_path_s else None
+    )
     archived = _archive_report(report_path, archive_root) if isinstance(report_path, Path) else None
 
     gate_pass = None
     param_changed = None
     if isinstance(parsed, dict):
-        gate_decision = parsed.get("gate_decision") if isinstance(parsed.get("gate_decision"), dict) else {}
+        gate_decision = (
+            parsed.get("gate_decision") if isinstance(parsed.get("gate_decision"), dict) else {}
+        )
         gate_pass = gate_decision.get("pass")
         prm = parsed.get("parameter") if isinstance(parsed.get("parameter"), dict) else {}
         param_changed = prm.get("changed")
@@ -191,7 +196,11 @@ def main() -> None:
             "channel": "alert",
             "severity": "warn",
             "message": msg,
-            "extras": {"event": "paramopt.bayes.validation.cron.failed", "trace_id": run_id, "severity": "warn"},
+            "extras": {
+                "event": "paramopt.bayes.validation.cron.failed",
+                "trace_id": run_id,
+                "severity": "warn",
+            },
             "idempotency_key": uuid.uuid4().hex,
         }
         _append_jsonl(outbox_dir / "alert.jsonl", alert_obj)
@@ -201,7 +210,17 @@ def main() -> None:
             tg_obj["channel"] = "telegram"
             _append_jsonl(outbox_dir / "telegram.jsonl", tg_obj)
 
-    print(json.dumps({"ok": bool(result.get("ok")), "run_id": run_id, "report_path": (str(report_path) if isinstance(report_path, Path) else None), "archived_report_path": (str(archived) if isinstance(archived, Path) else None)}, ensure_ascii=False))
+    print(
+        json.dumps(
+            {
+                "ok": bool(result.get("ok")),
+                "run_id": run_id,
+                "report_path": (str(report_path) if isinstance(report_path, Path) else None),
+                "archived_report_path": (str(archived) if isinstance(archived, Path) else None),
+            },
+            ensure_ascii=False,
+        )
+    )
     if not bool(result.get("ok")):
         raise SystemExit(1)
 

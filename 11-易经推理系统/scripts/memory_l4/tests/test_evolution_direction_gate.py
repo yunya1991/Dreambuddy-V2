@@ -12,30 +12,37 @@
       direction_state 闸门，逻辑与 BCRM2.0 路径（L13982-L14012）对齐。
       FAIL-OPEN：异常时放行（不阻塞交易热路径）。
 """
-import pytest
-from unittest.mock import MagicMock, patch
-from dataclasses import dataclass, field
+
+from dataclasses import dataclass, field  # noqa: I001
 from typing import Dict
+from unittest.mock import MagicMock
 
 
 @dataclass
 class MockFiveDomainState:
     """轻量 mock FiveDomainState，仅包含 direction_state 字段。"""
-    direction_state: Dict[str, str] = field(default_factory=lambda: {
-        "crypto_usdt": "NEUTRAL",
-        "us_stock": "NEUTRAL",
-        "precious_metal": "NEUTRAL",
-    })
-    war_state: Dict[str, str] = field(default_factory=lambda: {
-        "crypto_usdt": "ALLOW",
-        "us_stock": "ALLOW",
-        "precious_metal": "ALLOW",
-    })
-    aggregate_position_cap_pct: Dict[str, float] = field(default_factory=lambda: {
-        "crypto_usdt": 1.0,
-        "us_stock": 1.0,
-        "precious_metal": 1.0,
-    })
+
+    direction_state: Dict[str, str] = field(
+        default_factory=lambda: {
+            "crypto_usdt": "NEUTRAL",
+            "us_stock": "NEUTRAL",
+            "precious_metal": "NEUTRAL",
+        }
+    )
+    war_state: Dict[str, str] = field(
+        default_factory=lambda: {
+            "crypto_usdt": "ALLOW",
+            "us_stock": "ALLOW",
+            "precious_metal": "ALLOW",
+        }
+    )
+    aggregate_position_cap_pct: Dict[str, float] = field(
+        default_factory=lambda: {
+            "crypto_usdt": 1.0,
+            "us_stock": 1.0,
+            "precious_metal": 1.0,
+        }
+    )
 
 
 class TestEvolutionDirectionGate:
@@ -44,6 +51,7 @@ class TestEvolutionDirectionGate:
     def _make_trader_with_dstate(self, dstate: str, cls: str = "crypto_usdt"):
         """创建带 direction_state 的 mock trader。"""
         from scripts.memory_l4.polling_trader import PollingTrader
+
         bot = PollingTrader.__new__(PollingTrader)
 
         # 设置 _five_domain_state_cache
@@ -117,8 +125,9 @@ class TestEvolutionDirectionGate:
         bot._evolution_build_position("BTCUSDT", "short", 0.8, 0.02, 0.55, "standard")
         log_calls = [str(c) for c in bot._log.call_args_list]
         # 不应有 SHORT_ONLY 拦截日志（做空被放行）
-        assert not any("SHORT_ONLY" in c and "禁止" in c for c in log_calls), \
-            f"SHORT_ONLY 做空不应被拦截: {log_calls}"
+        assert not any(
+            "SHORT_ONLY" in c and "禁止" in c for c in log_calls
+        ), f"SHORT_ONLY 做空不应被拦截: {log_calls}"
 
     # ===== LONG_ONLY: 禁止做空，允许做多 =====
 
@@ -135,8 +144,9 @@ class TestEvolutionDirectionGate:
         bot = self._make_trader_with_dstate("LONG_ONLY")
         bot._evolution_build_position("BTCUSDT", "long", 0.8, 0.02, 0.55, "standard")
         log_calls = [str(c) for c in bot._log.call_args_list]
-        assert not any("LONG_ONLY" in c and "禁止" in c for c in log_calls), \
-            f"LONG_ONLY 做多不应被拦截: {log_calls}"
+        assert not any(
+            "LONG_ONLY" in c and "禁止" in c for c in log_calls
+        ), f"LONG_ONLY 做多不应被拦截: {log_calls}"
 
     # ===== NEUTRAL: 多空均可 =====
 
@@ -145,14 +155,16 @@ class TestEvolutionDirectionGate:
         bot = self._make_trader_with_dstate("NEUTRAL")
         bot._evolution_build_position("BTCUSDT", "long", 0.8, 0.02, 0.55, "standard")
         log_calls_long = [str(c) for c in bot._log.call_args_list]
-        assert not any("direction_state" in c and "禁止" in c for c in log_calls_long), \
-            f"NEUTRAL 做多不应被拦截: {log_calls_long}"
+        assert not any(
+            "direction_state" in c and "禁止" in c for c in log_calls_long
+        ), f"NEUTRAL 做多不应被拦截: {log_calls_long}"
 
         bot2 = self._make_trader_with_dstate("NEUTRAL")
         bot2._evolution_build_position("BTCUSDT", "short", 0.8, 0.02, 0.55, "standard")
         log_calls_short = [str(c) for c in bot2._log.call_args_list]
-        assert not any("direction_state" in c and "禁止" in c for c in log_calls_short), \
-            f"NEUTRAL 做空不应被拦截: {log_calls_short}"
+        assert not any(
+            "direction_state" in c and "禁止" in c for c in log_calls_short
+        ), f"NEUTRAL 做空不应被拦截: {log_calls_short}"
 
     # ===== FAIL-OPEN: 异常时放行 =====
 
@@ -168,5 +180,6 @@ class TestEvolutionDirectionGate:
         bot._evolution_build_position("BTCUSDT", "long", 0.8, 0.02, 0.55, "standard")
         log_calls = [str(c) for c in bot._log.call_args_list]
         # 应有 fail-open 日志
-        assert any("fail" in c.lower() or "方向状态" in c for c in log_calls), \
-            f"异常时应有 fail-open 日志: {log_calls}"
+        assert any(
+            "fail" in c.lower() or "方向状态" in c for c in log_calls
+        ), f"异常时应有 fail-open 日志: {log_calls}"

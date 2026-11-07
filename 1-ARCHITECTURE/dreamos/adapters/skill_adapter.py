@@ -12,16 +12,17 @@ Dreambuddy OS — SKILL 适配器
 
 from __future__ import annotations
 
+import json
 import os
 import re
-import json
 from pathlib import Path
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, Optional
 
-from .base import BaseAdapter
+from dreamos.shared.llm_client import get_default_client, make_messages
+from dreamos.shared.state import NodeResult, NodeStatus, State
+
 from ..registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
-from dreamos.shared.llm_client import get_default_client, LLMMessage, make_messages
+from .base import BaseAdapter
 
 
 def parse_skill_metadata(skill_md_path: str) -> Dict[str, Any]:
@@ -80,21 +81,26 @@ def parse_skill_metadata(skill_md_path: str) -> Dict[str, Any]:
             meta["name"] = m.group(1).strip()
 
     if not meta["description"]:
-        m = re.search(r"^##\s+(?:Description|描述|简介)\s*\n(.+?)(?=^##|\Z)",
-                      content, re.MULTILINE | re.DOTALL)
+        m = re.search(
+            r"^##\s+(?:Description|描述|简介)\s*\n(.+?)(?=^##|\Z)",
+            content,
+            re.MULTILINE | re.DOTALL,
+        )
         if m:
             meta["description"] = m.group(1).strip()[:200]
 
     sys_match = re.search(
         r"^##\s+(?:System|系统指令|System Prompt)\s*\n(.+?)(?=^##|\Z)",
-        content, re.MULTILINE | re.DOTALL,
+        content,
+        re.MULTILINE | re.DOTALL,
     )
     if sys_match:
         meta["system_prompt"] = sys_match.group(1).strip()
 
     boundary_match = re.search(
         r"^##\s+(?:Autonomy Boundary|自主性边界)\s*\n(.+?)(?=^##|\Z)",
-        content, re.MULTILINE | re.DOTALL,
+        content,
+        re.MULTILINE | re.DOTALL,
     )
     if boundary_match:
         meta["autonomy_boundary"] = boundary_match.group(1).strip()
@@ -156,13 +162,18 @@ class SkillNode(BaseNode):
     通过 LLM 执行 SKILL.md 中的指令，输出 NodeResult。
     """
 
-    def __init__(self, skill_path: str, node_id: str = "",
-                 name: str = "", chain: str = "",
-                 estimated_tokens: int = 0,
-                 system_prompt: str = "",
-                 autonomy_boundary: str = "",
-                 skill_content: str = "",
-                 **kwargs):
+    def __init__(
+        self,
+        skill_path: str,
+        node_id: str = "",
+        name: str = "",
+        chain: str = "",
+        estimated_tokens: int = 0,
+        system_prompt: str = "",
+        autonomy_boundary: str = "",
+        skill_content: str = "",
+        **kwargs,
+    ):
         super().__init__(config=kwargs)
         self.skill_path = skill_path
         self.node_id = node_id
@@ -221,8 +232,7 @@ class SkillNode(BaseNode):
         state_summary = self._build_state_summary(state)
 
         base_prompt = (
-            self._system_prompt
-            or "你是一个专业的交易分析助手，严格按照 SKILL 说明执行分析。"
+            self._system_prompt or "你是一个专业的交易分析助手，严格按照 SKILL 说明执行分析。"
         )
         # 注入自主性边界（借鉴 Codex 沙箱边界机制）
         if self._autonomy_boundary:
@@ -326,6 +336,7 @@ class SkillNode(BaseNode):
 # SKILL 适配器
 # ============================================================
 
+
 class SkillAdapter(BaseAdapter):
     """SKILL 适配器 — 将 SKILL.md 包装为 Node
 
@@ -414,6 +425,7 @@ def load_skills_from_governance(registry) -> int:
 
     try:
         import sys
+
         if str(governance_dir) not in sys.path:
             sys.path.insert(0, str(governance_dir))
         from skill_indexer import ALL_SKILL_ROOTS, scan_skills

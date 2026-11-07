@@ -5,10 +5,12 @@ prediction_bridge — P2-9 事前预测桥接层
 将 4-MEMORY 的 PredictionEngine 暴露给 11-易经推理系统使用，
 避免 11→4 包级反向依赖（与 ab_bridge 模式一致）。
 """
+
 from __future__ import annotations
+
 import sys
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 # 注入 4-MEMORY/9-工具与接口 到 sys.path
 # __file__ = 11-易经推理系统/scripts/memory_l4/prediction_bridge.py
@@ -22,6 +24,7 @@ def generate_prediction_dict(inference: Dict) -> Optional[Dict[str, Any]]:
     """从 inference 生成预测 dict（失败返回 None）"""
     try:
         from prediction_engine import PredictionEngine
+
         engine = PredictionEngine()
         pred = engine.generate_prediction(inference)
         return {
@@ -42,6 +45,7 @@ def compute_prediction_error_dict(prediction_dict: Dict, actual: Dict) -> Option
         return None
     try:
         from prediction_engine import Prediction, PredictionEngine
+
         pred = Prediction(
             expected_direction=prediction_dict.get("expected_direction", "HOLD"),
             expected_horizon_bars=prediction_dict.get("expected_horizon_bars", 0),

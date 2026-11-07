@@ -7,6 +7,13 @@ P3 外部最优路径获取：E1-E4 全链路（采集→解析→验证→注�
 P4 R1-R3 三级反思 + 纸上谈兵检测。
 P5 批评自循环：观察期与客观回滚机制。
 """
+
+from .critic_loop import CriticLoop, CriticProposal
+from .dreaming import DreamingLoop, generate_candidates, replay_objective
+from .harvest import ExternalHarvester, HarvestOutcome, HarvestSource
+from .rea_training_provider import REATrainingCaseProvider
+from .recorder import AnalysisRecorder
+from .reflection_layer import CritiqueFinding, ReflectionLayer
 from .replay_simulator import (
     MIN_TREES_FOR_EVAL,
     DiscoveryNode,
@@ -14,18 +21,12 @@ from .replay_simulator import (
     ReplayPool,
     ReplaySimulator,
 )
-from .recorder import AnalysisRecorder
-from .dreaming import DreamingLoop, replay_objective, generate_candidates
-from .harvest import ExternalHarvester, HarvestSource, HarvestOutcome
-from .reflection_layer import ReflectionLayer, CritiqueFinding
-from .critic_loop import CriticLoop, CriticProposal
 from .training_cases import (
-    TrainingCaseRecord,
-    TrainingCaseGenerator,
     HistoricalCaseConverter,
+    TrainingCaseGenerator,
+    TrainingCaseRecord,
     TrainingCaseStore,
 )
-from .rea_training_provider import REATrainingCaseProvider
 
 __all__ = [
     "DiscoveryNode",

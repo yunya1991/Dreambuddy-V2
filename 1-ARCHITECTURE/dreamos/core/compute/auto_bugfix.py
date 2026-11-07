@@ -24,15 +24,16 @@ logger = logging.getLogger(__name__)
 
 
 class BugfixAction(str, Enum):
-    NO_ACTION = "no_action"           # 无异常
-    AUTO_FIX = "auto_fix"             # recall 命中，自动修复
+    NO_ACTION = "no_action"  # 无异常
+    AUTO_FIX = "auto_fix"  # recall 命中，自动修复
     MANUAL_REQUIRED = "manual_required"  # recall 未命中，需人工
-    RECORDED = "recorded"             # 已记录到认知库
+    RECORDED = "recorded"  # 已记录到认知库
 
 
 @dataclass
 class BugfixReport:
     """自动 bugfix 报告"""
+
     action: BugfixAction
     anomaly_description: str = ""
     recalled_memories: List[Dict] = field(default_factory=list)
@@ -139,10 +140,7 @@ class AutoBugfixLoop:
                 return result
             if isinstance(result, dict):
                 checks = result.get("checks", [])
-                return [
-                    c for c in checks
-                    if c.get("status") not in ("healthy", "alive", "ok")
-                ]
+                return [c for c in checks if c.get("status") not in ("healthy", "alive", "ok")]
             return []
         except Exception as e:
             logger.warning(f"[AutoBugfix] 健康检查异常: {e}")
@@ -226,14 +224,12 @@ def create_default_auto_bugfix(
     Returns:
         配置好的 AutoBugfixLoop
     """
+
     def health_check_fn():
         if health_checker is None:
             return []
         report = health_checker.run_all_checks()
-        return [
-            c.to_dict() for c in report.checks
-            if c.status.value not in ("healthy",)
-        ]
+        return [c.to_dict() for c in report.checks if c.status.value not in ("healthy",)]
 
     return AutoBugfixLoop(
         health_check_fn=health_check_fn,

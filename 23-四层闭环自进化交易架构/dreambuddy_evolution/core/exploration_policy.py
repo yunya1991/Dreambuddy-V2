@@ -18,6 +18,7 @@
       与 1-ARCHITECTURE/dreamos/evolution/exploration_policy.py 逻辑等价,
       但各自独立维护, 避免子系统反向依赖架构层.
 """
+
 from __future__ import annotations
 
 import logging
@@ -251,6 +252,7 @@ class ExplorationPolicy:
             return False
 
         import random
+
         if rng_seed is not None:
             rng = random.Random(rng_seed)
             return rng.random() < epsilon

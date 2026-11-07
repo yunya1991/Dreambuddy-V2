@@ -14,10 +14,12 @@ A0 矛盾分析引擎 — 纯代码驱动，不依赖大模型。
   6. 周期矛盾 (cycle)         — 趋势持续时间 vs 历史均值
   7. 结构矛盾 (structure)     — 支撑阻力位突破/假突破
 """
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
-import numpy as np
+
 import logging
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +27,14 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ContradictionDimension:
     """单个矛盾维度"""
+
     dim_id: str
     name: str
-    thesis: str           # 正题
-    antithesis: str       # 反题
-    tension: float        # 张力 0-1
-    dominant_side: str    # BULL / BEAR / EQUAL
-    evidence: str = ""    # 证据描述
+    thesis: str  # 正题
+    antithesis: str  # 反题
+    tension: float  # 张力 0-1
+    dominant_side: str  # BULL / BEAR / EQUAL
+    evidence: str = ""  # 证据描述
 
 
 @dataclass
@@ -42,37 +45,45 @@ class A8GapDimension:
       - trading_a8: 交易 A8 hypothesis vs practice gap_score
       - code_a8:    代码 A8 文档/代码一致性 (consistency_score, doc_only, code_only)
     """
-    source: str                           # "trading_a8" / "code_a8"
-    gap_score: float                      # 张力原始值（直接映射为 tension）
-    hypothesis_score: float = 0.0         # 交易A8: 假设分数
-    practice_score: float = 0.0           # 交易A8: 实践分数
-    details: Dict[str, Any] = field(default_factory=dict)  # 代码A8: doc_only/code_only/consistency_score
+
+    source: str  # "trading_a8" / "code_a8"
+    gap_score: float  # 张力原始值（直接映射为 tension）
+    hypothesis_score: float = 0.0  # 交易A8: 假设分数
+    practice_score: float = 0.0  # 交易A8: 实践分数
+    details: Dict[str, Any] = field(
+        default_factory=dict
+    )  # 代码A8: doc_only/code_only/consistency_score
 
 
 @dataclass
 class A0AnalysisResult:
     """A0 矛盾分析结果"""
+
     contradictions: List[ContradictionDimension] = field(default_factory=list)
     primary_contradiction: Optional[ContradictionDimension] = None
-    overall_tension: float = 0.0       # 综合张力
-    direction_bias: float = 0.0        # 方向偏置 -1(空) ~ +1(多)
+    overall_tension: float = 0.0  # 综合张力
+    direction_bias: float = 0.0  # 方向偏置 -1(空) ~ +1(多)
     confidence_adjustment: float = 0.0  # 置信度调整 -0.15 ~ +0.15
-    risk_warning: str = ""             # 风险预警
-    trauma_signal: bool = False        # 创伤信号
+    risk_warning: str = ""  # 风险预警
+    trauma_signal: bool = False  # 创伤信号
 
     def to_dict(self) -> dict:
         return {
             "contradictions": [
                 {
-                    "dim_id": c.dim_id, "name": c.name,
-                    "thesis": c.thesis, "antithesis": c.antithesis,
+                    "dim_id": c.dim_id,
+                    "name": c.name,
+                    "thesis": c.thesis,
+                    "antithesis": c.antithesis,
                     "tension": round(c.tension, 4),
                     "dominant_side": c.dominant_side,
                     "evidence": c.evidence,
                 }
                 for c in self.contradictions
             ],
-            "primary_contradiction": self.primary_contradiction.dim_id if self.primary_contradiction else None,
+            "primary_contradiction": (
+                self.primary_contradiction.dim_id if self.primary_contradiction else None
+            ),
             "overall_tension": round(self.overall_tension, 4),
             "direction_bias": round(self.direction_bias, 4),
             "confidence_adjustment": round(self.confidence_adjustment, 4),
@@ -88,9 +99,9 @@ class A0ContradictionEngine:
     """
 
     # 周期统计窗口
-    TREND_LOOKBACK = 60       # 看近60根K线判断趋势持续时间
-    LIQUIDITY_LOOKBACK = 20   # 流动性看近20根
-    STRUCTURE_LOOKBACK = 30   # 结构看近30根
+    TREND_LOOKBACK = 60  # 看近60根K线判断趋势持续时间
+    LIQUIDITY_LOOKBACK = 20  # 流动性看近20根
+    STRUCTURE_LOOKBACK = 30  # 结构看近30根
 
     def __init__(self):
         self._trauma_tracker: Dict[str, List[Dict]] = {}  # inst_id -> 最近的决策记录
@@ -116,6 +127,7 @@ class A0ContradictionEngine:
              到矛盾池避免 tension 被稀释）。
         """
         import time as _t
+
         # 张力计算
         if gap.source == "code_a8" and "consistency_score" in gap.details:
             tension = round(1.0 - float(gap.details["consistency_score"]) / 100.0, 4)
@@ -136,14 +148,18 @@ class A0ContradictionEngine:
         # evidence 构造
         src_label = "交易A8" if gap.source == "trading_a8" else "代码A8"
         if gap.source == "trading_a8":
-            ev = (f"{src_label}: 理论{gap.hypothesis_score:.2f} vs "
-                  f"实践{gap.practice_score:.2f}，偏差={gap.gap_score:.2f}")
+            ev = (
+                f"{src_label}: 理论{gap.hypothesis_score:.2f} vs "
+                f"实践{gap.practice_score:.2f}，偏差={gap.gap_score:.2f}"
+            )
         else:
             doc_only = gap.details.get("doc_only") or gap.details.get("doc_only_functions") or []
             code_only = gap.details.get("code_only") or gap.details.get("code_only_functions") or []
             cons = gap.details.get("consistency_score", "?")
-            ev = (f"{src_label}: 一致性={cons} | 文档缺{len(doc_only)}项 | 代码缺{len(code_only)}项"
-                  + (f" doc_only={doc_only[:3]}" if doc_only else ""))
+            ev = (
+                f"{src_label}: 一致性={cons} | 文档缺{len(doc_only)}项 | 代码缺{len(code_only)}项"
+                + (f" doc_only={doc_only[:3]}" if doc_only else "")
+            )
         name_map = {"trading_a8": "A8理论实践一致性", "code_a8": "A8文档代码一致性"}
         thesis = "理论(文档/假设)是准确的"
         anti = "实践(代码/执行)与理论存在显著偏差"
@@ -163,13 +179,11 @@ class A0ContradictionEngine:
         # 去重：同一 _trace_id 覆盖旧的
         if entry["_trace_id"]:
             self._external_contradictions = [
-                e for e in self._external_contradictions
-                if e.get("_trace_id") != entry["_trace_id"]
+                e for e in self._external_contradictions if e.get("_trace_id") != entry["_trace_id"]
             ]
         # 相同来源（trading_a8/code_a8）合并为最新一条（避免堆积）
         self._external_contradictions = [
-            e for e in self._external_contradictions
-            if e.get("gap_source") != gap.source
+            e for e in self._external_contradictions if e.get("gap_source") != gap.source
         ]
         self._external_contradictions.append(entry)
         return {
@@ -181,7 +195,7 @@ class A0ContradictionEngine:
 
     def analyze(
         self,
-        df: "pd.DataFrame",
+        df: "pd.DataFrame",  # noqa: F821
         inst_id: str = "",
         market_snapshot: Optional[Dict[str, Any]] = None,
     ) -> A0AnalysisResult:
@@ -197,12 +211,17 @@ class A0ContradictionEngine:
             # 即使 df 空，也返回携带外部矛盾的结果
             r = A0AnalysisResult()
             for ext in self._external_contradictions:
-                r.contradictions.append(ContradictionDimension(
-                    dim_id=ext["dim_id"], name=ext["name"],
-                    thesis=ext["thesis"], antithesis=ext["antithesis"],
-                    tension=ext["tension"], dominant_side=ext["dominant_side"],
-                    evidence=ext["evidence"],
-                ))
+                r.contradictions.append(
+                    ContradictionDimension(
+                        dim_id=ext["dim_id"],
+                        name=ext["name"],
+                        thesis=ext["thesis"],
+                        antithesis=ext["antithesis"],
+                        tension=ext["tension"],
+                        dominant_side=ext["dominant_side"],
+                        evidence=ext["evidence"],
+                    )
+                )
             return r
 
         snapshot = market_snapshot or {}
@@ -224,12 +243,17 @@ class A0ContradictionEngine:
 
         # 合并外部注入的矛盾（a8_gap 等）
         for ext in self._external_contradictions:
-            result.contradictions.append(ContradictionDimension(
-                dim_id=ext["dim_id"], name=ext["name"],
-                thesis=ext["thesis"], antithesis=ext["antithesis"],
-                tension=ext["tension"], dominant_side=ext["dominant_side"],
-                evidence=ext["evidence"],
-            ))
+            result.contradictions.append(
+                ContradictionDimension(
+                    dim_id=ext["dim_id"],
+                    name=ext["name"],
+                    thesis=ext["thesis"],
+                    antithesis=ext["antithesis"],
+                    tension=ext["tension"],
+                    dominant_side=ext["dominant_side"],
+                    evidence=ext["evidence"],
+                )
+            )
 
         # 确定主要矛盾（张力最大的）
         result.primary_contradiction = max(result.contradictions, key=lambda c: c.tension)
@@ -282,7 +306,9 @@ class A0ContradictionEngine:
         return ContradictionDimension(
             dim_id="C1_bull_bear",
             name="多空矛盾",
-            thesis=f"价格变动{pct:+.2f}%，买方主导" if pct > 0 else f"价格变动{pct:+.2f}%，卖方主导",
+            thesis=(
+                f"价格变动{pct:+.2f}%，买方主导" if pct > 0 else f"价格变动{pct:+.2f}%，卖方主导"
+            ),
             antithesis=f"量比{vol_ratio:.2f}，{('放量确认' if vol_ratio > 1.2 else '缩量质疑')}",
             tension=tension,
             dominant_side=dominant,
@@ -311,7 +337,9 @@ class A0ContradictionEngine:
             disagreement = min(abs(short_vs_mid) + abs(mid_vs_long), 0.1) / 0.1
 
         # 主导方向以短期为准
-        dominant = "BULL" if short_vs_mid > 0.001 else ("BEAR" if short_vs_mid < -0.001 else "EQUAL")
+        dominant = (
+            "BULL" if short_vs_mid > 0.001 else ("BEAR" if short_vs_mid < -0.001 else "EQUAL")
+        )
 
         return ContradictionDimension(
             dim_id="C2_time",
@@ -332,7 +360,9 @@ class A0ContradictionEngine:
             return ContradictionDimension("C3_info", "信息不对称矛盾", "", "", 0.0, "EQUAL")
 
         price_change = (closes[-1] - closes[-5]) / closes[-5] if closes[-5] > 0 else 0
-        vol_change = (np.mean(volumes[-5:]) - np.mean(volumes[-20:])) / max(np.mean(volumes[-20:]), 1e-8)
+        vol_change = (np.mean(volumes[-5:]) - np.mean(volumes[-20:])) / max(
+            np.mean(volumes[-20:]), 1e-8
+        )
 
         # 量价背离：价格涨但量缩，或价格跌但量增
         divergence = 0.0
@@ -365,7 +395,7 @@ class A0ContradictionEngine:
             return ContradictionDimension("C4_liquidity", "流动性矛盾", "", "", 0.0, "EQUAL")
 
         vol_recent = np.mean(volumes[-5:])
-        vol_baseline = np.mean(volumes[-self.LIQUIDITY_LOOKBACK:])
+        vol_baseline = np.mean(volumes[-self.LIQUIDITY_LOOKBACK :])
         vol_decline = 1.0 - (vol_recent / max(vol_baseline, 1e-8))
 
         # 波动率
@@ -450,7 +480,7 @@ class A0ContradictionEngine:
             return ContradictionDimension("C6_cycle", "周期矛盾", "", "", 0.0, "EQUAL")
 
         # 计算当前趋势持续时间
-        ma20 = np.convolve(closes[-self.TREND_LOOKBACK:], np.ones(20) / 20, mode='valid')
+        ma20 = np.convolve(closes[-self.TREND_LOOKBACK :], np.ones(20) / 20, mode="valid")
         if len(ma20) < 5:
             return ContradictionDimension("C6_cycle", "周期矛盾", "", "", 0.0, "EQUAL")
 
@@ -465,7 +495,7 @@ class A0ContradictionEngine:
 
         # 历史平均趋势持续时间
         all_trends = []
-        dir_changes = 0
+        dir_changes = 0  # noqa: F841
         current_dir = 1 if ma20[0] > 0 else -1
         current_len = 1
         for i in range(1, len(ma20)):
@@ -510,7 +540,7 @@ class A0ContradictionEngine:
         if len(closes) < self.STRUCTURE_LOOKBACK:
             return ContradictionDimension("C7_structure", "结构矛盾", "", "", 0.0, "EQUAL")
 
-        window = closes[-self.STRUCTURE_LOOKBACK:]
+        window = closes[-self.STRUCTURE_LOOKBACK :]
         resistance = np.max(window[:-1])  # 排除当前K线
         support = np.min(window[:-1])
         current = closes[-1]
@@ -565,11 +595,13 @@ class A0ContradictionEngine:
         """记录决策结果，用于强迫性重复检测"""
         if inst_id not in self._trauma_tracker:
             self._trauma_tracker[inst_id] = []
-        self._trauma_tracker[inst_id].append({
-            "direction": direction,
-            "correct": was_correct,
-            "ts": ts,
-        })
+        self._trauma_tracker[inst_id].append(
+            {
+                "direction": direction,
+                "correct": was_correct,
+                "ts": ts,
+            }
+        )
         # 只保留最近20条
         if len(self._trauma_tracker[inst_id]) > 20:
             self._trauma_tracker[inst_id] = self._trauma_tracker[inst_id][-20:]

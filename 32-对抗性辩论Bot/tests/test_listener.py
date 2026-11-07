@@ -12,22 +12,25 @@ Listener 职责：
    - 将回复通过 send_message 发回群
 3. 维护 update_id offset（取最大 update_id + 1）
 """
+
 from __future__ import annotations
 
 from typing import Sequence
 
 import pytest
-
 from core.listener import TelegramListener
 
-
 # ─── Mock 组件 ───────────────────────────────────────────────────
+
 
 class MockTelegramClient:
     """模拟 TelegramHTTPClient。"""
 
-    def __init__(self, updates_seq: Sequence[list[dict]] | None = None,
-                 admin_map: dict[tuple[int, int], bool] | None = None):
+    def __init__(
+        self,
+        updates_seq: Sequence[list[dict]] | None = None,
+        admin_map: dict[tuple[int, int], bool] | None = None,
+    ):
         self._updates_seq = list(updates_seq) if updates_seq else []
         self._idx = 0
         self.admin_map = admin_map or {}
@@ -57,17 +60,22 @@ class MockCommandHandler:
         self._replies = replies or {}
         self.calls: list[dict] = []
 
-    async def handle_command(self, text: str, chat_id: int, user_id: int,
-                             is_admin: bool) -> str:
-        self.calls.append({
-            "text": text, "chat_id": chat_id,
-            "user_id": user_id, "is_admin": is_admin,
-        })
+    async def handle_command(self, text: str, chat_id: int, user_id: int, is_admin: bool) -> str:
+        self.calls.append(
+            {
+                "text": text,
+                "chat_id": chat_id,
+                "user_id": user_id,
+                "is_admin": is_admin,
+            }
+        )
         return self._replies.get(text, f"回复: {text}")
 
 
 def make_listener(
-    updates_seq=None, admin_map=None, replies=None,
+    updates_seq=None,
+    admin_map=None,
+    replies=None,
 ):
     tg = MockTelegramClient(updates_seq, admin_map)
     handler = MockCommandHandler(replies)
@@ -75,8 +83,9 @@ def make_listener(
     return listener, tg, handler
 
 
-def make_update(update_id: int, chat_id: int, user_id: int,
-                text: str, is_bot: bool = False) -> dict:
+def make_update(
+    update_id: int, chat_id: int, user_id: int, text: str, is_bot: bool = False
+) -> dict:
     """构造 Telegram update 对象。"""
     return {
         "update_id": update_id,
@@ -90,6 +99,7 @@ def make_update(update_id: int, chat_id: int, user_id: int,
 
 
 # ─── 基本路由测试 ────────────────────────────────────────────────
+
 
 class TestBasicRouting:
 
@@ -135,6 +145,7 @@ class TestBasicRouting:
 
 # ─── 权限校验测试 ────────────────────────────────────────────────
 
+
 class TestAdminCheck:
 
     @pytest.mark.asyncio
@@ -162,6 +173,7 @@ class TestAdminCheck:
 
 # ─── offset 维护测试 ─────────────────────────────────────────────
 
+
 class TestOffsetManagement:
 
     @pytest.mark.asyncio
@@ -169,8 +181,7 @@ class TestOffsetManagement:
         """offset 更新为最大 update_id + 1。"""
         listener, tg, _ = make_listener(
             updates_seq=[
-                [make_update(10, 100, 200, "a"),
-                 make_update(12, 100, 200, "b")],
+                [make_update(10, 100, 200, "a"), make_update(12, 100, 200, "b")],
             ],
             admin_map={(100, 200): True},
         )
@@ -191,6 +202,7 @@ class TestOffsetManagement:
 
 
 # ─── 长轮询循环测试 ──────────────────────────────────────────────
+
 
 class TestRunLoop:
 
@@ -213,8 +225,7 @@ class TestRunLoop:
         """单次 get_updates 返回多条消息时全部处理。"""
         listener, _, handler = make_listener(
             updates_seq=[
-                [make_update(1, 100, 200, "/debate a"),
-                 make_update(2, 100, 200, "/debate b")],
+                [make_update(1, 100, 200, "/debate a"), make_update(2, 100, 200, "/debate b")],
                 [],
             ],
             admin_map={(100, 200): True},

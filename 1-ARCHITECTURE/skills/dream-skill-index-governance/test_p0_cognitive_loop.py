@@ -6,19 +6,18 @@
 3. skill_index_generator — 从 registry.json 生成 SKILL_INDEX.md
 4. record_hook/verify_hook — 接入认知系统（get_cle）
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import json
-from pathlib import Path
-
-import pytest
-
 
 # ─────────────────────────────── 1. skill_lifecycle_writer ───────────────────────────────
+
 
 def test_lifecycle_writer_module_importable():
     """模块可导入。"""
     import skill_lifecycle_writer  # noqa: F401
+
     assert hasattr(skill_lifecycle_writer, "write_lifecycle")
 
 
@@ -107,8 +106,10 @@ def test_lifecycle_writer_appends_cognitive_links(tmp_path):
 
 # ─────────────────────────────── 2. skill_circulation_stats ───────────────────────────────
 
+
 def test_circulation_module_importable():
     import skill_circulation_stats  # noqa: F401
+
     assert hasattr(skill_circulation_stats, "record_invocation")
 
 
@@ -149,15 +150,20 @@ def test_circulation_should_deprecate(tmp_path, monkeypatch):
     stats_path = tmp_path / "skill_circulation.json"
     # 手动写一个 100 天前的统计
     from datetime import datetime, timedelta, timezone
+
     old_date = (datetime.now(timezone.utc) - timedelta(days=100)).isoformat()
-    stats_path.write_text(json.dumps({
-        "dream-old": {
-            "invocation_count": 0,
-            "success_count": 0,
-            "failure_count": 0,
-            "last_invoked_at": old_date,
-        }
-    }))
+    stats_path.write_text(
+        json.dumps(
+            {
+                "dream-old": {
+                    "invocation_count": 0,
+                    "success_count": 0,
+                    "failure_count": 0,
+                    "last_invoked_at": old_date,
+                }
+            }
+        )
+    )
     assert cs.should_deprecate("dream-old", stats_path=stats_path, days=90) is True
 
     # 刚调用过的不应 deprecate
@@ -178,8 +184,10 @@ def test_circulation_fail_open(tmp_path):
 
 # ─────────────────────────────── 3. skill_index_generator ───────────────────────────────
 
+
 def test_index_generator_module_importable():
     import skill_index_generator  # noqa: F401
+
     assert hasattr(skill_index_generator, "generate_skill_index")
 
 
@@ -191,10 +199,20 @@ def test_index_generator_produces_markdown(tmp_path):
         "schema_version": "1.0",
         "total_count": 2,
         "skills": [
-            {"name": "dream-a", "description": "A skill", "category": "orchestration",
-             "status": "active", "version": "1.0.0"},
-            {"name": "dream-b", "description": "B skill", "category": "trading",
-             "status": "shadow", "version": "0.1.0"},
+            {
+                "name": "dream-a",
+                "description": "A skill",
+                "category": "orchestration",
+                "status": "active",
+                "version": "1.0.0",
+            },
+            {
+                "name": "dream-b",
+                "description": "B skill",
+                "category": "trading",
+                "status": "shadow",
+                "version": "0.1.0",
+            },
         ],
     }
     reg_path = tmp_path / "registry.json"
@@ -225,6 +243,7 @@ def test_index_generator_empty_registry(tmp_path):
 
 
 # ─────────────────────────────── 4. 认知 hooks 接入 ───────────────────────────────
+
 
 def test_record_hook_writes_links_without_duplicate_record(tmp_path):
     """record_hook 不重复调用 cle.record，直接将给定 memory_id 写入 SKILL.md cognitive_links。"""
@@ -272,9 +291,15 @@ def test_verify_hook_lifecycle_without_duplicate_verify(tmp_path):
         "confidence: 0.8\napply_count: 3\ncognitive_links: [VM-001]\n---\n"
     )
 
-    entries = [skill_indexer.SkillEntry(name="dream-verify", status="shadow",
-                                         confidence=0.8, apply_count=3,
-                                         cognitive_links=["VM-001"])]
+    entries = [
+        skill_indexer.SkillEntry(
+            name="dream-verify",
+            status="shadow",
+            confidence=0.8,
+            apply_count=3,
+            cognitive_links=["VM-001"],
+        )
+    ]
     r = skill_indexer.verify_hook("dream-verify", True, entries, skill_dir=skill_dir)
     assert r["success"] is True
     assert r["suggested_transition"] == "shadow→active"
@@ -290,8 +315,7 @@ def test_verify_hook_suggested_transition_without_cognitive(tmp_path):
     """verify_hook 不依赖认知系统，suggested_transition 仍正确计算。"""
     import skill_indexer
 
-    entries = [skill_indexer.SkillEntry(name="s1", status="shadow",
-                                         confidence=0.7, apply_count=2)]
+    entries = [skill_indexer.SkillEntry(name="s1", status="shadow", confidence=0.7, apply_count=2)]
     r = skill_indexer.verify_hook("s1", True, entries, skill_dir=None)
     assert r["suggested_transition"] == "shadow→active"
     assert "cognitive_available" not in r

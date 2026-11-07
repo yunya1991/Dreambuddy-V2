@@ -14,14 +14,14 @@ DreamOS C层 — 节点执行器
 
 from __future__ import annotations
 
-import time
 import threading
-from typing import Optional, Dict, Any
+import time
+from typing import Any, Dict, Optional
 
-from dreamos.shared.state import State, NodeResult, NodeStatus
-from dreamos.shared.interfaces import Node
-from dreamos.shared.utils import Timer
 from dreamos.shared.errors import ErrorCode
+from dreamos.shared.interfaces import Node
+from dreamos.shared.state import NodeResult, NodeStatus, State
+from dreamos.shared.utils import Timer
 
 from .types import NodeExecutionRecord
 
@@ -37,18 +37,19 @@ class NodeRunner:
     BASE_BACKOFF_MS = 100
     BACKOFF_MULTIPLIER = 2.0
 
-    def __init__(self,
-                 max_retries: int = 2,
-                 retryable_errors: bool = True,
-                 timeout_ms: int = 30000,
-                 enable_pre_check: bool = True):
+    def __init__(
+        self,
+        max_retries: int = 2,
+        retryable_errors: bool = True,
+        timeout_ms: int = 30000,
+        enable_pre_check: bool = True,
+    ):
         self._max_retries = max_retries
         self._retryable_errors = retryable_errors
         self._timeout_ms = timeout_ms
         self._enable_pre_check = enable_pre_check
 
-    def run(self, node: Node, state: State,
-            allocated_tokens: int = 0) -> NodeExecutionRecord:
+    def run(self, node: Node, state: State, allocated_tokens: int = 0) -> NodeExecutionRecord:
         """执行节点
 
         Args:
@@ -144,8 +145,7 @@ class NodeRunner:
 
     # ── 内部方法 ──────────────────────────
 
-    def _pre_check(self, node: Node, state: State,
-                   allocated_tokens: int) -> Optional[str]:
+    def _pre_check(self, node: Node, state: State, allocated_tokens: int) -> Optional[str]:
         """前置检查：依赖满足 + 预算充足
 
         Returns:
@@ -163,10 +163,7 @@ class NodeRunner:
         if allocated_tokens > 0:
             estimated = getattr(node, "estimated_tokens", 0)
             if estimated and estimated > allocated_tokens:
-                return (
-                    f"预算不足: 节点预估{estimated}tokens > "
-                    f"分配{allocated_tokens}tokens"
-                )
+                return f"预算不足: 节点预估{estimated}tokens > " f"分配{allocated_tokens}tokens"
 
         return None
 

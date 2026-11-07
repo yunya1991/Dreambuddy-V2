@@ -25,7 +25,7 @@ AI工具无关的文件监听daemon。用mtime轮询（零外部依赖）监听�
 """
 
 import argparse
-import hashlib
+import fnmatch
 import json
 import os
 import re
@@ -33,7 +33,6 @@ import signal
 import subprocess
 import sys
 import time
-import fnmatch
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
@@ -43,16 +42,18 @@ _SCRIPT_DIR = Path(__file__).parent
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
-from cognitive_loop_entry import CognitiveLoopEntry, get_cle
+from cognitive_loop_entry import get_cle  # noqa: E402
 
 # 延迟导入session manager，避免循环依赖
 _session_mgr = None
+
 
 def _get_session_mgr():
     global _session_mgr
     if _session_mgr is None:
         try:
             from cognitive_session import CognitiveSessionManager
+
             _session_mgr = CognitiveSessionManager()
         except Exception:
             pass
@@ -68,6 +69,7 @@ def _get_skill_loader():
     if _skill_loader_instance is None:
         try:
             from cognitive_superpowers import SkillLoader
+
             _skill_loader_instance = SkillLoader()
         except Exception:
             _skill_loader_instance = None
@@ -80,71 +82,119 @@ def _get_skill_loader():
 
 # 监听的代码文件扩展名
 CODE_EXTENSIONS = {
-    ".py", ".js", ".ts", ".tsx", ".jsx", ".java", ".go", ".rs",
-    ".c", ".cpp", ".h", ".hpp", ".rb", ".php", ".swift", ".kt",
-    ".md", ".rst", ".txt",
-    ".json", ".yaml", ".yml", ".toml", ".ini", ".cfg",
-    ".sh", ".bash", ".zsh",
-    ".sql", ".html", ".css", ".scss", ".vue",
+    ".py",
+    ".js",
+    ".ts",
+    ".tsx",
+    ".jsx",
+    ".java",
+    ".go",
+    ".rs",
+    ".c",
+    ".cpp",
+    ".h",
+    ".hpp",
+    ".rb",
+    ".php",
+    ".swift",
+    ".kt",
+    ".md",
+    ".rst",
+    ".txt",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".ini",
+    ".cfg",
+    ".sh",
+    ".bash",
+    ".zsh",
+    ".sql",
+    ".html",
+    ".css",
+    ".scss",
+    ".vue",
 }
 
 # 排除的目录（精确匹配路径任一部分）
 EXCLUDE_DIRS = {
-    ".git", "__pycache__", "node_modules", ".venv", "venv",
-    ".idea", ".vscode", ".trae", ".claude", ".cognitive",
-    "dist", "build", ".next", ".nuxt", "target",
-    ".mypy_cache", ".pytest_cache", ".tox",
+    ".git",
+    "__pycache__",
+    "node_modules",
+    ".venv",
+    "venv",
+    ".idea",
+    ".vscode",
+    ".trae",
+    ".claude",
+    ".cognitive",
+    "dist",
+    "build",
+    ".next",
+    ".nuxt",
+    "target",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".tox",
     "4-MEMORY/versions",  # 版本控制快照
     # === 运行时产物（非开发行为，记录即噪音）===
-    "graph_store",        # dreamos图存储检查点 (39000+文件)
-    "checkpoints",        # 工作记忆/交易检查点 (700+文件)
-    "scheduler_data",     # 调度器历史
-    "artifacts",          # 运行产物目录(.gitkeep除外，但整个目录排更稳)
-    "logs", "log",        # 日志目录
-    "cache", ".cache",    # 缓存
-    ".workbuddy",         # L4 守护进程自动生成的运行态目录（heartbeat/stats等，全目录噪声）
+    "graph_store",  # dreamos图存储检查点 (39000+文件)
+    "checkpoints",  # 工作记忆/交易检查点 (700+文件)
+    "scheduler_data",  # 调度器历史
+    "artifacts",  # 运行产物目录(.gitkeep除外，但整个目录排更稳)
+    "logs",
+    "log",  # 日志目录
+    "cache",
+    ".cache",  # 缓存
+    ".workbuddy",  # L4 守护进程自动生成的运行态目录（heartbeat/stats等，全目录噪声）
     # === 交易系统自动产生的数据目录（非开发行为，避免数据污染）===
-    "a7_gate_logs",       # A7门控日志（每分钟产生多个JSON）
-    "episodes",           # 交易episode记录
-    "l4_events",          # L4事件流
-    "open_positions",     # 持仓快照
+    "a7_gate_logs",  # A7门控日志（每分钟产生多个JSON）
+    "episodes",  # 交易episode记录
+    "l4_events",  # L4事件流
+    "open_positions",  # 持仓快照
     # 注意: memory_l4/cases/evolution/guardian/learning/risk/stats 等歧义目录
     # 已移至 AMBIGUOUS_DATA_DIRS，仅在 data/ 下排除，保留 scripts/ 下的代码文件
-    "qmm",                # 量化记忆模型快照
-    "qmm_model",          # QMM模型文件
-    "strategy_diversity", # 策略多样性统计
+    "qmm",  # 量化记忆模型快照
+    "qmm_model",  # QMM模型文件
+    "strategy_diversity",  # 策略多样性统计
     # === 回测/缓存数据目录 ===
-    "backtest_cache",     # 回测K线缓存
-    "capital_manager",    # 资金管理器运行时状态目录
+    "backtest_cache",  # 回测K线缓存
+    "capital_manager",  # 资金管理器运行时状态目录
 }
 
 # 排除的文件名模式
 EXCLUDE_FILES = {
-    ".DS_Store", "Thumbs.db", "*.pyc", "*.pyo", "*.swp",
+    ".DS_Store",
+    "Thumbs.db",
+    "*.pyc",
+    "*.pyo",
+    "*.swp",
     # === 运行时状态文件（高频变更但无认知价值）===
-    "*.lock", "*.pid",
-    "scheduler_history.json",   # 调度器历史
+    "*.lock",
+    "*.pid",
+    "scheduler_history.json",  # 调度器历史
     "execution_feedback.json",  # 执行反馈(高频写入)
-    "hyperopt.lock",            # 超参优化锁
-    ".4h_dedup.json",           # 去重状态
-    "heartbeat.json",           # 守护进程心跳(高频，全是噪声，任何位置都排除)
-    ".*_time.json",             # 自动产生的时间戳文件(.trade_time.json等)
+    "hyperopt.lock",  # 超参优化锁
+    ".4h_dedup.json",  # 去重状态
+    "heartbeat.json",  # 守护进程心跳(高频，全是噪声，任何位置都排除)
+    ".*_time.json",  # 自动产生的时间戳文件(.trade_time.json等)
     # === 交易系统运行时状态快照（纯运行时数据，无认知价值，易经L4已记录交易事实）===
-    "*_state.json",             # v15_state.json / orchestrator_state.json / engine_state.json
-    "*_state_*.json",           # v15_state_0.json 等带数字后缀的状态文件
-    "*_sltp.json",              # v4_position_sltp.json 持仓止盈止损状态
-    "*_sltp_*.json",            # v4_position_sltp_0.json 等变体
-    "self_schedule.json",       # 自调度状态
-    "bayesian_memories.json",   # 认知系统自身产物（自引用无意义）
+    "*_state.json",  # v15_state.json / orchestrator_state.json / engine_state.json
+    "*_state_*.json",  # v15_state_0.json 等带数字后缀的状态文件
+    "*_sltp.json",  # v4_position_sltp.json 持仓止盈止损状态
+    "*_sltp_*.json",  # v4_position_sltp_0.json 等变体
+    "self_schedule.json",  # 自调度状态
+    "bayesian_memories.json",  # 认知系统自身产物（自引用无意义）
     # === 交易系统运行产物 JSON（data/ 下的报告/验证结果，非人工编辑）===
-    "config.json",              # okx_sim/config.json 等自动生成的交易所配置
-    "account_baseline.json",    # V15 账户基线快照
-    "*_backtest_result.json",   # 回测结果产物
-    "*_backtest_result_*.json", # 回测结果变体
-    "stress_test_*_report.json",# 压力测试报告产物
-    "validation_result_*.json", # 验证结果产物
-    "verify_landed_report.json",# 验证落地报告产物
-    "btc_windvane_*.json",      # V15 btc风向标回测产物
+    "config.json",  # okx_sim/config.json 等自动生成的交易所配置
+    "account_baseline.json",  # V15 账户基线快照
+    "*_backtest_result.json",  # 回测结果产物
+    "*_backtest_result_*.json",  # 回测结果变体
+    "stress_test_*_report.json",  # 压力测试报告产物
+    "validation_result_*.json",  # 验证结果产物
+    "verify_landed_report.json",  # 验证落地报告产物
+    "btc_windvane_*.json",  # V15 btc风向标回测产物
 }
 
 # 排除的相对路径模式（对路径段匹配粒度不足的补充）
@@ -177,10 +227,22 @@ def is_code_file(filepath: str) -> bool:
     # 注意：部分目录名（如 memory_l4）既出现在 data/（运行时数据）也出现在 scripts/（代码），
     # 需区分：data/memory_l4 排除，scripts/memory_l4 保留。因此对这类歧义目录用 data/<dir> 二段匹配。
     AMBIGUOUS_DATA_DIRS = {
-        "memory_l4", "cases", "evolution", "learning", "risk", "stats", "guardian",
+        "memory_l4",
+        "cases",
+        "evolution",
+        "learning",
+        "risk",
+        "stats",
+        "guardian",
         # 易经推理系统运行时数据子目录（位于 data/ 下）
-        "okx_sim", "polling_trader", "bcrm2", "bcrm2_phase0",
-        "self_evolution", "training", "l4_events", "backtest",
+        "okx_sim",
+        "polling_trader",
+        "bcrm2",
+        "bcrm2_phase0",
+        "self_evolution",
+        "training",
+        "l4_events",
+        "backtest",
         # V15策略运行时数据子目录
         "bayesian_opt",
     }
@@ -213,13 +275,14 @@ def is_code_file(filepath: str) -> bool:
 # 文件快照与变更检测
 # ============================================================
 
+
 def _take_snapshot(root: str) -> Dict[str, float]:
     """
     扫描目录，返回 {相对路径: mtime} 的快照。
     只包含代码文件。
     """
     snapshot = {}
-    root_path = Path(root)
+    root_path = Path(root)  # noqa: F841
 
     for dirpath, dirnames, filenames in os.walk(root):
         # 排除目录
@@ -244,11 +307,11 @@ def scan_changed_files(
 ) -> Dict[str, str]:
     """
     扫描变更文件。
-    
+
     Args:
         root: 监听根目录
         prev_snapshot: 上一次的快照。如果为None，返回当前快照（无变更）
-    
+
     Returns:
         如果prev_snapshot为None: 返回当前快照 {path: mtime}
         如果prev_snapshot不为None: 返回变更 {path: "added"|"modified"|"deleted"}
@@ -277,13 +340,29 @@ def scan_changed_files(
 # ============================================================
 
 # 代码文件扩展名（用于语义提取，区别于数据/配置文件）
-_CODE_FILE_EXTENSIONS = {".py", ".js", ".ts", ".tsx", ".jsx", ".java", ".go", ".rs",
-                         ".c", ".cpp", ".h", ".hpp", ".rb", ".php", ".swift", ".kt"}
+_CODE_FILE_EXTENSIONS = {
+    ".py",
+    ".js",
+    ".ts",
+    ".tsx",
+    ".jsx",
+    ".java",
+    ".go",
+    ".rs",
+    ".c",
+    ".cpp",
+    ".h",
+    ".hpp",
+    ".rb",
+    ".php",
+    ".swift",
+    ".kt",
+}
 
 # 从git diff提取函数/类定义的正则
 # 匹配新增行中的 def/function/class/async def 等
 _DIFF_FUNC_PATTERN = re.compile(
-    r'^\+\s*(?:async\s+def\s+(\w+)|def\s+(\w+)|function\s+(\w+)|class\s+(\w+))',
+    r"^\+\s*(?:async\s+def\s+(\w+)|def\s+(\w+)|function\s+(\w+)|class\s+(\w+))",
     re.MULTILINE,
 )
 
@@ -308,7 +387,9 @@ def _extract_semantic_from_diff(filepath: str) -> List[str]:
         # 检查文件是否被git tracked
         tracked_check = subprocess.run(
             ["git", "ls-files", "--error-unmatch", filepath],
-            capture_output=True, text=True, timeout=2,
+            capture_output=True,
+            text=True,
+            timeout=2,
             cwd=repo_root,
         )
         is_tracked = tracked_check.returncode == 0
@@ -318,7 +399,9 @@ def _extract_semantic_from_diff(filepath: str) -> List[str]:
             # tracked文件：获取unstaged diff
             result = subprocess.run(
                 ["git", "diff", "--", filepath],
-                capture_output=True, text=True, timeout=3,
+                capture_output=True,
+                text=True,
+                timeout=3,
                 cwd=repo_root,
             )
             diff_text = result.stdout
@@ -327,7 +410,9 @@ def _extract_semantic_from_diff(filepath: str) -> List[str]:
             if not diff_text.strip():
                 result = subprocess.run(
                     ["git", "diff", "--cached", "--", filepath],
-                    capture_output=True, text=True, timeout=3,
+                    capture_output=True,
+                    text=True,
+                    timeout=3,
                     cwd=repo_root,
                 )
                 diff_text = result.stdout
@@ -335,7 +420,9 @@ def _extract_semantic_from_diff(filepath: str) -> List[str]:
             # untracked文件：用 --no-index 模拟新增diff
             result = subprocess.run(
                 ["git", "diff", "--no-index", "/dev/null", abs_path],
-                capture_output=True, text=True, timeout=3,
+                capture_output=True,
+                text=True,
+                timeout=3,
                 cwd=repo_root,
             )
             # --no-index 在有差异时返回1，不是错误
@@ -390,8 +477,9 @@ def generate_change_experience(changes: Dict[str, str]) -> Optional[str]:
     module_str = ", ".join(top_dirs[:3])
 
     # 对代码文件提取函数/类名
-    code_files = [f for f in list(changes.keys())
-                  if Path(f).suffix.lower() in _CODE_FILE_EXTENSIONS]
+    code_files = [
+        f for f in list(changes.keys()) if Path(f).suffix.lower() in _CODE_FILE_EXTENSIONS
+    ]
     symbols_all: List[str] = []
     for f in code_files[:4]:  # 最多检查4个文件，控制耗时
         syms = _extract_semantic_from_diff(f)
@@ -484,7 +572,9 @@ def _extract_rich_tags(changes: Dict[str, str]) -> List[str]:
         top_dirs.add(top)
 
         # 交易系统下的子目录细分（K线/状态/信号池等）
-        if top in _TRADING_DIRS_FROM_SESSION or top.startswith(("10-", "11-", "12-", "13-", "14-", "15-", "16-", "6-")):
+        if top in _TRADING_DIRS_FROM_SESSION or top.startswith(
+            ("10-", "11-", "12-", "13-", "14-", "15-", "16-", "6-")
+        ):
             # 检查二级目录
             if len(parts) >= 2:
                 sub = parts[1]
@@ -564,12 +654,19 @@ def salience_score(changes: Dict[str, str]) -> float:
 
 
 # 交易相关顶层目录（与cognitive_session._TRADING_DIRS保持一致，循环导入时本地定义）
-_TRADING_DIRS_FROM_SESSION = frozenset([
-    "10-经典指标系统", "11-易经推理系统", "12-三屏趋势系统",
-    "13-通用风控模块", "14-V15经典马丁策略", "15-监控告警系统",
-    "16-调控系统", "6-TRADING",
-    "experiments",  # P0: experiments/ab-trading/ 含 A 系列节点代码和回测
-])
+_TRADING_DIRS_FROM_SESSION = frozenset(
+    [
+        "10-经典指标系统",
+        "11-易经推理系统",
+        "12-三屏趋势系统",
+        "13-通用风控模块",
+        "14-V15经典马丁策略",
+        "15-监控告警系统",
+        "16-调控系统",
+        "6-TRADING",
+        "experiments",  # P0: experiments/ab-trading/ 含 A 系列节点代码和回测
+    ]
+)
 
 
 def _has_code_file(changes: Dict[str, str]) -> bool:
@@ -600,14 +697,24 @@ def trigger_change_record(
     """
     # 降噪：无代码文件则不record
     if not _has_code_file(changes):
-        return {"dry_run": dry_run, "recorded": False, "memory_id": None,
-                "experience": "", "skipped": "no_code_file"}
+        return {
+            "dry_run": dry_run,
+            "recorded": False,
+            "memory_id": None,
+            "experience": "",
+            "skipped": "no_code_file",
+        }
 
     # 过滤：只保留通过 is_code_file 校验的代码文件，剔除同窗口的数据/状态文件
     code_changes = {f: t for f, t in changes.items() if is_code_file(f)}
     if not code_changes:
-        return {"dry_run": dry_run, "recorded": False, "memory_id": None,
-                "experience": "", "skipped": "no_code_file_after_filter"}
+        return {
+            "dry_run": dry_run,
+            "recorded": False,
+            "memory_id": None,
+            "experience": "",
+            "skipped": "no_code_file_after_filter",
+        }
 
     experience = generate_change_experience(code_changes)
     if experience is None:
@@ -645,10 +752,11 @@ def trigger_change_record(
 # 防抖计时器
 # ============================================================
 
+
 class DebounceTimer:
     """
     防抖计时器：窗口内的多次触发合并，窗口过期后标记可执行。
-    
+
     用法:
       dt = DebounceTimer(window_seconds=5)
       if dt.trigger():  # 返回True表示窗口过期，可以执行
@@ -684,6 +792,7 @@ class DebounceTimer:
 # ============================================================
 # Daemon主循环
 # ============================================================
+
 
 class CognitiveDaemon:
     """
@@ -755,8 +864,7 @@ class CognitiveDaemon:
             self.snapshot = new_snapshot
 
             if self.verbose:
-                print(f"[Daemon] 检测到 {len(changes)} 个文件变更: "
-                      f"{list(changes.keys())[:3]}")
+                print(f"[Daemon] 检测到 {len(changes)} 个文件变更: " f"{list(changes.keys())[:3]}")
 
             # 防抖触发
             if self.debounce_timer.trigger():
@@ -774,7 +882,7 @@ class CognitiveDaemon:
             idle = time.time() - self._last_activity_ts
             today = datetime.now().strftime("%Y-%m-%d")
             idle_threshold = self._rumination_idle_seconds
-            already_ruminate_today = (self._last_rumination_date == today)
+            already_ruminate_today = self._last_rumination_date == today
 
             # 详细日志：每次 idle 检查的状态
             if self.verbose:
@@ -788,12 +896,13 @@ class CognitiveDaemon:
                     trigger_reason = f"⏸️ 跳过（今日已执行: {last_run}）"
                 else:
                     trigger_reason = f"⏳ 等待（还需空闲 {remaining_min:.1f}min）"
-                print(f"[Daemon][反刍检查] idle={idle_min:.1f}min/{threshold_min:.0f}min | "
-                      f"今日已执行={already_ruminate_today} | {trigger_reason}",
-                      file=sys.stderr)
+                print(
+                    f"[Daemon][反刍检查] idle={idle_min:.1f}min/{threshold_min:.0f}min | "
+                    f"今日已执行={already_ruminate_today} | {trigger_reason}",
+                    file=sys.stderr,
+                )
 
-            if (idle >= idle_threshold
-                    and not already_ruminate_today):
+            if idle >= idle_threshold and not already_ruminate_today:
                 self._ruminate()
 
     def _check_g_layer_events(self):
@@ -826,6 +935,7 @@ class CognitiveDaemon:
 
             # 导入认知闭环
             from cognitive_loop_entry import get_cle
+
             cle = get_cle()
 
             for line in new_lines:
@@ -848,8 +958,18 @@ class CognitiveDaemon:
         """查找 g_layer_events.jsonl 路径"""
         # 相对于 daemon 脚本位置查找 dream-harness-bridge
         candidates = [
-            _SCRIPT_DIR.parent.parent / "1-ARCHITECTURE" / "dream-harness-bridge" / "packages" / ".session-projections" / "g_layer_events.jsonl",
-            _SCRIPT_DIR.parent.parent / "1-ARCHITECTURE" / "dream-harness-bridge" / "packages" / "python-server" / "g_layer_events.jsonl",
+            _SCRIPT_DIR.parent.parent
+            / "1-ARCHITECTURE"
+            / "dream-harness-bridge"
+            / "packages"
+            / ".session-projections"
+            / "g_layer_events.jsonl",
+            _SCRIPT_DIR.parent.parent
+            / "1-ARCHITECTURE"
+            / "dream-harness-bridge"
+            / "packages"
+            / "python-server"
+            / "g_layer_events.jsonl",
         ]
         for p in candidates:
             if p.exists():
@@ -893,11 +1013,12 @@ class CognitiveDaemon:
     def _ruminate(self):
         """P2-7: 静息态反刍——从近期 episode 提取模式，记录为 C 级假设记忆"""
         if self.verbose:
-            print(f"[Daemon][反刍开始] 启动静息态反刍流程...", file=sys.stderr)
+            print("[Daemon][反刍开始] 启动静息态反刍流程...", file=sys.stderr)
         t_start = time.time()
         try:
-            from rumination_engine import RuminationEngine
             from cognitive_loop_entry import get_cle
+            from rumination_engine import RuminationEngine
+
             engine = RuminationEngine()
             # episodes_dir: 多路径搜索，避免跨包硬编码
             ep_dir = self._find_episodes_dir()
@@ -906,8 +1027,10 @@ class CognitiveDaemon:
             findings = engine.ruminate(ep_dir)
             t_ruminate = time.time() - t_start
             if self.verbose:
-                print(f"[Daemon][反刍提取] 耗时={t_ruminate:.2f}s | 产出={len(findings)}条模式",
-                      file=sys.stderr)
+                print(
+                    f"[Daemon][反刍提取] 耗时={t_ruminate:.2f}s | 产出={len(findings)}条模式",
+                    file=sys.stderr,
+                )
             cle = get_cle()
             recorded = 0
             for f in findings:
@@ -922,33 +1045,38 @@ class CognitiveDaemon:
                     recorded += 1
                 except Exception as rec_err:
                     if self.verbose:
-                        print(f"[Daemon][反刍记录] 单条写入失败: {rec_err}",
-                              file=sys.stderr)
+                        print(f"[Daemon][反刍记录] 单条写入失败: {rec_err}", file=sys.stderr)
             self._last_rumination_date = datetime.now().strftime("%Y-%m-%d")
             self._last_activity_ts = time.time()
             t_total = time.time() - t_start
             if self.verbose:
                 if findings:
-                    print(f"[Daemon][反刍完成] 总耗时={t_total:.2f}s | "
-                          f"产出={len(findings)}条 | 写入成功={recorded}条 | "
-                          f"日期标记={self._last_rumination_date}",
-                          file=sys.stderr)
+                    print(
+                        f"[Daemon][反刍完成] 总耗时={t_total:.2f}s | "
+                        f"产出={len(findings)}条 | 写入成功={recorded}条 | "
+                        f"日期标记={self._last_rumination_date}",
+                        file=sys.stderr,
+                    )
                     for i, f in enumerate(findings[:3]):
-                        print(f"[Daemon][反刍样本 {i+1}] pattern={f.pattern_key} | "
-                              f"observed={getattr(f, 'observed_rate', '?')} | "
-                              f"baseline={getattr(f, 'baseline_rate', '?')} | "
-                              f"sample_n={getattr(f, 'sample_n', '?')}",
-                              file=sys.stderr)
+                        print(
+                            f"[Daemon][反刍样本 {i+1}] pattern={f.pattern_key} | "
+                            f"observed={getattr(f, 'observed_rate', '?')} | "
+                            f"baseline={getattr(f, 'baseline_rate', '?')} | "
+                            f"sample_n={getattr(f, 'sample_n', '?')}",
+                            file=sys.stderr,
+                        )
                 else:
-                    print(f"[Daemon][反刍完成] 总耗时={t_total:.2f}s | 无新模式 | "
-                          f"ep_dir={ep_dir} | 日期标记={self._last_rumination_date}",
-                          file=sys.stderr)
+                    print(
+                        f"[Daemon][反刍完成] 总耗时={t_total:.2f}s | 无新模式 | "
+                        f"ep_dir={ep_dir} | 日期标记={self._last_rumination_date}",
+                        file=sys.stderr,
+                    )
         except Exception as e:
             t_total = time.time() - t_start
             if self.verbose:
                 import traceback
-                print(f"[Daemon][反刍失败] 耗时={t_total:.2f}s | 错误: {e}",
-                      file=sys.stderr)
+
+                print(f"[Daemon][反刍失败] 耗时={t_total:.2f}s | 错误: {e}", file=sys.stderr)
                 traceback.print_exc(file=sys.stderr)
             self._last_activity_ts = time.time()  # 失败也重置，避免连续重试
 
@@ -962,10 +1090,12 @@ class CognitiveDaemon:
         # 尝试从 paths 模块获取（单一事实源）
         try:
             import sys
+
             _yijing_scripts = str(self.watch_dir / "11-易经推理系统" / "scripts")
             if _yijing_scripts not in sys.path:
                 sys.path.insert(0, _yijing_scripts)
             from memory_l4.paths import episodes_dir as _ep_dir
+
             candidates.insert(0, _ep_dir())
         except Exception:
             pass
@@ -987,7 +1117,11 @@ class CognitiveDaemon:
             results = loader.retrieve(initial_msg or "general", top_meta=2, top_applied=2)
             markdown = results.get("process_block_markdown", "")
             injected_count = len(results.get("meta", [])) + len(results.get("applied", []))
-            if markdown and working_memory is not None and hasattr(working_memory, "load_process_block"):
+            if (
+                markdown
+                and working_memory is not None
+                and hasattr(working_memory, "load_process_block")
+            ):
                 working_memory.load_process_block(markdown)
             if getattr(self, "verbose", False):
                 print(f"[Daemon] 路径 C 预热: session={session_id}, injected={injected_count}")
@@ -995,6 +1129,7 @@ class CognitiveDaemon:
         except Exception as e:
             if getattr(self, "verbose", False):
                 import sys as _sys
+
                 print(f"[Daemon] 路径 C 预热失败: {e}", file=_sys.stderr)
             return {"skipped": False, "injected_count": 0, "error": str(e)}
 
@@ -1065,6 +1200,7 @@ class CognitiveDaemon:
 # 日志重定向（P2a 可观测性修复）
 # ============================================================
 
+
 def _default_log_path() -> str:
     """默认日志路径：<项目根>/logs/cognitive_daemon.log"""
     project_root = _SCRIPT_DIR.parent.parent
@@ -1122,6 +1258,7 @@ def _setup_log_redirect(log_path: Optional[str], verbose: bool):
     返回 (prev_stdout, prev_stderr) 用于恢复。
     """
     import sys as _sys
+
     prev_stdout = _sys.stdout
     prev_stderr = _sys.stderr
 
@@ -1132,7 +1269,9 @@ def _setup_log_redirect(log_path: Optional[str], verbose: bool):
         Path(log_path).parent.mkdir(parents=True, exist_ok=True)
         fh = open(log_path, "a", encoding="utf-8", buffering=1)
         if verbose:
-            fh.write(f"\n=== Daemon 启动 PID={os.getpid()} {time.strftime('%Y-%m-%d %H:%M:%S')} ===\n")
+            fh.write(
+                f"\n=== Daemon 启动 PID={os.getpid()} {time.strftime('%Y-%m-%d %H:%M:%S')} ===\n"
+            )
             fh.flush()
         _sys.stdout = _TeeStream(fh, prev_stdout)
         _sys.stderr = _TeeStream(fh, prev_stderr)
@@ -1147,6 +1286,7 @@ def _setup_log_redirect(log_path: Optional[str], verbose: bool):
 # 主入口
 # ============================================================
 
+
 def main():
     parser = argparse.ArgumentParser(description="认知守护进程 — AI工具无关的文件监听")
     parser.add_argument("--watch", "-w", default=".", help="监听目录（默认当前目录）")
@@ -1157,8 +1297,11 @@ def main():
     parser.add_argument("--scan-once", action="store_true", help="仅扫描一次")
     parser.add_argument("--dry-run", action="store_true", help="预览模式")
     parser.add_argument("--verbose", "-v", action="store_true", help="详细输出")
-    parser.add_argument("--log-file", default=None,
-                        help=f"日志文件路径（默认前台不写，后台={_default_log_path()}）；指定后 stdout/stderr Tee 到文件")
+    parser.add_argument(
+        "--log-file",
+        default=None,
+        help=f"日志文件路径（默认前台不写，后台={_default_log_path()}）；指定后 stdout/stderr Tee 到文件",
+    )
     args = parser.parse_args()
 
     # 解析最终日志路径：显式指定优先；--daemon 无显式则用默认；前台无显式则不重定向
@@ -1203,11 +1346,16 @@ def main():
 
     if args.daemon:
         import subprocess
+
         cmd = [
-            sys.executable, str(_SCRIPT_DIR / "cognitive_daemon.py"),
-            "--watch", args.watch,
-            "--interval", str(args.interval),
-            "--debounce", str(args.debounce),
+            sys.executable,
+            str(_SCRIPT_DIR / "cognitive_daemon.py"),
+            "--watch",
+            args.watch,
+            "--interval",
+            str(args.interval),
+            "--debounce",
+            str(args.debounce),
         ]
         if args.verbose:
             cmd.append("--verbose")
@@ -1224,7 +1372,7 @@ def main():
         )
         print(f"[Daemon] 后台启动成功, PID: {proc.pid}")
         print(f"[Daemon] 日志: {subproc_log}")
-        print(f"[Daemon] 停止: python3 cognitive_daemon.py --stop")
+        print("[Daemon] 停止: python3 cognitive_daemon.py --stop")
     else:
         print("[Daemon] 前台运行 (Ctrl+C停止)")
         daemon.start()

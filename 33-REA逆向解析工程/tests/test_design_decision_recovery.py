@@ -3,12 +3,11 @@
 Task 2 of PoE 工程实践复现器 SPEC。
 依据：TASKS-工程实践复现器.md TR-2.1 / TR-2.2 / TR-2.3
 """
-import os
+
+import os  # noqa: I001
 import sys
 import tempfile
 from pathlib import Path
-
-import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -18,9 +17,10 @@ from core.design_decision_recovery import (
     recover_decisions,
 )
 
-
 MVC_USER_MODEL = "class User:\n    def __init__(self, name):\n        self.name = name\n"
-MVC_USER_VIEW = "class UserView:\n    def render(self, user):\n        return f'User: {user.name}'\n"
+MVC_USER_VIEW = (
+    "class UserView:\n    def render(self, user):\n        return f'User: {user.name}'\n"
+)
 MVC_USER_CTRL = (
     "from myapp.models.user import User\n"
     "from myapp.views.user_view import UserView\n\n"
@@ -100,9 +100,10 @@ def test_recover_decisions_evidence_level_observation_or_derivation():
         result = recover_decisions(d)
         for decision in result["decisions"]:
             ev = decision["evidence"]
-            assert ev.level.value in ("observation", "derivation"), (
-                f"决策 evidence 应为 observation/derivation 级，实际 {ev.level} (TR-2.2)"
-            )
+            assert ev.level.value in (
+                "observation",
+                "derivation",
+            ), f"决策 evidence 应为 observation/derivation 级，实际 {ev.level} (TR-2.2)"
 
 
 def test_recover_decisions_alternatives_must_be_inference():

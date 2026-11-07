@@ -12,6 +12,7 @@ SPEC-AGI升级蓝图.md §4.1.1
 
 蓝本: FinRL (16.3k★) 三层解耦 + ElegantRL (4.4k★) 并行训练
 """
+
 from __future__ import annotations
 
 import logging
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # 尝试导入 finrl（可选依赖，FAIL-OPEN）
 try:
-    from finrl.meta.env_stock_trading.env_stocktrading import StockTradingEnv  # type: ignore
+
     _FINRL_AVAILABLE = True
 except Exception:  # noqa: BLE001
     _FINRL_AVAILABLE = False
@@ -56,7 +57,7 @@ class SimplePolicy:
         if len(arr) < self.n_features:
             arr = np.pad(arr, (0, self.n_features - len(arr)))
         elif len(arr) > self.n_features:
-            arr = arr[:self.n_features]
+            arr = arr[: self.n_features]
         return arr
 
     def _logits(self, state_arr: np.ndarray) -> np.ndarray:
@@ -95,8 +96,10 @@ class SimplePolicy:
             return {"policy_loss": 0.0, "episode_reward": 0.0, "loss_history": []}
 
         # 自动发现 action 空间
-        actions_set = sorted(set(s["action"] for s in samples if "action" in s))
-        self._action_list = actions_set if actions_set else [f"action_{i}" for i in range(self.n_actions)]
+        actions_set = sorted(set(s["action"] for s in samples if "action" in s))  # noqa: C401
+        self._action_list = (
+            actions_set if actions_set else [f"action_{i}" for i in range(self.n_actions)]
+        )
         self.n_actions = len(self._action_list)
         action_to_idx = {a: i for i, a in enumerate(self._action_list)}
 
@@ -114,7 +117,7 @@ class SimplePolicy:
         baseline = np.mean(rewards)
 
         loss_history = []
-        for epoch in range(epochs):
+        for epoch in range(epochs):  # noqa: B007
             total_loss = 0.0
             for i in range(len(samples)):
                 arr = states_arr[i]
@@ -195,8 +198,10 @@ class ShadowRLTrainer:
         """
         try:
             from dreambuddy_evolution.agi_config import get_switch as _gs_ee
+
             if _gs_ee("enable_evolution_engine", False):
                 from dreambuddy_evolution.core.evolution_engine import EvolutionEngine
+
                 _ee = EvolutionEngine(population_size=10)
                 _samples = [{"weights": np.array([current_gmax]), "arch": {"gmax": current_gmax}}]
                 if _ee.admit_to_population(_samples):
@@ -316,6 +321,7 @@ class ShadowRLTrainer:
         """
         try:
             from dreambuddy_evolution.core.deep_policy_network import A2CTrainer
+
             trainer = A2CTrainer(
                 n_features=self.DEFAULT_N_FEATURES,
                 n_actions=3,
@@ -384,7 +390,6 @@ class ShadowRLTrainer:
                 "samples_seen": len(samples),
                 "gene_id": gene_id,
             }
-
 
     def get_trained_policy(self, gene_id: str = "default") -> SimplePolicy | None:
         """获取已训练的策略（未训练返回 None）."""

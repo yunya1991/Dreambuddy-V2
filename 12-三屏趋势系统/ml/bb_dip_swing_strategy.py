@@ -7,8 +7,9 @@
 - 目标：通过底部波段操作降低持仓成本
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import numpy as np
@@ -83,11 +84,13 @@ class BBDipSwingStrategy(EnhancedMA200Strategy):
         self.hs_min_depth_pct = hs_min_depth_pct
         self.hs_lock_swing = hs_lock_swing
 
-        self.stats.update({
-            "bb_swing_buy_days": 0,
-            "bb_swing_sell_days": 0,
-            "hs_confirmed_days": 0,
-        })
+        self.stats.update(
+            {
+                "bb_swing_buy_days": 0,
+                "bb_swing_sell_days": 0,
+                "hs_confirmed_days": 0,
+            }
+        )
 
     def _compute_bollinger_bands(self, close: np.ndarray) -> tuple:
         n = len(close)
@@ -95,7 +98,7 @@ class BBDipSwingStrategy(EnhancedMA200Strategy):
         mid = np.full(n, np.nan)
         lower = np.full(n, np.nan)
         for i in range(self.bb_period - 1, n):
-            window = close[i - self.bb_period + 1:i + 1]
+            window = close[i - self.bb_period + 1 : i + 1]
             m = np.mean(window)
             s = np.std(window)
             mid[i] = m
@@ -107,7 +110,7 @@ class BBDipSwingStrategy(EnhancedMA200Strategy):
         """简化版双底检测"""
         if i < self.hs_lookback:
             return False
-        window = close[i - self.hs_lookback + 1:i + 1]
+        window = close[i - self.hs_lookback + 1 : i + 1]
         low_idx = np.argmin(window)
         low_price = window[low_idx]
         window_high = np.max(window)
@@ -115,8 +118,8 @@ class BBDipSwingStrategy(EnhancedMA200Strategy):
         if depth < self.hs_min_depth_pct:
             return False
 
-        left_half = window[:max(1, low_idx)]
-        right_half = window[low_idx + 1:]
+        left_half = window[: max(1, low_idx)]
+        right_half = window[low_idx + 1 :]
         if len(left_half) < 3 or len(right_half) < 3:
             return False
 
@@ -130,7 +133,7 @@ class BBDipSwingStrategy(EnhancedMA200Strategy):
         right_low_idx = low_idx + 1 + np.argmin(right_half)
         if right_low_idx <= low_idx + 1:
             return False
-        mid_seg = window[low_idx + 1:right_low_idx]
+        mid_seg = window[low_idx + 1 : right_low_idx]
         if len(mid_seg) < 2:
             return False
         neckline = np.max(mid_seg)
@@ -142,7 +145,9 @@ class BBDipSwingStrategy(EnhancedMA200Strategy):
         positions = np.zeros(n)
         close = prices["close"].values
 
-        ma_series = pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        ma_series = (
+            pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        )
         ma = ma_series.values
 
         ma_slope = np.zeros(n)
@@ -150,10 +155,18 @@ class BBDipSwingStrategy(EnhancedMA200Strategy):
             if not np.isnan(ma[i]) and not np.isnan(ma[i - self.slope_period]):
                 ma_slope[i] = (ma[i] / ma[i - self.slope_period] - 1) * 100
 
-        weekly_ma200 = self._compute_weekly_ma200(prices) if (self.is_btc and self.weekly_ma200_dip_buy) else None
-        btc_regime = self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        weekly_ma200 = (
+            self._compute_weekly_ma200(prices)
+            if (self.is_btc and self.weekly_ma200_dip_buy)
+            else None
+        )
+        btc_regime = (
+            self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        )
 
-        bb_upper, bb_mid, bb_lower = self._compute_bollinger_bands(close) if self.use_bb_swing else (None, None, None)
+        bb_upper, bb_mid, bb_lower = (
+            self._compute_bollinger_bands(close) if self.use_bb_swing else (None, None, None)
+        )
 
         last_state = "init"
         short_entry_price = None
@@ -182,15 +195,20 @@ class BBDipSwingStrategy(EnhancedMA200Strategy):
             if self.is_btc:
                 # 计算基础抄底仓位
                 base_dip_pos = 0.0
-                if self.weekly_ma200_dip_buy and not np.isnan(weekly_ma200[i]) and weekly_ma200[i] > 0:
+                if (
+                    self.weekly_ma200_dip_buy
+                    and not np.isnan(weekly_ma200[i])
+                    and weekly_ma200[i] > 0
+                ):
                     weekly_below_pct = (weekly_ma200[i] - close[i]) / weekly_ma200[i] * 100
                     if weekly_below_pct > 0:
                         levels_filled = min(
-                            int(weekly_below_pct / self.dip_buy_step_pct),
-                            self.dip_buy_levels
+                            int(weekly_below_pct / self.dip_buy_step_pct), self.dip_buy_levels
                         )
                         if levels_filled > 0:
-                            base_dip_pos = (levels_filled / self.dip_buy_levels) * self.dip_buy_max_position
+                            base_dip_pos = (
+                                levels_filled / self.dip_buy_levels
+                            ) * self.dip_buy_max_position
 
                 if price_above and slope_pos:
                     # 牛市满仓
@@ -221,16 +239,26 @@ class BBDipSwingStrategy(EnhancedMA200Strategy):
 
                             if not hs_confirmed or not self.hs_lock_swing:
                                 # 触及下轨 → 买回波段仓位
-                                if close[i] <= bb_lower[i] and (i - last_bb_action_idx) >= bb_min_gap:
+                                if (
+                                    close[i] <= bb_lower[i]
+                                    and (i - last_bb_action_idx) >= bb_min_gap
+                                ):
                                     if swing_position < swing_max:
-                                        swing_position = min(swing_position + swing_max * 0.5, swing_max)
+                                        swing_position = min(
+                                            swing_position + swing_max * 0.5, swing_max
+                                        )
                                         last_bb_action_idx = i
                                         self.stats["bb_swing_buy_days"] += 1
 
                                 # 触及上轨 → 卖出波段仓位
-                                elif close[i] >= bb_upper[i] and (i - last_bb_action_idx) >= bb_min_gap:
+                                elif (
+                                    close[i] >= bb_upper[i]
+                                    and (i - last_bb_action_idx) >= bb_min_gap
+                                ):
                                     if swing_position > -swing_max:
-                                        swing_position = max(swing_position - swing_max * 0.5, -swing_max)
+                                        swing_position = max(
+                                            swing_position - swing_max * 0.5, -swing_max
+                                        )
                                         last_bb_action_idx = i
                                         self.stats["bb_swing_sell_days"] += 1
 
@@ -258,7 +286,11 @@ class BBDipSwingStrategy(EnhancedMA200Strategy):
                         if base_short > 0 and short_entry_price is None:
                             short_entry_price = close[i]
 
-                        if base_short > 0 and short_entry_price is not None and self.fib_take_profit:
+                        if (
+                            base_short > 0
+                            and short_entry_price is not None
+                            and self.fib_take_profit
+                        ):
                             fib_pos = self._calc_fib_tp_position(
                                 close[i], short_entry_price, True, base_short
                             )
@@ -321,7 +353,7 @@ class BBDipSwingStrategy(EnhancedMA200Strategy):
 
 
 if __name__ == "__main__":
-    import json
+    import json  # noqa: I001
     from ml.scenario_backtest_engine import ScenarioBacktestEngine
 
     with open("data/historical/BTC_1D_730d.json") as f:
@@ -338,13 +370,19 @@ if __name__ == "__main__":
     print("v2 基线...")
     v2 = EnhancedMA200Strategy(is_btc=True)
     v2_r = engine.run_scenario_backtest(prices, v2, "v2", symbol="BTC", experiment_name="v34_v2")
-    print(f"  夏普 {v2_r.overall_sharpe:.3f} | 收益 {v2_r.overall_total_return:.1%} | 评分 {v2_r.composite_score:.3f}")
+    print(
+        f"  夏普 {v2_r.overall_sharpe:.3f} | 收益 {v2_r.overall_total_return:.1%} | 评分 {v2_r.composite_score:.3f}"
+    )
 
     print()
     print("v3.4 布林带波段抄底...")
     v34 = BBDipSwingStrategy(is_btc=True, bb_period=10, bb_std=1.5, swing_fraction=0.4)
-    v34_r = engine.run_scenario_backtest(prices, v34, "v34", symbol="BTC", experiment_name="v34_swing")
-    print(f"  夏普 {v34_r.overall_sharpe:.3f} | 收益 {v34_r.overall_total_return:.1%} | 评分 {v34_r.composite_score:.3f}")
+    v34_r = engine.run_scenario_backtest(
+        prices, v34, "v34", symbol="BTC", experiment_name="v34_swing"
+    )
+    print(
+        f"  夏普 {v34_r.overall_sharpe:.3f} | 收益 {v34_r.overall_total_return:.1%} | 评分 {v34_r.composite_score:.3f}"
+    )
 
     print()
     print("状态统计:")

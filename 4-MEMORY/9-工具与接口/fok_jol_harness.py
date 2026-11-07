@@ -28,11 +28,11 @@
   - SPEC-CognitiveSystem-Evolution.md §2.5.3 + §4.3 P3-3
   - arXiv:2605.14186 (LLM Metacognitive Signals)
 """
+
 from __future__ import annotations
 
 import math
 from typing import Any, Dict, List, Optional
-
 
 # ============================================================
 # 常量
@@ -51,8 +51,7 @@ FOK_PROMPT_TEMPLATE = (
     "（FOK: Feeling of Knowing —— 低分将触发 recall 补充或 escalate）"
 )
 JOL_PROMPT_TEMPLATE = (
-    "你学到了什么？0-1 打分。\n"
-    "（JOL: Judgment of Learning —— 低分将标记需要后续 verify）"
+    "你学到了什么？0-1 打分。\n" "（JOL: Judgment of Learning —— 低分将标记需要后续 verify）"
 )
 
 ACTION_PROCEED = "proceed"

@@ -14,25 +14,24 @@
     8. strategy_exclusion_check       - 战略排除检查
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional  # noqa: I001
 from datetime import datetime, timezone
 
 try:
-    from ..core.context import (
+    from ..core.context import (  # noqa: I001
         Signal,
         RiskContext,
         RiskCheckResult,
         ReasonCode,
-        Direction,
+        Direction,  # noqa: F401
     )
     from ..core.registry import RuleRegistry, RuleCategory
 except ImportError:
-    from core.context import (
+    from core.context import (  # noqa: I001
         Signal,
         RiskContext,
         RiskCheckResult,
         ReasonCode,
-        Direction,
     )
     from core.registry import RuleRegistry, RuleCategory
 
@@ -44,7 +43,7 @@ def register_default_gate_rules(registry: RuleRegistry, config: Optional[Dict[st
         registry: 规则注册表
         config: 全局配置
     """
-    gate_config = (config or {}).get("gate", {})
+    gate_config = (config or {}).get("gate", {})  # noqa: F841
 
     registry.register(
         name="daily_drawdown_circuit_breaker",
@@ -122,7 +121,7 @@ def daily_drawdown_circuit_breaker(
     if current_dd >= max_dd:
         return RiskCheckResult.fail_result(
             reason_code=ReasonCode.HARD_FAIL_DRAWDOWN_CIRCUIT_BREAKER,
-            message=f"日回撤 {current_dd:.2%} 超过熔断阈值 {max_dd:.2%}，全天禁止开仓"
+            message=f"日回撤 {current_dd:.2%} 超过熔断阈值 {max_dd:.2%}，全天禁止开仓",
         )
 
     return RiskCheckResult.pass_result()
@@ -141,7 +140,7 @@ def leverage_cap_check(
     if signal_leverage > max_leverage:
         return RiskCheckResult.fail_result(
             reason_code=ReasonCode.HARD_FAIL_LEVERAGE_EXCEEDS_CAP,
-            message=f"杠杆 {signal_leverage}x 超过上限 {max_leverage}x"
+            message=f"杠杆 {signal_leverage}x 超过上限 {max_leverage}x",
         )
 
     return RiskCheckResult.pass_result()
@@ -162,7 +161,7 @@ def concurrent_position_limit(
     if context.active_positions_count >= max_positions:
         return RiskCheckResult.fail_result(
             reason_code=ReasonCode.HARD_FAIL_CONCURRENT_LIMIT,
-            message=f"并发仓位 {context.active_positions_count} 达到上限 {max_positions}"
+            message=f"并发仓位 {context.active_positions_count} 达到上限 {max_positions}",
         )
 
     return RiskCheckResult.pass_result()
@@ -180,7 +179,7 @@ def consecutive_losses_limit(
     if context.consecutive_losses >= max_consecutive:
         return RiskCheckResult.fail_result(
             reason_code=ReasonCode.HARD_FAIL_CONSECUTIVE_LOSSES,
-            message=f"连续亏损 {context.consecutive_losses} 次，达到上限 {max_consecutive}"
+            message=f"连续亏损 {context.consecutive_losses} 次，达到上限 {max_consecutive}",
         )
 
     return RiskCheckResult.pass_result()
@@ -219,7 +218,7 @@ def blackout_period_check(
             if start_min <= current_time <= end_min:
                 return RiskCheckResult.fail_result(
                     reason_code=ReasonCode.HARD_FAIL_BLACKOUT,
-                    message=f"当前处于黑窗时段 {start}-{end} UTC，禁止开仓"
+                    message=f"当前处于黑窗时段 {start}-{end} UTC，禁止开仓",
                 )
         except (ValueError, AttributeError):
             continue
@@ -244,7 +243,7 @@ def confidence_minimum(
     if signal.confidence < hard_min:
         return RiskCheckResult.fail_result(
             reason_code=ReasonCode.FAIL_LOW_DIM,
-            message=f"信号置信度 {signal.confidence:.2f} 低于硬阈值 {hard_min:.2f}"
+            message=f"信号置信度 {signal.confidence:.2f} 低于硬阈值 {hard_min:.2f}",
         )
 
     if signal.confidence < soft_min:
@@ -252,7 +251,7 @@ def confidence_minimum(
         return RiskCheckResult.degrade_result(
             reason_code=ReasonCode.SOFT_WARN_LOW_CONFIDENCE,
             modifier=modifier,
-            message=f"信号置信度 {signal.confidence:.2f} 低于软阈值 {soft_min:.2f}，仓位×{modifier:.2f}"
+            message=f"信号置信度 {signal.confidence:.2f} 低于软阈值 {soft_min:.2f}，仓位×{modifier:.2f}",
         )
 
     return RiskCheckResult.pass_result()
@@ -280,14 +279,14 @@ def drawdown_warning_degrade(
         return RiskCheckResult.degrade_result(
             reason_code=ReasonCode.DEGRADE_DRAWDOWN_WARNING,
             modifier=0.25,
-            message=f"日回撤 {current_dd:.2%} 达到严重警告线 {warn_2:.2%}，仓位×0.25"
+            message=f"日回撤 {current_dd:.2%} 达到严重警告线 {warn_2:.2%}，仓位×0.25",
         )
 
     if current_dd >= warn_1:
         return RiskCheckResult.degrade_result(
             reason_code=ReasonCode.DEGRADE_DRAWDOWN_WARNING,
             modifier=0.5,
-            message=f"日回撤 {current_dd:.2%} 达到警告线 {warn_1:.2%}，仓位减半"
+            message=f"日回撤 {current_dd:.2%} 达到警告线 {warn_1:.2%}，仓位减半",
         )
 
     return RiskCheckResult.pass_result()
@@ -306,13 +305,13 @@ def strategy_exclusion_check(
     if signal.strategy and signal.strategy in excluded_strategies:
         return RiskCheckResult.fail_result(
             reason_code=ReasonCode.HARD_FAIL_STRATEGY_EXCLUDED,
-            message=f"策略 '{signal.strategy}' 已被排除"
+            message=f"策略 '{signal.strategy}' 已被排除",
         )
 
     if signal.coin in excluded_coins:
         return RiskCheckResult.fail_result(
             reason_code=ReasonCode.HARD_FAIL_STRATEGY_EXCLUDED,
-            message=f"币种 '{signal.coin}' 已被排除"
+            message=f"币种 '{signal.coin}' 已被排除",
         )
 
     return RiskCheckResult.pass_result()

@@ -25,19 +25,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import (
+from scripts.memory_l4.l4_status_api import get_l4_status, get_l4_status_summary  # noqa: E402
+from scripts.memory_l4.paths import (  # noqa: E402
     memory_l4_cases_dir,
-    memory_l4_reviews_dir,
     memory_l4_distills_dir,
-    memory_l4_stats_dir,
+    memory_l4_reviews_dir,
 )
-from scripts.memory_l4.l4_status_api import get_l4_status, get_l4_status_summary
-
 
 # ─────────────────────────────────────────────
 # 常量
@@ -51,6 +48,7 @@ APP_MEMORY_VERSION = "1.0.0"
 # ─────────────────────────────────────────────
 # 工具函数
 # ─────────────────────────────────────────────
+
 
 def _list_json(dir_path: Path) -> List[Path]:
     if not dir_path.exists():
@@ -78,6 +76,7 @@ def _memory_id(prefix: str, raw_id: str) -> str:
 # ─────────────────────────────────────────────
 # 统一接口实现
 # ─────────────────────────────────────────────
+
 
 def search(
     query: str = "",
@@ -120,8 +119,9 @@ def search(
     results.sort(key=lambda x: x.get("score", 0), reverse=True)
 
     # 当 memory_type="all" 且有多类型时，同score组内按类型轮转
-    if memory_type == "all" and len(set(r["type"] for r in results)) > 1:
+    if memory_type == "all" and len(set(r["type"] for r in results)) > 1:  # noqa: C401
         from itertools import groupby
+
         balanced: List[Dict[str, Any]] = []
         for _score, group in groupby(results, key=lambda x: x.get("score", 0)):
             group_list = list(group)
@@ -167,16 +167,18 @@ def _search_cases(
         if score <= 0 and query:  # 有查询词但分数为0，跳过
             continue
 
-        results.append({
-            "id": _memory_id("CASE", case.get("case_id", f.stem)),
-            "type": "case",
-            "score": score,
-            "title": _case_title(case),
-            "summary": _case_summary(case),
-            "tags": case.get("tags", []),
-            "timestamp": case.get("timestamp"),
-            "data": case,
-        })
+        results.append(
+            {
+                "id": _memory_id("CASE", case.get("case_id", f.stem)),
+                "type": "case",
+                "score": score,
+                "title": _case_title(case),
+                "summary": _case_summary(case),
+                "tags": case.get("tags", []),
+                "timestamp": case.get("timestamp"),
+                "data": case,
+            }
+        )
 
     results.sort(key=lambda x: x["score"], reverse=True)
     return results[:top_k]
@@ -207,16 +209,18 @@ def _search_reviews(
         if score <= 0 and query:
             continue
 
-        results.append({
-            "id": _memory_id("REV", review.get("review_id", f.stem)),
-            "type": "review",
-            "score": score,
-            "title": f"复盘: {review.get('case_id', 'unknown')}",
-            "summary": review.get("summary", "")[:200],
-            "tags": [review.get("direction", "")],
-            "timestamp": review.get("timestamp"),
-            "data": review,
-        })
+        results.append(
+            {
+                "id": _memory_id("REV", review.get("review_id", f.stem)),
+                "type": "review",
+                "score": score,
+                "title": f"复盘: {review.get('case_id', 'unknown')}",
+                "summary": review.get("summary", "")[:200],
+                "tags": [review.get("direction", "")],
+                "timestamp": review.get("timestamp"),
+                "data": review,
+            }
+        )
 
     results.sort(key=lambda x: x["score"], reverse=True)
     return results[:top_k]
@@ -251,17 +255,19 @@ def _search_distills(
         kind = distill.get("kind", "")
         y = distill.get("quadrant", {}).get("y", 0)
 
-        results.append({
-            "id": _memory_id("DIST", distill.get("distill_id", f.stem)),
-            "type": "distill",
-            "score": score,
-            "title": f"[{kind}] {claim[:80]}",
-            "summary": claim[:200],
-            "tags": distill.get("what_is_it", {}).get("classification", []),
-            "timestamp": distill.get("process_trace", {}).get("optimization") or "",
-            "quality_score": y,
-            "data": distill,
-        })
+        results.append(
+            {
+                "id": _memory_id("DIST", distill.get("distill_id", f.stem)),
+                "type": "distill",
+                "score": score,
+                "title": f"[{kind}] {claim[:80]}",
+                "summary": claim[:200],
+                "tags": distill.get("what_is_it", {}).get("classification", []),
+                "timestamp": distill.get("process_trace", {}).get("optimization") or "",
+                "quality_score": y,
+                "data": distill,
+            }
+        )
 
     results.sort(key=lambda x: x["score"], reverse=True)
     return results[:top_k]
@@ -512,7 +518,10 @@ def stats() -> Dict[str, Any]:
         "app_memory_id": APP_MEMORY_ID,
         "app_memory_name": APP_MEMORY_NAME,
         "version": APP_MEMORY_VERSION,
-        "total_memories": status.get("cases_total", 0) + status.get("reviews_total", 0) + status.get("distills_total", 0) + status.get("stats_total", 0),
+        "total_memories": status.get("cases_total", 0)
+        + status.get("reviews_total", 0)
+        + status.get("distills_total", 0)
+        + status.get("stats_total", 0),
         "by_type": {
             "case": status.get("cases_total", 0),
             "review": status.get("reviews_total", 0),
@@ -568,17 +577,19 @@ def distill_candidates(
         supporting = distill.get("supporting_case_ids", [])
         claim = distill.get("claim", "")
 
-        candidates.append({
-            "id": _memory_id("DIST", distill.get("distill_id", f.stem)),
-            "type": "distill",
-            "claim": claim,
-            "kind": distill.get("kind", ""),
-            "quality_score": y,
-            "actionable_rules_count": len(rules),
-            "supporting_cases": len(supporting),
-            "why_it_works": distill.get("why_it_works", {}),
-            "how_to_apply": distill.get("how_to_apply", {}),
-        })
+        candidates.append(
+            {
+                "id": _memory_id("DIST", distill.get("distill_id", f.stem)),
+                "type": "distill",
+                "claim": claim,
+                "kind": distill.get("kind", ""),
+                "quality_score": y,
+                "actionable_rules_count": len(rules),
+                "supporting_cases": len(supporting),
+                "why_it_works": distill.get("why_it_works", {}),
+                "how_to_apply": distill.get("how_to_apply", {}),
+            }
+        )
 
     # 按质量分数排序
     candidates.sort(key=lambda x: x["quality_score"], reverse=True)
@@ -622,6 +633,7 @@ def healthcheck() -> Dict[str, Any]:
 # 便捷方法
 # ─────────────────────────────────────────────
 
+
 def search_similar_cases(
     inst_id: Optional[str] = None,
     regime: Optional[str] = None,
@@ -634,6 +646,7 @@ def search_similar_cases(
     """
     try:
         from scripts.memory_l4.cbr_engine import CBREngine, CBRQuery
+
         engine = CBREngine(top_k=top_k)
         engine.load(use_index=True)
 
@@ -667,6 +680,7 @@ def search_similar_cases(
 def run_distill_from_review(review_record: Dict[str, Any]) -> Dict[str, Any]:
     """便捷方法：从复盘记录运行完整蒸馏流程"""
     from scripts.memory_l4.distill_engine import run_full_distill_pipeline, save_distill
+
     distill = run_full_distill_pipeline(review_record)
     save_distill(distill)
     return distill
@@ -675,6 +689,7 @@ def run_distill_from_review(review_record: Dict[str, Any]) -> Dict[str, Any]:
 # ─────────────────────────────────────────────
 # 类式接口封装（符合 MEMORY_INTERFACE_SPEC v1.0）
 # ─────────────────────────────────────────────
+
 
 class TradingMemoryInterface:
     """L4 交易记忆统一接口（类式封装）
@@ -685,8 +700,13 @@ class TradingMemoryInterface:
     供 DistillScheduler / WorkingMemoryManager 等认知系统组件动态加载。
     """
 
-    def search(self, query: str = "", filters: Optional[Dict[str, Any]] = None,
-               memory_type: str = "all", top_k: int = 10) -> List[Dict[str, Any]]:
+    def search(
+        self,
+        query: str = "",
+        filters: Optional[Dict[str, Any]] = None,
+        memory_type: str = "all",
+        top_k: int = 10,
+    ) -> List[Dict[str, Any]]:
         return search(query=query, filters=filters, memory_type=memory_type, top_k=top_k)
 
     def add(self, memory_entry: Dict[str, Any]) -> str:
@@ -714,7 +734,9 @@ class TradingMemoryInterface:
         except Exception:
             return False
 
-    def update_quality(self, memory_id: str, new_quality: str, new_confidence: Optional[float] = None) -> bool:
+    def update_quality(
+        self, memory_id: str, new_quality: str, new_confidence: Optional[float] = None
+    ) -> bool:
         """调整质量等级 + 置信度（保守式）。"""
         updates: Dict[str, Any] = {"quality_level": new_quality}
         if new_confidence is not None:
@@ -739,10 +761,10 @@ class TradingMemoryInterface:
         QUALITY_ORDER = {"S": 0, "A": 1, "B": 2, "C": 3, "D": 4}
         _TH: Dict[str, Dict[str, float]] = {
             "S": {"min_verifies": 10, "min_confidence": 0.95},
-            "A": {"min_verifies": 3,  "min_confidence": 0.70},
-            "B": {"min_verifies": 1,  "min_confidence": 0.40},
-            "C": {"min_verifies": 0,  "min_confidence": 0.0},
-            "D": {"min_verifies": 0,  "min_confidence": 0.0},
+            "A": {"min_verifies": 3, "min_confidence": 0.70},
+            "B": {"min_verifies": 1, "min_confidence": 0.40},
+            "C": {"min_verifies": 0, "min_confidence": 0.0},
+            "D": {"min_verifies": 0, "min_confidence": 0.0},
         }
         min_order = QUALITY_ORDER.get(str(min_quality).upper(), 2)  # 默认 B
 
@@ -767,18 +789,19 @@ class TradingMemoryInterface:
             if QUALITY_ORDER[q] > min_order:
                 continue
             vc = int(item.get("verify_count") or item.get("verification_count") or 0)
-            conf = float(
-                item.get("confidence")
-                or (item.get("quadrant", {}) or {}).get("y")
-                or 0.0
-            )
+            conf = float(item.get("confidence") or (item.get("quadrant", {}) or {}).get("y") or 0.0)
             th = _TH.get(q) or _TH["C"]
             # 至少达到当前档的阈值才算有效候选（否则即使质量字面值写着B也不入选）
             if vc < th["min_verifies"] or conf < th["min_confidence"]:
                 # C/D档无硬性门槛，但若写了C档 + min_quality=C 也允许进入
                 if q not in ("C", "D"):
                     continue
-            _id = item.get("id") or item.get("memory_id") or item.get("case_id") or item.get("distill_id")
+            _id = (
+                item.get("id")
+                or item.get("memory_id")
+                or item.get("case_id")
+                or item.get("distill_id")
+            )
             if not _id:
                 continue
             content = (
@@ -790,26 +813,29 @@ class TradingMemoryInterface:
             )
             tags = list(item.get("tags") or [])
             mtype = str(item.get("memory_type") or item.get("type") or "case").lower()
-            source = (
-                item.get("source")
-                or (f"L4-TRD/{mtype}/" + (item.get("distill_id") or item.get("case_id") or _id))
+            source = item.get("source") or (
+                f"L4-TRD/{mtype}/" + (item.get("distill_id") or item.get("case_id") or _id)
             )
-            candidates.append({
-                "id": str(_id),
-                "content": str(content),
-                "quality_level": q,
-                "confidence": round(conf, 4),
-                "verify_count": vc,
-                "tags": tags,
-                "memory_type": mtype,
-                "source": source,
-            })
+            candidates.append(
+                {
+                    "id": str(_id),
+                    "content": str(content),
+                    "quality_level": q,
+                    "confidence": round(conf, 4),
+                    "verify_count": vc,
+                    "tags": tags,
+                    "memory_type": mtype,
+                    "source": source,
+                }
+            )
 
         # 统一排序：质量 S>A>B → verify多→少 → confidence高→低
         candidates.sort(
-            key=lambda c: (QUALITY_ORDER.get(c["quality_level"], 4),
-                           -c["verify_count"],
-                           -c["confidence"])
+            key=lambda c: (
+                QUALITY_ORDER.get(c["quality_level"], 4),
+                -c["verify_count"],
+                -c["confidence"],
+            )
         )
         return candidates[: max(0, int(limit))]
 
@@ -825,8 +851,7 @@ class TradingMemoryInterface:
         hits_raw: List[Dict[str, Any]] = []
         try:
             # 优先用 CBR 引擎（如果能加载）
-            result = search_similar_cases(inst_id=None, regime=content,
-                                          decision=None, top_k=top_k)
+            result = search_similar_cases(inst_id=None, regime=content, decision=None, top_k=top_k)
             hits_raw = result if isinstance(result, list) else []
         except Exception:
             pass
@@ -838,10 +863,7 @@ class TradingMemoryInterface:
 
         normalized: List[Dict[str, Any]] = []
         for i, r in enumerate(hits_raw):
-            rid = (
-                r.get("id") or r.get("memory_id")
-                or r.get("case_id") or str(i)
-            )
+            rid = r.get("id") or r.get("memory_id") or r.get("case_id") or str(i)
             raw_score = r.get("score") or r.get("similarity") or r.get("match_score")
             if raw_score is None:
                 raw_score = max(0.0, 1.0 / (1.0 + i))  # 顺序平滑估值
@@ -854,18 +876,20 @@ class TradingMemoryInterface:
             q = str(r.get("quality_level") or "C").upper()
             vc = int(r.get("verify_count") or 0)
             conf = float(r.get("confidence") or 0.0)
-            normalized.append({
-                "id": str(rid),
-                "score": round(s, 4),
-                "metadata": {
-                    "quality_level": q,
-                    "confidence": conf,
-                    "verify_count": vc,
-                    "tags": list(r.get("tags") or []),
-                    "memory_type": str(r.get("memory_type") or r.get("type") or "case"),
-                    "raw": r,
-                },
-            })
+            normalized.append(
+                {
+                    "id": str(rid),
+                    "score": round(s, 4),
+                    "metadata": {
+                        "quality_level": q,
+                        "confidence": conf,
+                        "verify_count": vc,
+                        "tags": list(r.get("tags") or []),
+                        "memory_type": str(r.get("memory_type") or r.get("type") or "case"),
+                        "raw": r,
+                    },
+                }
+            )
             if len(normalized) >= int(top_k):
                 break
         return normalized
@@ -876,19 +900,37 @@ class TradingMemoryInterface:
         返回 {"processed": 唯一记忆命中数, "upgraded": 升级成功数, "skipped": 跳过数}
         """
         import re as _re
+
         stats = {"processed": 0, "upgraded": 0, "skipped": 0}
 
         # 1) 关键词收集（兼容不同 Review 结构）
         keywords: List[str] = []
         if isinstance(review_data, dict):
-            for key in ("matched_patterns", "matched", "keywords", "hotspots",
-                        "matched_functions", "doc_only_functions", "code_only_functions",
-                        "hits", "supporting_case_ids"):
+            for key in (
+                "matched_patterns",
+                "matched",
+                "keywords",
+                "hotspots",
+                "matched_functions",
+                "doc_only_functions",
+                "code_only_functions",
+                "hits",
+                "supporting_case_ids",
+            ):
                 val = review_data.get(key)
                 if isinstance(val, list):
                     keywords.extend(str(v) for v in val if v)
-            for txt_key in ("subsystem", "summary", "title", "focus", "claim",
-                            "inst_id", "regime", "decision", "review"):
+            for txt_key in (
+                "subsystem",
+                "summary",
+                "title",
+                "focus",
+                "claim",
+                "inst_id",
+                "regime",
+                "decision",
+                "review",
+            ):
                 txt = review_data.get(txt_key)
                 if isinstance(txt, str) and txt.strip():
                     keywords.extend(p for p in _re.split(r"\W+", txt) if len(p) >= 2)
@@ -911,7 +953,7 @@ class TradingMemoryInterface:
         hits: List[Dict[str, Any]] = []
         for kw in clean_kws:
             try:
-                for r in (self.search(query=kw, top_k=3) or []):
+                for r in self.search(query=kw, top_k=3) or []:
                     rid = r.get("id") or r.get("memory_id") or r.get("case_id")
                     if not rid or rid in unique_ids:
                         continue
@@ -943,11 +985,7 @@ class TradingMemoryInterface:
                 continue
             q = str(cur.get("quality_level") or cur.get("quality") or "C").upper()
             vc = int(cur.get("verify_count") or cur.get("verification_count") or 0)
-            conf = float(
-                cur.get("confidence")
-                or (cur.get("quadrant", {}) or {}).get("y")
-                or 0.0
-            )
+            conf = float(cur.get("confidence") or (cur.get("quadrant", {}) or {}).get("y") or 0.0)
             paths = upgrade_paths.get(q) or {}
             moved = False
             for target_q, th in paths.items():
@@ -970,6 +1008,7 @@ AppMemoryInterface = TradingMemoryInterface
 # CLI 测试入口
 # ─────────────────────────────────────────────
 
+
 def main():
     import argparse
 
@@ -985,7 +1024,9 @@ def main():
     # search
     p_search = subparsers.add_parser("search", help="检索记忆")
     p_search.add_argument("--query", default="", help="查询词")
-    p_search.add_argument("--type", default="all", choices=["all", "case", "review", "distill"], help="记忆类型")
+    p_search.add_argument(
+        "--type", default="all", choices=["all", "case", "review", "distill"], help="记忆类型"
+    )
     p_search.add_argument("--limit", type=int, default=5, help="返回数量")
 
     # get

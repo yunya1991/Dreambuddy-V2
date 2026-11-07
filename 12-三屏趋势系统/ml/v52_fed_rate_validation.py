@@ -6,21 +6,21 @@
 3. 与V4基线对比（74维 vs 79维），决定是否保留
 """
 
+import json
 import os
 import sys
-import json
 import time
+
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
 from sklearn.metrics import roc_auc_score
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.feature_engineer import TrendFeatureEngineer
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
-
+from ml.feature_engineer import TrendFeatureEngineer  # noqa: E402
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
 
 # V5.2 新增特征
 V52_FEATURES = [
@@ -61,8 +61,9 @@ def generate_labels(closes, lookahead, threshold, mode="drop"):
     return labels
 
 
-def walk_forward_validation(features, labels, feature_names,
-                            n_splits=12, train_days=730, test_days=180, step_days=180):
+def walk_forward_validation(
+    features, labels, feature_names, n_splits=12, train_days=730, test_days=180, step_days=180
+):
     n = len(features)
     feature_importances = []
     train_aucs, test_aucs = [], []
@@ -89,10 +90,15 @@ def walk_forward_validation(features, labels, feature_names,
             continue
 
         model = lgb.LGBMClassifier(
-            n_estimators=200, max_depth=6, learning_rate=0.05,
-            num_leaves=31, min_child_samples=20,
-            subsample=0.8, colsample_bytree=0.8,
-            random_state=42, verbose=-1,
+            n_estimators=200,
+            max_depth=6,
+            learning_rate=0.05,
+            num_leaves=31,
+            min_child_samples=20,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42,
+            verbose=-1,
         )
         model.fit(X_train, y_train)
 
@@ -108,7 +114,11 @@ def walk_forward_validation(features, labels, feature_names,
     avg_test_auc = float(np.mean(test_aucs)) if test_aucs else 0.0
     avg_train_auc = float(np.mean(train_aucs)) if train_aucs else 0.0
     decay_rate = 1.0 - (avg_test_auc / avg_train_auc) if avg_train_auc > 0 else 0.0
-    avg_importances = np.mean(feature_importances, axis=0) if feature_importances else np.zeros(len(feature_names))
+    avg_importances = (
+        np.mean(feature_importances, axis=0)
+        if feature_importances
+        else np.zeros(len(feature_names))
+    )
 
     return {
         "avg_test_auc": avg_test_auc,
@@ -126,8 +136,9 @@ def main():
 
     prices = load_btc_data()
     closes = prices["close"].values
-    print("\n数据: {}天, {} ~ {}".format(
-        len(prices), prices.index[0].date(), prices.index[-1].date()))
+    print(
+        "\n数据: {}天, {} ~ {}".format(len(prices), prices.index[0].date(), prices.index[-1].date())
+    )
 
     # 1. 提取特征
     print("\n【1. 提取特征】")
@@ -152,9 +163,11 @@ def main():
     for fname in V52_FEATURES:
         if fname in all_features.columns:
             vals = all_features[fname]
-            print("  {:>25}: min={:>8.2f}, max={:>8.2f}, mean={:>8.2f}, 非零占比={:.1f}%".format(
-                fname, vals.min(), vals.max(), vals.mean(),
-                (vals != 0).sum() / len(vals) * 100))
+            print(
+                "  {:>25}: min={:>8.2f}, max={:>8.2f}, mean={:>8.2f}, 非零占比={:.1f}%".format(
+                    fname, vals.min(), vals.max(), vals.mean(), (vals != 0).sum() / len(vals) * 100
+                )
+            )
 
     # 3. 三组对比实验
     print("\n【3. 三组对比实验】")
@@ -182,8 +195,11 @@ def main():
         pos_rate = labels.sum() / len(labels) * 100
         print("  正样本率: {:.1f}%".format(pos_rate))
 
-        print("  {:<20} | {:>8} | {:>10} | {:>10} | {:>8}".format(
-            "实验", "特征数", "测试AUC", "训练AUC", "衰减率"))
+        print(
+            "  {:<20} | {:>8} | {:>10} | {:>10} | {:>8}".format(
+                "实验", "特征数", "测试AUC", "训练AUC", "衰减率"
+            )
+        )
         print("  " + "-" * 65)
 
         scenario_results = {}
@@ -191,9 +207,16 @@ def main():
             t0 = time.time()
             result = walk_forward_validation(all_features, labels, feat_names)
             elapsed = time.time() - t0
-            print("  {:<20} | {:>8} | {:>10.4f} | {:>10.4f} | {:>7.1f}%  ({:.1f}s)".format(
-                name, len(feat_names), result["avg_test_auc"], result["avg_train_auc"],
-                result["decay_rate"] * 100, elapsed))
+            print(
+                "  {:<20} | {:>8} | {:>10.4f} | {:>10.4f} | {:>7.1f}%  ({:.1f}s)".format(
+                    name,
+                    len(feat_names),
+                    result["avg_test_auc"],
+                    result["avg_train_auc"],
+                    result["decay_rate"] * 100,
+                    elapsed,
+                )
+            )
             scenario_results[name] = result
 
         # V5.2特征重要性排名
@@ -220,8 +243,11 @@ def main():
         v52_auc = all_results[scenario_name]["V5.2全部(79维)"]["avg_test_auc"]
         diff = v52_auc - baseline_auc
         status = "✅ 保留" if diff >= 0 else "❌ 回退"
-        print("  {} AUC: V4基线={:.4f}, V5.2={:.4f}, Δ={:+.4f} → {}".format(
-            scenario_name, baseline_auc, v52_auc, diff, status))
+        print(
+            "  {} AUC: V4基线={:.4f}, V5.2={:.4f}, Δ={:+.4f} → {}".format(
+                scenario_name, baseline_auc, v52_auc, diff, status
+            )
+        )
 
     # 5. 保存结果
     output = {

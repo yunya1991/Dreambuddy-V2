@@ -2,6 +2,7 @@
 dreambuddy_dal.protocols.market_macro_repo — 6 张宏观表 Repository
 对齐 SCHEMA_DESIGN.md §5 宏观域 mm_ 前缀 6 张 WITHOUT ROWID 表
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -18,9 +19,7 @@ class MarketMacroRepository(ABC):
 
     # ---------- 5.1 恐惧贪婪 ----------
     @abstractmethod
-    def upsert_fear_greed(
-        self, value: int, value_classification: str, ts: datetime
-    ) -> bool: ...
+    def upsert_fear_greed(self, value: int, value_classification: str, ts: datetime) -> bool: ...
 
     @abstractmethod
     def query_fear_greed_by_time(
@@ -72,8 +71,12 @@ class MarketMacroRepository(ABC):
     # ---------- 5.5 多空比 ----------
     @abstractmethod
     def upsert_long_short_ratio(
-        self, symbol: str, long_account: Decimal, short_account: Decimal,
-        long_short_ratio: Decimal, ts: datetime,
+        self,
+        symbol: str,
+        long_account: Decimal,
+        short_account: Decimal,
+        long_short_ratio: Decimal,
+        ts: datetime,
     ) -> bool: ...
 
     @abstractmethod
@@ -84,8 +87,13 @@ class MarketMacroRepository(ABC):
     # ---------- 5.6 Taker 主动买卖量 ----------
     @abstractmethod
     def upsert_taker_volume(
-        self, symbol: str, buy_vol: Decimal, sell_vol: Decimal,
-        buy_sell_volume_diff: Decimal, buy_sell_volume_ratio: Decimal, ts: datetime,
+        self,
+        symbol: str,
+        buy_vol: Decimal,
+        sell_vol: Decimal,
+        buy_sell_volume_diff: Decimal,
+        buy_sell_volume_ratio: Decimal,
+        ts: datetime,
     ) -> bool: ...
 
     @abstractmethod

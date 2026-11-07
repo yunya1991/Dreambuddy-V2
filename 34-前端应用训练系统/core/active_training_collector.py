@@ -14,10 +14,11 @@
 调度频率: 每日凌晨低峰期执行（不干扰用户操作）
 优先级: 低（后台任务）
 """
+
 import os
 import sys
 import time
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, Optional
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
@@ -28,7 +29,7 @@ for _p in [_THIS_DIR, _34_DIR, _SCRIPTS_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 # 质量等级优先级（数字越大越好）
 _QUALITY_ORDER = {"S": 4, "A": 3, "B": 2, "C": 1, "D": 0}
@@ -64,6 +65,7 @@ class ActiveTrainingCollector:
         if self._store_fn is None:
             try:
                 from case_bank_server import store_case
+
                 self._store_fn = store_case
             except Exception:
                 self._store_fn = None
@@ -169,30 +171,35 @@ class ActiveTrainingCollector:
         """注册所有默认数据源 Provider（TDR + Cognitive + Skill + Doc + REA）。"""
         try:
             from tdr_data_provider import TDRTrainingDataProvider
+
             self.register_provider(TDRTrainingDataProvider())
         except Exception:
             pass
 
         try:
             from cognitive_memory_collector import CognitiveMemoryCollector
+
             self.register_provider(CognitiveMemoryCollector())
         except Exception:
             pass
 
         try:
             from skill_system_collector import SkillSystemCollector
+
             self.register_provider(SkillSystemCollector())
         except Exception:
             pass
 
         try:
             from doc_knowledge_collector import DocKnowledgeCollector
+
             self.register_provider(DocKnowledgeCollector())
         except Exception:
             pass
 
         try:
             from rea_batch_collector import REABatchCollector
+
             self.register_provider(REABatchCollector())
         except Exception:
             pass

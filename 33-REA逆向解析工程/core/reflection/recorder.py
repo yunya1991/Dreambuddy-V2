@@ -18,6 +18,7 @@
 
 关联：SPEC-33-反思层.md v0.3 §4.1；core/reflection/replay_simulator.py
 """
+
 from __future__ import annotations
 
 import os

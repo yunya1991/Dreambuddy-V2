@@ -8,10 +8,11 @@ FAIL-OPEN: DataCenterClient 不可用时返回中性
 SKILL.md 调用路径: experiments/ab-trading/core/nodes/f4_onchain
 """
 
-from typing import Dict, Any
+from typing import Dict, Any  # noqa: I001
 
 try:
     from core.modules.data_center_adapter import get_data_center_client
+
     _DC_OK = True
 except ImportError:
     _DC_OK = False
@@ -50,7 +51,7 @@ def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
             if client.is_available():
                 onchain = client.get_onchain()
                 source = "data_center"
-                reasoning.append(f"[F4链上] 数据源: 数据采集中心")
+                reasoning.append("[F4链上] 数据源: 数据采集中心")
 
                 # 链上基础
                 if onchain.total_btc > 0:
@@ -74,11 +75,11 @@ def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
                 if onchain.bottom_signal_status:
                     reasoning.append(f"  📉 底部信号: {onchain.bottom_signal_status}")
             else:
-                reasoning.append(f"[F4链上] 数据源: 本地（数据采集中心不可用）")
+                reasoning.append("[F4链上] 数据源: 本地（数据采集中心不可用）")
         except Exception as e:
             reasoning.append(f"[F4链上] 数据源: 本地（{str(e)[:30]}）")
     else:
-        reasoning.append(f"[F4链上] 数据源: 本地（模块未加载）")
+        reasoning.append("[F4链上] 数据源: 本地（模块未加载）")
 
     # ── 链上方向判断 ──────────────────────────────────────────────
     direction = "HOLD"
@@ -137,7 +138,7 @@ def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
             "mvrv_value": onchain.mvrv_value if onchain else None,
             "puell_multiple": onchain.puell_multiple if onchain else None,
             "bottom_signal_status": onchain.bottom_signal_status if onchain else None,
-        }
+        },
     }
 
 

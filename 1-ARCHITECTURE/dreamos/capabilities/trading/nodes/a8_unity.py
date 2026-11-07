@@ -14,10 +14,10 @@ A8 知行合一验证节点
 
 from __future__ import annotations
 
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 
 class A8UnityNode(BaseNode):
@@ -56,7 +56,9 @@ class A8UnityNode(BaseNode):
         if direction_consistent:
             scores.append(("LONG", 0.25, "计划方向与实际一致"))
         else:
-            scores.append(("HOLD", 0.30, f"方向不一致(计划:{planned_direction} vs 实际:{actual_direction})"))
+            scores.append(
+                ("HOLD", 0.30, f"方向不一致(计划:{planned_direction} vs 实际:{actual_direction})")
+            )
 
         # ── 3. 入场价格偏差检查 ──────────────────────────
         entry_deviation = 0
@@ -77,7 +79,9 @@ class A8UnityNode(BaseNode):
             if size_consistent:
                 scores.append(("LONG", 0.15, "仓位执行一致"))
             else:
-                scores.append(("HOLD", 0.15, f"仓位不一致(计划:{planned_size} vs 实际:{actual_size})"))
+                scores.append(
+                    ("HOLD", 0.15, f"仓位不一致(计划:{planned_size} vs 实际:{actual_size})")
+                )
 
         # ── 5. 执行历史质量评估 ──────────────────────────
         execution_quality = self._evaluate_execution_quality(execution_history)
@@ -91,12 +95,14 @@ class A8UnityNode(BaseNode):
             scores.append(("HOLD", 0.20, f"执行质量差({execution_quality:.0f})"))
 
         # ── 6. 知行偏差检测 ──────────────────────────────
-        inconsistency_count = sum([
-            not direction_consistent,
-            entry_deviation > 3,
-            not size_consistent,
-            execution_quality < 50,
-        ])
+        inconsistency_count = sum(
+            [
+                not direction_consistent,
+                entry_deviation > 3,
+                not size_consistent,
+                execution_quality < 50,
+            ]
+        )
 
         if inconsistency_count == 0:
             scores.append(("LONG", 0.20, "知行合一，无偏差"))
@@ -134,7 +140,9 @@ class A8UnityNode(BaseNode):
             confidence = short_score / max(total, 0.01)
 
         rationale = [r for _, _, r in scores[:6]]
-        rationale.insert(0, f"[A8知行合一] 一致性得分={consistency_score:.2f} | 执行质量={execution_quality:.0f}")
+        rationale.insert(
+            0, f"[A8知行合一] 一致性得分={consistency_score:.2f} | 执行质量={execution_quality:.0f}"
+        )
         rationale.append(f"  方向: {direction} | 置信度: {confidence:.1%}")
 
         outputs = {
@@ -157,7 +165,11 @@ class A8UnityNode(BaseNode):
                 "entry": actual_entry,
                 "size": actual_size,
             },
-            "scores": {"long": round(long_score, 3), "short": round(short_score, 3), "hold": round(hold_score, 3)},
+            "scores": {
+                "long": round(long_score, 3),
+                "short": round(short_score, 3),
+                "hold": round(hold_score, 3),
+            },
             "rationale": rationale,
         }
 

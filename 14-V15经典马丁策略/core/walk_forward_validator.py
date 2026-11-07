@@ -16,10 +16,8 @@ Walk-Forward 验证框架
   validator = WalkForwardValidator(n_segments=5)
   report = validator.validate(base_trades, test_trades, total_bars=1500)
 """
-import json
-from collections import defaultdict
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+
+from typing import Dict, List
 
 
 class WalkForwardValidator:
@@ -45,9 +43,7 @@ class WalkForwardValidator:
         self.max_degradation_pct = max_degradation_pct
         self.min_pass_segments = min_pass_segments or n_segments
 
-    def _segment_trades(
-        self, trades: List[Dict], total_bars: int
-    ) -> List[List[Dict]]:
+    def _segment_trades(self, trades: List[Dict], total_bars: int) -> List[List[Dict]]:
         """按 exit_idx 将 trades 分成 n_segments 段"""
         if not trades or total_bars <= 0:
             return [[] for _ in range(self.n_segments)]
@@ -156,16 +152,18 @@ class WalkForwardValidator:
             if seg_pass:
                 pass_count += 1
 
-            segment_reports.append({
-                "segment": i + 1,
-                "base": bm,
-                "test": tm,
-                "ret_delta": round(ret_delta, 2),
-                "calmar_delta": round(calmar_delta, 2),
-                "wr_delta": round(wr_delta * 100, 2),
-                "ret_degradation_pct": round(ret_degradation, 1),
-                "pass": seg_pass,
-            })
+            segment_reports.append(
+                {
+                    "segment": i + 1,
+                    "base": bm,
+                    "test": tm,
+                    "ret_delta": round(ret_delta, 2),
+                    "calmar_delta": round(calmar_delta, 2),
+                    "wr_delta": round(wr_delta * 100, 2),
+                    "ret_degradation_pct": round(ret_degradation, 1),
+                    "pass": seg_pass,
+                }
+            )
 
         # 整体对比
         overall_base = self._calc_metrics(base_trades)
@@ -176,10 +174,7 @@ class WalkForwardValidator:
         overall_calmar_delta = overall_test["calmar"] - overall_base["calmar"]
 
         # 最终决策：通过段数 >= min_pass_segments 且整体不退化
-        overall_pass = (
-            pass_count >= self.min_pass_segments
-            and overall_ret_delta >= 0
-        )
+        overall_pass = pass_count >= self.min_pass_segments and overall_ret_delta >= 0
 
         return {
             "n_segments": self.n_segments,
@@ -203,14 +198,18 @@ class WalkForwardValidator:
         lines = []
         lines.append("=" * 100)
         lines.append(f"  Walk-Forward 验证报告 ({report['n_segments']} 段)")
-        lines.append(f"  通过段数: {report['pass_count']}/{report['n_segments']} "
-                     f"(最少需 {report['min_pass_segments']})")
+        lines.append(
+            f"  通过段数: {report['pass_count']}/{report['n_segments']} "
+            f"(最少需 {report['min_pass_segments']})"
+        )
         lines.append(f"  单段最大退化容忍: {report['max_degradation_pct']}%")
         lines.append("=" * 100)
 
         # 逐段对比表
-        lines.append(f"  {'段':>4}  {'BASE收益':>10}  {'TEST收益':>10}  {'差值':>8}  "
-                     f"{'BASE胜率':>8}  {'TEST胜率':>8}  {'退化%':>7}  {'通过':>4}")
+        lines.append(
+            f"  {'段':>4}  {'BASE收益':>10}  {'TEST收益':>10}  {'差值':>8}  "
+            f"{'BASE胜率':>8}  {'TEST胜率':>8}  {'退化%':>7}  {'通过':>4}"
+        )
         lines.append("-" * 100)
         for seg in report["segments"]:
             lines.append(
@@ -228,16 +227,20 @@ class WalkForwardValidator:
         # 整体对比
         ob = report["overall_base"]
         ot = report["overall_test"]
-        lines.append(f"  {'整体':>4}  "
-                     f"{ob['total_return_pct']:>+10.2f}  "
-                     f"{ot['total_return_pct']:>+10.2f}  "
-                     f"{report['overall_ret_delta']:>+8.2f}  "
-                     f"{ob['win_rate']*100:>7.1f}%  "
-                     f"{ot['win_rate']*100:>7.1f}%  "
-                     f"{'':>7}  "
-                     f"{'✅' if report['overall_pass'] else '❌'}")
+        lines.append(
+            f"  {'整体':>4}  "
+            f"{ob['total_return_pct']:>+10.2f}  "
+            f"{ot['total_return_pct']:>+10.2f}  "
+            f"{report['overall_ret_delta']:>+8.2f}  "
+            f"{ob['win_rate']*100:>7.1f}%  "
+            f"{ot['win_rate']*100:>7.1f}%  "
+            f"{'':>7}  "
+            f"{'✅' if report['overall_pass'] else '❌'}"
+        )
         lines.append("")
-        lines.append(f"  最终决策: {'✅ 通过 → 可部署' if report['overall_pass'] else '❌ 未通过 → 回退'}")
+        lines.append(
+            f"  最终决策: {'✅ 通过 → 可部署' if report['overall_pass'] else '❌ 未通过 → 回退'}"
+        )
         lines.append(f"    - 通过段数: {report['pass_count']}/{report['n_segments']}")
         lines.append(f"    - 整体收益差: {report['overall_ret_delta']:+.2f}")
         lines.append(f"    - 整体胜率差: {report['overall_wr_delta']:+.2f}%")

@@ -6,23 +6,20 @@
 确保策略设计原则被正确应用。
 """
 
-import sys
+import sys  # noqa: I001
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'core'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "core"))
 
-from strategy_exit_adapter import (
+from strategy_exit_adapter import (  # noqa: I001
     get_strategy_exit_design,
     evaluate_exit_rationality,
     STRATEGY_EXIT_DESIGNS,
-    ExitDesignPhilosophy,
-    MacroExitInfluenceLevel,
 )
 from technical_exit_adapter import (
     TechnicalExitSignal,
     fuse_macro_technical,
-    _calc_simple_technical_signals,
 )
 
 
@@ -36,7 +33,7 @@ def test_strategy_design_overview():
     print(f"{'策略':<25} {'哲学':<12} {'宏观影响':<10} {'技术权重':>8} {'宏观权重':>8}")
     print("-" * 70)
 
-    for sid, design in sorted(STRATEGY_EXIT_DESIGNS.items()):
+    for sid, design in sorted(STRATEGY_EXIT_DESIGNS.items()):  # noqa: B007
         philo_map = {
             "martingale": "马丁格尔",
             "trend_following": "趋势跟踪",
@@ -52,9 +49,13 @@ def test_strategy_design_overview():
             "none": "不干预",
         }
         philo = philo_map.get(design.philosophy.value, design.philosophy.value)
-        influence = influence_map.get(design.macro_influence_level.value, design.macro_influence_level.value)
-        print(f"{design.strategy_name:<25} {philo:<12} {influence:<10} "
-              f"{design.technical_signal_weight:>8.0%} {design.macro_signal_weight:>8.0%}")
+        influence = influence_map.get(
+            design.macro_influence_level.value, design.macro_influence_level.value
+        )
+        print(
+            f"{design.strategy_name:<25} {philo:<12} {influence:<10} "
+            f"{design.technical_signal_weight:>8.0%} {design.macro_signal_weight:>8.0%}"
+        )
 
     print()
     print("✅ 6 个策略的离场设计原则已定义")
@@ -63,7 +64,7 @@ def test_strategy_design_overview():
 
 def test_martin_floating_loss():
     """测试2：马丁策略浮亏场景
-    
+
     核心验证：马丁策略浮亏时，宏观建议平仓应该被否决，
     因为浮亏是马丁策略的正常组成部分。
     """
@@ -96,8 +97,12 @@ def test_martin_floating_loss():
         strategy_id, position_info, macro_analysis, technical_signals
     )
 
-    print(f"原始宏观建议: {result['original_action'].upper()} (置信度 {result['original_confidence']:.0%})")
-    print(f"调整后建议:   {result['adjusted_action'].upper()} (置信度 {result['adjusted_confidence']:.0%})")
+    print(
+        f"原始宏观建议: {result['original_action'].upper()} (置信度 {result['original_confidence']:.0%})"
+    )
+    print(
+        f"调整后建议:   {result['adjusted_action'].upper()} (置信度 {result['adjusted_confidence']:.0%})"
+    )
     print(f"是否合理:     {'✅ 合理' if result['is_rational'] else '⚠️ 被调整'}")
     print()
     print("调整原因:")
@@ -114,7 +119,7 @@ def test_martin_floating_loss():
 
 def test_martin_golden_window():
     """测试3：马丁黄金窗口期
-    
+
     核心验证：加仓后 12 小时内的黄金窗口期，
     即使宏观看空也不应该建议离场。
     """
@@ -147,8 +152,12 @@ def test_martin_golden_window():
         strategy_id, position_info, macro_analysis, technical_signals
     )
 
-    print(f"原始宏观建议: {result['original_action'].upper()} (置信度 {result['original_confidence']:.0%})")
-    print(f"调整后建议:   {result['adjusted_action'].upper()} (置信度 {result['adjusted_confidence']:.0%})")
+    print(
+        f"原始宏观建议: {result['original_action'].upper()} (置信度 {result['original_confidence']:.0%})"
+    )
+    print(
+        f"调整后建议:   {result['adjusted_action'].upper()} (置信度 {result['adjusted_confidence']:.0%})"
+    )
     print(f"是否合理:     {'✅ 合理' if result['is_rational'] else '⚠️ 被调整'}")
     print()
     print("调整原因:")
@@ -164,7 +173,7 @@ def test_martin_golden_window():
 
 def test_trend_following_tech_exit():
     """测试4：趋势跟踪策略的技术离场
-    
+
     核心验证：三屏趋势系统的技术离场信号权重高，
     宏观建议不能轻易覆盖技术止损。
     """
@@ -203,7 +212,9 @@ def test_trend_following_tech_exit():
 
     fused = fuse_macro_technical(macro_eval, tech_signal, pos_info, strategy_id)
 
-    print(f"宏观建议:     {macro_eval['recommended_action']} (置信度 {macro_eval['confidence']:.0%})")
+    print(
+        f"宏观建议:     {macro_eval['recommended_action']} (置信度 {macro_eval['confidence']:.0%})"
+    )
     print(f"技术建议:     {tech_signal.action} (置信度 {tech_signal.confidence:.0%})")
     print(f"融合后建议:   {fused['recommended_action']} (置信度 {fused['confidence']:.0%})")
     print(f"融合模式:     {fused['fusion_mode']}")
@@ -224,7 +235,7 @@ def test_trend_following_tech_exit():
 
 def test_weighted_confidence():
     """测试5：不同策略的置信度权重差异
-    
+
     核心验证：
     - 马丁策略：技术权重 80%，宏观权重 20%
     - Agent B：技术权重 40%，宏观权重 60%
@@ -274,8 +285,10 @@ def test_weighted_confidence():
         results[sid] = fused
 
         design = get_strategy_exit_design(sid)
-        print(f"{design.strategy_name:<20} {macro_w:>8.0%} {tech_w:>8.0%} "
-              f"{fused['confidence']:>14.0%} {fused['recommended_action']:>10}")
+        print(
+            f"{design.strategy_name:<20} {macro_w:>8.0%} {tech_w:>8.0%} "
+            f"{fused['confidence']:>14.0%} {fused['recommended_action']:>10}"
+        )
 
     print()
 
@@ -289,7 +302,7 @@ def test_weighted_confidence():
 
 def test_p0_no_override():
     """测试6：P0 硬退出不可被宏观覆盖
-    
+
     核心验证：所有策略的 P0 硬退出都不允许宏观覆盖（默认配置）。
     """
     print("=" * 70)
@@ -339,7 +352,7 @@ def test_p0_no_override():
 
 def test_max_reduce_fraction():
     """测试7：最大减仓比例限制
-    
+
     核心验证：马丁策略最多只能减仓 30%，
     而 Agent B 可以减仓 70%。
     """
@@ -365,7 +378,9 @@ def test_max_reduce_fraction():
 
     strategies = ["v15_martin", "yijing_bcrm", "agent_b"]
 
-    print(f"{'策略':<20} {'宏观建议减仓':>12} {'技术建议减仓':>12} {'最终减仓比例':>14} {'限制':>10}")
+    print(
+        f"{'策略':<20} {'宏观建议减仓':>12} {'技术建议减仓':>12} {'最终减仓比例':>14} {'限制':>10}"
+    )
     print("-" * 70)
 
     for sid in strategies:
@@ -382,11 +397,14 @@ def test_max_reduce_fraction():
         fused = fuse_macro_technical(macro_eval, tech_signal, pos_info, sid)
         final_reduce = fused.get("parameters", {}).get("reduce_fraction", 0)
 
-        print(f"{design.strategy_name:<20} {0.6:>12.0%} {0.3:>12.0%} "
-              f"{final_reduce:>14.0%} {design.max_macro_reduce_fraction:>10.0%}")
+        print(
+            f"{design.strategy_name:<20} {0.6:>12.0%} {0.3:>12.0%} "
+            f"{final_reduce:>14.0%} {design.max_macro_reduce_fraction:>10.0%}"
+        )
 
-        assert final_reduce <= design.max_macro_reduce_fraction, \
-            f"{design.strategy_name} 的减仓比例超过限制"
+        assert (
+            final_reduce <= design.max_macro_reduce_fraction
+        ), f"{design.strategy_name} 的减仓比例超过限制"
 
     print()
     print("✅ 验证通过：所有策略的减仓比例都不超过各自的限制")
@@ -421,6 +439,7 @@ def main():
         except Exception as e:
             print(f"💥 测试异常 [{name}]: {e}")
             import traceback
+
             traceback.print_exc()
             print()
             all_passed = False

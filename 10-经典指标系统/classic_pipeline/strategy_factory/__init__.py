@@ -12,6 +12,7 @@
 
 边界：只纳入"策略生产链路"的编排和对接，不吞并通用审批/策略管理/治理能力。
 """
+
 from __future__ import annotations
 
 __version__ = "0.1.0"

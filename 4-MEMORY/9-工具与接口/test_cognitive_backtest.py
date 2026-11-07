@@ -4,7 +4,7 @@
 从历史会话 action_chain 提取文件变更，A/B 对比全触发 vs salience 阈值过滤
 """
 
-import sys
+import sys  # noqa: I001
 import json
 from pathlib import Path
 from collections import defaultdict
@@ -38,12 +38,14 @@ def load_historical_file_changes():
                         continue
                     event = json.loads(line)
                     if event.get("action_type") == "file_change" and event.get("file"):
-                        all_changes.append({
-                            "session_id": session_id,
-                            "file": event["file"],
-                            "ts": event.get("timestamp", 0),
-                            "detail": event.get("detail", ""),
-                        })
+                        all_changes.append(
+                            {
+                                "session_id": session_id,
+                                "file": event["file"],
+                                "ts": event.get("timestamp", 0),
+                                "detail": event.get("detail", ""),
+                            }
+                        )
         except (json.JSONDecodeError, OSError):
             continue
 
@@ -97,31 +99,35 @@ def backtest_salience_score():
 
     # 计算召回调用减少率
     reduction_rate = (1 - group_b_triggers / group_a_triggers) * 100 if group_a_triggers > 0 else 0
-    immediate_reduction = (1 - group_b_immediate / group_a_triggers) * 100 if group_a_triggers > 0 else 0
+    immediate_reduction = (
+        (1 - group_b_immediate / group_a_triggers) * 100 if group_a_triggers > 0 else 0
+    )
 
     print(f"\n{'='*60}")
-    print(f"🧠 P1-2 突显网络 salience_score 认知回测")
+    print("🧠 P1-2 突显网络 salience_score 认知回测")
     print(f"{'='*60}")
-    print(f"\nGroup A (全触发 baseline):")
+    print("\nGroup A (全触发 baseline):")
     print(f"  总触发次数: {group_a_triggers}")
 
-    print(f"\nGroup B (salience 阈值过滤):")
+    print("\nGroup B (salience 阈值过滤):")
     print(f"  高显著 (≥0.7) 即时触发: {high_salience}")
     print(f"  中显著 (0.3-0.7) 累积触发: {medium_salience}")
     print(f"  低显著 (<0.3) 不触发: {low_salience}")
     print(f"  总触发次数: {group_b_triggers}")
     print(f"  即时触发次数: {group_b_immediate}")
 
-    print(f"\n📈 效果:")
+    print("\n📈 效果:")
     print(f"  召回调用减少率: {reduction_rate:.1f}%")
     print(f"  即时触发减少率: {immediate_reduction:.1f}%")
 
-    print(f"\n📊 salience 分布:")
+    print("\n📊 salience 分布:")
     for score in sorted(salience_distribution.keys()):
         count = salience_distribution[score]
         pct = count / len(changes) * 100
         examples = file_type_examples[score][:2]
-        print(f"  score={score}: {count} ({pct:.1f}%) — 例: {examples[0][:60] if examples else 'N/A'}")
+        print(
+            f"  score={score}: {count} ({pct:.1f}%) — 例: {examples[0][:60] if examples else 'N/A'}"
+        )
 
     # 验证：salience 阈值过滤应减少不必要的召回调用
     # 目标：低显著（<0.3）的不触发，减少率应 > 0
@@ -133,7 +139,7 @@ def backtest_salience_score():
         # 大量历史数据中应有高显著变更
         assert high_salience + medium_salience > 0, "应有高/中显著变更被识别"
 
-    print(f"\n✅ 认知回测验证通过：salience_score 有效区分变更显著性")
+    print("\n✅ 认知回测验证通过：salience_score 有效区分变更显著性")
     return True
 
 

@@ -12,12 +12,12 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 # === 路径设置：确保可导入同级包 ===
-_THIS_DIR = Path(__file__).resolve().parent          # .../9-RAG-INFRA/rag_engine
-_RAG_INFRA_DIR = _THIS_DIR.parent                    # .../9-RAG-INFRA
+_THIS_DIR = Path(__file__).resolve().parent  # .../9-RAG-INFRA/rag_engine
+_RAG_INFRA_DIR = _THIS_DIR.parent  # .../9-RAG-INFRA
 if str(_RAG_INFRA_DIR) not in sys.path:
     sys.path.insert(0, str(_RAG_INFRA_DIR))
 
-from vector_store.chunker import chunk_markdown
+from vector_store.chunker import chunk_markdown  # noqa: E402
 
 # 默认关键词索引目录
 DEFAULT_INDEX_PATH = _RAG_INFRA_DIR / "keyword_index"
@@ -27,17 +27,20 @@ _TOKEN_RE = re.compile(r"[A-Za-z0-9]+|[\u4e00-\u9fa5]")
 
 # 尝试导入 Whoosh
 try:
-    from whoosh.analysis import Tokenizer, Token
-    from whoosh.fields import Schema, TEXT, STORED
-    from whoosh.index import create_in, exists_in, open_dir
-    from whoosh.qparser import QueryParser, OrGroup
     from whoosh import scoring
+    from whoosh.analysis import Token, Tokenizer
+    from whoosh.fields import STORED, TEXT, Schema
+    from whoosh.index import create_in, exists_in, open_dir  # noqa: F401
+    from whoosh.qparser import OrGroup, QueryParser
+
     _WHOOSH_AVAILABLE = True
 except ImportError:
     _WHOOSH_AVAILABLE = False
+
     # Whoosh 不可用时定义占位基类，避免 class ChineseTokenizer(Tokenizer) 抛 NameError
     class Tokenizer:  # type: ignore[no-redef]
         pass
+
     class Token:  # type: ignore[no-redef]
         def __init__(self, **kwargs):
             pass
@@ -46,11 +49,20 @@ except ImportError:
 class ChineseTokenizer(Tokenizer):
     """中文分词器：中文字符按字切分，英文/数字按连续串切分。"""
 
-    def __call__(self, value, positions=False, chars=False,
-                 keeporiginal=False, removestops=True,
-                 start_pos=0, start_char=0, tokenize=True, mode="", **kwargs):
-        t = Token(positions=positions, chars=chars,
-                  removestops=removestops, mode=mode)
+    def __call__(
+        self,
+        value,
+        positions=False,
+        chars=False,
+        keeporiginal=False,
+        removestops=True,
+        start_pos=0,
+        start_char=0,
+        tokenize=True,
+        mode="",
+        **kwargs,
+    ):
+        t = Token(positions=positions, chars=chars, removestops=removestops, mode=mode)
         pos = start_pos
         for m in _TOKEN_RE.finditer(value):
             t.text = m.group(0).lower()
@@ -137,8 +149,7 @@ def build_keyword_index(knowledge_dir, index_path: Optional[Path] = None) -> Dic
     }
 
 
-def keyword_search(query: str, top_k: int = 5,
-                   index_path: Optional[Path] = None) -> List[Dict]:
+def keyword_search(query: str, top_k: int = 5, index_path: Optional[Path] = None) -> List[Dict]:
     """BM25 关键词检索。
 
     Args:
@@ -174,13 +185,15 @@ def keyword_search(query: str, top_k: int = 5,
         with ix.searcher(weighting=scoring.BM25F) as searcher:
             hits = searcher.search(q, limit=top_k)
             for hit in hits:
-                results.append({
-                    "content": hit["content"],
-                    "source_file": hit["source_file"],
-                    "domain": hit["domain"],
-                    "heading": hit.get("heading", ""),
-                    "score": float(hit.score),
-                })
+                results.append(
+                    {
+                        "content": hit["content"],
+                        "source_file": hit["source_file"],
+                        "domain": hit["domain"],
+                        "heading": hit.get("heading", ""),
+                        "score": float(hit.score),
+                    }
+                )
     except Exception:
         return []  # FAIL-OPEN：检索失败
 
@@ -189,6 +202,7 @@ def keyword_search(query: str, top_k: int = 5,
 
 if __name__ == "__main__":
     import json
+
     from vector_store.config import KNOWLEDGE_BASE_DIR
 
     build_keyword_index(KNOWLEDGE_BASE_DIR)

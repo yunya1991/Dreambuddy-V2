@@ -18,13 +18,13 @@
     python3 backtest/run_reasoning_backtest.py --synthetic 1500    # 使用1500天合成数据
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import argparse
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from backtest import (
+from backtest import (  # noqa: I001
     BacktestEngine,
     BacktestResult,
     BuyAndHoldStrategy,
@@ -43,7 +43,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description="三屏推理算法回测")
     parser.add_argument("--symbol", default="BTC-USDT", help="交易对")
     parser.add_argument("--limit", type=int, default=1000, help="K线数量")
-    parser.add_argument("--synthetic", type=int, default=0, help="使用合成数据(指定天数,0=真实数据)")
+    parser.add_argument(
+        "--synthetic", type=int, default=0, help="使用合成数据(指定天数,0=真实数据)"
+    )
     parser.add_argument("--daily", action="store_true", help="每日更新信号(默认每3天)")
     parser.add_argument("--ensemble", action="store_true", help="启用LightGBM集成推理")
     parser.add_argument("--no-wind-vane", action="store_true", help="禁用BTC风向标闸门")
@@ -84,14 +86,17 @@ def run_strategy_backtest(engine, strategy, prices, name):
         result = engine.run(prices["close"], signals, symbol=name)
         bt_result = BacktestResult(result)
         n_trades = bt_result.metrics.get("total_trades", 0)
-        print(f"  完成: 收益 {bt_result.total_return_pct:.2f}%, "
-              f"夏普 {bt_result.sharpe_ratio:.2f}, "
-              f"回撤 {bt_result.max_drawdown_pct:.2f}%, "
-              f"交易 {n_trades}")
+        print(
+            f"  完成: 收益 {bt_result.total_return_pct:.2f}%, "
+            f"夏普 {bt_result.sharpe_ratio:.2f}, "
+            f"回撤 {bt_result.max_drawdown_pct:.2f}%, "
+            f"交易 {n_trades}"
+        )
         return bt_result, strategy
     except Exception as e:
         print(f"  失败: {e}")
         import traceback
+
         traceback.print_exc()
         return None, strategy
 
@@ -125,7 +130,9 @@ def _print_lr_stats(strategy, name):
     weak = stats.get("weakening", 0)
     large_to_small = cont + late_cont
     small_to_large = acc_mode + weak
-    print(f"  双向驱动: 大→小={large_to_small}({large_to_small/total*100:.1f}%) | 小→大={small_to_large}({small_to_large/total*100:.1f}%)")
+    print(
+        f"  双向驱动: 大→小={large_to_small}({large_to_small/total*100:.1f}%) | 小→大={small_to_large}({small_to_large/total*100:.1f}%)"
+    )
     if cont > 0:
         print(f"    趋势延续: {cont} ({cont/total*100:.1f}%)")
     if late_cont > 0:
@@ -139,9 +146,13 @@ def _print_lr_stats(strategy, name):
     if stats.get("accumulation", 0) > 0:
         print(f"  质变积累: {stats['accumulation']} 次 ({stats['accumulation']/total*100:.1f}%)")
     if stats.get("breakthrough_imminent", 0) > 0:
-        print(f"  质变临近: {stats['breakthrough_imminent']} 次 ({stats['breakthrough_imminent']/total*100:.1f}%)")
+        print(
+            f"  质变临近: {stats['breakthrough_imminent']} 次 ({stats['breakthrough_imminent']/total*100:.1f}%)"
+        )
     if stats.get("breakthrough_confirmed", 0) > 0:
-        print(f"  质变确认: {stats['breakthrough_confirmed']} 次 ({stats['breakthrough_confirmed']/total*100:.1f}%)")
+        print(
+            f"  质变确认: {stats['breakthrough_confirmed']} 次 ({stats['breakthrough_confirmed']/total*100:.1f}%)"
+        )
 
 
 def _print_full_reasoning_stats(strategy, name):
@@ -153,48 +164,77 @@ def _print_full_reasoning_stats(strategy, name):
 
     print(f"\n--- {name} 推理统计 ---")
     print(f"  评估总次数: {total}")
-    print(f"  入场信号: 多={stats['enter_long']} | 空={stats['enter_short']} | "
-          f"观望={stats['wait']}")
+    print(
+        f"  入场信号: 多={stats['enter_long']} | 空={stats['enter_short']} | "
+        f"观望={stats['wait']}"
+    )
     enter_total = stats["enter_long"] + stats["enter_short"]
     enter_rate = enter_total / total * 100 if total > 0 else 0
     print(f"  入场率: {enter_rate:.1f}% ({enter_total}/{total})")
-    print(f"  风向标硬拦截: {stats['wind_vane_blocked']} 次 "
-          f"({stats['wind_vane_blocked']/total*100:.1f}%)")
+    print(
+        f"  风向标硬拦截: {stats['wind_vane_blocked']} 次 "
+        f"({stats['wind_vane_blocked']/total*100:.1f}%)"
+    )
     # P0 新增统计
     if stats.get("wind_vane_soft_blocked", 0) > 0:
-        print(f"  风向标软拦截(P0): {stats['wind_vane_soft_blocked']} 次 "
-              f"({stats['wind_vane_soft_blocked']/total*100:.1f}%)")
+        print(
+            f"  风向标软拦截(P0): {stats['wind_vane_soft_blocked']} 次 "
+            f"({stats['wind_vane_soft_blocked']/total*100:.1f}%)"
+        )
     if stats.get("reversal_trial", 0) > 0:
-        print(f"  逆转轻仓试探入场(P0): {stats['reversal_trial']} 次 "
-              f"({stats['reversal_trial']/total*100:.1f}%)")
+        print(
+            f"  逆转轻仓试探入场(P0): {stats['reversal_trial']} 次 "
+            f"({stats['reversal_trial']/total*100:.1f}%)"
+        )
     if stats.get("strong_consistent", 0) > 0:
-        print(f"  强一致入场(P0): {stats['strong_consistent']} 次 "
-              f"({stats['strong_consistent']/total*100:.1f}%)")
+        print(
+            f"  强一致入场(P0): {stats['strong_consistent']} 次 "
+            f"({stats['strong_consistent']/total*100:.1f}%)"
+        )
     # P1 新增统计
     if stats.get("dynamic_timing_entry", 0) > 0:
-        print(f"  动态时机入场(P1): {stats['dynamic_timing_entry']} 次 "
-              f"({stats['dynamic_timing_entry']/total*100:.1f}%)")
+        print(
+            f"  动态时机入场(P1): {stats['dynamic_timing_entry']} 次 "
+            f"({stats['dynamic_timing_entry']/total*100:.1f}%)"
+        )
     # P2 新增统计：趋势阶段分布
-    if stats.get("phase_early", 0) + stats.get("phase_accelerating", 0) + stats.get("phase_maturing", 0) + stats.get("phase_reversing", 0) > 0:
-        print(f"  趋势阶段分布(P2): 启动={stats['phase_early']} | 加速={stats['phase_accelerating']} | "
-              f"衰竭={stats['phase_maturing']} | 逆转={stats['phase_reversing']} | 未知={stats['phase_unknown']}")
+    if (
+        stats.get("phase_early", 0)
+        + stats.get("phase_accelerating", 0)
+        + stats.get("phase_maturing", 0)
+        + stats.get("phase_reversing", 0)
+        > 0
+    ):
+        print(
+            f"  趋势阶段分布(P2): 启动={stats['phase_early']} | 加速={stats['phase_accelerating']} | "
+            f"衰竭={stats['phase_maturing']} | 逆转={stats['phase_reversing']} | 未知={stats['phase_unknown']}"
+        )
         if stats.get("phase_adjusted", 0) > 0:
-            print(f"  阶段调整生效(P2): {stats['phase_adjusted']} 次 "
-                  f"({stats['phase_adjusted']/total*100:.1f}%)")
+            print(
+                f"  阶段调整生效(P2): {stats['phase_adjusted']} 次 "
+                f"({stats['phase_adjusted']/total*100:.1f}%)"
+            )
     # P2-v2 新增统计：Elder-ray 背离
     if stats.get("elder_bull_divergence", 0) + stats.get("elder_bear_divergence", 0) > 0:
-        print(f"  Elder-ray背离(P2-v2): 看涨={stats['elder_bull_divergence']} | 看跌={stats['elder_bear_divergence']}")
+        print(
+            f"  Elder-ray背离(P2-v2): 看涨={stats['elder_bull_divergence']} | 看跌={stats['elder_bear_divergence']}"
+        )
         if stats.get("elder_divergence_entry", 0) > 0:
-            print(f"  Elder-ray背离入场(P2-v2): {stats['elder_divergence_entry']} 次 "
-                  f"({stats['elder_divergence_entry']/total*100:.1f}%)")
-    print(f"  趋势不一致: {stats['trend_inconsistent']} 次 "
-          f"({stats['trend_inconsistent']/total*100:.1f}%)")
+            print(
+                f"  Elder-ray背离入场(P2-v2): {stats['elder_divergence_entry']} 次 "
+                f"({stats['elder_divergence_entry']/total*100:.1f}%)"
+            )
+    print(
+        f"  趋势不一致: {stats['trend_inconsistent']} 次 "
+        f"({stats['trend_inconsistent']/total*100:.1f}%)"
+    )
     # BTC趋势方向过滤统计
     if stats.get("btc_direction_blocked", 0) > 0:
-        print(f"  BTC方向过滤拦截: {stats['btc_direction_blocked']} 次 "
-              f"({stats['btc_direction_blocked']/total*100:.1f}%)")
-    print(f"  方向中性: {stats['neutral']} 次 "
-          f"({stats['neutral']/total*100:.1f}%)")
+        print(
+            f"  BTC方向过滤拦截: {stats['btc_direction_blocked']} 次 "
+            f"({stats['btc_direction_blocked']/total*100:.1f}%)"
+        )
+    print(f"  方向中性: {stats['neutral']} 次 " f"({stats['neutral']/total*100:.1f}%)")
     if stats["no_freqtrade_fallback"] > 0:
         print(f"  降级入场(无Freqtrade): {stats['no_freqtrade_fallback']} 次")
     if stats.get("ensemble_used", 0) > 0 or stats.get("ensemble_fallback", 0) > 0:
@@ -215,7 +255,7 @@ def main():
     print(f"  集成推理: {args.ensemble} | 杠杆: {args.leverage}x")
 
     df, data_source = fetch_data(args)
-    print(f"\n数据概况:")
+    print("\n数据概况:")
     print(f"  来源: {data_source}")
     print(f"  天数: {len(df)}")
     print(f"  价格范围: {df['close'].min():.2f} ~ {df['close'].max():.2f}")
@@ -226,7 +266,7 @@ def main():
         weekly_count = len(df) // 7
         if weekly_count < 200:
             print(f"\n  [警告] 周线数据不足({weekly_count}周 < 200周)，风向标MA200可能无法计算")
-            print(f"  风向标将退化为'数据不足，默认全开'模式")
+            print("  风向标将退化为'数据不足，默认全开'模式")
 
     engine = BacktestEngine(
         initial_capital=args.capital,
@@ -258,7 +298,7 @@ def main():
             warmup_periods=210,
             update_step=update_step,
             use_counter_indicators=False,  # 关闭反方指标，隔离推理算法效果
-            use_risk_control=False,        # 关闭风控，隔离推理算法效果
+            use_risk_control=False,  # 关闭风控，隔离推理算法效果
         ),
         df,
         "基础三屏(三大算法)",
@@ -379,8 +419,10 @@ def main():
         print("-" * 50)
         r_with = results["完整推理"]
         r_without = results["完整推理(无风向标)"]
-        print(f"  收益: {r_with.total_return_pct:.2f}% vs {r_without.total_return_pct:.2f}% "
-              f"(差异: {r_with.total_return_pct - r_without.total_return_pct:.2f}%)")
+        print(
+            f"  收益: {r_with.total_return_pct:.2f}% vs {r_without.total_return_pct:.2f}% "
+            f"(差异: {r_with.total_return_pct - r_without.total_return_pct:.2f}%)"
+        )
         print(f"  夏普: {r_with.sharpe_ratio:.2f} vs {r_without.sharpe_ratio:.2f}")
         print(f"  回撤: {r_with.max_drawdown_pct:.2f}% vs {r_without.max_drawdown_pct:.2f}%")
 

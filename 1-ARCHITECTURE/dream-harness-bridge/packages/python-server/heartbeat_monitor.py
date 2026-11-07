@@ -10,11 +10,10 @@ L2 自检测: DSH Subagent 心跳监控器
 
 import logging
 import threading
-import time
-from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional, Callable
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
+from typing import Any, Callable, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +27,7 @@ class HeartbeatStatus(str, Enum):
 @dataclass
 class SubagentHeartbeat:
     """单个 subagent 心跳记录"""
+
     subagent_type: str
     last_call_ts: Optional[str] = None
     last_call_duration_ms: Optional[float] = None
@@ -61,6 +61,7 @@ class SubagentHeartbeat:
 @dataclass
 class SubagentOutputStats:
     """SubagentOutput 字段非空统计"""
+
     total_outputs: int = 0
     module_non_empty: int = 0
     summary_non_empty: int = 0
@@ -98,8 +99,14 @@ class SubagentOutputStats:
 
 # 9 个 DSH subagent 类型
 DSH_SUBAGENT_TYPES = [
-    "technical", "sentiment", "macro", "flow",
-    "onchain", "valuation", "risk", "portfolio",
+    "technical",
+    "sentiment",
+    "macro",
+    "flow",
+    "onchain",
+    "valuation",
+    "risk",
+    "portfolio",
     "synthesizer",
 ]
 
@@ -161,7 +168,9 @@ class DSHHeartbeatMonitor:
                 status = HeartbeatStatus.DEAD
                 dead_count += 1
             else:
-                last_call = datetime.fromisoformat(hb.last_call_ts.replace("Z", "+00:00")).replace(tzinfo=None)
+                last_call = datetime.fromisoformat(hb.last_call_ts.replace("Z", "+00:00")).replace(
+                    tzinfo=None
+                )
                 elapsed = (now - last_call).total_seconds()
                 if elapsed > self.dead_threshold_seconds:
                     status = HeartbeatStatus.DEAD

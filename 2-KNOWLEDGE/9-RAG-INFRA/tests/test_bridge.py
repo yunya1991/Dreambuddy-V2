@@ -22,26 +22,25 @@ _RAG_INFRA_DIR = Path(__file__).resolve().parent.parent
 if str(_RAG_INFRA_DIR) not in sys.path:
     sys.path.insert(0, str(_RAG_INFRA_DIR))
 
-import pytest
+import pytest  # noqa: E402, I001
 
-from bridge import (
+from bridge import (  # noqa: E402
     record_retrieval_as_memory,
     verify_and_feedback,
     apply_boost_to_results,
     get_boost,
     update_boost,
-    reset,
     BOOST_MIN,
     BOOST_MAX,
     BOOST_SUCCESS_FACTOR,
     BOOST_FAILURE_FACTOR,
     DEFAULT_BOOST,
 )
-from bridge import weight_feedback as wf_mod
-from bridge import memory_bridge as mb_mod
-
+from bridge import weight_feedback as wf_mod  # noqa: E402
+from bridge import memory_bridge as mb_mod  # noqa: E402
 
 # === FakeCLE：模拟 CognitiveLoopEntry ===
+
 
 class FakeCLE:
     """模拟认知闭环入口，record/verify 行为可控。"""
@@ -52,18 +51,27 @@ class FakeCLE:
         self._counter = 0
         self._verify_ok = verify_ok
 
-    def record(self, content, quality_level="C", confidence=0.3,
-               tags=None, source="trae", memory_type="experience"):
+    def record(
+        self,
+        content,
+        quality_level="C",
+        confidence=0.3,
+        tags=None,
+        source="trae",
+        memory_type="experience",
+    ):
         self._counter += 1
         mid = f"VM-FAKE-{self._counter:04d}"
-        self.records.append({
-            "memory_id": mid,
-            "content": content,
-            "quality_level": quality_level,
-            "confidence": confidence,
-            "tags": tags or [],
-            "source": source,
-        })
+        self.records.append(
+            {
+                "memory_id": mid,
+                "content": content,
+                "quality_level": quality_level,
+                "confidence": confidence,
+                "tags": tags or [],
+                "source": source,
+            }
+        )
         return mid
 
     def verify(self, memory_id, success=True):
@@ -85,6 +93,7 @@ class FailingCLE:
 
 # === fixtures ===
 
+
 @pytest.fixture
 def fake_cle():
     return FakeCLE()
@@ -103,27 +112,27 @@ def isolated_paths(tmp_path):
 # weight_feedback 单元测试
 # ═══════════════════════════════════════════════════════════════
 
+
 def test_tc1_get_boost_default(isolated_paths):
     """未记录的知识单元 boost 默认 1.0。"""
-    assert get_boost("unknown.md", "未知标题",
-                     weight_path=isolated_paths["weight_path"]) == DEFAULT_BOOST
+    assert (
+        get_boost("unknown.md", "未知标题", weight_path=isolated_paths["weight_path"])
+        == DEFAULT_BOOST
+    )
 
 
 def test_tc2_update_boost_success_increases(isolated_paths):
     """verify 成功时 boost 上升（乘以 SUCCESS_FACTOR）。"""
-    new = update_boost("file.md", "标题", success=True,
-                       weight_path=isolated_paths["weight_path"])
+    new = update_boost("file.md", "标题", success=True, weight_path=isolated_paths["weight_path"])
     expected = round(DEFAULT_BOOST * BOOST_SUCCESS_FACTOR, 4)
     assert new == expected
     # 持久化生效
-    assert get_boost("file.md", "标题",
-                     weight_path=isolated_paths["weight_path"]) == expected
+    assert get_boost("file.md", "标题", weight_path=isolated_paths["weight_path"]) == expected
 
 
 def test_tc3_update_boost_failure_decreases(isolated_paths):
     """verify 失败时 boost 下降（乘以 FAILURE_FACTOR）。"""
-    new = update_boost("file.md", "标题", success=False,
-                       weight_path=isolated_paths["weight_path"])
+    new = update_boost("file.md", "标题", success=False, weight_path=isolated_paths["weight_path"])
     expected = round(DEFAULT_BOOST * BOOST_FAILURE_FACTOR, 4)
     assert new == expected
 
@@ -167,10 +176,8 @@ def test_tc7_apply_boost_reorders_results(isolated_paths):
 
     # a.md 原始分接近 b.md，boost 后应反超
     results = [
-        {"source_file": "a.md", "heading": "标题A",
-         "content": "A", "final_score": 0.80},
-        {"source_file": "b.md", "heading": "标题B",
-         "content": "B", "final_score": 0.85},
+        {"source_file": "a.md", "heading": "标题A", "content": "A", "final_score": 0.80},
+        {"source_file": "b.md", "heading": "标题B", "content": "B", "final_score": 0.85},
     ]
     adjusted = apply_boost_to_results(results, weight_path=wp)
     # a.md boost≈1.21，叠加后 0.80*1.21≈0.968 > 0.85，应排第一
@@ -208,20 +215,29 @@ def test_tc10_weight_feedback_persistence(isolated_paths):
 # memory_bridge: record_retrieval_as_memory
 # ═══════════════════════════════════════════════════════════════
 
+
 def test_tc11_record_retrieval_as_memory(fake_cle, isolated_paths):
     """RAG 检索结果 record 为 C 级记忆，返回映射列表。"""
     query = "BCRM推理模型"
     results = [
-        {"source_file": "BCRM.md", "heading": "344模型",
-         "content": "BCRM采用344+278模型架构", "domain": "trading",
-         "final_score": 0.85},
-        {"source_file": "五计.md", "heading": "五维评分",
-         "content": "道天地将法五维加权", "domain": "strategy",
-         "final_score": 0.72},
+        {
+            "source_file": "BCRM.md",
+            "heading": "344模型",
+            "content": "BCRM采用344+278模型架构",
+            "domain": "trading",
+            "final_score": 0.85,
+        },
+        {
+            "source_file": "五计.md",
+            "heading": "五维评分",
+            "content": "道天地将法五维加权",
+            "domain": "strategy",
+            "final_score": 0.72,
+        },
     ]
     mappings = record_retrieval_as_memory(
-        query, results, cle=fake_cle,
-        map_path=isolated_paths["map_path"])
+        query, results, cle=fake_cle, map_path=isolated_paths["map_path"]
+    )
 
     assert len(mappings) == 2
     # 每条映射含必要字段
@@ -245,10 +261,8 @@ def test_tc11_record_retrieval_as_memory(fake_cle, isolated_paths):
 def test_tc12_record_persists_map_jsonl(fake_cle, isolated_paths):
     """映射表持久化到 JSONL 文件。"""
     query = "Kalman滤波"
-    results = [{"source_file": "f.md", "heading": "h",
-                "content": "c", "final_score": 0.8}]
-    record_retrieval_as_memory(query, results, cle=fake_cle,
-                               map_path=isolated_paths["map_path"])
+    results = [{"source_file": "f.md", "heading": "h", "content": "c", "final_score": 0.8}]
+    record_retrieval_as_memory(query, results, cle=fake_cle, map_path=isolated_paths["map_path"])
 
     mp = isolated_paths["map_path"]
     assert mp.exists()
@@ -262,16 +276,18 @@ def test_tc12_record_persists_map_jsonl(fake_cle, isolated_paths):
 
 def test_tc13_record_empty_results(fake_cle, isolated_paths):
     """空结果列表返回空映射。"""
-    mappings = record_retrieval_as_memory("query", [], cle=fake_cle,
-                                          map_path=isolated_paths["map_path"])
+    mappings = record_retrieval_as_memory(
+        "query", [], cle=fake_cle, map_path=isolated_paths["map_path"]
+    )
     assert mappings == []
 
 
 def test_tc14_record_empty_query(fake_cle, isolated_paths):
     """空查询返回空映射。"""
     results = [{"source_file": "f.md", "heading": "h", "content": "c"}]
-    mappings = record_retrieval_as_memory("", results, cle=fake_cle,
-                                          map_path=isolated_paths["map_path"])
+    mappings = record_retrieval_as_memory(
+        "", results, cle=fake_cle, map_path=isolated_paths["map_path"]
+    )
     assert mappings == []
 
 
@@ -280,8 +296,7 @@ def test_tc15_record_fail_open_cle_none(isolated_paths, monkeypatch):
     # mock _get_cle 返回 None
     monkeypatch.setattr(mb_mod, "_get_cle", lambda: None)
     results = [{"source_file": "f.md", "heading": "h", "content": "c"}]
-    mappings = record_retrieval_as_memory("query", results,
-                                         map_path=isolated_paths["map_path"])
+    mappings = record_retrieval_as_memory("query", results, map_path=isolated_paths["map_path"])
     assert mappings == []
 
 
@@ -292,8 +307,9 @@ def test_tc16_record_fail_open_record_exception(isolated_paths):
         {"source_file": "f1.md", "heading": "h1", "content": "c1"},
         {"source_file": "f2.md", "heading": "h2", "content": "c2"},
     ]
-    mappings = record_retrieval_as_memory("query", results, cle=cle,
-                                          map_path=isolated_paths["map_path"])
+    mappings = record_retrieval_as_memory(
+        "query", results, cle=cle, map_path=isolated_paths["map_path"]
+    )
     # 全部 record 抛异常，返回空列表
     assert mappings == []
 
@@ -302,20 +318,25 @@ def test_tc16_record_fail_open_record_exception(isolated_paths):
 # memory_bridge: verify_and_feedback
 # ═══════════════════════════════════════════════════════════════
 
+
 def test_tc17_verify_and_feedback_success(fake_cle, isolated_paths):
     """verify 成功时更新 boost（上升）并返回 done。"""
     # 先 record 建立映射
     query = "测试"
-    results = [{"source_file": "f.md", "heading": "h",
-                "content": "c", "final_score": 0.8}]
-    mappings = record_retrieval_as_memory(query, results, cle=fake_cle,
-                                          map_path=isolated_paths["map_path"])
+    results = [{"source_file": "f.md", "heading": "h", "content": "c", "final_score": 0.8}]
+    mappings = record_retrieval_as_memory(
+        query, results, cle=fake_cle, map_path=isolated_paths["map_path"]
+    )
     mid = mappings[0]["memory_id"]
 
     # verify 成功
-    r = verify_and_feedback(mid, success=True, cle=fake_cle,
-                            map_path=isolated_paths["map_path"],
-                            weight_path=isolated_paths["weight_path"])
+    r = verify_and_feedback(
+        mid,
+        success=True,
+        cle=fake_cle,
+        map_path=isolated_paths["map_path"],
+        weight_path=isolated_paths["weight_path"],
+    )
     assert r["status"] == "done"
     assert r["boost_updated"] is True
     assert r["source_file"] == "f.md"
@@ -328,13 +349,20 @@ def test_tc17_verify_and_feedback_success(fake_cle, isolated_paths):
 def test_tc18_verify_and_feedback_failure(fake_cle, isolated_paths):
     """verify 失败时更新 boost（下降）并返回 done。"""
     mappings = record_retrieval_as_memory(
-        "q", [{"source_file": "f.md", "heading": "h", "content": "c"}],
-        cle=fake_cle, map_path=isolated_paths["map_path"])
+        "q",
+        [{"source_file": "f.md", "heading": "h", "content": "c"}],
+        cle=fake_cle,
+        map_path=isolated_paths["map_path"],
+    )
     mid = mappings[0]["memory_id"]
 
-    r = verify_and_feedback(mid, success=False, cle=fake_cle,
-                            map_path=isolated_paths["map_path"],
-                            weight_path=isolated_paths["weight_path"])
+    r = verify_and_feedback(
+        mid,
+        success=False,
+        cle=fake_cle,
+        map_path=isolated_paths["map_path"],
+        weight_path=isolated_paths["weight_path"],
+    )
     assert r["status"] == "done"
     assert r["boost_updated"] is True
     assert r["new_boost"] < DEFAULT_BOOST
@@ -342,9 +370,13 @@ def test_tc18_verify_and_feedback_failure(fake_cle, isolated_paths):
 
 def test_tc19_verify_mapping_not_found(fake_cle, isolated_paths):
     """memory_id 在映射表中不存在时返回 skipped。"""
-    r = verify_and_feedback("VM-NONEXISTENT", success=True, cle=fake_cle,
-                            map_path=isolated_paths["map_path"],
-                            weight_path=isolated_paths["weight_path"])
+    r = verify_and_feedback(
+        "VM-NONEXISTENT",
+        success=True,
+        cle=fake_cle,
+        map_path=isolated_paths["map_path"],
+        weight_path=isolated_paths["weight_path"],
+    )
     assert r["status"] == "skipped"
     assert r["error"] == "mapping_not_found"
     assert r["boost_updated"] is False
@@ -356,13 +388,20 @@ def test_tc20_verify_fail_open_cle_exception(isolated_paths):
     # 先用 FakeCLE 建立映射
     fake = FakeCLE()
     mappings = record_retrieval_as_memory(
-        "q", [{"source_file": "f.md", "heading": "h", "content": "c"}],
-        cle=fake, map_path=isolated_paths["map_path"])
+        "q",
+        [{"source_file": "f.md", "heading": "h", "content": "c"}],
+        cle=fake,
+        map_path=isolated_paths["map_path"],
+    )
     mid = mappings[0]["memory_id"]
 
-    r = verify_and_feedback(mid, success=True, cle=cle,
-                            map_path=isolated_paths["map_path"],
-                            weight_path=isolated_paths["weight_path"])
+    r = verify_and_feedback(
+        mid,
+        success=True,
+        cle=cle,
+        map_path=isolated_paths["map_path"],
+        weight_path=isolated_paths["weight_path"],
+    )
     assert r["status"] == "failed"
     assert "verify_exception" in (r["error"] or "")
 
@@ -372,13 +411,20 @@ def test_tc21_verify_fail_open_verify_returns_error(isolated_paths):
     cle = FakeCLE(verify_ok=False)
     fake = FakeCLE()
     mappings = record_retrieval_as_memory(
-        "q", [{"source_file": "f.md", "heading": "h", "content": "c"}],
-        cle=fake, map_path=isolated_paths["map_path"])
+        "q",
+        [{"source_file": "f.md", "heading": "h", "content": "c"}],
+        cle=fake,
+        map_path=isolated_paths["map_path"],
+    )
     mid = mappings[0]["memory_id"]
 
-    r = verify_and_feedback(mid, success=True, cle=cle,
-                            map_path=isolated_paths["map_path"],
-                            weight_path=isolated_paths["weight_path"])
+    r = verify_and_feedback(
+        mid,
+        success=True,
+        cle=cle,
+        map_path=isolated_paths["map_path"],
+        weight_path=isolated_paths["weight_path"],
+    )
     assert r["status"] == "failed"
     assert "记忆不存在" in (r["error"] or "")
     assert r["boost_updated"] is False
@@ -388,15 +434,21 @@ def test_tc22_verify_cle_none_updates_boost_only(isolated_paths, monkeypatch):
     """CLE 不可用时仍尝试更新 boost（verify 跳过，反哺不阻塞）。"""
     fake = FakeCLE()
     mappings = record_retrieval_as_memory(
-        "q", [{"source_file": "f.md", "heading": "h", "content": "c"}],
-        cle=fake, map_path=isolated_paths["map_path"])
+        "q",
+        [{"source_file": "f.md", "heading": "h", "content": "c"}],
+        cle=fake,
+        map_path=isolated_paths["map_path"],
+    )
     mid = mappings[0]["memory_id"]
 
     # _get_cle 返回 None
     monkeypatch.setattr(mb_mod, "_get_cle", lambda: None)
-    r = verify_and_feedback(mid, success=True,
-                            map_path=isolated_paths["map_path"],
-                            weight_path=isolated_paths["weight_path"])
+    r = verify_and_feedback(
+        mid,
+        success=True,
+        map_path=isolated_paths["map_path"],
+        weight_path=isolated_paths["weight_path"],
+    )
     # verify 跳过但 boost 更新成功
     assert r["status"] == "done"
     assert r["boost_updated"] is True
@@ -407,6 +459,7 @@ def test_tc22_verify_cle_none_updates_boost_only(isolated_paths, monkeypatch):
 # 端到端闭环测试
 # ═══════════════════════════════════════════════════════════════
 
+
 def test_tc23_e2e_record_verify_feedback_apply(fake_cle, isolated_paths):
     """端到端：record → verify → apply_boost_to_results 闭环。"""
     wp = isolated_paths["weight_path"]
@@ -415,25 +468,39 @@ def test_tc23_e2e_record_verify_feedback_apply(fake_cle, isolated_paths):
     # 1. record 检索结果为记忆
     query = "RAG架构"
     results = [
-        {"source_file": "rag.md", "heading": "混合检索",
-         "content": "三路召回", "domain": "technical", "final_score": 0.8},
-        {"source_file": "kg.md", "heading": "知识图谱",
-         "content": "NetworkX图", "domain": "technical", "final_score": 0.6},
+        {
+            "source_file": "rag.md",
+            "heading": "混合检索",
+            "content": "三路召回",
+            "domain": "technical",
+            "final_score": 0.8,
+        },
+        {
+            "source_file": "kg.md",
+            "heading": "知识图谱",
+            "content": "NetworkX图",
+            "domain": "technical",
+            "final_score": 0.6,
+        },
     ]
     mappings = record_retrieval_as_memory(query, results, cle=fake_cle, map_path=mp)
     assert len(mappings) == 2
 
     # 2. verify 第一条（成功）
-    r = verify_and_feedback(mappings[0]["memory_id"], success=True,
-                            cle=fake_cle, map_path=mp, weight_path=wp)
+    r = verify_and_feedback(
+        mappings[0]["memory_id"], success=True, cle=fake_cle, map_path=mp, weight_path=wp
+    )
     assert r["status"] == "done"
 
     # 3. apply_boost_to_results 验证 boost 叠加
     new_results = [
-        {"source_file": "rag.md", "heading": "混合检索",
-         "content": "三路召回", "final_score": 0.8},
-        {"source_file": "kg.md", "heading": "知识图谱",
-         "content": "NetworkX图", "final_score": 0.6},
+        {"source_file": "rag.md", "heading": "混合检索", "content": "三路召回", "final_score": 0.8},
+        {
+            "source_file": "kg.md",
+            "heading": "知识图谱",
+            "content": "NetworkX图",
+            "final_score": 0.6,
+        },
     ]
     adjusted = apply_boost_to_results(new_results, weight_path=wp)
     # rag.md 有 boost > 1.0，应排在前面
@@ -451,11 +518,11 @@ def test_tc24_e2e_repeated_verify_accumulates(fake_cle, isolated_paths):
 
     # 两次检索同一知识单元
     for q in ["查询1", "查询2"]:
-        results = [{"source_file": "f.md", "heading": "h",
-                    "content": "c", "final_score": 0.7}]
+        results = [{"source_file": "f.md", "heading": "h", "content": "c", "final_score": 0.7}]
         mappings = record_retrieval_as_memory(q, results, cle=fake_cle, map_path=mp)
-        r = verify_and_feedback(mappings[0]["memory_id"], success=True,
-                                cle=fake_cle, map_path=mp, weight_path=wp)
+        r = verify_and_feedback(
+            mappings[0]["memory_id"], success=True, cle=fake_cle, map_path=mp, weight_path=wp
+        )
         assert r["status"] == "done"
 
     # 两次成功 verify，boost 应 > 单次
@@ -490,18 +557,57 @@ def _make_mixed_map_file(path: Path) -> None:
     """构造含pytest tmp路径和真实行的retrieval_memory_map.jsonl。"""
     lines = [
         # pytest 临时路径（应删除）
-        json.dumps({"memory_id": "VM-TMP-1", "source_file": "/private/var/folders/xx/pytest-1/kb/f.md::h",
-                    "heading": "h", "query": "q", "timestamp": 1}, ensure_ascii=False),
-        json.dumps({"memory_id": "VM-TMP-2", "source_file": "/tmp/pytest-of-u/1/kb/f.md",
-                    "heading": "h", "query": "q", "timestamp": 2}, ensure_ascii=False),
-        json.dumps({"memory_id": "VM-TMP-3", "source_file": "/var/folders/z/tmp/kb/f.md",
-                    "heading": "h", "query": "q", "timestamp": 3}, ensure_ascii=False),
+        json.dumps(
+            {
+                "memory_id": "VM-TMP-1",
+                "source_file": "/private/var/folders/xx/pytest-1/kb/f.md::h",
+                "heading": "h",
+                "query": "q",
+                "timestamp": 1,
+            },
+            ensure_ascii=False,
+        ),
+        json.dumps(
+            {
+                "memory_id": "VM-TMP-2",
+                "source_file": "/tmp/pytest-of-u/1/kb/f.md",
+                "heading": "h",
+                "query": "q",
+                "timestamp": 2,
+            },
+            ensure_ascii=False,
+        ),
+        json.dumps(
+            {
+                "memory_id": "VM-TMP-3",
+                "source_file": "/var/folders/z/tmp/kb/f.md",
+                "heading": "h",
+                "query": "q",
+                "timestamp": 3,
+            },
+            ensure_ascii=False,
+        ),
         # 真实路径（应保留）
-        json.dumps({"memory_id": "VM-REAL-1",
-                    "source_file": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/risk-models/2026-09-01-恐贪.md",
-                    "heading": "调研", "query": "归档: 恐贪", "timestamp": 4}, ensure_ascii=False),
-        json.dumps({"memory_id": "VM-REAL-2", "source_file": "7-EXTERNAL-RESEARCH/debug/pathfix.md",
-                    "heading": "验证", "query": "修复", "timestamp": 5}, ensure_ascii=False),
+        json.dumps(
+            {
+                "memory_id": "VM-REAL-1",
+                "source_file": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/risk-models/2026-09-01-恐贪.md",
+                "heading": "调研",
+                "query": "归档: 恐贪",
+                "timestamp": 4,
+            },
+            ensure_ascii=False,
+        ),
+        json.dumps(
+            {
+                "memory_id": "VM-REAL-2",
+                "source_file": "7-EXTERNAL-RESEARCH/debug/pathfix.md",
+                "heading": "验证",
+                "query": "修复",
+                "timestamp": 5,
+            },
+            ensure_ascii=False,
+        ),
     ]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -531,7 +637,9 @@ def test_f1_purge_map_removes_tmp_rows(isolated_paths):
 
     assert stats["map_removed"] == 3
     assert stats["map_kept"] == 2
-    remaining_lines = [ln for ln in mp.read_text(encoding="utf-8").strip().split("\n") if ln.strip()]
+    remaining_lines = [
+        ln for ln in mp.read_text(encoding="utf-8").strip().split("\n") if ln.strip()
+    ]
     assert len(remaining_lines) == 2
     for ln in remaining_lines:
         rec = json.loads(ln)
@@ -577,6 +685,7 @@ def test_f1_purge_handles_nonexistent_files(isolated_paths):
 # F4: pytest 隔离 — 通过 TEST_BRIDGE_* 环境变量重定向默认路径
 # ============================================================
 
+
 def test_f4_env_var_resolves_map_path(monkeypatch, tmp_path):
     """TEST_BRIDGE_MAP_PATH 存在时，resolve_default_paths 返回 env 指定路径。"""
     env_map = tmp_path / "custom_map.jsonl"
@@ -587,6 +696,7 @@ def test_f4_env_var_resolves_map_path(monkeypatch, tmp_path):
 
     # 触发重算（强制重新读取 env）：如果未实现，直接断言路径重定向行为
     from importlib import reload
+
     reload(mb_mod)
     reload(wf_mod)
     paths = mb_mod.resolve_default_paths()
@@ -599,6 +709,7 @@ def test_f4_defaults_without_env(monkeypatch, tmp_path):
     monkeypatch.delenv("TEST_BRIDGE_MAP_PATH", raising=False)
     monkeypatch.delenv("TEST_BRIDGE_WEIGHT_PATH", raising=False)
     from importlib import reload
+
     reload(mb_mod)
     reload(wf_mod)
     paths = mb_mod.resolve_default_paths()
@@ -618,19 +729,22 @@ def test_f4_record_uses_env_map_path(monkeypatch, tmp_path):
     monkeypatch.setenv("TEST_BRIDGE_WEIGHT_PATH", str(env_weight))
 
     from importlib import reload
+
     reload(mb_mod)
     reload(wf_mod)
 
     fake = FakeCLE()
     record_retrieval_as_memory(
         query="test_f4",
-        results=[{
-            "source_file": "src.md",
-            "heading": "H",
-            "domain": "d",
-            "final_score": 0.9,
-            "content": "snippet",
-        }],
+        results=[
+            {
+                "source_file": "src.md",
+                "heading": "H",
+                "domain": "d",
+                "final_score": 0.9,
+                "content": "snippet",
+            }
+        ],
         cle=fake,
         # 显式不传 map_path（强制走默认解析）
     )
@@ -638,7 +752,7 @@ def test_f4_record_uses_env_map_path(monkeypatch, tmp_path):
     assert env_map.exists(), "record_retrieval_as_memory 未将映射写入 TEST_BRIDGE_MAP_PATH"
     assert env_map.read_text(encoding="utf-8").strip() != ""
     # 生产文件未被污染（size 不变或追加内容中不含 TEST_BRIDGE_MAP_PATH）
-    real_map = Path(mb_mod.__file__).parent / "retrieval_memory_map.jsonl"
+    real_map = Path(mb_mod.__file__).parent / "retrieval_memory_map.jsonl"  # noqa: F841
     prod_before = env_map.stat().st_size  # noop just to avoid lint
     assert prod_before > 0  # f4写入一定大于0
 
@@ -648,11 +762,15 @@ def test_f4_record_uses_env_map_path(monkeypatch, tmp_path):
 # 目标：snippet 200→500字符；核心结论摘要注入content，而非纯元数据包裹
 # ============================================================
 
+
 def test_f8_snippet_limit_expanded_to_500():
     """snippet长度上限从200扩展为500，超长内容在500处截断加省略号。"""
     long_content = "A" * 600
     result = {
-        "source_file": "s.md", "heading": "H", "domain": "d", "score": 0.9,
+        "source_file": "s.md",
+        "heading": "H",
+        "domain": "d",
+        "score": 0.9,
         "content": long_content,
     }
     built = mb_mod._build_memory_content(query="q", result=result)
@@ -660,11 +778,14 @@ def test_f8_snippet_limit_expanded_to_500():
     assert "snippet=" in built
     # 提取snippet=到结束或下一个|之前
     import re
+
     m = re.search(r"snippet=([A-Za-z0-9_.\u4e00-\u9fff，。、 ]+)", built)
     assert m is not None, f"snippet字段未正常解析, got: {built[:80]}"
     snip = m.group(1)
     # 600A截断500+... → 实际503字符
-    assert len(snip) == 503, f"期望503字符(500A+3省略), 实际={len(snip)} 首/尾: {snip[:10]}..{snip[-6:]}"
+    assert (
+        len(snip) == 503
+    ), f"期望503字符(500A+3省略), 实际={len(snip)} 首/尾: {snip[:10]}..{snip[-6:]}"
     assert snip.endswith("..."), "截断内容未添加省略号"
 
 
@@ -690,7 +811,10 @@ def test_f8_content_injects_summary_not_metadata_only():
 def test_f8_no_summary_falls_back_snippet():
     """没有summary/conclusion时，仅用snippet不报错，且snippet=500上限。"""
     result = {
-        "source_file": "x.md", "heading": "H", "domain": "d", "score": 0.5,
+        "source_file": "x.md",
+        "heading": "H",
+        "domain": "d",
+        "score": 0.5,
         "content": "Z" * 550,
     }
     built = mb_mod._build_memory_content(query="q", result=result)
@@ -704,14 +828,16 @@ def test_f8_record_writes_injected_format():
     fake = FakeCLE()
     record_retrieval_as_memory(
         query="Medallion调研",
-        results=[{
-            "source_file": "archive/Medallion三层奖章架构.md",
-            "heading": "Medallion调研",
-            "domain": "finance",
-            "final_score": 0.9,
-            "content": "完整正文会截断",
-            "summary": "核心结论：Silver层硬门禁，quality.py从监控升级为拦截。",
-        }],
+        results=[
+            {
+                "source_file": "archive/Medallion三层奖章架构.md",
+                "heading": "Medallion调研",
+                "domain": "finance",
+                "final_score": 0.9,
+                "content": "完整正文会截断",
+                "summary": "核心结论：Silver层硬门禁，quality.py从监控升级为拦截。",
+            }
+        ],
         cle=fake,
     )
     assert len(fake.records) == 1

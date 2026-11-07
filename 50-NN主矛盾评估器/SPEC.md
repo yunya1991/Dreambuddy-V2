@@ -76,7 +76,7 @@
 
 ## §2 输入契约
 
-### 2.1 42 总线（8 源）
+### 2.1 42 总线（8 源 + 11-bcrm-tactical）
 
 | source | 粒度 | horizon | 角色 | 50 内处理 |
 |---|---|---|---|---|
@@ -88,6 +88,7 @@
 | `40-cycle` | 宏观 | days | 约束 | 只进包络 |
 | `43-strategic` | 资产类 | days | 约束 | 只进包络 |
 | `23-contradiction` | 23 输出镜像 | hours | 自环 | 只审计，禁止入裁决 |
+| `11-bcrm-tactical` | 每币 | hours | D3 技术 | **R0 新增**（每币 BCRM2 持久化 + 42 适配器）；无源时 D3=neutral，不得用 `11-bcrm` 冒充 |
 
 > 42 的 `ENABLE_11_STATE_ADAPTER` 默认关；R0 需打开并验证 TTL/去重；bus 缺失时 fail-open。
 >
@@ -109,7 +110,7 @@
 
 ## §3 输出契约
 
-- 复用 `FinalDecisionSignal v1`；`source="50-nn"`；必填字段不变。
+- 复用 `FinalDecisionSignal v1.1`（新增文件，`source` enum 含 `23-evolution`/`50-nn`）；`source="50-nn"`；必填字段不变；v1 为 `const:"23-evolution"`，不得用于 50。
 - `payload` 追加：`evidence_summary` / `gene_versions` / `constraint_id` / `constraint_applied_at` / `control_group`（可选）。
 - 输出前只做约束复核（更保守值），不重复相乘；保留 `constraint_id`。
 - 执行层路由：`source=50-nn` → paper（初期）；live 需 `execution_rights` 授权；同标的同时刻单出口。
@@ -217,6 +218,7 @@ risk_exposure_hint, ts, expires_at, provenance, payload
 
 - 顺序：`full_freeze/FREEZE 否决 → position_band ∩ position_cap ∩ asset_count ∩ long/short_count ∩ leverage_cap → macro_mult → 13 最终钳位`。
 - 约束只钳位，不进矛盾评分、不重复相乘。
+- `full_freeze`：来自 43 `per_asset_class` 的冻结标记或 40 `risk_guards` 的事件窗口冻结；字段缺失视为未冻结，审计标注 `degraded=freeze_flag_missing`。
 - **字段定义**（43/16 必须提供；缺失则 fail-open 到更保守默认）：
   - `asset_groups`：资产分组/相关资产桶（如 L1_anchor / L2_major / L4_meme）；无分组时退化为资产类（crypto_usdt 等）。
   - `asset_count_cap`：每个资产组允许的最大持仓标的数。
@@ -275,7 +277,7 @@ risk_exposure_hint, ts, expires_at, provenance, payload
 50-NN主矛盾评估器/
 ├── SPEC.md
 ├── core/
-│   ├── evidence.py / dedup.py / dimension_forces.py / contradiction.py
+│   ├── evidence.py / dedup.py / path_synthesis.py / dimension_forces.py / contradiction.py
 │   ├── dominance.py / intent_tracks.py / horizon.py / constraints.py
 │   ├── w6.py / decision.py
 ├── genes/
@@ -367,7 +369,7 @@ risk_exposure_hint, ts, expires_at, provenance, payload
 | 双链执行冲突 | execution_rights 分区 + paper-only 起步 + 13 最终钳位 |
 | 48 训练网关未就绪 | 50 先 shadow + 独立 W6；训练闭环等 48 R4 |
 | 40 门禁 | 训练建议制；P5/P6 不放宽 |
-| 契约 source 新增 | ADR-0002 + manifest 更新（additive） |
+| 契约 source 新增 | ADR-0002 + 新增 v1.1 文件 + manifest 升 contract-freeze-v2（**非 additive**） |
 
 ---
 

@@ -10,19 +10,18 @@
 6. 未超时 → 不触发任何操作
 7. 止盈上限不超过 original_tp × 2.0
 """
-import sys
-import importlib
-from datetime import datetime, timezone, timedelta
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
-import pytest
+import sys  # noqa: I001
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from unittest.mock import MagicMock
 
 BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
 sys.path.insert(0, str(BASE_DIR / "core"))
 
-from config_loader import load_config
+from config_loader import load_config  # noqa: E402
+
 load_config("v15")
 
 
@@ -136,8 +135,14 @@ def test_signal_none_elder_ray_returns_weak():
 # ── check_time_exit 集成测试 ──────────────────────────────────────
 
 
-def _make_pos(entry_price=1200.0, direction="LONG", open_time_hours_ago=50,
-              take_profit_pct=0.0985, original_tp_pct=0.0985, addons=0):
+def _make_pos(
+    entry_price=1200.0,
+    direction="LONG",
+    open_time_hours_ago=50,
+    take_profit_pct=0.0985,
+    original_tp_pct=0.0985,
+    addons=0,
+):
     """构造测试用的持仓 dict。"""
     now = datetime.now(timezone.utc)
     open_time = (now - timedelta(hours=open_time_hours_ago)).isoformat()
@@ -162,8 +167,9 @@ def _make_pos(entry_price=1200.0, direction="LONG", open_time_hours_ago=50,
     }
 
 
-def _make_params(current_price=1263.0, elder_ray_direction="STRONG_BULL",
-                 elder_ray_strength=80, direction="LONG"):
+def _make_params(
+    current_price=1263.0, elder_ray_direction="STRONG_BULL", elder_ray_strength=80, direction="LONG"
+):
     """构造测试用的 _get_dynamic_params 返回值。"""
     return {
         "current_price": current_price,
@@ -206,8 +212,11 @@ def test_timeout_profit_signal_weak_triggers_close(monkeypatch):
 
     # mock 平仓函数避免真实调用
     close_called = []
-    monkeypatch.setattr(v15_trader, "_execute_close_position",
-                        lambda c, coin, p, s, reason="", exit_price=None: close_called.append((coin, reason)))
+    monkeypatch.setattr(
+        v15_trader,
+        "_execute_close_position",
+        lambda c, coin, p, s, reason="", exit_price=None: close_called.append((coin, reason)),
+    )
 
     result = v15_trader.check_time_exit(MagicMock(), "SKHYNIX", pos, state)
     assert result is True, "超时+盈利+信号弱化应触发平仓"
@@ -221,8 +230,9 @@ def test_timeout_profit_signal_strong_raises_tp(monkeypatch):
         del sys.modules["v15_trader"]
     import v15_trader
 
-    pos = _make_pos(entry_price=1200, open_time_hours_ago=50,
-                   take_profit_pct=0.0985, original_tp_pct=0.0985)
+    pos = _make_pos(
+        entry_price=1200, open_time_hours_ago=50, take_profit_pct=0.0985, original_tp_pct=0.0985
+    )
     state = {"positions": {"SKHYNIX": pos}}
 
     strong_params = _make_params(
@@ -234,8 +244,11 @@ def test_timeout_profit_signal_strong_raises_tp(monkeypatch):
     monkeypatch.setattr(v15_trader, "AUTO_EXECUTE", True)
 
     sync_called = []
-    monkeypatch.setattr(v15_trader, "_sync_tp_sl_orders",
-                        lambda c, coin, p, ep, tp, sl: sync_called.append((coin, tp)))
+    monkeypatch.setattr(
+        v15_trader,
+        "_sync_tp_sl_orders",
+        lambda c, coin, p, ep, tp, sl: sync_called.append((coin, tp)),
+    )
 
     result = v15_trader.check_time_exit(MagicMock(), "SKHYNIX", pos, state)
     assert result is False, "信号仍强时不应触发平仓"
@@ -299,8 +312,9 @@ def test_tp_cap_never_exceeds_original_x2(monkeypatch):
     monkeypatch.setattr(v15_trader, "AUTO_EXECUTE", True)
 
     sync_calls = []
-    monkeypatch.setattr(v15_trader, "_sync_tp_sl_orders",
-                        lambda c, coin, p, ep, tp, sl: sync_calls.append(tp))
+    monkeypatch.setattr(
+        v15_trader, "_sync_tp_sl_orders", lambda c, coin, p, ep, tp, sl: sync_calls.append(tp)
+    )
 
     v15_trader.check_time_exit(MagicMock(), "SKHYNIX", pos, state)
 

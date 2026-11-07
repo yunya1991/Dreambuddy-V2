@@ -7,10 +7,11 @@
   4. get_model() → GET /model
   5. FAIL-OPEN: HTTP 不可用时降级返回
 """
+
 import os
 import sys
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 # sys.path 注入
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -21,8 +22,8 @@ for _p in [_THIS_DIR, _ADAPTERS_DIR, _34_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from ts_http_training_executor import TSHTTPTrainingExecutor
-from interfaces.training_executor import TrainingLayer, TrainingResult
+from interfaces.training_executor import TrainingLayer  # noqa: E402
+from ts_http_training_executor import TSHTTPTrainingExecutor  # noqa: E402
 
 
 class TSHTTPTrainingExecutorP2Test(unittest.TestCase):

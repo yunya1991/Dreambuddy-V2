@@ -22,6 +22,7 @@
   - CodeQL: 跨过程数据流 + 污点追踪
   - 协同 33-REA逆向解析工程/core/python_analyzer.py
 """
+
 from __future__ import annotations
 
 import ast
@@ -75,46 +76,56 @@ class CodeQLSemanticAnalyzer:
         for node in ast.walk(self._tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    self._model["imports"].append({
-                        "name": alias.name,
-                        "asname": alias.asname,
-                        "lineno": node.lineno,
-                    })
+                    self._model["imports"].append(
+                        {
+                            "name": alias.name,
+                            "asname": alias.asname,
+                            "lineno": node.lineno,
+                        }
+                    )
             elif isinstance(node, ast.ImportFrom):
                 module = node.module or ""
                 for alias in node.names:
-                    self._model["imports"].append({
-                        "name": f"{module}.{alias.name}",
-                        "asname": alias.asname,
-                        "lineno": node.lineno,
-                    })
+                    self._model["imports"].append(
+                        {
+                            "name": f"{module}.{alias.name}",
+                            "asname": alias.asname,
+                            "lineno": node.lineno,
+                        }
+                    )
 
         # 提取函数定义
         for node in ast.walk(self._tree):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                self._model["functions"].append({
-                    "name": node.name,
-                    "lineno": node.lineno,
-                    "args": [a.arg for a in node.args.args],
-                    "is_async": isinstance(node, ast.AsyncFunctionDef),
-                })
+                self._model["functions"].append(
+                    {
+                        "name": node.name,
+                        "lineno": node.lineno,
+                        "args": [a.arg for a in node.args.args],
+                        "is_async": isinstance(node, ast.AsyncFunctionDef),
+                    }
+                )
             elif isinstance(node, ast.ClassDef):
-                self._model["classes"].append({
-                    "name": node.name,
-                    "lineno": node.lineno,
-                    "bases": [self._get_name(b) for b in node.bases],
-                })
+                self._model["classes"].append(
+                    {
+                        "name": node.name,
+                        "lineno": node.lineno,
+                        "bases": [self._get_name(b) for b in node.bases],
+                    }
+                )
 
         # 提取变量赋值
         for node in ast.walk(self._tree):
             if isinstance(node, ast.Assign):
                 for target in node.targets:
                     if isinstance(target, ast.Name):
-                        self._model["variables"].append({
-                            "name": target.id,
-                            "lineno": node.lineno,
-                            "scope": "module",
-                        })
+                        self._model["variables"].append(
+                            {
+                                "name": target.id,
+                                "lineno": node.lineno,
+                                "scope": "module",
+                            }
+                        )
 
         return self._model
 
@@ -139,17 +150,21 @@ class CodeQLSemanticAnalyzer:
                 for target in node.targets:
                     if isinstance(target, ast.Name):
                         name = target.id
-                        flow.setdefault(name, []).append({
-                            "type": "def",
-                            "lineno": node.lineno,
-                        })
+                        flow.setdefault(name, []).append(
+                            {
+                                "type": "def",
+                                "lineno": node.lineno,
+                            }
+                        )
             # 名称使用
             elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
                 name = node.id
-                flow.setdefault(name, []).append({
-                    "type": "use",
-                    "lineno": node.lineno,
-                })
+                flow.setdefault(name, []).append(
+                    {
+                        "type": "use",
+                        "lineno": node.lineno,
+                    }
+                )
 
         return flow
 
@@ -189,12 +204,39 @@ class CodeQLSemanticAnalyzer:
 
         # 内置名称（不需要定义）
         builtins = {
-            "print", "len", "range", "str", "int", "float", "list",
-            "dict", "set", "tuple", "bool", "None", "True", "False",
-            "Exception", "ValueError", "TypeError", "KeyError",
-            "open", "isinstance", "hasattr", "getattr", "setattr",
-            "enumerate", "zip", "map", "filter", "sorted", "sum",
-            "min", "max", "abs", "round", "isinstance",
+            "print",
+            "len",
+            "range",
+            "str",
+            "int",
+            "float",
+            "list",
+            "dict",
+            "set",
+            "tuple",
+            "bool",
+            "None",
+            "True",
+            "False",
+            "Exception",
+            "ValueError",
+            "TypeError",
+            "KeyError",
+            "open",
+            "isinstance",
+            "hasattr",
+            "getattr",
+            "setattr",
+            "enumerate",
+            "zip",
+            "map",
+            "filter",
+            "sorted",
+            "sum",
+            "min",
+            "max",
+            "abs",
+            "round",
         }
 
         # 第二遍：检测未定义使用
@@ -203,11 +245,13 @@ class CodeQLSemanticAnalyzer:
             if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
                 name = node.id
                 if name not in defined and name not in builtins:
-                    undefined.append({
-                        "name": name,
-                        "lineno": node.lineno,
-                        "context": "undefined_variable_usage",
-                    })
+                    undefined.append(
+                        {
+                            "name": name,
+                            "lineno": node.lineno,
+                            "context": "undefined_variable_usage",
+                        }
+                    )
 
         return undefined
 
@@ -229,7 +273,7 @@ class CodeQLSemanticAnalyzer:
             return {"reachable": False, "path": [], "evidence": []}
 
         # 构建调用图
-        call_graph = self.get_call_graph()
+        call_graph = self.get_call_graph()  # noqa: F841
 
         # 简化污点追踪：检查 source 的输出是否被 sink 消费
         # 通过变量流连接
@@ -374,7 +418,7 @@ def main():
     print(f"  path: {taint['path']}")
 
     graph = analyzer.get_call_graph()
-    print(f"\nCall graph:")
+    print("\nCall graph:")
     for caller, callees in graph.items():
         print(f"  {caller} → {callees}")
 

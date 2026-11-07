@@ -1,19 +1,20 @@
-import math
-import random
+import random  # noqa: I001
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 
 try:
-    from .skill_engine import register_skill, SkillEngine
+    from .skill_engine import register_skill, SkillEngine  # noqa: F401, I001
 except ImportError:
-    from skill_engine import register_skill, SkillEngine
+    from skill_engine import register_skill
 
 try:
     from . import llm_bridge
+
     _HAS_LLM = True
 except ImportError:
     try:
         import llm_bridge
+
         _HAS_LLM = True
     except ImportError:
         _HAS_LLM = False
@@ -34,7 +35,11 @@ def _estimate_rsi_from_change(change_pct: float, period: int = 14) -> float:
 def _calc_atr_pct(price: float, high: float, low: float, prev_close: float = 0) -> float:
     if price <= 0:
         return 0.0
-    tr = max(high - low, abs(high - prev_close) if prev_close else 0, abs(low - prev_close) if prev_close else 0)
+    tr = max(
+        high - low,
+        abs(high - prev_close) if prev_close else 0,
+        abs(low - prev_close) if prev_close else 0,
+    )
     atr = tr if tr > 0 else (high - low) * 0.5
     return (atr / price) * 100
 
@@ -60,7 +65,7 @@ def _determine_ema_alignment(change_24h_pct: float) -> str:
 
 def _determine_trend_phase(change_24h_pct: float, momentum: str) -> str:
     abs_change = abs(change_24h_pct)
-    direction = 1 if change_24h_pct > 0 else -1
+    direction = 1 if change_24h_pct > 0 else -1  # noqa: F841
 
     if abs_change < 0.5:
         return "盘整"
@@ -140,12 +145,18 @@ def _build_dual_dimension_fundamental(market: Dict, a1_result: Dict) -> Dict[str
     else:
         geo_impact = "NEUTRAL"
 
-    cb_policy = "EASING" if change_24h_pct > 1 else ("TIGHTENING" if change_24h_pct < -1 else "NEUTRAL")
+    cb_policy = (
+        "EASING" if change_24h_pct > 1 else ("TIGHTENING" if change_24h_pct < -1 else "NEUTRAL")
+    )
     regulatory = "NEUTRAL"
 
     fundamental_score = round((macro_score + etf_score + oi_score + fear_greed) / 4, 1)
     fundamental_score = max(0, min(100, fundamental_score))
-    fundamental_direction = "BULLISH" if fundamental_score > 55 else ("BEARISH" if fundamental_score < 45 else "NEUTRAL")
+    fundamental_direction = (
+        "BULLISH"
+        if fundamental_score > 55
+        else ("BEARISH" if fundamental_score < 45 else "NEUTRAL")
+    )
     fundamental_confidence = round(0.5 + abs(fundamental_score - 50) / 100, 2)
     fundamental_confidence = max(0.3, min(0.9, fundamental_confidence))
 
@@ -196,10 +207,16 @@ def _build_dual_dimension_technical(market: Dict) -> Dict[str, Any]:
 
     ema_alignment = _determine_ema_alignment(change_24h_pct)
     ma_slopes = _calc_ema_slopes(price, change_24h_pct)
-    ma_trajectory = "UP" if change_24h_pct > 0.5 else ("DOWN" if change_24h_pct < -0.5 else "NEUTRAL")
+    ma_trajectory = (
+        "UP" if change_24h_pct > 0.5 else ("DOWN" if change_24h_pct < -0.5 else "NEUTRAL")
+    )
     trajectory_strength = min(100, abs(change_24h_pct) * 15)
 
-    macd_signal = "GOLDEN_CROSS" if change_24h_pct > 1 else ("DEATH_CROSS" if change_24h_pct < -1 else "NEUTRAL")
+    macd_signal = (
+        "GOLDEN_CROSS"
+        if change_24h_pct > 1
+        else ("DEATH_CROSS" if change_24h_pct < -1 else "NEUTRAL")
+    )
     stochastic = f"{round(50 + change_24h_pct * 8, 1)}%"
 
     bollinger_pos = f"{round(50 + change_24h_pct * 10, 1)}%"
@@ -220,7 +237,9 @@ def _build_dual_dimension_technical(market: Dict) -> Dict[str, Any]:
 
     technical_score = round(50 + change_24h_pct * 6 + (rsi - 50) * 0.3, 1)
     technical_score = max(0, min(100, technical_score))
-    technical_direction = "BULLISH" if technical_score > 55 else ("BEARISH" if technical_score < 45 else "NEUTRAL")
+    technical_direction = (
+        "BULLISH" if technical_score > 55 else ("BEARISH" if technical_score < 45 else "NEUTRAL")
+    )
     technical_confidence = round(0.5 + abs(technical_score - 50) / 100, 2)
     technical_confidence = max(0.3, min(0.9, technical_confidence))
 
@@ -269,7 +288,9 @@ def _build_cross_dimension(fundamental: Dict, technical: Dict) -> Dict[str, Any]
         synthesis_confidence = min(0.95, conf + 0.1)
     elif fund_dir == "NEUTRAL" or tech_dir == "NEUTRAL":
         alignment = "MIXED"
-        synthesis_confidence = min(fundamental["synthesis"]["confidence"], technical["synthesis"]["confidence"])
+        synthesis_confidence = min(
+            fundamental["synthesis"]["confidence"], technical["synthesis"]["confidence"]
+        )
     else:
         alignment = "OPPOSITE"
         synthesis_confidence = 0.4
@@ -297,7 +318,11 @@ def _build_macro_asset_analysis(market: Dict) -> Dict[str, Any]:
             "price": round(2350.50 * (1 + gold_change / 100), 2),
             "ma_trend": "UP" if gold_change > 0 else "DOWN",
             "correlation_with_btc": "NEGATIVE",
-            "signal_to_btc": "黄金涨→BTC可能面临避险资金流出" if gold_change > 0 else "黄金跌→风险偏好回升→BTC可能受益",
+            "signal_to_btc": (
+                "黄金涨→BTC可能面临避险资金流出"
+                if gold_change > 0
+                else "黄金跌→风险偏好回升→BTC可能受益"
+            ),
         },
         {
             "inst_id": "CL-USDT-SWAP",
@@ -305,7 +330,11 @@ def _build_macro_asset_analysis(market: Dict) -> Dict[str, Any]:
             "price": round(78.50 * (1 + oil_change / 100), 2),
             "ma_trend": "UP" if oil_change > 0 else "DOWN",
             "correlation_with_btc": "WEAK",
-            "signal_to_btc": "原油涨→通胀预期升温→BTC可能承压" if oil_change > 0 else "原油跌→通胀预期降低→BTC可能受益",
+            "signal_to_btc": (
+                "原油涨→通胀预期升温→BTC可能承压"
+                if oil_change > 0
+                else "原油跌→通胀预期降低→BTC可能受益"
+            ),
         },
         {
             "inst_id": "XCU-USDT-SWAP",
@@ -313,7 +342,11 @@ def _build_macro_asset_analysis(market: Dict) -> Dict[str, Any]:
             "price": round(4.25 * (1 + copper_change / 100), 2),
             "ma_trend": "UP" if copper_change > 0 else "DOWN",
             "correlation_with_btc": "POSITIVE",
-            "signal_to_btc": "铜涨→经济乐观→风险资产普涨→BTC受益" if copper_change > 0 else "铜跌→经济担忧→BTC可能承压",
+            "signal_to_btc": (
+                "铜涨→经济乐观→风险资产普涨→BTC受益"
+                if copper_change > 0
+                else "铜跌→经济担忧→BTC可能承压"
+            ),
         },
         {
             "inst_id": "TSLA-USDT-SWAP",
@@ -321,7 +354,11 @@ def _build_macro_asset_analysis(market: Dict) -> Dict[str, Any]:
             "price": round(245.30 * (1 + tsla_change / 100), 2),
             "ma_trend": "UP" if tsla_change > 0 else "DOWN",
             "correlation_with_btc": "POSITIVE",
-            "signal_to_btc": "TSLA涨→科技股风险偏好回升→BTC受益" if tsla_change > 0 else "TSLA跌→科技股承压→BTC可能跟随",
+            "signal_to_btc": (
+                "TSLA涨→科技股风险偏好回升→BTC受益"
+                if tsla_change > 0
+                else "TSLA跌→科技股承压→BTC可能跟随"
+            ),
         },
         {
             "inst_id": "COIN-USDT-SWAP",
@@ -329,7 +366,11 @@ def _build_macro_asset_analysis(market: Dict) -> Dict[str, Any]:
             "price": round(215.80 * (1 + coin_change / 100), 2),
             "ma_trend": "UP" if coin_change > 0 else "DOWN",
             "correlation_with_btc": "STRONG_POSITIVE",
-            "signal_to_btc": "COIN涨→加密行业景气度高→BTC强相关受益" if coin_change > 0 else "COIN跌→加密行业降温→BTC可能承压",
+            "signal_to_btc": (
+                "COIN涨→加密行业景气度高→BTC强相关受益"
+                if coin_change > 0
+                else "COIN跌→加密行业降温→BTC可能承压"
+            ),
         },
     ]
 
@@ -341,52 +382,62 @@ def _build_macro_asset_analysis(market: Dict) -> Dict[str, Any]:
     coin_up = coin_change > 0
 
     if gold_up and btc_up:
-        resonance_signals.append({
-            "signal_type": "INFLATION_EXPECTATION",
-            "description": "黄金↑ + BTC↑ 同时发生，通胀预期升温",
-            "assets_involved": ["XAU-USDT-SWAP", "BTC-USDT-SWAP"],
-            "direction_implication": "UP",
-            "strength": "MODERATE",
-            "action_suggestion": "可考虑加仓BTC多单",
-        })
+        resonance_signals.append(
+            {
+                "signal_type": "INFLATION_EXPECTATION",
+                "description": "黄金↑ + BTC↑ 同时发生，通胀预期升温",
+                "assets_involved": ["XAU-USDT-SWAP", "BTC-USDT-SWAP"],
+                "direction_implication": "UP",
+                "strength": "MODERATE",
+                "action_suggestion": "可考虑加仓BTC多单",
+            }
+        )
 
     if gold_up and not btc_up:
-        resonance_signals.append({
-            "signal_type": "RISK_OFF",
-            "description": "黄金↑ + BTC↓ 同时发生，避险情绪主导",
-            "assets_involved": ["XAU-USDT-SWAP", "BTC-USDT-SWAP"],
-            "direction_implication": "DOWN",
-            "strength": "MODERATE",
-            "action_suggestion": "考虑减仓或做空BTC",
-        })
+        resonance_signals.append(
+            {
+                "signal_type": "RISK_OFF",
+                "description": "黄金↑ + BTC↓ 同时发生，避险情绪主导",
+                "assets_involved": ["XAU-USDT-SWAP", "BTC-USDT-SWAP"],
+                "direction_implication": "DOWN",
+                "strength": "MODERATE",
+                "action_suggestion": "考虑减仓或做空BTC",
+            }
+        )
 
     if coin_up and btc_up:
-        resonance_signals.append({
-            "signal_type": "INDUSTRY_BETA_CONFIRM",
-            "description": "COIN↑ + BTC↑ 同时发生，加密行业整体向好",
-            "assets_involved": ["COIN-USDT-SWAP", "BTC-USDT-SWAP"],
-            "direction_implication": "UP",
-            "strength": "STRONG",
-            "action_suggestion": "可考虑加仓BTC或轮动到COIN",
-        })
+        resonance_signals.append(
+            {
+                "signal_type": "INDUSTRY_BETA_CONFIRM",
+                "description": "COIN↑ + BTC↑ 同时发生，加密行业整体向好",
+                "assets_involved": ["COIN-USDT-SWAP", "BTC-USDT-SWAP"],
+                "direction_implication": "UP",
+                "strength": "STRONG",
+                "action_suggestion": "可考虑加仓BTC或轮动到COIN",
+            }
+        )
 
     divergence_detected = False
     divergence_details = []
     if btc_up and not copper_up:
         divergence_detected = True
-        divergence_details.append({
-            "type": "BTC vs 铜背离",
-            "description": "BTC上涨但铜下跌，需求预期差，BTC上涨可能不可持续",
-            "suggestion": "考虑减仓或加强止损",
-        })
+        divergence_details.append(
+            {
+                "type": "BTC vs 铜背离",
+                "description": "BTC上涨但铜下跌，需求预期差，BTC上涨可能不可持续",
+                "suggestion": "考虑减仓或加强止损",
+            }
+        )
 
     if btc_up and not tsla_up:
         divergence_detected = True
-        divergence_details.append({
-            "type": "BTC vs TSLA背离",
-            "description": "BTC上涨但TSLA下跌，科技股承压，BTC可能为独立叙事",
-            "suggestion": "分析BTC独立上涨原因",
-        })
+        divergence_details.append(
+            {
+                "type": "BTC vs TSLA背离",
+                "description": "BTC上涨但TSLA下跌，科技股承压，BTC可能为独立叙事",
+                "suggestion": "分析BTC独立上涨原因",
+            }
+        )
 
     macro_score = 0.0
     if gold_change > 0:
@@ -423,7 +474,9 @@ def _build_macro_asset_analysis(market: Dict) -> Dict[str, Any]:
     summary_parts = []
     for a in assets[:3]:
         summary_parts.append(f"{a['name']}{a['ma_trend']}")
-    summary = "宏观资产分析：" + "，".join(summary_parts) + f"，宏观趋势评分{macro_score_normalized}"
+    summary = (
+        "宏观资产分析：" + "，".join(summary_parts) + f"，宏观趋势评分{macro_score_normalized}"
+    )
 
     return {
         "assets": assets,
@@ -470,14 +523,22 @@ def _build_brain_analysis(fundamental: Dict, technical: Dict, a1_result: Dict) -
 
     pattern_list = []
     if technical["trend_indicators"]["ema_alignment"] == "BULLISH" and rsi > 50 and rsi < 70:
-        pattern_list.append({"pattern": "旗形整理", "confidence": "MEDIUM", "implication": "延续上涨"})
+        pattern_list.append(
+            {"pattern": "旗形整理", "confidence": "MEDIUM", "implication": "延续上涨"}
+        )
     elif technical["trend_indicators"]["ema_alignment"] == "BEARISH" and rsi < 50 and rsi > 30:
-        pattern_list.append({"pattern": "下降旗形", "confidence": "MEDIUM", "implication": "延续下跌"})
+        pattern_list.append(
+            {"pattern": "下降旗形", "confidence": "MEDIUM", "implication": "延续下跌"}
+        )
 
     if rsi < 25:
-        pattern_list.append({"pattern": "RSI极度超卖", "confidence": "HIGH", "implication": "反弹概率高"})
+        pattern_list.append(
+            {"pattern": "RSI极度超卖", "confidence": "HIGH", "implication": "反弹概率高"}
+        )
     elif rsi > 75:
-        pattern_list.append({"pattern": "RSI极度超买", "confidence": "HIGH", "implication": "回调概率高"})
+        pattern_list.append(
+            {"pattern": "RSI极度超买", "confidence": "HIGH", "implication": "回调概率高"}
+        )
 
     if not pattern_list:
         pattern_list.append({"pattern": "震荡整理", "confidence": "LOW", "implication": "方向不明"})
@@ -487,7 +548,9 @@ def _build_brain_analysis(fundamental: Dict, technical: Dict, a1_result: Dict) -
     base = det_score
     optimistic = round(min(100, det_score + 15), 1)
 
-    contradiction_detected = fund_dir != tech_dir and fund_dir != "NEUTRAL" and tech_dir != "NEUTRAL"
+    contradiction_detected = (
+        fund_dir != tech_dir and fund_dir != "NEUTRAL" and tech_dir != "NEUTRAL"
+    )
     if contradiction_detected:
         left_conf = fundamental["synthesis"]["confidence"]
         right_conf = technical["synthesis"]["confidence"]
@@ -525,7 +588,7 @@ def _build_brain_analysis(fundamental: Dict, technical: Dict, a1_result: Dict) -
         dominant = "SYNTHESIZED"
         action_advice = "跟踪确认"
         probe_conditions = ["趋势延续性确认"]
-        contradiction_conf = 0.6
+        contradiction_conf = 0.6  # noqa: F841
 
     contradiction = {
         "detected": contradiction_detected,
@@ -558,14 +621,22 @@ def _build_brain_analysis(fundamental: Dict, technical: Dict, a1_result: Dict) -
         "weight_adjustment": weight_adj,
     }
 
-    a1_contradictions = a1_result.get("contradiction_list", {}).get("contradictions", []) if isinstance(a1_result, dict) else []
+    a1_contradictions = (
+        a1_result.get("contradiction_list", {}).get("contradictions", [])
+        if isinstance(a1_result, dict)
+        else []
+    )
     if a1_contradictions and isinstance(a1_contradictions, list) and len(a1_contradictions) > 0:
         first_cx = a1_contradictions[0] if isinstance(a1_contradictions[0], dict) else {}
         cx_id = first_cx.get("id", "CX_001")
         cx_desc = first_cx.get("description", primary_contradiction_desc)
         cx_dominant = first_cx.get("dominant_side", "A")
         cx_dir = "UP" if cx_dominant == "A" else "DOWN"
-        cx_conf = first_cx.get("score", 0.65) if isinstance(first_cx.get("score", 0.65), (int, float)) else 0.65
+        cx_conf = (
+            first_cx.get("score", 0.65)
+            if isinstance(first_cx.get("score", 0.65), (int, float))
+            else 0.65
+        )
     else:
         cx_id = "CX_001"
         cx_desc = primary_contradiction_desc
@@ -579,11 +650,13 @@ def _build_brain_analysis(fundamental: Dict, technical: Dict, a1_result: Dict) -
             score = cx.get("importance_score", cx.get("score", 4.5 - i * 0.8))
             if not isinstance(score, (int, float)):
                 score = 4.5 - i * 0.8
-            cx_ranking.append({
-                "id": cx.get("id", f"CX_{i+1:03d}"),
-                "score": round(score, 2),
-                "rank": i + 1,
-            })
+            cx_ranking.append(
+                {
+                    "id": cx.get("id", f"CX_{i+1:03d}"),
+                    "score": round(score, 2),
+                    "rank": i + 1,
+                }
+            )
 
     if not cx_ranking:
         cx_ranking = [
@@ -751,7 +824,9 @@ def _build_trend_analysis(market: Dict, technical: Dict) -> Dict[str, Any]:
     rsi = technical["momentum"]["rsi"]
     ma_slopes = _calc_ema_slopes(price, change_24h_pct)
 
-    trajectory_value = ma_slopes["short"] * 0.3 + ma_slopes["medium"] * 0.4 + ma_slopes["long"] * 0.3
+    trajectory_value = (
+        ma_slopes["short"] * 0.3 + ma_slopes["medium"] * 0.4 + ma_slopes["long"] * 0.3
+    )
     trajectory_normalized = round(trajectory_value / 0.5, 2)
 
     abs_traj = abs(trajectory_normalized)
@@ -765,7 +840,9 @@ def _build_trend_analysis(market: Dict, technical: Dict) -> Dict[str, Any]:
     momentum = _calc_momentum(change_24h_pct, rsi)
     trend_phase = _determine_trend_phase(change_24h_pct, momentum)
 
-    trend_direction = "BULL" if change_24h_pct > 0.5 else ("BEAR" if change_24h_pct < -0.5 else "NEUTRAL")
+    trend_direction = (
+        "BULL" if change_24h_pct > 0.5 else ("BEAR" if change_24h_pct < -0.5 else "NEUTRAL")
+    )
     trend_strength_score = min(10, abs(change_24h_pct) * 2)
     trend_confidence = round(0.5 + abs(change_24h_pct) / 10, 2)
     trend_confidence = max(0.3, min(0.9, trend_confidence))
@@ -855,7 +932,9 @@ def _build_synthesis(
     if brain["contradiction"]["detected"]:
         contradictions.append("基本面与技术面方向分歧")
     if res_path != trend_dir and res_path != "NEUTRAL" and trend_dir != "NEUTRAL":
-        if (res_path == "UP" and trend_dir == "BEAR") or (res_path == "DOWN" and trend_dir == "BULL"):
+        if (res_path == "UP" and trend_dir == "BEAR") or (
+            res_path == "DOWN" and trend_dir == "BULL"
+        ):
             contradictions.append("阻力最小路径与趋势方向相反")
 
     if final_path == "UP":
@@ -962,11 +1041,13 @@ def _build_market_regime(trend: Dict, resistance: Dict, technical: Dict) -> Dict
     }
 
 
-@register_skill("dream-first-principles", "6-TRADING/skills/dream-first-principles/SKILL.md", "2.6.1")
+@register_skill(
+    "dream-first-principles", "6-TRADING/skills/dream-first-principles/SKILL.md", "2.6.1"
+)
 def a2_first_principles_handler(inputs: Dict[str, Any], engine) -> Dict[str, Any]:
     market = inputs.get("market", {})
     a1_result = inputs.get("a1_result", {})
-    positions = inputs.get("positions", [])
+    positions = inputs.get("positions", [])  # noqa: F841
 
     if isinstance(market, dict) and "BTC" not in market and "last" in market:
         market = {"BTC": market}

@@ -10,6 +10,7 @@
 
 默认全部 OFF（零行为变更），通过环境变量或显式调用开启。
 """
+
 from __future__ import annotations
 
 import os
@@ -20,6 +21,7 @@ from typing import Dict
 @dataclass
 class ModuleSwitches:
     """四层验证框架的模块化开关。"""
+
     # L0 观测层
     L0_observer: bool = False
     # L1 验证层
@@ -36,6 +38,7 @@ class ModuleSwitches:
         环境变量名：COGNITIVE_L0 / COGNITIVE_L1 / COGNITIVE_L2 / COGNITIVE_L3
         值为 1/true/yes/on 表示开启。
         """
+
         def _enabled(name: str) -> bool:
             return os.environ.get(name, "").lower() in ("1", "true", "yes", "on")
 
@@ -48,12 +51,14 @@ class ModuleSwitches:
 
     def all_off(self) -> bool:
         """所有层都关闭。"""
-        return not any([
-            self.L0_observer,
-            self.L1_verifiers,
-            self.L2_aggregation,
-            self.L3_prediction,
-        ])
+        return not any(
+            [
+                self.L0_observer,
+                self.L1_verifiers,
+                self.L2_aggregation,
+                self.L3_prediction,
+            ]
+        )
 
     def to_dict(self) -> Dict[str, bool]:
         return {

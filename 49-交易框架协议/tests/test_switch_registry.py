@@ -1,4 +1,5 @@
 """M0-04 switch registry tests."""
+
 from __future__ import annotations
 
 from validate_switches import load_registry, validate
@@ -24,7 +25,4 @@ class TestSwitchRegistry:
         } <= names
 
     def test_all_defaults_false(self):
-        assert all(
-            entry["default"] is False
-            for entry in load_registry()["switches"]
-        )
+        assert all(entry["default"] is False for entry in load_registry()["switches"])

@@ -13,6 +13,7 @@ P2 §5.2: 错误案例入库，标注 {wrong_dim, root_cause}，
   3. 按 wrong_dim / 维度模式检索
   4. 维度错误频次统计（供 ParameterReverseOptimizer 使用）
 """
+
 from __future__ import annotations
 
 import json
@@ -58,8 +59,9 @@ class ReverseCaseStore:
     # ------------------------------------------------------------------
     # 写入
     # ------------------------------------------------------------------
-    def add_case(self, derive_result: Any, snapshot: dict[str, Any],
-                 outcome: dict[str, Any]) -> str | None:
+    def add_case(
+        self, derive_result: Any, snapshot: dict[str, Any], outcome: dict[str, Any]
+    ) -> str | None:
         """入库一个错误案例。
 
         Args:
@@ -94,8 +96,9 @@ class ReverseCaseStore:
         }
         self._cases.append(case)
         self._save()
-        logger.info("[ReverseCaseStore] added case %s wrong_dims=%s",
-                    case["case_id"][:8], wrong_dims)
+        logger.info(
+            "[ReverseCaseStore] added case %s wrong_dims=%s", case["case_id"][:8], wrong_dims
+        )
         return case["case_id"]
 
     # ------------------------------------------------------------------

@@ -7,6 +7,7 @@ Spec 设计：
   • 仅暴露 calibrate(...) 接口输出 8 维概率分布，不提供 predict 硬分类。
   • FeatureSchema 严格校验：列顺序/列数/列名不匹配 → 抛 ValueError（禁止静默 reindex/fillna）。
 """
+
 from __future__ import annotations
 
 import json
@@ -41,9 +42,14 @@ class LGBMCalibrator:
     """
 
     REGIME_ORDER_DEFAULT = [
-        "RANGE_BOUND", "CONSOLIDATION", "ACCUMULATION",
-        "RECOVERY_MILD", "TREND_UP_MILD", "TREND_UP_STRONG",
-        "FOMO_RALLY", "VOLATILE_DROP",
+        "RANGE_BOUND",
+        "CONSOLIDATION",
+        "ACCUMULATION",
+        "RECOVERY_MILD",
+        "TREND_UP_MILD",
+        "TREND_UP_STRONG",
+        "FOMO_RALLY",
+        "VOLATILE_DROP",
     ]
 
     # ------------------------------------------------------------------ init
@@ -108,15 +114,20 @@ class LGBMCalibrator:
             mask = y.isin(set(regime_order))
             if mask.sum() < len(y):
                 dropped = len(y) - int(mask.sum())
-                print(f"[LGBMCalibrator.fit] 过滤 {dropped} 个不在 regime_order 中的样本", flush=True)
+                print(
+                    f"[LGBMCalibrator.fit] 过滤 {dropped} 个不在 regime_order 中的样本", flush=True
+                )
             X = X.loc[mask].copy()
             y = y.loc[mask].copy()
             # 将未在 y 中出现的 regime 也保留在列轴（predict_proba 会输出全 0 概率列）
         else:
             # 自动推导模式（兼容旧测试）
-            classes_present = sorted(y.unique().tolist(),
-                                     key=lambda c: (self.REGIME_ORDER_DEFAULT.index(c)
-                                                    if c in self.REGIME_ORDER_DEFAULT else 999))
+            classes_present = sorted(
+                y.unique().tolist(),
+                key=lambda c: (
+                    self.REGIME_ORDER_DEFAULT.index(c) if c in self.REGIME_ORDER_DEFAULT else 999
+                ),
+            )
             full_order = list(classes_present)
             for c in self.REGIME_ORDER_DEFAULT:
                 if c not in full_order:
@@ -136,7 +147,8 @@ class LGBMCalibrator:
                 n_total = len(y)
                 n_classes = len(self._regime_order)
                 cw_resolved = {
-                    self._regime_order.index(r): n_total / (n_classes * max(1, int(counts.get(r, 0))))
+                    self._regime_order.index(r): n_total
+                    / (n_classes * max(1, int(counts.get(r, 0))))
                     for r in self._regime_order
                 }
             elif isinstance(class_weight, dict):
@@ -178,24 +190,24 @@ class LGBMCalibrator:
         # 4) 保存 schema JSON（严格列顺序、regime 顺序）
         schema: Dict[str, Any] = {
             "feature_names_in_order": list(self._feature_names),
-            "regime_order":           list(self._regime_order),
-            "n_features":             len(self._feature_names),
-            "n_classes":              len(self._regime_order),
+            "regime_order": list(self._regime_order),
+            "n_features": len(self._feature_names),
+            "n_classes": len(self._regime_order),
             "hyperparams": {
-                "w_gauss":            W_GAUSS,
-                "w_lgbm":             W_LGBM,
-                "temperature":        TEMPERATURE,
-                "num_leaves":         num_leaves,
-                "max_depth":          max_depth,
-                "reg_alpha":          reg_alpha,
-                "reg_lambda":         reg_lambda,
-                "n_estimators":       n_estimators,
-                "learning_rate":      learning_rate,
-                "min_child_samples":  min_child_samples,
-                "colsample_bytree":   colsample_bytree,
-                "subsample":          subsample,
-                "subsample_freq":     subsample_freq,
-                "class_weight":       class_weight if isinstance(class_weight, str) else None,
+                "w_gauss": W_GAUSS,
+                "w_lgbm": W_LGBM,
+                "temperature": TEMPERATURE,
+                "num_leaves": num_leaves,
+                "max_depth": max_depth,
+                "reg_alpha": reg_alpha,
+                "reg_lambda": reg_lambda,
+                "n_estimators": n_estimators,
+                "learning_rate": learning_rate,
+                "min_child_samples": min_child_samples,
+                "colsample_bytree": colsample_bytree,
+                "subsample": subsample,
+                "subsample_freq": subsample_freq,
+                "class_weight": class_weight if isinstance(class_weight, str) else None,
             },
         }
         schema_path = Path(schema_path)
@@ -222,7 +234,7 @@ class LGBMCalibrator:
             )
         if in_cols != expected:
             # 找出第一个不同的位置给出错误信息
-            for i, (a, b) in enumerate(zip(in_cols, expected)):
+            for i, (a, b) in enumerate(zip(in_cols, expected)):  # noqa: B905
                 if a != b:
                     raise ValueError(
                         f"schema mismatch col: 第 {i} 列推理={a!r} ≠ schema={b!r}。"
@@ -252,9 +264,7 @@ class LGBMCalibrator:
         self._validate_schema_strict(X)
         n = len(X)
         if p_gauss.shape[0] != n:
-            raise ValueError(
-                f"p_gauss 行数={p_gauss.shape[0]} ≠ X 行数={n}"
-            )
+            raise ValueError(f"p_gauss 行数={p_gauss.shape[0]} ≠ X 行数={n}")
         if p_gauss.ndim != 2 or p_gauss.shape[1] != len(self._regime_order):
             # 允许 p_gauss 列与默认 8 态完全对齐（若 schema 中 regime 顺序和默认完全一致则 OK）
             if not (p_gauss.ndim == 2 and p_gauss.shape[1] <= len(self._regime_order)):
@@ -276,10 +286,10 @@ class LGBMCalibrator:
             row_remain = 1.0 - p_gauss_aligned.sum(axis=1, keepdims=True)
             tail_count = p_lgbm.shape[1] - k
             if tail_count > 0:
-                p_gauss_aligned[:, k:] = np.where(
-                    tail_count > 0, row_remain / tail_count, 0.0
-                )
-            p_gauss_aligned = p_gauss_aligned / np.clip(p_gauss_aligned.sum(axis=1, keepdims=True), EPS, None)
+                p_gauss_aligned[:, k:] = np.where(tail_count > 0, row_remain / tail_count, 0.0)
+            p_gauss_aligned = p_gauss_aligned / np.clip(
+                p_gauss_aligned.sum(axis=1, keepdims=True), EPS, None
+            )
 
         # 3) log-odds 加权 + temperature softmax
         log_pg = np.log(np.clip(p_gauss_aligned, EPS, None))
@@ -315,31 +325,37 @@ class LGBMCalibrator:
                 schema.json          # （fit 时已写，这里再覆写保证一致）
         """
         import joblib  # 懒加载，避免未装时 import 失败
+
         d = Path(dir_path)
         d.mkdir(parents=True, exist_ok=True)
         joblib.dump(self, d / "calibrator.joblib", compress=3)
         # 同步再写一份 schema（fit 已写过，但防御式覆盖）
         schema: Dict[str, Any] = {
             "feature_names_in_order": list(self._feature_names),
-            "regime_order":           list(self._regime_order),
-            "n_features":             len(self._feature_names),
-            "n_classes":              len(self._regime_order),
+            "regime_order": list(self._regime_order),
+            "n_features": len(self._feature_names),
+            "n_classes": len(self._regime_order),
             "hyperparams": {
-                "w_gauss":     W_GAUSS,
-                "w_lgbm":      W_LGBM,
+                "w_gauss": W_GAUSS,
+                "w_lgbm": W_LGBM,
                 "temperature": TEMPERATURE,
             },
         }
-        (d / "schema.json").write_text(json.dumps(schema, ensure_ascii=False, indent=2), encoding="utf-8")
+        (d / "schema.json").write_text(
+            json.dumps(schema, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         return d
 
     @classmethod
     def load(cls, dir_path: str) -> "LGBMCalibrator":
         import joblib
+
         d = Path(dir_path)
         cal_path = d / "calibrator.joblib"
         if not cal_path.exists():
-            raise FileNotFoundError(f"[LGBMCalibrator.load] 找不到 {cal_path}。请先 train_lgbm_calibrator_v4.py 产出。")
+            raise FileNotFoundError(
+                f"[LGBMCalibrator.load] 找不到 {cal_path}。请先 train_lgbm_calibrator_v4.py 产出。"
+            )
         obj: "LGBMCalibrator" = joblib.load(cal_path)
         if not isinstance(obj, cls):
             raise TypeError(f"calibrator.joblib 内对象不是 LGBMCalibrator：{type(obj)}")
@@ -351,6 +367,7 @@ class LGBMCalibrator:
 # ============================================================
 def _sync_module_aliases():
     import sys as _sys
+
     this_mod = _sys.modules.get(__name__)
     if this_mod is None:
         return

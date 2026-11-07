@@ -5,15 +5,16 @@ BCRM 输出契约定义。
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List
 
 
 @dataclass
 class ContradictionState:
     """矛盾状态：当前主导二元矛盾。"""
+
     thesis: str = ""
     antithesis: str = ""
-    dominant_side: str = "EQUAL"    # BULL / BEAR / EQUAL
+    dominant_side: str = "EQUAL"  # BULL / BEAR / EQUAL
     tension: float = 0.5
     source_contradiction_id: str = ""
     philosophy_basis: List[str] = field(default_factory=list)
@@ -32,6 +33,7 @@ class ContradictionState:
 @dataclass
 class DialecticalStep:
     """正反合推理步。"""
+
     thesis: Dict = field(default_factory=dict)
     antithesis: Dict = field(default_factory=dict)
     synthesis: str = ""
@@ -51,9 +53,10 @@ class DialecticalStep:
 @dataclass
 class NextState:
     """推演的下一行情状态。"""
-    direction: str = "UNKNOWN"      # UP/DOWN/FLAT/TRANSITIONING/UNKNOWN
+
+    direction: str = "UNKNOWN"  # UP/DOWN/FLAT/TRANSITIONING/UNKNOWN
     confidence: float = 0.0
-    horizon: str = "UNKNOWN"        # 短/中/长
+    horizon: str = "UNKNOWN"  # 短/中/长
     derivation: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
@@ -68,6 +71,7 @@ class NextState:
 @dataclass
 class StrategyBranch:
     """策略分支。"""
+
     branch_id: str = ""
     condition: str = ""
     action: str = ""
@@ -75,9 +79,9 @@ class StrategyBranch:
     stop_condition: str = ""
     rationale: str = ""
     # ── 结构化风控字段 ──
-    stop_loss_px: float = 0.0       # 止损价（0 表示不设置）
-    take_profit_px: float = 0.0     # 止盈价（0 表示不设置）
-    reduce_ratio: float = 0.0       # 减仓比例 0~1（0 表示不减仓）
+    stop_loss_px: float = 0.0  # 止损价（0 表示不设置）
+    take_profit_px: float = 0.0  # 止盈价（0 表示不设置）
+    reduce_ratio: float = 0.0  # 减仓比例 0~1（0 表示不减仓）
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -96,6 +100,7 @@ class StrategyBranch:
 @dataclass
 class PracticeDirective:
     """实践指令（知行合一）。"""
+
     action: str = ""
     verification_condition: str = ""
     feedback_loop: str = ""
@@ -106,14 +111,14 @@ class PracticeDirective:
             "action": self.action,
             "verification_condition": self.verification_condition,
             "feedback_loop": self.feedback_loop,
-            "theory_practice_alignment_score": round(
-                self.theory_practice_alignment_score, 4),
+            "theory_practice_alignment_score": round(self.theory_practice_alignment_score, 4),
         }
 
 
 @dataclass
 class SpiralPosition:
     """否定之否定螺旋定位。"""
+
     phase: str = "UNKNOWN"
     negation_count: int = 0
     historical_analogy_ref: str = ""
@@ -129,8 +134,9 @@ class SpiralPosition:
 @dataclass
 class TransformationTrigger:
     """量变→质变转化触发条件。"""
+
     condition: str = ""
-    probability: str = "LOW"        # LOW/MODERATE/HIGH
+    probability: str = "LOW"  # LOW/MODERATE/HIGH
     accumulation: float = 0.0
     threshold: float = 0.7
     monitoring_point: str = ""
@@ -148,20 +154,21 @@ class TransformationTrigger:
 @dataclass
 class HexagramResult:
     """六十四卦推理结果。"""
-    hexagram_name: str = ""          # 卦名英文
-    hexagram_name_cn: str = ""       # 卦名中文
-    inner_gua: str = ""              # 内卦（下卦）
-    outer_gua: str = ""              # 外卦（上卦）
-    gua_ci: str = ""                 # 卦辞
-    tuan_zhuan: str = ""             # 彖传
-    xiang_zhuan: str = ""            # 象传
+
+    hexagram_name: str = ""  # 卦名英文
+    hexagram_name_cn: str = ""  # 卦名中文
+    inner_gua: str = ""  # 内卦（下卦）
+    outer_gua: str = ""  # 外卦（上卦）
+    gua_ci: str = ""  # 卦辞
+    tuan_zhuan: str = ""  # 彖传
+    xiang_zhuan: str = ""  # 象传
     yao_results: List[Dict] = field(default_factory=list)  # 六爻结果
     changing_yaos: List[int] = field(default_factory=list)  # 动爻位置（1-6）
-    changed_hexagram: str = ""       # 变卦卦名
-    changed_hexagram_cn: str = ""    # 变卦卦名中文
-    overall_meaning: str = ""        # 整体含义
-    direction_hint: str = ""         # 方向暗示
-    confidence: float = 0.0          # 置信度
+    changed_hexagram: str = ""  # 变卦卦名
+    changed_hexagram_cn: str = ""  # 变卦卦名中文
+    overall_meaning: str = ""  # 整体含义
+    direction_hint: str = ""  # 方向暗示
+    confidence: float = 0.0  # 置信度
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -185,6 +192,7 @@ class HexagramResult:
 @dataclass
 class BCRMOutput:
     """BCRM 完整输出契约。"""
+
     snapshot_ts: str = ""
 
     # 版本三元组
@@ -193,16 +201,12 @@ class BCRMOutput:
     bcrm_version: str = "bcrm-v0.2"
 
     # 核心推演结论
-    contradiction_state: ContradictionState = field(
-        default_factory=ContradictionState)
-    dialectical_step: DialecticalStep = field(
-        default_factory=DialecticalStep)
+    contradiction_state: ContradictionState = field(default_factory=ContradictionState)
+    dialectical_step: DialecticalStep = field(default_factory=DialecticalStep)
     next_state: NextState = field(default_factory=NextState)
-    transformation_trigger: TransformationTrigger = field(
-        default_factory=TransformationTrigger)
+    transformation_trigger: TransformationTrigger = field(default_factory=TransformationTrigger)
     strategy_branches: List[StrategyBranch] = field(default_factory=list)
-    practice_directive: PracticeDirective = field(
-        default_factory=PracticeDirective)
+    practice_directive: PracticeDirective = field(default_factory=PracticeDirective)
 
     # 易经六十四卦推理结果
     hexagram: HexagramResult = field(default_factory=HexagramResult)

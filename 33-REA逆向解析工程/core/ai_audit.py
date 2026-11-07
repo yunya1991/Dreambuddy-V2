@@ -15,24 +15,22 @@ poe_score（综合证明链得分）+ gate_decision（门禁决策）。
 
 FAIL-OPEN（§5.5）: 审计失败时 poe_score=0.0, gate=review, known_gaps 注明。
 """
+
 from __future__ import annotations
 
 import ast
-import math
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
-from .architecture_pattern_detector import ArchitecturePatternDetector
 from .design_decision_recovery import DesignDecisionRecoverer
 from .evidence import Evidence, EvidenceLevel
 
-
 # ---------- 权重常量（DESIGN-PHILOSOPHY-PoE §5.2 / §7 冷启动默认值） ----------
 
-W_EVIDENCE = 0.4       # w1
-W_COVERAGE = 0.25      # w2
-W_COMPLEXITY = 0.2     # w3（反向计分）
+W_EVIDENCE = 0.4  # w1
+W_COVERAGE = 0.25  # w2
+W_COMPLEXITY = 0.2  # w3（反向计分）
 # w1+w2+w3 = 0.85，剩余 0.15 通过 layer_completeness_bonus 乘数体现
 
 BONUS_P0 = 1.0
@@ -53,9 +51,11 @@ _CONSTANT_NAMES = {"MAGIC", "CONST", "PI", "EULER", "TWO_PI"}
 
 # ---------- 数据结构 ----------
 
+
 @dataclass
 class CognitiveDebt:
     """认知债务条目。"""
+
     type: str
     description: str
     evidence: Evidence
@@ -69,6 +69,7 @@ class CognitiveDebt:
 
 
 # ---------- 核心实现 ----------
+
 
 def compute_poe_score(
     evidence_chain_score: float,
@@ -122,6 +123,7 @@ def _gate_decision(poe_score: float, evidence_chain_score: float) -> str:
 
 
 # ---------- 审计器 ----------
+
 
 class AIAuditor:
     """AI 产出审计器。
@@ -209,29 +211,32 @@ class AIAuditor:
         for d in debts:
             all_evidence.append(d.evidence)
 
-        all_evidence.insert(0, Evidence(
-            result=(
-                f"AI 审计: poe_score={poe_score:.3f}, evidence_chain={evidence_chain_score:.3f}, "
-                f"coverage={coverage_score:.3f}, complexity_penalty={complexity_penalty:.3f}, "
-                f"gate={gate}, debts={len(debts)}"
-            ),
-            level=EvidenceLevel.DERIVATION,
-            provenance={
-                "target": target,
-                "ai_context": ai_context,
-                "analysis": "ai_audit",
-                "audit_layer_status": {
-                    "design_decision": has_design_decision,
-                    "narrative": has_narrative,
-                    "methodology": has_methodology,
+        all_evidence.insert(
+            0,
+            Evidence(
+                result=(
+                    f"AI 审计: poe_score={poe_score:.3f}, evidence_chain={evidence_chain_score:.3f}, "
+                    f"coverage={coverage_score:.3f}, complexity_penalty={complexity_penalty:.3f}, "
+                    f"gate={gate}, debts={len(debts)}"
+                ),
+                level=EvidenceLevel.DERIVATION,
+                provenance={
+                    "target": target,
+                    "ai_context": ai_context,
+                    "analysis": "ai_audit",
+                    "audit_layer_status": {
+                        "design_decision": has_design_decision,
+                        "narrative": has_narrative,
+                        "methodology": has_methodology,
+                    },
                 },
-            },
-            confidence=0.9,
-            known_gaps=[
-                "evidence_chain_score 基于静态扫描，未做运行时覆盖率测量",
-                "complexity_penalty 仅基于 AST 嵌套深度，未做完整圈复杂度计算",
-            ],
-        ))
+                confidence=0.9,
+                known_gaps=[
+                    "evidence_chain_score 基于静态扫描，未做运行时覆盖率测量",
+                    "complexity_penalty 仅基于 AST 嵌套深度，未做完整圈复杂度计算",
+                ],
+            ),
+        )
 
         return {
             "target": target,
@@ -314,7 +319,11 @@ class AIAuditor:
                 if not stripped:
                     continue
                 total_lines += 1
-                if stripped.startswith("#") or stripped.startswith('"""') or stripped.startswith("'''"):
+                if (
+                    stripped.startswith("#")
+                    or stripped.startswith('"""')
+                    or stripped.startswith("'''")
+                ):
                     comment_lines += 1
 
         if total_lines == 0:
@@ -352,11 +361,13 @@ class AIAuditor:
     @staticmethod
     def _max_nesting_depth(node: ast.AST, current: int = 0) -> int:
         """计算函数最大嵌套深度。"""
-        if not hasattr(node, "body") or not isinstance(getattr(node, "body"), list):
+        if not hasattr(node, "body") or not isinstance(node.body, list):
             return current
         max_d = current
         for child in node.body:  # type: ignore[attr-defined]
-            if isinstance(child, (ast.If, ast.For, ast.While, ast.With, ast.Try, ast.ExceptHandler)):
+            if isinstance(
+                child, (ast.If, ast.For, ast.While, ast.With, ast.Try, ast.ExceptHandler)
+            ):
                 d = AIAuditor._max_nesting_depth(child, current + 1)
                 max_d = max(max_d, d)
             else:
@@ -386,26 +397,32 @@ class AIAuditor:
                     if not ast.get_docstring(node):
                         depth = self._max_nesting_depth(node)
                         if depth >= 3:
-                            debts.append(CognitiveDebt(
-                                type="uncommented_complexity",
-                                description=f"复杂逻辑无注释: {node.name} (嵌套深度 {depth})",
-                                evidence=Evidence(
-                                    result=f"函数 {node.name} 无 docstring 且嵌套深度 {depth} ≥ 3",
-                                    level=EvidenceLevel.OBSERVATION,
-                                    provenance={
-                                        "file": fpath,
-                                        "line": node.lineno,
-                                        "function": node.name,
-                                        "depth": depth,
-                                        "type": "uncommented_complexity",
-                                    },
-                                    confidence=0.9,
-                                    known_gaps=["复杂度判定基于 AST 嵌套，未做完整圈复杂度"],
-                                ),
-                            ))
+                            debts.append(
+                                CognitiveDebt(
+                                    type="uncommented_complexity",
+                                    description=f"复杂逻辑无注释: {node.name} (嵌套深度 {depth})",
+                                    evidence=Evidence(
+                                        result=f"函数 {node.name} 无 docstring 且嵌套深度 {depth} ≥ 3",
+                                        level=EvidenceLevel.OBSERVATION,
+                                        provenance={
+                                            "file": fpath,
+                                            "line": node.lineno,
+                                            "function": node.name,
+                                            "depth": depth,
+                                            "type": "uncommented_complexity",
+                                        },
+                                        confidence=0.9,
+                                        known_gaps=["复杂度判定基于 AST 嵌套，未做完整圈复杂度"],
+                                    ),
+                                )
+                            )
 
                 # 魔法数字检测
-                for sub in ast.walk(node) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Module)) else []:
+                for sub in (
+                    ast.walk(node)
+                    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Module))
+                    else []
+                ):
                     if isinstance(sub, ast.Constant) and isinstance(sub.value, (int, float)):
                         val = sub.value
                         if isinstance(val, int) and val in _MAGIC_NUMBER_EXEMPT:
@@ -415,25 +432,27 @@ class AIAuditor:
                         # 排除常量赋值上下文（Name = val）
                         line_no = getattr(sub, "lineno", 0)
                         if line_no:
-                            debts.append(CognitiveDebt(
-                                type="magic_number",
-                                description=f"魔法数字: {val}",
-                                evidence=Evidence(
-                                    result=f"魔法数字 {val}",
-                                    level=EvidenceLevel.OBSERVATION,
-                                    provenance={
-                                        "file": fpath,
-                                        "line": line_no,
-                                        "value": val,
-                                        "type": "magic_number",
-                                    },
-                                    confidence=0.7,
-                                    known_gaps=[
-                                        "数字 0/1/-1 已豁免",
-                                        "可能误判常量定义（如 MAGIC = 0.85）",
-                                    ],
-                                ),
-                            ))
+                            debts.append(
+                                CognitiveDebt(
+                                    type="magic_number",
+                                    description=f"魔法数字: {val}",
+                                    evidence=Evidence(
+                                        result=f"魔法数字 {val}",
+                                        level=EvidenceLevel.OBSERVATION,
+                                        provenance={
+                                            "file": fpath,
+                                            "line": line_no,
+                                            "value": val,
+                                            "type": "magic_number",
+                                        },
+                                        confidence=0.7,
+                                        known_gaps=[
+                                            "数字 0/1/-1 已豁免",
+                                            "可能误判常量定义（如 MAGIC = 0.85）",
+                                        ],
+                                    ),
+                                )
+                            )
 
             # 硬编码检测：字符串字面量长度 > 20 且非常量上下文（简化）
             # 此处仅作示意性检测，避免噪音过多
@@ -485,6 +504,7 @@ class AIAuditor:
 
 
 # ---------- 模块级入口 ----------
+
 
 def audit_ai_output(target: str, ai_context: dict[str, Any] | None = None) -> dict[str, Any]:
     """AI 产出审计的模块级入口。

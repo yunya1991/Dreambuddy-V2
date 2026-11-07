@@ -17,6 +17,7 @@
   - 认知记忆 VM-1791187544250 (PoC 失败 + 4 根因)
   - 调研记忆 VM-1791186239750 (路径依赖 SDE 概率 30-40%)
 """
+
 from __future__ import annotations
 
 import sys
@@ -66,9 +67,9 @@ class TestLogSigZScoreNormalization:
 
         for i in range(log_sigs_arr.shape[1]):
             col = log_sigs_arr[:, i]
-            assert np.all(np.abs(col) < 5.0), (
-                f"log_sig 第 {i} 维未归一化, 值 {col} 超出 z-score 范围 [-5, 5]"
-            )
+            assert np.all(
+                np.abs(col) < 5.0
+            ), f"log_sig 第 {i} 维未归一化, 值 {col} 超出 z-score 范围 [-5, 5]"
 
     def test_log_sig_mean_near_zero_after_normalization(self):
         """归一化后 log_sig 跨样本均值应接近 0 (z-score 性质)."""
@@ -90,9 +91,7 @@ class TestLogSigZScoreNormalization:
 
         col_means = np.mean(log_sigs_arr, axis=0)
         for i, m in enumerate(col_means):
-            assert abs(m) < 1.0, (
-                f"log_sig 第 {i} 维跨样本均值 {m} 不接近 0, z-score 归一化未生效"
-            )
+            assert abs(m) < 1.0, f"log_sig 第 {i} 维跨样本均值 {m} 不接近 0, z-score 归一化未生效"
 
     def test_log_sig_persist_normalization_params(self):
         """模型应持久化 log_sig 的归一化参数 (mean/std) 供推理用."""
@@ -122,11 +121,15 @@ class TestLogSigZScoreNormalization:
         assert loaded, "load 应成功"
 
         np.testing.assert_allclose(
-            model2._log_sig_mean, model._log_sig_mean, atol=1e-6,
+            model2._log_sig_mean,
+            model._log_sig_mean,
+            atol=1e-6,
             err_msg="_log_sig_mean 未在 save/load 中保留",
         )
         np.testing.assert_allclose(
-            model2._log_sig_std, model._log_sig_std, atol=1e-6,
+            model2._log_sig_std,
+            model._log_sig_std,
+            atol=1e-6,
             err_msg="_log_sig_std 未在 save/load 中保留",
         )
 
@@ -166,8 +169,7 @@ class TestSigDimNoTruncation:
         )
         model = NeuralSDEModel(device="cpu")
         assert model.sig_dim >= engine_dim, (
-            f"模型 sig_dim={model.sig_dim} 应 >= SignatureEngine 输出维度 "
-            f"{engine_dim}"
+            f"模型 sig_dim={model.sig_dim} 应 >= SignatureEngine 输出维度 " f"{engine_dim}"
         )
 
     def test_path_signature_drift_net_sig_dim_matches_engine(self):
@@ -181,8 +183,7 @@ class TestSigDimNoTruncation:
 
         net = _PathSignatureDriftNet()
         assert net.sig_dim >= engine_dim, (
-            f"drift_net sig_dim={net.sig_dim} 应 >= SignatureEngine 输出维度 "
-            f"{engine_dim}"
+            f"drift_net sig_dim={net.sig_dim} 应 >= SignatureEngine 输出维度 " f"{engine_dim}"
         )
 
     def test_log_sig_dim_not_truncated(self):
@@ -218,12 +219,12 @@ class TestSigDimNoTruncation:
 
         engine = SignatureEngine(depth=3)
         engine_dim = len(engine.log_signature(history))
-        assert len(log_sig) == model.sig_dim, (
-            f"log_sig 长度 {len(log_sig)} != sig_dim {model.sig_dim}"
-        )
-        assert model.sig_dim >= engine_dim, (
-            f"sig_dim={model.sig_dim} 截断了 SignatureEngine 输出 (维度 {engine_dim})"
-        )
+        assert (
+            len(log_sig) == model.sig_dim
+        ), f"log_sig 长度 {len(log_sig)} != sig_dim {model.sig_dim}"
+        assert (
+            model.sig_dim >= engine_dim
+        ), f"sig_dim={model.sig_dim} 截断了 SignatureEngine 输出 (维度 {engine_dim})"
 
 
 # ============================================================================
@@ -251,15 +252,13 @@ class TestQLIKELoss:
         model = NeuralSDEModel(device="cpu")
         # 默认 loss_type="mse"
         trainer = NeuralSDETrainer(model=model)
-        assert getattr(trainer, "loss_type", None) == "mse", (
-            "Trainer 默认 loss_type 应为 'mse' (向后兼容)"
-        )
+        assert (
+            getattr(trainer, "loss_type", None) == "mse"
+        ), "Trainer 默认 loss_type 应为 'mse' (向后兼容)"
 
         # 显式 qlike
         trainer_q = NeuralSDETrainer(model=model, loss_type="qlike")
-        assert trainer_q.loss_type == "qlike", (
-            "Trainer 应支持 loss_type='qlike'"
-        )
+        assert trainer_q.loss_type == "qlike", "Trainer 应支持 loss_type='qlike'"
 
     def test_train_epoch_qlike_returns_finite_loss(self):
         """用 loss_type='qlike' 训练一个 epoch, loss 应为正有限值."""
@@ -329,9 +328,9 @@ class TestQLIKELoss:
         report = trainer.train(closes, epochs=3)
 
         assert report["status"] == "ok", f"训练应成功, 实际={report}"
-        assert report.get("loss_type") == "qlike", (
-            f"training_report 应记录 loss_type='qlike', 实际={report.get('loss_type')}"
-        )
+        assert (
+            report.get("loss_type") == "qlike"
+        ), f"training_report 应记录 loss_type='qlike', 实际={report.get('loss_type')}"
 
 
 # ============================================================================
@@ -358,9 +357,7 @@ class TestMultitaskLoss:
 
         model = NeuralSDEModel(device="cpu")
         trainer = NeuralSDETrainer(model=model, loss_type="multitask")
-        assert trainer.loss_type == "multitask", (
-            "Trainer 应支持 loss_type='multitask'"
-        )
+        assert trainer.loss_type == "multitask", "Trainer 应支持 loss_type='multitask'"
 
     def test_multitask_loss_value_matches_formula(self):
         """multitask loss 应严格等于 0.7*MSE + 0.3*QLIKE (在相同 path/targets 上)."""
@@ -412,9 +409,7 @@ class TestMultitaskLoss:
         if not model.is_available:
             pytest.skip("torch 不可用")
 
-        trainer = NeuralSDETrainer(
-            model=model, loss_type="multitask", seq_len=64, horizon=20
-        )
+        trainer = NeuralSDETrainer(model=model, loss_type="multitask", seq_len=64, horizon=20)
         closes = 50000.0 + np.cumsum(np.random.randn(200) * 10.0)
         windows = trainer.prepare_data(closes, max_windows=50)
         assert len(windows) > 0
@@ -435,16 +430,14 @@ class TestMultitaskLoss:
         if not model.is_available:
             pytest.skip("torch 不可用")
 
-        trainer = NeuralSDETrainer(
-            model=model, loss_type="multitask", seq_len=64, horizon=20
-        )
+        trainer = NeuralSDETrainer(model=model, loss_type="multitask", seq_len=64, horizon=20)
         closes = 50000.0 + np.cumsum(np.random.randn(2000) * 10.0)
         report = trainer.train(closes, epochs=3)
 
         assert report["status"] == "ok", f"训练应成功, 实际={report}"
-        assert report.get("loss_type") == "multitask", (
-            f"training_report 应记录 loss_type='multitask', 实际={report.get('loss_type')}"
-        )
+        assert (
+            report.get("loss_type") == "multitask"
+        ), f"training_report 应记录 loss_type='multitask', 实际={report.get('loss_type')}"
 
 
 # ============================================================================
@@ -455,4 +448,5 @@ class TestMultitaskLoss:
 def _torch():
     """安全获取 torch."""
     import torch
+
     return torch

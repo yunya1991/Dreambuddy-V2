@@ -16,31 +16,31 @@ evolution_optimize.py — PROP-20260809-002: 提案参数值数据驱动化（Op
   - optuna（可选，未安装自动降级）
   - evolution_backtest.py（walk-forward 基础设施复用）
 """
+
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Tuple
 
 logger = logging.getLogger(__name__)
 
 # 复用 PROP-001 基础设施
-from scripts.memory_l4.evolution_backtest import (   # noqa: E402
+from scripts.memory_l4.evolution_backtest import (  # noqa: E402
     _PARAM_TO_ENGINE_FIELD,
+    _run_walk_forward,
     bars_to_walk_forward_data,
     load_local_bars,
-    _run_walk_forward,
-    MIN_BARS_FOR_BACKTEST,
 )
 
 # ── 寻优配置（Z3 规划: 控成本）────────────────────────────────────────────────
-OPTUNA_N_TRIALS   = 30     # 最大试验次数（硬上限）
-OPTUNA_TIMEOUT_S  = 120    # 总超时秒数（硬切）
-OPTUNA_MAX_BARS   = 150    # 寻优用更小的数据窗口（速度优先）
-OPTUNA_MIN_BARS   = 60     # 低于此数直接降级
+OPTUNA_N_TRIALS = 30  # 最大试验次数（硬上限）
+OPTUNA_TIMEOUT_S = 120  # 总超时秒数（硬切）
+OPTUNA_MAX_BARS = 150  # 寻优用更小的数据窗口（速度优先）
+OPTUNA_MIN_BARS = 60  # 低于此数直接降级
 
 # 方向 → 搜索空间（相对当前值的比例区间）
 _DIRECTION_BOUNDS = {
-    "lower":  (0.5, 0.999),   # [current*0.5, current)
-    "raise":  (1.001, 1.5),   # (current, current*1.5]
-    "around": (0.8, 1.2),     # ±20%
+    "lower": (0.5, 0.999),  # [current*0.5, current)
+    "raise": (1.001, 1.5),  # (current, current*1.5]
+    "around": (0.8, 1.2),  # ±20%
 }
 
 # 参数值域绝对上下限（防比例区间越界）
@@ -49,13 +49,11 @@ _ABS_BOUNDS = {
 }
 
 
-def _resolve_search_space(param_key: str,
-                          direction: str,
-                          current_value: float
-                          ) -> Tuple[float, float]:
+def _resolve_search_space(
+    param_key: str, direction: str, current_value: float
+) -> Tuple[float, float]:
     """根据方向约束计算搜索区间 [lo, hi]。"""
-    lo_ratio, hi_ratio = _DIRECTION_BOUNDS.get(direction,
-                                                _DIRECTION_BOUNDS["around"])
+    lo_ratio, hi_ratio = _DIRECTION_BOUNDS.get(direction, _DIRECTION_BOUNDS["around"])
     lo = current_value * lo_ratio
     hi = current_value * hi_ratio
 
@@ -67,9 +65,9 @@ def _resolve_search_space(param_key: str,
         mid = max(abs_lo, min(current_value, abs_hi))
         if direction == "lower":
             lo = max(abs_lo, mid * 0.90)
-            hi = mid                       # 只向下搜
+            hi = mid  # 只向下搜
         elif direction == "raise":
-            lo = mid                       # 只向上搜
+            lo = mid  # 只向上搜
             hi = min(abs_hi, mid * 1.10)
         else:
             lo = max(abs_lo, mid * 0.95)
@@ -79,14 +77,15 @@ def _resolve_search_space(param_key: str,
     return lo, hi
 
 
-def optimize_proposal_value(param_key: str,
-                            direction: str,
-                            current_value: float,
-                            symbol: str = "BTC",
-                            timeframe: str = "1H",
-                            n_trials: int = OPTUNA_N_TRIALS,
-                            timeout_s: int = OPTUNA_TIMEOUT_S
-                            ) -> Tuple[float, str]:
+def optimize_proposal_value(
+    param_key: str,
+    direction: str,
+    current_value: float,
+    symbol: str = "BTC",
+    timeframe: str = "1H",
+    n_trials: int = OPTUNA_N_TRIALS,
+    timeout_s: int = OPTUNA_TIMEOUT_S,
+) -> Tuple[float, str]:
     """
     为进化提案的参数值做数据驱动寻优。
 
@@ -114,6 +113,7 @@ def optimize_proposal_value(param_key: str,
     # ── optuna 可用性 ─────────────────────────────────────────────────────
     try:
         import optuna
+
         optuna.logging.set_verbosity(optuna.logging.WARNING)
     except ImportError:
         logger.warning("optuna 未安装，提案值降级为默认")
@@ -127,8 +127,8 @@ def optimize_proposal_value(param_key: str,
 
     data = bars_to_walk_forward_data(bars)
     train_w = min(30, max(20, len(data) // 4))
-    test_w  = min(5, max(3, len(data) // 10))
-    step    = 15
+    test_w = min(5, max(3, len(data) // 10))
+    step = 15
 
     lo, hi = _resolve_search_space(param_key, direction, current_value)
     if lo >= hi:  # W1修复: 空区间（卡死在绝对边界）→ 回退默认值
@@ -147,13 +147,9 @@ def optimize_proposal_value(param_key: str,
             logger.debug("trial 回测失败 val=%r: %s", val, e)
             return -1.0  # 惩罚失败
         # 目标: 方向准确率为主，平均置信度为辅，fail_closed 率惩罚
-        fail_rate = (summary["fail_closed_count"]
-                     / max(1, summary["total_bars"]))
-        score = (summary["direction_accuracy"]
-                 + 0.1 * summary["avg_confidence"]
-                 - 0.2 * fail_rate)
-        trial.set_user_attr("direction_accuracy",
-                            summary["direction_accuracy"])
+        fail_rate = summary["fail_closed_count"] / max(1, summary["total_bars"])
+        score = summary["direction_accuracy"] + 0.1 * summary["avg_confidence"] - 0.2 * fail_rate
+        trial.set_user_attr("direction_accuracy", summary["direction_accuracy"])
         trial.set_user_attr("fail_rate", round(fail_rate, 3))
         return score
 
@@ -181,6 +177,13 @@ def optimize_proposal_value(param_key: str,
     logger.info(
         "Optuna 寻优完成 %s: %r → %.4f (score=%.3f, trials=%d, "
         "space=[%.3f, %.3f], direction=%s)",
-        param_key, current_value, best_value,
-        study.best_trial.value, len(study.trials), lo, hi, direction)
+        param_key,
+        current_value,
+        best_value,
+        study.best_trial.value,
+        len(study.trials),
+        lo,
+        hi,
+        direction,
+    )
     return best_value, "optuna"

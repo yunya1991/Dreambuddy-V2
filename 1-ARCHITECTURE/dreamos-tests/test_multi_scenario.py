@@ -16,39 +16,35 @@ Dreambuddy OS 多场景测试套件
     11. 边界与 Bug: 空输入/循环/溢出/类型错误
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import threading
 import time
-import copy
 import traceback
-from typing import List, Dict, Any, Optional
+from typing import List
 
 # 确保可以 import dreamos
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from dreamos.shared.state import State, NodeResult, NodeStatus, new_state
-from dreamos.shared.interfaces import Node, Edge
+from dreamos.shared.state import State, NodeResult, NodeStatus, new_state  # noqa: I001
+from dreamos.shared.interfaces import Node
 from dreamos.shared.errors import ErrorCode, OSError
-from dreamos.shared.utils import Timer, safe_get, safe_json, chunk, dedupe, retry
-from dreamos.shared.llm_client import LLMClient, LLMMessage, LLMResponse, NoOpLLMClient
+from dreamos.shared.utils import Timer
+from dreamos.shared.llm_client import LLMClient, LLMResponse
 
-from dreamos.registry.node_registry import NodeRegistry, get_default_registry, set_default_registry
+from dreamos.registry.node_registry import NodeRegistry, set_default_registry
 
 from dreamos.core.sense.intent_engine import IntentEngine
 from dreamos.core.sense.types import (
-    IntentType, IntentInput, IntentResult, RecognizerResult,
-    get_intent_definition, register_intent_type,
+    IntentInput,
 )
-from dreamos.core.sense.token_budget import TokenBudgetManager, BudgetLevel
+from dreamos.core.sense.token_budget import TokenBudgetManager
 from dreamos.core.sense.recognizers.rule_based import RuleBasedRecognizer
 from dreamos.core.sense.recognizers.llm_based import LLMBasedRecognizer
-from dreamos.core.sense.recognizers.base import BaseRecognizer
 
 from dreamos.core.arrange.graph_planner import GraphPlanner
 from dreamos.core.arrange.types import (
-    ExecutionPlan, NodeMeta, ChainSpec, BudgetAllocation,
-    STANDARD_CHAINS, INTENT_CHAIN_MAP,
+    NodeMeta,
 )
 from dreamos.core.arrange.node_selector import NodeSelector
 from dreamos.core.arrange.budget_allocator import BudgetAllocator
@@ -59,24 +55,26 @@ from dreamos.core.compute.node_runner import NodeRunner
 from dreamos.core.compute.reflector import Reflector
 from dreamos.core.compute.aggregator import Aggregator
 from dreamos.core.compute.types import (
-    ReflectAction, ReflectDecision, ExecutionReport, NodeExecutionRecord,
+    ReflectAction,
+    ReflectDecision,
+    NodeExecutionRecord,
 )
 
 from dreamos.core.graph_store.store import GraphStore
-from dreamos.core.graph_store.types import Checkpoint, CompressedState, HistoryEntry
+from dreamos.core.graph_store.types import HistoryEntry
 
 from dreamos.evolution.engine import EvolutionEngine
-from dreamos.evolution.types import EvolutionReport, Lesson, GapAnalysis
 
 from dreamos.budget.global_budget import GlobalBudgetManager, BudgetLevel as GlobalBudgetLevel
-
 
 # ============================================================
 # 测试工具
 # ============================================================
 
+
 class TestResult:
     """单个测试结果"""
+
     def __init__(self, name: str, category: str):
         self.name = name
         self.category = category
@@ -94,10 +92,18 @@ class TestResult:
 
 class MockNode(Node):
     """模拟节点 - 用于测试"""
-    def __init__(self, node_id: str, confidence: float = 0.7,
-                 direction: str = "LONG", chain: str = "A",
-                 fail: bool = False, delay: float = 0,
-                 tags: List[str] = None, estimated_tokens: int = 100):
+
+    def __init__(
+        self,
+        node_id: str,
+        confidence: float = 0.7,
+        direction: str = "LONG",
+        chain: str = "A",
+        fail: bool = False,
+        delay: float = 0,
+        tags: List[str] = None,
+        estimated_tokens: int = 100,
+    ):
         self.node_id = node_id
         self.name = node_id
         self.description = f"Mock node {node_id}"
@@ -133,6 +139,7 @@ class MockNode(Node):
 
 class FlakyNode(Node):
     """不稳定节点 - 前N次失败，之后成功"""
+
     def __init__(self, node_id: str, fail_times: int = 2, confidence: float = 0.6):
         self.node_id = node_id
         self.name = node_id
@@ -164,8 +171,12 @@ class FlakyNode(Node):
 
 class MockLLMClient(LLMClient):
     """模拟 LLM 客户端"""
+
     def __init__(self, response_content: str = "", tokens: int = 100):
-        self._response = response_content or '{"intent_type": "TREND_FOLLOWING", "confidence": 0.8, "rationale": "LLM识别", "recommended_chain": "A"}'
+        self._response = (
+            response_content
+            or '{"intent_type": "TREND_FOLLOWING", "confidence": 0.8, "rationale": "LLM识别", "recommended_chain": "A"}'
+        )
         self._tokens = tokens
         self.call_count = 0
 
@@ -257,6 +268,7 @@ def assert_not_none(v, msg=""):
 # 1. State 层测试
 # ============================================================
 
+
 def test_state_creation():
     """测试 State 创建"""
     s = new_state(cycle_id="test_001")
@@ -318,8 +330,7 @@ def test_state_is_all_success_with_missing_nodes():
     # 这是 BUG: 未执行节点被跳过了
     if result:
         raise AssertionError(
-            "BUG#1: is_all_success(['A1','A2']) 返回 True, "
-            "但 A2 未执行 - 未执行节点被静默跳过"
+            "BUG#1: is_all_success(['A1','A2']) 返回 True, " "但 A2 未执行 - 未执行节点被静默跳过"
         )
 
 
@@ -333,6 +344,7 @@ def test_state_empty_aggregate():
 # ============================================================
 # 2. Registry 层测试
 # ============================================================
+
 
 def test_registry_basic():
     """测试注册表基本操作"""
@@ -411,9 +423,7 @@ def test_registry_thread_safety():
 
     threads = []
     for t in range(4):
-        threads.append(threading.Thread(
-            target=register_batch, args=(f"T{t}", 50)
-        ))
+        threads.append(threading.Thread(target=register_batch, args=(f"T{t}", 50)))
     for t in threads:
         t.start()
     for t in threads:
@@ -436,6 +446,7 @@ def test_registry_register_many():
 # ============================================================
 # 3. S 层 IntentEngine 测试
 # ============================================================
+
 
 def test_intent_engine_trend_following():
     """测试趋势跟随意图识别"""
@@ -530,7 +541,7 @@ def test_intent_engine_llm_fallback():
         "change_24h": 1.0,
         "rsi14": 50,
     }
-    result = engine.recognize(market=market, user_message="分析BTC")
+    result = engine.recognize(market=market, user_message="分析BTC")  # noqa: F841
     # 规则识别置信度低 → 触发 LLM
     assert_gt(mock_llm.call_count, 0, "应触发LLM调用")
 
@@ -550,17 +561,23 @@ def test_intent_engine_budget_exhausted():
     mock_llm = MockLLMClient()
     engine._recognizers = [r for r in engine._recognizers if r.name != "llm_based"]
     engine._recognizers.append(LLMBasedRecognizer(llm=mock_llm))
-    result = engine.recognize(market={"price": 50000})
+    result = engine.recognize(market={"price": 50000})  # noqa: F841
     assert_eq(mock_llm.call_count, 0, "预算不足时不应调用LLM")
 
 
 def test_rule_recognizer_recommend_chain():
     """测试规则识别器推荐链路"""
     rec = RuleBasedRecognizer()
-    inp = IntentInput(market={
-        "price": 50000, "ema20": 49000, "ema50": 47000,
-        "ema200": 45000, "change_24h": 6, "adx": 35
-    })
+    inp = IntentInput(
+        market={
+            "price": 50000,
+            "ema20": 49000,
+            "ema50": 47000,
+            "ema200": 45000,
+            "change_24h": 6,
+            "adx": 35,
+        }
+    )
     result = rec.recognize(inp)
     assert_eq(result.intent_type, "TREND_FOLLOWING")
     assert_true(len(result.base_chain) > 0, "应推荐非空链路")
@@ -571,6 +588,7 @@ def test_rule_recognizer_recommend_chain():
 # 4. A 层 GraphPlanner 测试
 # ============================================================
 
+
 def test_graph_planner_basic():
     """测试图规划器基本功能"""
     # 准备注册表
@@ -580,12 +598,14 @@ def test_graph_planner_basic():
     set_default_registry(reg)
     try:
         planner = GraphPlanner()
-        state = new_state(intent={
-            "intent_type": "TREND_FOLLOWING",
-            "recommended_chain": "A",
-            "base_chain": ["A1", "A2", "A3", "A4"],
-            "confidence": 0.7,
-        })
+        state = new_state(
+            intent={
+                "intent_type": "TREND_FOLLOWING",
+                "recommended_chain": "A",
+                "base_chain": ["A1", "A2", "A3", "A4"],
+                "confidence": 0.7,
+            }
+        )
         plan = planner.plan(state)
         assert_eq(plan.planned_chain, "A")
         assert_true(len(plan.selected_nodes) > 0)
@@ -699,6 +719,7 @@ def test_budget_allocator_reallocate():
 # 5. C 层 GraphExecutor 测试
 # ============================================================
 
+
 def test_executor_simple_sequence():
     """测试简单顺序执行"""
     graph = SequentialGraph()
@@ -785,8 +806,12 @@ def test_reflector_continue():
     graph.add_node(MockNode("A2"))
 
     decision = reflector.decide(
-        current_node_id="A1", result=result, state=state,
-        graph=graph, executed_count=1, max_nodes=3,
+        current_node_id="A1",
+        result=result,
+        state=state,
+        graph=graph,
+        executed_count=1,
+        max_nodes=3,
     )
     assert_eq(decision.action, ReflectAction.CONTINUE)
 
@@ -796,8 +821,10 @@ def test_reflector_redo_on_failure():
     reflector = Reflector(max_retries_per_node=3)
     state = new_state()
     result = NodeResult(
-        node_id="A1", status=NodeStatus.FAILED,
-        error="测试失败", error_code=ErrorCode.EXEC_002,
+        node_id="A1",
+        status=NodeStatus.FAILED,
+        error="测试失败",
+        error_code=ErrorCode.EXEC_002,
     )
     state.update("A1", result)
     graph = SequentialGraph()
@@ -805,8 +832,13 @@ def test_reflector_redo_on_failure():
 
     record = NodeExecutionRecord(node_id="A1", status="failed", retries=1)
     decision = reflector.decide(
-        current_node_id="A1", result=result, state=state,
-        graph=graph, executed_count=1, max_nodes=3, record=record,
+        current_node_id="A1",
+        result=result,
+        state=state,
+        graph=graph,
+        executed_count=1,
+        max_nodes=3,
+        record=record,
     )
     assert_eq(decision.action, ReflectAction.REDO)
 
@@ -816,8 +848,10 @@ def test_reflector_skip_on_max_retries():
     reflector = Reflector(max_retries_per_node=2)
     state = new_state()
     result = NodeResult(
-        node_id="A1", status=NodeStatus.FAILED,
-        error="持续失败", error_code=ErrorCode.EXEC_002,
+        node_id="A1",
+        status=NodeStatus.FAILED,
+        error="持续失败",
+        error_code=ErrorCode.EXEC_002,
     )
     state.update("A1", result)
     graph = SequentialGraph()
@@ -825,8 +859,13 @@ def test_reflector_skip_on_max_retries():
 
     record = NodeExecutionRecord(node_id="A1", status="failed", retries=2)
     decision = reflector.decide(
-        current_node_id="A1", result=result, state=state,
-        graph=graph, executed_count=1, max_nodes=3, record=record,
+        current_node_id="A1",
+        result=result,
+        state=state,
+        graph=graph,
+        executed_count=1,
+        max_nodes=3,
+        record=record,
     )
     assert_eq(decision.action, ReflectAction.SKIP)
 
@@ -843,6 +882,7 @@ def test_node_runner_retry():
 
 def test_node_runner_fallback_on_exception():
     """测试异常时降级"""
+
     class CrashNode(Node):
         node_id = "CRASH"
         name = "Crash"
@@ -850,8 +890,10 @@ def test_node_runner_fallback_on_exception():
         tags = []
         estimated_tokens = 0
         estimated_latency_ms = 0
+
         def execute(self, state):
             raise RuntimeError("严重崩溃")
+
         def fallback(self, state):
             return NodeResult(node_id="CRASH", status=NodeStatus.DEGRADED, confidence=0.1)
 
@@ -864,6 +906,7 @@ def test_node_runner_fallback_on_exception():
 # ============================================================
 # 6. Aggregator 测试
 # ============================================================
+
 
 def test_aggregator_long_direction():
     """测试多头方向聚合"""
@@ -962,6 +1005,7 @@ def test_aggregator_disagreement_threshold_bug():
 # 7. G 层 GraphStore 测试
 # ============================================================
 
+
 def test_graph_store_checkpoint():
     """测试检查点"""
     store = GraphStore()
@@ -1017,6 +1061,7 @@ def test_graph_store_summary():
 # 8. Evolution Engine 测试
 # ============================================================
 
+
 def test_evolution_empty():
     """测试空历史进化"""
     engine = EvolutionEngine()
@@ -1040,12 +1085,8 @@ def test_evolution_gap_high():
     """测试高差距"""
     engine = EvolutionEngine()
     state = new_state()
-    state.update("A1", NodeResult(
-        node_id="A1", status=NodeStatus.FAILED, confidence=0.0
-    ))
-    state.update("A2", NodeResult(
-        node_id="A2", status=NodeStatus.FAILED, confidence=0.0
-    ))
+    state.update("A1", NodeResult(node_id="A1", status=NodeStatus.FAILED, confidence=0.0))
+    state.update("A2", NodeResult(node_id="A2", status=NodeStatus.FAILED, confidence=0.0))
     gap = engine.analyze_gap(state)
     assert_gt(gap, 0.8, "全失败gap应接近1.0")
 
@@ -1072,6 +1113,7 @@ def test_evolution_record_and_evolve():
 # ============================================================
 # 9. Budget 测试
 # ============================================================
+
 
 def test_global_budget_basic():
     """测试全局预算"""
@@ -1152,6 +1194,7 @@ def test_token_budget_degradation():
 # 10. 端到端集成测试
 # ============================================================
 
+
 def test_e2e_full_pipeline():
     """端到端: S -> A -> C -> G 全链路"""
     # 准备注册表
@@ -1163,11 +1206,18 @@ def test_e2e_full_pipeline():
     try:
         # S 层: 意图识别
         engine = IntentEngine(use_llm_based=False, use_dynamic=False)
-        intent = engine.recognize(market={
-            "price": 50000, "change_24h": 6, "rsi14": 55,
-            "ema20": 49000, "ema50": 47000, "ema200": 45000,
-            "adx": 35, "vol_ratio": 1.2,
-        })
+        intent = engine.recognize(
+            market={
+                "price": 50000,
+                "change_24h": 6,
+                "rsi14": 55,
+                "ema20": 49000,
+                "ema50": 47000,
+                "ema200": 45000,
+                "adx": 35,
+                "vol_ratio": 1.2,
+            }
+        )
 
         # A 层: 图规划
         planner = GraphPlanner()
@@ -1205,12 +1255,14 @@ def test_e2e_with_failures():
 
     try:
         planner = GraphPlanner()
-        state = new_state(intent={
-            "intent_type": "TREND_FOLLOWING",
-            "recommended_chain": "A",
-            "base_chain": ["A1", "A2", "A3", "A4"],
-            "confidence": 0.6,
-        })
+        state = new_state(
+            intent={
+                "intent_type": "TREND_FOLLOWING",
+                "recommended_chain": "A",
+                "base_chain": ["A1", "A2", "A3", "A4"],
+                "confidence": 0.6,
+            }
+        )
         plan = planner.plan(state)
         graph = planner.build_graph(plan)
 
@@ -1254,8 +1306,10 @@ def test_e2e_conditional_graph():
 # 11. 边界与 Bug 检测
 # ============================================================
 
+
 def test_bug_executor_redo_infinite_loop():
     """BUG #3: REDO 可能导致无限循环"""
+
     # 如果 Reflector 返回 REDO 但节点始终失败
     # NodeRunner 内部已重试耗尽, 但 Reflector 可能再次 REDO
     class AlwaysFailNode(Node):
@@ -1265,10 +1319,13 @@ def test_bug_executor_redo_infinite_loop():
         tags = []
         estimated_tokens = 0
         estimated_latency_ms = 0
+
         def execute(self, state):
             return NodeResult(
-                node_id="FAIL", status=NodeStatus.FAILED,
-                error="永远失败", error_code=ErrorCode.EXEC_002,
+                node_id="FAIL",
+                status=NodeStatus.FAILED,
+                error="永远失败",
+                error_code=ErrorCode.EXEC_002,
             )
 
     graph = SequentialGraph()
@@ -1308,7 +1365,7 @@ def test_bug_aggregator_neutral_dominates():
 
 def test_bug_reflector_jumpto_missing_node():
     """BUG #5: JUMP_TO 目标节点不存在时静默忽略"""
-    reflector = Reflector()
+    reflector = Reflector()  # noqa: F841
     state = new_state()
     state.update("A1", NodeResult(node_id="A1", confidence=0.2))
 
@@ -1317,7 +1374,7 @@ def test_bug_reflector_jumpto_missing_node():
     graph.add_node(MockNode("A2"))
 
     # 构造一个 jump_to 不存在的决策
-    decision = ReflectDecision(
+    decision = ReflectDecision(  # noqa: F841
         action=ReflectAction.JUMP_TO,
         jump_to="NON_EXISTENT",
     )
@@ -1335,10 +1392,7 @@ def test_bug_budget_allocator_available_depletion():
     """BUG #6: 预算分配器 available 变量在循环中被修改"""
     allocator = BudgetAllocator(total=1000)
     # 5个必须节点, 每个需要 300 tokens
-    nodes = [
-        NodeMeta(node_id=f"N{i}", priority=0, estimated_tokens=300)
-        for i in range(5)
-    ]
+    nodes = [NodeMeta(node_id=f"N{i}", priority=0, estimated_tokens=300) for i in range(5)]
     alloc = allocator.allocate(nodes)
 
     # 总需求 5*300=1500, 但总预算只有 1000
@@ -1362,15 +1416,14 @@ def test_bug_state_from_dict_missing_timestamps():
     """BUG #7: from_dict 不恢复 started_at/updated_at"""
     s = new_state(cycle_id="test_ts")
     s.started_at = s.started_at  # 确保有值
-    original_started = s.started_at
+    original_started = s.started_at  # noqa: F841
 
     d = s.to_dict()
     s2 = State.from_dict(d)
 
     if s2.started_at is None:
         raise AssertionError(
-            "BUG#7: from_dict 未恢复 started_at/updated_at - "
-            "序列化往返丢失时间戳信息"
+            "BUG#7: from_dict 未恢复 started_at/updated_at - " "序列化往返丢失时间戳信息"
         )
 
 
@@ -1394,16 +1447,18 @@ def test_edge_case_empty_user_message():
 def test_edge_case_extreme_market_data():
     """边界: 极端市场数据"""
     engine = IntentEngine(use_llm_based=False, use_dynamic=False)
-    result = engine.recognize(market={
-        "price": 0,
-        "change_24h": 1000,  # 1000% 涨幅
-        "rsi14": 100,
-        "ema20": 0,
-        "ema50": 0,
-        "ema200": 0,
-        "adx": 100,
-        "vol_ratio": 100,
-    })
+    result = engine.recognize(
+        market={
+            "price": 0,
+            "change_24h": 1000,  # 1000% 涨幅
+            "rsi14": 100,
+            "ema20": 0,
+            "ema50": 0,
+            "ema200": 0,
+            "adx": 100,
+            "vol_ratio": 100,
+        }
+    )
     # 不应崩溃
     assert_not_none(result.intent_type)
 
@@ -1434,9 +1489,7 @@ def test_concurrent_state_update():
     def update_batch(prefix: str, count: int):
         try:
             for i in range(count):
-                state.update(f"{prefix}_{i}", NodeResult(
-                    node_id=f"{prefix}_{i}", confidence=0.5
-                ))
+                state.update(f"{prefix}_{i}", NodeResult(node_id=f"{prefix}_{i}", confidence=0.5))
         except Exception as e:
             errors.append(str(e))
 
@@ -1481,6 +1534,7 @@ def test_sequential_graph_condition_edge():
 # 运行所有测试
 # ============================================================
 
+
 def run_all_tests():
     """运行所有测试"""
     global _all_tests
@@ -1493,9 +1547,13 @@ def run_all_tests():
         ("test_state_aggregate_confidence", "State", test_state_aggregate_confidence),
         ("test_state_serialization_roundtrip", "State", test_state_serialization_roundtrip),
         ("test_state_snapshot_independence", "State", test_state_snapshot_independence),
-        ("test_state_is_all_success_with_missing_nodes", "State", test_state_is_all_success_with_missing_nodes, True),
+        (
+            "test_state_is_all_success_with_missing_nodes",
+            "State",
+            test_state_is_all_success_with_missing_nodes,
+            True,
+        ),
         ("test_state_empty_aggregate", "State", test_state_empty_aggregate),
-
         # 2. Registry
         ("test_registry_basic", "Registry", test_registry_basic),
         ("test_registry_duplicate", "Registry", test_registry_duplicate),
@@ -1505,7 +1563,6 @@ def run_all_tests():
         ("test_registry_list_by_tag", "Registry", test_registry_list_by_tag),
         ("test_registry_thread_safety", "Registry", test_registry_thread_safety),
         ("test_registry_register_many", "Registry", test_registry_register_many),
-
         # 3. S 层
         ("test_intent_engine_trend_following", "S-Intent", test_intent_engine_trend_following),
         ("test_intent_engine_mean_reversion", "S-Intent", test_intent_engine_mean_reversion),
@@ -1516,7 +1573,6 @@ def run_all_tests():
         ("test_intent_engine_llm_fallback", "S-Intent", test_intent_engine_llm_fallback),
         ("test_intent_engine_budget_exhausted", "S-Intent", test_intent_engine_budget_exhausted),
         ("test_rule_recognizer_recommend_chain", "S-Intent", test_rule_recognizer_recommend_chain),
-
         # 4. A 层
         ("test_graph_planner_basic", "A-Planner", test_graph_planner_basic),
         ("test_graph_planner_infer_chain", "A-Planner", test_graph_planner_infer_chain),
@@ -1525,8 +1581,12 @@ def run_all_tests():
         ("test_budget_allocator_priorities", "A-Budget", test_budget_allocator_priorities),
         ("test_budget_allocator_zero_nodes", "A-Budget", test_budget_allocator_zero_nodes),
         ("test_budget_allocator_reallocate", "A-Budget", test_budget_allocator_reallocate),
-        ("test_bug_budget_allocator_available_depletion", "A-Budget", test_bug_budget_allocator_available_depletion, True),
-
+        (
+            "test_bug_budget_allocator_available_depletion",
+            "A-Budget",
+            test_bug_budget_allocator_available_depletion,
+            True,
+        ),
         # 5. C 层
         ("test_executor_simple_sequence", "C-Executor", test_executor_simple_sequence),
         ("test_executor_with_failure", "C-Executor", test_executor_with_failure),
@@ -1537,31 +1597,54 @@ def run_all_tests():
         ("test_reflector_redo_on_failure", "C-Reflect", test_reflector_redo_on_failure),
         ("test_reflector_skip_on_max_retries", "C-Reflect", test_reflector_skip_on_max_retries),
         ("test_node_runner_retry", "C-Runner", test_node_runner_retry),
-        ("test_node_runner_fallback_on_exception", "C-Runner", test_node_runner_fallback_on_exception),
-        ("test_bug_executor_redo_infinite_loop", "C-Executor", test_bug_executor_redo_infinite_loop, True),
-
+        (
+            "test_node_runner_fallback_on_exception",
+            "C-Runner",
+            test_node_runner_fallback_on_exception,
+        ),
+        (
+            "test_bug_executor_redo_infinite_loop",
+            "C-Executor",
+            test_bug_executor_redo_infinite_loop,
+            True,
+        ),
         # 6. Aggregator
         ("test_aggregator_long_direction", "Aggregator", test_aggregator_long_direction),
         ("test_aggregator_short_direction", "Aggregator", test_aggregator_short_direction),
-        ("test_aggregator_hold_on_disagreement", "Aggregator", test_aggregator_hold_on_disagreement),
+        (
+            "test_aggregator_hold_on_disagreement",
+            "Aggregator",
+            test_aggregator_hold_on_disagreement,
+        ),
         ("test_aggregator_empty_state", "Aggregator", test_aggregator_empty_state),
-        ("test_aggregator_hold_confidence_discount", "Aggregator", test_aggregator_hold_confidence_discount),
+        (
+            "test_aggregator_hold_confidence_discount",
+            "Aggregator",
+            test_aggregator_hold_confidence_discount,
+        ),
         ("test_aggregator_weighted_confidence", "Aggregator", test_aggregator_weighted_confidence),
-        ("test_aggregator_disagreement_threshold_bug", "Aggregator", test_aggregator_disagreement_threshold_bug, True),
-        ("test_bug_aggregator_neutral_dominates", "Aggregator", test_bug_aggregator_neutral_dominates, True),
-
+        (
+            "test_aggregator_disagreement_threshold_bug",
+            "Aggregator",
+            test_aggregator_disagreement_threshold_bug,
+            True,
+        ),
+        (
+            "test_bug_aggregator_neutral_dominates",
+            "Aggregator",
+            test_bug_aggregator_neutral_dominates,
+            True,
+        ),
         # 7. G 层
         ("test_graph_store_checkpoint", "G-Store", test_graph_store_checkpoint),
         ("test_graph_store_history", "G-Store", test_graph_store_history),
         ("test_graph_store_compression", "G-Store", test_graph_store_compression),
         ("test_graph_store_summary", "G-Store", test_graph_store_summary),
-
         # 8. Evolution
         ("test_evolution_empty", "Evolution", test_evolution_empty),
         ("test_evolution_gap_analysis", "Evolution", test_evolution_gap_analysis),
         ("test_evolution_gap_high", "Evolution", test_evolution_gap_high),
         ("test_evolution_record_and_evolve", "Evolution", test_evolution_record_and_evolve),
-
         # 9. Budget
         ("test_global_budget_basic", "Budget", test_global_budget_basic),
         ("test_global_budget_levels", "Budget", test_global_budget_levels),
@@ -1569,15 +1652,18 @@ def run_all_tests():
         ("test_global_budget_layer_limits", "Budget", test_global_budget_layer_limits),
         ("test_token_budget_modes", "Budget", test_token_budget_modes),
         ("test_token_budget_degradation", "Budget", test_token_budget_degradation),
-
         # 10. 端到端
         ("test_e2e_full_pipeline", "E2E", test_e2e_full_pipeline),
         ("test_e2e_with_failures", "E2E", test_e2e_with_failures),
         ("test_e2e_conditional_graph", "E2E", test_e2e_conditional_graph),
-
         # 11. 边界与 Bug
         ("test_bug_reflector_jumpto_missing_node", "Bug", test_bug_reflector_jumpto_missing_node),
-        ("test_bug_state_from_dict_missing_timestamps", "Bug", test_bug_state_from_dict_missing_timestamps, True),
+        (
+            "test_bug_state_from_dict_missing_timestamps",
+            "Bug",
+            test_bug_state_from_dict_missing_timestamps,
+            True,
+        ),
         ("test_edge_case_none_intent", "Edge", test_edge_case_none_intent),
         ("test_edge_case_empty_user_message", "Edge", test_edge_case_empty_user_message),
         ("test_edge_case_extreme_market_data", "Edge", test_edge_case_extreme_market_data),
@@ -1619,7 +1705,7 @@ def run_all_tests():
     print(f"{'='*70}")
 
     if bug_fails:
-        print(f"\n发现的 Bug:")
+        print("\n发现的 Bug:")
         print(f"{'-'*70}")
         for t in bug_fails:
             print(f"  [{t.category}] {t.name}")
@@ -1639,10 +1725,12 @@ def run_all_tests():
         if t.bug_found:
             categories[t.category]["bugs"] += 1
 
-    print(f"\n按类别统计:")
+    print("\n按类别统计:")
     print(f"{'-'*50}")
     for cat, stats in sorted(categories.items()):
-        print(f"  {cat:12s}: {stats['passed']}/{stats['total']} 通过, {stats['failed']} 失败, {stats['bugs']} Bug")
+        print(
+            f"  {cat:12s}: {stats['passed']}/{stats['total']} 通过, {stats['failed']} 失败, {stats['bugs']} Bug"
+        )
 
     return _all_tests
 
@@ -1651,6 +1739,7 @@ if __name__ == "__main__":
     results = run_all_tests()
     # 输出 JSON 供后续分析
     import json
+
     output = {
         "total": len(results),
         "passed": sum(1 for r in results if r.passed),
@@ -1667,7 +1756,7 @@ if __name__ == "__main__":
         else:
             output["categories"][r.category]["failed"] += 1
 
-    print(f"\n\nJSON Summary:")
+    print("\n\nJSON Summary:")
     print(json.dumps(output, default=str, indent=2, ensure_ascii=False))
 
     sys.exit(0 if all(r.passed for r in results) else 1)

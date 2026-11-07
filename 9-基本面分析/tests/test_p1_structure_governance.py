@@ -25,7 +25,10 @@ class TestP1StructureGovernance(unittest.TestCase):
         self.assertTrue(gate.exists())
         content = gate.read_text(encoding="utf-8")
         self.assertIn('pytest tests -q -m "not slow"', content)
-        self.assertIn("python -m py_compile backend/src/_embedded_ml_trade_service_source.py backend/src/ml_trade_service.py", content)
+        self.assertIn(
+            "python -m py_compile backend/src/_embedded_ml_trade_service_source.py backend/src/ml_trade_service.py",
+            content,
+        )
         self.assertIn("npm run lint", content)
 
     def test_ci_workflows_define_not_slow_default_and_slow_nightly(self) -> None:
@@ -38,7 +41,7 @@ class TestP1StructureGovernance(unittest.TestCase):
         slow_content = slow.read_text(encoding="utf-8")
         self.assertIn('pytest tests -q -m "not slow"', fast_content)
         self.assertIn("cron:", slow_content)
-        self.assertIn("RUN_SLOW_TESTS: \"1\"", slow_content)
+        self.assertIn('RUN_SLOW_TESTS: "1"', slow_content)
         self.assertIn("pytest tests -q -m slow --maxfail=1", slow_content)
 
 

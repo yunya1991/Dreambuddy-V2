@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -16,4 +15,3 @@ def test_all_workflows_enable_node24_opt_in():
             missing.append(path.name)
 
     assert not missing
-

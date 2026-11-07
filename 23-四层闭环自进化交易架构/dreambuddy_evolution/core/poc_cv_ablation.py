@@ -9,11 +9,11 @@
 
 指标: OOS 夏普 / DSR / PBO + Holm-Bonferroni 配对校正
 """
+
 from __future__ import annotations
 
 import json
 import os
-from typing import Optional
 
 import numpy as np
 
@@ -22,7 +22,6 @@ from dreambuddy_evolution.core.framework_comparison import (
     FrameworkComparison,
     holm_bonferroni,
 )
-
 
 ABLATION_CONFIGS = {
     "E0_full": {
@@ -88,19 +87,13 @@ def momentum_direction(factors: np.ndarray, i: int, factor_idx: int) -> float:
     return recent - prev
 
 
-def run_ablation_signal(
-    factors: np.ndarray, returns: np.ndarray, config: dict
-) -> np.ndarray:
+def run_ablation_signal(factors: np.ndarray, returns: np.ndarray, config: dict) -> np.ndarray:
     """运行单个消融实验组的信号生成."""
     w = 60
     n = len(returns)
     sig = np.zeros(n)
 
-    gate_kwargs = {
-        k: v
-        for k, v in config.items()
-        if k != "use_granger"
-    }
+    gate_kwargs = {k: v for k, v in config.items() if k != "use_granger"}
     gate = CrossValidationGate(**gate_kwargs)
 
     factor_dim_map = ["technical", "technical", "fundamental", "fundamental", "macro"]
@@ -113,9 +106,11 @@ def run_ablation_signal(
         # G_dim: 过去因
         if config["use_granger"]:
             corrs = [
-                np.corrcoef(past_factors[:, j], past_rets)[0, 1]
-                if np.std(past_factors[:, j]) > 1e-10
-                else 0.0
+                (
+                    np.corrcoef(past_factors[:, j], past_rets)[0, 1]
+                    if np.std(past_factors[:, j]) > 1e-10
+                    else 0.0
+                )
                 for j in range(factors.shape[1])
             ]
             best_g = int(np.argmax(np.abs(corrs)))
@@ -131,13 +126,15 @@ def run_ablation_signal(
         recent_rets = returns[i - w : i]
         attn_weights = np.array(
             [
-                abs(np.corrcoef(recent_factors[:, j], recent_rets)[0, 1])
-                if np.std(recent_factors[:, j]) > 1e-10
-                else 0.0
+                (
+                    abs(np.corrcoef(recent_factors[:, j], recent_rets)[0, 1])
+                    if np.std(recent_factors[:, j]) > 1e-10
+                    else 0.0
+                )
                 for j in range(factors.shape[1])
             ]
         )
-        dim_strength = {d: 0.0 for d in dims}
+        dim_strength = dict.fromkeys(dims, 0.0)
         for j, d in enumerate(factor_dim_map):
             dim_strength[d] += attn_weights[j]
         total = sum(dim_strength.values())
@@ -152,13 +149,29 @@ def run_ablation_signal(
         vol_shift = bool(vol_recent > vol_past * 1.3) if vol_past > 1e-10 else False
 
         # 相关性断裂：过去 vs 现在 因子-收益相关性显著变化
-        corr_recent = abs(np.corrcoef(recent_factors[:, 0], recent_rets)[0, 1]) if np.std(recent_factors[:, 0]) > 1e-10 else 0.0
-        corr_past = abs(np.corrcoef(past_factors[:, 0], past_rets)[0, 1]) if np.std(past_factors[:, 0]) > 1e-10 else 0.0
+        corr_recent = (
+            abs(np.corrcoef(recent_factors[:, 0], recent_rets)[0, 1])
+            if np.std(recent_factors[:, 0]) > 1e-10
+            else 0.0
+        )
+        corr_past = (
+            abs(np.corrcoef(past_factors[:, 0], past_rets)[0, 1])
+            if np.std(past_factors[:, 0]) > 1e-10
+            else 0.0
+        )
         corr_break = bool(abs(corr_recent - corr_past) > 0.3)
 
         # 市场形态转变：Hurst 近似（用收益率自相关系数符号变化代理）
-        ac_recent = np.corrcoef(recent_rets[:-1], recent_rets[1:])[0, 1] if np.std(recent_rets[:-1]) > 1e-10 else 0.0
-        ac_past = np.corrcoef(past_rets[:-1], past_rets[1:])[0, 1] if np.std(past_rets[:-1]) > 1e-10 else 0.0
+        ac_recent = (
+            np.corrcoef(recent_rets[:-1], recent_rets[1:])[0, 1]
+            if np.std(recent_rets[:-1]) > 1e-10
+            else 0.0
+        )
+        ac_past = (
+            np.corrcoef(past_rets[:-1], past_rets[1:])[0, 1]
+            if np.std(past_rets[:-1]) > 1e-10
+            else 0.0
+        )
         form_shift = bool((ac_recent > 0) != (ac_past > 0))
 
         structural_break = {
@@ -186,7 +199,7 @@ def run_ablation_signal(
             head_mult = 1.0
             if result["head_adjustment"]:
                 # 取 A_dim 对应 head 的平均 multiplier
-                a_heads = [h for h in result["head_adjustment"].keys()]
+                a_heads = [h for h in result["head_adjustment"].keys()]  # noqa: C416
                 if a_heads:
                     head_mult = np.mean(list(result["head_adjustment"].values()))
             sig[i] = direction * result["confidence_mult"] * head_mult
@@ -212,7 +225,7 @@ def generate_simulated_prices(n: int = 5000, seed: int = 42) -> np.ndarray:
     regime_len = n // 3
 
     for i in range(1, n):
-        p = np.exp(log_prices[i - 1])
+        p = np.exp(log_prices[i - 1])  # noqa: F841
         if i < regime_len:
             # 动量主导
             drift = 0.0003
@@ -239,9 +252,7 @@ def generate_simulated_prices(n: int = 5000, seed: int = 42) -> np.ndarray:
 
 
 def main():
-    data_path = os.path.join(
-        os.path.dirname(__file__), "..", "data", "btc_30m_close.npy"
-    )
+    data_path = os.path.join(os.path.dirname(__file__), "..", "data", "btc_30m_close.npy")
     if os.path.exists(data_path):
         prices = np.load(data_path)
         print(f"加载 BTC 30m 数据: {len(prices)} 期")
@@ -319,9 +330,7 @@ def main():
         "pairwise_holm_bonferroni": adj_p,
         "pbo": pbo,
     }
-    out_path = os.path.join(
-        os.path.dirname(__file__), "..", "data", "ablation_result.json"
-    )
+    out_path = os.path.join(os.path.dirname(__file__), "..", "data", "ablation_result.json")
     with open(out_path, "w") as f:
         json.dump(output, f, indent=2, default=str)
     print(f"\n结果已保存: {out_path}")

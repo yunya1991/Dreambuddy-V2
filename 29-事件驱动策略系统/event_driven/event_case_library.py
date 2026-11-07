@@ -11,13 +11,13 @@ SPEC §6: 自进化学习
   event_date, cycle_phase, decision, hike_prob_before,
   market_reaction, relief_or_reversal, pnl_30d, assets
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import os
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -61,6 +61,7 @@ class EventCaseLibrary:
         """filter_decisions.json 与 event_case_library.json 同目录（P1-1 审计日志）。"""
         try:
             from pathlib import Path
+
             p = Path(self._storage_path)
             return str(p.parent / "filter_decisions.json")
         except Exception:
@@ -73,7 +74,9 @@ class EventCaseLibrary:
                 with open(self._storage_path, "r", encoding="utf-8") as f:
                     raw = json.load(f)
                 self._cases = [EventCase(**c) for c in raw]
-                logger.info("[CaseLib] loaded %d cases from %s", len(self._cases), self._storage_path)
+                logger.info(
+                    "[CaseLib] loaded %d cases from %s", len(self._cases), self._storage_path
+                )
         except Exception as e:
             logger.warning("[CaseLib] load fail: %s", e)
             self._cases = []
@@ -100,7 +103,8 @@ class EventCaseLibrary:
                     self._filter_decisions = json.load(f)
                 logger.info(
                     "[CaseLib] loaded %d filter decisions from %s",
-                    len(self._filter_decisions), self._filter_decisions_path,
+                    len(self._filter_decisions),
+                    self._filter_decisions_path,
                 )
         except Exception as e:
             logger.warning("[CaseLib] filter decisions load fail: %s", e)
@@ -206,7 +210,9 @@ class EventCaseLibrary:
         relief_count = sum(1 for c in labeled if c.relief_or_reversal == "relief")
         return relief_count / len(labeled)
 
-    def get_avg_pnl(self, cycle_phase: str | None = None, decision: str | None = None) -> float | None:
+    def get_avg_pnl(
+        self, cycle_phase: str | None = None, decision: str | None = None
+    ) -> float | None:
         """统计平均 30 天盈亏。"""
         cases = self.query(cycle_phase=cycle_phase, decision=decision)
         pnls = [c.pnl_30d for c in cases if c.pnl_30d is not None]
@@ -303,16 +309,106 @@ class EventCaseLibrary:
         """
         historical = [
             # (event_date, cycle_phase, decision, hike_prob, reaction, relief/reversal, pnl_30d, notes)
-            ("1972-03", "event", "hike", 0.95, {"gold": 0.048}, "relief", 0.095, "尼克松时代，金价脱钩美元后大涨"),
-            ("1977-08", "event", "hike", 0.90, {"gold": 0.035}, "relief", 0.182, "通胀加速，实际利率为负"),
-            ("1980-12", "event", "hike", 0.95, {"gold": -0.032}, "reversal", -0.156, "沃尔克激进加息，实际利率飙升"),
-            ("1983-05", "event", "hike", 0.85, {"gold": -0.015}, "reversal", -0.072, "通胀回落+高利率，黄金承压"),
-            ("1987-04", "event", "hike", 0.80, {"gold": 0.022}, "relief", 0.038, "温和加息，通胀可控"),
-            ("1994-02", "event", "hike", 0.85, {"gold": -0.018}, "reversal", -0.045, "格林斯潘预防性加息"),
-            ("1999-06", "event", "hike", 0.75, {"gold": -0.008}, "reversal", -0.025, "科技泡沫前夜，黄金平淡"),
-            ("2004-06", "event", "hike", 0.90, {"gold": 0.025}, "relief", 0.118, "通胀上行快于加息，实际利率走低，金价从393涨至589"),
-            ("2015-12", "event", "hike", 0.85, {"gold": 0.015}, "relief", 0.082, "耶伦首次加息，利空出尽反弹"),
-            ("2022-03", "event", "hike", 0.95, {"gold": 0.018}, "relief", 0.065, "鲍威尔启动加息周期，初期黄金反弹后回落"),
+            (
+                "1972-03",
+                "event",
+                "hike",
+                0.95,
+                {"gold": 0.048},
+                "relief",
+                0.095,
+                "尼克松时代，金价脱钩美元后大涨",
+            ),
+            (
+                "1977-08",
+                "event",
+                "hike",
+                0.90,
+                {"gold": 0.035},
+                "relief",
+                0.182,
+                "通胀加速，实际利率为负",
+            ),
+            (
+                "1980-12",
+                "event",
+                "hike",
+                0.95,
+                {"gold": -0.032},
+                "reversal",
+                -0.156,
+                "沃尔克激进加息，实际利率飙升",
+            ),
+            (
+                "1983-05",
+                "event",
+                "hike",
+                0.85,
+                {"gold": -0.015},
+                "reversal",
+                -0.072,
+                "通胀回落+高利率，黄金承压",
+            ),
+            (
+                "1987-04",
+                "event",
+                "hike",
+                0.80,
+                {"gold": 0.022},
+                "relief",
+                0.038,
+                "温和加息，通胀可控",
+            ),
+            (
+                "1994-02",
+                "event",
+                "hike",
+                0.85,
+                {"gold": -0.018},
+                "reversal",
+                -0.045,
+                "格林斯潘预防性加息",
+            ),
+            (
+                "1999-06",
+                "event",
+                "hike",
+                0.75,
+                {"gold": -0.008},
+                "reversal",
+                -0.025,
+                "科技泡沫前夜，黄金平淡",
+            ),
+            (
+                "2004-06",
+                "event",
+                "hike",
+                0.90,
+                {"gold": 0.025},
+                "relief",
+                0.118,
+                "通胀上行快于加息，实际利率走低，金价从393涨至589",
+            ),
+            (
+                "2015-12",
+                "event",
+                "hike",
+                0.85,
+                {"gold": 0.015},
+                "relief",
+                0.082,
+                "耶伦首次加息，利空出尽反弹",
+            ),
+            (
+                "2022-03",
+                "event",
+                "hike",
+                0.95,
+                {"gold": 0.018},
+                "relief",
+                0.065,
+                "鲍威尔启动加息周期，初期黄金反弹后回落",
+            ),
         ]
 
         added = 0

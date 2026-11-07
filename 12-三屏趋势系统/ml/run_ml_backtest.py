@@ -6,14 +6,13 @@
     python3 ml/run_ml_backtest.py
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import pandas as pd
-import numpy as np
 
-from backtest import (
+from backtest import (  # noqa: I001
     BacktestEngine,
     BacktestResult,
     BuyAndHoldStrategy,
@@ -25,7 +24,7 @@ from backtest import (
 )
 
 from ml.feature_engineer import TrendFeatureEngineer
-from ml.ml_strategy import MLTrendStrategy, train_ml_strategy
+from ml.ml_strategy import MLTrendStrategy
 
 
 def test_feature_engineer():
@@ -47,7 +46,7 @@ def test_feature_engineer():
 
         # 打印特征分组
         groups = fe.get_feature_groups()
-        print(f"特征分组:")
+        print("特征分组:")
         for group, feats in groups.items():
             print(f"  {group}: {len(feats)} 个特征")
 
@@ -56,6 +55,7 @@ def test_feature_engineer():
     except Exception as e:
         print(f"特征工程 ✗ 失败: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -82,13 +82,14 @@ def test_ml_model():
     test_data = valid.iloc[train_size:]
 
     X_train = train_data[feature_names]
-    y_train = train_data['label']
+    y_train = train_data["label"]
     X_test = test_data[feature_names]
-    y_test = test_data['label']
+    y_test = test_data["label"]
 
     try:
         from ml.models import create_model
-        model = create_model('lightgbm')
+
+        model = create_model("lightgbm")
         model.fit(X_train, y_train)
 
         train_acc = (model.predict(X_train) == y_train).mean()
@@ -98,7 +99,7 @@ def test_ml_model():
         print(f"LightGBM 测试集准确率: {test_acc:.4f}")
 
         importances = model.feature_importance()
-        print(f"Top 5 重要特征:")
+        print("Top 5 重要特征:")
         for feat, imp in importances.head(5).items():
             print(f"  {feat}: {imp:.4f}")
 
@@ -107,6 +108,7 @@ def test_ml_model():
     except Exception as e:
         print(f"ML模型 ✗ 失败: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -118,7 +120,9 @@ def run_ml_backtest_sample():
     print("=" * 60)
 
     df = generate_sample_data(n_days=800, start_price=100.0, volatility=0.02)
-    print(f"测试数据: {len(df)} 天, 起始价: {df['close'].iloc[0]:.2f}, 最终价: {df['close'].iloc[-1]:.2f}")
+    print(
+        f"测试数据: {len(df)} 天, 起始价: {df['close'].iloc[0]:.2f}, 最终价: {df['close'].iloc[-1]:.2f}"
+    )
 
     engine = BacktestEngine(
         initial_capital=10000.0,
@@ -133,7 +137,7 @@ def run_ml_backtest_sample():
         "TrendScreen": base_strategy,
         "ML+Trend (LightGBM)": MLTrendStrategy(
             base_strategy=base_strategy,
-            model_type='lightgbm',
+            model_type="lightgbm",
             ml_confidence_weight=0.3,
             label_lookahead=7,
             warmup_periods=100,
@@ -148,12 +152,15 @@ def run_ml_backtest_sample():
             signals = strategy.generate_signals(df)
             result = engine.run(df["close"], signals, symbol=name)
             results[name] = BacktestResult(result)
-            print(f"  完成: 收益 {results[name].total_return_pct:.2f}%, "
-                  f"夏普 {results[name].sharpe_ratio:.2f}, "
-                  f"最大回撤 {results[name].max_drawdown_pct:.2f}%")
+            print(
+                f"  完成: 收益 {results[name].total_return_pct:.2f}%, "
+                f"夏普 {results[name].sharpe_ratio:.2f}, "
+                f"最大回撤 {results[name].max_drawdown_pct:.2f}%"
+            )
         except Exception as e:
             print(f"  失败: {e}")
             import traceback
+
             traceback.print_exc()
 
     if results:
@@ -197,7 +204,7 @@ def run_ml_backtest_real():
         "TrendScreen": base_strategy,
         "ML+Trend (LightGBM)": MLTrendStrategy(
             base_strategy=base_strategy,
-            model_type='lightgbm',
+            model_type="lightgbm",
             ml_confidence_weight=0.3,
             label_lookahead=7,
             warmup_periods=100,
@@ -212,12 +219,15 @@ def run_ml_backtest_real():
             signals = strategy.generate_signals(df)
             result = engine.run(df["close"], signals, symbol=name)
             results[name] = BacktestResult(result)
-            print(f"  完成: 收益 {results[name].total_return_pct:.2f}%, "
-                  f"夏普 {results[name].sharpe_ratio:.2f}, "
-                  f"最大回撤 {results[name].max_drawdown_pct:.2f}%")
+            print(
+                f"  完成: 收益 {results[name].total_return_pct:.2f}%, "
+                f"夏普 {results[name].sharpe_ratio:.2f}, "
+                f"最大回撤 {results[name].max_drawdown_pct:.2f}%"
+            )
         except Exception as e:
             print(f"  失败: {e}")
             import traceback
+
             traceback.print_exc()
 
     if results:
@@ -247,10 +257,10 @@ def main():
         print("\nML模型测试失败，继续回测测试")
 
     # 3. 合成数据回测
-    sample_results = run_ml_backtest_sample()
+    sample_results = run_ml_backtest_sample()  # noqa: F841
 
     # 4. 真实数据回测
-    real_results = run_ml_backtest_real()
+    real_results = run_ml_backtest_real()  # noqa: F841
 
     print("\n" + "=" * 60)
     print("  Phase 3 验证完成")

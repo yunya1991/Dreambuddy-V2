@@ -16,19 +16,23 @@
 - orchestrator 是自主循环（一口气跑完），LLM 在循环内被调用
 - interactive_runner 是逐步驱动（每步由 Trae 手动生成内容）
 """
+
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import datetime
 from typing import Any
 
 from core.models import (
-    Argument, Turn, Verdict, MarketingMaterial,
-    DebateQualityScore, DebateResult,
+    Argument,
+    DebateQualityScore,
+    DebateResult,
+    MarketingMaterial,
+    Turn,
+    Verdict,
 )
-from core.telegram_bot import TelegramDualBot
 from core.orchestrator import _format_argument, _format_verdict
+from core.telegram_bot import TelegramDualBot
 
 logger = logging.getLogger("debate.interactive")
 
@@ -73,11 +77,13 @@ class InteractiveRunner:
         if self._ipc_fn is None:
             return []
         try:
-            result = self._ipc_fn({
-                "action": "recall",
-                "context": context,
-                "top_k": top_k,
-            })
+            result = self._ipc_fn(
+                {
+                    "action": "recall",
+                    "context": context,
+                    "top_k": top_k,
+                }
+            )
             if isinstance(result, dict) and result.get("ok"):
                 return result.get("memories", [])
             return []
@@ -107,26 +113,32 @@ class InteractiveRunner:
             return None
         try:
             import json as _json
-            content = _json.dumps({
-                "type": "argument",
-                "subtype": "argument-pattern",
-                "topic": topic,
-                "side": side,
-                "thesis": thesis,
-                "arguments": arguments,
-                "quote": quote,
-                "confidence": confidence,
-                "persona": persona,
-                "round": round,
-            }, ensure_ascii=False)
+
+            content = _json.dumps(
+                {
+                    "type": "argument",
+                    "subtype": "argument-pattern",
+                    "topic": topic,
+                    "side": side,
+                    "thesis": thesis,
+                    "arguments": arguments,
+                    "quote": quote,
+                    "confidence": confidence,
+                    "persona": persona,
+                    "round": round,
+                },
+                ensure_ascii=False,
+            )
             # 双维度 tags: 辩论维度 + 交易维度(从 topic 提取)
             tags = f"debate,argument-pattern,{topic[:20]}"
-            result = self._ipc_fn({
-                "action": "record",
-                "content": content,
-                "quality": "B",
-                "tags": tags,
-            })
+            result = self._ipc_fn(
+                {
+                    "action": "record",
+                    "content": content,
+                    "quality": "B",
+                    "tags": tags,
+                }
+            )
             if isinstance(result, dict) and result.get("ok"):
                 return result.get("memory_id")
             return None
@@ -302,14 +314,21 @@ class InteractiveRunner:
         """构建完整辩论结果。"""
         if self.material is None:
             self.material = MarketingMaterial(
-                quotes=[], hashtags=[], highlight_paragraph="",
-                short_copy=[], debate_title="",
+                quotes=[],
+                hashtags=[],
+                highlight_paragraph="",
+                short_copy=[],
+                debate_title="",
             )
         if self.quality_score is None:
             self.quality_score = DebateQualityScore(
-                overall=0.0, grade="C", dimensions={},
-                rule_score=0.0, llm_score=0.0,
-                highlights=[], suggestions=[],
+                overall=0.0,
+                grade="C",
+                dimensions={},
+                rule_score=0.0,
+                llm_score=0.0,
+                highlights=[],
+                suggestions=[],
             )
         return DebateResult(
             topic=self.topic,

@@ -14,13 +14,13 @@ _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import memory_l4_cases_dir, memory_l4_reviews_dir, memory_l4_distills_dir, memory_l4_stats_dir
-
 
 def _list_json(dir_path: Path) -> List[Path]:
     if not dir_path.exists():
         return []
-    return sorted([p for p in dir_path.glob("*.json") if p.is_file() and "_v02_backup" not in p.name])
+    return sorted(
+        [p for p in dir_path.glob("*.json") if p.is_file() and "_v02_backup" not in p.name]
+    )
 
 
 def _load_json(path: Path) -> Optional[Dict[str, Any]]:
@@ -137,10 +137,16 @@ def get_l4_status() -> Dict[str, Any]:
         qmm_consuming_real = not any("qmm_test" in str(k) for k in system_stats.keys())
 
     # Pipeline 是否通畅：有案例、有复盘、有蒸馏、有统计
-    pipeline_connected = cases_total > 0 and reviews_total > 0 and distills_total > 0 and stats_total > 0
+    pipeline_connected = (
+        cases_total > 0 and reviews_total > 0 and distills_total > 0 and stats_total > 0
+    )
 
     # Schema 合规率
-    schema_compliance = schema_valid / (schema_valid + schema_invalid) if (schema_valid + schema_invalid) > 0 else 1.0
+    schema_compliance = (
+        schema_valid / (schema_valid + schema_invalid)
+        if (schema_valid + schema_invalid) > 0
+        else 1.0
+    )
 
     # === Evolution Metrics ===
     review_rate = reviews_total / cases_total if cases_total > 0 else 0.0
@@ -212,5 +218,6 @@ def get_l4_status_summary() -> Dict[str, Any]:
 
 if __name__ == "__main__":
     import sys
+
     status = get_l4_status()
     print(json.dumps(status, ensure_ascii=False, indent=2))

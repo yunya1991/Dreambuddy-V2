@@ -3,7 +3,7 @@ import datetime as dt
 import json
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 
 def _now_ms() -> int:
@@ -13,7 +13,9 @@ def _now_ms() -> int:
 def _fmt_ms(ts_ms: Optional[int]) -> str:
     if ts_ms is None or int(ts_ms) <= 0:
         return "-"
-    return dt.datetime.fromtimestamp(int(ts_ms) / 1000.0, tz=dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    return dt.datetime.fromtimestamp(int(ts_ms) / 1000.0, tz=dt.timezone.utc).strftime(
+        "%Y-%m-%d %H:%M:%S UTC"
+    )
 
 
 def _fmt_dur(ms: Optional[int]) -> str:
@@ -42,8 +44,12 @@ def _family_of_strategy(sid: str) -> str:
 
 
 def _pick_latest_log(user_data_dir: Path) -> Optional[Path]:
-    cands = sorted([p for p in user_data_dir.glob("batch_paramopt_*.jsonl") if p.is_file()], key=lambda p: p.stat().st_mtime, reverse=True)
-    return (cands[0] if cands else None)
+    cands = sorted(
+        [p for p in user_data_dir.glob("batch_paramopt_*.jsonl") if p.is_file()],
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    return cands[0] if cands else None
 
 
 def _safe_read_jsonl(path: Path) -> List[Dict[str, Any]]:
@@ -109,7 +115,7 @@ def _scan(log_path: Path) -> Dict[str, Any]:
             st["trace_id"] = str(r.get("trace_id") or st.get("trace_id") or "")
             st["start_ts"] = ts if ts > 0 else st.get("start_ts")
         elif ev == "strategy_done":
-            st["status"] = ("success" if bool(r.get("ok")) else "fail")
+            st["status"] = "success" if bool(r.get("ok")) else "fail"
             st["http"] = r.get("http")
             st["end_ts"] = ts if ts > 0 else st.get("end_ts")
         elif ev in ("strategy_http_error", "strategy_error"):
@@ -141,11 +147,25 @@ def _scan(log_path: Path) -> Dict[str, Any]:
     fams = ["trend", "mean_reversion", "breakout", "carry"]
     fam_agg: Dict[str, Dict[str, Any]] = {}
     for f in fams:
-        fam_agg[f] = {"family": f, "total_seen": 0, "success": 0, "fail": 0, "running": 0, "avg_duration_sec_done": None}
+        fam_agg[f] = {
+            "family": f,
+            "total_seen": 0,
+            "success": 0,
+            "fail": 0,
+            "running": 0,
+            "avg_duration_sec_done": None,
+        }
     for st in by_sid.values():
         f = str(st.get("family") or "trend")
         if f not in fam_agg:
-            fam_agg[f] = {"family": f, "total_seen": 0, "success": 0, "fail": 0, "running": 0, "avg_duration_sec_done": None}
+            fam_agg[f] = {
+                "family": f,
+                "total_seen": 0,
+                "success": 0,
+                "fail": 0,
+                "running": 0,
+                "avg_duration_sec_done": None,
+            }
         fam_agg[f]["total_seen"] = int(fam_agg[f]["total_seen"]) + 1
         s = str(st.get("status") or "")
         if s == "success":
@@ -156,12 +176,26 @@ def _scan(log_path: Path) -> Dict[str, Any]:
             fam_agg[f]["running"] = int(fam_agg[f]["running"]) + 1
 
     for f, row in fam_agg.items():
-        durs = [int(st.get("duration_ms")) for st in by_sid.values() if str(st.get("family")) == f and str(st.get("status")) in ("success", "fail") and isinstance(st.get("duration_ms"), int)]
+        durs = [
+            int(st.get("duration_ms"))
+            for st in by_sid.values()
+            if str(st.get("family")) == f
+            and str(st.get("status")) in ("success", "fail")
+            and isinstance(st.get("duration_ms"), int)
+        ]
         if durs:
             row["avg_duration_sec_done"] = round(float(sum(durs)) / float(len(durs)) / 1000.0, 2)
 
-    slowest_done = sorted([x for x in done if isinstance(x.get("duration_ms"), int)], key=lambda x: int(x.get("duration_ms") or 0), reverse=True)[:5]
-    latest_fail = sorted([x for x in fail if isinstance(x.get("end_ts"), int)], key=lambda x: int(x.get("end_ts") or 0), reverse=True)[:5]
+    slowest_done = sorted(
+        [x for x in done if isinstance(x.get("duration_ms"), int)],
+        key=lambda x: int(x.get("duration_ms") or 0),
+        reverse=True,
+    )[:5]
+    latest_fail = sorted(
+        [x for x in fail if isinstance(x.get("end_ts"), int)],
+        key=lambda x: int(x.get("end_ts") or 0),
+        reverse=True,
+    )[:5]
 
     return {
         "ok": True,
@@ -170,7 +204,9 @@ def _scan(log_path: Path) -> Dict[str, Any]:
         "log_path": str(log_path),
         "batch_start_ts": batch_start_ts,
         "batch_end_ts": batch_end_ts,
-        "batch_elapsed_ms": (None if not batch_start_ts else (int((batch_end_ts or now_ms) - batch_start_ts))),
+        "batch_elapsed_ms": (
+            None if not batch_start_ts else (int((batch_end_ts or now_ms) - batch_start_ts))
+        ),
         "summary": {
             "total": int(total),
             "started": int(started),
@@ -179,12 +215,16 @@ def _scan(log_path: Path) -> Dict[str, Any]:
             "fail": int(len(fail)),
             "running": int(len(running)),
             "pending": int(pending),
-            "progress_pct": round((float(len(done)) / float(total) * 100.0), 2) if total > 0 else 0.0,
+            "progress_pct": (
+                round((float(len(done)) / float(total) * 100.0), 2) if total > 0 else 0.0
+            ),
         },
         "family_aggregation": [fam_agg[k] for k in sorted(fam_agg.keys())],
         "slowest_done_top5": slowest_done,
         "latest_fail_top5": latest_fail,
-        "strategies": sorted(list(by_sid.values()), key=lambda x: str(x.get("strategy_id") or "")),
+        "strategies": sorted(  # noqa: C414
+            list(by_sid.values()), key=lambda x: str(x.get("strategy_id") or "")
+        ),  # noqa: C414
         "ts": now_ms,
     }
 
@@ -194,7 +234,9 @@ def _print_report(rep: Dict[str, Any]) -> None:
     print("=== 批任务实时看板摘要 ===")
     print(f"run_id: {rep.get('run_id')}")
     print(f"log: {rep.get('log_path')}")
-    print(f"start: {_fmt_ms(rep.get('batch_start_ts'))} | elapsed: {_fmt_dur(rep.get('batch_elapsed_ms'))}")
+    print(
+        f"start: {_fmt_ms(rep.get('batch_start_ts'))} | elapsed: {_fmt_dur(rep.get('batch_elapsed_ms'))}"
+    )
     print(
         "进度: {completed}/{total} ({pct}%) | success={success} fail={fail} running={running} pending={pending}".format(
             completed=int(s.get("completed") or 0),
@@ -218,7 +260,11 @@ def _print_report(rep: Dict[str, Any]) -> None:
                 succ=int(row.get("success") or 0),
                 fail=int(row.get("fail") or 0),
                 run=int(row.get("running") or 0),
-                avg=("-" if row.get("avg_duration_sec_done") is None else f"{row.get('avg_duration_sec_done')}s"),
+                avg=(
+                    "-"
+                    if row.get("avg_duration_sec_done") is None
+                    else f"{row.get('avg_duration_sec_done')}s"
+                ),
             )
         )
     print("")
@@ -241,7 +287,9 @@ def _print_report(rep: Dict[str, Any]) -> None:
         for st in rep.get("latest_fail_top5") or []:
             if not isinstance(st, dict):
                 continue
-            print(f"{st.get('strategy_id')} | {st.get('family')} | {st.get('status')} | {str(st.get('error_brief') or '')}")
+            print(
+                f"{st.get('strategy_id')} | {st.get('family')} | {st.get('status')} | {str(st.get('error_brief') or '')}"
+            )
 
 
 def _run_once(log_path: Path, as_json: bool) -> int:

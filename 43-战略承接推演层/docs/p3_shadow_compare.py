@@ -7,7 +7,7 @@
 退出标准（SPEC v1.1 §六 P3）：一致率 >= 85%。
 前提：CYCLE_STATE_BRIDGE 未设置（43 侧承接开关关闭，验证纯迁移等价性）。
 """
-import importlib.util
+
 import json
 import os
 import sys
@@ -21,7 +21,9 @@ _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
 _43_ROOT = os.path.join(_DREAMBUDDY_ROOT, "43-战略承接推演层")
 if _43_ROOT not in sys.path:
     sys.path.insert(0, _43_ROOT)
-from strategic_extension.five_domain_feature_computer import FiveDomainFeatureComputer as FDC43  # noqa: E402
+from strategic_extension.five_domain_feature_computer import (  # noqa: E402
+    FiveDomainFeatureComputer as FDC43,
+)  # noqa: E402
 
 # 11 侧：原位置以正规模块方式导入（其内部依赖同目录 strategy_algo_layer 等模块）
 _11_DIR = os.path.join(_DREAMBUDDY_ROOT, "11-易经推理系统", "scripts", "memory_l4")
@@ -43,37 +45,71 @@ CASES = [
     (
         "扁平-典型值",
         {
-            "merrill_phase": "recovery", "atr_percentile": 0.7, "liquidity_score": 0.6,
-            "regime": "trend_up", "ma200_distance_percentile": 0.65,
-            "fedfunds_rate": 3.75, "stablecoin_mcap_bln": 182.0,
-            "policy_sentiment_score": 0.7, "cycle4y_t_rel": 0.6,
+            "merrill_phase": "recovery",
+            "atr_percentile": 0.7,
+            "liquidity_score": 0.6,
+            "regime": "trend_up",
+            "ma200_distance_percentile": 0.65,
+            "fedfunds_rate": 3.75,
+            "stablecoin_mcap_bln": 182.0,
+            "policy_sentiment_score": 0.7,
+            "cycle4y_t_rel": 0.6,
         },
         {
-            "factor_coverage_pct": 0.8, "win_rate": 0.55, "profit_factor": 1.4,
-            "position_pct": 0.02, "max_consecutive_losses": 3, "auto_execute": True,
+            "factor_coverage_pct": 0.8,
+            "win_rate": 0.55,
+            "profit_factor": 1.4,
+            "position_pct": 0.02,
+            "max_consecutive_losses": 3,
+            "auto_execute": True,
         },
     ),
     (
         "扁平-极端值",
         {
-            "merrill_phase": "REFLATION", "atr_percentile": 0.0, "liquidity_score": 0.0,
-            "regime": "trend_down", "ma200_distance_percentile": 0.0,
-            "fedfunds_rate": 7.0, "stablecoin_mcap_bln": 50.0,
-            "policy_sentiment_score": 0.1, "cycle4y_t_rel": 0.1,
+            "merrill_phase": "REFLATION",
+            "atr_percentile": 0.0,
+            "liquidity_score": 0.0,
+            "regime": "trend_down",
+            "ma200_distance_percentile": 0.0,
+            "fedfunds_rate": 7.0,
+            "stablecoin_mcap_bln": 50.0,
+            "policy_sentiment_score": 0.1,
+            "cycle4y_t_rel": 0.1,
         },
         {
-            "factor_coverage_pct": 0.1, "win_rate": 0.3, "profit_factor": 0.6,
-            "position_pct": 0.5, "max_consecutive_losses": 20, "auto_execute": False,
+            "factor_coverage_pct": 0.1,
+            "win_rate": 0.3,
+            "profit_factor": 0.6,
+            "position_pct": 0.5,
+            "max_consecutive_losses": 20,
+            "auto_execute": False,
         },
     ),
     (
         "分层-三类差异化",
         {
-            "crypto_usdt": {"merrill_phase": "overheat", "regime": "breakout", "ma200_distance_percentile": 0.8},
-            "us_stock": {"merrill_phase": "stagflation", "regime": "ranging", "ma200_distance_percentile": 0.4},
-            "precious_metal": {"merrill_phase": "recovery", "regime": "high_volatility", "ma200_distance_percentile": 0.55},
+            "crypto_usdt": {
+                "merrill_phase": "overheat",
+                "regime": "breakout",
+                "ma200_distance_percentile": 0.8,
+            },
+            "us_stock": {
+                "merrill_phase": "stagflation",
+                "regime": "ranging",
+                "ma200_distance_percentile": 0.4,
+            },
+            "precious_metal": {
+                "merrill_phase": "recovery",
+                "regime": "high_volatility",
+                "ma200_distance_percentile": 0.55,
+            },
         },
-        {"crypto_usdt": {"win_rate": 0.6}, "us_stock": {"win_rate": 0.45}, "precious_metal": {"win_rate": 0.52}},
+        {
+            "crypto_usdt": {"win_rate": 0.6},
+            "us_stock": {"win_rate": 0.45},
+            "precious_metal": {"win_rate": 0.52},
+        },
     ),
     (
         "分层-部分类缺失",
@@ -85,8 +121,12 @@ CASES = [
     (
         "脏数据-类型错误",
         {
-            "merrill_phase": 123, "atr_percentile": "abc", "liquidity_score": None,
-            "regime": [], "ma200_distance_percentile": {}, "fedfunds_rate": "x",
+            "merrill_phase": 123,
+            "atr_percentile": "abc",
+            "liquidity_score": None,
+            "regime": [],
+            "ma200_distance_percentile": {},
+            "fedfunds_rate": "x",
         },
         {"factor_coverage_pct": "bad", "win_rate": None, "auto_execute": "yes"},
     ),
@@ -122,20 +162,29 @@ def main() -> int:
                     match += 1
                     case_match += 1
                 else:
-                    mismatches.append({
-                        "case": case_name, "asset_class": cls, "domain": dom,
-                        "v11": v11, "v43": v43,
-                    })
-        per_case.append({
-            "case": case_name,
-            "match": case_match,
-            "total": case_total,
-            "rate": round(case_match / case_total, 4) if case_total else 1.0,
-        })
+                    mismatches.append(
+                        {
+                            "case": case_name,
+                            "asset_class": cls,
+                            "domain": dom,
+                            "v11": v11,
+                            "v43": v43,
+                        }
+                    )
+        per_case.append(
+            {
+                "case": case_name,
+                "match": case_match,
+                "total": case_total,
+                "rate": round(case_match / case_total, 4) if case_total else 1.0,
+            }
+        )
 
     rate = match / total if total else 1.0
     report = {
-        "generated_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+        "generated_at": __import__("datetime")
+        .datetime.now(__import__("datetime").timezone.utc)
+        .isoformat(),
         "module": "P3 影子比对（11 原位置 vs 43 模块，迁移等价性）",
         "bridge_switch": "off",
         "cases": len(CASES),

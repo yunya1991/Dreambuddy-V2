@@ -1,10 +1,10 @@
-import pandas as pd
-from pandas import DataFrame
-from typing import Optional, List, Union, Dict
 from datetime import datetime, timezone
+from typing import Dict, List, Optional, Union
 
-from freqtrade.strategy import IntParameter, DecimalParameter, BooleanParameter
+import pandas as pd
 from freqtrade.persistence import Trade
+from freqtrade.strategy import BooleanParameter, DecimalParameter, IntParameter
+from pandas import DataFrame
 
 
 class TakeProfitStopLossMixin:
@@ -57,7 +57,9 @@ class TakeProfitStopLossMixin:
             pass
         return dataframe
 
-    def _stoploss_pct_from_price(self, is_short: bool, stop_price: float, current_rate: float) -> Optional[float]:
+    def _stoploss_pct_from_price(
+        self, is_short: bool, stop_price: float, current_rate: float
+    ) -> Optional[float]:
         if stop_price <= 0 or current_rate <= 0:
             return None
         if is_short:
@@ -275,4 +277,3 @@ class TakeProfitStopLossMixin:
             return "emergency_stop_loss"
 
         return None
-

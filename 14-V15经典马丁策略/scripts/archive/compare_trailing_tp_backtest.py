@@ -10,16 +10,17 @@
   - 如果TRAIL收益显著变差（收益更低且回撤更大）→ ❌ 回退
   - 如果TRAIL与BASE持平 → ➡️ 无显著影响
 """
-import sys
+
 import json
-from pathlib import Path
+import sys
 from collections import Counter
+from pathlib import Path
 
 BASE_DIR = Path(__file__).parent
 sys.path.insert(0, str(BASE_DIR / "core"))
 sys.path.insert(0, str(BASE_DIR / "lib"))
 
-from v15_backtest import run_backtest, fetch_klines
+from v15_backtest import fetch_klines, run_backtest  # noqa: E402
 
 coins = ["BTC", "ETH", "SOL", "ARB", "OP", "UNI"]
 limit = 1500
@@ -28,7 +29,9 @@ TRAIL_START_PCT = 0.5
 
 print("=" * 100)
 print("  ATR移动止盈对比回测")
-print(f"  移动止盈参数: {TRAIL_ATR_MULT}×ATR | 启动阈值: 止盈×{TRAIL_START_PCT}(=50%) | ATR动态止盈: ON")
+print(
+    f"  移动止盈参数: {TRAIL_ATR_MULT}×ATR | 启动阈值: 止盈×{TRAIL_START_PCT}(=50%) | ATR动态止盈: ON"
+)
 print("=" * 100)
 
 all_results = []
@@ -42,14 +45,18 @@ for coin in coins:
 
     # 基线：ATR动态止盈（无移动止盈）
     r_base = run_backtest(
-        coin=coin, klines=klines,
-        use_atr=True, use_trailing_tp=False,
+        coin=coin,
+        klines=klines,
+        use_atr=True,
+        use_trailing_tp=False,
     )
 
     # 移动止盈：ATR + 移动止盈
     r_trail = run_backtest(
-        coin=coin, klines=klines,
-        use_atr=True, use_trailing_tp=True,
+        coin=coin,
+        klines=klines,
+        use_atr=True,
+        use_trailing_tp=True,
         trailing_atr_mult=TRAIL_ATR_MULT,
         trailing_start_pct_of_tp=TRAIL_START_PCT,
     )
@@ -61,14 +68,26 @@ for coin in coins:
     m_trail = r_trail["metrics"]
 
     print(f"\n  {coin} 详细对比:")
-    print(f"    指标        BASE(无移动)    TRAIL(有移动)      差值")
+    print("    指标        BASE(无移动)    TRAIL(有移动)      差值")
     print(f"    {'-'*55}")
-    print(f"    总收益:     {m_base['total_return_pct']:>+8.2f}%    {m_trail['total_return_pct']:>+8.2f}%    {m_trail['total_return_pct'] - m_base['total_return_pct']:>+7.2f}%")
-    print(f"    交易数:     {m_base['total_trades']:>8}      {m_trail['total_trades']:>8}      {m_trail['total_trades'] - m_base['total_trades']:>+6}")
-    print(f"    胜率:       {m_base['win_rate']*100:>7.2f}%     {m_trail['win_rate']*100:>7.2f}%     {m_trail['win_rate']*100 - m_base['win_rate']*100:>+7.2f}%")
-    print(f"    盈亏比:     {m_base['profit_factor']:>8.2f}     {m_trail['profit_factor']:>8.2f}     {m_trail['profit_factor'] - m_base['profit_factor']:>+8.2f}")
-    print(f"    最大回撤:   {m_base['max_drawdown_pct']:>7.2f}%     {m_trail['max_drawdown_pct']:>7.2f}%     {m_trail['max_drawdown_pct'] - m_base['max_drawdown_pct']:>+7.2f}%")
-    print(f"    夏普比:     {m_base['sharpe_ratio']:>8.4f}     {m_trail['sharpe_ratio']:>8.4f}     {m_trail['sharpe_ratio'] - m_base['sharpe_ratio']:>+8.4f}")
+    print(
+        f"    总收益:     {m_base['total_return_pct']:>+8.2f}%    {m_trail['total_return_pct']:>+8.2f}%    {m_trail['total_return_pct'] - m_base['total_return_pct']:>+7.2f}%"
+    )
+    print(
+        f"    交易数:     {m_base['total_trades']:>8}      {m_trail['total_trades']:>8}      {m_trail['total_trades'] - m_base['total_trades']:>+6}"
+    )
+    print(
+        f"    胜率:       {m_base['win_rate']*100:>7.2f}%     {m_trail['win_rate']*100:>7.2f}%     {m_trail['win_rate']*100 - m_base['win_rate']*100:>+7.2f}%"
+    )
+    print(
+        f"    盈亏比:     {m_base['profit_factor']:>8.2f}     {m_trail['profit_factor']:>8.2f}     {m_trail['profit_factor'] - m_base['profit_factor']:>+8.2f}"
+    )
+    print(
+        f"    最大回撤:   {m_base['max_drawdown_pct']:>7.2f}%     {m_trail['max_drawdown_pct']:>7.2f}%     {m_trail['max_drawdown_pct'] - m_base['max_drawdown_pct']:>+7.2f}%"
+    )
+    print(
+        f"    夏普比:     {m_base['sharpe_ratio']:>8.4f}     {m_trail['sharpe_ratio']:>8.4f}     {m_trail['sharpe_ratio'] - m_base['sharpe_ratio']:>+8.4f}"
+    )
 
     # 出场原因分布
     base_trades = r_base.get("trades", [])
@@ -77,19 +96,21 @@ for coin in coins:
     base_reasons = Counter(t["exit_reason"] for t in base_trades)
     trail_reasons = Counter(t["exit_reason"] for t in trail_trades)
 
-    print(f"\n    出场原因分布:")
+    print("\n    出场原因分布:")
     for reason in ["take_profit", "ma200_stop", "time_exit"]:
         b_cnt = base_reasons.get(reason, 0)
         t_cnt = trail_reasons.get(reason, 0)
         b_pct = b_cnt / len(base_trades) * 100 if base_trades else 0
         t_pct = t_cnt / len(trail_trades) * 100 if trail_trades else 0
-        print(f"      {reason:>14}: BASE {b_cnt:>3}({b_pct:>5.1f}%)  TRAIL {t_cnt:>3}({t_pct:>5.1f}%)")
+        print(
+            f"      {reason:>14}: BASE {b_cnt:>3}({b_pct:>5.1f}%)  TRAIL {t_cnt:>3}({t_pct:>5.1f}%)"
+        )
 
     # 移动止盈细分
     if m_trail.get("trailing_tp_trades", 0) > 0:
         ttp_trades = [t for t in trail_trades if t.get("sl_type") == "trailing_tp"]
         avg_ttp = sum(t["pnl_pct"] for t in ttp_trades) / len(ttp_trades) if ttp_trades else 0
-        print(f"\n    移动止盈细节:")
+        print("\n    移动止盈细节:")
         print(f"      移动止盈笔数: {m_trail['trailing_tp_trades']}")
         print(f"      固定止盈笔数: {m_trail['fixed_tp_trades']}")
         print(f"      移动止盈平均盈利: +{avg_ttp:.2f}%")
@@ -98,8 +119,10 @@ for coin in coins:
 print("\n" + "=" * 100)
 print("  📊 移动止盈对比汇总")
 print("=" * 100)
-print(f"  {'币种':>6}  {'模式':>7}  {'总收益':>9}  {'交易数':>6}  {'胜率':>7}  "
-      f"{'盈亏比':>7}  {'最大回撤':>9}  {'夏普':>8}  {'连亏':>5}  {'止盈':>5}  {'MA200':>5}")
+print(
+    f"  {'币种':>6}  {'模式':>7}  {'总收益':>9}  {'交易数':>6}  {'胜率':>7}  "
+    f"{'盈亏比':>7}  {'最大回撤':>9}  {'夏普':>8}  {'连亏':>5}  {'止盈':>5}  {'MA200':>5}"
+)
 print("-" * 100)
 
 for coin, r_base, r_trail in all_results:
@@ -110,10 +133,12 @@ for coin, r_base, r_trail in all_results:
         m = r["metrics"]
         ttp = m.get("trailing_tp_trades", 0) + m.get("fixed_tp_trades", 0)
         ma200 = m.get("ma200_stop_trades", 0)
-        print(f"  {coin:>6}  {label:>7}  {m['total_return_pct']:>+8.2f}%  {m['total_trades']:>6}  "
-              f"{m['win_rate']*100:>6.2f}%  {m['profit_factor']:>7.2f}  "
-              f"{m['max_drawdown_pct']:>8.2f}%  {m['sharpe_ratio']:>8.4f}  {m['max_consecutive_losses']:>5}  "
-              f"{ttp:>5}  {ma200:>5}")
+        print(
+            f"  {coin:>6}  {label:>7}  {m['total_return_pct']:>+8.2f}%  {m['total_trades']:>6}  "
+            f"{m['win_rate']*100:>6.2f}%  {m['profit_factor']:>7.2f}  "
+            f"{m['max_drawdown_pct']:>8.2f}%  {m['sharpe_ratio']:>8.4f}  {m['max_consecutive_losses']:>5}  "
+            f"{ttp:>5}  {ma200:>5}"
+        )
     print("-" * 100)
 
 # ── 效果总结与回退决策 ──
@@ -160,8 +185,10 @@ for coin, r_base, r_trail in all_results:
         decision = "➡️ 可选（无显著差异）"
         flat_coins.append(coin)
 
-    print(f"  {coin:>6}: 收益{ret_diff:>+7.2f}%  盈亏比{pf_diff:>+7.2f}  回撤{dd_diff:>+6.2f}%  "
-          f"{status}  → {decision}")
+    print(
+        f"  {coin:>6}: 收益{ret_diff:>+7.2f}%  盈亏比{pf_diff:>+7.2f}  回撤{dd_diff:>+6.2f}%  "
+        f"{status}  → {decision}"
+    )
 
 print("  " + "-" * 80)
 
@@ -169,14 +196,14 @@ print("  " + "-" * 80)
 print("\n  🎯 最终决策:")
 if worse_coins:
     print(f"  ❌ 以下币种移动止盈表现变差: {', '.join(worse_coins)}")
-    print(f"  → 建议回退，关闭移动止盈")
+    print("  → 建议回退，关闭移动止盈")
 elif improved_coins and overall_better:
     print(f"  ✅ 以下币种移动止盈有改善: {', '.join(improved_coins)}")
     if flat_coins:
         print(f"  ➡️ 以下币种持平: {', '.join(flat_coins)}")
     print(f"  → 建议启用移动止盈（{TRAIL_ATR_MULT}×ATR, 启动阈值{TRAIL_START_PCT*100:.0f}%）")
 else:
-    print(f"  ➡️ 移动止盈无显著改善，可保持现状")
+    print("  ➡️ 移动止盈无显著改善，可保持现状")
 
 print("=" * 100)
 
@@ -192,27 +219,29 @@ output = {
 for coin, r_base, r_trail in all_results:
     if "error" in r_base or "error" in r_trail:
         continue
-    output["results"].append({
-        "coin": coin,
-        "base": {
-            "total_return_pct": r_base["metrics"]["total_return_pct"],
-            "max_drawdown_pct": r_base["metrics"]["max_drawdown_pct"],
-            "sharpe_ratio": r_base["metrics"]["sharpe_ratio"],
-            "total_trades": r_base["metrics"]["total_trades"],
-            "win_rate": r_base["metrics"]["win_rate"],
-            "profit_factor": r_base["metrics"]["profit_factor"],
-        },
-        "trailing": {
-            "total_return_pct": r_trail["metrics"]["total_return_pct"],
-            "max_drawdown_pct": r_trail["metrics"]["max_drawdown_pct"],
-            "sharpe_ratio": r_trail["metrics"]["sharpe_ratio"],
-            "total_trades": r_trail["metrics"]["total_trades"],
-            "win_rate": r_trail["metrics"]["win_rate"],
-            "profit_factor": r_trail["metrics"]["profit_factor"],
-            "trailing_tp_trades": r_trail["metrics"].get("trailing_tp_trades", 0),
-            "fixed_tp_trades": r_trail["metrics"].get("fixed_tp_trades", 0),
-        },
-    })
+    output["results"].append(
+        {
+            "coin": coin,
+            "base": {
+                "total_return_pct": r_base["metrics"]["total_return_pct"],
+                "max_drawdown_pct": r_base["metrics"]["max_drawdown_pct"],
+                "sharpe_ratio": r_base["metrics"]["sharpe_ratio"],
+                "total_trades": r_base["metrics"]["total_trades"],
+                "win_rate": r_base["metrics"]["win_rate"],
+                "profit_factor": r_base["metrics"]["profit_factor"],
+            },
+            "trailing": {
+                "total_return_pct": r_trail["metrics"]["total_return_pct"],
+                "max_drawdown_pct": r_trail["metrics"]["max_drawdown_pct"],
+                "sharpe_ratio": r_trail["metrics"]["sharpe_ratio"],
+                "total_trades": r_trail["metrics"]["total_trades"],
+                "win_rate": r_trail["metrics"]["win_rate"],
+                "profit_factor": r_trail["metrics"]["profit_factor"],
+                "trailing_tp_trades": r_trail["metrics"].get("trailing_tp_trades", 0),
+                "fixed_tp_trades": r_trail["metrics"].get("fixed_tp_trades", 0),
+            },
+        }
+    )
 
 with open(output_file, "w") as f:
     json.dump(output, f, indent=2, ensure_ascii=False)

@@ -8,14 +8,13 @@
 - compare_screenshot_bytes(baseline_path, current_bytes) -> float  # Playwright Page.screenshot() 返回 bytes
 - compare_screenshot_paths(baseline_path, current_path) -> float    # 双方都是文件路径（线5 模式 B 截图）
 """
+
 from __future__ import annotations
 
 import io
-from pathlib import Path
-from typing import Union
 
-from PIL import Image
 import numpy as np
+from PIL import Image
 
 
 def _load_image_bytes(path: str) -> Image.Image:
@@ -68,9 +67,7 @@ def save_diff_screenshot(baseline_path: str, current_bytes: bytes, diff_path: st
     baseline_arr = np.array(baseline)
     current_arr = np.array(current)
 
-    diff_mask = np.any(
-        np.abs(baseline_arr.astype(int) - current_arr.astype(int)) > 30, axis=2
-    )
+    diff_mask = np.any(np.abs(baseline_arr.astype(int) - current_arr.astype(int)) > 30, axis=2)
     diff_arr = current_arr.copy()
     diff_arr[diff_mask] = [255, 0, 0]
     Image.fromarray(diff_arr).save(diff_path)
@@ -85,9 +82,7 @@ def save_diff_screenshot_paths(baseline_path: str, current_path: str, diff_path:
     baseline_arr = np.array(baseline)
     current_arr = np.array(current)
 
-    diff_mask = np.any(
-        np.abs(baseline_arr.astype(int) - current_arr.astype(int)) > 30, axis=2
-    )
+    diff_mask = np.any(np.abs(baseline_arr.astype(int) - current_arr.astype(int)) > 30, axis=2)
     diff_arr = current_arr.copy()
     diff_arr[diff_mask] = [255, 0, 0]
     Image.fromarray(diff_arr).save(diff_path)

@@ -24,19 +24,28 @@ DreamOS Evolution — 自我进化层
     print(f"Suggestions: {len(report.suggestions)}")
 """
 
-from dreamos.shared.state import State
+from dreamos.shared.state import State  # noqa: F401
 
-from .types import (
-    Lesson, GapAnalysis, OptimizationSuggestion, EvolutionReport,
-)
-from .lesson_distiller import LessonDistiller
-from .gap_analyzer import GapAnalyzer
-from .node_optimizer import NodeOptimizer
 from .engine import EvolutionEngine
+from .gap_analyzer import GapAnalyzer
+from .lesson_distiller import LessonDistiller
+from .node_optimizer import NodeOptimizer
+from .types import (
+    EvolutionReport,
+    GapAnalysis,
+    Lesson,
+    OptimizationSuggestion,
+)
 
 __all__ = [
     # types
-    "Lesson", "GapAnalysis", "OptimizationSuggestion", "EvolutionReport",
+    "Lesson",
+    "GapAnalysis",
+    "OptimizationSuggestion",
+    "EvolutionReport",
     # components
-    "LessonDistiller", "GapAnalyzer", "NodeOptimizer", "EvolutionEngine",
+    "LessonDistiller",
+    "GapAnalyzer",
+    "NodeOptimizer",
+    "EvolutionEngine",
 ]

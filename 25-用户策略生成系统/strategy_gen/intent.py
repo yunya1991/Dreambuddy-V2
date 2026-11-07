@@ -10,12 +10,13 @@ S1 调研(市场环境) → S2 分析 → S3 基于基线策略设计 config_pat
 - 自动回测验证，返回 metrics_summary
 - 与 10-经典指标系统 共享策略目录，生成的策略可直接被回测/实盘使用
 """
-from typing import Any, Dict, Optional
-import uuid
-import time
 
-from .generator import generate_strategy
+import time
+import uuid
+from typing import Any, Dict, Optional
+
 from .backtest_engine import run_backtest
+from .generator import generate_strategy
 from .llm_client import llm_available
 
 
@@ -126,7 +127,7 @@ def generate_from_intent(
         "elapsed_sec": elapsed,
         "ai_design": {
             "reason": f"基于意图 '{intent}' 由 LLM 生成趋势跟随策略，"
-                      f"已通过语法检查{'、未来函数检测' if checks['no_lookahead'] else ''}"
-                      f"{'、回测验证' if run_backtest_flag and checks.get('backtest_ok') else ''}",
+            f"已通过语法检查{'、未来函数检测' if checks['no_lookahead'] else ''}"
+            f"{'、回测验证' if run_backtest_flag and checks.get('backtest_ok') else ''}",
         },
     }

@@ -5,6 +5,7 @@
 输出: SubagentOutput (summary + signals + charts)
 图表: bar(柱状) + line(趋势线)
 """
+
 from __future__ import annotations
 
 import traceback
@@ -32,7 +33,9 @@ class MacroAgent:
         # D3: 填充 reasoning_chain + evidence_refs + artifact_uri
         reasoning_chain = " | ".join(rationale) if rationale else ""
         evidence_refs = [f"indicator:{k}" for k in indicators.keys()]
-        artifact_uri = f"artifact://macro/{hash(str(indicators)) % 100000:05d}" if indicators else None
+        artifact_uri = (
+            f"artifact://macro/{hash(str(indicators)) % 100000:05d}" if indicators else None
+        )
 
         return SubagentOutput(
             module="macro",
@@ -82,8 +85,9 @@ class MacroAgent:
 
         return signals
 
-    def _generate_summary(self, signals: List[Signal], rationale: List[str],
-                          direction: str, confidence: float) -> str:
+    def _generate_summary(
+        self, signals: List[Signal], rationale: List[str], direction: str, confidence: float
+    ) -> str:
         if self._llm_fn is not None:
             try:
                 prompt = (
@@ -96,8 +100,7 @@ class MacroAgent:
                 pass
         long_count = sum(1 for s in signals if s.direction == "long")
         short_count = sum(1 for s in signals if s.direction == "short")
-        return (f"宏观面{direction}({confidence:.0%}), "
-                f"多信号{long_count}/空信号{short_count}")
+        return f"宏观面{direction}({confidence:.0%}), " f"多信号{long_count}/空信号{short_count}"
 
     def _generate_charts(self, indicators: Dict[str, Any]) -> List[ChartSpec]:
         charts: List[ChartSpec] = []
@@ -112,29 +115,32 @@ class MacroAgent:
                 {"name": "CPI同比", "value": cpi or 0},
                 {"name": "利率", "value": rate or 0},
             ]
-            charts.append(ChartSpec(
-                type="bar",
-                title="宏观指标概览",
-                data=bar_data,
-                config={
-                    "xAxis": {"type": "category",
-                              "data": ["GDP同比", "CPI同比", "利率"]},
-                    "yAxis": {"type": "value", "name": "百分比%"},
-                },
-            ))
+            charts.append(
+                ChartSpec(
+                    type="bar",
+                    title="宏观指标概览",
+                    data=bar_data,
+                    config={
+                        "xAxis": {"type": "category", "data": ["GDP同比", "CPI同比", "利率"]},
+                        "yAxis": {"type": "value", "name": "百分比%"},
+                    },
+                )
+            )
 
         # 趋势线图: 流动性 M2 趋势
         liquidity = indicators.get("liquidity_m2")
         if liquidity is not None:
-            charts.append(ChartSpec(
-                type="line",
-                title="M2流动性趋势",
-                data={"liquidity_m2": liquidity},
-                config={
-                    "yAxis": {"type": "value", "name": "M2"},
-                    "smooth": True,
-                },
-            ))
+            charts.append(
+                ChartSpec(
+                    type="line",
+                    title="M2流动性趋势",
+                    data={"liquidity_m2": liquidity},
+                    config={
+                        "yAxis": {"type": "value", "name": "M2"},
+                        "smooth": True,
+                    },
+                )
+            )
 
         return charts
 
@@ -143,6 +149,7 @@ def handle_macro_agent(params: dict) -> dict:
     """IPC handler: macro-agent"""
     try:
         from subagent_registry import get_handler_llm_fn
+
         agent = MacroAgent(llm_fn=get_handler_llm_fn())
         output = agent.execute(params.get("node_output", {}))
         return {"ok": True, "output": output.to_dict()}

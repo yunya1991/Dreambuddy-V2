@@ -25,11 +25,11 @@ SKILL/策略入库后长期不验证，alpha（有效性置信）随时间衰减
   - SPEC-CognitiveSystem-Evolution.md §1.1（Vibe-Trading sdm_decay_scan）+ §4.3 P3-5
   - Alpha Decay: 量化交易策略超额收益随时间衰减的普遍现象
 """
+
 from __future__ import annotations
 
 import math
 from typing import Any, Dict, List, Optional
-
 
 # ============================================================
 # 常量
@@ -81,7 +81,9 @@ class AlphaDecayGate:
             active_threshold: 保持 active 的衰减后置信下限
             shadow_threshold: re-verify 的衰减后置信下限（低于则 deactivate）
         """
-        self._half_life = _safe_float(half_life_days, DEFAULT_HALF_LIFE_DAYS) or DEFAULT_HALF_LIFE_DAYS
+        self._half_life = (
+            _safe_float(half_life_days, DEFAULT_HALF_LIFE_DAYS) or DEFAULT_HALF_LIFE_DAYS
+        )
         self._active_threshold = active_threshold
         self._shadow_threshold = shadow_threshold
 
@@ -185,13 +187,15 @@ class AlphaDecayGate:
                 decayed = self.compute_decayed_confidence(confidence, days)
                 action = self.decide_gate_action(decayed)
 
-                results.append({
-                    "skill_id": skill_id,
-                    "original": _safe_float(confidence, 0.0),
-                    "decayed": decayed,
-                    "action": action,
-                    "days_since_verify": _safe_float(days, 0.0),
-                })
+                results.append(
+                    {
+                        "skill_id": skill_id,
+                        "original": _safe_float(confidence, 0.0),
+                        "decayed": decayed,
+                        "action": action,
+                        "days_since_verify": _safe_float(days, 0.0),
+                    }
+                )
             except Exception:
                 continue  # FAIL-OPEN：单条异常跳过
 
@@ -210,8 +214,7 @@ class AlphaDecayGate:
             仅含 action in ("re-verify", "deactivate") 的结果
         """
         return [
-            r for r in self.scan(entries)
-            if r["action"] in (ACTION_REVERIFY, ACTION_DEACTIVATE)
+            r for r in self.scan(entries) if r["action"] in (ACTION_REVERIFY, ACTION_DEACTIVATE)
         ]
 
 
@@ -230,7 +233,9 @@ if __name__ == "__main__":
     # 衰减曲线
     for days in (0, 15, 30, 60, 90):
         decayed = gate.compute_decayed_confidence(0.9, days)
-        print(f"  confidence=0.9, days={days:>3} → decayed={decayed:.3f} ({gate.decide_gate_action(decayed)})")
+        print(
+            f"  confidence=0.9, days={days:>3} → decayed={decayed:.3f} ({gate.decide_gate_action(decayed)})"
+        )
 
     # 批量扫描
     entries = [

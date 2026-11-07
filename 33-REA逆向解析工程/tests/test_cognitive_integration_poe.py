@@ -2,10 +2,9 @@
 
 依据：TASKS-工程实践复现器.md TR-6.1 / TR-6.2 / TR-6.3
 """
-import sys
-from pathlib import Path
 
-import pytest
+import sys  # noqa: I001
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -15,7 +14,6 @@ from core.cognitive_integration import (
     prepare_decision_record_params,
     prepare_methodology_record_params,
 )
-
 
 # ---------- 测试用例 ----------
 
@@ -33,13 +31,17 @@ def test_prepare_audit_record_params_tags():
             {
                 "type": "magic_number",
                 "description": "魔法数字: 142",
-                "evidence": type("E", (), {
-                    "result": "魔法数字 142",
-                    "level": type("L", (), {"value": "observation"})(),
-                    "provenance": {"file": "/mock/x.py", "line": 5},
-                    "confidence": 0.7,
-                    "known_gaps": [],
-                })(),
+                "evidence": type(
+                    "E",
+                    (),
+                    {
+                        "result": "魔法数字 142",
+                        "level": type("L", (), {"value": "observation"})(),
+                        "provenance": {"file": "/mock/x.py", "line": 5},
+                        "confidence": 0.7,
+                        "known_gaps": [],
+                    },
+                )(),
             }
         ],
         "evidence": [],
@@ -51,8 +53,12 @@ def test_prepare_audit_record_params_tags():
     assert "rea-audit" in tags, f"tags 应含 rea-audit (TR-6.1): {tags}"
     assert "PoE" in tags or "poe" in params["tags"].lower(), "tags 应含 PoE"
     content = params["content"]
-    assert "0.45" in content or "0.35" in content, f"content 应含证据链得分 (TR-6.1): {content[:200]}"
-    assert "magic" in content.lower() or "魔法" in content or "reject" in content, "content 应含债务摘要"
+    assert (
+        "0.45" in content or "0.35" in content
+    ), f"content 应含证据链得分 (TR-6.1): {content[:200]}"
+    assert (
+        "magic" in content.lower() or "魔法" in content or "reject" in content
+    ), "content 应含债务摘要"
 
 
 def test_prepare_methodology_record_params_tags():
@@ -76,8 +82,9 @@ def test_prepare_methodology_record_params_tags():
     assert "rea-methodology" in tags, f"tags 应含 rea-methodology (TR-6.2): {tags}"
     content = params["content"]
     assert "MVC" in content, f"content 应含 problem_pattern (TR-6.2): {content[:200]}"
-    assert "models" in content or "Solution" in content or "采用" in content, \
-        f"content 应含 solution_pattern: {content[:200]}"
+    assert (
+        "models" in content or "Solution" in content or "采用" in content
+    ), f"content 应含 solution_pattern: {content[:200]}"
 
 
 def test_prepare_decision_record_params_tags():

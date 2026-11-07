@@ -21,23 +21,24 @@ _RAG_INFRA_DIR = Path(__file__).resolve().parent.parent
 if str(_RAG_INFRA_DIR) not in sys.path:
     sys.path.insert(0, str(_RAG_INFRA_DIR))
 
-import pytest
+import pytest  # noqa: E402
 
 # 启用 TF-IDF 回退
-from vector_store.embedder import _embedder
+from vector_store.embedder import _embedder  # noqa: E402
+
 _embedder._use_tfidf_fallback = True
 _embedder._model = None
 
-from integration import (
+from integration import (  # noqa: E402, I001
     detect_research,
     archive_research,
     check_and_prompt,
     archive_from_conversation,
     batch_detect,
 )
-from integration import detector as detector_mod
-from integration import archiver as archiver_mod
-from integration import workflow as workflow_mod
+from integration import detector as detector_mod  # noqa: E402
+from integration import archiver as archiver_mod  # noqa: E402
+from integration import workflow as workflow_mod  # noqa: E402
 
 
 # === 隔离 fixture ===
@@ -50,10 +51,12 @@ def isolated_kb(tmp_path, monkeypatch):
     graph_path = tmp_path / "knowledge_graph.pkl"
 
     import evolution.ingest as ingest_mod
+
     monkeypatch.setattr(ingest_mod, "CHROMA_DB_PATH", str(db_dir))
     monkeypatch.setattr(ingest_mod, "COLLECTION_NAME", "test_unit_collection")
 
     from knowledge_graph import schema as kg_schema
+
     monkeypatch.setattr(kg_schema, "DEFAULT_GRAPH_PATH", str(graph_path))
 
     return kb
@@ -62,6 +65,7 @@ def isolated_kb(tmp_path, monkeypatch):
 # ═══════════════════════════════════════════════════════════════
 # detector 单元测试：各 finance 子分类
 # ═══════════════════════════════════════════════════════════════
+
 
 def test_tc9_detect_finance_risk_models():
     """风控模型关键词 → finance/risk-models。"""
@@ -96,6 +100,7 @@ def test_tc11_detect_finance_trading_psychology():
 # detector 单元测试：各 github 子分类
 # ═══════════════════════════════════════════════════════════════
 
+
 def test_tc12_detect_github_trading_systems():
     """交易系统仓库 → github/trading-systems。"""
     content = "参考了 github.com/freqtrade/freqtrade 这个交易系统仓库"
@@ -108,7 +113,9 @@ def test_tc13_detect_github_data_engineering():
     """数据工程仓库 → github/data-engineering。"""
     content = "调研了 github.com/apache/airflow 用于数据工程流水线"
     detections = detect_research(content)
-    sub = [d for d in detections if d["type"] == "github" and d["subcategory"] == "data-engineering"]
+    sub = [
+        d for d in detections if d["type"] == "github" and d["subcategory"] == "data-engineering"
+    ]
     assert len(sub) == 1
 
 
@@ -123,6 +130,7 @@ def test_tc14_detect_github_infra_tools():
 # ═══════════════════════════════════════════════════════════════
 # detector 单元测试：各 technical 子分类
 # ═══════════════════════════════════════════════════════════════
+
 
 def test_tc15_detect_technical_algorithms():
     """算法实现关键词 → technical/algorithms。"""
@@ -143,6 +151,7 @@ def test_tc16_detect_technical_testing():
 # ═══════════════════════════════════════════════════════════════
 # detector 边界条件
 # ═══════════════════════════════════════════════════════════════
+
 
 def test_tc17_detect_multi_type_mixed():
     """混合内容同时命中 finance + technical 两类。"""
@@ -186,14 +195,19 @@ def test_tc20_detect_excerpt_bounds():
 # archiver 单元测试
 # ═══════════════════════════════════════════════════════════════
 
+
 def test_tc21_archiver_template_fields(isolated_kb):
     """归档md文件模板字段完整填充。"""
     content = "Kalman Filter 量化滤波状态估计"
     detection = detect_research(content)[0]
 
-    result = archive_research(detection, content, isolated_kb,
-                              research_topic="Kalman滤波调研",
-                              research_scenario="力向量系统实现")
+    result = archive_research(
+        detection,
+        content,
+        isolated_kb,
+        research_topic="Kalman滤波调研",
+        research_scenario="力向量系统实现",
+    )
 
     fp = Path(result["file_path"])
     text = fp.read_text(encoding="utf-8")
@@ -217,8 +231,7 @@ def test_tc22_archiver_filename_slug(isolated_kb):
     content = "RAG 架构设计模式"
     detection = detect_research(content)[0]
 
-    result = archive_research(detection, content, isolated_kb,
-                              research_topic="RAG架构/设计:模式")
+    result = archive_research(detection, content, isolated_kb, research_topic="RAG架构/设计:模式")
 
     fp = Path(result["file_path"])
     filename = fp.name
@@ -235,13 +248,11 @@ def test_tc23_archiver_dedup(isolated_kb):
     detection = detect_research(content)[0]
 
     # 首次归档
-    r1 = archive_research(detection, content, isolated_kb,
-                          research_topic="第一次")
+    r1 = archive_research(detection, content, isolated_kb, research_topic="第一次")
     assert r1["status"] == "indexed"
 
     # 第二次归档相同内容（不同topic）
-    r2 = archive_research(detection, content, isolated_kb,
-                          research_topic="第二次")
+    r2 = archive_research(detection, content, isolated_kb, research_topic="第二次")
     # ingest_document检测到md5重复
     assert r2["status"] in ("duplicate", "indexed")
 
@@ -288,6 +299,7 @@ def test_tc25_archiver_index_md_append(isolated_kb):
 # workflow 单元测试
 # ═══════════════════════════════════════════════════════════════
 
+
 def test_tc26_workflow_no_research_prompt():
     """无调研内容时 check_and_prompt 返回 need_archive=False。"""
     prompt = check_and_prompt("今天天气真好")
@@ -327,8 +339,9 @@ def test_tc28_workflow_fail_open(isolated_kb, monkeypatch):
     monkeypatch.setattr(archiver_mod, "ingest_document", flaky_ingest)
 
     content = "Kalman 量化滤波"
-    result = archive_from_conversation(content, research_topic="FAIL-OPEN测试",
-                                       knowledge_dir=isolated_kb)
+    result = archive_from_conversation(
+        content, research_topic="FAIL-OPEN测试", knowledge_dir=isolated_kb
+    )
     # 工作流应完成，即使某次ingest失败
     assert result["status"] == "done"
     # 应有归档记录（即使索引失败）
@@ -338,6 +351,7 @@ def test_tc28_workflow_fail_open(isolated_kb, monkeypatch):
 # ═══════════════════════════════════════════════════════════════
 # 完整回归：所有测试一起运行不冲突
 # ═══════════════════════════════════════════════════════════════
+
 
 def test_tc29_batch_detect_consistency():
     """批量检测与单条检测结果一致。"""
@@ -352,13 +366,14 @@ def test_tc29_batch_detect_consistency():
 
     # 结果类型一致
     assert len(batch) == len(single) == 2
-    for b, s in zip(batch, single):
+    for b, s in zip(batch, single):  # noqa: B905
         assert {d["type"] for d in b} == {d["type"] for d in s}
 
 
 # ═══════════════════════════════════════════════════════════════
 # detector 内部函数边界测试
 # ═══════════════════════════════════════════════════════════════
+
 
 def test_tc30_find_pos_english_false_positive_guard():
     """英文关键词两侧不允许紧邻 ASCII 字母，避免误报。
@@ -431,6 +446,7 @@ def test_tc36_detect_all_three_types():
 # archiver 边界测试
 # ═══════════════════════════════════════════════════════════════
 
+
 def test_tc37_slugify_edge_cases():
     """_slugify 处理空字符串、纯特殊字符、保留中文。"""
     assert archiver_mod._slugify("") == "research"
@@ -447,7 +463,7 @@ def test_tc38_update_index_existing_archive_section(isolated_kb):
     index_path.parent.mkdir(parents=True, exist_ok=True)
     index_path.write_text(
         "# 外部调研索引\n\n## 归档记录\n\n- [2026-01-01] [旧条目](old.md)\n\n## 维护规则\n- 规则1\n",
-        encoding="utf-8"
+        encoding="utf-8",
     )
 
     content = "Kalman 量化滤波"
@@ -488,25 +504,31 @@ def test_tc40_update_index_fail_open(isolated_kb, monkeypatch):
     index_path.parent.mkdir(parents=True, exist_ok=True)
     index_path.write_text("# 已有内容\n", encoding="utf-8")
 
-    detection = {"category": "finance", "subcategory": "quant-methods",
-                 "suggested_path": "finance/quant-methods", "tags": ["#kalman"]}
+    detection = {
+        "category": "finance",
+        "subcategory": "quant-methods",
+        "suggested_path": "finance/quant-methods",
+        "tags": ["#kalman"],
+    }
     final_path = isolated_kb / "7-EXTERNAL-RESEARCH" / "finance" / "quant-methods" / "test.md"
     final_path.parent.mkdir(parents=True, exist_ok=True)
     final_path.write_text("test", encoding="utf-8")
 
     def fail_write(self, data, encoding=None):
         raise OSError("模拟写入失败")
+
     monkeypatch.setattr(Path, "write_text", fail_write)
 
     # _update_index 内部 try/except 捕获异常，不应抛出
-    archiver_mod._update_index(isolated_kb, detection, final_path,
-                               "2026-08-31", "test", "测试")
+    archiver_mod._update_index(isolated_kb, detection, final_path, "2026-08-31", "test", "测试")
 
 
 def test_tc41_archive_ingest_exception_fail_open(isolated_kb, monkeypatch):
     """ingest_document 抛异常时 archive_research FAIL-OPEN，直接写入最终路径。"""
+
     def fail_ingest(file_path, knowledge_dir):
         raise RuntimeError("模拟ingest彻底失败")
+
     monkeypatch.setattr(archiver_mod, "ingest_document", fail_ingest)
 
     content = "Kalman 量化滤波"
@@ -523,9 +545,7 @@ def test_tc42_archive_default_topic():
     """research_topic 为空时使用默认标题与默认场景。"""
     content = "Kalman 量化滤波"
     detection = detect_research(content)[0]
-    md_text, _ = archiver_mod._build_md(
-        detection, content, research_topic="", research_scenario=""
-    )
+    md_text, _ = archiver_mod._build_md(detection, content, research_topic="", research_scenario="")
     # 默认标题应为 category/subcategory 调研
     assert "finance/quant-methods 调研" in md_text
     # 默认调研场景
@@ -535,6 +555,7 @@ def test_tc42_archive_default_topic():
 # ═══════════════════════════════════════════════════════════════
 # workflow 边界测试
 # ═══════════════════════════════════════════════════════════════
+
 
 def test_tc43_workflow_no_research_archive(isolated_kb):
     """archive_from_conversation 无调研内容时返回 no_research。"""
@@ -562,20 +583,21 @@ def test_tc45_workflow_single_archive_exception_fail_open(isolated_kb, monkeypat
     call_count = {"n": 0}
     original_archive = workflow_mod.archive_research
 
-    def flaky_archive(detection, content, knowledge_dir, research_topic="",
-                      research_scenario=""):
+    def flaky_archive(detection, content, knowledge_dir, research_topic="", research_scenario=""):
         call_count["n"] += 1
         if call_count["n"] == 1:
             raise RuntimeError("模拟归档失败")
-        return original_archive(detection, content, knowledge_dir,
-                                research_topic, research_scenario)
+        return original_archive(
+            detection, content, knowledge_dir, research_topic, research_scenario
+        )
 
     monkeypatch.setattr(workflow_mod, "archive_research", flaky_archive)
 
     # 混合内容触发 finance + technical 两类检测
     content = "Kalman 量化滤波配合 RAG 架构设计"
-    result = archive_from_conversation(content, research_topic="混合归档",
-                                        knowledge_dir=isolated_kb)
+    result = archive_from_conversation(
+        content, research_topic="混合归档", knowledge_dir=isolated_kb
+    )
     # 整体流程完成
     assert result["status"] == "done"
     assert len(result["archived"]) == 2

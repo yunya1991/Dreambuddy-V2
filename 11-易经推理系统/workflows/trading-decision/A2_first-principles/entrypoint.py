@@ -1,5 +1,5 @@
-import json
 import importlib.util
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -36,7 +36,9 @@ def _least_resistance_path(rsi: float, funding_rate: float, fgi: int) -> str:
     return "NEUTRAL"
 
 
-def run_a2_first_principles(payload: Dict[str, Any], output_dir: Optional[Path] = None) -> Dict[str, Any]:
+def run_a2_first_principles(
+    payload: Dict[str, Any], output_dir: Optional[Path] = None
+) -> Dict[str, Any]:
     """Thin wrapper for A2 first-principles artifact output."""
     proto = _load_protocol_module()
     rsi = float(payload.get("rsi") or 50.0)
@@ -52,13 +54,13 @@ def run_a2_first_principles(payload: Dict[str, Any], output_dir: Optional[Path] 
 
     result = proto.ensure_contract_fields(
         {
-        "stage_id": "A2",
-        "trace_id": payload.get("trace_id"),
-        "least_resistance_path": path,
-        "rsi": rsi,
-        "funding_rate": funding_rate,
-        "fgi": fgi,
-        "timestamp": ts,
+            "stage_id": "A2",
+            "trace_id": payload.get("trace_id"),
+            "least_resistance_path": path,
+            "rsi": rsi,
+            "funding_rate": funding_rate,
+            "fgi": fgi,
+            "timestamp": ts,
         },
         producer="workflows/trading-decision/A2_first-principles",
     )

@@ -5,9 +5,9 @@
 
 对应 Spec §3bis.5.3 storage 扩展。
 """
+
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
@@ -17,7 +17,7 @@ import pytest
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2.storage import EvolutionStorageSQLite
+from bcrm2.storage import EvolutionStorageSQLite  # noqa: E402
 
 
 @pytest.fixture
@@ -32,6 +32,7 @@ def tmp_storage(tmp_path) -> EvolutionStorageSQLite:
 # ================================================================
 # T8: overshoot_hint 存储扩展
 # ================================================================
+
 
 class TestOvershootHintStorage:
     """验证 save_overshoot_hint / get_overshoot_hint 方法。"""

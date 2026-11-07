@@ -14,26 +14,27 @@
 FAIL-OPEN (HC1): 无 LLM 或异常时返回降级结果，不阻塞主流程。
 延迟预算 (HC11): Layer 1-3 总延迟 < 10s。
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
 logger = logging.getLogger("debate.adjudicator")
 
 # ── 6 维评分维度名称 ──────────────────────────────────────────
 
 DIMENSIONS = [
-    "clarity",             # 论证清晰度
-    "arrangement",         # 论点编排
-    "topic_relevance",     # 话题切题
-    "emotional_appeal",    # 情感诉求
-    "fact_authenticity",   # 事实真实性 (客观)
-    "logical_validity",    # 逻辑有效性 (客观)
+    "clarity",  # 论证清晰度
+    "arrangement",  # 论点编排
+    "topic_relevance",  # 话题切题
+    "emotional_appeal",  # 情感诉求
+    "fact_authenticity",  # 事实真实性 (客观)
+    "logical_validity",  # 逻辑有效性 (客观)
 ]
 
 SUBJECTIVE_DIMS = ["clarity", "arrangement", "topic_relevance", "emotional_appeal"]
@@ -62,6 +63,7 @@ ADJUDICATION_PROMPT = """你现在是独立裁判，不是辩手。你的任务�
 
 # ── AdjudicationResult ─────────────────────────────────────────
 
+
 @dataclass
 class AdjudicationResult:
     """裁判评审结果 (SPEC §3.4)。
@@ -80,6 +82,7 @@ class AdjudicationResult:
         evidence_depth: 证据深度 (附加指标)
         timestamp: 时间戳
     """
+
     topic: str
     bull_turn_scores: list[dict]
     bear_turn_scores: list[dict]
@@ -113,6 +116,7 @@ class AdjudicationResult:
 
 # ── JSON 解析 ─────────────────────────────────────────────────
 
+
 def _extract_json(raw: str) -> dict | None:
     """从 LLM 输出中提取 JSON 对象。"""
     raw = raw.strip()
@@ -121,7 +125,7 @@ def _extract_json(raw: str) -> dict | None:
     except json.JSONDecodeError:
         pass
     # 尝试提取第一个 JSON 对象
-    match = re.search(r'\{.*\}', raw, re.DOTALL)
+    match = re.search(r"\{.*\}", raw, re.DOTALL)
     if match:
         try:
             return json.loads(match.group())
@@ -156,6 +160,7 @@ def _determine_winner(bull_total: float, bear_total: float) -> str:
 
 
 # ── Adjudicator ───────────────────────────────────────────────
+
 
 class Adjudicator:
     """裁判评审器 (SPEC §3 Layer 1)。
@@ -204,10 +209,8 @@ class Adjudicator:
 
         try:
             # 构建评分 Prompt
-            bull_text = "\n".join(
-                _extract_argument_text(t) for t in bull_turns)
-            bear_text = "\n".join(
-                _extract_argument_text(t) for t in bear_turns)
+            bull_text = "\n".join(_extract_argument_text(t) for t in bull_turns)
+            bear_text = "\n".join(_extract_argument_text(t) for t in bear_turns)
 
             prompt = ADJUDICATION_PROMPT.format(
                 bull_argument=bull_text,
@@ -247,15 +250,11 @@ class Adjudicator:
 
             # 逐轮评分（简化版：将总分分配到每轮）
             bull_turn_scores = [
-                {"turn": t.get("round", i + 1), **{
-                    d: int(dim_comp[d]["bull"]) for d in DIMENSIONS
-                }}
+                {"turn": t.get("round", i + 1), **{d: int(dim_comp[d]["bull"]) for d in DIMENSIONS}}
                 for i, t in enumerate(bull_turns)
             ]
             bear_turn_scores = [
-                {"turn": t.get("round", i + 1), **{
-                    d: int(dim_comp[d]["bear"]) for d in DIMENSIONS
-                }}
+                {"turn": t.get("round", i + 1), **{d: int(dim_comp[d]["bear"]) for d in DIMENSIONS}}
                 for i, t in enumerate(bear_turns)
             ]
 
@@ -302,7 +301,10 @@ class Adjudicator:
             return self._degraded_result(topic, verdict, ts)
 
     def _degraded_result(
-        self, topic: str, verdict: dict, ts: str,
+        self,
+        topic: str,
+        verdict: dict,
+        ts: str,
     ) -> AdjudicationResult:
         """降级结果：无 LLM 或异常时使用 Verdict 兜底。"""
         verdict_winner = verdict.get("winner") or "draw"

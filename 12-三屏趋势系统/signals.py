@@ -10,11 +10,11 @@
 - Screen3：执行层入场时机 → 从信号池读取 Freqtrade 策略信号
 """
 
-import os
 import json
-from typing import Dict, Optional, List
+import os
 from dataclasses import dataclass
 from enum import Enum
+from typing import Dict, List, Optional
 
 
 class SignalDirection(str, Enum):
@@ -26,6 +26,7 @@ class SignalDirection(str, Enum):
 @dataclass
 class StrategySignal:
     """单策略信号"""
+
     strategy_name: str
     signal: SignalDirection
     confidence: float = 0.0
@@ -35,6 +36,7 @@ class StrategySignal:
 @dataclass
 class MultiStrategySignal:
     """多策略投票信号"""
+
     symbol: str
     timeframe: str
     direction: SignalDirection
@@ -130,18 +132,22 @@ def _dict_to_multi_signal(symbol: str, timeframe: str, data: dict) -> MultiStrat
 
     strategies = []
     for d in details:
-        strategies.append(StrategySignal(
-            strategy_name=d.get("strategy", ""),
-            signal=_parse_direction(d.get("signal", "hold")),
-            confidence=float(d.get("weight", 0)) * 100,
-        ))
+        strategies.append(
+            StrategySignal(
+                strategy_name=d.get("strategy", ""),
+                signal=_parse_direction(d.get("signal", "hold")),
+                confidence=float(d.get("weight", 0)) * 100,
+            )
+        )
 
     if not strategies:
-        strategies = [StrategySignal(
-            strategy_name=strategy_name,
-            signal=direction,
-            confidence=conf,
-        )]
+        strategies = [
+            StrategySignal(
+                strategy_name=strategy_name,
+                signal=direction,
+                confidence=conf,
+            )
+        ]
 
     return MultiStrategySignal(
         symbol=symbol,

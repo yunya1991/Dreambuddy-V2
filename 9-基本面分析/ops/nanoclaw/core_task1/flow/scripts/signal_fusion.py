@@ -13,8 +13,6 @@
 """
 
 import json
-import os
-import math
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -35,25 +33,13 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 FUSION_CONFIG = {
     # 默认权重
-    "default": {
-        "news_weight": 0.50,
-        "flow_weight": 0.50
-    },
+    "default": {"news_weight": 0.50, "flow_weight": 0.50},
     # 高波动市场：新闻反应更快
-    "high_volatility": {
-        "news_weight": 0.60,
-        "flow_weight": 0.40
-    },
+    "high_volatility": {"news_weight": 0.60, "flow_weight": 0.40},
     # 低波动市场：资金流更可靠
-    "low_volatility": {
-        "news_weight": 0.40,
-        "flow_weight": 0.60
-    },
+    "low_volatility": {"news_weight": 0.40, "flow_weight": 0.60},
     # 信号冲突：倾向资金流（更客观）
-    "conflict": {
-        "news_weight": 0.30,
-        "flow_weight": 0.70
-    }
+    "conflict": {"news_weight": 0.30, "flow_weight": 0.70},
 }
 
 # 冲突检测阈值（两信号差值超过此值视为冲突）
@@ -62,6 +48,7 @@ CONFLICT_THRESHOLD = 0.3
 # =============================================================================
 # 新闻情感计算
 # =============================================================================
+
 
 def load_event_ledger() -> list:
     """
@@ -89,6 +76,7 @@ def load_event_ledger() -> list:
     print(f"[INFO] Loaded {len(events)} events from {latest_file.name}")
     return events
 
+
 def calculate_type_weight(event_type: str) -> float:
     """
     计算事件类型权重
@@ -105,25 +93,23 @@ def calculate_type_weight(event_type: str) -> float:
         "exchange_hack": 0.95,
         "exchange_bankruptcy": 0.95,
         "fed_rate_decision": 0.90,
-
         # P1 - 重要事件
         "etf_approval": 0.85,
         "etf_rejection": 0.85,
         "stablecoin_depeg": 0.80,
         "major_protocol_upgrade": 0.75,
-
         # P2 - 一般事件
         "whale_movement": 0.60,
         "exchange_listing": 0.55,
         "protocol_launch": 0.50,
-
         # P3 - 观点/ rumor
         "analyst_view": 0.40,
         "rumor": 0.35,
-        "social_media": 0.30
+        "social_media": 0.30,
     }
 
     return type_weights.get(event_type, 0.50)
+
 
 def calculate_window_weight(event_timestamp: str) -> float:
     """
@@ -148,8 +134,9 @@ def calculate_window_weight(event_timestamp: str) -> float:
             return 0.2
         else:
             return 0.1
-    except:
+    except:  # noqa: E722
         return 0.5
+
 
 def calculate_surprise_weight(surprise_bucket: str) -> float:
     """
@@ -162,10 +149,11 @@ def calculate_surprise_weight(surprise_bucket: str) -> float:
         "major_negative": 1.0,
         "positive": 0.8,
         "negative": 0.8,
-        "neutral": 0.5
+        "neutral": 0.5,
     }
 
     return surprise_weights.get(surprise_bucket, 0.5)
+
 
 def calculate_news_sentiment(events: list) -> dict:
     """
@@ -190,17 +178,12 @@ def calculate_news_sentiment(events: list) -> dict:
             "weighted_sum": 0.0,
             "weight_total": 0.0,
             "event_count": 0,
-            "breakdown": {}
+            "breakdown": {},
         }
 
     weighted_sum = 0.0
     weight_total = 0.0
-    breakdown = {
-        "positive_events": 0,
-        "negative_events": 0,
-        "neutral_events": 0,
-        "by_type": {}
-    }
+    breakdown = {"positive_events": 0, "negative_events": 0, "neutral_events": 0, "by_type": {}}
 
     for event in events:
         # 支持两种字段名：sentiment_score 或 sentiment
@@ -210,7 +193,9 @@ def calculate_news_sentiment(events: list) -> dict:
         base_sentiment = max(-1, min(1, base_sentiment))
 
         type_weight = calculate_type_weight(event.get("event_type", ""))
-        window_weight = calculate_window_weight(event.get("timestamp", event.get("published_at", "")))
+        window_weight = calculate_window_weight(
+            event.get("timestamp", event.get("published_at", ""))
+        )
 
         # 支持 surprise_bucket 或 surprise_score
         surprise_bucket = event.get("surprise_bucket", "neutral")
@@ -250,12 +235,14 @@ def calculate_news_sentiment(events: list) -> dict:
         "weighted_sum": round(weighted_sum, 4),
         "weight_total": round(weight_total, 4),
         "event_count": len(events),
-        "breakdown": breakdown
+        "breakdown": breakdown,
     }
+
 
 # =============================================================================
 # 信号融合逻辑
 # =============================================================================
+
 
 def detect_market_state(volatility_24h: float = None) -> str:
     """
@@ -279,21 +266,20 @@ def detect_market_state(volatility_24h: float = None) -> str:
     else:
         return "default"
 
+
 def detect_signal_conflict(news_sentiment: float, flow_composite: float) -> bool:
     """
     检测信号冲突
 
     冲突定义：两信号差值超过阈值 (0.3)，且方向相反
     """
-    return (
-        (news_sentiment > CONFLICT_THRESHOLD and flow_composite < -CONFLICT_THRESHOLD) or
-        (news_sentiment < -CONFLICT_THRESHOLD and flow_composite > CONFLICT_THRESHOLD)
+    return (news_sentiment > CONFLICT_THRESHOLD and flow_composite < -CONFLICT_THRESHOLD) or (
+        news_sentiment < -CONFLICT_THRESHOLD and flow_composite > CONFLICT_THRESHOLD
     )
 
+
 def fuse_signals(
-    news_sentiment: float,
-    flow_composite: float,
-    market_state: str = "default"
+    news_sentiment: float, flow_composite: float, market_state: str = "default"
 ) -> dict:
     """
     融合新闻信号与资金流信号
@@ -319,7 +305,7 @@ def fuse_signals(
     # 确定权重配置
     if conflict_flag:
         weights = FUSION_CONFIG["conflict"]
-        print(f"[FUSION] Signal conflict detected! Using conflict weights.")
+        print("[FUSION] Signal conflict detected! Using conflict weights.")
     elif market_state in FUSION_CONFIG:
         weights = FUSION_CONFIG[market_state]
     else:
@@ -349,12 +335,14 @@ def fuse_signals(
         "flow_weight": flow_weight,
         "conflict_flag": conflict_flag,
         "market_state": market_state,
-        "recommendation": recommendation
+        "recommendation": recommendation,
     }
+
 
 # =============================================================================
 # 主流程
 # =============================================================================
+
 
 def run_signal_fusion(flow_regime_file: str = None) -> dict:
     """
@@ -375,7 +363,7 @@ def run_signal_fusion(flow_regime_file: str = None) -> dict:
         "news_signal": None,
         "flow_signal": None,
         "fused_signal": None,
-        "diagnostics": {}
+        "diagnostics": {},
     }
 
     # ==========================================================================
@@ -388,7 +376,9 @@ def run_signal_fusion(flow_regime_file: str = None) -> dict:
 
     print(f"  事件数量：{news_result['event_count']}")
     print(f"  新闻情感：{news_result['sentiment']:+.4f}")
-    print(f"  正面/负面/中性：{news_result['breakdown']['positive_events']}/{news_result['breakdown']['negative_events']}/{news_result['breakdown']['neutral_events']}")
+    print(
+        f"  正面/负面/中性：{news_result['breakdown']['positive_events']}/{news_result['breakdown']['negative_events']}/{news_result['breakdown']['neutral_events']}"
+    )
 
     # ==========================================================================
     # Step 2: 加载资金流 Regime
@@ -414,19 +404,15 @@ def run_signal_fusion(flow_regime_file: str = None) -> dict:
         # 模拟数据
         flow_data = {
             "composite": 0.0,
-            "layer_signals": {
-                "exogenous": 0.0,
-                "leverage": 0.0,
-                "onchain": 0.0
-            },
-            "confidence": 0.7
+            "layer_signals": {"exogenous": 0.0, "leverage": 0.0, "onchain": 0.0},
+            "confidence": 0.7,
         }
 
     flow_composite = flow_data.get("composite", 0.0)
     result["flow_signal"] = {
         "composite": flow_composite,
         "layer_signals": flow_data.get("layer_signals", {}),
-        "confidence": flow_data.get("confidence", 0.5)
+        "confidence": flow_data.get("confidence", 0.5),
     }
 
     print(f"  资金流信号：{flow_composite:+.4f}")
@@ -438,15 +424,15 @@ def run_signal_fusion(flow_regime_file: str = None) -> dict:
     print("\n[STEP 3] 执行信号融合...")
 
     fused_result = fuse_signals(
-        news_result["sentiment"],
-        flow_composite,
-        market_state="default"  # 简化：使用默认状态
+        news_result["sentiment"], flow_composite, market_state="default"  # 简化：使用默认状态
     )
 
     result["fused_signal"] = fused_result
 
     print(f"  融合信号：{fused_result['fused_signal']:+.4f}")
-    print(f"  权重配置：news={fused_result['news_weight']:.2f}, flow={fused_result['flow_weight']:.2f}")
+    print(
+        f"  权重配置：news={fused_result['news_weight']:.2f}, flow={fused_result['flow_weight']:.2f}"
+    )
     print(f"  冲突标记：{fused_result['conflict_flag']}")
     print(f"  建议操作：{fused_result['recommendation']}")
 
@@ -487,6 +473,7 @@ def run_signal_fusion(flow_regime_file: str = None) -> dict:
 """)
 
     return result
+
 
 # =============================================================================
 # 命令行入口

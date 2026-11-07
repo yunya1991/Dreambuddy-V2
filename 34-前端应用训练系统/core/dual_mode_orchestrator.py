@@ -8,6 +8,7 @@ P3 扩展:
   - 训练队列 + 重试机制 (TrainingQueue)
   - 状态监控 (get_status)
 """
+
 import os
 import sys
 from typing import Dict, List, Optional
@@ -20,10 +21,10 @@ for _p in [_THIS_DIR, _34_DIR, _ADAPTERS_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_data_provider import TrainingDataProvider
-from interfaces.training_executor import TrainingExecutor, TrainingLayer
-from interfaces.case_evaluator import CaseEvaluator
-from interfaces.rea_parser import REAParser
+from interfaces.case_evaluator import CaseEvaluator  # noqa: E402
+from interfaces.rea_parser import REAParser  # noqa: E402
+from interfaces.training_data_provider import TrainingDataProvider  # noqa: E402
+from interfaces.training_executor import TrainingExecutor  # noqa: E402
 
 # P2 修复: 成功案例跨层回灌（outcome=success → 补 LLM/C/S）
 try:
@@ -33,8 +34,9 @@ except ModuleNotFoundError:
 
 # P3: 资源管理 + 训练队列
 try:
-    from resource_manager import ResourceManager, ACTIVE_QUOTA, PASSIVE_QUOTA
-    from training_queue import TrainingQueue, QueuedTask
+    from resource_manager import ACTIVE_QUOTA, PASSIVE_QUOTA, ResourceManager
+    from training_queue import QueuedTask, TrainingQueue
+
     _P3_AVAILABLE = True
 except Exception:
     _P3_AVAILABLE = False
@@ -148,6 +150,7 @@ class DualModeTrainingOrchestrator:
 
             # 3. 转换为 TrainingCase（通过 rea_to_tdr_adapter）
             from rea_to_tdr_adapter import rea_to_training_cases
+
             training_cases = rea_to_training_cases(wrapup_case, rea_result)
 
             # 4. v0.5 增量训练: get_model(pre) → checkpoint → add_case → trigger_incremental → get_model(post)
@@ -158,9 +161,7 @@ class DualModeTrainingOrchestrator:
             for executor in self._training_executors:
                 layer_val = executor.get_layer().value
                 # 找到该 executor 对应的训练案例（成功案例跨层回灌）
-                layer_cases = [
-                    c for c in training_cases if layer_val in resolve_layer_tags(c)
-                ]
+                layer_cases = [c for c in training_cases if layer_val in resolve_layer_tags(c)]
                 if not layer_cases:
                     continue
 
@@ -193,7 +194,8 @@ class DualModeTrainingOrchestrator:
                     }
                 except (NotImplementedError, Exception):
                     training_results[layer_val] = {
-                        "success": False, "degraded": True,
+                        "success": False,
+                        "degraded": True,
                     }
 
                 # 4e. get_model → 获取训练后模型状态
@@ -208,7 +210,8 @@ class DualModeTrainingOrchestrator:
                 "evaluation": evaluation.__dict__,
                 "rea_result": rea_result.__dict__ if rea_result else None,
                 "coaching_context": self._build_coaching_context(
-                    wrapup_case, rea_result,
+                    wrapup_case,
+                    rea_result,
                     pre_models=pre_models,
                     post_models=post_models,
                     training_results=training_results,
@@ -253,7 +256,9 @@ class DualModeTrainingOrchestrator:
         return status
 
     def _build_coaching_context(
-        self, wrapup_case: dict, rea_result,
+        self,
+        wrapup_case: dict,
+        rea_result,
         pre_models: Dict[str, dict] = None,
         post_models: Dict[str, dict] = None,
         training_results: Dict[str, dict] = None,

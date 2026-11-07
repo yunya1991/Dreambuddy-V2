@@ -18,17 +18,18 @@
     python3 mailbox_scanner.py --since 2026-05-16T00:00:00
 """
 
+import argparse
+import json
 import os
 import re
-import json
 import sys
-import yaml
-import argparse
-import urllib.request
 import urllib.error
+import urllib.request
+from datetime import datetime
 from pathlib import Path
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
+
+import yaml
 
 # ==================== 配置 ====================
 
@@ -54,13 +55,14 @@ HUB_TRADING_ENDPOINT = f"{HUB_URL}/api/trading/mailbox-scan"
 
 # ==================== YAML Frontmatter 解析 ====================
 
+
 def parse_frontmatter(content: str) -> tuple:
     """
     解析 Markdown 文件的 YAML frontmatter
 
     返回: (metadata_dict, body_content)
     """
-    pattern = re.compile(r'^---\s*\n(.*?)\n---\s*\n', re.DOTALL)
+    pattern = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
     match = pattern.match(content)
 
     if not match:
@@ -73,11 +75,12 @@ def parse_frontmatter(content: str) -> tuple:
     except yaml.YAMLError:
         metadata = {}
 
-    body = content[match.end():]
+    body = content[match.end() :]
     return metadata, body
 
 
 # ==================== 文件扫描 ====================
+
 
 def get_new_files(subdir: str, since: Optional[datetime] = None) -> List[Path]:
     """获取指定子目录中的新文件"""
@@ -87,7 +90,7 @@ def get_new_files(subdir: str, since: Optional[datetime] = None) -> List[Path]:
 
     files = []
     for f in dir_path.iterdir():
-        if f.is_file() and f.suffix in ('.md', '.json') and not f.name.startswith('.'):
+        if f.is_file() and f.suffix in (".md", ".json") and not f.name.startswith("."):
             if since is None:
                 files.append(f)
             else:
@@ -102,7 +105,7 @@ def scan_all(since: Optional[datetime] = None) -> Dict[str, List[Dict]]:
     """扫描所有子目录，返回新文件列表"""
     results = {}
 
-    for subdir, desc in SUBDIRS.items():
+    for subdir, desc in SUBDIRS.items():  # noqa: B007
         if subdir == "orders":
             # orders 目录只有一个 active_orders.json 状态文件，特殊处理
             continue
@@ -120,14 +123,15 @@ def scan_all(since: Optional[datetime] = None) -> Dict[str, List[Dict]]:
 
 # ==================== 文件解析 ====================
 
+
 def parse_file(filepath: Path, subdir: str) -> Optional[Dict]:
     """解析单个文件，提取交易指令"""
     try:
-        content = filepath.read_text(encoding='utf-8')
+        content = filepath.read_text(encoding="utf-8")
     except (UnicodeDecodeError, IOError) as e:
         return {"file": str(filepath), "error": f"读取失败: {e}"}
 
-    if filepath.suffix == '.json':
+    if filepath.suffix == ".json":
         try:
             data = json.loads(content)
             return {
@@ -166,6 +170,7 @@ def parse_file(filepath: Path, subdir: str) -> Optional[Dict]:
 
 
 # ==================== 指令提取 ====================
+
 
 def extract_trading_instructions(scan_results: Dict[str, List[Dict]]) -> Dict[str, Any]:
     """
@@ -244,11 +249,13 @@ def extract_trading_instructions(scan_results: Dict[str, List[Dict]]) -> Dict[st
     # Execution log
     if "execution_log" in scan_results:
         for item in scan_results["execution_log"]:
-            summary["execution_log"].append({
-                "filename": item.get("filename"),
-                "date": item.get("date"),
-                "title": item.get("title"),
-            })
+            summary["execution_log"].append(
+                {
+                    "filename": item.get("filename"),
+                    "date": item.get("date"),
+                    "title": item.get("title"),
+                }
+            )
 
     return summary
 
@@ -268,11 +275,12 @@ def _extract_skill(filename: str) -> str:
 
 # ==================== 状态管理 ====================
 
+
 def load_state() -> Dict:
     """加载上次扫描状态"""
     if STATE_FILE.exists():
         try:
-            return json.loads(STATE_FILE.read_text(encoding='utf-8'))
+            return json.loads(STATE_FILE.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, IOError):
             pass
     return {"last_scan": None, "scan_count": 0, "total_files_processed": 0}
@@ -282,10 +290,11 @@ def save_state(state: Dict):
     """保存扫描状态"""
     state["last_scan"] = datetime.now().isoformat()
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    STATE_FILE.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding='utf-8')
+    STATE_FILE.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 # ==================== 投递到产物中台 ====================
+
 
 def deliver_to_artifact_hub(summary: Dict[str, Any], verbose: bool = False) -> bool:
     """
@@ -300,10 +309,7 @@ def deliver_to_artifact_hub(summary: Dict[str, Any], verbose: bool = False) -> b
 
         # 1. 写入摘要文件
         summary_file = ARTIFACTS_DIR / "6_trading_summary.json"
-        summary_file.write_text(
-            json.dumps(summary, indent=2, ensure_ascii=False),
-            encoding='utf-8'
-        )
+        summary_file.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
 
         if verbose:
             print(f"  已写入产物中台: {summary_file}")
@@ -312,13 +318,12 @@ def deliver_to_artifact_hub(summary: Dict[str, Any], verbose: bool = False) -> b
         orders_file = MAILBOX_DIR / "orders" / "active_orders.json"
         if summary.get("screen1"):
             try:
-                orders = json.loads(orders_file.read_text(encoding='utf-8'))
+                orders = json.loads(orders_file.read_text(encoding="utf-8"))
                 orders["screen1_direction"] = summary["screen1"]["direction"]
                 orders["screen1_week"] = summary["screen1"]["date"]
                 orders["last_updated"] = datetime.now().isoformat()
                 orders_file.write_text(
-                    json.dumps(orders, indent=2, ensure_ascii=False),
-                    encoding='utf-8'
+                    json.dumps(orders, indent=2, ensure_ascii=False), encoding="utf-8"
                 )
                 if verbose:
                     print(f"  已更新活跃订单: direction={summary['screen1']['direction']}")
@@ -330,7 +335,7 @@ def deliver_to_artifact_hub(summary: Dict[str, Any], verbose: bool = False) -> b
         index_data = []
         if index_file.exists():
             try:
-                index_data = json.loads(index_file.read_text(encoding='utf-8'))
+                index_data = json.loads(index_file.read_text(encoding="utf-8"))
             except (json.JSONDecodeError, IOError):
                 pass
 
@@ -354,8 +359,7 @@ def deliver_to_artifact_hub(summary: Dict[str, Any], verbose: bool = False) -> b
             index_data.append(entry)
 
         index_file.write_text(
-            json.dumps(index_data, indent=2, ensure_ascii=False),
-            encoding='utf-8'
+            json.dumps(index_data, indent=2, ensure_ascii=False), encoding="utf-8"
         )
 
         return True
@@ -367,6 +371,7 @@ def deliver_to_artifact_hub(summary: Dict[str, Any], verbose: bool = False) -> b
 
 # ==================== 推送到 Artifact Hub ====================
 
+
 def push_to_hub(summary: Dict[str, Any], verbose: bool = False) -> bool:
     """
     将交易指令摘要通过 HTTP POST 推送到 Artifact Hub
@@ -377,14 +382,17 @@ def push_to_hub(summary: Dict[str, Any], verbose: bool = False) -> bool:
     返回: 推送是否成功
     """
     try:
-        payload = json.dumps({
-            "source": "mailbox_scanner",
-            "scanned_at": summary.get("scanned_at"),
-            "screen1": summary.get("screen1"),
-            "screen2": summary.get("screen2"),
-            "signals": summary.get("signals", []),
-            "execution_log": summary.get("execution_log", []),
-        }, ensure_ascii=False).encode("utf-8")
+        payload = json.dumps(
+            {
+                "source": "mailbox_scanner",
+                "scanned_at": summary.get("scanned_at"),
+                "screen1": summary.get("screen1"),
+                "screen2": summary.get("screen2"),
+                "signals": summary.get("signals", []),
+                "execution_log": summary.get("execution_log", []),
+            },
+            ensure_ascii=False,
+        ).encode("utf-8")
 
         req = urllib.request.Request(
             HUB_TRADING_ENDPOINT,
@@ -419,12 +427,13 @@ def push_to_hub(summary: Dict[str, Any], verbose: bool = False) -> bool:
 
 # ==================== 报告生成 ====================
 
+
 def generate_scan_report(
     scan_results: Dict[str, List[Dict]],
     summary: Dict[str, Any],
     deliver_ok: bool,
     hub_ok: bool = False,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> str:
     """生成扫描报告"""
     total_files = sum(len(v) for v in scan_results.values())
@@ -496,11 +505,11 @@ def json_serializer(obj):
 
 # ==================== 主入口 ====================
 
+
 def main():
     parser = argparse.ArgumentParser(description="6-TRADING 邮箱扫描器")
     parser.add_argument("--verbose", "-v", action="store_true", help="详细输出")
-    parser.add_argument("--since", type=str, default=None,
-                        help="只扫描此时间之后的文件 (ISO格式)")
+    parser.add_argument("--since", type=str, default=None, help="只扫描此时间之后的文件 (ISO格式)")
     parser.add_argument("--dry-run", action="store_true", help="只扫描不投递")
     parser.add_argument("--force", action="store_true", help="忽略状态文件，扫描所有文件")
     args = parser.parse_args()
@@ -557,7 +566,9 @@ def main():
     report = generate_scan_report(scan_results, summary, deliver_ok, hub_ok, verbose=args.verbose)
 
     # 保存报告到 execution_log
-    report_file = MAILBOX_DIR / "execution_log" / f"scan_{datetime.now().strftime('%Y%m%d_%H%M')}.json"
+    report_file = (
+        MAILBOX_DIR / "execution_log" / f"scan_{datetime.now().strftime('%Y%m%d_%H%M')}.json"
+    )
     report_data = {
         "report": report,
         "summary": summary,
@@ -566,7 +577,7 @@ def main():
         "hub_push_success": hub_ok,
     }
     report_file.parent.mkdir(parents=True, exist_ok=True)
-    report_file.write_text(json.dumps(report_data, indent=2, ensure_ascii=False), encoding='utf-8')
+    report_file.write_text(json.dumps(report_data, indent=2, ensure_ascii=False), encoding="utf-8")
 
     # 更新状态
     state = load_state()

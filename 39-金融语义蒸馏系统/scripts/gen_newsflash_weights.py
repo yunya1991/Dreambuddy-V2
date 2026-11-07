@@ -16,6 +16,7 @@
 用法: /home/luke/venv-trading/bin/python3 gen_newsflash_weights.py
 边界: 权重是训练样本属性（描述性），非交易信号（SPEC §9.4/§7.4）
 """
+
 import json
 import os
 from collections import defaultdict
@@ -24,22 +25,23 @@ from datetime import datetime, timedelta
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _SYS_DIR = os.path.dirname(_THIS_DIR)
 sys_path = os.path
-import sys
+import sys  # noqa: E402
+
 sys.path.insert(0, _THIS_DIR)
-import dc_pg
+import dc_pg  # noqa: E402
 
 WEIGHTS_PATH = os.path.join(_SYS_DIR, "newsflash_weights.jsonl")
 CREDIBILITY_PATH = os.path.join(_SYS_DIR, "source_credibility.json")
 
 # ── 预注册参数（禁止事后调整）──
-INIT_WEIGHT_NEWSFLASH = 0.3   # 快讯样本初始权重
-INIT_WEIGHT_LOCAL_A = 1.0    # 本地蒸馏 A 级样本初始权重（对照声明）
-INIT_WEIGHT_LOCAL_B = 0.7    # 本地蒸馏 B 级样本初始权重（对照声明）
-VERIFY_WINDOW_H = 4          # 印证观察窗口：发布后 4 小时
-PRICE_MOVE_THRESHOLD = 0.005 # 价格变动阈值：±0.5% 之外才算方向
-WEIGHT_UP = 0.6              # 印证后权重
-WEIGHT_DOWN = 0.1            # 证伪后权重
-WEIGHT_NEUTRAL = 0.3         # 中性维持初始权重
+INIT_WEIGHT_NEWSFLASH = 0.3  # 快讯样本初始权重
+INIT_WEIGHT_LOCAL_A = 1.0  # 本地蒸馏 A 级样本初始权重（对照声明）
+INIT_WEIGHT_LOCAL_B = 0.7  # 本地蒸馏 B 级样本初始权重（对照声明）
+VERIFY_WINDOW_H = 4  # 印证观察窗口：发布后 4 小时
+PRICE_MOVE_THRESHOLD = 0.005  # 价格变动阈值：±0.5% 之外才算方向
+WEIGHT_UP = 0.6  # 印证后权重
+WEIGHT_DOWN = 0.1  # 证伪后权重
+WEIGHT_NEUTRAL = 0.3  # 中性维持初始权重
 
 
 def _parse_ts(ts):
@@ -146,7 +148,7 @@ def verify_newsflash(row, price_tables):
 
 def main():
     price_tables = load_price_tables()
-    print(f"[OK] 价格数据表加载: " + ", ".join(f"{s}({len(p)}条)" for s, p in price_tables.items()))
+    print("[OK] 价格数据表加载: " + ", ".join(f"{s}({len(p)}条)" for s, p in price_tables.items()))
     rows = dc_pg.fetch_records("newsflash_%", limit=2000, order_desc=False)
     print(f"[OK] 快讯加载 {len(rows)} 条")
 
@@ -163,18 +165,20 @@ def main():
             weight = WEIGHT_NEUTRAL if status == "neutral" else INIT_WEIGHT_NEWSFLASH
         etype = m.get("od_event_type", "unknown")
         cred[etype][status] += 1
-        records.append({
-            "record_id": row.get("id"),
-            "timestamp": row.get("timestamp"),
-            "event_type": etype,
-            "tickers_hit": m.get("tickers_hit"),
-            "policy_sentiment": sentiment,
-            "verify_status": status,
-            "price_move_4h": round(move, 4) if move is not None else None,
-            "weight": weight,
-            "weight_rule": f"初始 {INIT_WEIGHT_NEWSFLASH}；印证 {WEIGHT_UP}；证伪 {WEIGHT_DOWN}；中性 {WEIGHT_NEUTRAL}（预注册）",
-            "boundary": "训练样本权重属性（P-权重），非交易信号",
-        })
+        records.append(
+            {
+                "record_id": row.get("id"),
+                "timestamp": row.get("timestamp"),
+                "event_type": etype,
+                "tickers_hit": m.get("tickers_hit"),
+                "policy_sentiment": sentiment,
+                "verify_status": status,
+                "price_move_4h": round(move, 4) if move is not None else None,
+                "weight": weight,
+                "weight_rule": f"初始 {INIT_WEIGHT_NEWSFLASH}；印证 {WEIGHT_UP}；证伪 {WEIGHT_DOWN}；中性 {WEIGHT_NEUTRAL}（预注册）",
+                "boundary": "训练样本权重属性（P-权重），非交易信号",
+            }
+        )
 
     with open(WEIGHTS_PATH, "w", encoding="utf-8") as f:
         for r in records:
@@ -192,7 +196,11 @@ def main():
             "neutral": c["neutral"],
             "unverified": c["unverified"],
             "verify_rate": round(c["verified"] / judged, 4) if judged > 0 else None,
-            "note": "印证率基于关联代币价格验证（自动发现价格表，4h 窗口，±0.5% 阈值）" if judged > 0 else "暂无可验证样本",
+            "note": (
+                "印证率基于关联代币价格验证（自动发现价格表，4h 窗口，±0.5% 阈值）"
+                if judged > 0
+                else "暂无可验证样本"
+            ),
         }
     out = {
         "generated_at": "2026-10-20",
@@ -211,7 +219,9 @@ def main():
     for r in records:
         status_count[r["verify_status"]] += 1
     print(f"[OK] P-权重完成: {len(records)} 条权重记录 -> {WEIGHTS_PATH}")
-    print(f"     印证 {status_count['verified']} | 证伪 {status_count['falsified']} | 中性 {status_count['neutral']} | 未验证 {status_count['unverified']}")
+    print(
+        f"     印证 {status_count['verified']} | 证伪 {status_count['falsified']} | 中性 {status_count['neutral']} | 未验证 {status_count['unverified']}"
+    )
     print(f"     可信度画像 -> {CREDIBILITY_PATH}")
     for etype, p in sorted(profile.items(), key=lambda kv: -kv[1]["total"])[:6]:
         vr = f"{p['verify_rate']:.0%}" if p["verify_rate"] is not None else "-"

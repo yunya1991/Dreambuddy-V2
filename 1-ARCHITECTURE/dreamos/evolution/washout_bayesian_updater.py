@@ -20,6 +20,7 @@ W4 阶段落地 (纯新增, 零回归):
     posterior_beta = beta + m
     posterior_mean = posterior_alpha / (posterior_alpha + posterior_beta)
 """
+
 from __future__ import annotations
 
 import logging

@@ -11,14 +11,13 @@
 - 26-策略管理模块（registry 查询基线策略，可选 HTTP 调用）
 - 27-策略治理审批系统（changeset/approval，可选 HTTP 调用）
 """
+
 from __future__ import annotations
 
-import json
 import os
 import sys
-import uuid
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from flask import Flask, jsonify, request
 
@@ -27,11 +26,11 @@ _MODULE_DIR = Path(__file__).resolve().parent
 if str(_MODULE_DIR) not in sys.path:
     sys.path.insert(0, str(_MODULE_DIR))
 
-from strategy_gen.backtest_engine import run_backtest
-from strategy_gen.baseline import baseline_get, baseline_list, baseline_metrics
-from strategy_gen.compare import compare_with_baseline, compute_score
-from strategy_gen.intent import generate_from_intent
-from strategy_gen.pipeline import run_pipeline
+from strategy_gen.backtest_engine import run_backtest  # noqa: E402
+from strategy_gen.baseline import baseline_get, baseline_list, baseline_metrics  # noqa: E402
+from strategy_gen.compare import compare_with_baseline, compute_score  # noqa: E402
+from strategy_gen.intent import generate_from_intent  # noqa: E402
+from strategy_gen.pipeline import run_pipeline  # noqa: E402
 
 app = Flask(__name__)
 
@@ -58,6 +57,7 @@ STRATEGY_LIB_BASE = os.environ.get("STRATEGY_LIB_BASE", "http://127.0.0.1:8093")
 # 鉴权与工具
 # ---------------------------------------------------------------------------
 
+
 def _require_admin() -> bool:
     token = request.headers.get("X-Admin-Token", "")
     return token == ADMIN_TOKEN
@@ -78,31 +78,35 @@ def _safe_get_json() -> Dict[str, Any]:
 # 健康检查
 # ---------------------------------------------------------------------------
 
+
 @app.route("/health", methods=["GET"])
 def health():
-    return jsonify({
-        "ok": True,
-        "module": "25-用户策略生成系统",
-        "port": int(os.environ.get("STRATEGY_GEN_PORT", "8095")),
-        "deps": {
-            "strategy_lib_base": STRATEGY_LIB_BASE,
-        },
-        "endpoints": [
-            "/api/v1/gen/intent",
-            "/api/v1/gen/backtest",
-            "/api/v1/gen/compare",
-            "/api/v1/gen/pipeline",
-            "/api/v1/baseline/list",
-            "/api/v1/baseline/get",
-            "/api/v1/baseline/metrics",
-            "/api/v1/gen/score",
-        ],
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "module": "25-用户策略生成系统",
+            "port": int(os.environ.get("STRATEGY_GEN_PORT", "8095")),
+            "deps": {
+                "strategy_lib_base": STRATEGY_LIB_BASE,
+            },
+            "endpoints": [
+                "/api/v1/gen/intent",
+                "/api/v1/gen/backtest",
+                "/api/v1/gen/compare",
+                "/api/v1/gen/pipeline",
+                "/api/v1/baseline/list",
+                "/api/v1/baseline/get",
+                "/api/v1/baseline/metrics",
+                "/api/v1/gen/score",
+            ],
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # 用户策略生成 - 意图 → AI辅助设计
 # ---------------------------------------------------------------------------
+
 
 @app.route("/api/v1/gen/intent", methods=["POST"])
 def gen_intent():
@@ -132,6 +136,7 @@ def gen_intent():
 # 用户策略生成 - 回测验证
 # ---------------------------------------------------------------------------
 
+
 @app.route("/api/v1/gen/backtest", methods=["POST"])
 def gen_backtest():
     """对策略执行回测，产出 metrics_summary。
@@ -160,6 +165,7 @@ def gen_backtest():
 # 用户策略生成 - 基线对比
 # ---------------------------------------------------------------------------
 
+
 @app.route("/api/v1/gen/compare", methods=["POST"])
 def gen_compare():
     """对比用户策略与基线策略。
@@ -175,7 +181,9 @@ def gen_compare():
     """
     body = _safe_get_json()
     user_metrics = body.get("user_metrics") if isinstance(body.get("user_metrics"), dict) else {}
-    baseline_metrics = body.get("baseline_metrics") if isinstance(body.get("baseline_metrics"), dict) else {}
+    baseline_metrics = (
+        body.get("baseline_metrics") if isinstance(body.get("baseline_metrics"), dict) else {}
+    )
     if not user_metrics or not baseline_metrics:
         return jsonify({"ok": False, "error": "missing_metrics"}), 400
     try:
@@ -188,6 +196,7 @@ def gen_compare():
 # ---------------------------------------------------------------------------
 # 用户策略生成 - 综合评分
 # ---------------------------------------------------------------------------
+
 
 @app.route("/api/v1/gen/score", methods=["POST"])
 def gen_score():
@@ -209,6 +218,7 @@ def gen_score():
 # ---------------------------------------------------------------------------
 # 用户策略生成 - 完整流水线编排
 # ---------------------------------------------------------------------------
+
 
 @app.route("/api/v1/gen/pipeline", methods=["POST"])
 def gen_pipeline():
@@ -235,6 +245,7 @@ def gen_pipeline():
 # ---------------------------------------------------------------------------
 # 基线策略库（只读）
 # ---------------------------------------------------------------------------
+
 
 @app.route("/api/v1/baseline/list", methods=["GET"])
 def baseline_list_api():

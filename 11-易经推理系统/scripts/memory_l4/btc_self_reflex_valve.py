@@ -19,8 +19,8 @@ from __future__ import annotations
 
 import logging
 import time
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Dict, Optional, Tuple
 
 logger = logging.getLogger(__name__)
@@ -105,8 +105,11 @@ class BTCSelfReflexValve:
                 return 1.0, {**shadow, "reason": "g1_dpe_not_positive"}
             # ② BCRM BTC DOWN 连续性 ≥ ALIGN_BASIC
             grade_rank = {
-                "ALIGN_FULL": 4, "ALIGN_BASIC": 3,
-                "NEUTRAL": 2, "DIVERGE_BASIC": 1, "DIVERGE_SEVERE": 0,
+                "ALIGN_FULL": 4,
+                "ALIGN_BASIC": 3,
+                "NEUTRAL": 2,
+                "DIVERGE_BASIC": 1,
+                "DIVERGE_SEVERE": 0,
             }
             if grade_rank.get(btc_cont_grade, 0) < grade_rank.get("ALIGN_BASIC", 3):
                 return 1.0, {**shadow, "reason": "g2_cont_not_align_basic"}
@@ -116,7 +119,10 @@ class BTCSelfReflexValve:
             # ④ n_rev ≥ 60% × n_windows
             fill_ratio = n_rev / max(1, n_windows)
             if fill_ratio < C.P9_BTC_WINDOW_FILL_RATIO:
-                return 1.0, {**shadow, "reason": f"g4_fill_ratio_{fill_ratio:.2f}_below_{C.P9_BTC_WINDOW_FILL_RATIO}"}
+                return 1.0, {
+                    **shadow,
+                    "reason": f"g4_fill_ratio_{fill_ratio:.2f}_below_{C.P9_BTC_WINDOW_FILL_RATIO}",
+                }
             # ⑤ 24h 未触发大熔断
             if fuse_blocked:
                 return 1.0, {**shadow, "reason": "g5_fuse_blocked_24h"}
@@ -127,7 +133,10 @@ class BTCSelfReflexValve:
             if now - self._state.last_n_rev_ts < cooldown_sec:
                 return (
                     float(self._state.last_lambda),
-                    {**shadow, "reason": f"cooldown_remaining_{int(cooldown_sec - (now - self._state.last_n_rev_ts))}s"},
+                    {
+                        **shadow,
+                        "reason": f"cooldown_remaining_{int(cooldown_sec - (now - self._state.last_n_rev_ts))}s",
+                    },
                 )
 
             # --- λ 公式：λ = 1 - 0.40 · min(1, n_rev/3) · S_BCRM ---
@@ -146,8 +155,7 @@ class BTCSelfReflexValve:
             self._state.last_daily_penalty_acc += penalty
 
             # --- P10 clip：λ ∈ [0.60, 1.0] ---
-            lambda_final = max(C.BTC_REFLEX_LAMBDA_LOW,
-                               min(C.BTC_REFLEX_LAMBDA_HIGH, lambda_raw))
+            lambda_final = max(C.BTC_REFLEX_LAMBDA_LOW, min(C.BTC_REFLEX_LAMBDA_HIGH, lambda_raw))
 
             # --- 写入 state 冷却 ---
             self._state.last_n_rev_ts = now
@@ -162,8 +170,10 @@ class BTCSelfReflexValve:
             }
 
         except Exception as e:  # noqa: BLE001 - fail-open 兜底
-            from . import phase_c_constants as C
             import datetime as _dt
+
+            from . import phase_c_constants as C
+
             hour_tag = _dt.datetime.now().strftime("%Y-%m-%dT%H")
             if self._last_failopen_logged_hour != hour_tag:
                 logger.warning(
