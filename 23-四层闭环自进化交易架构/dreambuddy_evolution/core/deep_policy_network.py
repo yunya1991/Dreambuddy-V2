@@ -11,10 +11,10 @@
   - 懒加载 torch + torch.set_num_threads(1) 修 Apple Silicon SIGSEGV
   - 4 级降级链
 """
+
 from __future__ import annotations
 
 import logging
-import math
 from typing import Any
 
 import numpy as np
@@ -42,8 +42,9 @@ except ImportError:  # noqa: BLE001
 class _MLPPolicyBase:
     """MLPPolicy 基类（torch 可用/不可用共用接口）."""
 
-    def __init__(self, n_features: int = 17, n_actions: int = 3,
-                 hidden_dims: list[int] | None = None) -> None:
+    def __init__(
+        self, n_features: int = 17, n_actions: int = 3, hidden_dims: list[int] | None = None
+    ) -> None:
         self.n_features = int(n_features)
         self.n_actions = int(n_actions)
         self.hidden_dims = list(hidden_dims) if hidden_dims else [128, 64]
@@ -75,8 +76,9 @@ if _TORCH_AVAILABLE:
         Input[n_features] → Linear(128)+ReLU → Linear(64)+ReLU+Dropout(0.1) → Linear(n_actions)+Softmax
         """
 
-        def __init__(self, n_features: int = 17, n_actions: int = 3,
-                     hidden_dims: list[int] | None = None) -> None:
+        def __init__(
+            self, n_features: int = 17, n_actions: int = 3, hidden_dims: list[int] | None = None
+        ) -> None:
             _MLPPolicyBase.__init__(self, n_features, n_actions, hidden_dims)
             nn.Module.__init__(self)
 
@@ -99,7 +101,7 @@ if _TORCH_AVAILABLE:
             if arr.numel() < self.n_features:
                 arr = F.pad(arr, (0, self.n_features - arr.numel()))
             elif arr.numel() > self.n_features:
-                arr = arr[:self.n_features]
+                arr = arr[: self.n_features]
             return arr
 
         def forward(self, state: dict[str, Any] | torch.Tensor) -> torch.Tensor:
@@ -127,8 +129,9 @@ else:
     class MLPPolicy(_MLPPolicyBase):  # type: ignore[no-redef]
         """numpy 降级 MLP（torch 不可用时）."""
 
-        def __init__(self, n_features: int = 17, n_actions: int = 3,
-                     hidden_dims: list[int] | None = None) -> None:
+        def __init__(
+            self, n_features: int = 17, n_actions: int = 3, hidden_dims: list[int] | None = None
+        ) -> None:
             super().__init__(n_features, n_actions, hidden_dims)
             self._action_list: list[str] = []
             # 初始化权重（Xavier 近似）
@@ -153,7 +156,7 @@ else:
             if len(arr) < self.n_features:
                 arr = np.pad(arr, (0, self.n_features - len(arr)))
             elif len(arr) > self.n_features:
-                arr = arr[:self.n_features]
+                arr = arr[: self.n_features]
             return arr
 
         def _forward(self, arr: np.ndarray) -> np.ndarray:
@@ -217,6 +220,7 @@ if _TORCH_AVAILABLE:
             return float(v.item())
 
 else:
+
     class MLPCritic:  # type: ignore[no-redef]
         """numpy 降级值函数（torch 不可用时）."""
 
@@ -232,7 +236,7 @@ else:
             if len(arr) < self.n_features:
                 arr = np.pad(arr, (0, self.n_features - len(arr)))
             elif len(arr) > self.n_features:
-                arr = arr[:self.n_features]
+                arr = arr[: self.n_features]
             return float(np.dot(self.w, arr))
 
 
@@ -248,10 +252,16 @@ class A2CTrainer:
     Level 4: record-only
     """
 
-    def __init__(self, n_features: int = 17, n_actions: int = 3,
-                 hidden_dims: list[int] | None = None,
-                 lr: float = 3e-4, gae_lambda: float = 0.95,
-                 entropy_beta: float = 0.01, grad_clip: float = 1.0) -> None:
+    def __init__(
+        self,
+        n_features: int = 17,
+        n_actions: int = 3,
+        hidden_dims: list[int] | None = None,
+        lr: float = 3e-4,
+        gae_lambda: float = 0.95,
+        entropy_beta: float = 0.01,
+        grad_clip: float = 1.0,
+    ) -> None:
         self.n_features = int(n_features)
         self.n_actions = int(n_actions)
         self.hidden_dims = list(hidden_dims) if hidden_dims else [128, 64]
@@ -272,6 +282,7 @@ class A2CTrainer:
         else:
             # 降级到 numpy SimplePolicy
             from dreambuddy_evolution.core.shadow_rl_trainer import SimplePolicy
+
             self.policy = SimplePolicy(n_features=n_features, n_actions=n_actions)
             self.critic = None
             self.optimizer = None
@@ -300,19 +311,21 @@ class A2CTrainer:
         import torch as _torch
 
         # 准备数据
-        states = _torch.tensor([
-            self.policy._features_to_array(s.get("state", {})).numpy()
-            for s in samples
-        ], dtype=_torch.float32)
+        states = _torch.tensor(
+            [self.policy._features_to_array(s.get("state", {})).numpy() for s in samples],
+            dtype=_torch.float32,
+        )
 
-        actions_set = sorted(set(s["action"] for s in samples if "action" in s))
+        actions_set = sorted(set(s["action"] for s in samples if "action" in s))  # noqa: C401
         if not actions_set:
             actions_set = [f"action_{i}" for i in range(self.n_actions)]
         self.policy._action_list = actions_set
         self.n_actions = len(actions_set)
         action_to_idx = {a: i for i, a in enumerate(actions_set)}
         actions = _torch.tensor([action_to_idx.get(s.get("action", ""), 0) for s in samples])
-        rewards = _torch.tensor([float(s.get("reward", 0.0)) for s in samples], dtype=_torch.float32)
+        rewards = _torch.tensor(
+            [float(s.get("reward", 0.0)) for s in samples], dtype=_torch.float32
+        )
 
         # GAE 优势估计
         with _torch.no_grad():
@@ -322,7 +335,7 @@ class A2CTrainer:
 
         # 训练循环
         loss_history = []
-        for epoch in range(epochs):
+        for epoch in range(epochs):  # noqa: B007
             self.optimizer.zero_grad()
 
             # Policy forward
@@ -361,6 +374,7 @@ class A2CTrainer:
     def _compute_gae(self, rewards: Any, values: Any) -> Any:
         """计算 GAE 优势估计."""
         import torch as _torch
+
         advantages = _torch.zeros_like(rewards)
         gae = _torch.tensor(0.0)
         for i in reversed(range(len(rewards))):

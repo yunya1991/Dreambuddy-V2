@@ -1,8 +1,7 @@
 import json
 import re
-from pathlib import Path
 import sys
-
+from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
@@ -32,7 +31,9 @@ def test_update_gate_status_updates_snapshot(tmp_path, monkeypatch):
 
     out_dir = tmp_path
     snapshot_path = out_dir / "qmm_snapshot_x.json"
-    snapshot_path.write_text(json.dumps({"gate_status": "OFFLINE"}, ensure_ascii=False), encoding="utf-8")
+    snapshot_path.write_text(
+        json.dumps({"gate_status": "OFFLINE"}, ensure_ascii=False), encoding="utf-8"
+    )
 
     index_path = out_dir / "signals_index.json"
     index_path.write_text(
@@ -65,8 +66,7 @@ def test_update_gate_status_updates_snapshot(tmp_path, monkeypatch):
 
 
 def test_data_version_format_and_increment(tmp_path, monkeypatch):
-    from scripts.memory_l4.qmm import data_prep
-    from scripts.memory_l4.qmm import paths
+    from scripts.memory_l4.qmm import data_prep, paths
 
     monkeypatch.setattr(paths, "qmm_dir", lambda: tmp_path)
 

@@ -14,6 +14,7 @@
 FAIL-OPEN：任何步骤失败不阻塞 git/AI 主流程，但如实报告红旗。
 工程约束：HC-1a（独立模块）/ HC-9（只产索引信号）/ FAIL-OPEN / 零回归
 """
+
 from __future__ import annotations
 
 import argparse
@@ -32,9 +33,6 @@ if str(_HERE) not in sys.path:
 from skill_indexer import (  # noqa: E402
     ALL_SKILL_ROOTS,
     build,
-    detect_conflicts,
-    detect_drift,
-    scan_skills,
     validate,
 )
 
@@ -50,6 +48,7 @@ if _COGNITIVE_DIR.exists() and str(_COGNITIVE_DIR) not in sys.path:
     sys.path.insert(0, str(_COGNITIVE_DIR))
 try:
     from cognitive_loop_entry import get_cle  # type: ignore[import-not-found]
+
     _HAS_COGNITIVE = True
 except Exception:
     _HAS_COGNITIVE = False
@@ -67,9 +66,11 @@ def _get_cle_or_none():
 
 # ─────────────────────────────── git 路径发现 ───────────────────────────────
 
+
 def _find_git() -> str:
     """发现 git 可执行文件路径，兼容 PATH 不含 /usr/bin 的环境。"""
     import shutil
+
     found = shutil.which("git")
     if found:
         return found
@@ -84,9 +85,8 @@ _GIT = _find_git()
 
 # ─────────────────────────────── 检测新增 SKILL ───────────────────────────────
 
-def detect_new_skills_from_git(
-    repo_root: Path, diff_base: str = "HEAD"
-) -> list[Path]:
+
+def detect_new_skills_from_git(repo_root: Path, diff_base: str = "HEAD") -> list[Path]:
     """从 git 检测新增的 SKILL.md 文件。
 
     检测范围：
@@ -147,6 +147,7 @@ def detect_new_skills_from_git(
 
 
 # ─────────────────────────────── 注册主流程 ───────────────────────────────
+
 
 def register_skills(
     skill_dirs: list[Path] | None = None,
@@ -231,6 +232,7 @@ def register_skills(
         # P2-4: 自验证入库门 — 决定 SKILL 初始生命周期状态
         try:
             from skill_verification_gate import SkillVerificationGate
+
             gate = SkillVerificationGate(skill_indexer_module=sys.modules.get("skill_indexer"))
             gate_result = gate.verify(skill_dir)
             report["gate_decisions"][str(skill_dir)] = {
@@ -316,6 +318,7 @@ def register_skills(
 
 
 # ─────────────────────────────── CLI ───────────────────────────────
+
 
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(

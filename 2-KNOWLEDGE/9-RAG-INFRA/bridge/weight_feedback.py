@@ -64,14 +64,12 @@ def _save(feedback: Dict[str, float], weight_path: Optional[Path] = None) -> Non
     p = Path(weight_path) if weight_path else resolve_default_weight_path()
     try:
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(json.dumps(feedback, ensure_ascii=False, indent=2),
-                     encoding="utf-8")
+        p.write_text(json.dumps(feedback, ensure_ascii=False, indent=2), encoding="utf-8")
     except Exception:
         pass
 
 
-def get_boost(source_file: str, heading: str,
-              weight_path: Optional[Path] = None) -> float:
+def get_boost(source_file: str, heading: str, weight_path: Optional[Path] = None) -> float:
     """获取知识单元的 boost 因子，默认 1.0。
 
     Args:
@@ -86,8 +84,9 @@ def get_boost(source_file: str, heading: str,
     return feedback.get(_key(source_file, heading), DEFAULT_BOOST)
 
 
-def update_boost(source_file: str, heading: str, success: bool,
-                 weight_path: Optional[Path] = None) -> float:
+def update_boost(
+    source_file: str, heading: str, success: bool, weight_path: Optional[Path] = None
+) -> float:
     """根据 verify 结果更新 boost 因子并持久化。
 
     success=True → boost *= BOOST_SUCCESS_FACTOR（上限 BOOST_MAX）；
@@ -117,8 +116,7 @@ def update_boost(source_file: str, heading: str, success: bool,
     return feedback[k]
 
 
-def apply_boost_to_results(results: List[Dict],
-                           weight_path: Optional[Path] = None) -> List[Dict]:
+def apply_boost_to_results(results: List[Dict], weight_path: Optional[Path] = None) -> List[Dict]:
     """将 boost 因子叠加到检索结果的 final_score 并重新降序排序。
 
     对每个结果，若其 source_file/heading 对应的 boost != 1.0，

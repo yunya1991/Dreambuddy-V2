@@ -10,11 +10,12 @@
 
 共享目录：.workbuddy/shared_knowledge/
 """
+
 import json
 import time
-from pathlib import Path
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Any
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 
 class KnowledgeBridge:
@@ -79,7 +80,11 @@ class KnowledgeBridge:
         try:
             with open(self.evolved_params_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
-            return {"ok": True, "file": str(self.evolved_params_file), "params_count": len(adopted_params)}
+            return {
+                "ok": True,
+                "file": str(self.evolved_params_file),
+                "params_count": len(adopted_params),
+            }
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
@@ -174,7 +179,11 @@ class KnowledgeBridge:
         try:
             with open(self.contradiction_patterns_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
-            return {"ok": True, "file": str(self.contradiction_patterns_file), "patterns_count": len(patterns)}
+            return {
+                "ok": True,
+                "file": str(self.contradiction_patterns_file),
+                "patterns_count": len(patterns),
+            }
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
@@ -300,7 +309,11 @@ class KnowledgeBridge:
         try:
             with open(self.trading_rules_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
-            return {"ok": True, "file": str(self.trading_rules_file), "rules_count": len(trading_rules)}
+            return {
+                "ok": True,
+                "file": str(self.trading_rules_file),
+                "rules_count": len(trading_rules),
+            }
         except Exception as e:
             return {"ok": False, "error": str(e)}
 

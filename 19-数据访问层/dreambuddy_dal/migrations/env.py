@@ -3,6 +3,7 @@ Alembic env.py — 19-数据访问层
 
 使用 SQLAlchemy engine（Alembic 原生兼容），PRAGMA 在 connect 后执行。
 """
+
 from __future__ import annotations
 
 import os
@@ -14,8 +15,8 @@ from sqlalchemy import create_engine, event
 
 # 确保 dreambuddy_dal 可导入
 this_dir = os.path.dirname(os.path.abspath(__file__))
-parent = os.path.dirname(this_dir)       # dreambuddy_dal/
-project_root = os.path.dirname(parent)   # 19-数据访问层/
+parent = os.path.dirname(this_dir)  # dreambuddy_dal/
+project_root = os.path.dirname(parent)  # 19-数据访问层/
 for p in (parent, project_root):
     if p not in sys.path:
         sys.path.insert(0, p)

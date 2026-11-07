@@ -24,7 +24,9 @@ def _int_or_none(x: Any) -> Optional[int]:
         return None
 
 
-def _validate_weights(row: Dict[str, Any], cfg_weights: Tuple[float, float], tol: float) -> List[str]:
+def _validate_weights(
+    row: Dict[str, Any], cfg_weights: Tuple[float, float], tol: float
+) -> List[str]:
     errs: List[str] = []
     ws = row.get("input_weights") if isinstance(row.get("input_weights"), dict) else {}
     wb = _float_or_none(ws.get("btc"))
@@ -96,9 +98,17 @@ def _validate_rule_a34(row: Dict[str, Any], tol: float) -> List[str]:
             errs.append("ra4_allow_addon")
         if crash_switch:
             pass
-        elif risk_d is not None and risk_high is not None and float(risk_d) >= float(risk_high) - float(tol):
+        elif (
+            risk_d is not None
+            and risk_high is not None
+            and float(risk_d) >= float(risk_high) - float(tol)
+        ):
             pass
-        elif risk_1h is not None and crash_risk1h_thr is not None and float(risk_1h) >= float(crash_risk1h_thr) - float(tol):
+        elif (
+            risk_1h is not None
+            and crash_risk1h_thr is not None
+            and float(risk_1h) >= float(crash_risk1h_thr) - float(tol)
+        ):
             pass
         else:
             errs.append("ra4_no_extreme_trigger")
@@ -144,8 +154,10 @@ def _collect_history(
     try:
         for i in range(total):
             ts = int(now_ms - i * st)
-            svc._now_ms = (lambda t=ts: int(t))
-            snap = svc._macro_btc_dir_snapshot(timeframe=str(timeframe), horizon_h=int(horizon_h), short_n=int(short_n))
+            svc._now_ms = lambda t=ts: int(t)
+            snap = svc._macro_btc_dir_snapshot(
+                timeframe=str(timeframe), horizon_h=int(horizon_h), short_n=int(short_n)
+            )
             if not isinstance(snap, dict):
                 snap = {"ok": False, "error": "invalid_snapshot_type"}
             row = {

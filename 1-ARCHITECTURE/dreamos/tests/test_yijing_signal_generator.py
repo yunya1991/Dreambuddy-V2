@@ -1,12 +1,12 @@
 """YijingSignalGenerator test suite."""
-import pytest
+
+import sys  # noqa: I001
 from pathlib import Path
-import sys
 
 BASE = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE))
 
-from dreamos.capabilities.trading.yijing_signal_generator import YijingSignalGenerator
+from dreamos.capabilities.trading.yijing_signal_generator import YijingSignalGenerator  # noqa: E402
 
 
 def test_yijing_signal_generator_initialization():
@@ -76,6 +76,7 @@ def test_yijing_signal_generator_hexagram_structure():
 
 # ---- Task 2: Pool integration ----
 
+
 def test_yijing_generate_from_pools():
     """Test generate_from_pools processes a full coin pool."""
     gen = YijingSignalGenerator(seed=42)
@@ -90,25 +91,52 @@ def test_yijing_generate_from_pools():
     }
     market_data_batch = {
         "BTC": {
-            "symbol": "BTC", "supply_demand_score": 0.65, "technical_score": 0.60,
-            "capital_flow_score": 0.55, "sentiment_score": 0.50,
-            "trend_strength": 0.70, "volatility": 0.30, "volume_ratio": 1.2,
-            "price_position": 0.45, "ma5": 100.0, "ma10": 98.0, "ma20": 95.0,
-            "momentum_direction": "UP", "close_price": 100.0,
+            "symbol": "BTC",
+            "supply_demand_score": 0.65,
+            "technical_score": 0.60,
+            "capital_flow_score": 0.55,
+            "sentiment_score": 0.50,
+            "trend_strength": 0.70,
+            "volatility": 0.30,
+            "volume_ratio": 1.2,
+            "price_position": 0.45,
+            "ma5": 100.0,
+            "ma10": 98.0,
+            "ma20": 95.0,
+            "momentum_direction": "UP",
+            "close_price": 100.0,
         },
         "ETH": {
-            "symbol": "ETH", "supply_demand_score": 0.60, "technical_score": 0.55,
-            "capital_flow_score": 0.50, "sentiment_score": 0.45,
-            "trend_strength": 0.65, "volatility": 0.35, "volume_ratio": 1.1,
-            "price_position": 0.40, "ma5": 50.0, "ma10": 49.0, "ma20": 48.0,
-            "momentum_direction": "UP", "close_price": 50.0,
+            "symbol": "ETH",
+            "supply_demand_score": 0.60,
+            "technical_score": 0.55,
+            "capital_flow_score": 0.50,
+            "sentiment_score": 0.45,
+            "trend_strength": 0.65,
+            "volatility": 0.35,
+            "volume_ratio": 1.1,
+            "price_position": 0.40,
+            "ma5": 50.0,
+            "ma10": 49.0,
+            "ma20": 48.0,
+            "momentum_direction": "UP",
+            "close_price": 50.0,
         },
         "DOGE": {
-            "symbol": "DOGE", "supply_demand_score": 0.35, "technical_score": 0.30,
-            "capital_flow_score": 0.25, "sentiment_score": 0.20,
-            "trend_strength": 0.25, "volatility": 0.55, "volume_ratio": 0.7,
-            "price_position": 0.80, "ma5": 0.12, "ma10": 0.13, "ma20": 0.14,
-            "momentum_direction": "DOWN", "close_price": 0.12,
+            "symbol": "DOGE",
+            "supply_demand_score": 0.35,
+            "technical_score": 0.30,
+            "capital_flow_score": 0.25,
+            "sentiment_score": 0.20,
+            "trend_strength": 0.25,
+            "volatility": 0.55,
+            "volume_ratio": 0.7,
+            "price_position": 0.80,
+            "ma5": 0.12,
+            "ma10": 0.13,
+            "ma20": 0.14,
+            "momentum_direction": "DOWN",
+            "close_price": 0.12,
         },
     }
     signals = gen.generate_from_pools(pools, market_data_batch)
@@ -137,11 +165,20 @@ def test_yijing_generate_from_pools_missing_data():
     }
     market_data_batch = {
         "BTC": {
-            "symbol": "BTC", "supply_demand_score": 0.65, "technical_score": 0.60,
-            "capital_flow_score": 0.55, "sentiment_score": 0.50,
-            "trend_strength": 0.70, "volatility": 0.30, "volume_ratio": 1.2,
-            "price_position": 0.45, "ma5": 100.0, "ma10": 98.0, "ma20": 95.0,
-            "momentum_direction": "UP", "close_price": 100.0,
+            "symbol": "BTC",
+            "supply_demand_score": 0.65,
+            "technical_score": 0.60,
+            "capital_flow_score": 0.55,
+            "sentiment_score": 0.50,
+            "trend_strength": 0.70,
+            "volatility": 0.30,
+            "volume_ratio": 1.2,
+            "price_position": 0.45,
+            "ma5": 100.0,
+            "ma10": 98.0,
+            "ma20": 95.0,
+            "momentum_direction": "UP",
+            "close_price": 100.0,
         },
     }
     signals = gen.generate_from_pools(pools, market_data_batch)
@@ -152,16 +189,35 @@ def test_yijing_generate_from_pools_missing_data():
 
 # ---- Task 3: Signal fusion and direction decision ----
 
+
 def test_yijing_fuse_signals():
     """Test fuse_signals combines yijing signals with pool scores."""
     gen = YijingSignalGenerator(seed=42)
     signals = {
         "long_signals": [
-            {"symbol": "BTC", "direction": "LONG", "confidence": 0.75, "hexagram": {}, "pool_score": 0.85},
-            {"symbol": "ETH", "direction": "HOLD", "confidence": 0.50, "hexagram": {}, "pool_score": 0.80},
+            {
+                "symbol": "BTC",
+                "direction": "LONG",
+                "confidence": 0.75,
+                "hexagram": {},
+                "pool_score": 0.85,
+            },
+            {
+                "symbol": "ETH",
+                "direction": "HOLD",
+                "confidence": 0.50,
+                "hexagram": {},
+                "pool_score": 0.80,
+            },
         ],
         "short_signals": [
-            {"symbol": "DOGE", "direction": "SHORT", "confidence": 0.65, "hexagram": {}, "pool_score": 0.70},
+            {
+                "symbol": "DOGE",
+                "direction": "SHORT",
+                "confidence": 0.65,
+                "hexagram": {},
+                "pool_score": 0.70,
+            },
         ],
     }
     fused = gen.fuse_signals(signals)
@@ -183,7 +239,13 @@ def test_yijing_fuse_signals_weighting():
     gen = YijingSignalGenerator(seed=42)
     signals = {
         "long_signals": [
-            {"symbol": "BTC", "direction": "LONG", "confidence": 0.80, "hexagram": {}, "pool_score": 0.90},
+            {
+                "symbol": "BTC",
+                "direction": "LONG",
+                "confidence": 0.80,
+                "hexagram": {},
+                "pool_score": 0.90,
+            },
         ],
         "short_signals": [],
     }
@@ -197,10 +259,11 @@ def test_yijing_fuse_signals_weighting():
 
 # ---- Task 4: YijingSignalGeneratorNode ----
 
+
 def test_yijing_signal_generator_node():
     """Test YijingSignalGeneratorNode node wrapper."""
     from dreamos.capabilities.trading.yijing_signal_generator import YijingSignalGeneratorNode
-    from dreamos.shared.state import State, NodeResult, new_state
+    from dreamos.shared.state import NodeResult, new_state
 
     node = YijingSignalGeneratorNode()
     assert node.node_id == "YIJING_SIGNAL"
@@ -239,12 +302,14 @@ def test_yijing_signal_generator_node():
 
 # ---- Task 5: Phase 2 integration test ----
 
+
 def test_phase2_integration():
     """Phase 2 end-to-end: init -> generate -> pools -> fuse -> node."""
     from dreamos.capabilities.trading.yijing_signal_generator import (
-        YijingSignalGenerator, YijingSignalGeneratorNode,
+        YijingSignalGenerator,
+        YijingSignalGeneratorNode,
     )
-    from dreamos.shared.state import State, NodeResult, new_state
+    from dreamos.shared.state import new_state
 
     # Step 1: Initialize generator
     gen = YijingSignalGenerator(seed=42)
@@ -284,18 +349,36 @@ def test_phase2_integration():
     market_batch = {
         "BTC": market_data,
         "ETH": {
-            "symbol": "ETH", "supply_demand_score": 0.60, "technical_score": 0.55,
-            "capital_flow_score": 0.50, "sentiment_score": 0.45,
-            "trend_strength": 0.65, "volatility": 0.35, "volume_ratio": 1.1,
-            "price_position": 0.40, "ma5": 50.0, "ma10": 49.0, "ma20": 48.0,
-            "momentum_direction": "UP", "close_price": 50.0,
+            "symbol": "ETH",
+            "supply_demand_score": 0.60,
+            "technical_score": 0.55,
+            "capital_flow_score": 0.50,
+            "sentiment_score": 0.45,
+            "trend_strength": 0.65,
+            "volatility": 0.35,
+            "volume_ratio": 1.1,
+            "price_position": 0.40,
+            "ma5": 50.0,
+            "ma10": 49.0,
+            "ma20": 48.0,
+            "momentum_direction": "UP",
+            "close_price": 50.0,
         },
         "DOGE": {
-            "symbol": "DOGE", "supply_demand_score": 0.35, "technical_score": 0.30,
-            "capital_flow_score": 0.25, "sentiment_score": 0.20,
-            "trend_strength": 0.25, "volatility": 0.55, "volume_ratio": 0.7,
-            "price_position": 0.80, "ma5": 0.12, "ma10": 0.13, "ma20": 0.14,
-            "momentum_direction": "DOWN", "close_price": 0.12,
+            "symbol": "DOGE",
+            "supply_demand_score": 0.35,
+            "technical_score": 0.30,
+            "capital_flow_score": 0.25,
+            "sentiment_score": 0.20,
+            "trend_strength": 0.25,
+            "volatility": 0.55,
+            "volume_ratio": 0.7,
+            "price_position": 0.80,
+            "ma5": 0.12,
+            "ma10": 0.13,
+            "ma20": 0.14,
+            "momentum_direction": "DOWN",
+            "close_price": 0.12,
         },
     }
     signals = gen.generate_from_pools(pools, market_batch)

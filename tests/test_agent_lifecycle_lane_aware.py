@@ -15,7 +15,9 @@ def _load_module(module_name: str, file_path: Path):
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TOOLS_DIR = REPO_ROOT / "AGENT协作工具" / "github-actions"
 
-BUILD = _load_module("build_agent_lifecycle_payload", TOOLS_DIR / "build_agent_lifecycle_payload.py")
+BUILD = _load_module(
+    "build_agent_lifecycle_payload", TOOLS_DIR / "build_agent_lifecycle_payload.py"
+)
 CHECK = _load_module("check_agent_lifecycle", TOOLS_DIR / "check_agent_lifecycle.py")
 
 
@@ -80,4 +82,3 @@ class LaneAwareLifecycleGuardTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

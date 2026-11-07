@@ -14,7 +14,8 @@ P0-4：装配所有组件并启动 Telegram 监听器。
 9. 创建 TelegramListener（用 bull bot 接收消息）
 10. 启动长轮询
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import asyncio
 import logging
@@ -42,6 +43,7 @@ logger = logging.getLogger("debate.main")
 @dataclass
 class DebateApp:
     """装配完成的应用对象。"""
+
     listener: TelegramListener
     orchestrator: DebateOrchestrator
     command_handler: CommandHandler
@@ -80,11 +82,14 @@ def build_app(config: AppConfig) -> DebateApp:
     bear_tg = TelegramHTTPClient(token=config.telegram.bear_token)
     judge_tg = (
         TelegramHTTPClient(token=config.telegram.judge_token)
-        if config.telegram.judge_token else None
+        if config.telegram.judge_token
+        else None
     )
 
     telegram_dual_bot = TelegramDualBot(
-        bull_bot=bull_tg, bear_bot=bear_tg, judge_bot=judge_tg,
+        bull_bot=bull_tg,
+        bear_bot=bear_tg,
+        judge_bot=judge_tg,
         send_delay=config.telegram.message_interval_sec,
     )
 
@@ -128,8 +133,11 @@ def main(config_path: str | None = None):
         config_path = str(Path(__file__).resolve().parent / "config.yaml")
 
     config = load_config(config_path)
-    logger.info("配置加载完成: max_rounds=%d judge_enabled=%s",
-                config.debate.max_rounds, config.debate.judge_enabled)
+    logger.info(
+        "配置加载完成: max_rounds=%d judge_enabled=%s",
+        config.debate.max_rounds,
+        config.debate.judge_enabled,
+    )
 
     app = build_app(config)
     logger.info("应用装配完成，启动 Telegram 监听器...")

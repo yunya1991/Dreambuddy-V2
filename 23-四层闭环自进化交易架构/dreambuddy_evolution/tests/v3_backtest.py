@@ -7,6 +7,7 @@ V3 回测验证框架 (§1.12.2)
   涨幅>0.3%=多, 跌幅>0.3%=空, 否则=WAIT
   WAIT 不计入准确率分母
 """
+
 import logging
 import sys
 from pathlib import Path
@@ -55,20 +56,22 @@ def _generate_synthetic_klines(symbol: str, n_bars: int, seed: int = 42) -> list
         # liquidation_pressure: 爆仓密度
         liq_pressure = 0.40 + rng.randn() * 0.10
 
-        klines.append({
-            "i": i,
-            "close": close,
-            "high": high,
-            "low": low,
-            "volume": volume,
-            "base_price": base_price,
-            "ma_200": ma_200,
-            "fib_0786": fib_0786,
-            "chip_up_ratio": max(0.01, min(0.99, chip_up)),
-            "chip_down_ratio": max(0.01, min(0.99, chip_down)),
-            "liq_pressure": max(0.0, min(1.0, liq_pressure)),
-            "trend_phase": trend_phase,
-        })
+        klines.append(
+            {
+                "i": i,
+                "close": close,
+                "high": high,
+                "low": low,
+                "volume": volume,
+                "base_price": base_price,
+                "ma_200": ma_200,
+                "fib_0786": fib_0786,
+                "chip_up_ratio": max(0.01, min(0.99, chip_up)),
+                "chip_down_ratio": max(0.01, min(0.99, chip_down)),
+                "liq_pressure": max(0.0, min(1.0, liq_pressure)),
+                "trend_phase": trend_phase,
+            }
+        )
         base_price = close
 
     return klines
@@ -77,7 +80,7 @@ def _generate_synthetic_klines(symbol: str, n_bars: int, seed: int = 42) -> list
 def _build_kline_window(klines: list[dict], idx: int, window: int = 30) -> dict:
     """从K线列表中构建滑动窗口数据（供 L1 R 向量计算）"""
     start = max(0, idx - window + 1)
-    window_klines = klines[start:idx + 1]
+    window_klines = klines[start : idx + 1]
     closes = [k["close"] for k in window_klines]
     highs = [k["high"] for k in window_klines]
     lows = [k["low"] for k in window_klines]
@@ -135,8 +138,12 @@ def run_backtest(
     """
     try:
         if n_bars <= 0:
-            return {"alignment_rate": 0.0, "total_predictions": 0,
-                    "correct_predictions": 0, "wait_count": 0}
+            return {
+                "alignment_rate": 0.0,
+                "total_predictions": 0,
+                "correct_predictions": 0,
+                "wait_count": 0,
+            }
 
         # 生成合成数据
         klines = _generate_synthetic_klines(symbol, n_bars + 1)
@@ -156,6 +163,7 @@ def run_backtest(
             if use_random:
                 # 随机基线
                 import random
+
                 rng = random.Random(i)
                 d_star = rng.choice(["long", "short", "WAIT"])
             else:
@@ -211,5 +219,9 @@ def run_backtest(
 
     except Exception as e:
         logger.warning("[FO] backtest crash: %s", e)
-        return {"alignment_rate": 0.0, "total_predictions": 0,
-                "correct_predictions": 0, "wait_count": 0}
+        return {
+            "alignment_rate": 0.0,
+            "total_predictions": 0,
+            "correct_predictions": 0,
+            "wait_count": 0,
+        }

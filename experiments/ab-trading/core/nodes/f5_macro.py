@@ -8,10 +8,11 @@ FAIL-OPEN: DataCenterClient 不可用时返回中性
 SKILL.md 调用路径: experiments/ab-trading/core/nodes/f5_macro
 """
 
-from typing import Dict, Any
+from typing import Dict, Any  # noqa: I001
 
 try:
     from core.modules.data_center_adapter import get_data_center_client
+
     _DC_OK = True
 except ImportError:
     _DC_OK = False
@@ -50,7 +51,7 @@ def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
             if client.is_available():
                 macro = client.get_macro()
                 source = "data_center"
-                reasoning.append(f"[F5宏观] 数据源: 数据采集中心")
+                reasoning.append("[F5宏观] 数据源: 数据采集中心")
 
                 # VIX
                 if macro.vix is not None:
@@ -74,11 +75,11 @@ def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
                 if macro.treasury_yield_10y_2y is not None:
                     reasoning.append(f"  📉 10Y-2Y利差: {macro.treasury_yield_10y_2y:.2f}%")
             else:
-                reasoning.append(f"[F5宏观] 数据源: 本地（数据采集中心不可用）")
+                reasoning.append("[F5宏观] 数据源: 本地（数据采集中心不可用）")
         except Exception as e:
             reasoning.append(f"[F5宏观] 数据源: 本地（{str(e)[:30]}）")
     else:
-        reasoning.append(f"[F5宏观] 数据源: 本地（模块未加载）")
+        reasoning.append("[F5宏观] 数据源: 本地（模块未加载）")
 
     # ── 宏观方向判断 ──────────────────────────────────────────────
     direction = "HOLD"
@@ -117,7 +118,9 @@ def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
         # 10年-2年利差倒挂 = 衰退信号
         if macro.treasury_yield_10y_2y is not None:
             if macro.treasury_yield_10y_2y < 0:
-                reasoning.append(f"  ⚠️ 10Y-2Y利差倒挂 ({macro.treasury_yield_10y_2y:.2f}%)，衰退信号")
+                reasoning.append(
+                    f"  ⚠️ 10Y-2Y利差倒挂 ({macro.treasury_yield_10y_2y:.2f}%)，衰退信号"
+                )
 
         # SPY 趋势
         if macro.spy_price is not None:
@@ -142,7 +145,7 @@ def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
             "m2": macro.m2 if macro else None,
             "treasury_yield_10y_2y": macro.treasury_yield_10y_2y if macro else None,
             "fed_balance_sheet": macro.fed_balance_sheet if macro else None,
-        }
+        },
     }
 
 

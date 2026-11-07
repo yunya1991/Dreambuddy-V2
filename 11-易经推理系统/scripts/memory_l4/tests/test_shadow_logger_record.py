@@ -5,9 +5,9 @@
 
 对应 Plan §T_B3: record_polling() 记录逻辑。
 """
+
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -18,8 +18,8 @@ import pytest
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2.storage import EvolutionStorageSQLite
-from bcrm2.shadow_logger import ShadowLogger, SHADOW_LOGGER_ENABLED
+from bcrm2.shadow_logger import ShadowLogger  # noqa: E402
+from bcrm2.storage import EvolutionStorageSQLite  # noqa: E402
 
 
 @pytest.fixture
@@ -101,7 +101,11 @@ def _make_mock_mapper():
         "short_threshold_mult": (0.8, 1.1),
     }
     mock.map_sector_weights.return_value = {
-        "defi": 0.25, "ai": 0.30, "rwa": 0.15, "meme": 0.10, "l2": 0.20,
+        "defi": 0.25,
+        "ai": 0.30,
+        "rwa": 0.15,
+        "meme": 0.10,
+        "l2": 0.20,
     }
     return mock
 
@@ -109,6 +113,7 @@ def _make_mock_mapper():
 # ================================================================
 # T_B3: record_polling() 记录逻辑
 # ================================================================
+
 
 class TestShadowLoggerRecord:
     """验证 record_polling() 核心记录逻辑。"""
@@ -181,7 +186,9 @@ class TestShadowLoggerRecord:
             logger.record_polling("BTC", _make_inference(), _make_actual_params())
 
         # predictor 只被调用 1 次（缓存命中，predict 或 predict_with_fallback 均算）
-        _total_calls = mock_predictor.predict.call_count + mock_predictor.predict_with_fallback.call_count
+        _total_calls = (
+            mock_predictor.predict.call_count + mock_predictor.predict_with_fallback.call_count
+        )
         assert _total_calls == 1
 
         # 两条记录都存在

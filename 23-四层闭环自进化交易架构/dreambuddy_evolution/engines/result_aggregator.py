@@ -4,6 +4,7 @@
 
 来源: SPEC v0.3 §2.B — kline_event_handler 多职责缝合体拆分
 """
+
 from __future__ import annotations
 
 import logging
@@ -38,6 +39,7 @@ class ResultAggregator:
             self._router = router
         else:
             from dreambuddy_evolution.engines.engine_router import EngineRouter
+
             self._router = EngineRouter()
         self._trader: Any = None
         # 方向预测透传（从 store_pre_trade_snapshot 读取）
@@ -51,6 +53,7 @@ class ResultAggregator:
         """延迟初始化 TradeSettlementBridge"""
         if self._bridge is None:
             from dreambuddy_evolution.engines.trade_settlement_bridge import TradeSettlementBridge
+
             self._bridge = TradeSettlementBridge(pipeline=self._pipeline)
         return self._bridge
 
@@ -71,7 +74,7 @@ class ResultAggregator:
         if self._build_position_callback is None:
             return
         try:
-            cb_kwargs = dict(
+            cb_kwargs = dict(  # noqa: C408
                 symbol=symbol,
                 action=action,
                 u_open=position_mult,
@@ -100,6 +103,7 @@ class ResultAggregator:
         """存储 pre_trade_snapshot（FAIL-OPEN）"""
         try:
             from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
             dim_predictions = getattr(self._router, "_last_dimension_predictions", {}) or {}
             snapshot = ReflectionEngine().create_snapshot(
                 symbol=symbol,
@@ -135,13 +139,21 @@ class ResultAggregator:
             - conviction: 宏观置信度 [0,1]
             - macro_info: 详细信息字典
         """
-        inactive = ("", 0.0, {
-            "active": False, "filter_level": "soft",
-            "direction": "", "conviction": 0.0,
-            "position_params": None, "adjusted_params": None,
-        })
+        inactive = (
+            "",
+            0.0,
+            {
+                "active": False,
+                "filter_level": "soft",
+                "direction": "",
+                "conviction": 0.0,
+                "position_params": None,
+                "adjusted_params": None,
+            },
+        )
         try:
             from dreambuddy_evolution.agi_config import is_enabled
+
             if not is_enabled("enable_contradiction_driven_layer"):
                 return inactive
             ec = kline_data.get("event_context") or {}
@@ -183,7 +195,11 @@ class ResultAggregator:
             }
             logger.debug(
                 "[MacroFilter] %s active dir=%s conf=%.2f priced_in=%.2f tier=%s",
-                kline_data.get("symbol", "?"), macro_dir, conviction, priced_in, macro_tier,
+                kline_data.get("symbol", "?"),
+                macro_dir,
+                conviction,
+                priced_in,
+                macro_tier,
             )
             return macro_dir, conviction, macro_info
         except Exception as e:

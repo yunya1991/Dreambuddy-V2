@@ -10,11 +10,10 @@ Spec: docs/superpowers/specs/2026-09-21-washout-detector-design.md §4.3
 
 FAIL-OPEN: 任何异常 → 返回 False（不触发），绝不阻塞交易。
 """
-from __future__ import annotations
 
-from typing import Optional
+from __future__ import annotations  # noqa: I001
 
-import numpy as np
+
 import pandas as pd
 
 __all__ = ["WashoutTriggerGate"]

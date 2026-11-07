@@ -3,6 +3,7 @@
 集中存放跨模块复用的数值安全转换与裁剪函数，
 消除各业务模块中的重复定义。
 """
+
 from __future__ import annotations
 
 import math

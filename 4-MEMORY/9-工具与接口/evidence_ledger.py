@@ -12,6 +12,7 @@ SPEC: SPEC-CognitiveSystem-Evolution.md §2.3.4 P0-3 + §3.5 M3（Merkle树）
 
 工程约束：FAIL-OPEN / 零外部依赖 / 纯 Python 标准库
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -23,10 +24,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-
 # ============================================================
 # EvidenceEntry — 决策审计条目
 # ============================================================
+
 
 @dataclass
 class EvidenceEntry:
@@ -55,7 +56,7 @@ class EvidenceEntry:
     entry_id: str = field(default_factory=lambda: f"el_{uuid.uuid4().hex}")
     timestamp: int = field(default_factory=lambda: time.time_ns())
     receipt_hash: str = ""  # append 时计算
-    prev_hash: str = ""    # append 时填充
+    prev_hash: str = ""  # append 时填充
     git_commit_hash: str = ""  # P1-5: 链式溯源等价物（git commit hash）
 
     def to_ledger_json(self) -> str:
@@ -92,6 +93,7 @@ class EvidenceEntry:
 # ============================================================
 # Merkle 树辅助函数
 # ============================================================
+
 
 def _sha256(data: str) -> str:
     """计算字符串的 SHA-256 哈希。"""
@@ -226,8 +228,7 @@ class EvidenceLedger:
             return _GENESIS_HASH
         try:
             cursor = self._conn.execute(
-                "SELECT receipt_hash FROM evidence_entries "
-                "ORDER BY timestamp DESC LIMIT 1"
+                "SELECT receipt_hash FROM evidence_entries " "ORDER BY timestamp DESC LIMIT 1"
             )
             row = cursor.fetchone()
             return row[0] if row else _GENESIS_HASH
@@ -372,19 +373,21 @@ class EvidenceLedger:
             cursor = self._conn.execute(sql, params)
             results: list[EvidenceEntry] = []
             for row in cursor.fetchall():
-                results.append(EvidenceEntry(
-                    entry_id=row[0],
-                    subject=row[1],
-                    relation=row[2],
-                    object=row[3],
-                    timestamp=row[4],
-                    source=row[5],
-                    confidence=row[6],
-                    level=row[7],
-                    receipt_hash=row[8],
-                    prev_hash=row[9],
-                    git_commit_hash=row[10] if len(row) > 10 else "",
-                ))
+                results.append(
+                    EvidenceEntry(
+                        entry_id=row[0],
+                        subject=row[1],
+                        relation=row[2],
+                        object=row[3],
+                        timestamp=row[4],
+                        source=row[5],
+                        confidence=row[6],
+                        level=row[7],
+                        receipt_hash=row[8],
+                        prev_hash=row[9],
+                        git_commit_hash=row[10] if len(row) > 10 else "",
+                    )
+                )
             return results
         except Exception:
             return []
@@ -547,8 +550,17 @@ class EvidenceLedger:
                      scope = ?,
                      verify_failures = 0,
                      last_reverify_status = ''""",
-                (memory_id, now_ns, git_commit_hash, dependency_fp, scope,
-                 now_ns, git_commit_hash, dependency_fp, scope),
+                (
+                    memory_id,
+                    now_ns,
+                    git_commit_hash,
+                    dependency_fp,
+                    scope,
+                    now_ns,
+                    git_commit_hash,
+                    dependency_fp,
+                    scope,
+                ),
             )
             self._conn.commit()
             return True
@@ -576,8 +588,7 @@ class EvidenceLedger:
             return False
         try:
             self._conn.execute(
-                "UPDATE trust_state SET last_reverify_status = 'failed' "
-                "WHERE memory_id = ?",
+                "UPDATE trust_state SET last_reverify_status = 'failed' " "WHERE memory_id = ?",
                 (memory_id,),
             )
             self._conn.commit()
@@ -633,10 +644,21 @@ class EvidenceLedger:
             if row is None:
                 return (False, "no_trust_state")
 
-            first_verified_at, stored_hash, stored_dep_fp, \
-                stored_scope, verify_failures, last_reverify = (
-                    row[0], row[1], row[2], row[3], row[4], row[5],
-                )
+            (
+                first_verified_at,
+                stored_hash,
+                stored_dep_fp,
+                stored_scope,
+                verify_failures,
+                last_reverify,
+            ) = (
+                row[0],
+                row[1],
+                row[2],
+                row[3],
+                row[4],
+                row[5],
+            )
 
             # 失效条件 1: 代码变更（git_commit_hash 不匹配）
             if stored_hash and current_git_hash and stored_hash != current_git_hash:
@@ -660,8 +682,7 @@ class EvidenceLedger:
                     return (False, "timeout")
 
             # 失效条件 4: 依赖指纹变化
-            if stored_dep_fp and current_dependency_fp and \
-               stored_dep_fp != current_dependency_fp:
+            if stored_dep_fp and current_dependency_fp and stored_dep_fp != current_dependency_fp:
                 return (False, "dependency_changed")
 
             # 失效条件 5: scope 漂移
@@ -682,8 +703,7 @@ class EvidenceLedger:
             return
         try:
             cursor = self._conn.execute(
-                "SELECT entry_id FROM evidence_entries "
-                "ORDER BY timestamp ASC"
+                "SELECT entry_id FROM evidence_entries " "ORDER BY timestamp ASC"
             )
             rows = cursor.fetchall()
             if index >= len(rows):

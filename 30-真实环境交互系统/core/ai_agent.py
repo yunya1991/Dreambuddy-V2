@@ -20,6 +20,7 @@
 - 自定义工具: https://docs.browser-use.com/open-source/customize/tools
 - 真实浏览器: https://docs.browser-use.com/open-source/customize/browser/real-browser
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -28,7 +29,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from .llm_factory import create_llm, get_use_vision, validate_llm_config
+from .llm_factory import create_llm, get_use_vision
 from .result_verifier import ResultVerifier, VerificationResult
 
 logger = logging.getLogger("real_env.ai_agent")
@@ -37,6 +38,7 @@ logger = logging.getLogger("real_env.ai_agent")
 @dataclass
 class AgentStep:
     """Agent 执行的单步记录（来自 history）"""
+
     step: int
     action: str = ""
     description: str = ""
@@ -46,6 +48,7 @@ class AgentStep:
 @dataclass
 class AgentResult:
     """AI Agent 执行结果"""
+
     task: str
     passed: bool
     final_result: Optional[str] = None
@@ -60,8 +63,10 @@ class AgentResult:
             "task": self.task,
             "passed": self.passed,
             "final_result": self.final_result,
-            "steps": [{"step": s.step, "action": s.action, "description": s.description}
-                      for s in self.steps],
+            "steps": [
+                {"step": s.step, "action": s.action, "description": s.description}
+                for s in self.steps
+            ],
             "duration_ms": self.duration_ms,
             "verification": self.verification.to_dict() if self.verification else None,
             "error": self.error,
@@ -106,9 +111,9 @@ class AIAgentRunner:
             logger.info("LLM prepared for AI Agent")
         return self._llm
 
-    async def run_task(self, task: str,
-                       assertions: Optional[Dict[str, Any]] = None,
-                       tools: Optional[Any] = None) -> AgentResult:
+    async def run_task(
+        self, task: str, assertions: Optional[Dict[str, Any]] = None, tools: Optional[Any] = None
+    ) -> AgentResult:
         """运行一个自然语言任务。
 
         Args:
@@ -129,15 +134,18 @@ class AIAgentRunner:
         except Exception as e:
             logger.error("Failed to prepare LLM: %s", e)
             return AgentResult(
-                task=task, passed=False, error=f"LLM init failed: {e}",
+                task=task,
+                passed=False,
+                error=f"LLM init failed: {e}",
                 duration_ms=0,
             )
 
         try:
-            from browser_use import Agent
+            from browser_use import Agent  # noqa: F401
         except ImportError as e:
             return AgentResult(
-                task=task, passed=False,
+                task=task,
+                passed=False,
                 error=f"browser-use not installed: {e}",
                 duration_ms=0,
             )
@@ -157,22 +165,28 @@ class AIAgentRunner:
         if tools is not None:
             agent_kwargs["tools"] = tools
 
-        logger.info("Launching Agent (max_steps=%d, use_vision=%s)",
-                    self._max_steps, agent_kwargs["use_vision"])
+        logger.info(
+            "Launching Agent (max_steps=%d, use_vision=%s)",
+            self._max_steps,
+            agent_kwargs["use_vision"],
+        )
 
         # 运行 Agent（max_steps 通过 run() 传递，不是构造函数参数）
         try:
             history = await agent_run_with_timeout(agent_kwargs, self._max_steps)
         except asyncio.TimeoutError:
             return AgentResult(
-                task=task, passed=False,
+                task=task,
+                passed=False,
                 error=f"Agent timed out after {self._max_steps} steps",
                 duration_ms=(time.time() - start_time) * 1000,
             )
         except Exception as e:
             logger.error("Agent execution failed: %s", e)
             return AgentResult(
-                task=task, passed=False, error=str(e),
+                task=task,
+                passed=False,
+                error=str(e),
                 duration_ms=(time.time() - start_time) * 1000,
             )
 
@@ -210,11 +224,9 @@ class AIAgentRunner:
         )
 
         if result.passed:
-            logger.info("AI Agent task PASSED (%.0fms, %d steps)",
-                        duration_ms, len(steps))
+            logger.info("AI Agent task PASSED (%.0fms, %d steps)", duration_ms, len(steps))
         else:
-            logger.error("AI Agent task FAILED (%.0fms, %d steps)",
-                         duration_ms, len(steps))
+            logger.error("AI Agent task FAILED (%.0fms, %d steps)", duration_ms, len(steps))
 
         return result
 
@@ -234,7 +246,8 @@ class AIAgentRunner:
         task = scenario.get("task")
         if not task:
             return AgentResult(
-                task="", passed=False,
+                task="",
+                passed=False,
                 error="AI scenario must contain 'task' field",
             )
 
@@ -255,8 +268,7 @@ class AIAgentRunner:
         page = await self._get_current_page()
         if page is None:
             logger.warning(
-                "Cannot get Playwright Page from Browser Use Browser; "
-                "verification skipped"
+                "Cannot get Playwright Page from Browser Use Browser; " "verification skipped"
             )
             return VerificationResult(
                 name="verification",
@@ -271,7 +283,9 @@ class AIAgentRunner:
         except Exception as e:
             logger.error("Verification failed: %s", e)
             return VerificationResult(
-                name="verification", passed=False, error=str(e),
+                name="verification",
+                passed=False,
+                error=str(e),
             )
 
     async def _get_current_page(self):
@@ -304,6 +318,7 @@ class AIAgentRunner:
                     result = m()
                     # async 方法返回 coroutine
                     import inspect
+
                     if inspect.iscoroutine(result):
                         page = await result
                     else:
@@ -347,11 +362,13 @@ class AIAgentRunner:
                 elif isinstance(item, dict):
                     action = item.get("action", "")
 
-                steps.append(AgentStep(
-                    step=i + 1,
-                    action=action,
-                    description=description,
-                ))
+                steps.append(
+                    AgentStep(
+                        step=i + 1,
+                        action=action,
+                        description=description,
+                    )
+                )
         except Exception as e:
             logger.debug("Step extraction failed (non-fatal): %s", e)
 
@@ -373,6 +390,7 @@ async def agent_run_with_timeout(agent_kwargs: dict, max_steps: int):
     - Browser Use Agent.run() 内部已是异步，这里额外设置整体超时
     """
     from browser_use import Agent
+
     agent = Agent(**agent_kwargs)
 
     # 单步 ~30s 超时，总超时 = max_steps * 30
@@ -413,9 +431,7 @@ def create_verification_tools(verifier: ResultVerifier):
         # 实际实现需要 Browser Use 提供的 page 上下文
         return ActionResult(extracted_content="DOM verification registered")
 
-    @tools.action(
-        description="Take a verification screenshot and compare with baseline."
-    )
+    @tools.action(description="Take a verification screenshot and compare with baseline.")
     def verify_screenshot(baseline_path: str, threshold: float = 0.05) -> ActionResult:
         return ActionResult(extracted_content="Screenshot verification registered")
 

@@ -8,49 +8,52 @@
    截止日期 2026-09-30（配合 dreambuddy_dal.compat 兼容层）。
    SSoT 文档：19-数据访问层/docs/SCHEMA_DESIGN.md §3.1 / §3.2
 """
+
+import fcntl
 import json
+import logging
 import os
 import sys
 import time
 import uuid
-import fcntl
-import logging
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
-from pathlib import Path
-from dataclasses import dataclass, field, asdict
 
 logger = logging.getLogger(__name__)
 
 # 自动注入 19-数据访问层路径，使 dreambuddy_dal 可被 import（避免 ModuleNotFoundError）
 # trading_utils.py 位于 11-易经推理系统/scripts/memory_l4/，向上 3 层到 dreambuddy-v2/，再加 19-数据访问层/
 _DAL_ROOT = os.path.abspath(
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir, os.pardir, "19-数据访问层")
+    os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir, os.pardir, "19-数据访问层"
+    )
 )
 if os.path.isdir(_DAL_ROOT) and _DAL_ROOT not in sys.path:
     sys.path.insert(0, _DAL_ROOT)
 
-from scripts.memory_l4.paths import memory_l4_stats_dir, memory_l4_cases_dir, memory_l4_dir
-from scripts.memory_l4.trade_event import TradeEvent
-from scripts.memory_l4.case_registry import UnifiedCaseRegistry
-
+from scripts.memory_l4.case_registry import UnifiedCaseRegistry  # noqa: E402
+from scripts.memory_l4.paths import memory_l4_dir, memory_l4_stats_dir  # noqa: E402
+from scripts.memory_l4.trade_event import TradeEvent  # noqa: E402
 
 # ── 数据结构 ──────────────────────────────────────────
+
 
 @dataclass
 class TradeRecord:
     """单笔交易记录"""
+
     trade_id: str = ""
     coin: str = ""
     inst_id: str = ""
-    direction: str = ""       # long / short
+    direction: str = ""  # long / short
     entry_price: float = 0.0
     exit_price: float = 0.0
     entry_time: str = ""
     exit_time: str = ""
     pnl: float = 0.0
     pnl_pct: float = 0.0
-    exit_reason: str = ""     # signal_reverse / stop_loss / take_profit / manual
+    exit_reason: str = ""  # signal_reverse / stop_loss / take_profit / manual
     confidence: float = 0.0
     hexagram: str = ""
     liangyi_state: Dict = field(default_factory=dict)
@@ -58,11 +61,13 @@ class TradeRecord:
     market_snapshot: Dict = field(default_factory=dict)
     contradiction_list: List[Dict] = field(default_factory=list)
     strategy_source: str = ""  # bcrm / external (马丁等其他策略)
-    enhance_info: Dict = field(default_factory=dict)  # 震荡市增强器信息（regime, bollinger, sl_mult等）
+    enhance_info: Dict = field(
+        default_factory=dict
+    )  # 震荡市增强器信息（regime, bollinger, sl_mult等）
     reduce_count: int = 0  # E项优化：累计减仓次数，用于max_reduce_count限制
     # ATR 基线 SL/TP 收益率（开仓时记录，供易经离场系统调制使用）
-    base_sl_roi: float = 0.0   # 开仓时 ATR 基线止损收益率（如 0.12 = 12%）
-    base_tp_roi: float = 0.0   # 开仓时 ATR 基线止盈收益率（如 0.60 = 60%）
+    base_sl_roi: float = 0.0  # 开仓时 ATR 基线止损收益率（如 0.12 = 12%）
+    base_tp_roi: float = 0.0  # 开仓时 ATR 基线止盈收益率（如 0.60 = 60%）
     # P2-07: 形态预测器 regime + 参数乘数快照（开仓时记录，事后审计用）
     regime_pred: str = None
     regime_multipliers: Dict = None
@@ -70,12 +75,12 @@ class TradeRecord:
     # {"type": "ranked_tp", "wait_cycles": 2, "trigger_rank": float, "set_at_cycle": int}
     reduce_plan: Optional[Dict] = None
     # 轻仓试错标记 + 评估周期（v4.5 新增；P1 改为定期重评估）
-    is_trial: bool = False         # 是否轻仓试错开仓
+    is_trial: bool = False  # 是否轻仓试错开仓
     trial_eval_done: bool = False  # 是否已完成过首次评估（向后兼容）
-    trial_open_ts: float = 0.0     # 试错开仓时间戳（秒），用于计算评估周期
+    trial_open_ts: float = 0.0  # 试错开仓时间戳（秒），用于计算评估周期
     last_trial_eval_ts: float = 0.0  # 上次试错评估时间戳（秒），用于 60min 定期重评估
     # v4.6：开仓时的过滤层共识分快照，用于基础阈值动态调节（聚合非单笔）
-    score_consensus: float = 0.0   # 开仓时 ElasticGate3L 共识分 score_consensus
+    score_consensus: float = 0.0  # 开仓时 ElasticGate3L 共识分 score_consensus
     gate_base_threshold: float = 0.40  # 开仓时的基础阈值快照
     # — BDSM 2026-09 协作 · 仓位子池隔离标签 —
     #   "bdsm"  : BDSM 权威池币种（BDSM_COINS，≤3 仓），触发 BDSM 方向/仓位/出场协作
@@ -99,6 +104,7 @@ class TradeRecord:
 @dataclass
 class DailyStats:
     """每日绩效统计"""
+
     date: str = ""
     total_trades: int = 0
     win_trades: int = 0
@@ -122,20 +128,24 @@ class DailyStats:
 @dataclass
 class RiskState:
     """风控状态"""
+
     daily_pnl: float = 0.0
-    daily_loss_limit: float = -100.0       # 日最大亏损（USDT，兜底固定值）
-    loss_limit_pct: float = 0.20           # 日最大亏损比例（相对当前权益，0.20=20%）
-    max_consecutive_losses: int = 999      # 最大连续亏损次数（已禁用，设极大值不再触发）
+    daily_loss_limit: float = -100.0  # 日最大亏损（USDT，兜底固定值）
+    loss_limit_pct: float = 0.20  # 日最大亏损比例（相对当前权益，0.20=20%）
+    max_consecutive_losses: int = 999  # 最大连续亏损次数（已禁用，设极大值不再触发）
     current_consecutive_losses: int = 0
     trading_halted: bool = False
     halt_reason: str = ""
-    position_size_pct: float = 0.10        # 默认单笔仓位 10%
+    position_size_pct: float = 0.10  # 默认单笔仓位 10%
     min_position_size_pct: float = 0.02
     max_position_size_pct: float = 0.20
-    min_position_usdt: float = 250.0      # 最低名义仓位价值（USDT，传给OKX的下单金额；=50U保证金×5x杠杆）
+    min_position_usdt: float = (
+        250.0  # 最低名义仓位价值（USDT，传给OKX的下单金额；=50U保证金×5x杠杆）
+    )
 
 
 # ── 绩效统计器 ────────────────────────────────────────
+
 
 class PerformanceTracker:
     """交易绩效跟踪器"""
@@ -165,8 +175,13 @@ class PerformanceTracker:
                         line = line.strip()
                         if line:
                             data = json.loads(line)
-                            rec = TradeRecord(**{k: v for k, v in data.items()
-                                               if k in TradeRecord.__dataclass_fields__})
+                            rec = TradeRecord(
+                                **{
+                                    k: v
+                                    for k, v in data.items()
+                                    if k in TradeRecord.__dataclass_fields__
+                                }
+                            )
                             self.trades.append(rec)
             except Exception:
                 pass
@@ -176,8 +191,13 @@ class PerformanceTracker:
                 with open(self.daily_stats_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 for date_str, stats_data in data.items():
-                    ds = DailyStats(**{k: v for k, v in stats_data.items()
-                                     if k in DailyStats.__dataclass_fields__})
+                    ds = DailyStats(
+                        **{
+                            k: v
+                            for k, v in stats_data.items()
+                            if k in DailyStats.__dataclass_fields__
+                        }
+                    )
                     self.daily_stats[date_str] = ds
             except Exception:
                 pass
@@ -189,7 +209,11 @@ class PerformanceTracker:
                 running_equity += t.pnl
                 if running_equity > self.peak_equity:
                     self.peak_equity = running_equity
-                dd = (self.peak_equity - running_equity) / self.peak_equity if self.peak_equity else 0
+                dd = (
+                    (self.peak_equity - running_equity) / self.peak_equity
+                    if self.peak_equity
+                    else 0
+                )
                 if dd > self.max_drawdown:
                     self.max_drawdown = dd
             self.current_equity = running_equity
@@ -244,14 +268,14 @@ class PerformanceTracker:
             ds.win_trades += 1
             ds.current_consecutive_wins += 1
             ds.current_consecutive_losses = 0
-            ds.max_consecutive_wins = max(ds.max_consecutive_wins,
-                                          ds.current_consecutive_wins)
+            ds.max_consecutive_wins = max(ds.max_consecutive_wins, ds.current_consecutive_wins)
         else:
             ds.loss_trades += 1
             ds.current_consecutive_losses += 1
             ds.current_consecutive_wins = 0
-            ds.max_consecutive_losses = max(ds.max_consecutive_losses,
-                                            ds.current_consecutive_losses)
+            ds.max_consecutive_losses = max(
+                ds.max_consecutive_losses, ds.current_consecutive_losses
+            )
 
         ds.win_rate = ds.win_trades / ds.total_trades if ds.total_trades else 0
 
@@ -328,9 +352,10 @@ class PerformanceTracker:
         sharpe_ratio = 0.0
         if len(daily_pnls) > 1:
             import numpy as _np
+
             std = _np.std(daily_pnls)
             if std > 0:
-                sharpe_ratio = _np.mean(daily_pnls) / std * (252 ** 0.5)
+                sharpe_ratio = _np.mean(daily_pnls) / std * (252**0.5)
 
         return {
             "total_trades": total_trades,
@@ -346,24 +371,27 @@ class PerformanceTracker:
             "peak_equity": self.peak_equity,
             "initial_equity": self.initial_equity,
             "sharpe_ratio": sharpe_ratio,  # P2新增
-            "daily_returns": daily_pnls,   # P2新增
+            "daily_returns": daily_pnls,  # P2新增
             "trading_days": len(daily_pnls),  # P2新增
         }
 
 
 # ── 风险控制器 ────────────────────────────────────────
 
+
 class RiskManager:
     """风险控制器：动态仓位 + 日亏损限制 + 连续亏损熔断"""
 
-    def __init__(self,
-                 daily_loss_limit_usdt: float = -30.0,
-                 max_consecutive_losses: int = 999,
-                 default_position_pct: float = 0.10,
-                 min_position_pct: float = 0.02,
-                 max_position_pct: float = 0.20,
-                 min_position_usdt: float = 250.0,
-                 loss_limit_pct: float = 0.20):
+    def __init__(
+        self,
+        daily_loss_limit_usdt: float = -30.0,
+        max_consecutive_losses: int = 999,
+        default_position_pct: float = 0.10,
+        min_position_pct: float = 0.02,
+        max_position_pct: float = 0.20,
+        min_position_usdt: float = 250.0,
+        loss_limit_pct: float = 0.20,
+    ):
         self.state = RiskState(
             daily_loss_limit=daily_loss_limit_usdt,
             loss_limit_pct=loss_limit_pct,
@@ -463,12 +491,20 @@ class RiskManager:
 
         # 动态亏损阈值：亏损超过当前权益的 loss_limit_pct（默认20%）则拦截
         # 兜底固定值 daily_loss_limit（默认-30U，即150U可用金的20%）
-        dynamic_limit = -(current_equity * self.state.loss_limit_pct) if current_equity > 0 else self.state.daily_loss_limit
-        effective_limit = min(dynamic_limit, self.state.daily_loss_limit)  # 取更宽松阈值，确保大余额时按比例放行
+        dynamic_limit = (
+            -(current_equity * self.state.loss_limit_pct)
+            if current_equity > 0
+            else self.state.daily_loss_limit
+        )
+        effective_limit = min(
+            dynamic_limit, self.state.daily_loss_limit
+        )  # 取更宽松阈值，确保大余额时按比例放行
 
         if self.state.daily_pnl <= effective_limit:
-            return {"allowed": False,
-                    "reason": f"日亏损达上限: {self.state.daily_pnl:.2f} <= {effective_limit:.2f} (权益{current_equity:.2f}的{self.state.loss_limit_pct:.0%})"}
+            return {
+                "allowed": False,
+                "reason": f"日亏损达上限: {self.state.daily_pnl:.2f} <= {effective_limit:.2f} (权益{current_equity:.2f}的{self.state.loss_limit_pct:.0%})",
+            }
 
         return {"allowed": True, "reason": ""}
 
@@ -489,9 +525,9 @@ class RiskManager:
         return "HIGH"
 
     @staticmethod
-    def volatility_adaptive_atr_mult(volatility: float,
-                                     base_sl: float = 2.5,
-                                     base_tp_ratio: float = 2.0) -> tuple:
+    def volatility_adaptive_atr_mult(
+        volatility: float, base_sl: float = 2.5, base_tp_ratio: float = 2.0
+    ) -> tuple:
         """波动率自适应 ATR 止损/止盈倍率（连续插值，非离散跳变）。
 
         核心思路：
@@ -516,9 +552,9 @@ class RiskManager:
         return round(sl_mult, 2), round(tp_mult, 2)
 
     @staticmethod
-    def volatility_position_factor(volatility: float,
-                                   f_min: float = 0.55,
-                                   f_max: float = 1.00) -> float:
+    def volatility_position_factor(
+        volatility: float, f_min: float = 0.55, f_max: float = 1.00
+    ) -> float:
         """波动率仓位调整因子（叠加在 P2 base_multiplier 上）。
 
         分段函数：低/正常波动不惩罚，仅高波动缩仓。
@@ -531,6 +567,7 @@ class RiskManager:
               factor = f_max - (f_max - f_min) × sigmoid((vol - 0.04) × 30)
         """
         import math
+
         if volatility < 0.04:
             return 1.0
         sigmoid = 1.0 / (1.0 + math.exp(-(volatility - 0.04) * 30.0))
@@ -538,9 +575,14 @@ class RiskManager:
         return round(factor, 4)
 
     @staticmethod
-    def kelly_half_factor(win_rate: float, avg_win: float, avg_loss: float,
-                          kelly_shrink: float = 0.5,
-                          min_factor: float = 0.25, max_factor: float = 1.25) -> float:
+    def kelly_half_factor(
+        win_rate: float,
+        avg_win: float,
+        avg_loss: float,
+        kelly_shrink: float = 0.5,
+        min_factor: float = 0.25,
+        max_factor: float = 1.25,
+    ) -> float:
         """半凯利仓位系数。
 
         Kelly 公式: f = (p·b − q) / b，其中 p=胜率, q=1-p, b=盈亏比=avg_win/avg_loss
@@ -559,8 +601,9 @@ class RiskManager:
         return factor
 
     @staticmethod
-    def consecutive_loss_factor(loss_streak: int,
-                                factor_map: Optional[Dict[int, float]] = None) -> float:
+    def consecutive_loss_factor(
+        loss_streak: int, factor_map: Optional[Dict[int, float]] = None
+    ) -> float:
         """连续亏损缩仓系数：连亏越多，仓位越小，防止情绪失控与极端段放大回撤。
 
         默认映射：连亏0→1.0；连亏1→0.85；连亏2→0.65；连亏3→0.45；连亏≥4→0.30
@@ -572,9 +615,11 @@ class RiskManager:
         return factor_map.get(loss_streak, 0.30)
 
     @staticmethod
-    def hexagram_class_factor(hexagram: str,
-                              bullish_hexagrams: Optional[set] = None,
-                              bearish_hexagrams: Optional[set] = None) -> Tuple[float, str]:
+    def hexagram_class_factor(
+        hexagram: str,
+        bullish_hexagrams: Optional[set] = None,
+        bearish_hexagrams: Optional[set] = None,
+    ) -> Tuple[float, str]:
         """卦象类型仓位系数（复用 review_engine 中 BULLISH/BEARISH/NEUTRAL 分类）。
 
         - BULLISH（吉卦，做多有利）×1.20  放大仓位
@@ -594,8 +639,9 @@ class RiskManager:
     # ===== Phase B: EV 风险价值雷达 =====
 
     @staticmethod
-    def calc_position_ev(subscores: Dict[str, float],
-                         weights: Dict[str, float]) -> Tuple[float, Dict[str, float]]:
+    def calc_position_ev(
+        subscores: Dict[str, float], weights: Dict[str, float]
+    ) -> Tuple[float, Dict[str, float]]:
         """EV 风险-价值合成（Spec §4）。
 
         数学：base_score = Σ(w_i * s_i)，其中 s_i ∈ [0,1] 归一化子分
@@ -605,18 +651,14 @@ class RiskManager:
         """
         if not subscores:
             return 0.0, {}
-        base_score = sum(
-            float(weights.get(k, 0.0)) * float(v)
-            for k, v in subscores.items()
-        )
+        base_score = sum(float(weights.get(k, 0.0)) * float(v) for k, v in subscores.items())
         ev = base_score - 0.2  # 正偏置，使 Σ(w*0.5)=0.5 → EV=0.3
         return round(ev, 4), dict(subscores)
 
     # ===== Phase C: 多 horizon 预测（S3）=====
 
     @staticmethod
-    def predict_multi_horizon(inference: Dict,
-                              k_candidates: List[int]) -> Dict:
+    def predict_multi_horizon(inference: Dict, k_candidates: List[int]) -> Dict:
         """多 horizon K 线预测（Phase C 占位实现，Spec §4.2）。
 
         基于当前推理的 confidence / direction / 五角得分，为每个候选 K 线数
@@ -633,11 +675,13 @@ class RiskManager:
         base_conf = max(0.10, min(0.99, float(inference.get("confidence", 0.5))))
         base_dir = str(inference.get("direction", "UP"))
         pentagon = inference.get("pentagon_scores") or {}
-        pentagon_avg = (sum(float(v) for v in pentagon.values()) / len(pentagon)) \
-            if pentagon else base_conf
+        pentagon_avg = (
+            (sum(float(v) for v in pentagon.values()) / len(pentagon)) if pentagon else base_conf
+        )
 
         # 为每个 k 生成 horizon 条目（以中=30 为置信度顶峰，高斯衰减）
         import math
+
         peak_k = 30  # 占位：默认最佳 K 线 ~30h（五角越强 → peak 越右移）
         # 用 pentagon_avg 右移 peak：五角高 → 支持更长持有
         peak_k = int(peak_k + (pentagon_avg - 0.5) * 80)  # ±40 偏移
@@ -655,15 +699,16 @@ class RiskManager:
                 direction = base_dir
             else:
                 # 超过 peak 后，若置信度已跌落 < 0.45 → 反向
-                direction = base_dir if c >= 0.45 else \
-                    ("DOWN" if base_dir == "UP" else "UP")
+                direction = base_dir if c >= 0.45 else ("DOWN" if base_dir == "UP" else "UP")
             roi = max_roi_pct * decay
-            horizons.append({
-                "k_bar": int(k),
-                "confidence": round(c, 4),
-                "direction": direction,
-                "expected_roi_pct": round(roi, 6),
-            })
+            horizons.append(
+                {
+                    "k_bar": int(k),
+                    "confidence": round(c, 4),
+                    "direction": direction,
+                    "expected_roi_pct": round(roi, 6),
+                }
+            )
 
         # 简单 recommended_action 占位（具体 HOLD/PREP_EXIT 判定在 _recommend_exit_bars）
         # 这里选最高置信度的 horizon 作为参考点
@@ -712,7 +757,8 @@ class RiskManager:
 
         if not multi_horizon_probs:
             return {
-                "S_curve": {}, "L_curve": {},
+                "S_curve": {},
+                "L_curve": {},
                 "HORIZON_K_STAR": 0,
                 "CONTINUATION_SCORE": 0.0,
                 "SHORT_TERM_REVERSAL_RISK": 0.5,
@@ -726,9 +772,10 @@ class RiskManager:
         cumulative = 0.0
         for h in sorted_horizons:
             probs = multi_horizon_probs[h]
-            p_correct = float(probs.get("P_up", 0.5)) if pos_sign >= 0 \
-                else float(probs.get("P_down", 0.5))
-            cumulative += (p_correct - 0.5)
+            p_correct = (
+                float(probs.get("P_up", 0.5)) if pos_sign >= 0 else float(probs.get("P_down", 0.5))
+            )
+            cumulative += p_correct - 0.5
             S_curve[h] = cumulative
 
         # 2. HORIZON_K_STAR: 第一个 S(k+1) - S(k) ≤ 0 的 k
@@ -744,8 +791,9 @@ class RiskManager:
         L_curve = {}
         for h in sorted_horizons:
             probs = multi_horizon_probs[h]
-            p_correct = float(probs.get("P_up", 0.5)) if pos_sign >= 0 \
-                else float(probs.get("P_down", 0.5))
+            p_correct = (
+                float(probs.get("P_up", 0.5)) if pos_sign >= 0 else float(probs.get("P_down", 0.5))
+            )
             L_curve[h] = p_correct * (1.0 - math.exp(-h / tau))
 
         # 4. CONTINUATION_SCORE = L_norm(6)
@@ -770,8 +818,7 @@ class RiskManager:
     # ===== Phase C: 排名止盈落差（S4）=====
 
     @staticmethod
-    def calc_ranked_tp_gap(ranked_positions: List[Dict],
-                           min_profit_usdt: float = 5.0) -> Dict:
+    def calc_ranked_tp_gap(ranked_positions: List[Dict], min_profit_usdt: float = 5.0) -> Dict:
         """排名止盈落差计算（Spec §4.3）。
 
         数学（Top1 > 0）：
@@ -795,8 +842,7 @@ class RiskManager:
             except Exception:
                 return 0.0
 
-        sorted_pos = sorted(enumerate(ranked_positions),
-                            key=lambda iv: _upl(iv[1]), reverse=True)
+        sorted_pos = sorted(enumerate(ranked_positions), key=lambda iv: _upl(iv[1]), reverse=True)
         top1_idx, top1 = sorted_pos[0]
         _, top2 = sorted_pos[1]
         upl1 = _upl(top1)
@@ -810,19 +856,21 @@ class RiskManager:
 
         # trigger 默认 0.70 阈值；具体门槛在调用方传入（此处只算 ratio）
         # 但测试 C-5 直接断言 trigger=True 当 gap=0.70 时，所以这里也用 ≥0.70
-        trigger = (gap_ratio >= 0.70)
+        trigger = gap_ratio >= 0.70
         return {"top1_idx": top1_idx, "gap_ratio": gap_ratio, "trigger": trigger}
 
-    def calc_position_size(self,
-                           confidence: float,
-                           volatility: float,
-                           current_equity: float,
-                           base_pct: float = None,
-                           leverage: float = None,
-                           kelly_factor: float = 1.0,
-                           consecutive_loss_factor: float = 1.0,
-                           hexagram_factor: float = 1.0,
-                           vol_regime_factor: float = 1.0) -> Dict:
+    def calc_position_size(
+        self,
+        confidence: float,
+        volatility: float,
+        current_equity: float,
+        base_pct: float = None,
+        leverage: float = None,
+        kelly_factor: float = 1.0,
+        consecutive_loss_factor: float = 1.0,
+        hexagram_factor: float = 1.0,
+        vol_regime_factor: float = 1.0,
+    ) -> Dict:
         """根据置信度和波动率动态计算仓位大小
 
         Args:
@@ -845,10 +893,12 @@ class RiskManager:
         base = base_pct or self.state.position_size_pct
 
         # P2+P3 动态仓位基础倍率：凯利 × 连亏 × 卦象 × 波动率 共同作用于 base
-        p2_base_multiplier = max(0.15, min(kelly_factor, 1.50)) \
-            * max(0.25, min(consecutive_loss_factor, 1.20)) \
-            * max(0.50, min(hexagram_factor, 1.50)) \
+        p2_base_multiplier = (
+            max(0.15, min(kelly_factor, 1.50))
+            * max(0.25, min(consecutive_loss_factor, 1.20))
+            * max(0.50, min(hexagram_factor, 1.50))
             * max(0.40, min(vol_regime_factor, 1.30))
+        )
         p2_base_multiplier = max(0.15, min(p2_base_multiplier, 1.80))  # 全局限制避免因子乘积爆炸
         base = base * p2_base_multiplier
 
@@ -877,8 +927,9 @@ class RiskManager:
             vol_factor = 1.0
 
         position_pct = base * conf_factor * vol_factor
-        position_pct = max(self.state.min_position_size_pct,
-                           min(position_pct, self.state.max_position_size_pct))
+        position_pct = max(
+            self.state.min_position_size_pct, min(position_pct, self.state.max_position_size_pct)
+        )
 
         margin_usdt = current_equity * position_pct  # 保证金金额
         position_usdt = margin_usdt * leverage  # 名义仓位价值（传给OKX下单）
@@ -922,7 +973,11 @@ class RiskManager:
             self.state.current_consecutive_losses += 1
 
         # 仅以亏损金额触发halt，不以连续亏损笔数触发
-        dynamic_limit = -(current_equity * self.state.loss_limit_pct) if current_equity > 0 else self.state.daily_loss_limit
+        dynamic_limit = (
+            -(current_equity * self.state.loss_limit_pct)
+            if current_equity > 0
+            else self.state.daily_loss_limit
+        )
         effective_limit = min(dynamic_limit, self.state.daily_loss_limit)
 
         if self.state.daily_pnl <= effective_limit:
@@ -936,7 +991,7 @@ class RiskManager:
 
     def reset_daily(self):
         """重置每日风控（新的一天调用）"""
-        today = datetime.now().strftime("%Y-%m-%d")
+        today = datetime.now().strftime("%Y-%m-%d")  # noqa: F841
         self.state.daily_pnl = 0.0
         self.state.trading_halted = False
         self.state.halt_reason = ""
@@ -956,6 +1011,7 @@ class RiskManager:
 
 
 # ── Case 生成器（统一接口）──────────────────────────────
+
 
 def generate_case_from_trade(trade: TradeRecord) -> Dict:
     """从平仓交易生成 L4 case（旧接口，保留兼容性）
@@ -1001,10 +1057,12 @@ def _dal_write_trade_if_enabled(trade: TradeRecord) -> None:
     try:
         from dreambuddy_dal import di as _dal_di  # 局部导入，无 DAL 时也不破坏
         from dreambuddy_dal.unified_models import (
-            TradeRecord as UnifiedTradeRecord,
-            TradeDirection,
-            ExitReason,
             CloseInfo,
+            ExitReason,
+            TradeDirection,
+        )
+        from dreambuddy_dal.unified_models import (
+            TradeRecord as UnifiedTradeRecord,
         )
     except Exception as exc:  # pragma: no cover - 部署未装 dreambuddy_dal 包路径
         logger.warning("[DAL-p1] import failed: %s", exc)
@@ -1099,6 +1157,7 @@ def _convert_tradingutils_trade_to_unified(
 
 # ── 持仓跟踪器 ────────────────────────────────────────
 
+
 class PositionTracker:
     """持仓跟踪器：记录开仓信息，平仓时生成完整交易记录"""
 
@@ -1174,8 +1233,7 @@ class PositionTracker:
         except Exception:
             pass
 
-    def is_in_cooldown(self, inst_id: str, direction: str,
-                       cooldown_sec: float) -> Tuple[bool, str]:
+    def is_in_cooldown(self, inst_id: str, direction: str, cooldown_sec: float) -> Tuple[bool, str]:
         """检查统一冷静期（全方向拦截）
 
         平仓后 cooldown_sec 内禁止该币种任何方向的新开仓（含反手）。
@@ -1192,21 +1250,31 @@ class PositionTracker:
         info = self.last_close_info.get(inst_id)
         if not info:
             # DEBUG: 无冷却记录 → 放行
-            print(f"[cooldown DEBUG pid={self._pid}] {inst_id} no_close_record → pass",
-                  file=sys.stderr)
+            print(
+                f"[cooldown DEBUG pid={self._pid}] {inst_id} no_close_record → pass",
+                file=sys.stderr,
+            )
             return False, ""
         elapsed = time.time() - info.get("close_ts", 0)
         if elapsed < cooldown_sec:
             remaining = cooldown_sec - elapsed
-            reason = (f"统一冷静期: 剩余{remaining/3600:.1f}h "
-                      f"(上次{info.get('pos_side')}平仓于{elapsed/60:.1f}分钟前, "
-                      f"reason={info.get('exit_reason')})")
-            print(f"[cooldown DEBUG pid={self._pid}] {inst_id} BLOCK elapsed={elapsed/60:.1f}min "
-                  f"< cooldown={cooldown_sec/3600:.1f}h → {reason}", file=sys.stderr)
+            reason = (
+                f"统一冷静期: 剩余{remaining/3600:.1f}h "
+                f"(上次{info.get('pos_side')}平仓于{elapsed/60:.1f}分钟前, "
+                f"reason={info.get('exit_reason')})"
+            )
+            print(
+                f"[cooldown DEBUG pid={self._pid}] {inst_id} BLOCK elapsed={elapsed/60:.1f}min "
+                f"< cooldown={cooldown_sec/3600:.1f}h → {reason}",
+                file=sys.stderr,
+            )
             return True, reason
         # 冷却已过期 → 放行
-        print(f"[cooldown DEBUG pid={self._pid}] {inst_id} expired elapsed={elapsed/60:.1f}min "
-              f">= cooldown={cooldown_sec/3600:.1f}h → pass", file=sys.stderr)
+        print(
+            f"[cooldown DEBUG pid={self._pid}] {inst_id} expired elapsed={elapsed/60:.1f}min "
+            f">= cooldown={cooldown_sec/3600:.1f}h → pass",
+            file=sys.stderr,
+        )
         return False, ""
 
     def _load_open_positions(self):
@@ -1215,8 +1283,9 @@ class PositionTracker:
             try:
                 with open(f, "r", encoding="utf-8") as fp:
                     data = json.load(fp)
-                rec = TradeRecord(**{k: v for k, v in data.items()
-                                   if k in TradeRecord.__dataclass_fields__})
+                rec = TradeRecord(
+                    **{k: v for k, v in data.items() if k in TradeRecord.__dataclass_fields__}
+                )
                 if rec.inst_id:
                     self.open_positions[rec.inst_id] = rec
             except Exception:
@@ -1228,8 +1297,13 @@ class PositionTracker:
             filepath = self.positions_dir / f"{inst_id.replace('/', '_')}.json"
             try:
                 with open(filepath, "w", encoding="utf-8") as f:
-                    json.dump(asdict(self.open_positions[inst_id]), f,
-                              indent=2, ensure_ascii=False, default=str)
+                    json.dump(
+                        asdict(self.open_positions[inst_id]),
+                        f,
+                        indent=2,
+                        ensure_ascii=False,
+                        default=str,
+                    )
             except Exception:
                 pass
 
@@ -1243,31 +1317,33 @@ class PositionTracker:
             except Exception:
                 pass
 
-    def open_position(self,
-                      coin: str,
-                      inst_id: str,
-                      direction: str,
-                      entry_price: float,
-                      confidence: float,
-                      hexagram: str,
-                      liangyi_state: Dict = None,
-                      scale_params: Dict = None,
-                      market_snapshot: Dict = None,
-                      contradiction_list: List[Dict] = None,
-                      strategy_source: str = "bcrm",
-                      enhance_info: Dict = None,
-                      base_sl_roi: float = 0.0,
-                      base_tp_roi: float = 0.0,
-                      regime_pred: str = None,
-                      regime_multipliers: Dict = None,
-                      is_trial: bool = False,
-                      score_consensus: float = 0.0,
-                      gate_base_threshold: float = 0.40,
-                      source_tag: str = "",
-                      position_qty: float = 0.0,
-                      position_usdt: float = 0.0,
-                      margin_usdt: float = 0.0,
-                      leverage: int = 1) -> TradeRecord:
+    def open_position(
+        self,
+        coin: str,
+        inst_id: str,
+        direction: str,
+        entry_price: float,
+        confidence: float,
+        hexagram: str,
+        liangyi_state: Dict = None,
+        scale_params: Dict = None,
+        market_snapshot: Dict = None,
+        contradiction_list: List[Dict] = None,
+        strategy_source: str = "bcrm",
+        enhance_info: Dict = None,
+        base_sl_roi: float = 0.0,
+        base_tp_roi: float = 0.0,
+        regime_pred: str = None,
+        regime_multipliers: Dict = None,
+        is_trial: bool = False,
+        score_consensus: float = 0.0,
+        gate_base_threshold: float = 0.40,
+        source_tag: str = "",
+        position_qty: float = 0.0,
+        position_usdt: float = 0.0,
+        margin_usdt: float = 0.0,
+        leverage: int = 1,
+    ) -> TradeRecord:
         """记录开仓"""
         trade_id = f"{int(time.time())}_{uuid.uuid4().hex[:6]}"
         rec = TradeRecord(
@@ -1303,12 +1379,14 @@ class PositionTracker:
         self._save_open_position(inst_id)
         return rec
 
-    def close_position(self,
-                       inst_id: str,
-                       exit_price: float,
-                       exit_reason: str,
-                       pnl: float = None,
-                       pnl_pct: float = None) -> Optional[TradeRecord]:
+    def close_position(
+        self,
+        inst_id: str,
+        exit_price: float,
+        exit_reason: str,
+        pnl: float = None,
+        pnl_pct: float = None,
+    ) -> Optional[TradeRecord]:
         """记录平仓，返回完整交易记录
 
         Returns:

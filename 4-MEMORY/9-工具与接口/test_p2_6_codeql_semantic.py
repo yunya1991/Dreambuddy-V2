@@ -18,12 +18,11 @@ RED 契约:
 
 参考: SPEC-CognitiveSystem-Evolution.md §4.3 P2-6
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
-
-import pytest
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR) not in sys.path:
@@ -151,9 +150,9 @@ class TestCognitiveLoopEntryCodeQL:
 
     def test_codeql_attribute_exists(self):
         """RED: CognitiveLoopEntry 应有 codeql 属性。"""
-        from cognitive_loop_entry import CognitiveLoopEntry
-
         import inspect
+
+        from cognitive_loop_entry import CognitiveLoopEntry
 
         src = inspect.getsource(CognitiveLoopEntry.__init__)
         assert "codeql" in src

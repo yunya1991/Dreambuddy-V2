@@ -8,6 +8,7 @@
   - 权重缓存由 `neural_sde_model` 在 cross-attn 后写入；无权重时 `available=False`
   - 只读诊断，不改变生产裁决
 """
+
 from __future__ import annotations
 
 import logging
@@ -103,7 +104,7 @@ def aggregate_attention(
             raise ValueError(
                 f"n_heads={len(strengths)} 与 dimensions 长度 {len(dimensions)} 不匹配"
             )
-        dim_strengths = {dim: 0.0 for dim in THREE_DIMS}
+        dim_strengths = dict.fromkeys(THREE_DIMS, 0.0)
         for head_index, c_dim in enumerate(dimensions):
             target = C_DIM_TO_3.get(c_dim)
             if target:
@@ -127,7 +128,7 @@ def aggregate_attention(
             "available": False,
             "A_dim": None,
             "A_strength": 0.0,
-            "dim_strengths": {dim: 0.0 for dim in THREE_DIMS},
+            "dim_strengths": dict.fromkeys(THREE_DIMS, 0.0),
             "error": f"{type(exc).__name__}: {exc}",
             "method": METHOD_VERSION,
         }

@@ -12,13 +12,13 @@
     ├── train_report.json           (Macro F1 / Balanced Acc / 混淆矩阵)
     └── best.lgb / best.meta.json   (Macro F1 最高的一折权重)
 """
+
 from __future__ import annotations
 
 import argparse
 import importlib
 import json
 import logging
-import os
 import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -42,15 +42,14 @@ logging.basicConfig(
 logger = logging.getLogger("train_btc_regime_predictor")
 
 # 注册 FeatureRegistry 中的形态+广度+MA200周期+多时间框架模块
-import bcrm2.classic_experience_features as _c  # noqa: F401 触发注册
-import bcrm2.cross_asset_features as _x          # noqa: F401 触发注册
-import bcrm2.ma200_cycle_features as _mc          # noqa: F401 触发注册
-import bcrm2.multi_timeframe_features as _mt      # noqa: F401 触发注册
-
-from bcrm2.feature_registry import FeatureRegistry
-from bcrm2.labels.regime_labeler import REGIME_ORDER, generate_8state_label
-from bcrm2.regime_predictor import RegimePredictor
-from bcrm2.walk_forward_splitter import walk_forward_time_series_split
+import bcrm2.classic_experience_features as _c  # noqa: E402, F401
+import bcrm2.cross_asset_features as _x  # noqa: E402, F401
+import bcrm2.ma200_cycle_features as _mc  # noqa: E402, F401
+import bcrm2.multi_timeframe_features as _mt  # noqa: E402, F401
+from bcrm2.feature_registry import FeatureRegistry  # noqa: E402
+from bcrm2.labels.regime_labeler import REGIME_ORDER, generate_8state_label  # noqa: E402
+from bcrm2.regime_predictor import RegimePredictor  # noqa: E402
+from bcrm2.walk_forward_splitter import walk_forward_time_series_split  # noqa: E402
 
 # Breadth 8 币
 BREADTH_COINS = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX"]
@@ -85,6 +84,7 @@ def fetch_external_data(df: pd.DataFrame, enable_external: bool = True) -> pd.Da
     vix_series = None
     try:
         import yfinance as yf
+
         ticker = yf.Ticker("^VIX")
         vix_hist = ticker.history(start=df.index[0], end=df.index[-1] + pd.Timedelta(days=1))
         if not vix_hist.empty:
@@ -98,6 +98,7 @@ def fetch_external_data(df: pd.DataFrame, enable_external: bool = True) -> pd.Da
     fgi_series = None
     try:
         import requests
+
         # 拉取历史 F&G 数据（最大 limit）
         r = requests.get("https://api.alternative.me/fng/?limit=0", timeout=15)
         if r.status_code == 200:
@@ -125,7 +126,9 @@ def fetch_external_data(df: pd.DataFrame, enable_external: bool = True) -> pd.Da
     df["vix"] = df["vix"].ffill().bfill()
     df["fear_greed_index"] = df["fear_greed_index"].ffill().bfill()
 
-    logger.info(f"   外部数据合并完成: vix非空={df['vix'].notna().sum()}, fgi非空={df['fear_greed_index'].notna().sum()}")
+    logger.info(
+        f"   外部数据合并完成: vix非空={df['vix'].notna().sum()}, fgi非空={df['fear_greed_index'].notna().sum()}"
+    )
     return df
 
 
@@ -150,8 +153,13 @@ def load_ohlcv(
         coins_closes["BTC"] = close_arr
         rng = np.random.RandomState(7)
         pert = {
-            "ETH": 0.004, "SOL": 0.01, "BNB": 0.003, "XRP": 0.006,
-            "ADA": 0.008, "DOGE": 0.012, "AVAX": 0.009,
+            "ETH": 0.004,
+            "SOL": 0.01,
+            "BNB": 0.003,
+            "XRP": 0.006,
+            "ADA": 0.008,
+            "DOGE": 0.012,
+            "AVAX": 0.009,
         }
         n = len(df)
         for coin, sigma in pert.items():
@@ -168,7 +176,7 @@ def load_ohlcv(
     # 合成数据：严格跟测试一致
     rng = np.random.RandomState(123)
     N = n_samples
-    t = np.arange(N, dtype=float)
+    t = np.arange(N, dtype=float)  # noqa: F841
     drift = np.zeros(N)
     drift[0:500] = 0.0
     drift[500:1100] = 0.0038
@@ -190,13 +198,25 @@ def load_ohlcv(
     volume[1100:1220] *= 3.0
     volume[980:1080] *= 2.2
     idx = pd.date_range("2020-01-01", periods=N, freq="D")
-    df = pd.DataFrame({
-        "open": open_, "high": high, "low": low, "close": close, "volume": volume,
-    }, index=idx)
+    df = pd.DataFrame(
+        {
+            "open": open_,
+            "high": high,
+            "low": low,
+            "close": close,
+            "volume": volume,
+        },
+        index=idx,
+    )
     coins_closes = {"BTC": list(close[::-1])}
     pert = {
-        "ETH": 0.004, "SOL": 0.01, "BNB": 0.003, "XRP": 0.006,
-        "ADA": 0.008, "DOGE": 0.012, "AVAX": 0.009,
+        "ETH": 0.004,
+        "SOL": 0.01,
+        "BNB": 0.003,
+        "XRP": 0.006,
+        "ADA": 0.008,
+        "DOGE": 0.012,
+        "AVAX": 0.009,
     }
     for coin, sigma in pert.items():
         c = close * np.exp(np.cumsum(rng.randn(N) * sigma))
@@ -217,7 +237,10 @@ def compute_features(
     importlib.reload(_mc)
     importlib.reload(_mt)
     feats, _names = FeatureRegistry.compute_all(
-        df=df, symbol=symbol, enabled_set=feature_set, coins_closes=coins_closes,
+        df=df,
+        symbol=symbol,
+        enabled_set=feature_set,
+        coins_closes=coins_closes,
         config=cfg or {},
     )
     for col in ["open", "high", "low", "close", "volume"]:
@@ -228,9 +251,10 @@ def compute_features(
 def evaluate(y_true, y_pred) -> Dict[str, float]:
     from sklearn.metrics import (
         balanced_accuracy_score,
-        f1_score,
         confusion_matrix,
+        f1_score,
     )
+
     macro_f1 = float(f1_score(y_true, y_pred, average="macro", zero_division=0))
     bal_acc = float(balanced_accuracy_score(y_true, y_pred))
     cm = confusion_matrix(y_true, y_pred, labels=REGIME_ORDER).tolist()
@@ -244,10 +268,12 @@ def main():
     _default_csv = str(ROOT / "scripts" / "data" / "klines" / "BTC_1D_full.csv")
     parser.add_argument("--csv", default=_default_csv, help="BTCUSDT.csv 真实数据路径")
     parser.add_argument("--n-samples", type=int, default=1825)
-    parser.add_argument("--enable-external", action="store_true", default=True,
-                        help="启用 P5 外部数据（VIX, F&G）")
-    parser.add_argument("--enable-ensemble", action="store_true", default=True,
-                        help="启用 P4 BOCPD+HMM 集成")
+    parser.add_argument(
+        "--enable-external", action="store_true", default=True, help="启用 P5 外部数据（VIX, F&G）"
+    )
+    parser.add_argument(
+        "--enable-ensemble", action="store_true", default=True, help="启用 P4 BOCPD+HMM 集成"
+    )
     parser.add_argument("--no-external", dest="enable_external", action="store_false")
     parser.add_argument("--no-ensemble", dest="enable_ensemble", action="store_false")
     args = parser.parse_args()
@@ -267,8 +293,9 @@ def main():
 
     logger.info("2. 计算 Phase 0 形态 + 广度特征")
     features_df = compute_features(df, cfg["symbol"], cfg["feature_set"], coins_closes, cfg=cfg)
-    feature_cols = [c for c in features_df.columns
-                    if c not in ("open", "high", "low", "close", "volume")]
+    feature_cols = [
+        c for c in features_df.columns if c not in ("open", "high", "low", "close", "volume")
+    ]
 
     # OPT-2: 将外部数据列加入特征
     if args.enable_external and "vix" in df.columns:
@@ -276,7 +303,7 @@ def main():
             if ext_col in df.columns:
                 features_df[ext_col] = df[ext_col].values
                 feature_cols.append(ext_col)
-        logger.info(f"   外部特征已加入: vix, fear_greed_index")
+        logger.info("   外部特征已加入: vix, fear_greed_index")
 
     logger.info(f"   {len(feature_cols)} 个特征列")
 
@@ -289,14 +316,16 @@ def main():
     X_all = df2[feature_cols].to_numpy(dtype=float)
     y_all = df2["label"].astype(str).to_numpy()
 
-    splits = list(walk_forward_time_series_split(
-        len(df2),
-        n_splits=wf_cfg["n_splits"],
-        gap=wf_cfg["gap"],
-        train_ratio=wf_cfg["train_ratio"],
-        test_ratio=wf_cfg["test_ratio"],
-        expanding=wf_cfg.get("expanding", True),
-    ))
+    splits = list(
+        walk_forward_time_series_split(
+            len(df2),
+            n_splits=wf_cfg["n_splits"],
+            gap=wf_cfg["gap"],
+            train_ratio=wf_cfg["train_ratio"],
+            test_ratio=wf_cfg["test_ratio"],
+            expanding=wf_cfg.get("expanding", True),
+        )
+    )
     logger.info(f"4. WalkForward {len(splits)} 折")
 
     report: Dict[str, object] = {"folds": [], "regime_order": REGIME_ORDER}
@@ -317,19 +346,21 @@ def main():
 
         # OPT-4: LightGBM 首选引擎（强正则 + 早停）
         predictor = RegimePredictor(config_dict=cfg)
-        predictor.fit(X_tr, y_tr, feature_names=feature_cols,
-                      lgbm_params=cfg.get("lgbm_hparams"))
+        predictor.fit(X_tr, y_tr, feature_names=feature_cols, lgbm_params=cfg.get("lgbm_hparams"))
 
         # OPT-3: P4 BOCPD+HMM 集成
         if args.enable_ensemble:
             try:
                 from models.hmm_regime import HMMRegime
+
                 predictor.enable_bocpd_hmm = True
                 hmm = HMMRegime(n_states=8, n_iter=50)
                 hmm.fit_with_labels(X_tr, y_tr, predictor.REGIME_ORDER)
                 predictor.hmm_model = hmm
-                y_pred, _, _ = predictor.predict_with_ensemble(X_te, X_te, feature_names=feature_cols)
-                logger.info(f"        集成预测已启用（LGBM×0.7 + HMM×0.3）")
+                y_pred, _, _ = predictor.predict_with_ensemble(
+                    X_te, X_te, feature_names=feature_cols
+                )
+                logger.info("        集成预测已启用（LGBM×0.7 + HMM×0.3）")
             except Exception as e:
                 logger.warning(f"        HMM 集成失败，回退纯 LGBM: {e}")
                 y_pred, _, _ = predictor.predict(X_te, feature_names=feature_cols)
@@ -337,7 +368,9 @@ def main():
             y_pred, _, _ = predictor.predict(X_te, feature_names=feature_cols)
 
         metrics = evaluate(y_te, y_pred)
-        logger.info(f"        MacroF1={metrics['macro_f1']:.3f} BalAcc={metrics['balanced_accuracy']:.3f}")
+        logger.info(
+            f"        MacroF1={metrics['macro_f1']:.3f} BalAcc={metrics['balanced_accuracy']:.3f}"
+        )
         fold_path = ARTIFACT_DIR / f"fold_{i}"
         predictor.save(fold_path)
         metrics["fold"] = i

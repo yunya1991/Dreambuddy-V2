@@ -16,16 +16,15 @@ DreamOS Registry — 版本管理与依赖检查
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple
 
-from dreamos.shared.errors import OSError, ErrorCode
 from dreamos.shared.interfaces import Node
-
 
 # ============================================================
 # 版本比较
 # ============================================================
+
 
 def parse_version(version_str: str) -> Tuple[int, int, int]:
     """解析 semver 版本号
@@ -106,13 +105,15 @@ def satisfies_requirement(version: str, requirement: str) -> bool:
 # 依赖检查结果
 # ============================================================
 
+
 @dataclass
 class DependencyCheckResult:
     """依赖检查结果"""
+
     ok: bool = True
-    missing: List[str] = field(default_factory=list)        # 缺少的节点
+    missing: List[str] = field(default_factory=list)  # 缺少的节点
     incompatible: Dict[str, str] = field(default_factory=dict)  # 版本不兼容 {node_id: expected}
-    deprecated: List[str] = field(default_factory=list)    # 已废弃的节点
+    deprecated: List[str] = field(default_factory=list)  # 已废弃的节点
 
     @property
     def issues(self) -> int:
@@ -132,6 +133,7 @@ class DependencyCheckResult:
 # 版本化节点 mixin
 # ============================================================
 
+
 class VersionedNodeMixin:
     """节点版本化 mixin
 
@@ -143,9 +145,10 @@ class VersionedNodeMixin:
             requires = {"A0": ">=1.0.0"}
             provides = ["trend_analysis"]
     """
+
     version: str = "0.1.0"
-    requires: Dict[str, str] = {}       # {node_id: version_requirement}
-    provides: List[str] = []            # 提供的能力
+    requires: Dict[str, str] = {}  # {node_id: version_requirement}
+    provides: List[str] = []  # 提供的能力
     deprecated: bool = False
     deprecation_note: str = ""
 
@@ -153,6 +156,7 @@ class VersionedNodeMixin:
 # ============================================================
 # 注册表扩展方法
 # ============================================================
+
 
 class RegistryExtension:
     """注册表扩展 — 版本管理 + 依赖检查

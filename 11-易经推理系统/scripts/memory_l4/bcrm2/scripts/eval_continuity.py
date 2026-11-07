@@ -7,13 +7,13 @@
   - 连续性 = mean(|ΔL| + |ΔT|) per day
   - 4 个人工拐点的 Sperandeo 123 第 3 条满足滞后天数
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import sys
 from pathlib import Path
-from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -23,10 +23,9 @@ _MEMORY_L4 = _THIS.parent.parent.parent
 if str(_MEMORY_L4) not in sys.path:
     sys.path.insert(0, str(_MEMORY_L4))
 
-from bcrm2.indicators import IndicatorBank
-from bcrm2.score_composer import ScoreComposer
-from bcrm2.temporal_smoother import TemporalSmoother
-from bcrm2.regime_mapper import RegimeMapper, REGIME_ORDER
+from bcrm2.indicators import IndicatorBank  # noqa: E402
+from bcrm2.score_composer import ScoreComposer  # noqa: E402
+from bcrm2.temporal_smoother import TemporalSmoother  # noqa: E402
 
 
 def _read_csv(csv_path: Path) -> pd.DataFrame:
@@ -66,13 +65,15 @@ def evaluate_continuity(df: pd.DataFrame) -> dict:
     adj = ScoreComposer.apply_sperandeo_adjustment(
         level_smooth=so.level_smooth.values,
         trend_smooth=so.trend_smooth.values,
-        high=df["high"].values, low=df["low"].values, close=df["close"].values,
+        high=df["high"].values,
+        low=df["low"].values,
+        close=df["close"].values,
         swing_window=5,
     )
 
     key_dates = [
-        ("ATH_69k", "2021-11-10", "top"),       # 顶 → 下降趋势反转（bull→bear）
-        ("FTX_low", "2022-11-21", "bottom"),    # 底 → 上升趋势反转（bear→bull）
+        ("ATH_69k", "2021-11-10", "top"),  # 顶 → 下降趋势反转（bull→bear）
+        ("FTX_low", "2022-11-21", "bottom"),  # 底 → 上升趋势反转（bear→bull）
         ("halving_2024", "2024-04-20", "bottom"),  # 底 → 上升趋势反转
     ]
     turning_points = []
@@ -91,16 +92,18 @@ def evaluate_continuity(df: pd.DataFrame) -> dict:
                 confirm_date = df.index[i].strftime("%Y-%m-%d")
                 break
 
-        turning_points.append({
-            "tag": tag,
-            "target_date": target_date,
-            "actual_date": actual_date,
-            "direction": direction,
-            "L": round(float(L[pos]), 3),
-            "T": round(float(T[pos]), 3),
-            "sperandeo_confirm_date": confirm_date,
-            "lag_days": lag_days,
-        })
+        turning_points.append(
+            {
+                "tag": tag,
+                "target_date": target_date,
+                "actual_date": actual_date,
+                "direction": direction,
+                "L": round(float(L[pos]), 3),
+                "T": round(float(T[pos]), 3),
+                "sperandeo_confirm_date": confirm_date,
+                "lag_days": lag_days,
+            }
+        )
 
     return {
         "continuity": {
@@ -138,8 +141,10 @@ def main(argv=None) -> int:
         lag = tp["lag_days"]
         lag_str = f"{lag} 天" if lag is not None else "未确认"
         ok = "PASS" if (lag is not None and lag <= 10) else "FAIL"
-        print(f"  {tp['tag']:16s} [{tp['actual_date']}] L={tp['L']:+.2f} T={tp['T']:+.2f}  "
-              f"确认={tp['sperandeo_confirm_date'] or '-'}  滞后={lag_str}  → {ok}")
+        print(
+            f"  {tp['tag']:16s} [{tp['actual_date']}] L={tp['L']:+.2f} T={tp['T']:+.2f}  "
+            f"确认={tp['sperandeo_confirm_date'] or '-'}  滞后={lag_str}  → {ok}"
+        )
 
     if args.out:
         out_path = Path(args.out).resolve()

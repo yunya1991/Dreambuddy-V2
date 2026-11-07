@@ -3,17 +3,15 @@ L2 自检测: A4 门禁节点单测
 覆盖: 置信度门槛、多空方向、A8 知行合一、加权投票、趋势确认
 """
 
-import sys
+import sys  # noqa: I001
 from pathlib import Path
-
-import pytest
 
 # 将 dreamos 加入 path
 PROJECT_ROOT = Path(__file__).resolve().parents[5]
 sys.path.insert(0, str(PROJECT_ROOT / "1-ARCHITECTURE"))
 
-from dreamos.shared.state import State, NodeResult, NodeStatus
-from dreamos.capabilities.trading.nodes.a4_gate import A4GateNode
+from dreamos.capabilities.trading.nodes.a4_gate import A4GateNode  # noqa: E402
+from dreamos.shared.state import NodeResult, State  # noqa: E402
 
 
 def make_state(results=None, market_data=None, intent=None):
@@ -37,9 +35,11 @@ class TestA4Gate:
     def test_long_pass_when_confidence_above_threshold(self):
         """LONG 方向且置信度 >= 门槛 → 通过"""
         node = A4GateNode()
-        state = make_state(results={
-            "A2": NodeResult(node_id="A2", confidence=0.8, direction="LONG"),
-        })
+        state = make_state(
+            results={
+                "A2": NodeResult(node_id="A2", confidence=0.8, direction="LONG"),
+            }
+        )
         result = node.execute(state)
         assert result.direction == "LONG"
         assert result.outputs["gate_passed"] is True
@@ -66,9 +66,11 @@ class TestA4Gate:
     def test_hold_direction_always_blocked(self):
         """HOLD 方向始终被拦截"""
         node = A4GateNode()
-        state = make_state(results={
-            "A2": NodeResult(node_id="A2", confidence=0.9, direction="HOLD"),
-        })
+        state = make_state(
+            results={
+                "A2": NodeResult(node_id="A2", confidence=0.9, direction="HOLD"),
+            }
+        )
         result = node.execute(state)
         assert result.direction == "HOLD"
         assert result.outputs["gate_passed"] is False
@@ -84,9 +86,11 @@ class TestA4Gate:
     def test_short_pass_when_confidence_above_threshold(self):
         """SHORT 方向且置信度 >= 门槛 → 通过"""
         node = A4GateNode()
-        state = make_state(results={
-            "A2": NodeResult(node_id="A2", confidence=0.8, direction="SHORT"),
-        })
+        state = make_state(
+            results={
+                "A2": NodeResult(node_id="A2", confidence=0.8, direction="SHORT"),
+            }
+        )
         result = node.execute(state)
         assert result.direction == "SHORT"
         assert result.outputs["gate_passed"] is True
@@ -113,9 +117,11 @@ class TestA4CollectDirection:
     def test_single_long_node(self):
         """单一 LONG 节点 → LONG"""
         node = A4GateNode()
-        state = make_state(results={
-            "A2": NodeResult(node_id="A2", confidence=0.8, direction="LONG"),
-        })
+        state = make_state(
+            results={
+                "A2": NodeResult(node_id="A2", confidence=0.8, direction="LONG"),
+            }
+        )
         direction, confidence = node._collect_direction(state)
         assert direction == "LONG"
         assert confidence > 0
@@ -126,30 +132,36 @@ class TestA4CollectDirection:
         long_ratio=0.5, short_ratio=0.5, diff=0 < 0.2 → HOLD
         """
         node = A4GateNode()
-        state = make_state(results={
-            "A2": NodeResult(node_id="A2", confidence=0.55, direction="LONG"),
-            "A3": NodeResult(node_id="A3", confidence=0.55, direction="SHORT"),
-        })
+        state = make_state(
+            results={
+                "A2": NodeResult(node_id="A2", confidence=0.55, direction="LONG"),
+                "A3": NodeResult(node_id="A3", confidence=0.55, direction="SHORT"),
+            }
+        )
         direction, confidence = node._collect_direction(state)
         assert direction == "HOLD"
 
     def test_zero_confidence_nodes_skipped(self):
         """置信度 <= 0 的节点被跳过"""
         node = A4GateNode()
-        state = make_state(results={
-            "A2": NodeResult(node_id="A2", confidence=0.0, direction="LONG"),
-            "A3": NodeResult(node_id="A3", confidence=0.8, direction="LONG"),
-        })
+        state = make_state(
+            results={
+                "A2": NodeResult(node_id="A2", confidence=0.0, direction="LONG"),
+                "A3": NodeResult(node_id="A3", confidence=0.8, direction="LONG"),
+            }
+        )
         direction, confidence = node._collect_direction(state)
         assert direction == "LONG"
 
     def test_only_hold_directions_returns_hold(self):
         """所有节点都是 HOLD → HOLD"""
         node = A4GateNode()
-        state = make_state(results={
-            "A2": NodeResult(node_id="A2", confidence=0.8, direction="HOLD"),
-            "A3": NodeResult(node_id="A3", confidence=0.8, direction="HOLD"),
-        })
+        state = make_state(
+            results={
+                "A2": NodeResult(node_id="A2", confidence=0.8, direction="HOLD"),
+                "A3": NodeResult(node_id="A3", confidence=0.8, direction="HOLD"),
+            }
+        )
         direction, confidence = node._collect_direction(state)
         assert direction == "HOLD"
         assert confidence == 0.0
@@ -157,10 +169,12 @@ class TestA4CollectDirection:
     def test_confidence_capped_at_0_95(self):
         """置信度上限 0.95"""
         node = A4GateNode()
-        state = make_state(results={
-            "A2": NodeResult(node_id="A2", confidence=0.99, direction="LONG"),
-            "A3": NodeResult(node_id="A3", confidence=0.99, direction="LONG"),
-        })
+        state = make_state(
+            results={
+                "A2": NodeResult(node_id="A2", confidence=0.99, direction="LONG"),
+                "A3": NodeResult(node_id="A3", confidence=0.99, direction="LONG"),
+            }
+        )
         _, confidence = node._collect_direction(state)
         assert confidence <= 0.95
 

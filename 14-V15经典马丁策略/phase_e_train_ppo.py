@@ -7,12 +7,10 @@
     python3 phase_e_train_ppo.py --episodes 500 --out ./data/phase_e_models_v1/ppo_lstm.pt
     python3 phase_e_train_ppo.py --quick-smoke  # 快速冒烟测试
 """
+
 from __future__ import annotations
 
 import argparse
-import json
-import math
-import os
 import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -27,11 +25,11 @@ _BASE_DIR = Path(__file__).resolve().parent
 if str(_BASE_DIR) not in sys.path:
     sys.path.insert(0, str(_BASE_DIR))
 
-from ai_trainers.phase_e_models import PPOLSTMActorCritic
-from ai_trainers.v15_gym_env import (
-    V15MartingaleGymEnv,
-    GAMMA,
+from ai_trainers.phase_e_models import PPOLSTMActorCritic  # noqa: E402
+from ai_trainers.v15_gym_env import (  # noqa: E402
     ACTION_BOUNDS,
+    GAMMA,
+    V15MartingaleGymEnv,
     _apply_k_bound_to_bounds,
 )
 
@@ -56,17 +54,17 @@ def _compute_effective_bounds(k_bound: float) -> List[Tuple[float, float]]:
 # ── PPO 超参数（v2 提 entropy / 短 rollout，避免 identity 收敛） ──
 PPO_CONFIG = {
     "lr": 2e-4,
-    "gamma": GAMMA,           # 0.995
+    "gamma": GAMMA,  # 0.995
     "clip_eps": 0.2,
-    "ent_coef": 0.03,         # v2: 0.01 → 0.03，防 identity 过早收敛
+    "ent_coef": 0.03,  # v2: 0.01 → 0.03，防 identity 过早收敛
     "vf_coef": 0.5,
     "max_grad_norm": 0.5,
-    "n_steps": 512,           # v2: 2048 → 512，每 episode 一次更频繁更新
+    "n_steps": 512,  # v2: 2048 → 512，每 episode 一次更频繁更新
     "batch_size": 64,
     "n_epochs": 4,
     "hidden_dim": 128,
     "num_layers": 1,
-    "reward_window": 20,      # v2: 每 20 ep 计算 moving best，防偶发 0 值卡住
+    "reward_window": 20,  # v2: 每 20 ep 计算 moving best，防偶发 0 值卡住
 }
 
 
@@ -134,7 +132,7 @@ def train_ppo(
 
     device = torch.device("cpu")
     # v2: 每 episode 一个新 env 实例，K 线分布不同（PPO 的多样性至关重要）
-    env_fn = lambda s: V15MartingaleGymEnv(seed=s)
+    env_fn = lambda s: V15MartingaleGymEnv(seed=s)  # noqa: E731
     env = env_fn(1000)
     # v6: 从 env 的 k_bound 计算有效 action bounds，传给模型（保证训练/推理边界一致）
     effective_bounds = _compute_effective_bounds(env.k_bound)
@@ -251,7 +249,11 @@ def train_ppo(
         # ── 日志 & 保存（v2: rolling window best 防偶发 0 值卡 best_reward=0） ──
         if ep % log_interval == 0 or ep == 1:
             avg_r = float(np.mean(all_rewards[-log_interval:]))
-            win_r = float(np.mean(all_rewards[-reward_window_size:])) if len(all_rewards) >= reward_window_size else float("nan")
+            win_r = (
+                float(np.mean(all_rewards[-reward_window_size:]))
+                if len(all_rewards) >= reward_window_size
+                else float("nan")
+            )
             print(
                 f"  ep {ep:4d}/{episodes}  avg_r={avg_r:+.2f}  win_r={win_r:+.2f}  "
                 f"best={best_reward:+.2f}  steps={steps}  TP≈{n_tp_ep}  bust≈{n_bust_ep}  "
@@ -261,28 +263,34 @@ def train_ppo(
             if len(all_rewards) >= reward_window_size and win_r > rolling_best_moving:
                 rolling_best_moving = win_r
                 Path(out_path).parent.mkdir(parents=True, exist_ok=True)
-                torch.save({
-                    "model_state_dict": model.state_dict(),
-                    "config": cfg,
-                    "action_bounds": effective_bounds,  # v6: 推理时恢复边界
-                    "episode": ep,
-                    "best_reward": rolling_best_moving,
-                    "best_kind": "rolling_window",
-                    "window_size": reward_window_size,
-                }, out_path)
+                torch.save(
+                    {
+                        "model_state_dict": model.state_dict(),
+                        "config": cfg,
+                        "action_bounds": effective_bounds,  # v6: 推理时恢复边界
+                        "episode": ep,
+                        "best_reward": rolling_best_moving,
+                        "best_kind": "rolling_window",
+                        "window_size": reward_window_size,
+                    },
+                    out_path,
+                )
 
         # 保存单集 best
         if ep_reward > best_reward:
             best_reward = ep_reward
             Path(out_path).parent.mkdir(parents=True, exist_ok=True)
-            torch.save({
-                "model_state_dict": model.state_dict(),
-                "config": cfg,
-                "action_bounds": effective_bounds,  # v6: 推理时恢复边界
-                "episode": ep,
-                "best_reward": best_reward,
-                "best_kind": "single_episode",
-            }, out_path)
+            torch.save(
+                {
+                    "model_state_dict": model.state_dict(),
+                    "config": cfg,
+                    "action_bounds": effective_bounds,  # v6: 推理时恢复边界
+                    "episode": ep,
+                    "best_reward": best_reward,
+                    "best_kind": "single_episode",
+                },
+                out_path,
+            )
 
     print(f"\n✅ PPO 训练完成: {episodes} episodes, best_reward={best_reward:.2f}")
     print(f"   权重已保存: {out_path}")

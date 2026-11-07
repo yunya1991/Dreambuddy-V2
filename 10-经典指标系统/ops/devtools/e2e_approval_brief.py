@@ -1,4 +1,4 @@
-import json
+import json  # noqa: I001
 import os
 import time
 import urllib.request
@@ -102,21 +102,42 @@ def main():
     hist = _get(base, "/approvals/history?limit=10&decision=pending")
     reminder = _post(base, "/agent/approvals/reminder/run", {"max_pending": 10})
 
-    print(json.dumps(
-        {
-            "strategy": {"strategy_id": strategy_id, "source_zip": source_zip},
-            "draft": {"ok": bool(draft.get("ok")), "draft_id_present": ("draft_id" in draft), "draft_id": draft_id},
-            "approval": {"ok": bool(appr.get("ok")), "approval_id": appr.get("id")},
-            "brief_generate": {"ok": bool(gen.get("ok")), "skipped": bool(gen.get("skipped"))},
-            "brief_get": {"ok": bool(brief.get("ok")), "brief_id": (brief.get("brief") or {}).get("id"), "decision": ((brief.get("brief") or {}).get("recommendation") or {}).get("decision")},
-            "outbox": {"ok": bool(outbox.get("ok")), "count": outbox.get("count"), "last_type": (((outbox.get("items") or [{}])[-1]).get("item") or {}).get("type")},
-            "approvals_pending_history": {"returned": hist.get("returned"), "total_matched": hist.get("total_matched")},
-            "reminder_run": reminder,
-        },
-        ensure_ascii=False,
-        indent=2,
-        sort_keys=True,
-    ))
+    print(
+        json.dumps(
+            {
+                "strategy": {"strategy_id": strategy_id, "source_zip": source_zip},
+                "draft": {
+                    "ok": bool(draft.get("ok")),
+                    "draft_id_present": ("draft_id" in draft),
+                    "draft_id": draft_id,
+                },
+                "approval": {"ok": bool(appr.get("ok")), "approval_id": appr.get("id")},
+                "brief_generate": {"ok": bool(gen.get("ok")), "skipped": bool(gen.get("skipped"))},
+                "brief_get": {
+                    "ok": bool(brief.get("ok")),
+                    "brief_id": (brief.get("brief") or {}).get("id"),
+                    "decision": ((brief.get("brief") or {}).get("recommendation") or {}).get(
+                        "decision"
+                    ),
+                },
+                "outbox": {
+                    "ok": bool(outbox.get("ok")),
+                    "count": outbox.get("count"),
+                    "last_type": (((outbox.get("items") or [{}])[-1]).get("item") or {}).get(
+                        "type"
+                    ),
+                },
+                "approvals_pending_history": {
+                    "returned": hist.get("returned"),
+                    "total_matched": hist.get("total_matched"),
+                },
+                "reminder_run": reminder,
+            },
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+    )
 
 
 if __name__ == "__main__":

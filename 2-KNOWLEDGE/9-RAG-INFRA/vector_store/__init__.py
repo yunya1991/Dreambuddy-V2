@@ -10,6 +10,7 @@ from .embedder import Embedder
 try:
     from .build_index import build_index
     from .search import search
+
     _VECTOR_AVAILABLE = True
 except ImportError:
     build_index = None  # type: ignore[assignment]

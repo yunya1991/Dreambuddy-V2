@@ -10,21 +10,21 @@
   - fed_hawkish_top      (TOP_EXIT #48, DIP_BUY #77, 非零占比仅2.2%)
 """
 
+import json
 import os
 import sys
-import json
 import time
+
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
 from sklearn.metrics import roc_auc_score
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.feature_engineer import TrendFeatureEngineer
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
-
+from ml.feature_engineer import TrendFeatureEngineer  # noqa: E402
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
 
 V52_CORE = ["fed_months_in_cycle", "fed_easing_btc_dip"]
 V52_LOW = ["fed_rate_action", "fed_rate_level", "fed_hawkish_top"]
@@ -55,8 +55,9 @@ def generate_labels(closes, lookahead, threshold, mode="drop"):
     return labels
 
 
-def walk_forward(features, labels, feat_names,
-                 n_splits=12, train_days=730, test_days=180, step_days=180):
+def walk_forward(
+    features, labels, feat_names, n_splits=12, train_days=730, test_days=180, step_days=180
+):
     n = len(features)
     importances = []
     train_aucs, test_aucs = [], []
@@ -83,10 +84,15 @@ def walk_forward(features, labels, feat_names,
             continue
 
         model = lgb.LGBMClassifier(
-            n_estimators=200, max_depth=6, learning_rate=0.05,
-            num_leaves=31, min_child_samples=20,
-            subsample=0.8, colsample_bytree=0.8,
-            random_state=42, verbose=-1,
+            n_estimators=200,
+            max_depth=6,
+            learning_rate=0.05,
+            num_leaves=31,
+            min_child_samples=20,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42,
+            verbose=-1,
         )
         model.fit(X_train, y_train)
 
@@ -104,9 +110,13 @@ def walk_forward(features, labels, feat_names,
     decay = 1.0 - (avg_test / avg_train) if avg_train > 0 else 0.0
     avg_imp = np.mean(importances, axis=0) if importances else np.zeros(len(feat_names))
 
-    return {"avg_test_auc": avg_test, "avg_train_auc": avg_train,
-            "decay_rate": float(decay), "n_folds": len(test_aucs),
-            "feature_importances": avg_imp.tolist()}
+    return {
+        "avg_test_auc": avg_test,
+        "avg_train_auc": avg_train,
+        "decay_rate": float(decay),
+        "n_folds": len(test_aucs),
+        "feature_importances": avg_imp.tolist(),
+    }
 
 
 def main():
@@ -145,8 +155,11 @@ def main():
         labels = generate_labels(closes, lookahead, threshold, mode)
         print("  正样本率: {:.1f}%".format(labels.sum() / len(labels) * 100))
 
-        print("  {:<20} | {:>6} | {:>10} | {:>10} | {:>8}".format(
-            "实验", "特征数", "测试AUC", "训练AUC", "衰减率"))
+        print(
+            "  {:<20} | {:>6} | {:>10} | {:>10} | {:>8}".format(
+                "实验", "特征数", "测试AUC", "训练AUC", "衰减率"
+            )
+        )
         print("  " + "-" * 62)
 
         scenario_results = {}
@@ -154,9 +167,16 @@ def main():
             t0 = time.time()
             r = walk_forward(all_features, labels, feat_names)
             elapsed = time.time() - t0
-            print("  {:<20} | {:>6} | {:>10.4f} | {:>10.4f} | {:>7.1f}%  ({:.1f}s)".format(
-                name, len(feat_names), r["avg_test_auc"], r["avg_train_auc"],
-                r["decay_rate"] * 100, elapsed))
+            print(
+                "  {:<20} | {:>6} | {:>10.4f} | {:>10.4f} | {:>7.1f}%  ({:.1f}s)".format(
+                    name,
+                    len(feat_names),
+                    r["avg_test_auc"],
+                    r["avg_train_auc"],
+                    r["decay_rate"] * 100,
+                    elapsed,
+                )
+            )
             scenario_results[name] = r
 
         all_results[scenario_name] = scenario_results
@@ -184,9 +204,18 @@ def main():
 
     # 保存
     output = {
-        "experiments": {s: {n: {"avg_test_auc": r["avg_test_auc"], "avg_train_auc": r["avg_train_auc"],
-                                 "decay_rate": r["decay_rate"], "n_folds": r["n_folds"]}
-                             for n, r in rs.items()} for s, rs in all_results.items()},
+        "experiments": {
+            s: {
+                n: {
+                    "avg_test_auc": r["avg_test_auc"],
+                    "avg_train_auc": r["avg_train_auc"],
+                    "decay_rate": r["decay_rate"],
+                    "n_folds": r["n_folds"],
+                }
+                for n, r in rs.items()
+            }
+            for s, rs in all_results.items()
+        },
         "core_features": V52_CORE,
         "low_efficacy_features": V52_LOW,
     }

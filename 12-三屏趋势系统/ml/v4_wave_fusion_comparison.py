@@ -3,17 +3,19 @@
 V4减半周期 + 波浪策略融合对比回测
 对比：V4基线、波浪+物理、V4+波浪融合（多种分仓比例）、买入持有
 """
+
+import argparse
+import json
 import os
 import sys
-import json
 import time
-import argparse
+
 import numpy as np
 import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
-sys.path.insert(0, '.')
+sys.path.insert(0, ".")
 
 
 def load_coin_data(symbol: str) -> pd.DataFrame:
@@ -37,7 +39,7 @@ def compute_v4_position(prices, symbol="BTC"):
 
     from ml.halving_top_exit_strategy import HalvingTopExitStrategy
 
-    is_btc = (symbol == "BTC")
+    is_btc = symbol == "BTC"
     strategy = HalvingTopExitStrategy(
         symbol=symbol,
         is_btc=is_btc,
@@ -45,9 +47,11 @@ def compute_v4_position(prices, symbol="BTC"):
     )
 
     position_series = strategy.generate_signals(prices)
-    position_arr = position_series.values if hasattr(position_series, 'values') else np.array(position_series)
+    position_arr = (
+        position_series.values if hasattr(position_series, "values") else np.array(position_series)
+    )
 
-    n = len(position_arr)
+    n = len(position_arr)  # noqa: F841
     direction_arr = np.sign(position_arr)
     abs_position = np.abs(position_arr)
 
@@ -92,7 +96,7 @@ def generate_wave_signals(prices, zigzag_threshold=0.05):
 
 def compute_wave_position(prices, wave_signals, wave_confs, use_physics=True, base_position=0.3):
     """根据波浪信号计算仓位"""
-    from ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
+    from ml.pitd_confidence_scorer import ConfidenceWeights, PhysicsConfidenceScorer
 
     print(f"  [Wave] 计算波浪仓位 (base_pos={base_position}, physics={use_physics})...")
     t0 = time.time()
@@ -105,13 +109,17 @@ def compute_wave_position(prices, wave_signals, wave_confs, use_physics=True, ba
 
     if use_physics:
         weights = ConfidenceWeights(
-            w_eta=0.211, w_reversal=0.368,
-            w_support=0.211, w_kinetic=0.211,
-            position_lower=0.6, position_scale=1.0,
+            w_eta=0.211,
+            w_reversal=0.368,
+            w_support=0.211,
+            w_kinetic=0.211,
+            position_lower=0.6,
+            position_scale=1.0,
         )
         scorer = PhysicsConfidenceScorer(weights)
-        from ml.pitd_kinematics_engineer import KinematicsEngineer
         from ml.pitd_dynamics_engineer import DynamicsEngineer
+        from ml.pitd_kinematics_engineer import KinematicsEngineer
+
         kin_fe = KinematicsEngineer()
         dyn_fe = DynamicsEngineer()
         kin_feats = kin_fe.extract_series(prices)
@@ -288,7 +296,9 @@ def run_comparison(symbol="BTC", zigzag_threshold=0.05, wave_base_position=0.3):
     v4_pos, v4_dir = compute_v4_position(prices, symbol=symbol)
     wave_signals, wave_confs = generate_wave_signals(prices, zigzag_threshold=zigzag_threshold)
     wave_pos, wave_dir = compute_wave_position(
-        prices, wave_signals, wave_confs,
+        prices,
+        wave_signals,
+        wave_confs,
         use_physics=True,
         base_position=wave_base_position,
     )
@@ -308,7 +318,9 @@ def run_comparison(symbol="BTC", zigzag_threshold=0.05, wave_base_position=0.3):
     print(f"\n{'='*80}")
     print(f"  回测结果对比（有效天数: {n-valid_start}天）")
     print(f"{'='*80}")
-    print(f"{'策略组合':<22} {'年化':>8} {'总收益':>10} {'夏普':>8} {'回撤':>10} {'Calmar':>8} {'胜率':>8} {'均仓':>7}")
+    print(
+        f"{'策略组合':<22} {'年化':>8} {'总收益':>10} {'夏普':>8} {'回撤':>10} {'Calmar':>8} {'胜率':>8} {'均仓':>7}"
+    )
     print(f"{'-'*90}")
 
     results = {}
@@ -319,44 +331,54 @@ def run_comparison(symbol="BTC", zigzag_threshold=0.05, wave_base_position=0.3):
         elif wave_w == 1.0:
             pos, direction = wave_pos, wave_dir
         else:
-            pos, direction = compute_fusion_position(v4_pos, v4_dir, wave_pos, wave_dir, v4_w, wave_w)
+            pos, direction = compute_fusion_position(
+                v4_pos, v4_dir, wave_pos, wave_dir, v4_w, wave_w
+            )
 
-        metrics = backtest_position(pos[valid_start:], direction[valid_start:], prices.iloc[valid_start:])
+        metrics = backtest_position(
+            pos[valid_start:], direction[valid_start:], prices.iloc[valid_start:]
+        )
         results[name] = metrics
 
-        ann = metrics.get('ann_return', 0) * 100
-        tot = metrics.get('total_return', 0) * 100
-        sharpe = metrics.get('sharpe', 0)
-        mdd = metrics.get('max_drawdown', 0) * 100
-        calmar = metrics.get('calmar', 0)
-        win = metrics.get('win_rate', 0) * 100
-        avgpos = metrics.get('avg_position', 0)
+        ann = metrics.get("ann_return", 0) * 100
+        tot = metrics.get("total_return", 0) * 100
+        sharpe = metrics.get("sharpe", 0)
+        mdd = metrics.get("max_drawdown", 0) * 100
+        calmar = metrics.get("calmar", 0)
+        win = metrics.get("win_rate", 0) * 100
+        avgpos = metrics.get("avg_position", 0)
 
-        print(f"{name:<22} {ann:>7.2f}% {tot:>9.2f}% {sharpe:>8.4f} {mdd:>9.2f}% {calmar:>8.4f} {win:>7.2f}% {avgpos:>7.3f}")
+        print(
+            f"{name:<22} {ann:>7.2f}% {tot:>9.2f}% {sharpe:>8.4f} {mdd:>9.2f}% {calmar:>8.4f} {win:>7.2f}% {avgpos:>7.3f}"
+        )
 
     bh_pos = np.ones(n)
     bh_dir = np.ones(n)
-    bh_metrics = backtest_position(bh_pos[valid_start:], bh_dir[valid_start:], prices.iloc[valid_start:])
+    bh_metrics = backtest_position(
+        bh_pos[valid_start:], bh_dir[valid_start:], prices.iloc[valid_start:]
+    )
     results["买入持有"] = bh_metrics
-    ann = bh_metrics.get('ann_return', 0) * 100
-    tot = bh_metrics.get('total_return', 0) * 100
-    sharpe = bh_metrics.get('sharpe', 0)
-    mdd = bh_metrics.get('max_drawdown', 0) * 100
-    calmar = bh_metrics.get('calmar', 0)
-    win = bh_metrics.get('win_rate', 0) * 100
-    avgpos = bh_metrics.get('avg_position', 0)
-    print(f"{'买入持有':<22} {ann:>7.2f}% {tot:>9.2f}% {sharpe:>8.4f} {mdd:>9.2f}% {calmar:>8.4f} {win:>7.2f}% {avgpos:>7.3f}")
+    ann = bh_metrics.get("ann_return", 0) * 100
+    tot = bh_metrics.get("total_return", 0) * 100
+    sharpe = bh_metrics.get("sharpe", 0)
+    mdd = bh_metrics.get("max_drawdown", 0) * 100
+    calmar = bh_metrics.get("calmar", 0)
+    win = bh_metrics.get("win_rate", 0) * 100
+    avgpos = bh_metrics.get("avg_position", 0)
+    print(
+        f"{'买入持有':<22} {ann:>7.2f}% {tot:>9.2f}% {sharpe:>8.4f} {mdd:>9.2f}% {calmar:>8.4f} {win:>7.2f}% {avgpos:>7.3f}"
+    )
 
     print(f"\n{'='*80}")
-    print(f"  相对纯V4的增量价值")
+    print("  相对纯V4的增量价值")
     print(f"{'='*80}")
     print(f"{'策略组合':<22} {'年化增量':>10} {'夏普增量':>10} {'回撤改善':>10} {'综合评分':>10}")
     print(f"{'-'*75}")
 
     v4_base = results.get("纯V4 (100%)", {})
-    v4_ann = v4_base.get('ann_return', 0)
-    v4_sharpe = v4_base.get('sharpe', 0)
-    v4_mdd = v4_base.get('max_drawdown', 0)
+    v4_ann = v4_base.get("ann_return", 0)
+    v4_sharpe = v4_base.get("sharpe", 0)
+    v4_mdd = v4_base.get("max_drawdown", 0)
 
     best_score = -999
     best_name = ""
@@ -364,9 +386,9 @@ def run_comparison(symbol="BTC", zigzag_threshold=0.05, wave_base_position=0.3):
     for name, metrics in results.items():
         if name == "买入持有":
             continue
-        ann_delta = (metrics.get('ann_return', 0) - v4_ann) * 100
-        sharpe_delta = metrics.get('sharpe', 0) - v4_sharpe
-        mdd_delta = (metrics.get('max_drawdown', 0) - v4_mdd) * 100
+        ann_delta = (metrics.get("ann_return", 0) - v4_ann) * 100
+        sharpe_delta = metrics.get("sharpe", 0) - v4_sharpe
+        mdd_delta = (metrics.get("max_drawdown", 0) - v4_mdd) * 100
 
         score = sharpe_delta * 0.4 + ann_delta * 0.01 * 0.3 + (-mdd_delta) * 0.01 * 0.3
 
@@ -375,7 +397,9 @@ def run_comparison(symbol="BTC", zigzag_threshold=0.05, wave_base_position=0.3):
             best_score = score
             best_name = name
 
-        print(f"{name:<22} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {score:>10.4f}{mark}")
+        print(
+            f"{name:<22} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {score:>10.4f}{mark}"
+        )
 
     print(f"\n最优组合: {best_name} (综合评分: {best_score:.4f})")
 
@@ -387,8 +411,7 @@ def run_comparison(symbol="BTC", zigzag_threshold=0.05, wave_base_position=0.3):
         "date_range": [str(prices.index[0].date()), str(prices.index[-1].date())],
         "results": {
             k: {
-                kk: float(vv) if isinstance(vv, (int, float, np.floating, np.integer))
-                else vv
+                kk: float(vv) if isinstance(vv, (int, float, np.floating, np.integer)) else vv
                 for kk, vv in v.items()
                 if kk != "cumulative_returns"
             }

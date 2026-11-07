@@ -21,11 +21,11 @@
 - 离场决策 → 委托给 10-经典指标系统 的 ClassicExitSystem
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone  # noqa: I001
 from typing import Optional, Dict
 
 try:
-    from .core import (
+    from .core import (  # noqa: I001
         calc_trend_consistency,
         calc_bayesian_confidence,
         fuse_technical_fundamental,
@@ -37,13 +37,13 @@ try:
         get_vol_adjusted_params,
         calc_risk_reward_ratio,
         evaluate_addon_opportunity,
-        calc_position_sizing,
+        calc_position_sizing,  # noqa: F401
         MAX_LEVERAGE,
         MAX_POSITION_PCT,
         MAX_ADDON_POSITION_PCT,
         BASE_TAKE_PROFIT_PCT,
         BASE_STOP_LOSS_PCT,
-        BTC_DIVERGENCE_ADDON_PCT,
+        BTC_DIVERGENCE_ADDON_PCT,  # noqa: F401
         BTC_WIND_VANE_DAILY_MA,
         BTC_WIND_VANE_WEEKLY_MA,
         BTC_WIND_VANE_BREAK_DAYS,
@@ -53,11 +53,11 @@ try:
         OPEN_CONFIDENCE_THRESHOLD,
         TRIAL_CONFIDENCE_THRESHOLD,
         POSITION_TIERS,
-        CONFIDENCE_JUMP_THRESHOLD,
+        CONFIDENCE_JUMP_THRESHOLD,  # noqa: F401
         DEFAULT_INST_SPOT,
     )
 except ImportError:
-    from core import (
+    from core import (  # noqa: I001
         calc_trend_consistency,
         calc_bayesian_confidence,
         fuse_technical_fundamental,
@@ -69,13 +69,11 @@ except ImportError:
         get_vol_adjusted_params,
         calc_risk_reward_ratio,
         evaluate_addon_opportunity,
-        calc_position_sizing,
         MAX_LEVERAGE,
         MAX_POSITION_PCT,
         MAX_ADDON_POSITION_PCT,
         BASE_TAKE_PROFIT_PCT,
         BASE_STOP_LOSS_PCT,
-        BTC_DIVERGENCE_ADDON_PCT,
         BTC_WIND_VANE_DAILY_MA,
         BTC_WIND_VANE_WEEKLY_MA,
         BTC_WIND_VANE_BREAK_DAYS,
@@ -85,12 +83,13 @@ except ImportError:
         OPEN_CONFIDENCE_THRESHOLD,
         TRIAL_CONFIDENCE_THRESHOLD,
         POSITION_TIERS,
-        CONFIDENCE_JUMP_THRESHOLD,
         DEFAULT_INST_SPOT,
     )
 
 
-def evaluate_btc_wind_vane(btc_daily_df=None, btc_weekly_df=None, reversal_context: Optional[Dict] = None) -> Dict:
+def evaluate_btc_wind_vane(
+    btc_daily_df=None, btc_weekly_df=None, reversal_context: Optional[Dict] = None
+) -> Dict:
     """BTC风向标评估 — 全系统做多/做空闸门
 
     大原则（宏观方向过滤器，优先级高于一切币种级信号）：
@@ -170,7 +169,10 @@ def evaluate_btc_wind_vane(btc_daily_df=None, btc_weekly_df=None, reversal_conte
     last_daily_close = None
     daily_below_confirmed = False
 
-    if btc_daily_df is not None and len(btc_daily_df) >= BTC_WIND_VANE_DAILY_MA + BTC_WIND_VANE_BREAK_DAYS:
+    if (
+        btc_daily_df is not None
+        and len(btc_daily_df) >= BTC_WIND_VANE_DAILY_MA + BTC_WIND_VANE_BREAK_DAYS
+    ):
         closes = list(btc_daily_df["close"])
         daily_ma128 = sum(closes[-BTC_WIND_VANE_DAILY_MA:]) / BTC_WIND_VANE_DAILY_MA
         last_daily_close = closes[-1]
@@ -223,7 +225,11 @@ def evaluate_btc_wind_vane(btc_daily_df=None, btc_weekly_df=None, reversal_conte
         result["short_gate_open"] = False
 
         # P0 软拦截判定：静态强制做多 + 动态强逆转看空 → 软拦截（允许轻仓做空试探）
-        if has_reversal and reversal_dir == "BEAR" and reversal_confidence >= REVERSAL_SOFT_BLOCK_THRESHOLD:
+        if (
+            has_reversal
+            and reversal_dir == "BEAR"
+            and reversal_confidence >= REVERSAL_SOFT_BLOCK_THRESHOLD
+        ):
             result["hard_block"] = False
             result["soft_block"] = True
             result["reversal_downgrade"] = True
@@ -248,7 +254,11 @@ def evaluate_btc_wind_vane(btc_daily_df=None, btc_weekly_df=None, reversal_conte
         result["prohibit_long"] = True
 
         # P0 软拦截判定：静态强制做空 + 动态强逆转看多 → 软拦截（允许轻仓做多试探）
-        if has_reversal and reversal_dir == "BULL" and reversal_confidence >= REVERSAL_SOFT_BLOCK_THRESHOLD:
+        if (
+            has_reversal
+            and reversal_dir == "BULL"
+            and reversal_confidence >= REVERSAL_SOFT_BLOCK_THRESHOLD
+        ):
             result["hard_block"] = False
             result["soft_block"] = True
             result["reversal_downgrade"] = True
@@ -270,7 +280,9 @@ def evaluate_btc_wind_vane(btc_daily_df=None, btc_weekly_df=None, reversal_conte
     parts = []
     if daily_ma128 and last_daily_close:
         if last_daily_close < daily_ma128:
-            parts.append(f"日线收盘{last_daily_close:.2f}<MA128({daily_ma128:.2f})但未连续{BTC_WIND_VANE_BREAK_DAYS}日确认")
+            parts.append(
+                f"日线收盘{last_daily_close:.2f}<MA128({daily_ma128:.2f})但未连续{BTC_WIND_VANE_BREAK_DAYS}日确认"
+            )
         else:
             parts.append(f"日线收盘{last_daily_close:.2f}≥MA128({daily_ma128:.2f})")
     if weekly_ma200 and last_weekly_close:
@@ -351,11 +363,13 @@ def compute_value_risk_assessment(
 
     klines = []
     for i in range(len(daily_df)):
-        klines.append({
-            "high": float(daily_df["high"].iloc[i]),
-            "low": float(daily_df["low"].iloc[i]),
-            "close": float(daily_df["close"].iloc[i]),
-        })
+        klines.append(
+            {
+                "high": float(daily_df["high"].iloc[i]),
+                "low": float(daily_df["low"].iloc[i]),
+                "close": float(daily_df["close"].iloc[i]),
+            }
+        )
 
     elder_ray = calc_elder_ray(klines, period=13)
 
@@ -404,11 +418,13 @@ def evaluate_addon_decision(
 
     klines = []
     for i in range(len(daily_df)):
-        klines.append({
-            "high": float(daily_df["high"].iloc[i]),
-            "low": float(daily_df["low"].iloc[i]),
-            "close": float(daily_df["close"].iloc[i]),
-        })
+        klines.append(
+            {
+                "high": float(daily_df["high"].iloc[i]),
+                "low": float(daily_df["low"].iloc[i]),
+                "close": float(daily_df["close"].iloc[i]),
+            }
+        )
 
     elder_ray = calc_elder_ray(klines, period=13)
 
@@ -481,7 +497,7 @@ def _integrate_freqtrade_signals(
         if sig is None:
             continue
 
-        if hasattr(sig, 'direction'):
+        if hasattr(sig, "direction"):
             sig_obj = sig
         else:
             sig_obj = _dict_to_signal(sig, tf)
@@ -526,11 +542,13 @@ def _dict_to_signal(sig_dict: Dict, timeframe: str):
         strategy_count=1,
         long_votes=1 if direction == SignalDirection.LONG else 0,
         short_votes=1 if direction == SignalDirection.SHORT else 0,
-        strategies=[StrategySignal(
-            strategy_name=sig_dict.get("strategy", f"freqtrade_{timeframe}"),
-            signal=direction,
-            confidence=float(sig_dict.get("confidence", 0) or 0),
-        )],
+        strategies=[
+            StrategySignal(
+                strategy_name=sig_dict.get("strategy", f"freqtrade_{timeframe}"),
+                signal=direction,
+                confidence=float(sig_dict.get("confidence", 0) or 0),
+            )
+        ],
     )
 
 
@@ -553,9 +571,11 @@ def fetch_entry_signals_from_classic(
     """
     try:
         from .signals import fetch_freqtrade_signals
+
         return fetch_freqtrade_signals(symbol, timeframes)
     except ImportError:
         from signals import fetch_freqtrade_signals
+
         return fetch_freqtrade_signals(symbol, timeframes)
     except Exception:
         return {}
@@ -756,7 +776,11 @@ def five_algo_decision(
 
         # 硬拦截逻辑（原有逻辑保持）
         # 强制做多场景：站上MA200时，BEAR信号一律硬拦截
-        if btc_wind_vane.get("force_long") and direction == "BEAR" and btc_wind_vane.get("hard_block", True):
+        if (
+            btc_wind_vane.get("force_long")
+            and direction == "BEAR"
+            and btc_wind_vane.get("hard_block", True)
+        ):
             result_flags["wind_vane_blocked"] = True
             return {
                 "action": "WAIT",
@@ -767,7 +791,11 @@ def five_algo_decision(
             }
 
         # 做空闸门关闭：禁止ENTER_SHORT（硬拦截）
-        if not btc_wind_vane.get("short_gate_open", True) and direction == "BEAR" and btc_wind_vane.get("hard_block", True):
+        if (
+            not btc_wind_vane.get("short_gate_open", True)
+            and direction == "BEAR"
+            and btc_wind_vane.get("hard_block", True)
+        ):
             result_flags["wind_vane_blocked"] = True
             return {
                 "action": "WAIT",
@@ -778,7 +806,11 @@ def five_algo_decision(
             }
 
         # 做多闸门关闭：禁止ENTER_LONG（硬拦截）
-        if not btc_wind_vane.get("long_gate_open", True) and direction == "BULL" and btc_wind_vane.get("hard_block", True):
+        if (
+            not btc_wind_vane.get("long_gate_open", True)
+            and direction == "BULL"
+            and btc_wind_vane.get("hard_block", True)
+        ):
             result_flags["wind_vane_blocked"] = True
             return {
                 "action": "WAIT",
@@ -809,7 +841,7 @@ def five_algo_decision(
         }
 
     # REVERSAL_CONSISTENT：标记为逆转试探，仓位上限为 trial
-    is_reversal_trial = (consistency_level == "REVERSAL_CONSISTENT")
+    is_reversal_trial = consistency_level == "REVERSAL_CONSISTENT"
 
     pos = confidence_to_position(confidence)
 
@@ -898,8 +930,8 @@ def five_algo_decision(
     # - speed 高 + accel 正（加速） → 动量强劲，降低入场阈值
     # - speed 高 + accel 负（减速） → 动量衰竭，提高入场阈值
     # - speed 低 → 时机不佳，不降级入场
-    DYNAMIC_SPEED_THRESHOLD = 30.0   # speed ≥ 30 视为动量充足
-    DYNAMIC_ACCEL_THRESHOLD = 10.0   # accel ≥ 10 视为加速
+    DYNAMIC_SPEED_THRESHOLD = 30.0  # speed ≥ 30 视为动量充足
+    DYNAMIC_ACCEL_THRESHOLD = 10.0  # accel ≥ 10 视为加速
 
     dynamic_timing_score = 0.0
     daily_speed = 0.0
@@ -946,13 +978,17 @@ def five_algo_decision(
     if elder_ray and not ft_signals:  # 无 Freqtrade 信号时才启用 Elder-ray 背离
         er_bull_div = elder_ray.get("bull_divergence", {})
         er_bear_div = elder_ray.get("bear_divergence", {})
-        er_ema_trend = elder_ray.get("ema_trend", "NEUTRAL")
+        er_ema_trend = elder_ray.get("ema_trend", "NEUTRAL")  # noqa: F841
 
         # 场景1: 趋势一致 + 同向背离（趋势内回调，顺势入场）
         # 例如：主趋势BULL，日线看涨背离（回调后继续向上）→ 做多
         # 例如：主趋势BEAR，日线看跌背离（反弹后继续向下）→ 做空
         # P2-v3: 降低阈值，提升权重（背离 = 动态趋势切换信号）
-        if direction == "BULL" and er_bear_div.get("detected", False) and consistency_level in ("STRONG_CONSISTENT", "NEUTRAL_CONSISTENT"):
+        if (
+            direction == "BULL"
+            and er_bear_div.get("detected", False)
+            and consistency_level in ("STRONG_CONSISTENT", "NEUTRAL_CONSISTENT")
+        ):
             div_strength = er_bear_div.get("strength", 0.0)
             if div_strength >= 40:
                 elder_divergence_bonus = 25
@@ -962,7 +998,11 @@ def five_algo_decision(
                 elder_divergence_bonus = 15
             elder_divergence_type = "bull"
 
-        elif direction == "BEAR" and er_bull_div.get("detected", False) and consistency_level in ("STRONG_CONSISTENT", "NEUTRAL_CONSISTENT"):
+        elif (
+            direction == "BEAR"
+            and er_bull_div.get("detected", False)
+            and consistency_level in ("STRONG_CONSISTENT", "NEUTRAL_CONSISTENT")
+        ):
             div_strength = er_bull_div.get("strength", 0.0)
             if div_strength >= 40:
                 elder_divergence_bonus = 25
@@ -1004,7 +1044,9 @@ def five_algo_decision(
     if direction == "BULL":
         if ft_bull and freqtrade_consistent:
             action = "ENTER_LONG"
-            reason = f"趋势一致+Freqtrade {ft_trigger_tf}看多+置信{confidence:.1f}%，{pos_label}入场"
+            reason = (
+                f"趋势一致+Freqtrade {ft_trigger_tf}看多+置信{confidence:.1f}%，{pos_label}入场"
+            )
         elif not ft_signals:
             # P2-v2 Elder-ray 背离 + P1 动态时机 + 纯置信度 三级降级入场
             if confidence >= final_entry_threshold:
@@ -1013,8 +1055,10 @@ def five_algo_decision(
                     result_flags["elder_ray_divergence_entry"] = True
                     result_flags["dynamic_timing_entry"] = False
                     er_str = er_bear_div.get("strength", 0.0) if elder_ray else 0
-                    reason = (f"经典系统不可用，趋势一致+看涨背离(强度{er_str:.0f})+置信{confidence:.1f}%"
-                              f"≥{final_entry_threshold}%，Elder-ray背离入场({pos_label})")
+                    reason = (
+                        f"经典系统不可用，趋势一致+看涨背离(强度{er_str:.0f})+置信{confidence:.1f}%"
+                        f"≥{final_entry_threshold}%，Elder-ray背离入场({pos_label})"
+                    )
                 elif dynamic_timing_score >= 1.0:
                     result_flags["dynamic_timing_entry"] = True
                     reason = f"经典系统不可用，趋势一致+置信{confidence:.1f}%≥{final_entry_threshold}%，动态时机入场(speed={daily_speed:.1f}/accel={daily_accel:.1f}，{pos_label})"
@@ -1025,7 +1069,11 @@ def five_algo_decision(
                     reason = f"经典系统不可用，趋势一致+置信{confidence:.1f}%≥{final_entry_threshold}%，降级入场({pos_label})"
             else:
                 action = "WAIT"
-                div_info = f"，Elder-ray背离阈值{final_entry_threshold}" if elder_divergence_bonus > 0 else f"，动态时机评分{dynamic_timing_score}"
+                div_info = (
+                    f"，Elder-ray背离阈值{final_entry_threshold}"
+                    if elder_divergence_bonus > 0
+                    else f"，动态时机评分{dynamic_timing_score}"
+                )
                 reason = f"Freqtrade信号缺失+置信{confidence:.1f}%<{final_entry_threshold}%，观望{div_info}"
         else:
             action = "WAIT"
@@ -1033,7 +1081,9 @@ def five_algo_decision(
     elif direction == "BEAR":
         if ft_bear and freqtrade_consistent:
             action = "ENTER_SHORT"
-            reason = f"趋势一致+Freqtrade {ft_trigger_tf}看空+置信{confidence:.1f}%，{pos_label}入场"
+            reason = (
+                f"趋势一致+Freqtrade {ft_trigger_tf}看空+置信{confidence:.1f}%，{pos_label}入场"
+            )
         elif not ft_signals:
             if confidence >= final_entry_threshold:
                 action = "ENTER_SHORT"
@@ -1041,8 +1091,10 @@ def five_algo_decision(
                     result_flags["elder_ray_divergence_entry"] = True
                     result_flags["dynamic_timing_entry"] = False
                     er_str = er_bull_div.get("strength", 0.0) if elder_ray else 0
-                    reason = (f"经典系统不可用，趋势一致+看跌背离(强度{er_str:.0f})+置信{confidence:.1f}%"
-                              f"≥{final_entry_threshold}%，Elder-ray背离入场({pos_label})")
+                    reason = (
+                        f"经典系统不可用，趋势一致+看跌背离(强度{er_str:.0f})+置信{confidence:.1f}%"
+                        f"≥{final_entry_threshold}%，Elder-ray背离入场({pos_label})"
+                    )
                 elif dynamic_timing_score >= 1.0:
                     result_flags["dynamic_timing_entry"] = True
                     reason = f"经典系统不可用，趋势一致+置信{confidence:.1f}%≥{final_entry_threshold}%，动态时机入场(speed={daily_speed:.1f}/accel={daily_accel:.1f}，{pos_label})"
@@ -1053,7 +1105,11 @@ def five_algo_decision(
                     reason = f"经典系统不可用，趋势一致+置信{confidence:.1f}%≥{final_entry_threshold}%，降级入场({pos_label})"
             else:
                 action = "WAIT"
-                div_info = f"，Elder-ray背离阈值{final_entry_threshold}" if elder_divergence_bonus > 0 else f"，动态时机评分{dynamic_timing_score}"
+                div_info = (
+                    f"，Elder-ray背离阈值{final_entry_threshold}"
+                    if elder_divergence_bonus > 0
+                    else f"，动态时机评分{dynamic_timing_score}"
+                )
                 reason = f"Freqtrade信号缺失+置信{confidence:.1f}%<{final_entry_threshold}%，观望{div_info}"
         else:
             action = "WAIT"
@@ -1121,8 +1177,11 @@ def compute_trend_signal_from_dataframes(
     classic_confidence = calc_classic_indicator_confidence(weekly_df, daily_df)
 
     fusion_result = fuse_technical_fundamental(
-        {"direction": bayesian_confidence["direction"], "confidence": bayesian_confidence["confidence"]},
-        fundamental_data
+        {
+            "direction": bayesian_confidence["direction"],
+            "confidence": bayesian_confidence["confidence"],
+        },
+        fundamental_data,
     )
 
     # ── P3.4: 综合预测引擎（技术基线 + 基本面三维度调节）──
@@ -1131,6 +1190,7 @@ def compute_trend_signal_from_dataframes(
     composite_prediction = None
     try:
         from .core.composite_predictor import create_composite_predictor
+
         predictor = create_composite_predictor()
         tech_result_for_composite = {
             "direction": trend_consistency.get("overall_direction", "NEUTRAL"),
@@ -1147,7 +1207,10 @@ def compute_trend_signal_from_dataframes(
     final_confidence = fusion_result["final_confidence"]
 
     # 应用综合预测引擎的调节因子
-    if composite_prediction and composite_prediction.get("fundamental", {}).get("adjustment", {}).get("adjustment") != 0:
+    if (
+        composite_prediction
+        and composite_prediction.get("fundamental", {}).get("adjustment", {}).get("adjustment") != 0
+    ):
         adjustment = composite_prediction["fundamental"]["adjustment"]
         adjustment_type = adjustment.get("adjustment_type", "none")
         if adjustment_type == "enhance":
@@ -1215,7 +1278,9 @@ def compute_trend_signal_from_dataframes(
         "reversal_confidence": trend_consistency.get("reversal_confidence", 0.0),
         "overall_direction": trend_consistency.get("overall_direction", "NEUTRAL"),
     }
-    btc_wind_vane = evaluate_btc_wind_vane(wv_daily_df, wv_weekly_df, reversal_context=reversal_context)
+    btc_wind_vane = evaluate_btc_wind_vane(
+        wv_daily_df, wv_weekly_df, reversal_context=reversal_context
+    )
 
     # P1: 提取日线动态指标（speed/acceleration）传给 five_algo_decision 做时机评分
     daily_dynamics_for_timing = None
@@ -1264,7 +1329,6 @@ def compute_trend_signal_from_dataframes(
     # 9年回测验证：V4年化 53.34%，V4+波浪互斥融合年化 56.43%
     v4_strategy_info = None
     try:
-        import pandas as _pd_v4
 
         if daily_df is not None and len(daily_df) >= 250:
             if is_btc:
@@ -1292,7 +1356,11 @@ def compute_trend_signal_from_dataframes(
                 strategy_name = "AltcoinTrendStrategy"
 
             v4_position_series = v4_strategy.generate_signals(daily_df)
-            v4_position_arr = v4_position_series.values if hasattr(v4_position_series, 'values') else np.array(v4_position_series)
+            v4_position_arr = (
+                v4_position_series.values
+                if hasattr(v4_position_series, "values")
+                else np.array(v4_position_series)  # noqa: F821
+            )
             v4_current_position = float(v4_position_arr[-1]) if len(v4_position_arr) > 0 else 0.0
             v4_abs_position = abs(v4_current_position)
 
@@ -1350,7 +1418,11 @@ def compute_trend_signal_from_dataframes(
             value_risk = None
 
     adjusted_position_pct = decision["position"]["position_pct"]
-    if value_risk and value_risk.get("value_gt_risk") is False and decision["action"] in ("ENTER_LONG", "ENTER_SHORT"):
+    if (
+        value_risk
+        and value_risk.get("value_gt_risk") is False
+        and decision["action"] in ("ENTER_LONG", "ENTER_SHORT")
+    ):
         adjusted_position_pct = min(adjusted_position_pct, 0.05)
 
     # === PITD 物理置信度调节（方向1条件策略）===
@@ -1358,16 +1430,26 @@ def compute_trend_signal_from_dataframes(
     # 条件：仅在弱趋势状态（η<0.10）启用物理调节，强趋势保持原始仓位
     # 最优参数：网格搜索+Walk-Forward验证（年化7.19%→9.38%，夏普0.3772→0.4364）
     physics_adjustment = None
-    if decision["action"] in ("ENTER_LONG", "ENTER_SHORT") and daily_df is not None and len(daily_df) >= 60:
+    if (
+        decision["action"] in ("ENTER_LONG", "ENTER_SHORT")
+        and daily_df is not None
+        and len(daily_df) >= 60
+    ):
         try:
             import numpy as _np
-            import pandas as _pd
+
             try:
-                from .ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
+                from .ml.pitd_confidence_scorer import (  # noqa: I001
+                    PhysicsConfidenceScorer,
+                    ConfidenceWeights,
+                )  # noqa: I001
                 from .ml.pitd_kinematics_engineer import KinematicsEngineer
                 from .ml.pitd_dynamics_engineer import DynamicsEngineer
             except (ImportError, ValueError):
-                from ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
+                from ml.pitd_confidence_scorer import (  # noqa: I001
+                    PhysicsConfidenceScorer,
+                    ConfidenceWeights,
+                )  # noqa: I001
                 from ml.pitd_kinematics_engineer import KinematicsEngineer
                 from ml.pitd_dynamics_engineer import DynamicsEngineer
 
@@ -1390,9 +1472,12 @@ def compute_trend_signal_from_dataframes(
 
                 # 4) 调用物理置信度评估器（最优参数显式传入）
                 optimal_weights = ConfidenceWeights(
-                    w_eta=0.211, w_reversal=0.368,
-                    w_support=0.211, w_kinetic=0.211,
-                    position_lower=0.6, position_scale=1.0,
+                    w_eta=0.211,
+                    w_reversal=0.368,
+                    w_support=0.211,
+                    w_kinetic=0.211,
+                    position_lower=0.6,
+                    position_scale=1.0,
                 )
                 _scorer = PhysicsConfidenceScorer(optimal_weights)
                 # 构造等长 ML 预测数组（最后一根为当前 bar）
@@ -1418,13 +1503,14 @@ def compute_trend_signal_from_dataframes(
                     "physics_confidence": round(current_confidence, 4),
                     "original_position_pct": round(adjusted_position_pct, 4),
                     "adjusted_position_pct": round(physics_adjusted_pct, 4),
-                    "multiplier": round(
-                        physics_adjusted_pct / max(adjusted_position_pct, 1e-6), 4
-                    ),
+                    "multiplier": round(physics_adjusted_pct / max(adjusted_position_pct, 1e-6), 4),
                     "weights": {
-                        "w_eta": 0.211, "w_reversal": 0.368,
-                        "w_support": 0.211, "w_kinetic": 0.211,
-                        "position_lower": 0.6, "position_scale": 1.0,
+                        "w_eta": 0.211,
+                        "w_reversal": 0.368,
+                        "w_support": 0.211,
+                        "w_kinetic": 0.211,
+                        "position_lower": 0.6,
+                        "position_scale": 1.0,
                     },
                     "components": {
                         "trend_score": round(float(components["trend_score"][-1]), 4),
@@ -1484,7 +1570,9 @@ def compute_trend_signal_from_dataframes(
         "direction": final_direction,
         "confidence": round(final_confidence, 1),
         "trend_consistent": trend_consistency["consistent"],
-        "consistency_level": trend_consistency.get("consistency_level", "STRONG_CONSISTENT"),  # P0 新增
+        "consistency_level": trend_consistency.get(
+            "consistency_level", "STRONG_CONSISTENT"
+        ),  # P0 新增
         "reversal_alignment": trend_consistency.get("reversal_alignment", "NONE"),  # P0 新增
         "reversal_confidence": trend_consistency.get("reversal_confidence", 0.0),  # P0 新增
         "fusion_consistent": fusion_result["consistent"],
@@ -1502,7 +1590,9 @@ def compute_trend_signal_from_dataframes(
         "dynamic_timing_entry": decision.get("dynamic_timing_entry", False),  # P1 新增
         "trend_phase": decision.get("trend_phase", "UNKNOWN"),  # P2 新增
         "phase_adjusted": decision.get("phase_adjusted", False),  # P2 新增
-        "elder_ray_divergence_entry": decision.get("elder_ray_divergence_entry", False),  # P2-v2 新增
+        "elder_ray_divergence_entry": decision.get(
+            "elder_ray_divergence_entry", False
+        ),  # P2-v2 新增
         "elder_ray": elder_ray_result,  # P2-v2 新增，完整 Elder-ray 结果
         "btc_direction_blocked": btc_direction_blocked,  # BTC趋势方向过滤
         "btc_filter_reason": btc_filter_reason,  # 过滤原因
@@ -1558,13 +1648,19 @@ def compute_full_trading_signal(
         完整信号结构
     """
     try:
-        from data_center.compat.market_compat import fetch_candles, resample_candles, fetch_ticker
+        from data_center.compat.market_compat import (  # noqa: I001
+            fetch_candles,
+            resample_candles,
+            fetch_ticker,
+        )  # noqa: I001
     except ImportError:
         try:
-            from .data.market_data import fetch_candles, resample_candles
+            from .data.market_data import fetch_candles, resample_candles  # noqa: F401
+
             fetch_ticker = None
         except ImportError:
-            from data.market_data import fetch_candles, resample_candles
+            from data.market_data import fetch_candles
+
             fetch_ticker = None
     try:
         from .data.fundamental_data import fetch_fundamental_data
@@ -1576,7 +1672,7 @@ def compute_full_trading_signal(
 
     daily = fetch_candles(spot_inst, "1D", 250)
     weekly = fetch_candles(spot_inst, "1W", 210)
-    hourly = fetch_candles(spot_inst, "1H", 168)
+    hourly = fetch_candles(spot_inst, "1H", 168)  # noqa: F841
 
     if not daily:
         return {"error": f"无法获取{spot_inst} K线数据"}
@@ -1593,26 +1689,34 @@ def compute_full_trading_signal(
     if price is None:
         price = daily[-1]["c"]
 
-    daily_df = pd.DataFrame({
-        "open": [c["o"] for c in daily],
-        "high": [c["h"] for c in daily],
-        "low": [c["l"] for c in daily],
-        "close": [c["c"] for c in daily],
-        "volume": [c["vol"] for c in daily],
-    })
+    daily_df = pd.DataFrame(
+        {
+            "open": [c["o"] for c in daily],
+            "high": [c["h"] for c in daily],
+            "low": [c["l"] for c in daily],
+            "close": [c["c"] for c in daily],
+            "volume": [c["vol"] for c in daily],
+        }
+    )
     # 设置 DatetimeIndex：V4 主策略(halving_top_exit_strategy)依赖 prices.index[i] 为 pd.Timestamp
     # 用于减半周期阶段判断(_get_halving_phase)，缺失会导致 TypeError: Timestamp <= int
     # 注意：BTC_HALVING_DATES 是 tz-naive，这里必须用 tz-naive 以避免 tz-naive/tz-aware 比较错误
     if daily and "ts" in daily[0]:
         daily_df.index = pd.to_datetime([c["ts"] for c in daily], unit="ms").tz_localize(None)
 
-    weekly_df = pd.DataFrame({
-        "open": [c["o"] for c in weekly],
-        "high": [c["h"] for c in weekly],
-        "low": [c["l"] for c in weekly],
-        "close": [c["c"] for c in weekly],
-        "volume": [c["vol"] for c in weekly],
-    }) if weekly else pd.DataFrame()
+    weekly_df = (
+        pd.DataFrame(
+            {
+                "open": [c["o"] for c in weekly],
+                "high": [c["h"] for c in weekly],
+                "low": [c["l"] for c in weekly],
+                "close": [c["c"] for c in weekly],
+                "volume": [c["vol"] for c in weekly],
+            }
+        )
+        if weekly
+        else pd.DataFrame()
+    )
     if weekly and "ts" in weekly[0]:
         weekly_df.index = pd.to_datetime([c["ts"] for c in weekly], unit="ms").tz_localize(None)
 
@@ -1643,9 +1747,17 @@ def compute_full_trading_signal(
                     "regime": f"classic_{classic_conf['screen2_daily']['direction'].lower()}",
                     "source": "classic_indicator",
                 },
-                "reports": [{"type": "classic_indicator_fallback", "direction": classic_conf["overall_direction"], "confidence": classic_conf["overall_confidence"]}],
-                "bull_count": classic_conf["screen1_weekly"]["bull_count"] + classic_conf["screen2_daily"]["bull_count"],
-                "bear_count": classic_conf["screen1_weekly"]["bear_count"] + classic_conf["screen2_daily"]["bear_count"],
+                "reports": [
+                    {
+                        "type": "classic_indicator_fallback",
+                        "direction": classic_conf["overall_direction"],
+                        "confidence": classic_conf["overall_confidence"],
+                    }
+                ],
+                "bull_count": classic_conf["screen1_weekly"]["bull_count"]
+                + classic_conf["screen2_daily"]["bull_count"],
+                "bear_count": classic_conf["screen1_weekly"]["bear_count"]
+                + classic_conf["screen2_daily"]["bear_count"],
                 "total_reports": 0,
             }
             fundamental_source = "classic_indicator_fallback"
@@ -1681,26 +1793,34 @@ def compute_full_trading_signal(
             btc_daily_raw = fetch_candles("BTC-USDT", "1D", 260)
             btc_weekly_raw = fetch_candles("BTC-USDT", "1W", 210)
             if btc_daily_raw:
-                btc_daily_df = pd.DataFrame({
-                    "open": [c["o"] for c in btc_daily_raw],
-                    "high": [c["h"] for c in btc_daily_raw],
-                    "low": [c["l"] for c in btc_daily_raw],
-                    "close": [c["c"] for c in btc_daily_raw],
-                    "volume": [c["vol"] for c in btc_daily_raw],
-                })
+                btc_daily_df = pd.DataFrame(
+                    {
+                        "open": [c["o"] for c in btc_daily_raw],
+                        "high": [c["h"] for c in btc_daily_raw],
+                        "low": [c["l"] for c in btc_daily_raw],
+                        "close": [c["c"] for c in btc_daily_raw],
+                        "volume": [c["vol"] for c in btc_daily_raw],
+                    }
+                )
                 # 同步设置 DatetimeIndex（与 daily_df 保持一致，tz-naive）
                 if "ts" in btc_daily_raw[0]:
-                    btc_daily_df.index = pd.to_datetime([c["ts"] for c in btc_daily_raw], unit="ms").tz_localize(None)
+                    btc_daily_df.index = pd.to_datetime(
+                        [c["ts"] for c in btc_daily_raw], unit="ms"
+                    ).tz_localize(None)
             if btc_weekly_raw:
-                btc_weekly_df = pd.DataFrame({
-                    "open": [c["o"] for c in btc_weekly_raw],
-                    "high": [c["h"] for c in btc_weekly_raw],
-                    "low": [c["l"] for c in btc_weekly_raw],
-                    "close": [c["c"] for c in btc_weekly_raw],
-                    "volume": [c["vol"] for c in btc_weekly_raw],
-                })
+                btc_weekly_df = pd.DataFrame(
+                    {
+                        "open": [c["o"] for c in btc_weekly_raw],
+                        "high": [c["h"] for c in btc_weekly_raw],
+                        "low": [c["l"] for c in btc_weekly_raw],
+                        "close": [c["c"] for c in btc_weekly_raw],
+                        "volume": [c["vol"] for c in btc_weekly_raw],
+                    }
+                )
                 if "ts" in btc_weekly_raw[0]:
-                    btc_weekly_df.index = pd.to_datetime([c["ts"] for c in btc_weekly_raw], unit="ms").tz_localize(None)
+                    btc_weekly_df.index = pd.to_datetime(
+                        [c["ts"] for c in btc_weekly_raw], unit="ms"
+                    ).tz_localize(None)
         except Exception:
             pass
 
@@ -1727,7 +1847,11 @@ def compute_full_trading_signal(
                 btc_daily_df=btc_daily_df,
             )
             result["value_risk_assessment"] = vr
-            if vr and vr.get("value_gt_risk") is False and result["final_signal"]["action"] in ("ENTER_LONG", "ENTER_SHORT"):
+            if (
+                vr
+                and vr.get("value_gt_risk") is False
+                and result["final_signal"]["action"] in ("ENTER_LONG", "ENTER_SHORT")
+            ):
                 orig_pos = result["final_signal"]["position"]["position_pct"]
                 result["final_signal"]["position"]["position_pct"] = min(orig_pos, 0.05)
                 result["final_signal"]["position"]["original_position_pct"] = orig_pos

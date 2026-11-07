@@ -10,6 +10,7 @@
 
 FAIL-OPEN：YAML 不可读 → 返回空 dict，expand 返回 [skill]
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -68,11 +69,13 @@ def list_operons(operons: dict) -> list[dict]:
     for name, op_def in operons.items():
         if not isinstance(op_def, dict):
             continue
-        result.append({
-            "name": name,
-            "description": op_def.get("description", ""),
-            "members": op_def.get("members", []),
-            "trigger": op_def.get("trigger", ""),
-            "member_count": len(op_def.get("members", [])),
-        })
+        result.append(
+            {
+                "name": name,
+                "description": op_def.get("description", ""),
+                "members": op_def.get("members", []),
+                "trigger": op_def.get("trigger", ""),
+                "member_count": len(op_def.get("members", [])),
+            }
+        )
     return result

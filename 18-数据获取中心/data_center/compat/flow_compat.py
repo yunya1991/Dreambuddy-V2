@@ -3,6 +3,7 @@
 fetch_yahoo_symbol / fetch_fred_series 用 YFinanceCollector / FredCollector 替换手写 HTTP；
 run_full_collection 是复杂三层编排器（2300+ 行），compat 版转发老实现 + 发 DeprecationWarning。
 """
+
 from __future__ import annotations
 
 import os
@@ -14,8 +15,16 @@ from data_center.collectors.macro.fred_collector import FredCollector
 
 # flow_collector 所在路径（老代码）
 _FLOW_COLLECTOR_DIR = os.path.join(
-    os.path.dirname(__file__), "..", "..", "..",
-    "9-基本面分析", "ops", "nanoclaw", "core_task1", "flow", "scripts",
+    os.path.dirname(__file__),
+    "..",
+    "..",
+    "..",
+    "9-基本面分析",
+    "ops",
+    "nanoclaw",
+    "core_task1",
+    "flow",
+    "scripts",
 )
 
 
@@ -74,6 +83,7 @@ def _run_full_collection_legacy() -> dict:
     if flow_dir not in sys.path:
         sys.path.insert(0, flow_dir)
     import flow_collector
+
     return flow_collector.run_full_collection()
 
 

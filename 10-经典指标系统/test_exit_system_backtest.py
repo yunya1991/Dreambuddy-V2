@@ -56,8 +56,8 @@ class TestExitSystemBacktest(unittest.TestCase):
         svc._exit_gate_should_take = lambda **kwargs: (1.0, True, "test")
         self._hold_risk = 0.05
         svc._exit_hold_risk_score = lambda **kwargs: float(self._hold_risk)
-        svc._exit_build_position_snapshot = (
-            lambda pair, pos, now_ms: dict((pos or {}).get("exit_snapshot") or {"dd": 0.0, "atr_pct": 0.01})
+        svc._exit_build_position_snapshot = lambda pair, pos, now_ms: dict(
+            (pos or {}).get("exit_snapshot") or {"dd": 0.0, "atr_pct": 0.01}
         )
         svc.hyperliquid_market_close_internal = lambda **kwargs: {}
         svc.aster_market_close_internal = lambda **kwargs: {}
@@ -255,7 +255,11 @@ class TestExitSystemBacktest(unittest.TestCase):
                 "exit_snapshot_ts": now_ms,
                 "exit_snapshot": {"dd": 0.0, "atr_pct": 0.01},
             },
-            dec={"action": "reduce", "reason": "exit_exit_feeder:l1_take_profit_reduce:reduce", "reduce_frac": 0.25},
+            dec={
+                "action": "reduce",
+                "reason": "exit_exit_feeder:l1_take_profit_reduce:reduce",
+                "reduce_frac": 0.25,
+            },
             now_ms=int(now_ms),
             execute=True,
             owner="exit_feeder",
@@ -429,8 +433,24 @@ class TestQuantPairsBtcethPnlExit(unittest.TestCase):
 
     def test_pairs_btcalt_close_retries_failed_leg(self) -> None:
         svc.TRACKER_STATE["quant_open_positions"] = {
-            "BTC-PERP": {"pair": "BTC-PERP", "side": "short", "strategy_id": "quant_pairs_btcalt", "tag": "t|g", "pair_group": "g", "alt": "SOL", "base_sz": 1.0},
-            "SOL-PERP": {"pair": "SOL-PERP", "side": "long", "strategy_id": "quant_pairs_btcalt", "tag": "t|g", "pair_group": "g", "alt": "SOL", "base_sz": 1.0},
+            "BTC-PERP": {
+                "pair": "BTC-PERP",
+                "side": "short",
+                "strategy_id": "quant_pairs_btcalt",
+                "tag": "t|g",
+                "pair_group": "g",
+                "alt": "SOL",
+                "base_sz": 1.0,
+            },
+            "SOL-PERP": {
+                "pair": "SOL-PERP",
+                "side": "long",
+                "strategy_id": "quant_pairs_btcalt",
+                "tag": "t|g",
+                "pair_group": "g",
+                "alt": "SOL",
+                "base_sz": 1.0,
+            },
         }
         svc.TRACKER_STATE["open_positions"] = {
             "BTC-PERP": {"pair": "BTC-PERP", "side": "short", "notional_usdc": 100.0},
@@ -441,6 +461,7 @@ class TestQuantPairsBtcethPnlExit(unittest.TestCase):
         per_coin = {"BTC": 0, "SOL": 0}
         orig_close_leg = svc._pairs_btceth_close_leg
         try:
+
             def _fake_close_leg(**kwargs):
                 coin = str(kwargs.get("coin") or "").strip().upper()
                 per_coin[coin] = int(per_coin.get(coin, 0)) + 1
@@ -460,7 +481,13 @@ class TestQuantPairsBtcethPnlExit(unittest.TestCase):
             with svc.app.test_request_context(
                 "/execution/pairs/btcalt/market_close",
                 method="POST",
-                json={"venue": "hyperliquid", "execute": False, "confirm_execute": True, "tag": "t", "alt": "SOL"},
+                json={
+                    "venue": "hyperliquid",
+                    "execute": False,
+                    "confirm_execute": True,
+                    "tag": "t",
+                    "alt": "SOL",
+                },
                 environ_base={"REMOTE_ADDR": "127.0.0.1"},
             ):
                 out = svc.execution_pairs_btcalt_market_close()
@@ -478,12 +505,40 @@ class TestQuantPairsBtcethPnlExit(unittest.TestCase):
         now_ms = 1_700_000_000_000
         svc.CONFIG["execution_venue"] = "hyperliquid"
         svc.TRACKER_STATE["open_positions"] = {
-            "BTC-PERP": {"pair": "BTC-PERP", "side": "short", "notional_usdc": 100.0, "entry_ts": now_ms},
-            "SOL-PERP": {"pair": "SOL-PERP", "side": "long", "notional_usdc": 100.0, "entry_ts": now_ms},
+            "BTC-PERP": {
+                "pair": "BTC-PERP",
+                "side": "short",
+                "notional_usdc": 100.0,
+                "entry_ts": now_ms,
+            },
+            "SOL-PERP": {
+                "pair": "SOL-PERP",
+                "side": "long",
+                "notional_usdc": 100.0,
+                "entry_ts": now_ms,
+            },
         }
         svc.TRACKER_STATE["quant_open_positions"] = {
-            "BTC-PERP": {"pair": "BTC-PERP", "side": "short", "strategy_id": "quant_pairs_btcalt", "tag": "t|g", "pair_group": "g", "alt": "SOL", "notional_usdc": 100.0, "base_sz": 1.0},
-            "SOL-PERP": {"pair": "SOL-PERP", "side": "long", "strategy_id": "quant_pairs_btcalt", "tag": "t|g", "pair_group": "g", "alt": "SOL", "notional_usdc": 100.0, "base_sz": 1.0},
+            "BTC-PERP": {
+                "pair": "BTC-PERP",
+                "side": "short",
+                "strategy_id": "quant_pairs_btcalt",
+                "tag": "t|g",
+                "pair_group": "g",
+                "alt": "SOL",
+                "notional_usdc": 100.0,
+                "base_sz": 1.0,
+            },
+            "SOL-PERP": {
+                "pair": "SOL-PERP",
+                "side": "long",
+                "strategy_id": "quant_pairs_btcalt",
+                "tag": "t|g",
+                "pair_group": "g",
+                "alt": "SOL",
+                "notional_usdc": 100.0,
+                "base_sz": 1.0,
+            },
         }
 
         orig_close_leg = svc._pairs_btceth_close_leg
@@ -508,8 +563,20 @@ class TestQuantPairsBtcethPnlExit(unittest.TestCase):
                 side = str(kwargs.get("side") or "").strip().lower()
                 notional = float(kwargs.get("notional_usdc") or 0.0)
                 if coin == "BTC":
-                    svc.TRACKER_STATE["open_positions"]["BTC-PERP"] = {"pair": "BTC-PERP", "side": side, "notional_usdc": float(notional)}
-                    svc.TRACKER_STATE["quant_open_positions"]["BTC-PERP"] = {"pair": "BTC-PERP", "side": side, "strategy_id": "quant_pairs_btcalt", "tag": "t|g", "pair_group": "g", "alt": "SOL", "notional_usdc": float(notional)}
+                    svc.TRACKER_STATE["open_positions"]["BTC-PERP"] = {
+                        "pair": "BTC-PERP",
+                        "side": side,
+                        "notional_usdc": float(notional),
+                    }
+                    svc.TRACKER_STATE["quant_open_positions"]["BTC-PERP"] = {
+                        "pair": "BTC-PERP",
+                        "side": side,
+                        "strategy_id": "quant_pairs_btcalt",
+                        "tag": "t|g",
+                        "pair_group": "g",
+                        "alt": "SOL",
+                        "notional_usdc": float(notional),
+                    }
                 return ({"ok": True, "order": {"status": "filled"}}, None)
 
             def _fake_hl_sync_record(**kwargs):
@@ -522,7 +589,15 @@ class TestQuantPairsBtcethPnlExit(unittest.TestCase):
             with svc.app.test_request_context(
                 "/execution/pairs/btcalt/market_close",
                 method="POST",
-                json={"venue": "hyperliquid", "execute": True, "confirm_execute": True, "tag": "t", "alt": "SOL", "close_verify_timeout_sec": 0.1, "close_verify_poll_sec": 0.05},
+                json={
+                    "venue": "hyperliquid",
+                    "execute": True,
+                    "confirm_execute": True,
+                    "tag": "t",
+                    "alt": "SOL",
+                    "close_verify_timeout_sec": 0.1,
+                    "close_verify_poll_sec": 0.05,
+                },
                 environ_base={"REMOTE_ADDR": "127.0.0.1"},
             ):
                 out = svc.execution_pairs_btcalt_market_close()

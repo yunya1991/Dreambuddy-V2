@@ -31,16 +31,17 @@ Spec: 2026-08-29-fundamental-7engines-daotian-boost-spec.md
  TC-14 FAIL-OPEN 3场景：S3 ImportError / S5 ValueError / A6 RuntimeError —— 单引擎异常 → delta=0
  TC-15 fx_r3_sample 四点命中区间 + 乘法精确差 ≤1e-6
 """
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import pytest
 
 THIS_DIR = Path(__file__).resolve().parent
-_REPO = THIS_DIR.parent                                    # 11-易经推理系统/
+_REPO = THIS_DIR.parent  # 11-易经推理系统/
 _COMPUTER_ROOT = _REPO / "scripts" / "memory_l4"
 _FUND_ROOT = Path(__file__).resolve().parents[1].parent / "9-基本面分析"
 _FUND_ENGINES = _FUND_ROOT / "engines"
@@ -64,9 +65,11 @@ class TestT02RedEvidence:
         if not p.exists():
             # ── T02 RED 阶段：文件不存在，记录证据 ──
             import pytest as _pt
+
             _pt.skip(f"[T02 RED证据] {p.name} NOT EXISTS —— TDD RED 基线（需 T03 创建代理）")
         # ── T03+ GREEN 阶段：import 验证 ──
         import importlib.util as _iu
+
         spec = _iu.spec_from_file_location("event_ledger_engine_proxy", str(p))
         assert spec is not None and spec.loader is not None, f"{p.name} import spec 构造失败"
         mod = _iu.module_from_spec(spec)
@@ -79,8 +82,10 @@ class TestT02RedEvidence:
         p = _FUND_ENGINES / "event_mapping_engine.py"
         if not p.exists():
             import pytest as _pt
+
             _pt.skip(f"[T02 RED证据] {p.name} NOT EXISTS —— TDD RED 基线")
         import importlib.util as _iu
+
         spec = _iu.spec_from_file_location("event_mapping_engine_proxy", str(p))
         mod = _iu.module_from_spec(spec)
         spec.loader.exec_module(mod)
@@ -91,8 +96,10 @@ class TestT02RedEvidence:
         p = _FUND_ENGINES / "narrative_engine.py"
         if not p.exists():
             import pytest as _pt
+
             _pt.skip(f"[T02 RED证据] {p.name} NOT EXISTS —— TDD RED 基线")
         import importlib.util as _iu
+
         spec = _iu.spec_from_file_location("narrative_engine_proxy", str(p))
         mod = _iu.module_from_spec(spec)
         spec.loader.exec_module(mod)
@@ -103,8 +110,10 @@ class TestT02RedEvidence:
         p = _FUND_ENGINES / "news_contract_validator.py"
         if not p.exists():
             import pytest as _pt
+
             _pt.skip(f"[T02 RED证据] {p.name} NOT EXISTS —— TDD RED 基线")
         import importlib.util as _iu
+
         spec = _iu.spec_from_file_location("news_contract_validator_proxy", str(p))
         mod = _iu.module_from_spec(spec)
         spec.loader.exec_module(mod)
@@ -114,6 +123,7 @@ class TestT02RedEvidence:
 # ============================================================
 # T01 Fixtures 10 件
 # ============================================================
+
 
 @pytest.fixture
 def fx_news_empty() -> List[Dict[str, Any]]:
@@ -125,22 +135,94 @@ def fx_news_empty() -> List[Dict[str, Any]]:
 def fx_news_positive() -> List[Dict[str, Any]]:
     """Fixture 2 — 正向新闻 8 条（温和利多加密：ETF通过+央行降息+BTC生态叙事热）。"""
     return [
-        {"id": "n1", "ts_ms": 1_755_000_000_000, "title": "贝莱德现货ETH ETF 获SEC通过", "content": "美国SEC正式批准贝莱德iShares Ethereum Trust现货ETF上市，机构资金加速入场。",
-         "source": "odaily", "sentiment_label": "bullish", "event_type": "crypto_regulation", "importance": 0.9, "assets": ["BTC", "ETH"]},
-        {"id": "n2", "ts_ms": 1_755_001_000_000, "title": "美联储暗示下月降息25bp", "content": "鲍威尔在杰克逊霍尔年会上暗示通胀回落快于预期，下月大概率降息25bp。",
-         "source": "odaily", "sentiment_label": "bullish", "event_type": "monetary_policy", "importance": 0.95, "assets": ["ALL"]},
-        {"id": "n3", "ts_ms": 1_755_007_500_000, "title": "萨尔瓦多BTC持仓浮盈超10亿", "content": "萨尔瓦多政府公布BTC持仓账面盈利突破10亿美元，总统再次加仓计划。",
-         "source": "odaily", "sentiment_label": "bullish", "event_type": "us_policy", "importance": 0.7, "assets": ["BTC"]},
-        {"id": "n4", "ts_ms": 1_755_003_000_000, "title": "Tether增发20亿USDT", "content": "Tether在Tron链增发20亿USDT，稳定币真实供应量续创新高。",
-         "source": "odaily", "sentiment_label": "bullish", "event_type": "market_data", "importance": 0.6, "assets": ["USDT"]},
-        {"id": "n5", "ts_ms": 1_755_004_000_000, "title": "Uniswap V4 正式主网上线", "content": "Uniswap V4主网正式发布，hooks生态首批20+项目同步启动。",
-         "source": "odaily", "sentiment_label": "bullish", "event_type": "market_data", "importance": 0.8, "assets": ["UNI", "ETH"]},
-        {"id": "n6", "ts_ms": 1_755_005_000_000, "title": "Solana Saga 2 手机销量破50万", "content": "Solana Saga 2 手机开售2周销量破50万，区块链手机叙事再起。",
-         "source": "odaily", "sentiment_label": "bullish", "event_type": "market_data", "importance": 0.5, "assets": ["SOL"]},
-        {"id": "n7", "ts_ms": 1_755_006_000_000, "title": "欧盟MiCA第三阶段顺利落地", "content": "欧盟MiCA监管框架第三阶段顺利落地，服务商合规进度达标。",
-         "source": "odaily", "sentiment_label": "neutral", "event_type": "crypto_regulation", "importance": 0.6, "assets": ["ALL"]},
-        {"id": "n8", "ts_ms": 1_755_007_000_000, "title": "币安Labs Q3投资22个项目", "content": "币安Labs公布Q3投资组合，覆盖DeFi/AI/L2三个赛道共22个项目。",
-         "source": "odaily", "sentiment_label": "bullish", "event_type": "market_data", "importance": 0.55, "assets": ["BNB"]},
+        {
+            "id": "n1",
+            "ts_ms": 1_755_000_000_000,
+            "title": "贝莱德现货ETH ETF 获SEC通过",
+            "content": "美国SEC正式批准贝莱德iShares Ethereum Trust现货ETF上市，机构资金加速入场。",
+            "source": "odaily",
+            "sentiment_label": "bullish",
+            "event_type": "crypto_regulation",
+            "importance": 0.9,
+            "assets": ["BTC", "ETH"],
+        },
+        {
+            "id": "n2",
+            "ts_ms": 1_755_001_000_000,
+            "title": "美联储暗示下月降息25bp",
+            "content": "鲍威尔在杰克逊霍尔年会上暗示通胀回落快于预期，下月大概率降息25bp。",
+            "source": "odaily",
+            "sentiment_label": "bullish",
+            "event_type": "monetary_policy",
+            "importance": 0.95,
+            "assets": ["ALL"],
+        },
+        {
+            "id": "n3",
+            "ts_ms": 1_755_007_500_000,
+            "title": "萨尔瓦多BTC持仓浮盈超10亿",
+            "content": "萨尔瓦多政府公布BTC持仓账面盈利突破10亿美元，总统再次加仓计划。",
+            "source": "odaily",
+            "sentiment_label": "bullish",
+            "event_type": "us_policy",
+            "importance": 0.7,
+            "assets": ["BTC"],
+        },
+        {
+            "id": "n4",
+            "ts_ms": 1_755_003_000_000,
+            "title": "Tether增发20亿USDT",
+            "content": "Tether在Tron链增发20亿USDT，稳定币真实供应量续创新高。",
+            "source": "odaily",
+            "sentiment_label": "bullish",
+            "event_type": "market_data",
+            "importance": 0.6,
+            "assets": ["USDT"],
+        },
+        {
+            "id": "n5",
+            "ts_ms": 1_755_004_000_000,
+            "title": "Uniswap V4 正式主网上线",
+            "content": "Uniswap V4主网正式发布，hooks生态首批20+项目同步启动。",
+            "source": "odaily",
+            "sentiment_label": "bullish",
+            "event_type": "market_data",
+            "importance": 0.8,
+            "assets": ["UNI", "ETH"],
+        },
+        {
+            "id": "n6",
+            "ts_ms": 1_755_005_000_000,
+            "title": "Solana Saga 2 手机销量破50万",
+            "content": "Solana Saga 2 手机开售2周销量破50万，区块链手机叙事再起。",
+            "source": "odaily",
+            "sentiment_label": "bullish",
+            "event_type": "market_data",
+            "importance": 0.5,
+            "assets": ["SOL"],
+        },
+        {
+            "id": "n7",
+            "ts_ms": 1_755_006_000_000,
+            "title": "欧盟MiCA第三阶段顺利落地",
+            "content": "欧盟MiCA监管框架第三阶段顺利落地，服务商合规进度达标。",
+            "source": "odaily",
+            "sentiment_label": "neutral",
+            "event_type": "crypto_regulation",
+            "importance": 0.6,
+            "assets": ["ALL"],
+        },
+        {
+            "id": "n8",
+            "ts_ms": 1_755_007_000_000,
+            "title": "币安Labs Q3投资22个项目",
+            "content": "币安Labs公布Q3投资组合，覆盖DeFi/AI/L2三个赛道共22个项目。",
+            "source": "odaily",
+            "sentiment_label": "bullish",
+            "event_type": "market_data",
+            "importance": 0.55,
+            "assets": ["BNB"],
+        },
     ]
 
 
@@ -148,20 +230,83 @@ def fx_news_positive() -> List[Dict[str, Any]]:
 def fx_news_negative() -> List[Dict[str, Any]]:
     """Fixture 3 — 负向新闻 7 条（恐慌+严监管+加息）。"""
     return [
-        {"id": "b1", "ts_ms": 1_755_100_000_000, "title": "FTX清算再抛5亿美元BTC", "content": "FTX破产受托人再度抛售约5亿美元BTC和ETH，短期抛压增大。",
-         "source": "odaily", "sentiment_label": "bearish", "event_type": "market_data", "importance": 0.8, "assets": ["BTC", "ETH"]},
-        {"id": "b2", "ts_ms": 1_755_101_000_000, "title": "美联储超预期鹰派维持利率不变", "content": "FOMC会议维持利率不变，点阵图暗示明年仅降息1次，市场大跌。",
-         "source": "odaily", "sentiment_label": "bearish", "event_type": "monetary_policy", "importance": 0.95, "assets": ["ALL"]},
-        {"id": "b3", "ts_ms": 1_755_102_000_000, "title": "SEC起诉Coinbase内幕交易", "content": "SEC正式起诉Coinbase涉嫌内幕交易并涉嫌未注册证券交易所。",
-         "source": "odaily", "sentiment_label": "bearish", "event_type": "crypto_regulation", "importance": 0.9, "assets": ["ALL"]},
-        {"id": "b4", "ts_ms": 1_755_103_000_000, "title": "USDC遭大额赎回15亿", "content": "Circle公布USDC 24h净赎回达15亿美元，稳定币供应量收缩。",
-         "source": "odaily", "sentiment_label": "bearish", "event_type": "market_data", "importance": 0.7, "assets": ["USDC"]},
-        {"id": "b5", "ts_ms": 1_755_104_000_000, "title": "Curve Finance再度被黑7000万", "content": "Curve Finance新版Vyper漏洞再度被利用，损失约7000万美元。",
-         "source": "odaily", "sentiment_label": "bearish", "event_type": "security", "importance": 0.85, "assets": ["CRV", "ETH"]},
-        {"id": "b6", "ts_ms": 1_755_105_000_000, "title": "中东地缘冲突升级油价急涨", "content": "霍尔木兹海峡军事冲突升级，油价跳涨5%，风险资产普跌。",
-         "source": "odaily", "sentiment_label": "bearish", "event_type": "geopolitics", "importance": 0.75, "assets": ["ALL"]},
-        {"id": "b7", "ts_ms": 1_755_106_000_000, "title": "韩国打击非法加密交易所", "content": "韩国金融监管局突击检查6家可疑加密交易所，冻结资金约2亿美元。",
-         "source": "odaily", "sentiment_label": "bearish", "event_type": "crypto_regulation", "importance": 0.6, "assets": ["ALL"]},
+        {
+            "id": "b1",
+            "ts_ms": 1_755_100_000_000,
+            "title": "FTX清算再抛5亿美元BTC",
+            "content": "FTX破产受托人再度抛售约5亿美元BTC和ETH，短期抛压增大。",
+            "source": "odaily",
+            "sentiment_label": "bearish",
+            "event_type": "market_data",
+            "importance": 0.8,
+            "assets": ["BTC", "ETH"],
+        },
+        {
+            "id": "b2",
+            "ts_ms": 1_755_101_000_000,
+            "title": "美联储超预期鹰派维持利率不变",
+            "content": "FOMC会议维持利率不变，点阵图暗示明年仅降息1次，市场大跌。",
+            "source": "odaily",
+            "sentiment_label": "bearish",
+            "event_type": "monetary_policy",
+            "importance": 0.95,
+            "assets": ["ALL"],
+        },
+        {
+            "id": "b3",
+            "ts_ms": 1_755_102_000_000,
+            "title": "SEC起诉Coinbase内幕交易",
+            "content": "SEC正式起诉Coinbase涉嫌内幕交易并涉嫌未注册证券交易所。",
+            "source": "odaily",
+            "sentiment_label": "bearish",
+            "event_type": "crypto_regulation",
+            "importance": 0.9,
+            "assets": ["ALL"],
+        },
+        {
+            "id": "b4",
+            "ts_ms": 1_755_103_000_000,
+            "title": "USDC遭大额赎回15亿",
+            "content": "Circle公布USDC 24h净赎回达15亿美元，稳定币供应量收缩。",
+            "source": "odaily",
+            "sentiment_label": "bearish",
+            "event_type": "market_data",
+            "importance": 0.7,
+            "assets": ["USDC"],
+        },
+        {
+            "id": "b5",
+            "ts_ms": 1_755_104_000_000,
+            "title": "Curve Finance再度被黑7000万",
+            "content": "Curve Finance新版Vyper漏洞再度被利用，损失约7000万美元。",
+            "source": "odaily",
+            "sentiment_label": "bearish",
+            "event_type": "security",
+            "importance": 0.85,
+            "assets": ["CRV", "ETH"],
+        },
+        {
+            "id": "b6",
+            "ts_ms": 1_755_105_000_000,
+            "title": "中东地缘冲突升级油价急涨",
+            "content": "霍尔木兹海峡军事冲突升级，油价跳涨5%，风险资产普跌。",
+            "source": "odaily",
+            "sentiment_label": "bearish",
+            "event_type": "geopolitics",
+            "importance": 0.75,
+            "assets": ["ALL"],
+        },
+        {
+            "id": "b7",
+            "ts_ms": 1_755_106_000_000,
+            "title": "韩国打击非法加密交易所",
+            "content": "韩国金融监管局突击检查6家可疑加密交易所，冻结资金约2亿美元。",
+            "source": "odaily",
+            "sentiment_label": "bearish",
+            "event_type": "crypto_regulation",
+            "importance": 0.6,
+            "assets": ["ALL"],
+        },
     ]
 
 
@@ -172,8 +317,8 @@ def fx_system_state_dao_up() -> Dict[str, Any]:
         "timestamp_ms": 1_755_007_000_000,
         "_by_class": {
             "crypto_usdt": {"jiang_score": 72, "fa_score": 65, "war_state": "COOLDOWN"},
-            "us_stock":     {"jiang_score": 60, "fa_score": 58, "war_state": "ALLOW"},
-            "precious_metal":{"jiang_score": 55, "fa_score": 62, "war_state": "COOLDOWN"},
+            "us_stock": {"jiang_score": 60, "fa_score": 58, "war_state": "ALLOW"},
+            "precious_metal": {"jiang_score": 55, "fa_score": 62, "war_state": "COOLDOWN"},
         },
         "regime_crypto": "bull_phase",
     }
@@ -186,8 +331,8 @@ def fx_system_state_dao_down() -> Dict[str, Any]:
         "timestamp_ms": 1_755_106_000_000,
         "_by_class": {
             "crypto_usdt": {"jiang_score": 38, "fa_score": 30, "war_state": "FREEZE"},
-            "us_stock":     {"jiang_score": 45, "fa_score": 50, "war_state": "COOLDOWN"},
-            "precious_metal":{"jiang_score": 50, "fa_score": 55, "war_state": "COOLDOWN"},
+            "us_stock": {"jiang_score": 45, "fa_score": 50, "war_state": "COOLDOWN"},
+            "precious_metal": {"jiang_score": 50, "fa_score": 55, "war_state": "COOLDOWN"},
         },
         "regime_crypto": "bear_phase",
     }
@@ -219,23 +364,66 @@ def fx_r3_sample() -> Dict[str, Any]:
           dao_raw=80 → 80 * 1.468368 = 117.46944 → clamp[0,100] = 100
     """
     news_list = [
-        {"id": "r1", "ts_ms": 1_755_200_000_000, "title": "美联储确认9月降息25bp",
-         "content": "会议纪要显示FOMC一致同意下月降息25bp，年内再降息1次。",
-         "source": "odaily", "sentiment_label": "bullish", "event_type": "monetary_policy", "importance": 0.95, "assets": ["ALL"]},
-        {"id": "r2", "ts_ms": 1_755_201_000_000, "title": "现货BTC ETF连续5日净流入",
-         "content": "彭博数据显示现货BTC ETF连续5个交易日净流入超4亿美元。",
-         "source": "odaily", "sentiment_label": "bullish", "event_type": "market_data", "importance": 0.9, "assets": ["BTC"]},
-        {"id": "r3", "ts_ms": 1_755_202_000_000, "title": "日本扩大加密税收优惠",
-         "content": "日本自民党批准加密资产税制改革法案，企业端持有利得免征。",
-         "source": "odaily", "sentiment_label": "bullish", "event_type": "crypto_regulation", "importance": 0.8, "assets": ["ALL"]},
-        {"id": "r4", "ts_ms": 1_755_203_000_000, "title": "L2 TVL突破300亿美元",
-         "content": "L2Beat数据显示以太坊L2总TVL突破300亿美元历史新高。",
-         "source": "odaily", "sentiment_label": "bullish", "event_type": "market_data", "importance": 0.7, "assets": ["ETH"]},
+        {
+            "id": "r1",
+            "ts_ms": 1_755_200_000_000,
+            "title": "美联储确认9月降息25bp",
+            "content": "会议纪要显示FOMC一致同意下月降息25bp，年内再降息1次。",
+            "source": "odaily",
+            "sentiment_label": "bullish",
+            "event_type": "monetary_policy",
+            "importance": 0.95,
+            "assets": ["ALL"],
+        },
+        {
+            "id": "r2",
+            "ts_ms": 1_755_201_000_000,
+            "title": "现货BTC ETF连续5日净流入",
+            "content": "彭博数据显示现货BTC ETF连续5个交易日净流入超4亿美元。",
+            "source": "odaily",
+            "sentiment_label": "bullish",
+            "event_type": "market_data",
+            "importance": 0.9,
+            "assets": ["BTC"],
+        },
+        {
+            "id": "r3",
+            "ts_ms": 1_755_202_000_000,
+            "title": "日本扩大加密税收优惠",
+            "content": "日本自民党批准加密资产税制改革法案，企业端持有利得免征。",
+            "source": "odaily",
+            "sentiment_label": "bullish",
+            "event_type": "crypto_regulation",
+            "importance": 0.8,
+            "assets": ["ALL"],
+        },
+        {
+            "id": "r4",
+            "ts_ms": 1_755_203_000_000,
+            "title": "L2 TVL突破300亿美元",
+            "content": "L2Beat数据显示以太坊L2总TVL突破300亿美元历史新高。",
+            "source": "odaily",
+            "sentiment_label": "bullish",
+            "event_type": "market_data",
+            "importance": 0.7,
+            "assets": ["ETH"],
+        },
     ]
     return {
         "news_list": news_list,
-        "r3d": {"direction": 1.0, "velocity": 0.7, "acceleration": 0.3, "confidence": 0.8, "data_points": 120, "trend_summary": "strong_bullish"},
-        "signal": {"base_weight": 0.4, "effective_weight": 0.7, "hit_rate_30d": 0.68},  # w_ratio = 0.7/0.4 = 1.75
+        "r3d": {
+            "direction": 1.0,
+            "velocity": 0.7,
+            "acceleration": 0.3,
+            "confidence": 0.8,
+            "data_points": 120,
+            "trend_summary": "strong_bullish",
+        },
+        "signal": {
+            "base_weight": 0.4,
+            "effective_weight": 0.7,
+            "hit_rate_30d": 0.68,
+        },  # w_ratio = 0.7/0.4 = 1.75
         "pn_ceiling": {"pn_dao": 0.20, "pn_tian": 0.20},  # 强制pn顶0.20
         "od_ceiling": {"od_dao": 0.10, "od_tian": 0.10},  # 强制od顶0.10
     }
@@ -248,23 +436,25 @@ def fx_coin_data_baseline() -> Dict[str, Any]:
     - tian 4子项 季性60+美林70+波动50+流动50 = 57.5 → 乘法 *1.0 → 57.5 → 58
     """
     return {
-        "fedfunds_rate": 4.375,            # 85 - 4.375*8 = 50 ✓
-        "stablecoin_mcap_bln": 180.0,      # (180-80)/2 = 50 ✓
-        "policy_sentiment_score": 0.5,     # sent=0.5→50 ✓
-        "stablecoin_change_rate": 0.0,     # 50+0=50 ✓
-        "cycle4y_t_rel": 0.50,             # t_rel∈[0.25,0.50)=65 ... wait 0.50 ∈ [0.50,0.75)=50 ✓
+        "fedfunds_rate": 4.375,  # 85 - 4.375*8 = 50 ✓
+        "stablecoin_mcap_bln": 180.0,  # (180-80)/2 = 50 ✓
+        "policy_sentiment_score": 0.5,  # sent=0.5→50 ✓
+        "stablecoin_change_rate": 0.0,  # 50+0=50 ✓
+        "cycle4y_t_rel": 0.50,  # t_rel∈[0.25,0.50)=65 ... wait 0.50 ∈ [0.50,0.75)=50 ✓
         # tian
-        "merrill_phase": "RECOVERY",       # 70
-        "atr_percentile": 0.5,             # 50
-        "liquidity_score": 0.5,            # 50
+        "merrill_phase": "RECOVERY",  # 70
+        "atr_percentile": 0.5,  # 50
+        "liquidity_score": 0.5,  # 50
     }
 
 
 # Fixture 10 — mock_sqlite_news：动态注入到 _fetch_news_72h_limit200 返回值，测试用 monkeypatch.setattr(c, '_fetch_news_72h_limit200', mock_sqlite_news(ret))
 def mock_sqlite_news(ret_value: List[Dict[str, Any]]):
     """Helper: 构造一个永远返回 ret_value 的可调用函数，供 monkeypatch 注入。"""
+
     def _fn(*a, **kw):
         return list(ret_value)
+
     return _fn
 
 
@@ -273,6 +463,7 @@ def mock_sqlite_news(ret_value: List[Dict[str, Any]]):
 # ============================================================
 def _get_computer_cls():
     from five_domain_feature_computer import FiveDomainFeatureComputer
+
     return FiveDomainFeatureComputer
 
 
@@ -319,12 +510,15 @@ class TestTC1NoneEmptyZero:
 # T06 TC-2 enable=False 字节一致（RED）
 # ============================================================
 class TestTC2EnableOffByteEqual:
-    def test_tc2_enable_off_byte_equal(self, fx_coin_data_baseline, fx_system_state_dao_up, monkeypatch):
+    def test_tc2_enable_off_byte_equal(
+        self, fx_coin_data_baseline, fx_system_state_dao_up, monkeypatch
+    ):
         """enable_fundamental_7engines_boost=False 时 compute 结果 = 开启开关但 4 boost 返回 0.0 时结果字节 deep equal。
 
         字节等价核心测试：开关关 → * (1+0)*(1+0) = *1；开关开但 4 引擎全 0 → * (1+0)*(1+0) = *1；两者结果必须完全相同。
         """
         import os
+
         os.environ.pop("FUND_7ENGINES_BOOST", None)
         Cls = _get_computer_cls()
 
@@ -351,12 +545,12 @@ class TestTC2EnableOffByteEqual:
         tian_on = c_on._compute_tian(fx_coin_data_baseline, fx_system_state_dao_up, "crypto_usdt")
 
         # 字节 deep equal：整数评分逐位相等
-        assert dao_off == dao_on, (
-            f"开关字节不等：enable=False(dao={dao_off}) vs enable=True+4neutral(dao={dao_on})"
-        )
-        assert tian_off == tian_on, (
-            f"开关字节不等：enable=False(tian={tian_off}) vs enable=True+4neutral(tian={tian_on})"
-        )
+        assert (
+            dao_off == dao_on
+        ), f"开关字节不等：enable=False(dao={dao_off}) vs enable=True+4neutral(dao={dao_on})"
+        assert (
+            tian_off == tian_on
+        ), f"开关字节不等：enable=False(tian={tian_off}) vs enable=True+4neutral(tian={tian_on})"
         # 同时 dao_off 应该是预期的 50（5 子项 50 中性等权 → 50 × *1.0 → 50）
         assert dao_off == 50, f"dao 子项全50 基线期望50，实际={dao_off}"
 
@@ -390,7 +584,9 @@ class TestTC456SABC:
         assert isinstance(b, float)
         assert -0.10 <= b < -0.02, f"S_dao负命中失败：b={b} ∉[-0.10, -0.02)"
 
-    def test_tc5_s_tian_policy_positive(self, fx_news_positive, fx_system_state_dao_up, monkeypatch):
+    def test_tc5_s_tian_policy_positive(
+        self, fx_news_positive, fx_system_state_dao_up, monkeypatch
+    ):
         """正向新闻含降息+ETF通过 → _fd_S_tian_boost ∈ (0.03, 0.10]."""
         Cls = _get_computer_cls()
         c = Cls()
@@ -399,7 +595,9 @@ class TestTC456SABC:
         assert isinstance(b, float)
         assert 0.03 < b <= 0.10, f"S_tian政策正失败：b={b} ∉(0.03, 0.10]"
 
-    def test_tc6_s_tian_emergency_negative(self, fx_news_negative, fx_system_state_dao_down, monkeypatch):
+    def test_tc6_s_tian_emergency_negative(
+        self, fx_news_negative, fx_system_state_dao_down, monkeypatch
+    ):
         """负向含Curve被黑+中东冲突+SEC起诉 → _fd_S_tian_boost ∈ [-0.10, -0.02)."""
         Cls = _get_computer_cls()
         c = Cls()
@@ -417,13 +615,16 @@ class TestTC7SClamp:
         """monkeypatch S 方法 强制返回 sum=0.25 → 仍被外层 clamp 到 ≤ 0.10."""
         Cls = _get_computer_cls()
         c = Cls()
+
         # 真实逻辑应先算5个deltas求和=0.25，再max(-0.1,min(0.1,round(sum,6))) → 0.1
         # 这里直接调用内置工具方法（若存在）否则 monkeypatch 5 引擎各返回 0.05 = 合计0.25
         # 简化版：直接断言 _fd_S_dao_boost 永远不会超过 ±0.10（通过 monkeypatch 子引擎）
         def fake_S_deltas(nl, sys):
             return [0.05, 0.05, 0.05, 0.05, 0.05]  # sum=0.25 > 顶
 
-        monkeypatch.setattr(c, "_fd_S_dao_deltas", lambda *a, **k: fake_S_deltas([], None), raising=False)
+        monkeypatch.setattr(
+            c, "_fd_S_dao_deltas", lambda *a, **k: fake_S_deltas([], None), raising=False
+        )
         # 若方法不存在 raising=False → monkeypatch 不生效但 test 逻辑通过 GREEN 前需实现
         b = c._fd_S_dao_boost({"dummy": 1})
         # 顶值不超过 0.10
@@ -432,9 +633,13 @@ class TestTC7SClamp:
     def test_tc7_s_clamp_negative_burst(self, monkeypatch):
         Cls = _get_computer_cls()
         c = Cls()
+
         def fake_neg(nl, sys):
             return [-0.05, -0.05, -0.05, -0.05, -0.08]  # sum=-0.28
-        monkeypatch.setattr(c, "_fd_S_dao_deltas", lambda *a, **k: fake_neg([], None), raising=False)
+
+        monkeypatch.setattr(
+            c, "_fd_S_dao_deltas", lambda *a, **k: fake_neg([], None), raising=False
+        )
         b = c._fd_S_dao_boost({"dummy": 1})
         assert b >= -0.10, f"S_dao clamp -0.10 被击穿：{b}"
 
@@ -447,7 +652,14 @@ class TestTC8to12AGrades:
         """TC-8 3D(direction=1, v=0.5, a=0.3, conf=0.8) → A_dao ∈ [0.005, 0.04]."""
         Cls = _get_computer_cls()
         c = Cls()
-        r3d = {"direction": 1.0, "velocity": 0.5, "acceleration": 0.3, "confidence": 0.8, "data_points": 100, "trend_summary": "bull"}
+        r3d = {
+            "direction": 1.0,
+            "velocity": 0.5,
+            "acceleration": 0.3,
+            "confidence": 0.8,
+            "data_points": 100,
+            "trend_summary": "bull",
+        }
         b = c._fd_A_dao_boost({"dummy": 1}, r3d)
         assert isinstance(b, float)
         assert -0.05 <= b <= 0.05, f"A级双保险clamp击穿：{b}"
@@ -457,7 +669,14 @@ class TestTC8to12AGrades:
         """TC-9 3D(direction=-1, v=0.6, a=0.4, conf=0.75) → A_dao ∈ [-0.04, -0.005]."""
         Cls = _get_computer_cls()
         c = Cls()
-        r3d = {"direction": -1.0, "velocity": 0.6, "acceleration": 0.4, "confidence": 0.75, "data_points": 100, "trend_summary": "bear"}
+        r3d = {
+            "direction": -1.0,
+            "velocity": 0.6,
+            "acceleration": 0.4,
+            "confidence": 0.75,
+            "data_points": 100,
+            "trend_summary": "bear",
+        }
         b = c._fd_A_dao_boost({"dummy": 1}, r3d)
         assert -0.04 <= b <= -0.005, f"A_dao负向命中失败：b={b} ∉[-0.04, -0.005]"
 
@@ -465,7 +684,14 @@ class TestTC8to12AGrades:
         """TC-10 3D(direction=0, v=0, a=0) → A_dao ≈ 0.0（abs ≤0.002）."""
         Cls = _get_computer_cls()
         c = Cls()
-        r3d = {"direction": 0.0, "velocity": 0.0, "acceleration": 0.0, "confidence": 0.5, "data_points": 50, "trend_summary": "flat"}
+        r3d = {
+            "direction": 0.0,
+            "velocity": 0.0,
+            "acceleration": 0.0,
+            "confidence": 0.5,
+            "data_points": 50,
+            "trend_summary": "flat",
+        }
         b = c._fd_A_dao_boost({"dummy": 1}, r3d)
         assert abs(b) <= 0.002, f"A_dao neutral 偏离 0.0 超限：abs({b})>0.002"
 
@@ -514,30 +740,48 @@ class TestTC13MulCeiling:
         # 更简洁：直接调用 dao_raw 的守卫后归一逻辑 —— monkeypatch 让 dao/tian 原始计算出 80/70
         class FakeSub:
             pass
+
         # 直接在 _compute_dao 开头插，更简洁：monkeypatch 让 dao 子5项返回和=400（均值80）
         # 采用：把 rate/sc/sent/diff/cycle 这 5 个内部计算结果 fake
         def fake_compute_dao(self_ref, coin_data, system_state, cls):
             dao_raw = 80.0
             if self_ref.enable_odaily_engine_boost:
-                dao_raw = dao_raw * (1.0 + self_ref._pn_dao_boost(coin_data)) * (1.0 + self_ref._od_dao_boost(coin_data))
+                dao_raw = (
+                    dao_raw
+                    * (1.0 + self_ref._pn_dao_boost(coin_data))
+                    * (1.0 + self_ref._od_dao_boost(coin_data))
+                )
             else:
                 dao_raw = dao_raw * (1.0 + self_ref._pn_dao_boost(coin_data))
             if self_ref.enable_fundamental_7engines_boost:
-                dao_raw = dao_raw * (1.0 + self_ref._fd_S_dao_boost(coin_data)) * (1.0 + self_ref._fd_A_dao_boost(coin_data, system_state))
+                dao_raw = (
+                    dao_raw
+                    * (1.0 + self_ref._fd_S_dao_boost(coin_data))
+                    * (1.0 + self_ref._fd_A_dao_boost(coin_data, system_state))
+                )
             # clamp [0,100]
             return max(0, min(100, int(round(dao_raw))))
 
         def fake_compute_tian(self_ref, coin_data, system_state, cls):
             tian_raw = 70.0
             if self_ref.enable_odaily_engine_boost:
-                tian_raw = tian_raw * (1.0 + self_ref._pn_tian_boost(coin_data)) * (1.0 + self_ref._od_tian_boost(coin_data))
+                tian_raw = (
+                    tian_raw
+                    * (1.0 + self_ref._pn_tian_boost(coin_data))
+                    * (1.0 + self_ref._od_tian_boost(coin_data))
+                )
             else:
                 tian_raw = tian_raw * (1.0 + self_ref._pn_tian_boost(coin_data))
             if self_ref.enable_fundamental_7engines_boost:
-                tian_raw = tian_raw * (1.0 + self_ref._fd_S_tian_boost(coin_data)) * (1.0 + self_ref._fd_A_tian_boost(coin_data, None))
+                tian_raw = (
+                    tian_raw
+                    * (1.0 + self_ref._fd_S_tian_boost(coin_data))
+                    * (1.0 + self_ref._fd_A_tian_boost(coin_data, None))
+                )
             return max(0, min(100, int(round(tian_raw))))
 
         import types
+
         c._compute_dao = types.MethodType(fake_compute_dao, c)
         c._compute_tian = types.MethodType(fake_compute_tian, c)
 
@@ -557,15 +801,18 @@ class TestTC14FailOpenSingleEngine:
         Cls = _get_computer_cls()
         c = Cls()
         monkeypatch.setattr(c, "_fetch_news_72h_limit200", mock_sqlite_news(fx_news_positive))
+
         # S3 抛 ImportError（通过 monkeypatch S级内部 S3 计算函数）
         def boom_s3(*a, **kw):
             raise ImportError("cannot import name 'Validator'")
+
         # 优先 monkeypatch S3 子函数名（未实现 raising=False 会跳过不干扰；实现后才拦截）
         monkeypatch.setattr(c, "_fd_S_s3_newscontract_passrate", boom_s3, raising=False)
 
         b = c._fd_S_dao_boost({"dummy": 1})
         assert isinstance(b, float), f"FAIL-OPEN失效：返回非float={type(b)}"
         import math
+
         assert not math.isnan(b), "FAIL-OPEN失效：返回NaN"
         # -0.1~+0.1 合法区间内（S3异常→S3项 delta=0，其余4项可能还有值，整体非零属正常）
         assert -0.1 <= b <= 0.1
@@ -575,8 +822,10 @@ class TestTC14FailOpenSingleEngine:
         Cls = _get_computer_cls()
         c = Cls()
         monkeypatch.setattr(c, "_fetch_news_72h_limit200", mock_sqlite_news(fx_news_positive))
+
         def boom_s5(*a, **kw):
             raise ValueError("empty narratives list")
+
         monkeypatch.setattr(c, "_fd_S_s5_narrative_traj", boom_s5, raising=False)
         b = c._fd_S_tian_boost({"dummy": 1})
         assert isinstance(b, float)
@@ -587,13 +836,21 @@ class TestTC14FailOpenSingleEngine:
         Cls = _get_computer_cls()
         c = Cls()
         r3d = {"direction": 1.0, "velocity": 0.5, "acceleration": 0.3, "confidence": 0.8}
+
         def boom_a6(*a, **kw):
             raise RuntimeError("least_resistance numpy nan")
+
         # A级 dao 内部若调用 compute_resistance_3d，拦截它
         import sys
+
         # 尝试拦截 engines.least_resistance.compute_resistance_3d
         if "engines.least_resistance" in sys.modules:
-            monkeypatch.setattr(sys.modules["engines.least_resistance"], "compute_resistance_3d", boom_a6, raising=False)
+            monkeypatch.setattr(
+                sys.modules["engines.least_resistance"],
+                "compute_resistance_3d",
+                boom_a6,
+                raising=False,
+            )
         b = c._fd_A_dao_boost({"dummy": 1}, r3d)
         assert isinstance(b, float), f"FAIL-OPEN：A6异常抛，返回非float={type(b)}"
         assert -0.05 <= b <= 0.05
@@ -607,7 +864,9 @@ class TestTC15R3FourPoints:
         """4 个 boost 都落在 Spec 区间内."""
         Cls = _get_computer_cls()
         c = Cls()
-        monkeypatch.setattr(c, "_fetch_news_72h_limit200", mock_sqlite_news(fx_r3_sample["news_list"]))
+        monkeypatch.setattr(
+            c, "_fetch_news_72h_limit200", mock_sqlite_news(fx_r3_sample["news_list"])
+        )
         # S级
         s_dao = c._fd_S_dao_boost({"dummy": 1})
         s_tian = c._fd_S_tian_boost({"dummy": 1})
@@ -625,27 +884,41 @@ class TestTC15R3FourPoints:
         Cls = _get_computer_cls()
         c = Cls()
         # monkeypatch 4 个 boost 方法返回中间区间稳定值（用于验证乘法守卫的精度）
-        monkeypatch.setattr(c, "_pn_dao_boost", lambda *a, **k: fx_r3_sample["pn_ceiling"]["pn_dao"])
-        monkeypatch.setattr(c, "_od_dao_boost", lambda *a, **k: fx_r3_sample["od_ceiling"]["od_dao"])
+        monkeypatch.setattr(
+            c, "_pn_dao_boost", lambda *a, **k: fx_r3_sample["pn_ceiling"]["pn_dao"]
+        )
+        monkeypatch.setattr(
+            c, "_od_dao_boost", lambda *a, **k: fx_r3_sample["od_ceiling"]["od_dao"]
+        )
         monkeypatch.setattr(c, "_fd_S_dao_boost", lambda *a, **k: 0.08)
         monkeypatch.setattr(c, "_fd_A_dao_boost", lambda *a, **k: 0.03)
         c.enable_fundamental_7engines_boost = True
         c.enable_odaily_engine_boost = True
 
         import types
+
         def fake_compute_dao(self_ref, coin_data, system_state, cls):
             dao_raw = 80.0
             if self_ref.enable_odaily_engine_boost:
-                dao_raw = dao_raw * (1.0 + self_ref._pn_dao_boost(coin_data)) * (1.0 + self_ref._od_dao_boost(coin_data))
+                dao_raw = (
+                    dao_raw
+                    * (1.0 + self_ref._pn_dao_boost(coin_data))
+                    * (1.0 + self_ref._od_dao_boost(coin_data))
+                )
             else:
                 dao_raw = dao_raw * (1.0 + self_ref._pn_dao_boost(coin_data))
             if self_ref.enable_fundamental_7engines_boost:
-                dao_raw = dao_raw * (1.0 + self_ref._fd_S_dao_boost(coin_data)) * (1.0 + self_ref._fd_A_dao_boost(coin_data, system_state))
+                dao_raw = (
+                    dao_raw
+                    * (1.0 + self_ref._fd_S_dao_boost(coin_data))
+                    * (1.0 + self_ref._fd_A_dao_boost(coin_data, system_state))
+                )
             return dao_raw  # 不做归一直接返回 float，便于比较精度
+
         c._compute_dao = types.MethodType(fake_compute_dao, c)
 
         code_v = c._compute_dao({}, None, "crypto_usdt")
         expected = 80.0 * (1.0 + 0.20) * (1.0 + 0.10) * (1.0 + 0.08) * (1.0 + 0.03)
-        assert abs(code_v - expected) <= 1e-6, (
-            f"乘法精确差超限：|code={code_v} - exp={expected}| = {abs(code_v-expected):.9f} > 1e-6"
-        )
+        assert (
+            abs(code_v - expected) <= 1e-6
+        ), f"乘法精确差超限：|code={code_v} - exp={expected}| = {abs(code_v-expected):.9f} > 1e-6"

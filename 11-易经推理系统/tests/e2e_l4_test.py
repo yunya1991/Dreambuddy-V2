@@ -7,7 +7,6 @@
 import json
 import sys
 import tempfile
-import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -17,18 +16,23 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4 import paths as _paths
-from scripts.memory_l4.paths import (
+from scripts.memory_l4 import (  # noqa: E402
+    a0a9_bridge,
+    case_registry,
+    distill_engine,
+    index_builder,
+    query_similar,
+    review_engine,
+    stats_engine,
+)
+from scripts.memory_l4 import paths as _paths  # noqa: E402
+from scripts.memory_l4.paths import (  # noqa: E402
     memory_l4_cases_dir,
-    memory_l4_reviews_dir,
     memory_l4_distills_dir,
+    memory_l4_reviews_dir,
     memory_l4_stats_dir,
     workbuddy_dir,
 )
-from scripts.memory_l4 import case_registry, a0a9_bridge, review_engine
-from scripts.memory_l4 import distill_engine, stats_engine, pipeline
-from scripts.memory_l4 import index_builder, query_similar
-
 
 # ── 测试/生产数据隔离 ──────────────────────────────────────────────
 # P0 修复：原 _clean_workspace fixture (autouse) 直接清空生产目录
@@ -55,12 +59,14 @@ _paths.memory_l4_reviews_dir = lambda: _sandbox_path(".workbuddy", "memory_l4", 
 _paths.episodes_dir = lambda: _sandbox_path(".workbuddy", "episodes")
 _paths.artifacts_memory_l4_dir = lambda: _sandbox_path("artifacts", "memory_l4")
 
+
 def _ts() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _make_episode(case_id: str, pnl: float, regime: str = "bull",
-                  decision: str = "long", trace_id: str = None) -> dict:
+def _make_episode(
+    case_id: str, pnl: float, regime: str = "bull", decision: str = "long", trace_id: str = None
+) -> dict:
     """生成合成 episode 数据。"""
     tid = trace_id or case_id
     return {
@@ -101,29 +107,59 @@ def _make_a0a9_artifacts(case_id: str):
     trading_dir = _sandbox_path("artifacts", "trading")
 
     stage_data = {
-        "A0": {"timestamp": _ts(), "core_contradiction": "price action vs indicator divergence",
-               "analysis": "price makes higher high but RSI makes lower high"},
-        "A1": {"timestamp": _ts(), "research_conclusion": "momentum confirmed",
-               "methodology": "technical analysis"},
-        "A2": {"timestamp": _ts(), "first_principles": "trend follows momentum",
-               "reasoning": "market inefficiency in short term"},
-        "A3": {"timestamp": _ts(), "simulation_result": "backtest positive",
-               "hypothesis": "momentum breakout strategy",
-               "backtest_result": "win_rate=0.65, avg_pnl=2.3%"},
-        "A4": {"timestamp": _ts(), "validation_result": "hypothesis validated",
-               "assumption": "trend continuation",
-               "test_outcome": "pass"},
-        "A5": {"timestamp": _ts(), "execution_decision": "enter long",
-               "execution_logic": "breakout above resistance"},
-        "A6": {"timestamp": _ts(), "signal_decision": "hold",
-               "signal_rationale": "no reversal signal"},
-        "A7": {"timestamp": _ts(), "practice_audit_result": "practice matches theory",
-               "practice_theory_gap": "minor slippage observed"},
-        "A8": {"timestamp": _ts(), "verification_result": "theory confirmed",
-               "theory_critique": "valid under current regime",
-               "verification_outcome": "pass"},
-        "A9": {"timestamp": _ts(), "exit_decision": "take profit at target",
-               "exit_reasoning": "reached target price level"},
+        "A0": {
+            "timestamp": _ts(),
+            "core_contradiction": "price action vs indicator divergence",
+            "analysis": "price makes higher high but RSI makes lower high",
+        },
+        "A1": {
+            "timestamp": _ts(),
+            "research_conclusion": "momentum confirmed",
+            "methodology": "technical analysis",
+        },
+        "A2": {
+            "timestamp": _ts(),
+            "first_principles": "trend follows momentum",
+            "reasoning": "market inefficiency in short term",
+        },
+        "A3": {
+            "timestamp": _ts(),
+            "simulation_result": "backtest positive",
+            "hypothesis": "momentum breakout strategy",
+            "backtest_result": "win_rate=0.65, avg_pnl=2.3%",
+        },
+        "A4": {
+            "timestamp": _ts(),
+            "validation_result": "hypothesis validated",
+            "assumption": "trend continuation",
+            "test_outcome": "pass",
+        },
+        "A5": {
+            "timestamp": _ts(),
+            "execution_decision": "enter long",
+            "execution_logic": "breakout above resistance",
+        },
+        "A6": {
+            "timestamp": _ts(),
+            "signal_decision": "hold",
+            "signal_rationale": "no reversal signal",
+        },
+        "A7": {
+            "timestamp": _ts(),
+            "practice_audit_result": "practice matches theory",
+            "practice_theory_gap": "minor slippage observed",
+        },
+        "A8": {
+            "timestamp": _ts(),
+            "verification_result": "theory confirmed",
+            "theory_critique": "valid under current regime",
+            "verification_outcome": "pass",
+        },
+        "A9": {
+            "timestamp": _ts(),
+            "exit_decision": "take profit at target",
+            "exit_reasoning": "reached target price level",
+        },
     }
 
     for stage, data in stage_data.items():
@@ -215,7 +251,17 @@ def test_m0_upgrade_v01_to_v02():
         "backtest": None,
         "review": {"summary": "", "theory_practice_consistency": "consistent", "lessons": []},
         "dream_reflection": None,
-        "quadrant": {"x": 0.5, "y": 0.6, "evidence": {"weights": {"perf": 0.4, "consistency": 0.4, "human": 0.2}, "y_perf": 0.6, "y_consistency": 0.6, "y_human": 0.5, "notes": ""}},
+        "quadrant": {
+            "x": 0.5,
+            "y": 0.6,
+            "evidence": {
+                "weights": {"perf": 0.4, "consistency": 0.4, "human": 0.2},
+                "y_perf": 0.6,
+                "y_consistency": 0.6,
+                "y_human": 0.5,
+                "notes": "",
+            },
+        },
     }
     upgraded = case_registry.upgrade_case_to_v02(old_case)
     assert upgraded["version"] == "v0.2"
@@ -233,8 +279,19 @@ def test_m0_populate_thinking_chain():
         _make_episode("TC_STAGE_01", pnl=1.0), "TC_STAGE_01"
     )
     stages = [
-        {"stage": "A0", "ts": _ts(), "decision": "found contradiction", "contradiction": "divergence"},
-        {"stage": "A3", "ts": _ts(), "decision": "simulated", "hypothesis": "momentum", "test_result": "pass"},
+        {
+            "stage": "A0",
+            "ts": _ts(),
+            "decision": "found contradiction",
+            "contradiction": "divergence",
+        },
+        {
+            "stage": "A3",
+            "ts": _ts(),
+            "decision": "simulated",
+            "hypothesis": "momentum",
+            "test_result": "pass",
+        },
         {"stage": "A9", "ts": _ts(), "decision": "exit", "exit_logic": "target hit"},
     ]
     case_registry.populate_thinking_chain(case, stages)
@@ -303,10 +360,12 @@ def test_m1_review_success():
 
 def test_m1_review_failure():
     """M1: 失败案例分析。"""
-    case = case_registry.create_case_data(
-        _make_episode("TC_REV_FAIL", pnl=-3.0), "TC_REV_FAIL"
-    ) if False else case_registry.create_case_from_episode_data(
-        _make_episode("TC_REV_FAIL", pnl=-3.0), "TC_REV_FAIL"
+    case = (
+        case_registry.create_case_data(_make_episode("TC_REV_FAIL", pnl=-3.0), "TC_REV_FAIL")
+        if False
+        else case_registry.create_case_from_episode_data(
+            _make_episode("TC_REV_FAIL", pnl=-3.0), "TC_REV_FAIL"
+        )
     )
     ep = _make_episode("TC_REV_FAIL", pnl=-3.0)
     result = review_engine.analyze_failure(case, ep)
@@ -371,9 +430,7 @@ def test_m2_init_distill():
 def test_m2_full_pipeline():
     """M2: 完整蒸馏流程 (11 步 + 三问)。"""
     case_id = "TC_DISTILL_FULL"
-    case = case_registry.create_case_from_episode_data(
-        _make_episode(case_id, pnl=-2.5), case_id
-    )
+    case = case_registry.create_case_from_episode_data(_make_episode(case_id, pnl=-2.5), case_id)
     case_path = memory_l4_cases_dir() / f"{case_id}.json"
     case_registry.save_json(case_path, case)
 
@@ -398,9 +455,7 @@ def test_m2_full_pipeline():
 def test_m2_compute_quadrant():
     """M2: 象限计算。"""
     case_id = "TC_DISTILL_QUAD"
-    case = case_registry.create_case_from_episode_data(
-        _make_episode(case_id, pnl=5.0), case_id
-    )
+    case = case_registry.create_case_from_episode_data(_make_episode(case_id, pnl=5.0), case_id)
     # Set a non-zero quadrant
     case["quadrant"]["x"] = 0.8
     case["quadrant"]["y"] = 0.7
@@ -410,8 +465,13 @@ def test_m2_compute_quadrant():
     case_registry.save_json(case_path, case)
 
     distill = distill_engine.init_distill(
-        {"case_id": case_id, "direction": "success", "mistakes": [], "successes": [{"what": "good entry"}]},
-        kind="benefit_experience"
+        {
+            "case_id": case_id,
+            "direction": "success",
+            "mistakes": [],
+            "successes": [{"what": "good entry"}],
+        },
+        kind="benefit_experience",
     )
     distill = distill_engine.answer_what_is_it(distill)
     distill = distill_engine.answer_why_it_works(distill)
@@ -472,9 +532,7 @@ def test_index_v02():
     distills = index_builder.load_distills()
     episodes = index_builder.load_episodes_for_cases(cases)
 
-    data = index_builder.build_index_data(
-        _ts(), cases, distills, episodes_by_path=episodes
-    )
+    data = index_builder.build_index_data(_ts(), cases, distills, episodes_by_path=episodes)
     assert data["metadata"]["feature_version"] == "v0.2"
     assert "summary" in data
     assert "case_features" in data
@@ -487,11 +545,14 @@ def test_index_thinking_chain_features():
         _make_episode("TC_IDX_TC_FEAT", pnl=1.0), "TC_IDX_TC_FEAT"
     )
     # Add thinking chain
-    case_registry.populate_thinking_chain(case, [
-        {"stage": "A0", "decision": "contradiction_found", "contradiction": "price divergence"},
-        {"stage": "A3", "decision": "simulation_pass"},
-        {"stage": "A9", "decision": "exit_taken"},
-    ])
+    case_registry.populate_thinking_chain(
+        case,
+        [
+            {"stage": "A0", "decision": "contradiction_found", "contradiction": "price divergence"},
+            {"stage": "A3", "decision": "simulation_pass"},
+            {"stage": "A9", "decision": "exit_taken"},
+        ],
+    )
     # Verify thinking_chain structure
     tc = case.get("thinking_chain", [])
     assert len(tc) == 3, f"Expected 3 stages, got {len(tc)}"
@@ -638,64 +699,70 @@ if __name__ == "__main__":
 
     # Clean test data (沙箱目录，已隔离生产数据)
     import shutil
-    for d in [memory_l4_cases_dir(), memory_l4_reviews_dir(), memory_l4_distills_dir(), memory_l4_stats_dir()]:
+
+    for d in [
+        memory_l4_cases_dir(),
+        memory_l4_reviews_dir(),
+        memory_l4_distills_dir(),
+        memory_l4_stats_dir(),
+    ]:
         if d.exists():
             shutil.rmtree(d)
         d.mkdir(parents=True, exist_ok=True)
     print(f"[安全] 测试沙箱目录: {_TEST_SANDBOX}")
 
     print("\n--- M0: case_registry ---")
-    test("M0: register profit case", test_m0_register)
-    test("M0: register loss case", test_m0_register_loss)
-    test("M0: upgrade v0.1 to v0.2", test_m0_upgrade_v01_to_v02)
-    test("M0: populate thinking_chain", test_m0_populate_thinking_chain)
-    test("M0: advance L4 status", test_m0_advance_l4_status)
+    test("M0: register profit case", test_m0_register)  # noqa: F821
+    test("M0: register loss case", test_m0_register_loss)  # noqa: F821
+    test("M0: upgrade v0.1 to v0.2", test_m0_upgrade_v01_to_v02)  # noqa: F821
+    test("M0: populate thinking_chain", test_m0_populate_thinking_chain)  # noqa: F821
+    test("M0: advance L4 status", test_m0_advance_l4_status)  # noqa: F821
 
     print("\n--- A0-A9: bridge ---")
-    test("A0-A9: collect stage outputs", test_a0a9_collect)
-    test("A0-A9: build thinking_chain", test_a0a9_build_chain)
-    test("A0-A9: query memory for stage", test_a0a9_query_memory)
+    test("A0-A9: collect stage outputs", test_a0a9_collect)  # noqa: F821
+    test("A0-A9: build thinking_chain", test_a0a9_build_chain)  # noqa: F821
+    test("A0-A9: query memory for stage", test_a0a9_query_memory)  # noqa: F821
 
     print("\n--- M1: review_engine ---")
-    test("M1: review success", test_m1_review_success)
-    test("M1: review failure", test_m1_review_failure)
-    test("M1: build review record", test_m1_build_review_record)
-    test("M1: batch review", test_m1_batch_review)
+    test("M1: review success", test_m1_review_success)  # noqa: F821
+    test("M1: review failure", test_m1_review_failure)  # noqa: F821
+    test("M1: build review record", test_m1_build_review_record)  # noqa: F821
+    test("M1: batch review", test_m1_batch_review)  # noqa: F821
 
     print("\n--- M2: distill_engine ---")
-    test("M2: init distill", test_m2_init_distill)
-    test("M2: full distill pipeline", test_m2_full_pipeline)
-    test("M2: compute quadrant", test_m2_compute_quadrant)
+    test("M2: init distill", test_m2_init_distill)  # noqa: F821
+    test("M2: full distill pipeline", test_m2_full_pipeline)  # noqa: F821
+    test("M2: compute quadrant", test_m2_compute_quadrant)  # noqa: F821
 
     print("\n--- M3: stats_engine ---")
-    test("M3: stage coverage", test_m3_stage_coverage)
-    test("M3: pnl stats", test_m3_pnl_stats)
-    test("M3: L4 status distribution", test_m3_l4_status_dist)
-    test("M3: full stats snapshot", test_m3_full_stats)
+    test("M3: stage coverage", test_m3_stage_coverage)  # noqa: F821
+    test("M3: pnl stats", test_m3_pnl_stats)  # noqa: F821
+    test("M3: L4 status distribution", test_m3_l4_status_dist)  # noqa: F821
+    test("M3: full stats snapshot", test_m3_full_stats)  # noqa: F821
 
     print("\n--- Index: index_builder ---")
-    test("Index: v0.2 build", test_index_v02)
-    test("Index: thinking_chain features", test_index_thinking_chain_features)
-    test("Index: global summary", test_index_summary)
+    test("Index: v0.2 build", test_index_v02)  # noqa: F821
+    test("Index: thinking_chain features", test_index_thinking_chain_features)  # noqa: F821
+    test("Index: global summary", test_index_summary)  # noqa: F821
 
     print("\n--- Query: query_similar ---")
-    test("Query: by stage", test_query_by_stage)
-    test("Query: by regime", test_query_by_regime)
-    test("Query: get thinking_chain", test_get_thinking_chain)
-    test("Query: v0.2 similarity", test_query_v2_similarity)
+    test("Query: by stage", test_query_by_stage)  # noqa: F821
+    test("Query: by regime", test_query_by_regime)  # noqa: F821
+    test("Query: get thinking_chain", test_get_thinking_chain)  # noqa: F821
+    test("Query: v0.2 similarity", test_query_v2_similarity)  # noqa: F821
 
     print("\n--- L1→L4: communication ---")
-    test("L1→L4: data flow", test_l1_to_l4_data_flow)
-    test("L4: state machine M0→M4", test_l4_status_machine)
+    test("L1→L4: data flow", test_l1_to_l4_data_flow)  # noqa: F821
+    test("L4: state machine M0→M4", test_l4_status_machine)  # noqa: F821
 
     print("\n" + "=" * 60)
-    print(f"Results: {PASSED} passed, {FAILED} failed, {PASSED + FAILED} total")
+    print(f"Results: {PASSED} passed, {FAILED} failed, {PASSED + FAILED} total")  # noqa: F821
     print("=" * 60)
 
-    if TESTS:
+    if TESTS:  # noqa: F821
         print("\nTest Details:")
-        for name, status, err in TESTS:
+        for name, status, err in TESTS:  # noqa: F821
             mark = "OK" if status == "PASS" else "FAIL"
             print(f"  [{mark}] {name}" + (f" — {err}" if err else ""))
 
-    sys.exit(1 if FAILED > 0 else 0)
+    sys.exit(1 if FAILED > 0 else 0)  # noqa: F821

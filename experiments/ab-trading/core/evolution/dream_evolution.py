@@ -4,13 +4,15 @@
 基于dream-oneirology技能的潜意识层外部视角
 通过梦境解析、潜意识探测、反事实推演等方式发现被系统忽视的机会
 """
-import json, os, time
-from pathlib import Path
-from typing import Dict, List, Optional
-from datetime import datetime, timezone
 
-from .evolution_engine import EvolutionEngine, EvolutionSource
+import json
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, List
+
 from .backtest_engine import SimpleBacktestEngine
+from .evolution_engine import EvolutionEngine, EvolutionSource
 
 BASE_DIR = Path(__file__).parent.parent.parent
 
@@ -129,10 +131,7 @@ class DreamOneirologyEvolution:
                 "象征作用：RSI指标被当作市场状态的象征，但可能只是表象而非本质"
             )
 
-        external_attribution = sum(
-            1 for r in reasons
-            if "市场" in r or "外部" in r or "等待" in r
-        )
+        external_attribution = sum(1 for r in reasons if "市场" in r or "外部" in r or "等待" in r)
         if external_attribution / len(reasons) > 0.6 if reasons else False:
             latent["projection"].append(
                 "投射机制：将内部的不确定性投射为'市场不好'，真正的问题是系统缺乏信心"
@@ -162,15 +161,18 @@ class DreamOneirologyEvolution:
             scores = d.get("per_coin_scores", {})
             if scores:
                 high_score_coins = [
-                    coin for coin, info in scores.items()
+                    coin
+                    for coin, info in scores.items()
                     if info.get("score", 0) > 55 and info.get("direction") != "HOLD"
                 ]
                 if high_score_coins and d.get("action") == "HOLD":
-                    subconscious["suppressed_signals"].append({
-                        "cycle": d.get("cycle_id", "unknown"),
-                        "suppressed_coins": high_score_coins,
-                        "final_action": "HOLD",
-                    })
+                    subconscious["suppressed_signals"].append(
+                        {
+                            "cycle": d.get("cycle_id", "unknown"),
+                            "suppressed_coins": high_score_coins,
+                            "final_action": "HOLD",
+                        }
+                    )
 
         hold_streak = memory.get("hold_streak", 0)
         if hold_streak >= 5:
@@ -209,15 +211,17 @@ class DreamOneirologyEvolution:
             if best_info.get("score", 0) < 50:
                 continue
 
-            results.append({
-                "cycle": d.get("cycle_id", "unknown"),
-                "actual_decision": "HOLD",
-                "counterfactual_choice": best_coin,
-                "counterfactual_direction": best_info.get("direction", "LONG"),
-                "counterfactual_score": best_info.get("score", 0),
-                "potential_gain_loss": "UNKNOWN",
-                "reflection": f"如果当时选择{best_coin} {best_info.get('direction')}，结果会怎样？",
-            })
+            results.append(
+                {
+                    "cycle": d.get("cycle_id", "unknown"),
+                    "actual_decision": "HOLD",
+                    "counterfactual_choice": best_coin,
+                    "counterfactual_direction": best_info.get("direction", "LONG"),
+                    "counterfactual_score": best_info.get("score", 0),
+                    "potential_gain_loss": "UNKNOWN",
+                    "reflection": f"如果当时选择{best_coin} {best_info.get('direction')}，结果会怎样？",
+                }
+            )
 
         return results
 

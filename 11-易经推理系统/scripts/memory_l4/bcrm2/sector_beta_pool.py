@@ -7,6 +7,7 @@
   meme_beta_252d,  meme_alpha_60d,  meme_correl_btc_60d,
   l2_beta_252d,    l2_alpha_60d,    l2_correl_btc_60d,
 """
+
 from __future__ import annotations
 
 from typing import Dict, Optional
@@ -14,13 +15,12 @@ from typing import Dict, Optional
 import numpy as np
 import pandas as pd
 
-
 SECTORS: Dict[str, tuple[str, ...]] = {
-    "defi":  ("UNI", "AAVE", "COMP", "LINK"),
-    "ai":    ("FET", "AGIX", "RNDR", "AR"),
-    "rwa":   ("ONDO", "SYN", "PROP", "TRAC"),
-    "meme":  ("PEPE", "DOGE", "SHIB", "WIF"),
-    "l2":    ("OP",  "ARB",  "STRK", "IMX"),
+    "defi": ("UNI", "AAVE", "COMP", "LINK"),
+    "ai": ("FET", "AGIX", "RNDR", "AR"),
+    "rwa": ("ONDO", "SYN", "PROP", "TRAC"),
+    "meme": ("PEPE", "DOGE", "SHIB", "WIF"),
+    "l2": ("OP", "ARB", "STRK", "IMX"),
 }
 
 
@@ -45,7 +45,8 @@ class SectorBetaPool:
     """
 
     COLUMNS = [
-        f"{s}_{metric}" for s in SECTORS.keys()
+        f"{s}_{metric}"
+        for s in SECTORS.keys()
         for metric in ("beta_252d", "alpha_60d", "correl_btc_60d")
     ]
 

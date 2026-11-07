@@ -14,12 +14,12 @@ A4触发时优先检索大师策略, 成功+5/失败-10评分反馈
 """
 
 import json
-import yaml
 import os
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+
+import yaml
 
 # ============================================================
 # 路径配置
@@ -72,14 +72,14 @@ class MasterStrategyRetriever:
     def retrieve_master_strategies(self, regime: str, top_k: int = 5) -> list:
         """
         按Regime检索大师策略 — A4触发时优先调用
-        
+
         Args:
             regime: 市场状态(TREND_STRONG_UP/TREND_DOWN/EXTREME等)
             top_k: 返回前K个策略
-            
+
         Returns:
             按priority(升序)+source_score(降序)排序的大师策略列表
-            
+
         排序规则:
         1. priority=0的大师策略优先(prioriy越小越优先)
         2. 同priority按source_score降序
@@ -103,19 +103,23 @@ class MasterStrategyRetriever:
                 is_exact = is_match
 
             if is_match:
-                matched.append({
-                    **s,
-                    "_regime_exact": is_exact,
-                    "_sort_priority": s.get("priority", 99),
-                    "_sort_score": s.get("source_score", s.get("score", 0)),
-                })
+                matched.append(
+                    {
+                        **s,
+                        "_regime_exact": is_exact,
+                        "_sort_priority": s.get("priority", 99),
+                        "_sort_score": s.get("source_score", s.get("score", 0)),
+                    }
+                )
 
         # 排序: 精确匹配 > 非精确; priority升序; score降序
-        matched.sort(key=lambda x: (
-            not x["_regime_exact"],  # 精确匹配优先
-            x["_sort_priority"],     # priority越小越优先
-            -x["_sort_score"],       # score越高越优先
-        ))
+        matched.sort(
+            key=lambda x: (
+                not x["_regime_exact"],  # 精确匹配优先
+                x["_sort_priority"],  # priority越小越优先
+                -x["_sort_score"],  # score越高越优先
+            )
+        )
 
         # 清理辅助字段
         for m in matched:
@@ -207,7 +211,9 @@ class MasterScoreFeedback:
         else:
             return "C"
 
-    def _move_entry_between_ranks(self, strategy_id: str, old_rank: Path, old_index: int, new_tier: str):
+    def _move_entry_between_ranks(
+        self, strategy_id: str, old_rank: Path, old_index: int, new_tier: str
+    ):
         """在rank文件间移动条目(分数变化导致tier变化)"""
         # 读取旧rank文件
         old_data = self._load_json(old_rank)
@@ -228,17 +234,18 @@ class MasterScoreFeedback:
         new_data["updated"] = datetime.now().strftime("%Y-%m-%d %H:%M")
         self._save_json(new_rank_path, new_data)
 
-    def update_master_score(self, strategy_id: str, result: str, evidence: str = "", 
-                            episode_id: str = "") -> dict:
+    def update_master_score(
+        self, strategy_id: str, result: str, evidence: str = "", episode_id: str = ""
+    ) -> dict:
         """
         更新大师策略评分 — 核心方法
-        
+
         Args:
             strategy_id: 策略ID (e.g. "master_soros_reflexivity_short")
             result: "success" | "failure"
             evidence: 证据描述
             episode_id: 关联的episode ID
-            
+
         Returns:
             更新结果摘要
         """
@@ -248,12 +255,18 @@ class MasterScoreFeedback:
         elif result == "failure":
             delta = SCORE_FAILURE_DELTA
         else:
-            return {"status": "ERROR", "message": f"Invalid result: {result}, must be 'success' or 'failure'"}
+            return {
+                "status": "ERROR",
+                "message": f"Invalid result: {result}, must be 'success' or 'failure'",
+            }
 
         # 在rank文件中查找
         rank_file, entry_idx, entry = self._find_entry_in_rank_file(strategy_id)
         if entry is None:
-            return {"status": "NOT_FOUND", "message": f"Strategy {strategy_id} not found in any rank file"}
+            return {
+                "status": "NOT_FOUND",
+                "message": f"Strategy {strategy_id} not found in any rank file",
+            }
 
         # 计算新分数
         old_score = entry.get("score", 0)
@@ -269,13 +282,15 @@ class MasterScoreFeedback:
 
         # 更新score_history
         history = entry.get("score_history", [])
-        history.append({
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "from": old_score,
-            "to": new_score,
-            "reason": f"A4实战验证({result}): {evidence or strategy_id}",
-            "episode_id": episode_id,
-        })
+        history.append(
+            {
+                "date": datetime.now().strftime("%Y-%m-%d"),
+                "from": old_score,
+                "to": new_score,
+                "reason": f"A4实战验证({result}): {evidence or strategy_id}",
+                "episode_id": episode_id,
+            }
+        )
         entry["score_history"] = history
 
         # 更新evidence
@@ -310,8 +325,15 @@ class MasterScoreFeedback:
             "verifications": entry["verifications"],
         }
 
-    def _update_all_index(self, strategy_id: str, new_score: int, new_tier: str,
-                          delta: int, result: str, evidence: str):
+    def _update_all_index(
+        self,
+        strategy_id: str,
+        new_score: int,
+        new_tier: str,
+        delta: int,
+        result: str,
+        evidence: str,
+    ):
         """同步更新all_index.json中的条目和evolution_log"""
         index_data = self._load_all_index()
 
@@ -328,15 +350,17 @@ class MasterScoreFeedback:
 
         # 如果all_index中没有该大师策略条目, 新增
         if not found:
-            index_data.setdefault("entries", []).append({
-                "id": f"{new_tier.lower()}_{strategy_id}",
-                "name": f"大师策略:{strategy_id}",
-                "score": new_score,
-                "tier": new_tier,
-                "regime": [],
-                "tool": "master",
-                "verifications": 1,
-            })
+            index_data.setdefault("entries", []).append(
+                {
+                    "id": f"{new_tier.lower()}_{strategy_id}",
+                    "name": f"大师策略:{strategy_id}",
+                    "score": new_score,
+                    "tier": new_tier,
+                    "regime": [],
+                    "tool": "master",
+                    "verifications": 1,
+                }
+            )
 
         # 更新scoring_summary
         self._recalculate_summary(index_data)
@@ -400,10 +424,10 @@ class MasterScoreFeedback:
     def batch_update(self, updates: list) -> list:
         """
         批量更新大师策略评分
-        
+
         Args:
             updates: [{"strategy_id": "...", "result": "success"|"failure", "evidence": "..."}]
-            
+
         Returns:
             更新结果列表
         """
@@ -431,28 +455,32 @@ class MasterScoreFeedback:
         for tier, rank_file in tier_map.items():
             data = self._load_json(rank_file)
             for e in data.get("entries", []):
-                entries.append({
-                    "id": e.get("id", f"{tier.lower()}_{e.get('strategy_id', 'unknown')}"),
-                    "name": e.get("name", ""),
-                    "score": e.get("score", 0),
-                    "tier": tier,
-                    "regime": e.get("regime", []),
-                    "tool": e.get("tool_type", "unknown"),
-                    "verifications": e.get("verifications", 0),
-                })
+                entries.append(
+                    {
+                        "id": e.get("id", f"{tier.lower()}_{e.get('strategy_id', 'unknown')}"),
+                        "name": e.get("name", ""),
+                        "score": e.get("score", 0),
+                        "tier": tier,
+                        "regime": e.get("regime", []),
+                        "tool": e.get("tool_type", "unknown"),
+                        "verifications": e.get("verifications", 0),
+                    }
+                )
 
         # 添加pending
         pending_data = self._load_json(PENDING_FILE)
         for e in pending_data.get("entries", []):
-            entries.append({
-                "id": e.get("id", f"p_{e.get('strategy_id', 'unknown')}"),
-                "name": e.get("name", ""),
-                "score": e.get("score", 0),
-                "tier": "pending",
-                "regime": e.get("regime", []),
-                "tool": e.get("tool_type", "unknown"),
-                "verifications": 0,
-            })
+            entries.append(
+                {
+                    "id": e.get("id", f"p_{e.get('strategy_id', 'unknown')}"),
+                    "name": e.get("name", ""),
+                    "score": e.get("score", 0),
+                    "tier": "pending",
+                    "regime": e.get("regime", []),
+                    "tool": e.get("tool_type", "unknown"),
+                    "verifications": 0,
+                }
+            )
 
         # 保留现有evolution_log
         existing_index = self._load_all_index()
@@ -463,12 +491,15 @@ class MasterScoreFeedback:
             "updated": datetime.now().strftime("%Y-%m-%d %H:%M"),
             "description": "总索引 - 所有知识条目(含v3.1全部45条策略评分含10条大师策略)",
             "scoring_summary": {},
-            "evolution_log": evolution_log + [{
-                "date": datetime.now().strftime("%Y-%m-%d"),
-                "trigger": "all_index.json重建(v3.0→v3.1, 35→45策略)",
-                "changes": ["新增10条master_*大师策略", "总策略数35→45"],
-                "key_findings": ["S级+3条大师策略(Soros82/Druckenmiller80/PTJ80)"],
-            }],
+            "evolution_log": evolution_log
+            + [
+                {
+                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "trigger": "all_index.json重建(v3.0→v3.1, 35→45策略)",
+                    "changes": ["新增10条master_*大师策略", "总策略数35→45"],
+                    "key_findings": ["S级+3条大师策略(Soros82/Druckenmiller80/PTJ80)"],
+                }
+            ],
             "entries": entries,
         }
         self._recalculate_summary(new_index)
@@ -479,7 +510,7 @@ class MasterScoreFeedback:
 class MasterCompositeEngine:
     """
     大师策略组合引擎 — 三位大师合力
-    
+
     组合架构:
     ┌─────────────────────────────────────────┐
     │  Livermore: 进出场时机                    │
@@ -627,22 +658,28 @@ class MasterCompositeEngine:
             },
         }
 
-    def get_composite_strategy(self, regime: str, price_data: dict = None,
-                               conviction: float = 0.5, equity: float = 5855.0) -> dict:
+    def get_composite_strategy(
+        self, regime: str, price_data: dict = None, conviction: float = 0.5, equity: float = 5855.0
+    ) -> dict:
         """
         获取组合策略 — 三位大师合力
-        
+
         Args:
             regime: 当前市场状态
             price_data: 价格数据(breakout, volume_ratio, ma_alignment, fgi)
             conviction: 确信度(0-1)
             equity: 账户权益
-            
+
         Returns:
             组合策略指令
         """
         if price_data is None:
-            price_data = {"breakout": False, "volume_ratio": 1.0, "ma_alignment": "neutral", "fgi": 50}
+            price_data = {
+                "breakout": False,
+                "volume_ratio": 1.0,
+                "ma_alignment": "neutral",
+                "fgi": 50,
+            }
 
         # 1. Livermore: 进出场
         livermore = self._livermore_entry(regime, price_data)
@@ -680,7 +717,11 @@ class MasterCompositeEngine:
                 "ptj": ptj,
             },
             "matched_master_strategies": [
-                {"id": m["id"], "name": m["name"], "score": m.get("source_score", m.get("score", 0))}
+                {
+                    "id": m["id"],
+                    "name": m["name"],
+                    "score": m.get("source_score", m.get("score", 0)),
+                }
                 for m in master_strategies
             ],
             "execution_plan": {
@@ -711,8 +752,15 @@ class MasterStrategyStressTest:
 
     def test_retrieval(self) -> dict:
         """测试1: 大师策略检索 — 每种Regime都能检索到大师策略"""
-        regimes = ["TREND_STRONG_UP", "TREND_UP", "RANGE_BOUND", "COMPRESSION",
-                   "TRANSITION", "TREND_DOWN", "EXTREME"]
+        regimes = [
+            "TREND_STRONG_UP",
+            "TREND_UP",
+            "RANGE_BOUND",
+            "COMPRESSION",
+            "TRANSITION",
+            "TREND_DOWN",
+            "EXTREME",
+        ]
         results = {}
 
         for regime in regimes:
@@ -720,7 +768,9 @@ class MasterStrategyStressTest:
             results[regime] = {
                 "count": len(masters),
                 "strategies": [m["id"] for m in masters],
-                "top_score": masters[0].get("source_score", masters[0].get("score", 0)) if masters else 0,
+                "top_score": (
+                    masters[0].get("source_score", masters[0].get("score", 0)) if masters else 0
+                ),
                 "pass": len(masters) > 0,
             }
 
@@ -747,9 +797,14 @@ class MasterStrategyStressTest:
             "pass": is_sorted and len(masters) > 0,
             "details": {
                 "regime": regime,
-                "strategies": [{"id": m["id"], "priority": m.get("priority", 99),
-                                "score": m.get("source_score", m.get("score", 0))}
-                               for m in masters],
+                "strategies": [
+                    {
+                        "id": m["id"],
+                        "priority": m.get("priority", 99),
+                        "score": m.get("source_score", m.get("score", 0)),
+                    }
+                    for m in masters
+                ],
                 "priority_order": priorities,
                 "is_sorted": is_sorted,
             },
@@ -760,25 +815,49 @@ class MasterStrategyStressTest:
         test_cases = [
             {
                 "regime": "TREND_STRONG_UP",
-                "price_data": {"breakout": True, "volume_ratio": 2.0, "ma_alignment": "bull", "fgi": 45, "price": 80000},
+                "price_data": {
+                    "breakout": True,
+                    "volume_ratio": 2.0,
+                    "ma_alignment": "bull",
+                    "fgi": 45,
+                    "price": 80000,
+                },
                 "conviction": 0.8,
                 "expected_action": "BUY",
             },
             {
                 "regime": "TREND_DOWN",
-                "price_data": {"breakout": True, "volume_ratio": 1.8, "ma_alignment": "bear", "fgi": 20, "price": 76000},
+                "price_data": {
+                    "breakout": True,
+                    "volume_ratio": 1.8,
+                    "ma_alignment": "bear",
+                    "fgi": 20,
+                    "price": 76000,
+                },
                 "conviction": 0.6,
                 "expected_action": "SHORT",
             },
             {
                 "regime": "RANGE_BOUND",
-                "price_data": {"breakout": False, "volume_ratio": 0.8, "ma_alignment": "neutral", "fgi": 45, "price": 77500},
+                "price_data": {
+                    "breakout": False,
+                    "volume_ratio": 0.8,
+                    "ma_alignment": "neutral",
+                    "fgi": 45,
+                    "price": 77500,
+                },
                 "conviction": 0.3,
                 "expected_action": "SKIP",
             },
             {
                 "regime": "EXTREME",
-                "price_data": {"breakout": False, "volume_ratio": 3.0, "ma_alignment": "bear", "fgi": 10, "price": 72000},
+                "price_data": {
+                    "breakout": False,
+                    "volume_ratio": 3.0,
+                    "ma_alignment": "bear",
+                    "fgi": 10,
+                    "price": 72000,
+                },
                 "conviction": 0.7,
                 "expected_action": "BUY",  # FGI<15恐慌抄底
             },
@@ -795,13 +874,15 @@ class MasterStrategyStressTest:
             has_livermore = "livermore" in composite["masters"]
             has_druckenmiller = "druckenmiller" in composite["masters"]
             has_ptj = "ptj" in composite["masters"]
-            results.append({
-                "regime": tc["regime"],
-                "action": composite["action"],
-                "expected": tc["expected_action"],
-                "match": action_match,
-                "has_all_masters": has_livermore and has_druckenmiller and has_ptj,
-            })
+            results.append(
+                {
+                    "regime": tc["regime"],
+                    "action": composite["action"],
+                    "expected": tc["expected_action"],
+                    "match": action_match,
+                    "has_all_masters": has_livermore and has_druckenmiller and has_ptj,
+                }
+            )
 
         all_pass = all(r["match"] and r["has_all_masters"] for r in results)
         return {
@@ -816,7 +897,7 @@ class MasterStrategyStressTest:
         # 使用测试专用策略ID, 避免污染真实数据
         # 我们直接测试真实策略但使用"模拟"标记
         test_strategy = "master_livermore_breakout_long"
-        
+
         # 1. 读取当前分数
         rank_file, _, entry = self.feedback._find_entry_in_rank_file(test_strategy)
         original_score = entry.get("score", 0) if entry else 0
@@ -941,6 +1022,7 @@ class MasterStrategyStressTest:
 def main():
     """CLI入口: 支持多种子命令"""
     import argparse
+
     parser = argparse.ArgumentParser(description="大师策略检索器+评分反馈引擎")
     sub = parser.add_subparsers(dest="command")
 
@@ -968,7 +1050,7 @@ def main():
     sub.add_parser("rebuild-index", help="重建all_index.json(35→45)")
 
     # summary
-    p_summary = sub.add_parser("summary", help="所有Regime大师策略概览")
+    p_summary = sub.add_parser("summary", help="所有Regime大师策略概览")  # noqa: F841
 
     args = parser.parse_args()
 
@@ -988,25 +1070,37 @@ def main():
         f = MasterScoreFeedback()
         result = f.update_master_score(args.strategy_id, args.result, args.evidence)
         status = "✅" if result["status"] == "OK" else "❌"
-        print(f"{status} {result['strategy_id']}: {result.get('old_score', '?')}→{result.get('new_score', '?')} ({result.get('delta', 0):+d})")
+        print(
+            f"{status} {result['strategy_id']}: {result.get('old_score', '?')}→{result.get('new_score', '?')} ({result.get('delta', 0):+d})"
+        )
         if result.get("tier_changed"):
             print(f"  ⚠️ Tier变更: {result['old_tier']}→{result['new_tier']}")
 
     elif args.command == "composite":
         e = MasterCompositeEngine()
-        result = e.get_composite_strategy(args.regime, conviction=args.conviction, equity=args.equity)
+        result = e.get_composite_strategy(
+            args.regime, conviction=args.conviction, equity=args.equity
+        )
         print(f"🎯 组合策略: {result['action']}")
         print(f"  Livermore: {result['masters']['livermore']['entry_signal']}")
         print(f"  Druckenmiller: max={result['execution_plan']['max_position_usd']}U")
-        print(f"  PTJ: SL@{result['execution_plan']['sl_price']} ({result['execution_plan']['sl_distance_pct']}%)")
+        print(
+            f"  PTJ: SL@{result['execution_plan']['sl_price']} ({result['execution_plan']['sl_distance_pct']}%)"
+        )
         if result["matched_master_strategies"]:
-            print(f"  匹配大师策略: {', '.join(m['id'] for m in result['matched_master_strategies'])}")
+            print(
+                f"  匹配大师策略: {', '.join(m['id'] for m in result['matched_master_strategies'])}"
+            )
 
     elif args.command == "stress-test":
         t = MasterStrategyStressTest()
         report = t.run_all_tests()
         # 保存报告
-        report_path = WORKSPACE / "reports" / f"master_stress_test_{datetime.now().strftime('%Y%m%d_%H%M')}.json"
+        report_path = (
+            WORKSPACE
+            / "reports"
+            / f"master_stress_test_{datetime.now().strftime('%Y%m%d_%H%M')}.json"
+        )
         report_path.parent.mkdir(parents=True, exist_ok=True)
         with open(report_path, "w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
@@ -1016,7 +1110,7 @@ def main():
         f = MasterScoreFeedback()
         result = f.rebuild_all_index()
         summary = result.get("scoring_summary", {})
-        print(f"✅ all_index.json重建完成:")
+        print("✅ all_index.json重建完成:")
         print(f"  总策略: {summary.get('total_strategies', 0)}")
         print(f"  S级: {summary.get('S_rank_count', 0)} | A级: {summary.get('A_rank_count', 0)}")
         print(f"  B级: {summary.get('B_rank_count', 0)} | C级: {summary.get('C_rank_count', 0)}")
@@ -1024,13 +1118,22 @@ def main():
 
     elif args.command == "summary":
         r = MasterStrategyRetriever()
-        regimes = ["TREND_STRONG_UP", "TREND_UP", "RANGE_BOUND", "COMPRESSION",
-                   "TRANSITION", "TREND_DOWN", "EXTREME"]
+        regimes = [
+            "TREND_STRONG_UP",
+            "TREND_UP",
+            "RANGE_BOUND",
+            "COMPRESSION",
+            "TRANSITION",
+            "TREND_DOWN",
+            "EXTREME",
+        ]
         print("📊 大师策略Regime覆盖概览:")
         print("-" * 60)
         for regime in regimes:
             summary = r.get_regime_master_summary(regime)
-            print(f"  {regime}: {summary['master_count']}条 | 最佳: {summary['top_strategy'] or 'None'}")
+            print(
+                f"  {regime}: {summary['master_count']}条 | 最佳: {summary['top_strategy'] or 'None'}"
+            )
         print("-" * 60)
 
     else:

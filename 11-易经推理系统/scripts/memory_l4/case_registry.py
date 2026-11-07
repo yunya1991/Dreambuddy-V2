@@ -18,20 +18,19 @@ TradeCase v0.3 标准格式（兼容 v0.2）：
 """
 
 import json
+import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-import sys
 from typing import Any, Dict, List, Optional, Tuple
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import memory_l4_cases_dir, workspace_root
-from scripts.memory_l4.trade_event import TradeEvent
-from scripts.memory_l4.schema_validator import validate_case, quick_validate
-
+from scripts.memory_l4.paths import memory_l4_cases_dir, workspace_root  # noqa: E402
+from scripts.memory_l4.schema_validator import validate_case  # noqa: E402
+from scripts.memory_l4.trade_event import TradeEvent  # noqa: E402
 
 SYSTEM_SOURCES = [
     "yijing_inference",
@@ -135,8 +134,11 @@ class UnifiedCaseRegistry:
         """
         try:
             from scripts.memory_l4.shared_memory_bus import publish_shared_memory_event
+
             publish_shared_memory_event(
-                snapshot_ts=event.ts_exit or event.ts_entry or datetime.now(timezone.utc).isoformat(),
+                snapshot_ts=event.ts_exit
+                or event.ts_entry
+                or datetime.now(timezone.utc).isoformat(),
                 agent_id=event.system_source,
                 event_type="trade_case_registered",
                 payload={
@@ -155,35 +157,34 @@ class UnifiedCaseRegistry:
         except Exception as e:
             # 总线写入失败不影响案例库主流程
             print(f"[UnifiedCaseRegistry] shared_memory_bus publish 失败(非致命): {e}")
-    
+
     def build_trade_case(self, event: TradeEvent) -> Dict[str, Any]:
         """
         将 TradeEvent 转换为标准 TradeCase v0.3
-        
+
         保留 thinking_chain 字段（为未来 AI 推理模型预留）
         新增 system_source、decision_context、risk_events
         """
-        evt_dict = event.to_dict()
-        
+        evt_dict = event.to_dict()  # noqa: F841
+
         x_val, y_val = self._compute_quadrant(event)
         quadrant_obj = self._build_quadrant_object(x_val, y_val, event)
-        
+
         return {
             "case_id": f"tc_{event.system_source}_{event.trade_id}",
             "version": "v0.3",
             "system_source": event.system_source,
             "source": "live_trading",
             # P1-1: 测试数据标记，下游消费时按 is_test=False 过滤训练集
-            "is_test": _detect_is_test(f"tc_{event.system_source}_{event.trade_id}", event.trade_id),
-
+            "is_test": _detect_is_test(
+                f"tc_{event.system_source}_{event.trade_id}", event.trade_id
+            ),
             "ts": event.ts_exit or event.ts_entry,
             "ts_start": event.ts_entry,
             "ts_end": event.ts_exit,
-            
             "inst_id": event.symbol,
             "symbol": event.symbol,
             "direction": event.direction,
-            
             "position_info": {
                 "entry_price": event.entry_price,
                 "exit_price": event.exit_price,
@@ -191,7 +192,6 @@ class UnifiedCaseRegistry:
                 "leverage": event.leverage,
                 "margin_usdt": event.margin_usdt,
             },
-            
             "decision_outcome": {
                 "is_correct": event.pnl >= 0 if event.pnl is not None else None,
                 "pnl": event.pnl,
@@ -200,19 +200,14 @@ class UnifiedCaseRegistry:
                 "exit_reason": event.exit_reason,
                 "goal_achieved": None,
             },
-            
             "actual_outcome": {
                 "is_correct": event.pnl >= 0 if event.pnl is not None else None,
                 "pnl_pct": event.pnl_pct,
                 "exit_reason": event.exit_reason,
             },
-            
             "decision_context": event.decision_context,
-            
             "environment_snapshot": self._build_environment_snapshot(event),
-            
             "thinking_chain": self._build_thinking_chain(event),
-            
             "evidence_chain": {
                 "market_data_refs": [],
                 "signal_refs": [],
@@ -220,20 +215,14 @@ class UnifiedCaseRegistry:
                 "historical_refs": [],
                 "constraint_refs": [],
             },
-            
             "quadrant": quadrant_obj,
-            
             "risk_events": event.risk_events,
-            
             "tags": ["auto_case", event.system_source],
-            
             "l4_status": "M0_CASE_REGISTERED",
-            
             "execution": {
                 "episode_refs": [],
                 "result": "completed" if event.ts_exit else "open",
             },
-            
             "review": {
                 "summary": "",
                 "theory_practice_consistency": "not_reviewed",
@@ -243,19 +232,21 @@ class UnifiedCaseRegistry:
                 "review_record_id": None,
             },
         }
-    
+
     def _compute_quadrant(self, event: TradeEvent) -> Tuple[float, float]:
         """计算象限坐标 (x, y)"""
         pnl = event.pnl_pct or 0
-        
+
         x_val = 1.0 if pnl > 0 else (-1.0 if pnl < 0 else 0.0)
-        
+
         conf = event.decision_context.get("confidence", 0.5)
         y_val = (conf - 0.5) * 2
-        
+
         return round(x_val, 4), round(y_val, 4)
-    
-    def _build_quadrant_object(self, x_val: float, y_val: float, event: TradeEvent) -> Dict[str, Any]:
+
+    def _build_quadrant_object(
+        self, x_val: float, y_val: float, event: TradeEvent
+    ) -> Dict[str, Any]:
         """构建标准象限对象"""
         return {
             "x": x_val,
@@ -268,7 +259,7 @@ class UnifiedCaseRegistry:
                 "notes": f"System: {event.system_source}",
             },
         }
-    
+
     def _build_environment_snapshot(self, event: TradeEvent) -> Dict[str, Any]:
         """构建环境快照"""
         snapshot = event.market_snapshot or {}
@@ -279,94 +270,108 @@ class UnifiedCaseRegistry:
             "price_position": snapshot.get("price_position", 0.5),
             "is_ranging": snapshot.get("is_ranging", False),
         }
-    
+
     def _build_thinking_chain(self, event: TradeEvent) -> List[Dict[str, Any]]:
         """
         构建 thinking_chain（为未来 AI 推理模型预留）
-        
+
         当前版本：从 decision_context 提取关键决策信息
         未来版本：AI 推理模型的完整决策链
         """
         ctx = event.decision_context
         chain = []
-        
+
         if event.system_source == "yijing_inference":
-            chain.append({
-                "stage": "A0",
-                "ts": event.ts_entry,
-                "decision": f"{event.direction.upper()} {event.symbol}",
-                "rationale": f"Hexagram: {ctx.get('hexagram', 'N/A')}, Confidence: {ctx.get('confidence', 0)}",
-                "evidence_refs": [],
-                "decision_context": ctx,
-            })
-        
+            chain.append(
+                {
+                    "stage": "A0",
+                    "ts": event.ts_entry,
+                    "decision": f"{event.direction.upper()} {event.symbol}",
+                    "rationale": f"Hexagram: {ctx.get('hexagram', 'N/A')}, Confidence: {ctx.get('confidence', 0)}",
+                    "evidence_refs": [],
+                    "decision_context": ctx,
+                }
+            )
+
         elif event.system_source == "martin_v15":
-            chain.append({
-                "stage": "MARTIN",
-                "ts": event.ts_entry,
-                "decision": f"{event.direction.upper()} {event.symbol}",
-                "rationale": f"Martin strategy entry, Addon: {ctx.get('addon_level', 0)}",
-                "evidence_refs": [],
-                "decision_context": ctx,
-            })
-        
+            chain.append(
+                {
+                    "stage": "MARTIN",
+                    "ts": event.ts_entry,
+                    "decision": f"{event.direction.upper()} {event.symbol}",
+                    "rationale": f"Martin strategy entry, Addon: {ctx.get('addon_level', 0)}",
+                    "evidence_refs": [],
+                    "decision_context": ctx,
+                }
+            )
+
         elif event.system_source == "three_screen":
-            chain.append({
-                "stage": "THREE_SCREEN",
-                "ts": event.ts_entry,
-                "decision": f"{event.direction.upper()} {event.symbol}",
-                "rationale": f"Three-screen signal alignment",
-                "evidence_refs": [],
-                "decision_context": ctx,
-            })
-        
+            chain.append(
+                {
+                    "stage": "THREE_SCREEN",
+                    "ts": event.ts_entry,
+                    "decision": f"{event.direction.upper()} {event.symbol}",
+                    "rationale": "Three-screen signal alignment",
+                    "evidence_refs": [],
+                    "decision_context": ctx,
+                }
+            )
+
         elif event.system_source in ("agent_a", "agent_b"):
-            chain.append({
-                "stage": "AGENT_DECIDE",
-                "ts": event.ts_entry,
-                "decision": f"{event.direction.upper()} {event.symbol}",
-                "rationale": f"{event.system_source.upper()} LLM decision",
-                "evidence_refs": [],
-                "decision_context": ctx,
-            })
-        
+            chain.append(
+                {
+                    "stage": "AGENT_DECIDE",
+                    "ts": event.ts_entry,
+                    "decision": f"{event.direction.upper()} {event.symbol}",
+                    "rationale": f"{event.system_source.upper()} LLM decision",
+                    "evidence_refs": [],
+                    "decision_context": ctx,
+                }
+            )
+
         else:
-            chain.append({
-                "stage": "SYSTEM",
-                "ts": event.ts_entry,
-                "decision": f"{event.direction.upper()} {event.symbol}",
-                "rationale": f"System: {event.system_source}",
-                "evidence_refs": [],
-                "decision_context": ctx,
-            })
-        
+            chain.append(
+                {
+                    "stage": "SYSTEM",
+                    "ts": event.ts_entry,
+                    "decision": f"{event.direction.upper()} {event.symbol}",
+                    "rationale": f"System: {event.system_source}",
+                    "evidence_refs": [],
+                    "decision_context": ctx,
+                }
+            )
+
         if event.ts_exit:
-            chain.append({
-                "stage": "EXIT",
-                "ts": event.ts_exit,
-                "decision": f"Close {event.direction.upper()} {event.symbol}",
-                "rationale": f"Exit reason: {event.exit_reason}, PnL: {event.pnl_pct}%",
-                "evidence_refs": [],
-                "exit_price": event.exit_price,
-            })
+            chain.append(
+                {
+                    "stage": "EXIT",
+                    "ts": event.ts_exit,
+                    "decision": f"Close {event.direction.upper()} {event.symbol}",
+                    "rationale": f"Exit reason: {event.exit_reason}, PnL: {event.pnl_pct}%",
+                    "evidence_refs": [],
+                    "exit_price": event.exit_price,
+                }
+            )
 
         # P2-9: 追加 PREDICTION stage（事前预测快照，若 decision_context 含 prediction）
         prediction = ctx.get("prediction")
         if prediction:
-            chain.append({
-                "stage": "PREDICTION",
-                "ts": event.ts_entry,
-                "decision": f"Predict {prediction.get('expected_direction', 'N/A')} "
-                            f"target={prediction.get('target_return_pct', 0)}%",
-                "rationale": f"horizon={prediction.get('expected_horizon_bars', 0)}bars, "
-                             f"stop_prob={prediction.get('stop_loss_prob', 0)}, "
-                             f"conf={prediction.get('prediction_confidence', 0)}",
-                "evidence_refs": [],
-                "prediction_snapshot": prediction,
-            })
+            chain.append(
+                {
+                    "stage": "PREDICTION",
+                    "ts": event.ts_entry,
+                    "decision": f"Predict {prediction.get('expected_direction', 'N/A')} "
+                    f"target={prediction.get('target_return_pct', 0)}%",
+                    "rationale": f"horizon={prediction.get('expected_horizon_bars', 0)}bars, "
+                    f"stop_prob={prediction.get('stop_loss_prob', 0)}, "
+                    f"conf={prediction.get('prediction_confidence', 0)}",
+                    "evidence_refs": [],
+                    "prediction_snapshot": prediction,
+                }
+            )
 
         return chain
-    
+
     def save_case(self, case: Dict[str, Any], validate: bool = True) -> bool:
         """保存 TradeCase 到 L4 案例库
 
@@ -374,7 +379,9 @@ class UnifiedCaseRegistry:
             case: TradeCase 字典
             validate: 保存前是否进行 schema 验证（默认 True）
         """
-        case_id = case.get("case_id") or f"tc_{int(time.time())}_{uuid.uuid4().hex[:8]}"
+        case_id = (
+            case.get("case_id") or f"tc_{int(time.time())}_{uuid.uuid4().hex[:8]}"  # noqa: F821
+        )  # noqa: F821
         case["case_id"] = case_id
 
         if "ts" not in case:
@@ -396,7 +403,7 @@ class UnifiedCaseRegistry:
             return True
         except Exception:
             return False
-    
+
     def get_case(self, case_id: str) -> Optional[Dict[str, Any]]:
         """获取指定 TradeCase"""
         filepath = self.cases_dir / f"{case_id}.json"
@@ -408,12 +415,15 @@ class UnifiedCaseRegistry:
         except Exception:
             return None
 
-    def update_outcome(self, case_id: str,
-                       pnl: Optional[float] = None,
-                       pnl_pct: Optional[float] = None,
-                       exit_price: Optional[float] = None,
-                       exit_reason: Optional[str] = None,
-                       ts_exit: Optional[str] = None) -> bool:
+    def update_outcome(
+        self,
+        case_id: str,
+        pnl: Optional[float] = None,
+        pnl_pct: Optional[float] = None,
+        exit_price: Optional[float] = None,
+        exit_reason: Optional[str] = None,
+        ts_exit: Optional[str] = None,
+    ) -> bool:
         """离场回填：更新已注册案例的实际结果，闭合开仓→离场两阶段闭环
 
         与 CaseWriter.update_outcome 对齐，支持 auto_trader 等子系统
@@ -479,14 +489,16 @@ class UnifiedCaseRegistry:
         chain = case.get("thinking_chain", [])
         symbol = case.get("symbol", case.get("inst_id", "UNKNOWN"))
         direction = case.get("direction", "UNKNOWN")
-        chain.append({
-            "stage": "EXIT",
-            "ts": ts_exit or datetime.now(timezone.utc).isoformat(),
-            "decision": f"Close {direction.upper()} {symbol}",
-            "rationale": f"Exit reason: {exit_reason}, PnL: {pnl_pct}%",
-            "evidence_refs": [],
-            "exit_price": exit_price,
-        })
+        chain.append(
+            {
+                "stage": "EXIT",
+                "ts": ts_exit or datetime.now(timezone.utc).isoformat(),
+                "decision": f"Close {direction.upper()} {symbol}",
+                "rationale": f"Exit reason: {exit_reason}, PnL: {pnl_pct}%",
+                "evidence_refs": [],
+                "exit_price": exit_price,
+            }
+        )
 
         # P2-9: 计算预测误差（若 case thinking_chain 含 PREDICTION stage）
         prediction_snapshot = None
@@ -497,6 +509,7 @@ class UnifiedCaseRegistry:
         if prediction_snapshot:
             try:
                 from scripts.memory_l4.prediction_bridge import compute_prediction_error_dict
+
                 actual = {
                     "direction": direction,
                     "return_pct": pnl_pct if pnl_pct is not None else 0.0,
@@ -561,19 +574,12 @@ def create_case_from_episode_data(episode: Dict[str, Any], case_id: str) -> Dict
     first_trade = trades[0] if trades else {}
 
     inst_id = str(
-        episode.get("inst_id")
-        or first_trade.get("inst_id")
-        or first_trade.get("symbol")
-        or ""
+        episode.get("inst_id") or first_trade.get("inst_id") or first_trade.get("symbol") or ""
     )
     if not inst_id:
         raise ValueError("missing required field: inst_id")
 
-    trace_id = str(
-        episode.get("trace_id")
-        or first_trade.get("trade_id")
-        or case_id
-    )
+    trace_id = str(episode.get("trace_id") or first_trade.get("trade_id") or case_id)
 
     pnl = episode.get("pnl_pct")
     if pnl is None:
@@ -586,16 +592,29 @@ def create_case_from_episode_data(episode: Dict[str, Any], case_id: str) -> Dict
     exit_reason = first_trade.get("exit_reason")
     raw_system_source = first_trade.get("system_source", "yijing_inference")
     # 归一化易经推理子系统别名 → yijing_inference
-    _YIJING_ALIASES = frozenset({
-        "bcrm", "yijing_live", "yijing_engine", "yijing_inference",
-        "liangyi", "scale", "bagua", "yijing", "yijing_force",
-    })
+    _YIJING_ALIASES = frozenset(
+        {
+            "bcrm",
+            "yijing_live",
+            "yijing_engine",
+            "yijing_inference",
+            "liangyi",
+            "scale",
+            "bagua",
+            "yijing",
+            "yijing_force",
+        }
+    )
     _src_norm = str(raw_system_source).strip().lower() or "yijing_inference"
-    if _src_norm in _YIJING_ALIASES or _src_norm.startswith("yijing") or _src_norm.startswith("bcrm"):
+    if (
+        _src_norm in _YIJING_ALIASES
+        or _src_norm.startswith("yijing")
+        or _src_norm.startswith("bcrm")
+    ):
         system_source = "yijing_inference"
     else:
         system_source = _src_norm
-    
+
     return {
         "case_id": case_id,
         "version": "v0.2",
@@ -621,7 +640,9 @@ def create_case_from_episode_data(episode: Dict[str, Any], case_id: str) -> Dict
             "pnl_usdt": float(pnl_usdt) if pnl_usdt is not None else None,
             "drawdown": float(dd) if dd is not None else None,
             "exit_reason": exit_reason,
-            "goal_achieved": True if (pnl is not None and pnl > 0) else (False if pnl is not None else None),
+            "goal_achieved": (
+                True if (pnl is not None and pnl > 0) else (False if pnl is not None else None)
+            ),
         },
         "l4_status": "M0_CASE_REGISTERED",
         "plan": {
@@ -685,10 +706,10 @@ def create_case_from_episode_file(episode_path: Path, out_path: Optional[Path] =
     case_id = derive_case_id_from_episode_path(episode_path)
     if out_path is None:
         out_path = memory_l4_cases_dir() / f"{case_id}.json"
-    
+
     data = create_case_from_episode_data(episode, case_id=case_id)
     data["execution"]["episode_refs"][0]["path"] = _to_repo_relative_path(episode_path)
-    
+
     save_json(out_path, data)
     return out_path
 
@@ -697,18 +718,18 @@ def upgrade_case_to_v03(case_data: Dict[str, Any]) -> Dict[str, Any]:
     """将 v0.2 case 升级为 v0.3 格式"""
     if case_data.get("version") == "v0.3":
         return case_data
-    
+
     case_data["version"] = "v0.3"
-    
+
     if "system_source" not in case_data:
         case_data["system_source"] = "unknown"
-    
+
     if "decision_context" not in case_data:
         case_data["decision_context"] = {}
-    
+
     if "risk_events" not in case_data:
         case_data["risk_events"] = []
-    
+
     if "position_info" not in case_data:
         case_data["position_info"] = {
             "entry_price": None,
@@ -717,7 +738,7 @@ def upgrade_case_to_v03(case_data: Dict[str, Any]) -> Dict[str, Any]:
             "leverage": 1.0,
             "margin_usdt": 0.0,
         }
-    
+
     quadrant = case_data.get("quadrant")
     if isinstance(quadrant, str):
         q_map = {"q1": (1.0, 0.5), "q2": (-1.0, 0.5), "q3": (-1.0, -0.5), "q4": (1.0, -0.5)}
@@ -733,10 +754,10 @@ def upgrade_case_to_v03(case_data: Dict[str, Any]) -> Dict[str, Any]:
                 "notes": f"Upgraded from v0.2, quadrant: {quadrant}",
             },
         }
-    
+
     if "thinking_chain" not in case_data:
         case_data["thinking_chain"] = []
-    
+
     if "evidence_chain" not in case_data:
         case_data["evidence_chain"] = {
             "market_data_refs": [],
@@ -745,7 +766,7 @@ def upgrade_case_to_v03(case_data: Dict[str, Any]) -> Dict[str, Any]:
             "historical_refs": [],
             "constraint_refs": [],
         }
-    
+
     if "decision_outcome" not in case_data:
         case_data["decision_outcome"] = {
             "is_correct": None,
@@ -755,31 +776,33 @@ def upgrade_case_to_v03(case_data: Dict[str, Any]) -> Dict[str, Any]:
             "exit_reason": None,
             "goal_achieved": None,
         }
-    
+
     if "actual_outcome" not in case_data:
         case_data["actual_outcome"] = {
             "is_correct": None,
             "pnl_pct": None,
             "exit_reason": None,
         }
-    
+
     review = case_data.get("review") or {}
     review.setdefault("mistakes", [])
     review.setdefault("successes", [])
     review.setdefault("review_record_id", None)
     case_data["review"] = review
-    
+
     return case_data
 
 
 def main() -> None:
     import argparse
-    
-    parser = argparse.ArgumentParser(description="UnifiedCaseRegistry - Global Trade Event Registry")
+
+    parser = argparse.ArgumentParser(
+        description="UnifiedCaseRegistry - Global Trade Event Registry"
+    )
     subparsers = parser.add_subparsers(dest="command")
-    
+
     subparsers.add_parser("list", help="List all cases")
-    
+
     parser_register = subparsers.add_parser("register", help="Register trade event")
     parser_register.add_argument("--source", required=True, choices=SYSTEM_SOURCES)
     parser_register.add_argument("--trade-id", required=True)
@@ -792,16 +815,16 @@ def main() -> None:
     parser_register.add_argument("--exit-reason")
     parser_register.add_argument("--entry-time")
     parser_register.add_argument("--exit-time")
-    
+
     args = parser.parse_args()
-    
+
     registry = UnifiedCaseRegistry()
-    
+
     if args.command == "list":
         cases = registry.list_cases()
         for case_id in cases:
             print(case_id)
-    
+
     elif args.command == "register":
         event = TradeEvent(
             event_id=TradeEvent.generate_event_id(),
@@ -822,7 +845,7 @@ def main() -> None:
             print(f"Registered: {case_id}")
         else:
             print(f"Failed to register: {case_id}")
-    
+
     elif args.command is None:
         parser.print_help()
 

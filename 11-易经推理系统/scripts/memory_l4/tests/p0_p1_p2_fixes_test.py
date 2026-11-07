@@ -83,7 +83,7 @@ def test_p4_xaut_to_xau_normalization():
     )
     # default 可能是动态表达式（如 ",".join(_load_registry_symbols() or [...])），
     # 提取 fallback 列表中的币种
-    fb = re.search(r'_load_registry_symbols\(\)\s*or\s*\[([\s\S]*?)\]', main_src)
+    fb = re.search(r"_load_registry_symbols\(\)\s*or\s*\[([\s\S]*?)\]", main_src)
     if fb:
         coins_default_list = re.findall(r'"([A-Z]+)"', fb.group(1))
     else:

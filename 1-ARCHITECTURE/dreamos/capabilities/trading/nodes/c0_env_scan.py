@@ -33,8 +33,7 @@ import math
 from typing import Any, Dict
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
-
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 # ── 默认阈值 ──────────────────────────────────────────────
 _DEFAULT_VOLATILITY_THRESHOLD = 0.10
@@ -76,7 +75,9 @@ class C0EnvScanNode(BaseNode):
                 return float(default)
 
         return {
-            "volatility_threshold": max(0.001, _get_float("env_scan_volatility_threshold", _DEFAULT_VOLATILITY_THRESHOLD)),
+            "volatility_threshold": max(
+                0.001, _get_float("env_scan_volatility_threshold", _DEFAULT_VOLATILITY_THRESHOLD)
+            ),
             "trend_threshold": _get_float("env_scan_trend_threshold", _DEFAULT_TREND_THRESHOLD),
         }
 
@@ -138,7 +139,9 @@ class C0EnvScanNode(BaseNode):
             if weighted_trend > trend_threshold:
                 regime = "bull"
                 vol_label = "low_vol"
-            elif weighted_trend < -abs(trend_threshold) or (trend_threshold == 0.0 and weighted_trend < 0.0):
+            elif weighted_trend < -abs(trend_threshold) or (
+                trend_threshold == 0.0 and weighted_trend < 0.0
+            ):
                 regime = "bear"
                 vol_label = "low_vol"
             else:
@@ -146,8 +149,8 @@ class C0EnvScanNode(BaseNode):
                 vol_label = "low_vol"
 
         # macro_flags
-        risk_on = (regime == "bull")
-        risk_off = (regime == "bear")
+        risk_on = regime == "bull"
+        risk_off = regime == "bear"
         macro_flags = {
             "risk_on": bool(risk_on),
             "risk_off": bool(risk_off),

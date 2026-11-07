@@ -11,13 +11,11 @@ Phase 1: 基于系统 Prompt 的零样本意图识别基线
     python intent_classifier.py --evaluate  # 运行所有测试用例评估
 """
 
+import argparse
 import json
 import sys
-import os
-import argparse
-import time
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, Optional
 
 # ── 路径设置 ──────────────────────────────────────────────────────────────
 
@@ -28,7 +26,8 @@ SPEC_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR / "16-调控系统" / "core"))
 
 try:
-    from qwen_client import chat_completion, QWEN_MODEL
+    from qwen_client import QWEN_MODEL, chat_completion  # noqa: F401
+
     HAS_QWEN = True
 except ImportError:
     HAS_QWEN = False
@@ -36,6 +35,7 @@ except ImportError:
 
 
 # ── 系统 Prompt 加载 ───────────────────────────────────────────────────────
+
 
 def load_system_prompt() -> str:
     """从 system_prompt.md 加载系统 Prompt"""
@@ -237,6 +237,7 @@ def normalize_slots(result: Dict[str, Any]) -> Dict[str, Any]:
 
 # ── 意图识别核心 ──────────────────────────────────────────────────────────
 
+
 def classify_intent(user_input: str, context: Optional[Dict] = None) -> Dict[str, Any]:
     """
     识别用户输入的意图
@@ -267,7 +268,7 @@ def _classify_with_qwen(system_prompt: str, user_message: str) -> Dict[str, Any]
     """使用 Qwen 模型进行意图识别"""
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_message}
+        {"role": "user", "content": user_message},
     ]
 
     try:
@@ -276,7 +277,7 @@ def _classify_with_qwen(system_prompt: str, user_message: str) -> Dict[str, Any]
             temperature=0.1,  # 低温度，保证输出稳定
             max_tokens=1024,
             timeout=60,  # 增加超时到 60s，避免复杂意图超时
-            retries=3,     # 增加重试次数
+            retries=3,  # 增加重试次数
         )
 
         if not response.success:
@@ -345,7 +346,7 @@ def _parse_json_response(content: str) -> Dict[str, Any]:
         "slots": {},
         "confidence": 0.0,
         "parse_error": True,
-        "raw_content": content
+        "raw_content": content,
     }
 
 
@@ -355,19 +356,18 @@ def _classify_mock(user_input: str) -> Dict[str, Any]:
         "intent_primary": "query",
         "intent_secondary": "market_query",
         "risk_level": "low",
-        "slots": {
-            "stock": "mock_stock"
-        },
+        "slots": {"stock": "mock_stock"},
         "confidence": 0.5,
         "multi_intent": False,
         "intents": [],
         "clarify_needed": False,
         "clarify_question": None,
-        "mock": True
+        "mock": True,
     }
 
 
 # ── 评估逻辑 ──────────────────────────────────────────────────────────────
+
 
 def evaluate(test_cases_path: Optional[str] = None, limit: Optional[int] = None) -> Dict[str, Any]:
     """运行测试用例集并评估准确率"""
@@ -419,7 +419,9 @@ def evaluate(test_cases_path: Optional[str] = None, limit: Optional[int] = None)
             primary_correct += 1
             print(f"  一级意图: ✅ {result.get('intent_primary')}")
         else:
-            print(f"  一级意图: ❌ 期望={expected.get('intent_primary')}, 实际={result.get('intent_primary')}")
+            print(
+                f"  一级意图: ❌ 期望={expected.get('intent_primary')}, 实际={result.get('intent_primary')}"
+            )
 
         # 评估二级意图
         secondary_match = result.get("intent_secondary") == expected.get("intent_secondary")
@@ -427,7 +429,9 @@ def evaluate(test_cases_path: Optional[str] = None, limit: Optional[int] = None)
             secondary_correct += 1
             print(f"  二级意图: ✅ {result.get('intent_secondary')}")
         else:
-            print(f"  二级意图: ❌ 期望={expected.get('intent_secondary')}, 实际={result.get('intent_secondary')}")
+            print(
+                f"  二级意图: ❌ 期望={expected.get('intent_secondary')}, 实际={result.get('intent_secondary')}"
+            )
 
         # 评估槽位
         expected_slots = expected.get("slots", {})
@@ -443,16 +447,18 @@ def evaluate(test_cases_path: Optional[str] = None, limit: Optional[int] = None)
 
         print(f"  置信度: {result.get('confidence', 'N/A')}")
 
-        results.append({
-            "id": tc["id"],
-            "input": tc["input"],
-            "expected": expected,
-            "actual": result,
-            "primary_correct": primary_match,
-            "secondary_correct": secondary_match,
-            "difficulty": tc.get("difficulty"),
-            "category": tc.get("category"),
-        })
+        results.append(
+            {
+                "id": tc["id"],
+                "input": tc["input"],
+                "expected": expected,
+                "actual": result,
+                "primary_correct": primary_match,
+                "secondary_correct": secondary_match,
+                "difficulty": tc.get("difficulty"),
+                "category": tc.get("category"),
+            }
+        )
 
         sys.stdout.flush()
 
@@ -510,9 +516,15 @@ def print_summary(summary: Dict[str, Any]):
     print("📊 评估结果汇总")
     print("=" * 60)
     print(f"  总用例数:       {summary['total']}")
-    print(f"  一级意图准确率: {summary['primary_accuracy']:.1f}% ({summary['primary_correct']}/{summary['total']})")
-    print(f"  二级意图准确率: {summary['secondary_accuracy']:.1f}% ({summary['secondary_correct']}/{summary['total']})")
-    print(f"  槽位准确率:     {summary['slot_accuracy']:.1f}% ({summary['slot_correct']}/{summary['slot_total']})")
+    print(
+        f"  一级意图准确率: {summary['primary_accuracy']:.1f}% ({summary['primary_correct']}/{summary['total']})"
+    )
+    print(
+        f"  二级意图准确率: {summary['secondary_accuracy']:.1f}% ({summary['secondary_correct']}/{summary['total']})"
+    )
+    print(
+        f"  槽位准确率:     {summary['slot_accuracy']:.1f}% ({summary['slot_correct']}/{summary['slot_total']})"
+    )
 
     print("\n按难度分布:")
     for diff, stats in summary.get("by_difficulty", {}).items():
@@ -530,11 +542,16 @@ def print_summary(summary: Dict[str, Any]):
         print(f"\n❌ 错误用例 ({len(error_cases)}条):")
         for r in error_cases:
             print(f"  {r['id']}: {r['input'][:50]}...")
-            print(f"    期望: {r['expected']['intent_primary']}/{r['expected']['intent_secondary']}")
-            print(f"    实际: {r['actual'].get('intent_primary', '?')}/{r['actual'].get('intent_secondary', '?')}")
+            print(
+                f"    期望: {r['expected']['intent_primary']}/{r['expected']['intent_secondary']}"
+            )
+            print(
+                f"    实际: {r['actual'].get('intent_primary', '?')}/{r['actual'].get('intent_secondary', '?')}"
+            )
 
 
 # ── 主函数 ────────────────────────────────────────────────────────────────
+
 
 def main():
     parser = argparse.ArgumentParser(description="交易系统意图识别器")

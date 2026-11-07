@@ -8,17 +8,19 @@
   β_ratio < 0.5 持续3天 → decay_signal=True, decay_days>=3
   β_ratio > 2.0 持续3天 → amplification_signal=True, amplification_days>=3
 """
-import pytest
+
 import sys
 from pathlib import Path
+
+import pytest
 
 # 将 memory_l4 注入 sys.path，使 force_vector.* 可导入
 _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.elasticity_beta_calculator import ElasticityBetaCalculator
-from force_vector.models import ElasticityBeta
+from force_vector.elasticity_beta_calculator import ElasticityBetaCalculator  # noqa: E402
+from force_vector.models import ElasticityBeta  # noqa: E402
 
 
 class TestElasticityBetaDecay:
@@ -130,7 +132,7 @@ class TestElasticityBetaFailOpen:
             price_changes_7d=[0.01, 0.02, 0.03],
             force_changes_7d=[0.05, 0.05, 0.05],  # 恒定 → var~0
             price_changes_30d=[0.01] * 30,
-            force_changes_30d=[0.05] * 30,        # 恒定 → var~0
+            force_changes_30d=[0.05] * 30,  # 恒定 → var~0
         )
         assert result.beta_7d == pytest.approx(1.0)
         assert result.beta_30d == pytest.approx(1.0)

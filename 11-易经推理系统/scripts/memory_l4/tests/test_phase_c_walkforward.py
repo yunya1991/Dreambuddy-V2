@@ -18,6 +18,7 @@
   • mock walk_forward_time_series_split 返回小折叠
   • 验证返回结构而非真实数值
 """
+
 from __future__ import annotations
 
 import sys
@@ -26,7 +27,6 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
-import pytest
 
 # Add bcrm2 to sys.path
 THIS_DIR = Path(__file__).resolve().parent
@@ -37,12 +37,14 @@ sys.path.insert(0, str(THIS_DIR))
 # T_C3: WalkForward 回测扩展
 # ================================================================
 
+
 class TestAlphaBlendWalkForward:
     """验证 run_alpha_blend_comparison 函数。"""
 
     def test_function_exists(self):
         """T_C3.1: run_alpha_blend_comparison 函数存在。"""
         from bcrm2.scripts.eval_walkforward import run_alpha_blend_comparison
+
         assert callable(run_alpha_blend_comparison)
 
     def test_alpha_zero_returns_valid_result(self):
@@ -53,15 +55,23 @@ class TestAlphaBlendWalkForward:
         n = 300
         dates = pd.date_range("2024-01-01", periods=n, freq="D")
         close = 40000 + np.cumsum(np.random.randn(n) * 100)
-        df = pd.DataFrame({
-            "open": close, "high": close + 50, "low": close - 50,
-            "close": close, "volume": 1000.0,
-        }, index=dates)
+        df = pd.DataFrame(
+            {
+                "open": close,
+                "high": close + 50,
+                "low": close - 50,
+                "close": close,
+                "volume": 1000.0,
+            },
+            index=dates,
+        )
 
-        with patch("bcrm2.scripts.eval_walkforward._read_csv", return_value=df), \
-             patch("bcrm2.scripts.eval_walkforward._compute_level_trend") as mock_lt, \
-             patch("bcrm2.scripts.eval_walkforward.walk_forward_time_series_split") as mock_split, \
-             patch("bcrm2.morph_cycle_predictor.MorphCyclePredictor") as mock_pred_cls:
+        with (
+            patch("bcrm2.scripts.eval_walkforward._read_csv", return_value=df),
+            patch("bcrm2.scripts.eval_walkforward._compute_level_trend") as mock_lt,
+            patch("bcrm2.scripts.eval_walkforward.walk_forward_time_series_split") as mock_split,
+            patch("bcrm2.morph_cycle_predictor.MorphCyclePredictor") as mock_pred_cls,
+        ):
             # mock level/trend
             mock_lt.return_value = (
                 pd.Series(np.linspace(-2, 2, n), index=dates),  # level_smooth
@@ -104,15 +114,23 @@ class TestAlphaBlendWalkForward:
         n = 300
         dates = pd.date_range("2024-01-01", periods=n, freq="D")
         close = 40000 + np.cumsum(np.random.randn(n) * 100)
-        df = pd.DataFrame({
-            "open": close, "high": close + 50, "low": close - 50,
-            "close": close, "volume": 1000.0,
-        }, index=dates)
+        df = pd.DataFrame(
+            {
+                "open": close,
+                "high": close + 50,
+                "low": close - 50,
+                "close": close,
+                "volume": 1000.0,
+            },
+            index=dates,
+        )
 
-        with patch("bcrm2.scripts.eval_walkforward._read_csv", return_value=df), \
-             patch("bcrm2.scripts.eval_walkforward._compute_level_trend") as mock_lt, \
-             patch("bcrm2.scripts.eval_walkforward.walk_forward_time_series_split") as mock_split, \
-             patch("bcrm2.morph_cycle_predictor.MorphCyclePredictor") as mock_pred_cls:
+        with (
+            patch("bcrm2.scripts.eval_walkforward._read_csv", return_value=df),
+            patch("bcrm2.scripts.eval_walkforward._compute_level_trend") as mock_lt,
+            patch("bcrm2.scripts.eval_walkforward.walk_forward_time_series_split") as mock_split,
+            patch("bcrm2.morph_cycle_predictor.MorphCyclePredictor") as mock_pred_cls,
+        ):
             mock_lt.return_value = (
                 pd.Series(np.linspace(-2, 2, n), index=dates),
                 pd.Series(np.linspace(-1, 1, n), index=dates),
@@ -148,15 +166,23 @@ class TestAlphaBlendWalkForward:
         n = 300
         dates = pd.date_range("2024-01-01", periods=n, freq="D")
         close = 40000 + np.cumsum(np.random.randn(n) * 100)
-        df = pd.DataFrame({
-            "open": close, "high": close + 50, "low": close - 50,
-            "close": close, "volume": 1000.0,
-        }, index=dates)
+        df = pd.DataFrame(
+            {
+                "open": close,
+                "high": close + 50,
+                "low": close - 50,
+                "close": close,
+                "volume": 1000.0,
+            },
+            index=dates,
+        )
 
-        with patch("bcrm2.scripts.eval_walkforward._read_csv", return_value=df), \
-             patch("bcrm2.scripts.eval_walkforward._compute_level_trend") as mock_lt, \
-             patch("bcrm2.scripts.eval_walkforward.walk_forward_time_series_split") as mock_split, \
-             patch("bcrm2.morph_cycle_predictor.MorphCyclePredictor") as mock_pred_cls:
+        with (
+            patch("bcrm2.scripts.eval_walkforward._read_csv", return_value=df),
+            patch("bcrm2.scripts.eval_walkforward._compute_level_trend") as mock_lt,
+            patch("bcrm2.scripts.eval_walkforward.walk_forward_time_series_split") as mock_split,
+            patch("bcrm2.morph_cycle_predictor.MorphCyclePredictor") as mock_pred_cls,
+        ):
             mock_lt.return_value = (
                 pd.Series(np.linspace(-2, 2, n), index=dates),
                 pd.Series(np.linspace(-1, 1, n), index=dates),
@@ -191,15 +217,23 @@ class TestAlphaBlendWalkForward:
         n = 300
         dates = pd.date_range("2024-01-01", periods=n, freq="D")
         close = 40000 + np.cumsum(np.random.randn(n) * 100)
-        df = pd.DataFrame({
-            "open": close, "high": close + 50, "low": close - 50,
-            "close": close, "volume": 1000.0,
-        }, index=dates)
+        df = pd.DataFrame(
+            {
+                "open": close,
+                "high": close + 50,
+                "low": close - 50,
+                "close": close,
+                "volume": 1000.0,
+            },
+            index=dates,
+        )
 
-        with patch("bcrm2.scripts.eval_walkforward._read_csv", return_value=df), \
-             patch("bcrm2.scripts.eval_walkforward._compute_level_trend") as mock_lt, \
-             patch("bcrm2.scripts.eval_walkforward.walk_forward_time_series_split") as mock_split, \
-             patch("bcrm2.morph_cycle_predictor.MorphCyclePredictor") as mock_pred_cls:
+        with (
+            patch("bcrm2.scripts.eval_walkforward._read_csv", return_value=df),
+            patch("bcrm2.scripts.eval_walkforward._compute_level_trend") as mock_lt,
+            patch("bcrm2.scripts.eval_walkforward.walk_forward_time_series_split") as mock_split,
+            patch("bcrm2.morph_cycle_predictor.MorphCyclePredictor") as mock_pred_cls,
+        ):
             mock_lt.return_value = (
                 pd.Series(np.linspace(-2, 2, n), index=dates),
                 pd.Series(np.linspace(-1, 1, n), index=dates),
@@ -229,7 +263,6 @@ class TestAlphaBlendWalkForward:
 
     def test_alpha_zero_equivalent_no_forecast(self):
         """T_C3.6: α=0 结果与无 forecast 的回测一致（字节等价验证）。"""
-        from bcrm2.scripts.eval_walkforward import run_alpha_blend_comparison
         from bcrm2.parameter_mapper import ParameterMapper
 
         # alpha=0 时 ParameterMapper 输出应与无 forecast 完全一致

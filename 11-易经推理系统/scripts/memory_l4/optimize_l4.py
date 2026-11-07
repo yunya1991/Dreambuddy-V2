@@ -16,29 +16,28 @@ Usage:
 import argparse
 import json
 import shutil
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Dict, Any, List
-
 import sys
+from pathlib import Path
+from typing import Any, Dict, List
+
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import (
-    memory_l4_cases_dir,
-    memory_l4_reviews_dir,
-    memory_l4_distills_dir,
-    memory_l4_stats_dir,
-)
-from scripts.memory_l4.case_registry import (
+from scripts.memory_l4.case_registry import (  # noqa: E402
     UnifiedCaseRegistry,
     upgrade_case_to_v03,
 )
-from scripts.memory_l4.review_engine import run_review
-from scripts.memory_l4.distill_engine import run_full_distill_pipeline, save_distill
-from scripts.memory_l4.stats_engine import compute_full_stats, save_stats
-from scripts.memory_l4.qmm.engine import run_qmm
+from scripts.memory_l4.distill_engine import run_full_distill_pipeline, save_distill  # noqa: E402
+from scripts.memory_l4.paths import (  # noqa: E402
+    memory_l4_cases_dir,
+    memory_l4_distills_dir,
+    memory_l4_reviews_dir,
+    memory_l4_stats_dir,
+)
+from scripts.memory_l4.qmm.engine import run_qmm  # noqa: E402
+from scripts.memory_l4.review_engine import run_review  # noqa: E402
+from scripts.memory_l4.stats_engine import compute_full_stats, save_stats  # noqa: E402
 
 
 class L4Optimizer:
@@ -79,7 +78,9 @@ class L4Optimizer:
 
             if version != "v0.2":
                 results["failed"] += 1
-                results["details"].append({"file": f.name, "error": f"unexpected version: {version}"})
+                results["details"].append(
+                    {"file": f.name, "error": f"unexpected version: {version}"}
+                )
                 continue
 
             results["v02_found"] += 1
@@ -97,7 +98,13 @@ class L4Optimizer:
                     json.dump(upgraded, fp, ensure_ascii=False, indent=2, default=str)
 
                 results["upgraded"] += 1
-                results["details"].append({"file": f.name, "status": "upgraded", "source": upgraded.get("system_source", "unknown")})
+                results["details"].append(
+                    {
+                        "file": f.name,
+                        "status": "upgraded",
+                        "source": upgraded.get("system_source", "unknown"),
+                    }
+                )
             except Exception as e:
                 results["failed"] += 1
                 results["details"].append({"file": f.name, "error": f"upgrade failed: {e}"})
@@ -188,47 +195,75 @@ class L4Optimizer:
 
         # ── market_data_refs: 市场数据 ──
         evidence["market_data_refs"].append({"type": "symbol", "ref": str(case.get("symbol"))})
-        evidence["market_data_refs"].append({"type": "direction", "ref": str(case.get("direction"))})
+        evidence["market_data_refs"].append(
+            {"type": "direction", "ref": str(case.get("direction"))}
+        )
         if pi.get("entry_price"):
-            evidence["market_data_refs"].append({"type": "entry_price", "ref": str(pi["entry_price"])})
+            evidence["market_data_refs"].append(
+                {"type": "entry_price", "ref": str(pi["entry_price"])}
+            )
         if pi.get("exit_price"):
-            evidence["market_data_refs"].append({"type": "exit_price", "ref": str(pi["exit_price"])})
+            evidence["market_data_refs"].append(
+                {"type": "exit_price", "ref": str(pi["exit_price"])}
+            )
         if pi.get("leverage"):
             evidence["market_data_refs"].append({"type": "leverage", "ref": str(pi["leverage"])})
 
-        evidence["market_data_refs"].append({"type": "regime", "ref": str(es.get("regime", "unknown"))})
-        evidence["market_data_refs"].append({"type": "volatility", "ref": str(es.get("volatility", 0))})
-        evidence["market_data_refs"].append({"type": "trend_strength", "ref": str(es.get("trend_strength", 0))})
-        evidence["market_data_refs"].append({"type": "is_ranging", "ref": str(es.get("is_ranging", False))})
+        evidence["market_data_refs"].append(
+            {"type": "regime", "ref": str(es.get("regime", "unknown"))}
+        )
+        evidence["market_data_refs"].append(
+            {"type": "volatility", "ref": str(es.get("volatility", 0))}
+        )
+        evidence["market_data_refs"].append(
+            {"type": "trend_strength", "ref": str(es.get("trend_strength", 0))}
+        )
+        evidence["market_data_refs"].append(
+            {"type": "is_ranging", "ref": str(es.get("is_ranging", False))}
+        )
 
         # ── signal_refs: 交易信号 ──
         system_source = case.get("system_source")
         evidence["strategy_refs"].append({"type": "system_source", "ref": str(system_source)})
 
         if system_source == "yijing_inference":
-            evidence["signal_refs"].append({"type": "hexagram", "ref": str(dc.get("hexagram", "N/A"))})
-            evidence["signal_refs"].append({"type": "confidence", "ref": str(dc.get("confidence", 0))})
+            evidence["signal_refs"].append(
+                {"type": "hexagram", "ref": str(dc.get("hexagram", "N/A"))}
+            )
+            evidence["signal_refs"].append(
+                {"type": "confidence", "ref": str(dc.get("confidence", 0))}
+            )
             if dc.get("liangyi_state"):
                 evidence["signal_refs"].append({"type": "liangyi", "ref": str(dc["liangyi_state"])})
             if dc.get("enhance_info"):
-                evidence["constraint_refs"].append({"type": "enhance", "ref": str(dc["enhance_info"])})
+                evidence["constraint_refs"].append(
+                    {"type": "enhance", "ref": str(dc["enhance_info"])}
+                )
 
             # 分析师维度: 易经推理分析师
-            evidence["analyst_refs"].append({
-                "type": "yijing_analyst",
-                "ref": f"hexagram={dc.get('hexagram', 'N/A')}, confidence={dc.get('confidence', 0)}, liangyi={dc.get('liangyi_state', 'N/A')}"
-            })
+            evidence["analyst_refs"].append(
+                {
+                    "type": "yijing_analyst",
+                    "ref": f"hexagram={dc.get('hexagram', 'N/A')}, confidence={dc.get('confidence', 0)}, liangyi={dc.get('liangyi_state', 'N/A')}",
+                }
+            )
 
         elif system_source == "martin_v15":
-            evidence["signal_refs"].append({"type": "addon_level", "ref": str(dc.get("addon_level", 0))})
+            evidence["signal_refs"].append(
+                {"type": "addon_level", "ref": str(dc.get("addon_level", 0))}
+            )
             if dc.get("martin_config"):
-                evidence["strategy_refs"].append({"type": "martin_config", "ref": str(dc["martin_config"])})
+                evidence["strategy_refs"].append(
+                    {"type": "martin_config", "ref": str(dc["martin_config"])}
+                )
 
             # 分析师维度: 马丁策略分析师
-            evidence["analyst_refs"].append({
-                "type": "martin_analyst",
-                "ref": f"addon_level={dc.get('addon_level', 0)}, config={dc.get('martin_config', 'N/A')}"
-            })
+            evidence["analyst_refs"].append(
+                {
+                    "type": "martin_analyst",
+                    "ref": f"addon_level={dc.get('addon_level', 0)}, config={dc.get('martin_config', 'N/A')}",
+                }
+            )
 
         elif system_source == "three_screen":
             if dc.get("screen_signals"):
@@ -237,31 +272,47 @@ class L4Optimizer:
 
             # 分析师维度: 三屏分析师
             screens = dc.get("screen_signals", {})
-            evidence["analyst_refs"].append({
-                "type": "three_screen_analyst",
-                "ref": f"screens={list(screens.keys())}, signals={list(screens.values())}"
-            })
+            evidence["analyst_refs"].append(
+                {
+                    "type": "three_screen_analyst",
+                    "ref": f"screens={list(screens.keys())}, signals={list(screens.values())}",
+                }
+            )
 
         elif system_source in ("agent_a", "agent_b"):
-            evidence["signal_refs"].append({"type": "confidence", "ref": str(dc.get("confidence", 0))})
-            evidence["strategy_refs"].append({"type": "strategy", "ref": str(dc.get("strategy", "N/A"))})
+            evidence["signal_refs"].append(
+                {"type": "confidence", "ref": str(dc.get("confidence", 0))}
+            )
+            evidence["strategy_refs"].append(
+                {"type": "strategy", "ref": str(dc.get("strategy", "N/A"))}
+            )
 
             # 分析师维度: Agent 分析师
-            evidence["analyst_refs"].append({
-                "type": f"{system_source}_analyst",
-                "ref": f"confidence={dc.get('confidence', 0)}, strategy={dc.get('strategy', 'N/A')}"
-            })
+            evidence["analyst_refs"].append(
+                {
+                    "type": f"{system_source}_analyst",
+                    "ref": f"confidence={dc.get('confidence', 0)}, strategy={dc.get('strategy', 'N/A')}",
+                }
+            )
 
         elif system_source == "dream_os":
-            evidence["strategy_refs"].append({"type": "fusion_mode", "ref": str(dc.get("fusion_mode", "N/A"))})
-            evidence["strategy_refs"].append({"type": "strategy_id", "ref": str(dc.get("strategy_id", "N/A"))})
-            evidence["constraint_refs"].append({"type": "urgency", "ref": str(dc.get("urgency", "N/A"))})
+            evidence["strategy_refs"].append(
+                {"type": "fusion_mode", "ref": str(dc.get("fusion_mode", "N/A"))}
+            )
+            evidence["strategy_refs"].append(
+                {"type": "strategy_id", "ref": str(dc.get("strategy_id", "N/A"))}
+            )
+            evidence["constraint_refs"].append(
+                {"type": "urgency", "ref": str(dc.get("urgency", "N/A"))}
+            )
 
             # 分析师维度: DreamOS 融合分析师
-            evidence["analyst_refs"].append({
-                "type": "dreamos_analyst",
-                "ref": f"fusion={dc.get('fusion_mode', 'N/A')}, strategy={dc.get('strategy_id', 'N/A')}"
-            })
+            evidence["analyst_refs"].append(
+                {
+                    "type": "dreamos_analyst",
+                    "ref": f"fusion={dc.get('fusion_mode', 'N/A')}, strategy={dc.get('strategy_id', 'N/A')}",
+                }
+            )
 
         # ── 技术面分析师 (所有系统通用) ──
         technical_evidence = []
@@ -274,10 +325,9 @@ class L4Optimizer:
         if es.get("price_position") is not None:
             technical_evidence.append(f"price_position={es['price_position']}")
         if technical_evidence:
-            evidence["analyst_refs"].append({
-                "type": "technical_analyst",
-                "ref": ", ".join(technical_evidence)
-            })
+            evidence["analyst_refs"].append(
+                {"type": "technical_analyst", "ref": ", ".join(technical_evidence)}
+            )
 
         # ── 情绪面分析师 ──
         sentiment_evidence = []
@@ -286,10 +336,9 @@ class L4Optimizer:
         if case.get("direction"):
             sentiment_evidence.append(f"direction={case['direction']}")
         if sentiment_evidence:
-            evidence["analyst_refs"].append({
-                "type": "sentiment_analyst",
-                "ref": ", ".join(sentiment_evidence)
-            })
+            evidence["analyst_refs"].append(
+                {"type": "sentiment_analyst", "ref": ", ".join(sentiment_evidence)}
+            )
 
         # ── 风控分析师 ──
         risk_evidence = []
@@ -298,22 +347,29 @@ class L4Optimizer:
         if case.get("risk_events"):
             risk_evidence.append(f"risk_events={len(case['risk_events'])}")
         if risk_evidence:
-            evidence["analyst_refs"].append({
-                "type": "risk_analyst",
-                "ref": ", ".join(risk_evidence)
-            })
+            evidence["analyst_refs"].append(
+                {"type": "risk_analyst", "ref": ", ".join(risk_evidence)}
+            )
 
         # ── historical_refs: 历史结果 ──
         do = case.get("decision_outcome", {})
         evidence["historical_refs"].append({"type": "pnl", "ref": str(do.get("pnl_pct", 0))})
-        evidence["historical_refs"].append({"type": "exit_reason", "ref": str(do.get("exit_reason", "N/A"))})
-        evidence["historical_refs"].append({"type": "is_correct", "ref": str(do.get("is_correct", "unknown"))})
+        evidence["historical_refs"].append(
+            {"type": "exit_reason", "ref": str(do.get("exit_reason", "N/A"))}
+        )
+        evidence["historical_refs"].append(
+            {"type": "is_correct", "ref": str(do.get("is_correct", "unknown"))}
+        )
 
         # ── constraint_refs: 约束条件 ──
         quadrant = case.get("quadrant", {})
         if isinstance(quadrant, dict):
-            evidence["constraint_refs"].append({"type": "quadrant_x", "ref": str(quadrant.get("x", 0))})
-            evidence["constraint_refs"].append({"type": "quadrant_y", "ref": str(quadrant.get("y", 0))})
+            evidence["constraint_refs"].append(
+                {"type": "quadrant_x", "ref": str(quadrant.get("x", 0))}
+            )
+            evidence["constraint_refs"].append(
+                {"type": "quadrant_y", "ref": str(quadrant.get("y", 0))}
+            )
 
         return evidence
 
@@ -345,7 +401,7 @@ class L4Optimizer:
             review_results = run_review(cases=cases)
             results["review_count"] = review_results.get("total_reviews", 0)
 
-            print(f"Running distill for reviewed cases...")
+            print("Running distill for reviewed cases...")
             review_records = []
             for f in sorted(self.reviews_dir.glob("*.json")):
                 try:
@@ -356,7 +412,8 @@ class L4Optimizer:
 
             # 过滤真实案例的 review（排除测试案例）
             real_review_records = [
-                r for r in review_records
+                r
+                for r in review_records
                 if "qmm_test" not in r.get("case_id", "") and "yj_test" not in r.get("case_id", "")
             ]
             print(f"  Distilling {min(len(real_review_records), batch_size)} real reviews...")
@@ -368,10 +425,12 @@ class L4Optimizer:
                     save_distill(distill)
                     distill_count += 1
                 except Exception as e:
-                    results["errors"].append(f"Distill failed for {review_record.get('review_id')}: {e}")
+                    results["errors"].append(
+                        f"Distill failed for {review_record.get('review_id')}: {e}"
+                    )
             results["distill_count"] = distill_count
 
-            print(f"Generating stats snapshot...")
+            print("Generating stats snapshot...")
             stats = compute_full_stats()
             save_stats(stats)
             results["stats_generated"] = True
@@ -406,8 +465,12 @@ class L4Optimizer:
                         continue
 
                     if case.get("source") == "live_trading" or case.get("system_source") in [
-                        "yijing_inference", "three_screen", "martin_v15",
-                        "agent_a", "agent_b", "dream_os"
+                        "yijing_inference",
+                        "three_screen",
+                        "martin_v15",
+                        "agent_a",
+                        "agent_b",
+                        "dream_os",
                     ]:
                         cases.append(case)
                         results["real_cases"] += 1

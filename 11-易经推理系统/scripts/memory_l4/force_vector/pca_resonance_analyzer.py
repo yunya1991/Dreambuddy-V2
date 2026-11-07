@@ -7,14 +7,14 @@
 
 所有方法 FAIL-OPEN：异常或样本不足时返回中性默认值（不破坏下游）。
 """
+
 from __future__ import annotations
 
 import warnings
 
 import numpy as np
-from sklearn.decomposition import PCA
-
 from force_vector.models import PCAResonance
+from sklearn.decomposition import PCA
 
 # 五维固定顺序
 _DIM_ORDER = ("dao", "tian", "di", "jiang", "fa")
@@ -34,8 +34,7 @@ class PCAResonanceAnalyzer:
     # ------------------------------------------------------------------
     # PCA 五维共振分析（定强度）
     # ------------------------------------------------------------------
-    def compute_resonance(self, five_dim_powers: dict,
-                          dominant_dim: str) -> PCAResonance:
+    def compute_resonance(self, five_dim_powers: dict, dominant_dim: str) -> PCAResonance:
         """PCA 五维共振分析（定强度）。
 
         Args:
@@ -62,26 +61,24 @@ class PCAResonanceAnalyzer:
         """
         try:
             # 输入校验：主导维度必须存在且五维齐全
-            if (not five_dim_powers or dominant_dim not in five_dim_powers
-                    or not all(d in five_dim_powers for d in _DIM_ORDER)):
+            if (
+                not five_dim_powers
+                or dominant_dim not in five_dim_powers
+                or not all(d in five_dim_powers for d in _DIM_ORDER)
+            ):
                 return self._neutral_default(dominant_dim)
 
-            powers = np.array(
-                [float(five_dim_powers[d]) for d in _DIM_ORDER], dtype=float
-            )
+            powers = np.array([float(five_dim_powers[d]) for d in _DIM_ORDER], dtype=float)
             dominant_power = float(five_dim_powers[dominant_dim])
 
             # 1) PCA 分解：协方差矩阵 → 特征值 → explained_ratio = λ1/Σλi
             explained_ratio = self._explained_variance_ratio(powers)
 
             # 2) 共振分析：其他四维与主导维度的方向一致性
-            sign_alignment = self._sign_alignment(powers, dominant_dim,
-                                                   dominant_power)
+            sign_alignment = self._sign_alignment(powers, dominant_dim, dominant_power)
 
             # 3) 强度调整系数（按共振等级）
-            alignment, strength_coefficient = self._resonance_coefficient(
-                sign_alignment
-            )
+            alignment, strength_coefficient = self._resonance_coefficient(sign_alignment)
 
             # 4) PCA 退化惩罚：结构不清晰时额外打折
             if explained_ratio < _DEGENERACY_THRESHOLD:
@@ -100,18 +97,22 @@ class PCAResonanceAnalyzer:
     # ------------------------------------------------------------------
     # 排名一致性检测：Spearman 秩相关
     # ------------------------------------------------------------------
-    def compute_rank_stability(self, ranks_t: list,
-                               ranks_t_prev: list) -> float:
+    def compute_rank_stability(self, ranks_t: list, ranks_t_prev: list) -> float:
         """排名一致性检测：Spearman 秩相关(rank_t, rank_t_prev)。
 
         返回 [0, 1]（负相关截断到 0）。异常或样本不足时返回中性默认 0.5。
         """
         try:
-            if (ranks_t is None or ranks_t_prev is None
-                    or len(ranks_t) < 2 or len(ranks_t_prev) < 2
-                    or len(ranks_t) != len(ranks_t_prev)):
+            if (
+                ranks_t is None
+                or ranks_t_prev is None
+                or len(ranks_t) < 2
+                or len(ranks_t_prev) < 2
+                or len(ranks_t) != len(ranks_t_prev)
+            ):
                 return 0.5
             from scipy.stats import spearmanr
+
             r, _p = spearmanr(ranks_t, ranks_t_prev)
             if r is None or not np.isfinite(r):
                 return 0.5
@@ -132,8 +133,7 @@ class PCAResonanceAnalyzer:
         异常时返回 False（不轻易误报切换）。
         """
         try:
-            if (not ranks_t or not ranks_t_prev
-                    or len(ranks_t) == 0 or len(ranks_t_prev) == 0):
+            if not ranks_t or not ranks_t_prev or len(ranks_t) == 0 or len(ranks_t_prev) == 0:
                 return False
             if isinstance(ranks_t[0], str):
                 top_t = ranks_t[0]
@@ -172,8 +172,9 @@ class PCAResonanceAnalyzer:
         except Exception:
             return 1.0  # PCA 异常时不施加退化惩罚（保守不削弱）
 
-    def _sign_alignment(self, powers: np.ndarray, dominant_dim: str,
-                        dominant_power: float) -> float:
+    def _sign_alignment(
+        self, powers: np.ndarray, dominant_dim: str, dominant_power: float
+    ) -> float:
         """其他四维与主导维度方向一致的比例。
 
         sign_alignment = count(sign(dim_i) == sign(dominant)) / 4

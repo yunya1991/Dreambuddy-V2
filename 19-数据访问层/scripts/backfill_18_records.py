@@ -18,6 +18,7 @@ mm_metrics 表，使 9-基本面分析 / 23-自进化等可通过 MarketMacroRep
   - 幂等（主键 source+sub_category+metric_name+timestamp）
   - 自动建表（mm_metrics WITHOUT ROWID）
 """
+
 from __future__ import annotations
 
 import argparse
@@ -62,9 +63,10 @@ def _is_numeric(v: Any) -> bool:
 
 def _pg_conn():
     """连接 18 层 PostgreSQL 主库（方案 4 迁移后，替代 SQLite 源库）。"""
-    import os
     import re
+
     import psycopg2
+
     pwd = os.environ.get("DATA_CENTER_PG_PASSWORD", "")
     if not pwd:
         env = Path("/home/luke/dreambuddy/7-产物中台/系统研究索引体系/.env")
@@ -73,8 +75,11 @@ def _pg_conn():
             if m:
                 pwd = m.group(1)
     return psycopg2.connect(
-        host="127.0.0.1", port=5432, user="dreambuddy",
-        password=pwd, dbname="data_center",
+        host="127.0.0.1",
+        port=5432,
+        user="dreambuddy",
+        password=pwd,
+        dbname="data_center",
     )
 
 
@@ -86,15 +91,13 @@ def _iter_metric_rows(src_db: str) -> Iterable[tuple]:
     """
     conn = _pg_conn()
     cur = conn.cursor()
-    cur.execute(
-        """
+    cur.execute("""
         SELECT source, sub_category, timestamp, metrics, timeseries
         FROM records
         WHERE (metrics IS NOT NULL AND metrics != '')
            OR (timeseries IS NOT NULL AND timeseries != '')
           AND sub_category NOT LIKE 'newsflash%%'
-        """
-    )
+        """)
     for source, sub_category, ts_text, metrics_json, ts_json in cur:
         if not sub_category:
             continue
@@ -150,8 +153,7 @@ def backfill(src_db: str, dst_db: str, dry_run: bool = False) -> dict:
     # 单连接批量写入
     conn = sqlite3.connect(dst_db)
     try:
-        conn.execute(
-            """
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS mm_metrics (
                 source TEXT NOT NULL,
                 sub_category TEXT NOT NULL,
@@ -160,8 +162,7 @@ def backfill(src_db: str, dst_db: str, dry_run: bool = False) -> dict:
                 timestamp INTEGER NOT NULL,
                 PRIMARY KEY (source, sub_category, metric_name, timestamp)
             ) WITHOUT ROWID
-            """
-        )
+            """)
         # 分批 executemany
         batch_size = 5000
         inserted = 0

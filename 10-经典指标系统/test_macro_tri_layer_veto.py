@@ -15,8 +15,16 @@ class TestMacroTriLayerSnapshot(unittest.TestCase):
 
         def _std_tf(ts_ms, timeframe="12h"):
             if str(timeframe) == "1d":
-                return {"ok": True, "btc": {"dir": 1, "risk_pct": 0.35}, "eth": {"dir": 1, "risk_pct": 0.30}}
-            return {"ok": True, "btc": {"dir": 1, "risk_pct": 0.40}, "eth": {"dir": 1, "risk_pct": 0.38}}
+                return {
+                    "ok": True,
+                    "btc": {"dir": 1, "risk_pct": 0.35},
+                    "eth": {"dir": 1, "risk_pct": 0.30},
+                }
+            return {
+                "ok": True,
+                "btc": {"dir": 1, "risk_pct": 0.40},
+                "eth": {"dir": 1, "risk_pct": 0.38},
+            }
 
         svc._entry_macro_btceth_tf_std_at = _std_tf
 
@@ -26,14 +34,28 @@ class TestMacroTriLayerSnapshot(unittest.TestCase):
             self._n += 1
             v = 0.40 + 0.05 * float(self._n)
             r = 0.30 + 0.02 * float(self._n)
-            return {"ok": True, "btc": {"dir": 1, "value_pct": v, "risk_pct": r}, "eth": {"dir": 1, "value_pct": v, "risk_pct": r}}
+            return {
+                "ok": True,
+                "btc": {"dir": 1, "value_pct": v, "risk_pct": r},
+                "eth": {"dir": 1, "value_pct": v, "risk_pct": r},
+            }
 
         svc._entry_macro_btceth_hourly_std_at = _std_1h
 
         def _trend_at(ts_ms, coin="BTC", lookback_days=400):
             if int(ts_ms) < 1_700_000_000_000 - 12 * 3600_000:
-                return {"trend_w_dir": 1, "trend_d_dir": 1, "trend_w_slope": 0.08, "trend_rate_change_dw": 0.40}
-            return {"trend_w_dir": 1, "trend_d_dir": 1, "trend_w_slope": 0.10, "trend_rate_change_dw": 0.50}
+                return {
+                    "trend_w_dir": 1,
+                    "trend_d_dir": 1,
+                    "trend_w_slope": 0.08,
+                    "trend_rate_change_dw": 0.40,
+                }
+            return {
+                "trend_w_dir": 1,
+                "trend_d_dir": 1,
+                "trend_w_slope": 0.10,
+                "trend_rate_change_dw": 0.50,
+            }
 
         svc._macro_trend_at = _trend_at
         svc.CONFIG["quant_pairs_macro_riskd_mid_thr"] = 0.60
@@ -63,8 +85,16 @@ class TestMacroTriLayerSnapshot(unittest.TestCase):
     def test_extreme_riskd_maps_to_ra4(self):
         def _std_tf(ts_ms, timeframe="12h"):
             if str(timeframe) == "1d":
-                return {"ok": True, "btc": {"dir": 1, "risk_pct": 0.88}, "eth": {"dir": 1, "risk_pct": 0.86}}
-            return {"ok": True, "btc": {"dir": 1, "risk_pct": 0.40}, "eth": {"dir": 1, "risk_pct": 0.38}}
+                return {
+                    "ok": True,
+                    "btc": {"dir": 1, "risk_pct": 0.88},
+                    "eth": {"dir": 1, "risk_pct": 0.86},
+                }
+            return {
+                "ok": True,
+                "btc": {"dir": 1, "risk_pct": 0.40},
+                "eth": {"dir": 1, "risk_pct": 0.38},
+            }
 
         svc._entry_macro_btceth_tf_std_at = _std_tf
         out = svc._macro_btc_dir_snapshot(timeframe="1h", horizon_h=12, short_n=3)
@@ -80,13 +110,33 @@ class TestMacroTriLayerSnapshot(unittest.TestCase):
 
         def _std_tf(ts_ms, timeframe="12h"):
             if str(timeframe) == "1d":
-                return {"ok": True, "btc": {"dir": 1, "risk_pct": 0.35}, "eth": {"dir": -1, "risk_pct": 0.30}}
-            return {"ok": True, "btc": {"dir": 1, "risk_pct": 0.40}, "eth": {"dir": -1, "risk_pct": 0.38}}
+                return {
+                    "ok": True,
+                    "btc": {"dir": 1, "risk_pct": 0.35},
+                    "eth": {"dir": -1, "risk_pct": 0.30},
+                }
+            return {
+                "ok": True,
+                "btc": {"dir": 1, "risk_pct": 0.40},
+                "eth": {"dir": -1, "risk_pct": 0.38},
+            }
 
         def _trend_at(ts_ms, coin="BTC", lookback_days=400):
             if str(coin).upper() == "BTC":
-                return {"trend_w_dir": 1, "trend_d_dir": 1, "trend_w_slope": 0.10, "trend_d_slope": 0.08, "trend_rate_change_dw": 0.50}
-            return {"trend_w_dir": -1, "trend_d_dir": -1, "trend_w_slope": -0.20, "trend_d_slope": -0.15, "trend_rate_change_dw": -0.60}
+                return {
+                    "trend_w_dir": 1,
+                    "trend_d_dir": 1,
+                    "trend_w_slope": 0.10,
+                    "trend_d_slope": 0.08,
+                    "trend_rate_change_dw": 0.50,
+                }
+            return {
+                "trend_w_dir": -1,
+                "trend_d_dir": -1,
+                "trend_w_slope": -0.20,
+                "trend_d_slope": -0.15,
+                "trend_rate_change_dw": -0.60,
+            }
 
         svc._entry_macro_btceth_tf_std_at = _std_tf
         svc._macro_trend_at = _trend_at

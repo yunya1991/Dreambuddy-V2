@@ -56,7 +56,7 @@ INITIAL_CAPITAL = 10000
 # --------------------------------------------------------------------------- #
 # 导入回测引擎
 # --------------------------------------------------------------------------- #
-from v15_backtest import fetch_klines, run_backtest  # type: ignore
+from v15_backtest import fetch_klines, run_backtest  # type: ignore  # noqa: E402
 
 
 def _metrics(r: dict) -> Tuple[float, float, float, int]:
@@ -155,9 +155,9 @@ def objective(
 # 简易贝叶斯优化（高斯过程回归 + 期望改进）
 # --------------------------------------------------------------------------- #
 from scipy.stats import norm  # noqa
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF, ConstantKernel, WhiteKernel
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.gaussian_process import GaussianProcessRegressor  # noqa: E402
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel, WhiteKernel  # noqa: E402
+from sklearn.preprocessing import MinMaxScaler  # noqa: E402
 
 BOUNDS = np.array(
     [
@@ -232,7 +232,7 @@ def bayesian_optimize(
             "stage": "init",
             "elapsed_sec": round(dt, 1),
             "objective": round(val, 4),
-            **{k: round(float(v), 5) for k, v in zip(PARAM_NAMES, x)},
+            **{k: round(float(v), 5) for k, v in zip(PARAM_NAMES, x)},  # noqa: B905
         }
         trace.append(row)
         print(f"  [init {i+1}/{n_init}] obj={val:.4f} t={dt:.1f}s")
@@ -285,7 +285,7 @@ def bayesian_optimize(
             "stage": "BO",
             "elapsed_sec": round(dt, 1),
             "objective": round(val_next, 4),
-            **{k: round(float(v), 5) for k, v in zip(PARAM_NAMES, x_next)},
+            **{k: round(float(v), 5) for k, v in zip(PARAM_NAMES, x_next)},  # noqa: B905
         }
         trace.append(row)
         best_so_far = float(np.max(y_arr))

@@ -2,8 +2,9 @@
 
 adapter 把 Spider/Playwright 提取的字段 dict 转成统一 DataRecord 契约。
 """
-from data_center.crawler.adapters import adapt_item, adapt_items
+
 from data_center.core.contract import DataRecord
+from data_center.crawler.adapters import adapt_item, adapt_items
 
 
 def test_adapt_single_item():
@@ -69,6 +70,7 @@ def test_adapt_validates_record():
     """产出 DataRecord 经过契约校验，不合法则抛异常。"""
     import pytest
     from data_center.core.errors import ContractError
+
     with pytest.raises(ContractError):
         # source 为空会触发 ContractError
         adapt_item({"title": "t"}, {"source": "", "sub_category": "x"})

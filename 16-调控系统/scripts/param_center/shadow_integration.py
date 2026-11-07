@@ -12,6 +12,7 @@ SPEC §2.3.4 ShadowLogger 增强：
   不改动已有 shadow_param_log schema（避免破坏生产数据）。
   后续可通过 view 关联两表做联合查询。
 """
+
 from __future__ import annotations
 
 import json

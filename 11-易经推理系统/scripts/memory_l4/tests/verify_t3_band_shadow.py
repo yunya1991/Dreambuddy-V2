@@ -7,7 +7,8 @@
 2) 构造 band 且 switch=True 时，应正确写入 inference["_band_shadow"]
 3) 真实参数 L/T（传给 mapper.map_global_parameters 的值）未被修改（monkeypatch 验证）
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 import pathlib
@@ -15,14 +16,13 @@ import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent.parent.parent))
 
-import numpy as np
-
 
 def _make_minimal_trader(enable_front_band: bool, inject_band: dict | None):
     """构造最小可运行 shell，仅带必要属性。"""
-    from scripts.memory_l4.strategy_algo_layer import (
-        StrategyAlgorithmLayer, StrategyAlgoConfig
-    )
+    from scripts.memory_l4.strategy_algo_layer import (  # noqa: I001
+        StrategyAlgorithmLayer,
+        StrategyAlgoConfig,
+    )  # noqa: I001
     from scripts.memory_l4.five_domain_scorer import FiveDomainState, FiveDomainHeuristicScorer
 
     cfg = StrategyAlgoConfig(
@@ -40,13 +40,16 @@ def _make_minimal_trader(enable_front_band: bool, inject_band: dict | None):
 
     class _TraderShell:
         pass
+
     trader = _TraderShell()
     trader._strategy_algo_layer = layer
     trader._five_domain_state_cache = state
     trader._five_domain_scorer = scorer
     trader._logs = []
+
     def _log(msg, level="INFO"):
         trader._logs.append((level, msg))
+
     trader._log = _log
     return trader
 
@@ -109,11 +112,14 @@ def test_1_switch_off_no_band_shadow_key():
     }
 
     from scripts.memory_l4.polling_trader import PollingTrader
+
     method = PollingTrader._log_param_mapper_snapshot.__get__(trader, PollingTrader)
     method("BTC", "BTCUSDT", inference)
 
     has_key = "_band_shadow" in inference
-    assert not has_key, f"FAIL: switch=False 但 inference 出现了 _band_shadow 键！inference keys={list(inference.keys())}"
+    assert (
+        not has_key
+    ), f"FAIL: switch=False 但 inference 出现了 _band_shadow 键！inference keys={list(inference.keys())}"
     print("PASS ✓ (no _band_shadow key)")
 
 
@@ -122,9 +128,12 @@ def test_2_switch_on_with_band_writes_shadow():
     print("[Test 2] switch=True + band → _band_shadow 写入...", end=" ", flush=True)
 
     band = {
-        "L_min": 0.0, "L_max": 0.5,
-        "T_min": -0.3, "T_max": 0.3,
-        "sector_weights_min": 0.1, "sector_weights_max": 0.9,
+        "L_min": 0.0,
+        "L_max": 0.5,
+        "T_min": -0.3,
+        "T_max": 0.3,
+        "sector_weights_min": 0.1,
+        "sector_weights_max": 0.9,
     }
     trader = _make_minimal_trader(enable_front_band=True, inject_band=band)
     mapper, _ = _make_mock_mapper()
@@ -141,19 +150,30 @@ def test_2_switch_on_with_band_writes_shadow():
     }
 
     from scripts.memory_l4.polling_trader import PollingTrader
+
     method = PollingTrader._log_param_mapper_snapshot.__get__(trader, PollingTrader)
     method("BTC", "BTCUSDT", inference)
 
-    assert "_band_shadow" in inference, f"FAIL: 未写入 _band_shadow！inference keys={list(inference.keys())}"
+    assert (
+        "_band_shadow" in inference
+    ), f"FAIL: 未写入 _band_shadow！inference keys={list(inference.keys())}"
     shadow = inference["_band_shadow"]
 
     assert shadow["L_before"] == L_raw_input, f"L_before={shadow['L_before']} != {L_raw_input}"
     assert shadow["T_before"] == T_raw_input, f"T_before={shadow['T_before']} != {T_raw_input}"
 
-    assert shadow["L_after"] <= band["L_max"], f"L_after={shadow['L_after']} > L_max={band['L_max']}"
-    assert shadow["L_after"] >= band["L_min"], f"L_after={shadow['L_after']} < L_min={band['L_min']}"
-    assert shadow["T_after"] <= band["T_max"], f"T_after={shadow['T_after']} > T_max={band['T_max']}"
-    assert shadow["T_after"] >= band["T_min"], f"T_after={shadow['T_after']} < T_min={band['T_min']}"
+    assert (
+        shadow["L_after"] <= band["L_max"]
+    ), f"L_after={shadow['L_after']} > L_max={band['L_max']}"
+    assert (
+        shadow["L_after"] >= band["L_min"]
+    ), f"L_after={shadow['L_after']} < L_min={band['L_min']}"
+    assert (
+        shadow["T_after"] <= band["T_max"]
+    ), f"T_after={shadow['T_after']} > T_max={band['T_max']}"
+    assert (
+        shadow["T_after"] >= band["T_min"]
+    ), f"T_after={shadow['T_after']} < T_min={band['T_min']}"
 
     for i, s in enumerate(shadow["sec_after"]):
         assert 0.1 <= s <= 0.9, f"sec_after[{i}]={s} 超出 [0.1,0.9]"
@@ -162,10 +182,14 @@ def test_2_switch_on_with_band_writes_shadow():
     assert shadow["band"] == band
 
     shadow_log_lines = [m for lvl, m in trader._logs if "战略层带宽影子" in m]
-    assert len(shadow_log_lines) >= 1, f"FAIL: 未找到[战略层带宽影子]日志！日志数={len(trader._logs)}"
+    assert (
+        len(shadow_log_lines) >= 1
+    ), f"FAIL: 未找到[战略层带宽影子]日志！日志数={len(trader._logs)}"
 
-    print(f"PASS ✓ (L_after={shadow['L_after']:.4f} clipped from {L_raw_input}, "
-          f"T_after={shadow['T_after']:.4f} clipped from {T_raw_input})")
+    print(
+        f"PASS ✓ (L_after={shadow['L_after']:.4f} clipped from {L_raw_input}, "
+        f"T_after={shadow['T_after']:.4f} clipped from {T_raw_input})"
+    )
 
 
 def test_3_real_params_unchanged_monkeypatch():
@@ -173,9 +197,12 @@ def test_3_real_params_unchanged_monkeypatch():
     print("[Test 3] 真实参数 L/T 未被修改(monkeypatch)...", end=" ", flush=True)
 
     band = {
-        "L_min": -1.0, "L_max": 0.0,
-        "T_min": 0.5, "T_max": 2.0,
-        "sector_weights_min": 0.0, "sector_weights_max": 1.0,
+        "L_min": -1.0,
+        "L_max": 0.0,
+        "T_min": 0.5,
+        "T_max": 2.0,
+        "sector_weights_min": 0.0,
+        "sector_weights_max": 1.0,
     }
     trader = _make_minimal_trader(enable_front_band=True, inject_band=band)
     mapper, received = _make_mock_mapper()
@@ -192,30 +219,33 @@ def test_3_real_params_unchanged_monkeypatch():
     }
 
     from scripts.memory_l4.polling_trader import PollingTrader
+
     method = PollingTrader._log_param_mapper_snapshot.__get__(trader, PollingTrader)
     method("BTC", "BTCUSDT", inference)
 
     assert "L" in received, "FAIL: mapper.map_global_parameters 似乎未被调用！"
-    assert received["L"] == L_real_input, (
-        f"FAIL: 真实 L 参数被修改！传入 mapper 的 L={received['L']}，原始={L_real_input}"
-    )
-    assert received["T"] == T_real_input, (
-        f"FAIL: 真实 T 参数被修改！传入 mapper 的 T={received['T']}，原始={T_real_input}"
-    )
-    assert received["sw_L"] == L_real_input, (
-        f"FAIL: map_sector_weights 的 L 被修改！收到={received['sw_L']}，原始={L_real_input}"
-    )
-    assert received["sw_T"] == T_real_input, (
-        f"FAIL: map_sector_weights 的 T 被修改！收到={received['sw_T']}，原始={T_real_input}"
-    )
+    assert (
+        received["L"] == L_real_input
+    ), f"FAIL: 真实 L 参数被修改！传入 mapper 的 L={received['L']}，原始={L_real_input}"
+    assert (
+        received["T"] == T_real_input
+    ), f"FAIL: 真实 T 参数被修改！传入 mapper 的 T={received['T']}，原始={T_real_input}"
+    assert (
+        received["sw_L"] == L_real_input
+    ), f"FAIL: map_sector_weights 的 L 被修改！收到={received['sw_L']}，原始={L_real_input}"
+    assert (
+        received["sw_T"] == T_real_input
+    ), f"FAIL: map_sector_weights 的 T 被修改！收到={received['sw_T']}，原始={T_real_input}"
 
     shadow = inference.get("_band_shadow")
     assert shadow is not None, "_band_shadow 未写入"
     assert shadow["L_after"] == 0.0, f"影子 L_after 未正确 clip：{shadow['L_after']} (expect 0.0)"
     assert shadow["T_after"] == 0.5, f"影子 T_after 未正确 clip：{shadow['T_after']} (expect 0.5)"
 
-    print(f"PASS ✓ (mapper收到 L={received['L']},T={received['T']} 与原始一致，"
-          f"影子 L_after={shadow['L_after']},T_after={shadow['T_after']} 已 clip)")
+    print(
+        f"PASS ✓ (mapper收到 L={received['L']},T={received['T']} 与原始一致，"
+        f"影子 L_after={shadow['L_after']},T_after={shadow['T_after']} 已 clip)"
+    )
 
 
 def main():
@@ -231,7 +261,9 @@ def main():
         all_pass = False
     except Exception as e:
         print(f"ERROR ✗: {type(e).__name__}: {e}")
-        import traceback; traceback.print_exc()
+        import traceback
+
+        traceback.print_exc()
         all_pass = False
 
     try:
@@ -241,7 +273,9 @@ def main():
         all_pass = False
     except Exception as e:
         print(f"ERROR ✗: {type(e).__name__}: {e}")
-        import traceback; traceback.print_exc()
+        import traceback
+
+        traceback.print_exc()
         all_pass = False
 
     try:
@@ -251,7 +285,9 @@ def main():
         all_pass = False
     except Exception as e:
         print(f"ERROR ✗: {type(e).__name__}: {e}")
-        import traceback; traceback.print_exc()
+        import traceback
+
+        traceback.print_exc()
         all_pass = False
 
     print("=" * 70)

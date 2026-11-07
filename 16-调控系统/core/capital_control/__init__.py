@@ -1,3 +1,4 @@
+from .component import CapitalControlComponent
 from .types import (
     AccountType,
     CapitalMode,
@@ -8,7 +9,6 @@ from .types import (
     calc_margin_pressure,
     now_iso,
 )
-from .component import CapitalControlComponent
 
 __all__ = [
     "AccountType",

@@ -3,6 +3,7 @@
 从 evolution_pipeline.py run_symbol 主流程抽出。
 当前为委托模式（通过 pipeline 引用委托），后续 Phase 逐步将实现搬入。
 """
+
 import logging
 from typing import Any
 
@@ -22,8 +23,13 @@ class EvolutionOrchestrator:
     - logging_ctx: 日志上下文
     """
 
-    def __init__(self, weight_store: Any = None, path_discovery: Any = None,
-                 logging_ctx: Any = None, pipeline: Any = None):
+    def __init__(
+        self,
+        weight_store: Any = None,
+        path_discovery: Any = None,
+        logging_ctx: Any = None,
+        pipeline: Any = None,
+    ):
         """构造函数。
 
         Args:

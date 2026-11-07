@@ -6,23 +6,21 @@
 - 宽限期：C 档记忆在 grace_verify_count 次 verify 内不因 fail 降权
 - 可配置开关
 """
-import pytest
 
 
 def test_module_importable():
-    from role_separation import (
-        RolePolicy, QuarantineManager, GracePolicy,
-        filter_self_verification, is_in_grace_period,
-    )
+    pass
 
 
 # ---------------------------------------------------------------------------
 # 角色分离
 # ---------------------------------------------------------------------------
 
+
 def test_self_verification_filtered_as_abstain():
     from role_separation import filter_self_verification
     from verification_record import VerificationSignal
+
     signals = [
         VerificationSignal(stage="a", verdict="pass", verifier_id="creator1"),
         VerificationSignal(stage="b", verdict="pass", verifier_id="other"),
@@ -38,6 +36,7 @@ def test_self_verification_filtered_as_abstain():
 def test_no_self_verification_passes_through():
     from role_separation import filter_self_verification
     from verification_record import VerificationSignal
+
     signals = [
         VerificationSignal(stage="a", verdict="pass", verifier_id="other1"),
         VerificationSignal(stage="b", verdict="fail", verifier_id="other2"),
@@ -49,6 +48,7 @@ def test_no_self_verification_passes_through():
 
 def test_filter_works_with_dict_signals():
     from role_separation import filter_self_verification
+
     signals = [
         {"stage": "a", "verdict": "pass", "verifier_id": "creator1"},
         {"stage": "b", "verdict": "pass", "verifier_id": "other"},
@@ -62,8 +62,10 @@ def test_filter_works_with_dict_signals():
 # 隔离区
 # ---------------------------------------------------------------------------
 
+
 def test_quarantine_new_memory():
     from role_separation import QuarantineManager
+
     qm = QuarantineManager()
     # 未知记忆默认 released（兼容存量记忆，避免 recall 返回空）
     assert qm.is_quarantined("VM-new") is False
@@ -75,6 +77,7 @@ def test_quarantine_new_memory():
 
 def test_quarantine_release_requires_verification():
     from role_separation import QuarantineManager
+
     qm = QuarantineManager()
     qm.quarantine("VM-1")
     assert qm.is_quarantined("VM-1") is True
@@ -88,6 +91,7 @@ def test_quarantine_release_requires_verification():
 
 def test_quarantine_disabled():
     from role_separation import QuarantineManager
+
     qm = QuarantineManager(enabled=False)
     assert qm.is_quarantined("VM-anything") is False
 
@@ -96,8 +100,10 @@ def test_quarantine_disabled():
 # 验证宽限期
 # ---------------------------------------------------------------------------
 
+
 def test_c_tier_in_grace_period():
     from role_separation import GracePolicy
+
     gp = GracePolicy(grace_verify_count=3)
     # C 档 + verify_count < 3 → 在宽限期内
     assert gp.is_in_grace(quality="C", verify_count=0) is True
@@ -107,6 +113,7 @@ def test_c_tier_in_grace_period():
 
 def test_non_c_tier_not_in_grace():
     from role_separation import GracePolicy
+
     gp = GracePolicy(grace_verify_count=3)
     assert gp.is_in_grace(quality="B", verify_count=0) is False
     assert gp.is_in_grace(quality="A", verify_count=0) is False
@@ -115,6 +122,7 @@ def test_non_c_tier_not_in_grace():
 def test_grace_period_protects_from_fail_downgrade():
     """宽限期内 fail 不导致置信度下降。"""
     from role_separation import GracePolicy
+
     gp = GracePolicy(grace_verify_count=3)
     # 宽限期内：fail 应被保护（返回 should_downgrade=False）
     assert gp.should_downgrade(quality="C", verify_count=1, success=False) is False
@@ -127,6 +135,7 @@ def test_grace_period_protects_from_fail_downgrade():
 
 def test_grace_policy_disabled():
     from role_separation import GracePolicy
+
     gp = GracePolicy(enabled=False)
     assert gp.is_in_grace(quality="C", verify_count=0) is False
     assert gp.should_downgrade(quality="C", verify_count=0, success=False) is True

@@ -10,23 +10,22 @@
 文件: ml/ewave_vs_v55_comparison.py
 """
 
+import json
 import os
 import sys
-import json
 import time
+
 import numpy as np
 import pandas as pd
-from typing import Dict
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
-from ml.feature_engineer import TrendFeatureEngineer
-from ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
-from ml.ewave_recognizer import ElliottWaveRecognizer
-
-import lightgbm as lgb
+import lightgbm as lgb  # noqa: E402
+from ml.ewave_recognizer import ElliottWaveRecognizer  # noqa: E402
+from ml.feature_engineer import TrendFeatureEngineer  # noqa: E402
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
+from ml.pitd_confidence_scorer import ConfidenceWeights, PhysicsConfidenceScorer  # noqa: E402
 
 
 def load_coin_data(symbol: str) -> pd.DataFrame:
@@ -103,6 +102,7 @@ def walk_forward_predictions(X, y, feature_names, train_days=730, test_days=180)
             test_valid_mask = ~np.isnan(y_test) & (y_test >= 0)
             if test_valid_mask.sum() > 10 and len(np.unique(y_test[test_valid_mask])) >= 2:
                 from sklearn.metrics import roc_auc_score
+
                 auc = roc_auc_score(y_test[test_valid_mask], pred[test_valid_mask])
                 aucs.append(auc)
 
@@ -132,7 +132,11 @@ def compute_v55_position(prices, symbol="BTC"):
     phil_fe = PhilosophyFeatureEngineer()
     phil_features = phil_fe.extract_series(prices, symbol=symbol)
 
-    v55_base = pd.concat([trend_features, phil_features], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    v55_base = (
+        pd.concat([trend_features, phil_features], axis=1)
+        .fillna(0.0)
+        .replace([np.inf, -np.inf], 0.0)
+    )
     v55_names = list(v55_base.columns)
     print(f"    特征维数: {len(v55_names)}")
 
@@ -200,13 +204,17 @@ def compute_wave_position(prices, wave_signals, wave_confs, use_physics=True, ba
     # 物理置信度（如启用）
     if use_physics:
         weights = ConfidenceWeights(
-            w_eta=0.211, w_reversal=0.368,
-            w_support=0.211, w_kinetic=0.211,
-            position_lower=0.6, position_scale=1.0,
+            w_eta=0.211,
+            w_reversal=0.368,
+            w_support=0.211,
+            w_kinetic=0.211,
+            position_lower=0.6,
+            position_scale=1.0,
         )
         scorer = PhysicsConfidenceScorer(weights)
-        from ml.pitd_kinematics_engineer import KinematicsEngineer
         from ml.pitd_dynamics_engineer import DynamicsEngineer
+        from ml.pitd_kinematics_engineer import KinematicsEngineer
+
         kin_fe = KinematicsEngineer()
         dyn_fe = DynamicsEngineer()
         kin_feats = kin_fe.extract_series(prices)
@@ -370,7 +378,7 @@ def run_comparison(symbols=None, zigzag_threshold=0.05, wave_base_position=0.3):
             print(f"⚠ {symbol} 数据文件不存在, 跳过")
             continue
 
-        closes = prices["close"].values
+        closes = prices["close"].values  # noqa: F841
         n = len(prices)
 
         # 1. V5.5 ML基线
@@ -379,30 +387,43 @@ def run_comparison(symbols=None, zigzag_threshold=0.05, wave_base_position=0.3):
         valid_start = splits[0][2] if splits else 730
 
         # 计算V5.5指标（只在有效预测区域）
-        v55_metrics = backtest_position(v55_pos[valid_start:], v55_dir[valid_start:], prices.iloc[valid_start:])
-        print(f"  V5.5 ML基线:")
-        print(f"    年化: {v55_metrics['ann_return']*100:.2f}%, 夏普: {v55_metrics['sharpe']:.4f}, 回撤: {v55_metrics['max_drawdown']*100:.2f}%")
-        print(f"    Calmar: {v55_metrics['calmar']:.4f}, 胜率: {v55_metrics['win_rate']*100:.2f}%, 平均仓位: {v55_metrics['avg_position']:.3f}")
+        v55_metrics = backtest_position(
+            v55_pos[valid_start:], v55_dir[valid_start:], prices.iloc[valid_start:]
+        )
+        print("  V5.5 ML基线:")
+        print(
+            f"    年化: {v55_metrics['ann_return']*100:.2f}%, 夏普: {v55_metrics['sharpe']:.4f}, 回撤: {v55_metrics['max_drawdown']*100:.2f}%"
+        )
+        print(
+            f"    Calmar: {v55_metrics['calmar']:.4f}, 胜率: {v55_metrics['win_rate']*100:.2f}%, 平均仓位: {v55_metrics['avg_position']:.3f}"
+        )
 
         # 2. 波浪策略（含物理调节）
         wave_sigs, wave_confs = generate_wave_signals(prices, zigzag_threshold=zigzag_threshold)
         wave_pos, wave_dir = compute_wave_position(
-            prices, wave_sigs, wave_confs,
-            use_physics=True, base_position=wave_base_position
+            prices, wave_sigs, wave_confs, use_physics=True, base_position=wave_base_position
         )
 
         # 在同一有效区域计算波浪指标
-        wave_metrics = backtest_position(wave_pos[valid_start:], wave_dir[valid_start:], prices.iloc[valid_start:])
-        print(f"  波浪策略(+物理):")
-        print(f"    年化: {wave_metrics['ann_return']*100:.2f}%, 夏普: {wave_metrics['sharpe']:.4f}, 回撤: {wave_metrics['max_drawdown']*100:.2f}%")
-        print(f"    Calmar: {wave_metrics['calmar']:.4f}, 胜率: {wave_metrics['win_rate']*100:.2f}%, 平均仓位: {wave_metrics['avg_position']:.3f}")
+        wave_metrics = backtest_position(
+            wave_pos[valid_start:], wave_dir[valid_start:], prices.iloc[valid_start:]
+        )
+        print("  波浪策略(+物理):")
+        print(
+            f"    年化: {wave_metrics['ann_return']*100:.2f}%, 夏普: {wave_metrics['sharpe']:.4f}, 回撤: {wave_metrics['max_drawdown']*100:.2f}%"
+        )
+        print(
+            f"    Calmar: {wave_metrics['calmar']:.4f}, 胜率: {wave_metrics['win_rate']*100:.2f}%, 平均仓位: {wave_metrics['avg_position']:.3f}"
+        )
 
         # 3. 买入持有
         bh_pos = np.ones(n - valid_start)
         bh_dir = np.ones(n - valid_start)
         bh_metrics = backtest_position(bh_pos, bh_dir, prices.iloc[valid_start:])
-        print(f"  买入持有:")
-        print(f"    年化: {bh_metrics['ann_return']*100:.2f}%, 夏普: {bh_metrics['sharpe']:.4f}, 回撤: {bh_metrics['max_drawdown']*100:.2f}%")
+        print("  买入持有:")
+        print(
+            f"    年化: {bh_metrics['ann_return']*100:.2f}%, 夏普: {bh_metrics['sharpe']:.4f}, 回撤: {bh_metrics['max_drawdown']*100:.2f}%"
+        )
 
         all_results[symbol] = {
             "v55_ml": v55_metrics,
@@ -416,18 +437,24 @@ def run_comparison(symbols=None, zigzag_threshold=0.05, wave_base_position=0.3):
     print(f"{'='*90}")
 
     # 年化收益
-    print(f"\n【年化收益】")
-    print(f"{'币种':<6} {'V5.5 ML':>12} {'波浪+物理':>12} {'买入持有':>12} {'波浪vs V5.5':>14} {'波浪vs BH':>14}")
+    print("\n【年化收益】")
+    print(
+        f"{'币种':<6} {'V5.5 ML':>12} {'波浪+物理':>12} {'买入持有':>12} {'波浪vs V5.5':>14} {'波浪vs BH':>14}"
+    )
     print(f"{'-'*70}")
     for sym, res in all_results.items():
         v55 = res["v55_ml"]["ann_return"] * 100
         wv = res["wave_physics"]["ann_return"] * 100
         bh = res["buy_hold"]["ann_return"] * 100
-        print(f"{sym:<6} {v55:>10.2f}% {wv:>10.2f}% {bh:>10.2f}% {wv-v55:>+10.2f}pp {wv-bh:>+10.2f}pp")
+        print(
+            f"{sym:<6} {v55:>10.2f}% {wv:>10.2f}% {bh:>10.2f}% {wv-v55:>+10.2f}pp {wv-bh:>+10.2f}pp"
+        )
 
     # 夏普比
-    print(f"\n【夏普比】")
-    print(f"{'币种':<6} {'V5.5 ML':>12} {'波浪+物理':>12} {'买入持有':>12} {'波浪vs V5.5':>14} {'波浪vs BH':>14}")
+    print("\n【夏普比】")
+    print(
+        f"{'币种':<6} {'V5.5 ML':>12} {'波浪+物理':>12} {'买入持有':>12} {'波浪vs V5.5':>14} {'波浪vs BH':>14}"
+    )
     print(f"{'-'*70}")
     for sym, res in all_results.items():
         v55 = res["v5.5_ml"]["sharpe"] if "v5.5_ml" in res else res["v55_ml"]["sharpe"]
@@ -437,18 +464,24 @@ def run_comparison(symbols=None, zigzag_threshold=0.05, wave_base_position=0.3):
         print(f"{sym:<6} {v55:>12.4f} {wv:>12.4f} {bh:>12.4f} {wv-v55:>+14.4f} {wv-bh:>+14.4f}")
 
     # 最大回撤
-    print(f"\n【最大回撤】")
-    print(f"{'币种':<6} {'V5.5 ML':>12} {'波浪+物理':>12} {'买入持有':>12} {'波浪vs V5.5':>14} {'波浪vs BH':>14}")
+    print("\n【最大回撤】")
+    print(
+        f"{'币种':<6} {'V5.5 ML':>12} {'波浪+物理':>12} {'买入持有':>12} {'波浪vs V5.5':>14} {'波浪vs BH':>14}"
+    )
     print(f"{'-'*70}")
     for sym, res in all_results.items():
         v55 = res["v55_ml"]["max_drawdown"] * 100
         wv = res["wave_physics"]["max_drawdown"] * 100
         bh = res["buy_hold"]["max_drawdown"] * 100
-        print(f"{sym:<6} {v55:>10.2f}% {wv:>10.2f}% {bh:>10.2f}% {wv-v55:>+10.2f}pp {wv-bh:>+10.2f}pp")
+        print(
+            f"{sym:<6} {v55:>10.2f}% {wv:>10.2f}% {bh:>10.2f}% {wv-v55:>+10.2f}pp {wv-bh:>+10.2f}pp"
+        )
 
     # Calmar比
-    print(f"\n【Calmar比】")
-    print(f"{'币种':<6} {'V5.5 ML':>12} {'波浪+物理':>12} {'买入持有':>12} {'波浪vs V5.5':>14} {'波浪vs BH':>14}")
+    print("\n【Calmar比】")
+    print(
+        f"{'币种':<6} {'V5.5 ML':>12} {'波浪+物理':>12} {'买入持有':>12} {'波浪vs V5.5':>14} {'波浪vs BH':>14}"
+    )
     print(f"{'-'*70}")
     for sym, res in all_results.items():
         v55 = res["v55_ml"]["calmar"]
@@ -457,13 +490,25 @@ def run_comparison(symbols=None, zigzag_threshold=0.05, wave_base_position=0.3):
         print(f"{sym:<6} {v55:>12.4f} {wv:>12.4f} {bh:>12.4f} {wv-v55:>+14.4f} {wv-bh:>+14.4f}")
 
     # 综合评分（归一化: 夏普0.4 + Calmar0.3 + 年化0.3）
-    print(f"\n【综合评分（夏普0.4 + Calmar0.3 + 年化*100*0.3，越高越好）】")
+    print("\n【综合评分（夏普0.4 + Calmar0.3 + 年化*100*0.3，越高越好）】")
     print(f"{'币种':<6} {'V5.5 ML':>12} {'波浪+物理':>12} {'买入持有':>12} {'波浪胜出':>12}")
     print(f"{'-'*60}")
     for sym, res in all_results.items():
-        v55_score = res["v55_ml"]["sharpe"] * 0.4 + res["v55_ml"]["calmar"] * 0.3 + res["v55_ml"]["ann_return"] * 100 * 0.3
-        wv_score = res["wave_physics"]["sharpe"] * 0.4 + res["wave_physics"]["calmar"] * 0.3 + res["wave_physics"]["ann_return"] * 100 * 0.3
-        bh_score = res["buy_hold"]["sharpe"] * 0.4 + res["buy_hold"]["calmar"] * 0.3 + res["buy_hold"]["ann_return"] * 100 * 0.3
+        v55_score = (
+            res["v55_ml"]["sharpe"] * 0.4
+            + res["v55_ml"]["calmar"] * 0.3
+            + res["v55_ml"]["ann_return"] * 100 * 0.3
+        )
+        wv_score = (
+            res["wave_physics"]["sharpe"] * 0.4
+            + res["wave_physics"]["calmar"] * 0.3
+            + res["wave_physics"]["ann_return"] * 100 * 0.3
+        )
+        bh_score = (
+            res["buy_hold"]["sharpe"] * 0.4
+            + res["buy_hold"]["calmar"] * 0.3
+            + res["buy_hold"]["ann_return"] * 100 * 0.3
+        )
         win = "✅是" if wv_score > v55_score else "❌否"
         print(f"{sym:<6} {v55_score:>12.2f} {wv_score:>12.2f} {bh_score:>12.2f} {win:>12}")
 
@@ -485,7 +530,9 @@ def run_comparison(symbols=None, zigzag_threshold=0.05, wave_base_position=0.3):
         v55_sharpe = res["v55_ml"]["sharpe"]
         wv_sharpe = res["wave_physics"]["sharpe"]
         improvement = (wv_sharpe - v55_sharpe) / abs(v55_sharpe) * 100 if v55_sharpe != 0 else 0
-        print(f"   {sym}: 夏普 {v55_sharpe:.4f} → {wv_sharpe:.4f}, {'提升' if improvement > 0 else '下降'} {abs(improvement):.1f}%")
+        print(
+            f"   {sym}: 夏普 {v55_sharpe:.4f} → {wv_sharpe:.4f}, {'提升' if improvement > 0 else '下降'} {abs(improvement):.1f}%"
+        )
 
     print()
     print("3. 组合价值（7成V5.5 + 3成波浪，等权重合并）:")
@@ -498,7 +545,9 @@ def run_comparison(symbols=None, zigzag_threshold=0.05, wave_base_position=0.3):
         wv_sharpe = res["wave_physics"]["sharpe"]
         combined_sharpe = 0.7 * v55_sharpe + 0.3 * wv_sharpe  # 粗略估计
 
-        print(f"   {sym}: 组合年化 {combined_ret*100:.2f}% (V5.5 {v55_ret*100:.2f}%), 组合夏普 {combined_sharpe:.4f} (V5.5 {v55_sharpe:.4f})")
+        print(
+            f"   {sym}: 组合年化 {combined_ret*100:.2f}% (V5.5 {v55_ret*100:.2f}%), 组合夏普 {combined_sharpe:.4f} (V5.5 {v55_sharpe:.4f})"
+        )
 
     print()
     print("结论: 波浪策略在风险控制上有显著价值，可作为V5.5的补充（分仓位运行）")
@@ -514,6 +563,7 @@ def run_comparison(symbols=None, zigzag_threshold=0.05, wave_base_position=0.3):
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--symbols", nargs="+", default=["BTC", "ETH", "SOL", "UNI"])
     parser.add_argument("--zigzag", type=float, default=0.05)

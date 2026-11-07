@@ -34,9 +34,11 @@ class OrchestrationBacktestCommand(Command):
         parser.add_argument("--step", type=int, default=6, help="窗口步长 (默认: 6)")
         parser.add_argument("--hold", type=int, default=12, help="持有K线数 (默认: 12)")
 
-    def execute(self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs) -> int:
-        from dreamos.core.memory.scenario_backtester import ScenarioBacktester
+    def execute(
+        self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs
+    ) -> int:
         from dreamos.core.memory.orchestration_memory import OrchestrationMemory
+        from dreamos.core.memory.scenario_backtester import ScenarioBacktester
 
         window = getattr(args, "window", 24) if args else kwargs.get("window", 24)
         step = getattr(args, "step", 6) if args else kwargs.get("step", 6)
@@ -69,7 +71,9 @@ class OrchestrationMemoryListCommand(Command):
     description = "列出编排记忆表中所有场景"
     aliases = ["orch-memory-list"]
 
-    def execute(self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs) -> int:
+    def execute(
+        self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs
+    ) -> int:
         from dreamos.core.memory.orchestration_memory import OrchestrationMemory
 
         mem = OrchestrationMemory()
@@ -83,9 +87,11 @@ class OrchestrationMemoryListCommand(Command):
         ctx.print("-" * 90)
         for s in scenarios:
             sparse = "✓" if s.get("sparse") else " "
-            ctx.print(f"{s['scenario_id']:<35} {s['best_pattern']:<12} "
-                       f"{s['score']:>6.3f} {s['sample_count']:>6} "
-                       f"{s['confidence']:<8} {sparse}")
+            ctx.print(
+                f"{s['scenario_id']:<35} {s['best_pattern']:<12} "
+                f"{s['score']:>6.3f} {s['sample_count']:>6} "
+                f"{s['confidence']:<8} {sparse}"
+            )
 
         stats = mem.get_stats()
         ctx.print(f"\n覆盖率: {stats['coverage_rate']:.0%} | sparse率: {stats['sparse_rate']:.0%}")
@@ -103,7 +109,9 @@ class OrchestrationMemoryShowCommand(Command):
     def add_arguments(self, parser: argparse.ArgumentParser) -> None:
         parser.add_argument("scenario_id", help="场景ID (如 BULL_NORMAL_ACCELERATING)")
 
-    def execute(self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs) -> int:
+    def execute(
+        self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs
+    ) -> int:
         from dreamos.core.memory.orchestration_memory import OrchestrationMemory
 
         scenario_id = getattr(args, "scenario_id", None) if args else kwargs.get("scenario_id")
@@ -132,7 +140,7 @@ class OrchestrationMemoryShowCommand(Command):
         ctx.print(f"  置信度: {data['confidence']}")
         ctx.print(f"  sparse: {data.get('sparse', False)}")
         metrics = data.get("metrics", {})
-        ctx.print(f"  指标:")
+        ctx.print("  指标:")
         ctx.print(f"    夏普: {metrics.get('sharpe', 0):.4f}")
         ctx.print(f"    收益: {metrics.get('return', 0):.4f}")
         ctx.print(f"    最大回撤: {metrics.get('max_dd', 0):.4f}")
@@ -151,7 +159,9 @@ class OrchestrationQueryCommand(Command):
     def add_arguments(self, parser: argparse.ArgumentParser) -> None:
         parser.add_argument("--scenario", required=True, help="场景ID")
 
-    def execute(self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs) -> int:
+    def execute(
+        self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs
+    ) -> int:
         from dreamos.core.memory.orchestration_memory import OrchestrationMemory
 
         scenario_id = getattr(args, "scenario", None) if args else kwargs.get("scenario")
@@ -184,7 +194,9 @@ class OrchestrationEvolveCommand(Command):
     def add_arguments(self, parser: argparse.ArgumentParser) -> None:
         parser.add_argument("--scenario", help="指定场景ID（不指定则检查所有场景）")
 
-    def execute(self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs) -> int:
+    def execute(
+        self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs
+    ) -> int:
         from dreamos.evolution.engine import EvolutionEngine
 
         scenario_id = getattr(args, "scenario", None) if args else kwargs.get("scenario")
@@ -205,8 +217,10 @@ class OrchestrationEvolveCommand(Command):
             if updates:
                 ctx.success(f"进化完成: {len(updates)} 场景更新")
                 for u in updates:
-                    ctx.print(f"  {u['scenario_id']}: {u['old_pattern']} → {u['new_pattern']} "
-                               f"(reason: {u['trigger_reason']})")
+                    ctx.print(
+                        f"  {u['scenario_id']}: {u['old_pattern']} → {u['new_pattern']} "
+                        f"(reason: {u['trigger_reason']})"
+                    )
             else:
                 ctx.info("无场景需要优化")
         return 0
@@ -223,7 +237,9 @@ class OrchestrationFeedbackCommand(Command):
     def add_arguments(self, parser: argparse.ArgumentParser) -> None:
         parser.add_argument("--scenario", help="指定场景ID")
 
-    def execute(self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs) -> int:
+    def execute(
+        self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs
+    ) -> int:
         from dreamos.core.memory.execution_feedback import ExecutionFeedbackCollector
         from dreamos.core.memory.orchestration_memory import OrchestrationMemory
 
@@ -246,11 +262,15 @@ class OrchestrationFeedbackCommand(Command):
                 ctx.info("暂无执行反馈记录")
                 return 0
             ctx.info(f"执行反馈: {len(feedbacks)} 场景")
-            ctx.print(f"{'场景ID':<35} {'编排':<12} {'实际夏普':>10} {'预期夏普':>10} {'偏差':>8} {'触发'}")
+            ctx.print(
+                f"{'场景ID':<35} {'编排':<12} {'实际夏普':>10} {'预期夏普':>10} {'偏差':>8} {'触发'}"
+            )
             ctx.print("-" * 90)
             for fb in feedbacks:
                 trigger = "✓" if fb.trigger_evolution else " "
-                ctx.print(f"{fb.scenario_id:<35} {fb.pattern_used:<12} "
-                           f"{fb.actual_sharpe:>10.4f} {fb.expected_sharpe:>10.4f} "
-                           f"{fb.deviation:>7.1%} {trigger}")
+                ctx.print(
+                    f"{fb.scenario_id:<35} {fb.pattern_used:<12} "
+                    f"{fb.actual_sharpe:>10.4f} {fb.expected_sharpe:>10.4f} "
+                    f"{fb.deviation:>7.1%} {trigger}"
+                )
         return 0

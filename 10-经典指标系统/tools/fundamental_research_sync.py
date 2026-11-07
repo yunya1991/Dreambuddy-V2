@@ -109,7 +109,9 @@ def _probe_upstream(research_root: Path) -> Dict[str, Any]:
     flow_out = research_root / "ops" / "nanoclaw" / "core_task1" / "flow" / "outputs"
     narr_out = _pick_narrative_dir(research_root)
 
-    brief_p = _find_latest(news_out, ("brief_v3_*_optimized.md", "brief_v3_*.md", "brief_v2_*.md", "brief_*.md"))
+    brief_p = _find_latest(
+        news_out, ("brief_v3_*_optimized.md", "brief_v3_*.md", "brief_v2_*.md", "brief_*.md")
+    )
     risk_p = _find_latest(news_raw, ("risk_action_events_*.json",))
     flow_p = _find_latest(flow_out, ("flow_regime_*.json",))
     narr_p = _find_latest(narr_out, ("narrative_registry_*.json",))
@@ -122,11 +124,19 @@ def _probe_upstream(research_root: Path) -> Dict[str, Any]:
     flow_quality = ""
     flow_cov = None
     if isinstance(flow_obj, dict):
-        flow_turning = str(
-            flow_obj.get("turning_point_state")
-            or ((flow_obj.get("regime") or {}).get("turning_point_state") if isinstance(flow_obj.get("regime"), dict) else "")
-            or ""
-        ).strip().lower()
+        flow_turning = (
+            str(
+                flow_obj.get("turning_point_state")
+                or (
+                    (flow_obj.get("regime") or {}).get("turning_point_state")
+                    if isinstance(flow_obj.get("regime"), dict)
+                    else ""
+                )
+                or ""
+            )
+            .strip()
+            .lower()
+        )
         qv = flow_obj.get("quality")
         if isinstance(qv, dict):
             flow_quality = str(qv.get("status") or qv.get("overall_quality") or "").strip().lower()
@@ -139,12 +149,20 @@ def _probe_upstream(research_root: Path) -> Dict[str, Any]:
 
     narr_quality = ""
     if isinstance(narr_obj, dict):
-        narr_quality = str(
-            narr_obj.get("quality")
-            or narr_obj.get("overall_quality")
-            or ((narr_obj.get("summary") or {}).get("quality") if isinstance(narr_obj.get("summary"), dict) else "")
-            or ""
-        ).strip().lower()
+        narr_quality = (
+            str(
+                narr_obj.get("quality")
+                or narr_obj.get("overall_quality")
+                or (
+                    (narr_obj.get("summary") or {}).get("quality")
+                    if isinstance(narr_obj.get("summary"), dict)
+                    else ""
+                )
+                or ""
+            )
+            .strip()
+            .lower()
+        )
 
     risk_action = _extract_risk_action(risk_obj)
 
@@ -213,7 +231,10 @@ def _detect_trigger(prev_probe: Dict[str, Any], curr_probe: Dict[str, Any]) -> D
     if curr_q_flow > prev_q_flow or curr_q_narr > prev_q_narr:
         reasons.append("quality_worsened")
 
-    force_sync = any(x in reasons for x in ("risk_action_changed", "turning_point_state_changed", "quality_worsened"))
+    force_sync = any(
+        x in reasons
+        for x in ("risk_action_changed", "turning_point_state_changed", "quality_worsened")
+    )
     return {"hit": bool(reasons), "force_sync": bool(force_sync), "reasons": reasons}
 
 
@@ -228,7 +249,12 @@ def _rules() -> List[SyncRule]:
         SyncRule(
             source_rel="ops/nanoclaw/core_task1/raw",
             target_rel="ops/nanoclaw/core_task1/raw",
-            patterns=("coverage_report_*.json", "risk_action_events_*.json", "anchor_delta_view_*.json", "event_ledger_*.jsonl"),
+            patterns=(
+                "coverage_report_*.json",
+                "risk_action_events_*.json",
+                "anchor_delta_view_*.json",
+                "event_ledger_*.jsonl",
+            ),
             max_files=160,
         ),
         SyncRule(
@@ -260,7 +286,9 @@ def _rules() -> List[SyncRule]:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--research-root", default="/Users/zhangjiangtao/ft_userdata/基本面分析_fundamental")
+    parser.add_argument(
+        "--research-root", default="/Users/zhangjiangtao/ft_userdata/基本面分析_fundamental"
+    )
     parser.add_argument("--trading-root", default=str(Path(__file__).resolve().parents[1]))
     parser.add_argument("--manifest", default="")
     parser.add_argument("--policy-state", default="")
@@ -335,7 +363,11 @@ def main() -> None:
         st["last_probe"] = curr_probe
         st["last_check_ms"] = int(now_ms)
         st["burst_until_ms"] = int(burst_until_ms)
-        st["last_decision"] = {"mode": ("burst" if in_burst else "baseline"), "should_sync": False, "trigger": trigger}
+        st["last_decision"] = {
+            "mode": ("burst" if in_burst else "baseline"),
+            "should_sync": False,
+            "trigger": trigger,
+        }
         pp.write_text(json.dumps(st, ensure_ascii=False, indent=2), encoding="utf-8")
         mp.write_text(json.dumps(out_skip, ensure_ascii=False, indent=2), encoding="utf-8")
         print(json.dumps(out_skip, ensure_ascii=False))
@@ -364,7 +396,9 @@ def main() -> None:
     src_narr = _pick_narrative_dir(research_root)
     dst_narr = _pick_narrative_dir(trading_root)
     if src_narr.exists():
-        rows = _glob_latest(src_narr, ("narrative_brief_*.md", "narrative_registry_*.json"), max_files=160)
+        rows = _glob_latest(
+            src_narr, ("narrative_brief_*.md", "narrative_registry_*.json"), max_files=160
+        )
         scanned += len(rows)
         for src in rows:
             dst = dst_narr / src.name
@@ -399,7 +433,11 @@ def main() -> None:
     st["last_check_ms"] = int(now_ms)
     st["last_full_sync_ms"] = int(now_ms)
     st["burst_until_ms"] = int(burst_until_ms)
-    st["last_decision"] = {"mode": ("burst" if in_burst else "baseline"), "should_sync": True, "trigger": trigger}
+    st["last_decision"] = {
+        "mode": ("burst" if in_burst else "baseline"),
+        "should_sync": True,
+        "trigger": trigger,
+    }
     pp.write_text(json.dumps(st, ensure_ascii=False, indent=2), encoding="utf-8")
     mp.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(out, ensure_ascii=False))

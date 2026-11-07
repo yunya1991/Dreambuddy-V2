@@ -15,6 +15,7 @@
 
 退出码: 0=全部通过, 1=部分失败
 """
+
 import argparse
 import json
 import os
@@ -53,7 +54,9 @@ def _curl_get(url: str, timeout: int = 10) -> dict:
 def _curl_post(url: str, body: dict, timeout: int = 10) -> dict:
     data = json.dumps(body).encode("utf-8")
     req = urllib.request.Request(
-        url, data=data, method="POST",
+        url,
+        data=data,
+        method="POST",
         headers={"Content-Type": "application/json"},
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -157,6 +160,7 @@ def collect_from_all_providers(limit: int) -> dict:
     # P1.5 埋点（spec §9.1 DSH 调度域采集点）：各源采集汇总写入案例库，FAIL-OPEN
     try:
         from datetime import datetime as _dt
+
         _case = {
             "ts": _dt.now().isoformat(timespec="seconds"),
             "schema_version": "v2",
@@ -166,7 +170,9 @@ def collect_from_all_providers(limit: int) -> dict:
                 "total": total,
             },
         }
-        _store = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "l1_case_store.jsonl")
+        _store = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "l1_case_store.jsonl"
+        )
         with open(_store, "a", encoding="utf-8") as _f:
             _f.write(json.dumps(_case, ensure_ascii=False) + "\n")
     except Exception:
@@ -188,30 +194,44 @@ def _convert_case_to_training_data(case, layer: str) -> dict:
     outcome = derive_outcome(case)
     prompt_pattern = normalize_prompt_pattern(case)
     if layer == "S":
-        return {"message": case.outcome_text or case.intent,
-                "intent_type": case.intent, "entities": [], "quality": case.quality}
+        return {
+            "message": case.outcome_text or case.intent,
+            "intent_type": case.intent,
+            "entities": [],
+            "quality": case.quality,
+        }
     elif layer == "DSH":
-        data = {"task": case.intent, "node_sequence": case.actions,
-                "outcome": outcome, "quality": case.quality}
+        data = {
+            "task": case.intent,
+            "node_sequence": case.actions,
+            "outcome": outcome,
+            "quality": case.quality,
+        }
         try:
             from adapters.fis_material_prefilter import search_evidence
+
             data["evidence"] = search_evidence(case.intent, limit=3)
         except Exception:
             data["evidence"] = []
         return data
     elif layer == "C":
-        return {"context_summary": case.intent,
-                "action_taken": case.actions[0] if case.actions else "",
-                "outcome": outcome,
-                "expected_decision": derive_expected_decision_with_cdrive(case),
-                "quality": case.quality}
+        return {
+            "context_summary": case.intent,
+            "action_taken": case.actions[0] if case.actions else "",
+            "outcome": outcome,
+            "expected_decision": derive_expected_decision_with_cdrive(case),
+            "quality": case.quality,
+        }
     elif layer == "G":
-        return {"decisions": [case.intent], "rules": case.learned,
-                "quality": case.quality}
+        return {"decisions": [case.intent], "rules": case.learned, "quality": case.quality}
     elif layer == "LLM":
-        return {"intent": case.intent, "learned": case.learned,
-                "outcome": outcome, "prompt_pattern": prompt_pattern,
-                "quality": case.quality}
+        return {
+            "intent": case.intent,
+            "learned": case.learned,
+            "outcome": outcome,
+            "prompt_pattern": prompt_pattern,
+            "quality": case.quality,
+        }
     return {"intent": case.intent, "learned": case.learned, "quality": case.quality}
 
 
@@ -232,16 +252,18 @@ def feed_continual(base_url: str, sources: dict) -> dict:
       ③ 优先级: quality=S → 立即 trainIncremental
     """
     print(f"\n{'='*60}")
-    print(f"  阶段 2: 持续喂入（数据到达即学习，不等桶满）")
+    print("  阶段 2: 持续喂入（数据到达即学习，不等桶满）")
     print(f"{'='*60}")
 
-    stats = {layer: {"fed": 0, "added": 0, "failed": 0, "s_level": 0, "backfilled": 0}
-             for layer in _LAYERS}
+    stats = {
+        layer: {"fed": 0, "added": 0, "failed": 0, "s_level": 0, "backfilled": 0}
+        for layer in _LAYERS
+    }
 
     # P2: 收集 S 层 S/A/B 级样本用于语义原型更新
     s_semantic_batch = []
 
-    for source_name, cases in sources.items():
+    for source_name, cases in sources.items():  # noqa: B007
         for case in cases:
             native_tags = list(getattr(case, "layer_tags", []) or [])
             layer_tags = resolve_layer_tags(case)
@@ -283,23 +305,27 @@ def feed_continual(base_url: str, sources: dict) -> dict:
             sem_updated = sem_result.get("updated", False)
             sem_step = sem_result.get("semanticStep", 0)
             sem_count = sem_result.get("prototypeCount", 0)
-            print(f"  语义原型: {'✓' if sem_updated else '✗'} "
-                  f"step={sem_step} prototypes={sem_count} "
-                  f"(from {len(s_semantic_batch)} S/A/B samples)")
+            print(
+                f"  语义原型: {'✓' if sem_updated else '✗'} "
+                f"step={sem_step} prototypes={sem_count} "
+                f"(from {len(s_semantic_batch)} S/A/B samples)"
+            )
         except Exception as e:
             print(f"  语义原型: 跳过 (API 调用失败: {e})")
 
     for layer in _LAYERS:
         s = stats[layer]
-        print(f"  {layer:4s} | 喂入 {s['fed']:>4} | 成功 {s['added']:>4} | "
-              f"失败 {s['failed']:>4} | S级 {s['s_level']:>3} | 回灌 {s['backfilled']:>4}")
+        print(
+            f"  {layer:4s} | 喂入 {s['fed']:>4} | 成功 {s['added']:>4} | "
+            f"失败 {s['failed']:>4} | S级 {s['s_level']:>3} | 回灌 {s['backfilled']:>4}"
+        )
     return stats
 
 
 def verify_continual_training(base_url: str, before: dict, feed_stats: dict) -> dict:
     """验证持续训练核心机制: 数据到达即学习（不等桶满）。"""
     print(f"\n{'='*60}")
-    print(f"  阶段 3: 验证持续训练（数据到达即学习）")
+    print("  阶段 3: 验证持续训练（数据到达即学习）")
     print(f"{'='*60}")
 
     time.sleep(1)  # 等待 API 写入 + 触发完成
@@ -313,7 +339,7 @@ def verify_continual_training(base_url: str, before: dict, feed_stats: dict) -> 
         step_after = a.get("step", 0)
         bc_before = b.get("bucketCount", 0)
         bc_after = a.get("bucketCount", 0)
-        threshold = a.get("capacity", 0)  # capacity 作为桶上限参考
+        threshold = a.get("capacity", 0)  # capacity 作为桶上限参考  # noqa: F841
         avg_w = a.get("avgWeight", 0)
         oldest_age = a.get("oldestAge", 0)
         step_delta = step_after - step_before
@@ -335,8 +361,10 @@ def verify_continual_training(base_url: str, before: dict, feed_stats: dict) -> 
             "s_level": feed_stats[layer]["s_level"],
         }
         tag = "✅ 持续训练" if continual_evidence else "⚠️ 未触发"
-        print(f"  {layer:4s} | step {step_before}→{step_after} (Δ=+{step_delta}) | "
-              f"桶 {bc_before}→{bc_after} | avgW={avg_w:.3f} | age={oldest_age} | {tag}")
+        print(
+            f"  {layer:4s} | step {step_before}→{step_after} (Δ=+{step_delta}) | "
+            f"桶 {bc_before}→{bc_after} | avgW={avg_w:.3f} | age={oldest_age} | {tag}"
+        )
 
     return results
 
@@ -344,7 +372,7 @@ def verify_continual_training(base_url: str, before: dict, feed_stats: dict) -> 
 def verify_ewma_decay(base_url: str) -> dict:
     """验证 EWMA 衰减: 手动触发多次 trainIncremental 后 avgWeight 应下降。"""
     print(f"\n{'='*60}")
-    print(f"  阶段 4: 验证 EWMA 衰减（多次增量训练后 avgWeight 下降）")
+    print("  阶段 4: 验证 EWMA 衰减（多次增量训练后 avgWeight 下降）")
     print(f"{'='*60}")
 
     # 先快照 C 层（C 层有 ruleArchive，最适合验证）
@@ -353,7 +381,7 @@ def verify_ewma_decay(base_url: str) -> dict:
     step_before = before.get("step", 0)
 
     # 手动触发 5 次 incremental（通过 API action=incremental）
-    for i in range(5):
+    for i in range(5):  # noqa: B007
         try:
             _curl_post(f"{base_url}/api/training/c", {"action": "incremental"})
         except Exception:
@@ -372,15 +400,17 @@ def verify_ewma_decay(base_url: str) -> dict:
         "decayed": decayed,
     }
     tag = "✅ EWMA 衰减" if decayed else "⚠️ 衰减未检出"
-    print(f"  C层 | avgWeight {w_before:.4f} → {w_after:.4f} | "
-          f"step {step_before}→{step_after} | {tag}")
+    print(
+        f"  C层 | avgWeight {w_before:.4f} → {w_after:.4f} | "
+        f"step {step_before}→{step_after} | {tag}"
+    )
     return result
 
 
 def verify_checkpoint_restore(base_url: str) -> dict:
     """验证 checkpoint/restore: 模型状态可持久化 + 恢复。"""
     print(f"\n{'='*60}")
-    print(f"  阶段 5: 验证 checkpoint / restore")
+    print("  阶段 5: 验证 checkpoint / restore")
     print(f"{'='*60}")
 
     result = {"checkpoint_ok": False, "restore_ok": False, "model_ok": False}
@@ -399,15 +429,16 @@ def verify_checkpoint_restore(base_url: str) -> dict:
         model = _curl_get(f"{base_url}/api/training/c/model")
         model_data = model.get("data", {}) or {}
         result["model_ok"] = bool(model.get("success")) and "step" in model_data
-        print(f"  GET model C层: success={result['model_ok']} | "
-              f"step={model_data.get('step', '?')}")
+        print(
+            f"  GET model C层: success={result['model_ok']} | "
+            f"step={model_data.get('step', '?')}"
+        )
     except Exception as e:
         print(f"  GET model C层: 失败 {e}")
 
     try:
         # restore（需要 data=model_state）
-        rs = _curl_post(f"{base_url}/api/training/c",
-                        {"action": "restore", "data": model_data})
+        rs = _curl_post(f"{base_url}/api/training/c", {"action": "restore", "data": model_data})
         result["restore_ok"] = bool(rs.get("success"))
         print(f"  restore C层: success={result['restore_ok']}")
     except Exception as e:
@@ -426,27 +457,28 @@ def collect_and_feed(base_url: str, limit: int) -> dict:
     total_cases = sum(len(v) for v in sources.values())
     if total_cases == 0:
         print("  ⚠️ 本轮无数据采集")
-        return {layer: {"fed": 0, "added": 0, "failed": 0, "s_level": 0}
-                for layer in _LAYERS}
+        return {layer: {"fed": 0, "added": 0, "failed": 0, "s_level": 0} for layer in _LAYERS}
     return feed_continual(base_url, sources)
 
 
 def run_once(base_url: str, limit: int) -> int:
     """单次完整运行: 采集→喂入→验证→报告。"""
-    print(f"╔══════════════════════════════════════════════════════════════╗")
-    print(f"║  v0.5 持续训练（continual mode）— 数据到达即学习              ║")
-    print(f"╚══════════════════════════════════════════════════════════════╝")
+    print("╔══════════════════════════════════════════════════════════════╗")
+    print("║  v0.5 持续训练（continual mode）— 数据到达即学习              ║")
+    print("╚══════════════════════════════════════════════════════════════╝")
     print(f"  前端服务: {base_url}")
     print(f"  采集上限: {limit}/数据源")
     print(f"  时间: {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
     # 阶段 0: 记录初始状态
     before = snapshot_all_layers(base_url)
-    print(f"\n  初始状态:")
+    print("\n  初始状态:")
     for layer in _LAYERS:
         s = before[layer]
-        print(f"    {layer:4s} | step={s['step']} | bucket={s['bucketCount']} | "
-              f"avgW={s['avgWeight']:.3f}")
+        print(
+            f"    {layer:4s} | step={s['step']} | bucket={s['bucketCount']} | "
+            f"avgW={s['avgWeight']:.3f}"
+        )
 
     # 阶段 1-2: 采集 + 喂入
     feed_stats = collect_and_feed(base_url, limit)
@@ -462,7 +494,7 @@ def run_once(base_url: str, limit: int) -> int:
 
     # 汇总报告
     print(f"\n{'='*60}")
-    print(f"  汇总报告 — SPEC v0.5 §5.4 P3 验收")
+    print("  汇总报告 — SPEC v0.5 §5.4 P3 验收")
     print(f"{'='*60}")
 
     continual_pass = sum(1 for r in continual_results.values() if r["continual_trained"])
@@ -478,7 +510,7 @@ def run_once(base_url: str, limit: int) -> int:
     print(f"  S级优先级触发: {s_level_total} 条 S级数据（触发立即 trainIncremental）")
 
     # SPEC §5.4 P3 验收标准
-    print(f"\n  SPEC §5.4 P3 验收标准:")
+    print("\n  SPEC §5.4 P3 验收标准:")
     checks = [
         ("EWMA: 旧数据 weight 随 age 衰减", ewma_pass),
         ("C层规则权重衰减 + ruleArchive", continual_results.get("C", {}).get("step_delta", 0) > 0),
@@ -502,14 +534,14 @@ def run_daemon(base_url: str, limit: int, interval: int) -> int:
     每轮: collect_and_feed → sleep(interval) → repeat
     Ctrl+C 优雅退出。
     """
-    print(f"╔══════════════════════════════════════════════════════════════╗")
+    print("╔══════════════════════════════════════════════════════════════╗")
     print(f"║  v0.5 持续训练守护模式 — 每 {interval}s 采集+喂入              ║")
-    print(f"╚══════════════════════════════════════════════════════════════╝")
+    print("╚══════════════════════════════════════════════════════════════╝")
     print(f"  前端服务: {base_url}")
     print(f"  采集上限: {limit}/数据源")
     print(f"  轮询间隔: {interval}s")
     print(f"  启动时间: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"  按 Ctrl+C 停止")
+    print("  按 Ctrl+C 停止")
 
     cycle = 0
     try:
@@ -534,14 +566,12 @@ def run_daemon(base_url: str, limit: int, interval: int) -> int:
 
 def main():
     parser = argparse.ArgumentParser(description="持续训练脚本（v0.5 continual mode）")
-    parser.add_argument("--limit", type=int, default=30,
-                        help="每个数据源最大采集数（默认30）")
-    parser.add_argument("--frontend-url", default="http://localhost:3001",
-                        help="前端服务地址")
-    parser.add_argument("--daemon", action="store_true",
-                        help="P2: 守护模式，持续循环采集+喂入（Ctrl+C 停止）")
-    parser.add_argument("--interval", type=int, default=60,
-                        help="守护模式轮询间隔秒数（默认60）")
+    parser.add_argument("--limit", type=int, default=30, help="每个数据源最大采集数（默认30）")
+    parser.add_argument("--frontend-url", default="http://localhost:3001", help="前端服务地址")
+    parser.add_argument(
+        "--daemon", action="store_true", help="P2: 守护模式，持续循环采集+喂入（Ctrl+C 停止）"
+    )
+    parser.add_argument("--interval", type=int, default=60, help="守护模式轮询间隔秒数（默认60）")
     args = parser.parse_args()
     base_url = args.frontend_url.rstrip("/")
 

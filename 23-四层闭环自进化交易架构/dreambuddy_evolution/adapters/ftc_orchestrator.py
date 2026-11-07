@@ -14,6 +14,7 @@ ftc_orchestrator — 金融思维链编排器
   - 连续无 ESS 提升 → ε × 1.15
   - 永不低于 0.2（周期相似但不雷同）
 """
+
 from __future__ import annotations
 
 import json
@@ -22,10 +23,10 @@ import random
 from pathlib import Path
 from typing import Optional
 
-from .ftc_schema import FTC
-from .ftc_similarity import align_to_anchors, get_track_by_similarity
 from .ftc_backtest import backtest_ftc, backtest_ftc_list
 from .ftc_combiner import generate_combinations
+from .ftc_schema import FTC
+from .ftc_similarity import align_to_anchors, get_track_by_similarity
 from .path_library import PathLibrary
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 # 探索因子常量
 EPSILON_INIT = 0.3
-EPSILON_MIN = 0.2   # 结构性底线: 周期不雷同
+EPSILON_MIN = 0.2  # 结构性底线: 周期不雷同
 EPSILON_MAX = 0.6
 EPSILON_DECAY_PROFIT = 0.95
 EPSILON_RISE_LOSS = 1.2
@@ -105,11 +106,15 @@ class ExplorationFactor:
         try:
             Path(self._persist_path).parent.mkdir(parents=True, exist_ok=True)
             with open(self._persist_path, "w") as f:
-                json.dump({
-                    "epsilon": round(self.value, 4),
-                    "stagnation_count": self._stagnation_count,
-                    "prev_max_ess": self._prev_max_ess,
-                }, f, indent=2)
+                json.dump(
+                    {
+                        "epsilon": round(self.value, 4),
+                        "stagnation_count": self._stagnation_count,
+                        "prev_max_ess": self._prev_max_ess,
+                    },
+                    f,
+                    indent=2,
+                )
         except Exception as e:
             logger.debug(f"epsilon persist failed: {e}")
 

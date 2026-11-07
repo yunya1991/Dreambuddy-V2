@@ -15,9 +15,7 @@
 """
 
 import os
-from typing import Dict, Optional, Any
-from dataclasses import dataclass
-
+from typing import Any, Dict, Optional
 
 CLASSIC_SYSTEM_BASE_ENV = "CLASSIC_SYSTEM_BASE_URL"
 DEFAULT_CLASSIC_BASE = "http://127.0.0.1:8092"

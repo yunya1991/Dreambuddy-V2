@@ -8,6 +8,7 @@
 红线：门槛为预注册值，本模块不提供任何绕过参数。
 E2 及以后必须以 P1-P5 完成验证为前置门禁，禁止提前训练。
 """
+
 import json
 import os
 import sys
@@ -42,6 +43,7 @@ def _count_parquet_rows(path):
         return 0, "file_not_found"
     try:
         import pyarrow.parquet as pq
+
         n = pq.read_metadata(path).num_rows
         return n, "ok"
     except Exception as e:
@@ -58,9 +60,7 @@ def check_gate() -> dict:
 
     baseline = _load_json(BASELINE_METRICS)
     baseline_passed = (
-        isinstance(baseline, dict)
-        and "accuracy" in baseline
-        and "direction_ic" in baseline
+        isinstance(baseline, dict) and "accuracy" in baseline and "direction_ic" in baseline
     )
 
     items = [
@@ -87,7 +87,9 @@ def check_gate() -> dict:
             "current": {
                 "exists": bool(baseline),
                 "has_accuracy": "accuracy" in baseline if isinstance(baseline, dict) else False,
-                "has_direction_ic": "direction_ic" in baseline if isinstance(baseline, dict) else False,
+                "has_direction_ic": (
+                    "direction_ic" in baseline if isinstance(baseline, dict) else False
+                ),
             },
             "required": "baseline_metrics.json 含 accuracy 与 direction_ic",
             "passed": baseline_passed,

@@ -25,14 +25,13 @@ from __future__ import annotations
 
 import json
 import logging
-import math
 import os
 import time
 from typing import Any
 
 import numpy as np
 
-from dreambuddy_evolution.core.cd_mapping import C_TO_D_MAP, build_shadow, map_c_to_d
+from dreambuddy_evolution.core.cd_mapping import build_shadow, map_c_to_d
 
 logger = logging.getLogger(__name__)
 

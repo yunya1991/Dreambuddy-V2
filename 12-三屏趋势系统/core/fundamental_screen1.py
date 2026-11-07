@@ -101,7 +101,7 @@ def calc_halving_cycle(current_date: Optional[datetime] = None) -> dict:
     # 找到最近一次已发生的减半
     latest_halving = None
     next_halving = None
-    for i, h in enumerate(BTC_HALVING_DATES):
+    for i, h in enumerate(BTC_HALVING_DATES):  # noqa: B007
         h_date = datetime.strptime(h["date"], "%Y-%m-%d")
         if h_date <= current_date:
             latest_halving = h
@@ -316,7 +316,7 @@ def calc_fundamental_screen1(current_date: Optional[datetime] = None) -> Optiona
     bull_weight = 0.0
     bear_weight = 0.0
 
-    for dim_name, dim_data in available_dims.items():
+    for dim_name, dim_data in available_dims.items():  # noqa: B007
         weight = dim_data["weight"] / total_weight  # 归一化
         score = dim_data.get("score", 0)
         signal = dim_data.get("signal", "NEUTRAL")

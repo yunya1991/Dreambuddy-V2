@@ -12,27 +12,20 @@
 
 使用 dry_run 模式，不写入数据库。
 """
+
 import sys
-import os
-import time
-import tempfile
-import shutil
 from pathlib import Path
-from collections import Counter
 
 # 加入认知系统路径
 SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
-from cognitive_daemon import (
-    is_code_file,
-    _has_code_file,
-    trigger_change_record,
-    generate_change_experience,
+from cognitive_daemon import (  # noqa: E402
     EXCLUDE_DIRS,
     EXCLUDE_FILES,
+    is_code_file,
+    trigger_change_record,
 )
-
 
 # ============================================================
 # 测试用例定义
@@ -193,7 +186,7 @@ def run_stress_test():
 
     passed = 0
     failed = 0
-    skipped_details = []
+    skipped_details = []  # noqa: F841
 
     for i, tc in enumerate(TEST_CASES, 1):
         name = tc["name"]
@@ -203,7 +196,11 @@ def run_stress_test():
         result = trigger_change_record(changes, dry_run=True)
 
         # dry_run 时 recorded 恒为 False，用 experience 是否非空判断"是否会被记录"
-        recorded = bool(result.get("experience", "")) if result.get("dry_run") else result.get("recorded", False)
+        recorded = (
+            bool(result.get("experience", ""))
+            if result.get("dry_run")
+            else result.get("recorded", False)
+        )
         skip_reason = result.get("skipped", "")
         experience = result.get("experience", "")
 
@@ -283,10 +280,21 @@ def run_high_frequency_simulation():
     ]
 
     scenarios = [
-        ("S1-连续100次纯噪声", {f: "modified" for f in noise_files * 20}, False),
-        ("S2-连续100次纯代码", {f: "modified" for f in code_files * 50}, True),
-        ("S3-99噪声+1代码", {**{f: "modified" for f in noise_files * 19}, code_files[0]: "modified"}, True),
-        ("S4-50噪声+50代码", {**{f: "modified" for f in noise_files * 10}, **{f: "modified" for f in code_files * 25}}, True),
+        ("S1-连续100次纯噪声", dict.fromkeys(noise_files * 20, "modified"), False),
+        ("S2-连续100次纯代码", dict.fromkeys(code_files * 50, "modified"), True),
+        (
+            "S3-99噪声+1代码",
+            {**dict.fromkeys(noise_files * 19, "modified"), code_files[0]: "modified"},
+            True,
+        ),
+        (
+            "S4-50噪声+50代码",
+            {
+                **dict.fromkeys(noise_files * 10, "modified"),
+                **dict.fromkeys(code_files * 25, "modified"),
+            },
+            True,
+        ),
     ]
 
     print(f"场景数: {len(scenarios)}")
@@ -295,14 +303,20 @@ def run_high_frequency_simulation():
     passed = 0
     for name, changes, expect_recorded in scenarios:
         result = trigger_change_record(changes, dry_run=True)
-        recorded = bool(result.get("experience", "")) if result.get("dry_run") else result.get("recorded", False)
+        recorded = (
+            bool(result.get("experience", ""))
+            if result.get("dry_run")
+            else result.get("recorded", False)
+        )
         ok = recorded == expect_recorded
         status = "PASS" if ok else "FAIL"
         if ok:
             passed += 1
         n_code = sum(1 for f in changes if is_code_file(f))
         n_data = len(changes) - n_code
-        print(f"[{status}] {name}: 变更{len(changes)}个(代码{n_code}/数据{n_data}) -> recorded={recorded} 期望{expect_recorded}")
+        print(
+            f"[{status}] {name}: 变更{len(changes)}个(代码{n_code}/数据{n_data}) -> recorded={recorded} 期望{expect_recorded}"
+        )
 
     print()
     print(f"高频模拟结果: {passed}/{len(scenarios)} PASS")

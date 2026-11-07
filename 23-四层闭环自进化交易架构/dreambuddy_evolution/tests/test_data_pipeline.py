@@ -1,14 +1,11 @@
 """test_data_pipeline.py — DataPipelineAdapter 集成测试
 覆盖: 全字段装配, 部分失败降级, 性能<1s, symbol传递, ripples构造
 """
-from __future__ import annotations
 
-import time
+from __future__ import annotations  # noqa: I001
 
-import pytest
 
 from dreambuddy_evolution.adapters.data_pipeline import DataPipelineAdapter
-from dreambuddy_evolution.adapters.okx_market import OKXMarketAdapter
 
 
 class MockOKXClient:
@@ -18,12 +15,16 @@ class MockOKXClient:
         candles = []
         for i in range(n_candles):
             p = 50000.0 + i * 5
-            candles.append({
-                "ts": str(1700000000000 + i * 3600000),
-                "o": str(p), "h": str(p + 20),
-                "l": str(p - 20), "c": str(p),
-                "vol": str(1000 + i * 2),
-            })
+            candles.append(
+                {
+                    "ts": str(1700000000000 + i * 3600000),
+                    "o": str(p),
+                    "h": str(p + 20),
+                    "l": str(p - 20),
+                    "c": str(p),
+                    "vol": str(1000 + i * 2),
+                }
+            )
         self._candles = list(reversed(candles))
         self._oi = open_interest
 
@@ -44,13 +45,13 @@ class MockOKXClient:
 
 class MockTrader:
     """模拟 polling_trader — 含子交易系统状态"""
+
     def __init__(self):
         class FDS:
             war_state = {"crypto_usdt": "ALLOW"}
+
         self._five_domain_state_shadow = FDS()
-        self._last_bcrm2_result = {
-            "next_state": {"direction": "UP", "confidence": 0.82}
-        }
+        self._last_bcrm2_result = {"next_state": {"direction": "UP", "confidence": 0.82}}
         self._last_bdsm_snapshot = {"valuation_percentile": 0.65}
 
 
@@ -92,13 +93,17 @@ class TestDataPipelineAdapter:
 
     def test_assemble_partial_fail(self):
         """OKX 失败 → 仍返回部分字段（不 crash）"""
+
         class CrashClient:
             def get_kline(self, *a, **kw):
                 raise RuntimeError("network down")
+
             def get_ticker(self, *a, **kw):
                 raise RuntimeError("timeout")
+
             def get_positions(self, *a, **kw):
                 raise RuntimeError("auth fail")
+
             def _get(self, *a, **kw):
                 raise RuntimeError("nope")
 
@@ -207,8 +212,9 @@ class TestDataPipelineAdapter:
 
     def test_r1_hit_direction_match(self):
         """R1 hit: K线方向与 ess_top_direction 一致 → hits=1"""
-        from pathlib import Path
+        from pathlib import Path  # noqa: I001
         import sys
+
         evo_pkg = Path(__file__).resolve().parents[1]
         evo_root = evo_pkg.parent
         if str(evo_root) not in sys.path:

@@ -12,10 +12,10 @@ P0-3：长轮询 getUpdates + is_admin 校验 + 路由到 CommandHandler + 回�
    - 将回复通过 send_message 发回群
 3. 维护 update_id offset（取最大 update_id + 1）
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 logger = logging.getLogger("debate.listener")
 
@@ -23,8 +23,7 @@ logger = logging.getLogger("debate.listener")
 class TelegramListener:
     """Telegram 消息监听器：长轮询 + 路由到 CommandHandler。"""
 
-    def __init__(self, telegram_client, command_handler,
-                 poll_timeout: int = 30):
+    def __init__(self, telegram_client, command_handler, poll_timeout: int = 30):
         """
         Args:
             telegram_client: TelegramHTTPClient（需有 get_updates/is_admin/send_message）
@@ -40,7 +39,8 @@ class TelegramListener:
     async def run_once(self) -> int:
         """执行一次轮询周期，返回处理的 update 数量。"""
         updates = await self.tg.get_updates(
-            offset=self.offset, timeout=self.poll_timeout,
+            offset=self.offset,
+            timeout=self.poll_timeout,
         )
         if not updates:
             return 0
@@ -105,7 +105,10 @@ class TelegramListener:
 
         try:
             reply = await self.handler.handle_command(
-                text, chat_id, user_id, is_admin,
+                text,
+                chat_id,
+                user_id,
+                is_admin,
             )
         except Exception as e:
             logger.exception("命令处理异常: %s", e)

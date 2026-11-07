@@ -112,9 +112,7 @@ class OKXCLI:
         return result
 
     def get_candles(self, inst_id: str, bar: str = "1H", limit: int = 100) -> Dict:
-        result = self._run(
-            ["market", "candles", inst_id, "--bar", bar, "--limit", str(limit)]
-        )
+        result = self._run(["market", "candles", inst_id, "--bar", bar, "--limit", str(limit)])
         return result
 
     def get_balance(self) -> Dict:

@@ -11,22 +11,21 @@ v6 关键修复：
 
 用于 phase_e_train_ppo.py 训练 + PhaseEGateway 推理。
 """
+
 from __future__ import annotations
 
 from typing import Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.distributions import Normal, Categorical
-
+from torch.distributions import Categorical, Normal
 
 # v6: 默认动作边界（k_bound=0.80 时的有效边界，与 v15_gym_env.ACTION_BOUNDS + _apply_k_bound_to_bounds 一致）
 DEFAULT_ACTION_BOUNDS: List[Tuple[float, float]] = [
-    (0.75, 1.24),    # addon_pct_mult
-    (0.50, 1.40),    # addon_size_mult
-    (0.75, 1.24),    # tp_pct_mult
-    (0.625, 1.16),   # base_position_mult
+    (0.75, 1.24),  # addon_pct_mult
+    (0.50, 1.40),  # addon_size_mult
+    (0.75, 1.24),  # tp_pct_mult
+    (0.625, 1.16),  # base_position_mult
 ]
 
 
@@ -150,7 +149,7 @@ class PPOLSTMActorCritic(nn.Module):
         out = self.forward(x, h)
         # 取最后一步
         cont_mean = out["cont_mean"][:, -1, :]  # (B, 4) tanh-bounded
-        cont_std = out["cont_std"][:, -1, :]    # (B, 4)
+        cont_std = out["cont_std"][:, -1, :]  # (B, 4)
         disc_logits = out["disc_logits"][:, -1, :]  # (B, 2)
         value = out["value"][:, -1, 0]  # (B,)
 

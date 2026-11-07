@@ -8,6 +8,7 @@ surprise = actual - forecast，正值=超预期鹰派，负值=不及预期鸽�
 
 FAIL-OPEN：所有异常被捕获，失败时返回空列表。
 """
+
 from __future__ import annotations
 
 import logging
@@ -82,7 +83,11 @@ def _fetch_indicator(indicator: str) -> dict:
         tables = root.find_all("table")
         for table in tables:
             rows = table.find_all("tr")
-            header_cells = [th.get_text(strip=True).lower() for th in rows[0].find_all(["td", "th"])] if rows else []
+            header_cells = (
+                [th.get_text(strip=True).lower() for th in rows[0].find_all(["td", "th"])]
+                if rows
+                else []
+            )
 
             # 查找包含 "actual" 列的表格
             if "actual" in " ".join(header_cells):
@@ -125,7 +130,11 @@ def _fetch_indicator(indicator: str) -> dict:
         if actual is None:
             for table in tables:
                 rows = table.find_all("tr")
-                header_cells = [th.get_text(strip=True).lower() for th in rows[0].find_all(["td", "th"])] if rows else []
+                header_cells = (
+                    [th.get_text(strip=True).lower() for th in rows[0].find_all(["td", "th"])]
+                    if rows
+                    else []
+                )
                 if "last" in " ".join(header_cells):
                     last_col = header_cells.index("last") if "last" in header_cells else 1
                     prev_col = header_cells.index("previous") if "previous" in header_cells else 2
@@ -135,7 +144,11 @@ def _fetch_indicator(indicator: str) -> dict:
                         if len(cells) > max(last_col, prev_col):
                             # 第一列是指标名称，只取匹配的
                             name = cells[0].lower()
-                            if indicator == "cpi" and "inflation rate" not in name and "cpi" not in name:
+                            if (
+                                indicator == "cpi"
+                                and "inflation rate" not in name
+                                and "cpi" not in name
+                            ):
                                 # 取 Inflation Rate YoY 行
                                 if "inflation rate" in name:
                                     val = _parse_number(cells[last_col])

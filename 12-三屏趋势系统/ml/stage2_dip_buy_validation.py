@@ -18,7 +18,7 @@ V2 哲学抄底特征（核心验证对象）：
     V2 抄底特征平均排名在 top 30%，且 DIP_BUY 测试 AUC > 0.60
 """
 
-import json
+import json  # noqa: I001
 import sys
 import os
 import warnings
@@ -32,10 +32,9 @@ warnings.filterwarnings("ignore")
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.feature_engineer import TrendFeatureEngineer
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
-from ml.four_objective_feature_mapper import FourObjectiveFeatureMapper
-
+from ml.feature_engineer import TrendFeatureEngineer  # noqa: E402, I001
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
+from ml.four_objective_feature_mapper import FourObjectiveFeatureMapper  # noqa: E402
 
 # ── V2 抄底哲学特征 ──────────────────────────────────────────────
 V2_DIP_FEATURES = [
@@ -52,15 +51,27 @@ DIP_001_FEATURES = [
 ]
 
 V2_OTHER_PHILOSOPHY = [
-    "btc_regime_label", "btc_alt_divergence", "is_btc_asset", "alt_short_risk_score",
-    "bear_short_layer", "fib_tp_remaining_ratio", "layered_position_target", "position_adjustment",
-    "btc_bull_confirmed", "self_bull_confirmed", "double_bull_score",
+    "btc_regime_label",
+    "btc_alt_divergence",
+    "is_btc_asset",
+    "alt_short_risk_score",
+    "bear_short_layer",
+    "fib_tp_remaining_ratio",
+    "layered_position_target",
+    "position_adjustment",
+    "btc_bull_confirmed",
+    "self_bull_confirmed",
+    "double_bull_score",
 ]
 
 V4_FEATURES = [
-    "halving_months_after", "halving_phase", "halving_position_cap",
-    "ma128_distance_pct", "ma128_below_days",
-    "ath_drawdown_pct", "bounce_from_low_pct",
+    "halving_months_after",
+    "halving_phase",
+    "halving_position_cap",
+    "ma128_distance_pct",
+    "ma128_below_days",
+    "ath_drawdown_pct",
+    "bounce_from_low_pct",
 ]
 
 ALL_PHILOSOPHY = V2_DIP_FEATURES + DIP_001_FEATURES + V2_OTHER_PHILOSOPHY + V4_FEATURES
@@ -129,18 +140,30 @@ def walk_forward_validation(
             continue
 
         params = {
-            "objective": "binary", "metric": "binary_logloss", "boosting_type": "gbdt",
-            "num_leaves": 31, "learning_rate": 0.05, "feature_fraction": 0.8,
-            "bagging_fraction": 0.8, "bagging_freq": 5, "min_data_in_leaf": 20,
-            "verbose": -1, "random_state": 42,
+            "objective": "binary",
+            "metric": "binary_logloss",
+            "boosting_type": "gbdt",
+            "num_leaves": 31,
+            "learning_rate": 0.05,
+            "feature_fraction": 0.8,
+            "bagging_fraction": 0.8,
+            "bagging_freq": 5,
+            "min_data_in_leaf": 20,
+            "verbose": -1,
+            "random_state": 42,
         }
 
         train_data = lgb.Dataset(X_train, label=y_train, feature_name=feature_names)
-        valid_data = lgb.Dataset(X_test, label=y_test, feature_name=feature_names, reference=train_data)
+        valid_data = lgb.Dataset(
+            X_test, label=y_test, feature_name=feature_names, reference=train_data
+        )
 
         model = lgb.train(
-            params, train_data, num_boost_round=200,
-            valid_sets=[train_data, valid_data], valid_names=["train", "valid"],
+            params,
+            train_data,
+            num_boost_round=200,
+            valid_sets=[train_data, valid_data],
+            valid_names=["train", "valid"],
             callbacks=[lgb.early_stopping(30, verbose=False), lgb.log_evaluation(0)],
         )
 
@@ -156,7 +179,7 @@ def walk_forward_validation(
         test_recall = recall_score(y_test, y_test_binary, zero_division=0)
 
         importance = model.feature_importance(importance_type="gain")
-        importance_dict = dict(zip(feature_names, importance))
+        importance_dict = dict(zip(feature_names, importance))  # noqa: B905
         all_importances.append(importance_dict)
 
         train_dates = (features.index[start], features.index[train_end - 1])
@@ -179,9 +202,18 @@ def walk_forward_validation(
         }
         folds.append(fold_result)
 
-        print("  Fold {}: {}~{} | train_auc={:.4f} test_auc={:.4f} | pos={}/{} | iter={}".format(
-            fold_idx, test_dates[0].date(), test_dates[1].date(),
-            train_auc, test_auc, int(y_test.sum()), len(y_test), model.best_iteration))
+        print(
+            "  Fold {}: {}~{} | train_auc={:.4f} test_auc={:.4f} | pos={}/{} | iter={}".format(
+                fold_idx,
+                test_dates[0].date(),
+                test_dates[1].date(),
+                train_auc,
+                test_auc,
+                int(y_test.sum()),
+                len(y_test),
+                model.best_iteration,
+            )
+        )
 
         start += step_size
 
@@ -211,7 +243,11 @@ def walk_forward_validation(
         "std_test_auc": np.std(oos_aucs) if oos_aucs else 0,
         "min_test_auc": np.min(oos_aucs) if oos_aucs else 0,
         "max_test_auc": np.max(oos_aucs) if oos_aucs else 0,
-        "decay_ratio": (np.mean(is_aucs) - np.mean(oos_aucs)) / np.mean(is_aucs) * 100 if is_aucs and np.mean(is_aucs) > 0 else 0,
+        "decay_ratio": (
+            (np.mean(is_aucs) - np.mean(oos_aucs)) / np.mean(is_aucs) * 100
+            if is_aucs and np.mean(is_aucs) > 0
+            else 0
+        ),
     }
 
     return summary
@@ -286,28 +322,49 @@ def print_report(summary: dict, analysis: dict, pos_rate: float):
     print("\n【1. Walk-Forward 验证概况】")
     print("  总特征数: {}".format(summary["n_features"]))
     print("  验证折数: {}".format(summary["n_folds"]))
-    print("  训练窗口: {}天 | 测试窗口: {}天".format(summary["train_window"], summary["test_window"]))
+    print(
+        "  训练窗口: {}天 | 测试窗口: {}天".format(summary["train_window"], summary["test_window"])
+    )
     print("  DIP_BUY正样本率: {:.1f}%".format(pos_rate))
     print("  平均训练AUC: {:.4f}".format(summary["mean_train_auc"]))
-    print("  平均测试AUC: {:.4f} (+/-{:.4f})".format(summary["mean_test_auc"], summary["std_test_auc"]))
+    print(
+        "  平均测试AUC: {:.4f} (+/-{:.4f})".format(
+            summary["mean_test_auc"], summary["std_test_auc"]
+        )
+    )
     print("  最小测试AUC: {:.4f}".format(summary["min_test_auc"]))
     print("  最大测试AUC: {:.4f}".format(summary["max_test_auc"]))
     print("  AUC衰减率: {:.1f}%".format(summary["decay_ratio"]))
 
     # 2. 各折详情
     print("\n【2. 各折详情】")
-    print("  {:>4} | {:>25} | {:>25} | {:>8} | {:>8} | {:>6}".format(
-        "Fold", "训练期", "测试期", "TrainAUC", "TestAUC", "正样本"))
-    print("  {} | {} | {} | {} | {} | {}".format("-"*4, "-"*25, "-"*25, "-"*8, "-"*8, "-"*6))
+    print(
+        "  {:>4} | {:>25} | {:>25} | {:>8} | {:>8} | {:>6}".format(
+            "Fold", "训练期", "测试期", "TrainAUC", "TestAUC", "正样本"
+        )
+    )
+    print(
+        "  {} | {} | {} | {} | {} | {}".format(
+            "-" * 4, "-" * 25, "-" * 25, "-" * 8, "-" * 8, "-" * 6
+        )
+    )
     for f in summary["folds"]:
-        print("  {:>4} | {:>25} | {:>25} | {:>8.4f} | {:>8.4f} | {}/{}".format(
-            f["fold"], f["train_period"], f["test_period"],
-            f["train_auc"], f["test_auc"], f["test_positives"], f["test_samples"]))
+        print(
+            "  {:>4} | {:>25} | {:>25} | {:>8.4f} | {:>8.4f} | {}/{}".format(
+                f["fold"],
+                f["train_period"],
+                f["test_period"],
+                f["train_auc"],
+                f["test_auc"],
+                f["test_positives"],
+                f["test_samples"],
+            )
+        )
 
     # 3. 特征重要性排名 Top 30
     print("\n【3. 特征重要性排名（Top 30）】")
     print("  {:>4} | {:>30} | {:>10} | {:>8}".format("排名", "特征名", "重要性", "类别"))
-    print("  {} | {} | {} | {}".format("-"*4, "-"*30, "-"*10, "-"*8))
+    print("  {} | {} | {} | {}".format("-" * 4, "-" * 30, "-" * 10, "-" * 8))
     for rank, (feat, imp) in enumerate(summary["sorted_features"][:30], 1):
         if feat in V2_DIP_FEATURES:
             category = "V2抄底"
@@ -327,7 +384,7 @@ def print_report(summary: dict, analysis: dict, pos_rate: float):
 
     print("\n  V2 抄底特征（4个）:")
     print("  {:>30} | {:>6} | {:>10} | {:>6}".format("特征名", "排名", "重要性", "Top30%"))
-    print("  {} | {} | {} | {}".format("-"*30, "-"*6, "-"*10, "-"*6))
+    print("  {} | {} | {} | {}".format("-" * 30, "-" * 6, "-" * 10, "-" * 6))
     for feat in V2_DIP_FEATURES:
         rank = analysis["v2_dip_ranks"][feat]
         imp = analysis["v2_dip_importances"][feat]
@@ -336,7 +393,7 @@ def print_report(summary: dict, analysis: dict, pos_rate: float):
 
     print("\n  Stage 2.1 DIP-001 新增特征（2个）:")
     print("  {:>30} | {:>6} | {:>10} | {:>6}".format("特征名", "排名", "重要性", "Top30%"))
-    print("  {} | {} | {} | {}".format("-"*30, "-"*6, "-"*10, "-"*6))
+    print("  {} | {} | {} | {}".format("-" * 30, "-" * 6, "-" * 10, "-" * 6))
     for feat in DIP_001_FEATURES:
         rank = analysis["dip001_ranks"][feat]
         imp = analysis["dip001_importances"][feat]
@@ -344,60 +401,115 @@ def print_report(summary: dict, analysis: dict, pos_rate: float):
         print("  {:>30} | {:>6} | {:>10.1f} | {:>6}".format(feat, rank, imp, in_top))
 
     all_dip = V2_DIP_FEATURES + DIP_001_FEATURES
-    print("\n  抄底特征合集（6个）平均排名: {:.1f} / {}".format(analysis["all_dip_avg_rank"], analysis["n_features"]))
+    print(
+        "\n  抄底特征合集（6个）平均排名: {:.1f} / {}".format(
+            analysis["all_dip_avg_rank"], analysis["n_features"]
+        )
+    )
     print("  进入Top30%: {}/{}".format(analysis["all_dip_in_top30"], len(all_dip)))
 
     # 5. 四类特征对比
     print("\n【5. 四类哲学特征对比】")
     print("  {:>10} | {:>8} | {:>10} | {:>6}".format("类别", "平均排名", "进入Top30%", "占比"))
-    print("  {} | {} | {} | {}".format("-"*10, "-"*8, "-"*10, "-"*6))
-    print("  {:>10} | {:>8.1f} | {:>4}/{} | {:.1f}%".format(
-        "V2抄底", analysis["v2_dip_avg_rank"], analysis["v2_dip_in_top30"], len(V2_DIP_FEATURES),
-        analysis["v2_dip_in_top30"]/len(V2_DIP_FEATURES)*100))
-    print("  {:>10} | {:>8.1f} | {:>4}/{} | {:.1f}%".format(
-        "DIP001新", analysis["dip001_avg_rank"], analysis["dip001_in_top30"], len(DIP_001_FEATURES),
-        analysis["dip001_in_top30"]/len(DIP_001_FEATURES)*100))
-    print("  {:>10} | {:>8.1f} | {:>4}/{} | {:.1f}%".format(
-        "V2其他", analysis["v2_other_avg_rank"], analysis["v2_other_in_top30"], len(V2_OTHER_PHILOSOPHY),
-        analysis["v2_other_in_top30"]/len(V2_OTHER_PHILOSOPHY)*100))
-    print("  {:>10} | {:>8.1f} | {:>4}/{} | {:.1f}%".format(
-        "V4新", analysis["v4_avg_rank"], analysis["v4_in_top30"], len(V4_FEATURES),
-        analysis["v4_in_top30"]/len(V4_FEATURES)*100))
-    print("  {:>10} | {:>8.1f} | {:>10} | {}".format("趋势特征", analysis["trend_avg_rank"], "—", "—"))
+    print("  {} | {} | {} | {}".format("-" * 10, "-" * 8, "-" * 10, "-" * 6))
+    print(
+        "  {:>10} | {:>8.1f} | {:>4}/{} | {:.1f}%".format(
+            "V2抄底",
+            analysis["v2_dip_avg_rank"],
+            analysis["v2_dip_in_top30"],
+            len(V2_DIP_FEATURES),
+            analysis["v2_dip_in_top30"] / len(V2_DIP_FEATURES) * 100,
+        )
+    )
+    print(
+        "  {:>10} | {:>8.1f} | {:>4}/{} | {:.1f}%".format(
+            "DIP001新",
+            analysis["dip001_avg_rank"],
+            analysis["dip001_in_top30"],
+            len(DIP_001_FEATURES),
+            analysis["dip001_in_top30"] / len(DIP_001_FEATURES) * 100,
+        )
+    )
+    print(
+        "  {:>10} | {:>8.1f} | {:>4}/{} | {:.1f}%".format(
+            "V2其他",
+            analysis["v2_other_avg_rank"],
+            analysis["v2_other_in_top30"],
+            len(V2_OTHER_PHILOSOPHY),
+            analysis["v2_other_in_top30"] / len(V2_OTHER_PHILOSOPHY) * 100,
+        )
+    )
+    print(
+        "  {:>10} | {:>8.1f} | {:>4}/{} | {:.1f}%".format(
+            "V4新",
+            analysis["v4_avg_rank"],
+            analysis["v4_in_top30"],
+            len(V4_FEATURES),
+            analysis["v4_in_top30"] / len(V4_FEATURES) * 100,
+        )
+    )
+    print(
+        "  {:>10} | {:>8.1f} | {:>10} | {}".format("趋势特征", analysis["trend_avg_rank"], "—", "—")
+    )
 
     # 6. 结论
     print("\n【6. 验证结论】")
     if analysis["success"]:
-        print("  [PASS] 抄底特征合集平均排名 {:.1f} <= Top30%阈值 {}".format(
-            analysis["all_dip_avg_rank"], analysis["top_30_threshold"]))
+        print(
+            "  [PASS] 抄底特征合集平均排名 {:.1f} <= Top30%阈值 {}".format(
+                analysis["all_dip_avg_rank"], analysis["top_30_threshold"]
+            )
+        )
         print("     {}/{} 个抄底特征进入Top30%".format(analysis["all_dip_in_top30"], len(all_dip)))
     else:
-        print("  [WARN] 抄底特征合集平均排名 {:.1f} > Top30%阈值 {}".format(
-            analysis["all_dip_avg_rank"], analysis["top_30_threshold"]))
-        print("     仅 {}/{} 个抄底特征进入Top30%".format(analysis["all_dip_in_top30"], len(all_dip)))
+        print(
+            "  [WARN] 抄底特征合集平均排名 {:.1f} > Top30%阈值 {}".format(
+                analysis["all_dip_avg_rank"], analysis["top_30_threshold"]
+            )
+        )
+        print(
+            "     仅 {}/{} 个抄底特征进入Top30%".format(analysis["all_dip_in_top30"], len(all_dip))
+        )
 
     print("\n  样本外AUC:")
     if summary["mean_test_auc"] > 0.65:
-        print("    [GOOD] 平均测试AUC {:.4f} > 0.65，模型预测能力良好".format(summary["mean_test_auc"]))
+        print(
+            "    [GOOD] 平均测试AUC {:.4f} > 0.65，模型预测能力良好".format(
+                summary["mean_test_auc"]
+            )
+        )
     elif summary["mean_test_auc"] > 0.55:
-        print("    [OK] 平均测试AUC {:.4f} 在0.55-0.65，预测能力一般".format(summary["mean_test_auc"]))
+        print(
+            "    [OK] 平均测试AUC {:.4f} 在0.55-0.65，预测能力一般".format(summary["mean_test_auc"])
+        )
     else:
-        print("    [WEAK] 平均测试AUC {:.4f} <= 0.55，预测能力不足".format(summary["mean_test_auc"]))
+        print(
+            "    [WEAK] 平均测试AUC {:.4f} <= 0.55，预测能力不足".format(summary["mean_test_auc"])
+        )
 
     print("\n  过拟合检测:")
     if summary["decay_ratio"] < 30:
         print("    [GOOD] AUC衰减率 {:.1f}% < 30%，过拟合风险低".format(summary["decay_ratio"]))
     elif summary["decay_ratio"] < 50:
-        print("    [WARN] AUC衰减率 {:.1f}% 在30-50%，中等过拟合风险".format(summary["decay_ratio"]))
+        print(
+            "    [WARN] AUC衰减率 {:.1f}% 在30-50%，中等过拟合风险".format(summary["decay_ratio"])
+        )
     else:
         print("    [HIGH] AUC衰减率 {:.1f}% > 50%，高过拟合风险".format(summary["decay_ratio"]))
 
     # 7. 与Stage 2.0基线对比
     print("\n【7. Stage 2.1 vs Stage 2.0 对比】")
-    print("  特征总数: {} → {} (新增RSI+volume_ratio)".format(
-        summary["n_features"] - 2, summary["n_features"]))
+    print(
+        "  特征总数: {} → {} (新增RSI+volume_ratio)".format(
+            summary["n_features"] - 2, summary["n_features"]
+        )
+    )
     print("  注: Stage 2.0基线 AUC=0.5929, 衰减率=37.5%")
-    print("  本轮: AUC={:.4f}, 衰减率={:.1f}%".format(summary["mean_test_auc"], summary["decay_ratio"]))
+    print(
+        "  本轮: AUC={:.4f}, 衰减率={:.1f}%".format(
+            summary["mean_test_auc"], summary["decay_ratio"]
+        )
+    )
     auc_delta = summary["mean_test_auc"] - 0.5929
     if auc_delta > 0:
         print("  AUC提升: +{:.4f} → 假设DIP-001特征有效".format(auc_delta))
@@ -406,8 +518,18 @@ def print_report(summary: dict, analysis: dict, pos_rate: float):
 
     # 8. 下一步建议
     print("\n【8. 下一步建议】")
-    dip_top = [f for f in all_dip if analysis["v2_dip_ranks"].get(f, analysis["dip001_ranks"].get(f, 999)) <= analysis["top_30_threshold"]]
-    dip_weak = [f for f in all_dip if analysis["v2_dip_ranks"].get(f, analysis["dip001_ranks"].get(f, 999)) > analysis["top_30_threshold"]]
+    dip_top = [
+        f
+        for f in all_dip
+        if analysis["v2_dip_ranks"].get(f, analysis["dip001_ranks"].get(f, 999))
+        <= analysis["top_30_threshold"]
+    ]
+    dip_weak = [
+        f
+        for f in all_dip
+        if analysis["v2_dip_ranks"].get(f, analysis["dip001_ranks"].get(f, 999))
+        > analysis["top_30_threshold"]
+    ]
 
     if dip_top:
         print("  有效抄底特征: {} → 保留并强化".format(", ".join(dip_top)))
@@ -420,9 +542,15 @@ def print_report(summary: dict, analysis: dict, pos_rate: float):
     if rsi_rank <= analysis["top_30_threshold"] and vol_rank <= analysis["top_30_threshold"]:
         print("    [VALIDATED] RSI和volume_ratio均进入Top30%，假设DIP-001验证通过")
     elif rsi_rank <= analysis["top_30_threshold"] or vol_rank <= analysis["top_30_threshold"]:
-        print("    [PARTIAL] 部分验证通过，RSI排名#{} volume_ratio排名#{}".format(rsi_rank, vol_rank))
+        print(
+            "    [PARTIAL] 部分验证通过，RSI排名#{} volume_ratio排名#{}".format(rsi_rank, vol_rank)
+        )
     else:
-        print("    [REJECTED] RSI排名#{} volume_ratio排名#{} 均未进入Top30%".format(rsi_rank, vol_rank))
+        print(
+            "    [REJECTED] RSI排名#{} volume_ratio排名#{} 均未进入Top30%".format(
+                rsi_rank, vol_rank
+            )
+        )
 
     print("\n" + "=" * 80)
 
@@ -435,7 +563,9 @@ def main():
     # 1. 加载数据
     print("\n[1/4] 加载BTC日线数据...")
     prices = load_btc_data()
-    print("  数据: {}天, {} ~ {}".format(len(prices), prices.index[0].date(), prices.index[-1].date()))
+    print(
+        "  数据: {}天, {} ~ {}".format(len(prices), prices.index[0].date(), prices.index[-1].date())
+    )
 
     # 2. 生成DIP_BUY标签
     print("\n[2/4] 生成DIP_BUY标签...")
@@ -452,7 +582,9 @@ def main():
     print("  总特征数: {}".format(features.shape[1]))
     print("  训练窗口: 730天(2年) | 测试窗口: 180天(6月) | 步长: 180天")
 
-    summary = walk_forward_validation(features, labels, train_window=730, test_window=180, step_size=180)
+    summary = walk_forward_validation(
+        features, labels, train_window=730, test_window=180, step_size=180
+    )
 
     if summary["n_folds"] == 0:
         print("  [ERROR] 没有有效的验证折")

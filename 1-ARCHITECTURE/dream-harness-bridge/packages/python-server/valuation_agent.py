@@ -5,6 +5,7 @@
 输出: SubagentOutput (summary + signals + charts)
 图表: scatter(散点) + line(回归线)
 """
+
 from __future__ import annotations
 
 import traceback
@@ -32,7 +33,9 @@ class ValuationAgent:
         # D3: 填充 reasoning_chain + evidence_refs + artifact_uri
         reasoning_chain = " | ".join(rationale) if rationale else ""
         evidence_refs = [f"indicator:{k}" for k in indicators.keys()]
-        artifact_uri = f"artifact://valuation/{hash(str(indicators)) % 100000:05d}" if indicators else None
+        artifact_uri = (
+            f"artifact://valuation/{hash(str(indicators)) % 100000:05d}" if indicators else None
+        )
 
         return SubagentOutput(
             module="valuation",
@@ -86,8 +89,9 @@ class ValuationAgent:
 
         return signals
 
-    def _generate_summary(self, signals: List[Signal], rationale: List[str],
-                          direction: str, confidence: float) -> str:
+    def _generate_summary(
+        self, signals: List[Signal], rationale: List[str], direction: str, confidence: float
+    ) -> str:
         if self._llm_fn is not None:
             try:
                 prompt = (
@@ -100,8 +104,7 @@ class ValuationAgent:
                 pass
         long_count = sum(1 for s in signals if s.direction == "long")
         short_count = sum(1 for s in signals if s.direction == "short")
-        return (f"估值面{direction}({confidence:.0%}), "
-                f"多信号{long_count}/空信号{short_count}")
+        return f"估值面{direction}({confidence:.0%}), " f"多信号{long_count}/空信号{short_count}"
 
     def _generate_charts(self, indicators: Dict[str, Any]) -> List[ChartSpec]:
         charts: List[ChartSpec] = []
@@ -111,30 +114,33 @@ class ValuationAgent:
         price = indicators.get("price")
         if nvt is not None and price is not None:
             scatter_data = [[nvt, price]]
-            charts.append(ChartSpec(
-                type="scatter",
-                title="NVT vs 价格散点",
-                data=scatter_data,
-                config={
-                    "xAxis": {"type": "value", "name": "NVT"},
-                    "yAxis": {"type": "value", "name": "价格"},
-                },
-            ))
+            charts.append(
+                ChartSpec(
+                    type="scatter",
+                    title="NVT vs 价格散点",
+                    data=scatter_data,
+                    config={
+                        "xAxis": {"type": "value", "name": "NVT"},
+                        "yAxis": {"type": "value", "name": "价格"},
+                    },
+                )
+            )
 
         # 回归线图: StockFlow 估值趋势
         stf = indicators.get("stock_to_flow")
         if stf is not None and price is not None:
-            charts.append(ChartSpec(
-                type="line",
-                title="StockFlow 估值回归线",
-                data={"stock_to_flow": stf, "price": price,
-                      "fair_value": price * 0.9},
-                config={
-                    "xAxis": {"type": "value", "name": "StockFlow"},
-                    "yAxis": {"type": "value", "name": "价格"},
-                    "showRegression": True,
-                },
-            ))
+            charts.append(
+                ChartSpec(
+                    type="line",
+                    title="StockFlow 估值回归线",
+                    data={"stock_to_flow": stf, "price": price, "fair_value": price * 0.9},
+                    config={
+                        "xAxis": {"type": "value", "name": "StockFlow"},
+                        "yAxis": {"type": "value", "name": "价格"},
+                        "showRegression": True,
+                    },
+                )
+            )
 
         return charts
 
@@ -143,6 +149,7 @@ def handle_valuation_agent(params: dict) -> dict:
     """IPC handler: valuation-agent"""
     try:
         from subagent_registry import get_handler_llm_fn
+
         agent = ValuationAgent(llm_fn=get_handler_llm_fn())
         output = agent.execute(params.get("node_output", {}))
         return {"ok": True, "output": output.to_dict()}

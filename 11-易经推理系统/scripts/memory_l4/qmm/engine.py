@@ -9,8 +9,8 @@ from .data_prep import prepare_events
 from .gate import GateResult, GateRunner
 from .mrd import compute_mrd
 from .paths import qmm_dir
-from .triple_screen import ScreenConfig, compute_triple_screen
 from .trend_velocity import compute_trend_velocity
+from .triple_screen import ScreenConfig, compute_triple_screen
 from .types import MDRResult, QMMOutput
 from .uncertainty import compute_uncertainty
 
@@ -46,8 +46,10 @@ def run_qmm(
             trend_state="UNKNOWN",
             trend_change_point="STABLE",
             mrd_vector={
-                "direction": "NEUTRAL", "resistance_up": 50,
-                "resistance_down": 50, "confidence": 0,
+                "direction": "NEUTRAL",
+                "resistance_up": 50,
+                "resistance_down": 50,
+                "confidence": 0,
             },
             uncertainty=1.0,
             reason_codes=["INSUFFICIENT_DATA"],
@@ -71,7 +73,10 @@ def run_qmm(
 
     # Step 5: 不确定性
     unc = compute_uncertainty(
-        ts_result, mrd_result, vel_result["velocity"], len(events),
+        ts_result,
+        mrd_result,
+        vel_result["velocity"],
+        len(events),
     )
 
     # Step 6: 构建输出
@@ -158,6 +163,7 @@ def run_qmm_with_gate(
 
 def _screen_to_dict(sr) -> Dict[str, Any]:
     from .types import ScreenResult
+
     if isinstance(sr, ScreenResult):
         return {
             "timeframe": sr.timeframe,
@@ -172,7 +178,9 @@ def _screen_to_dict(sr) -> Dict[str, Any]:
 
 
 def _build_reason_codes(
-    ts_result: Dict, mrd_result: MDRResult, vel_result: Dict,
+    ts_result: Dict,
+    mrd_result: MDRResult,
+    vel_result: Dict,
 ) -> List[str]:
     """构建英文大写原因代码。"""
     codes: List[str] = []
@@ -223,7 +231,7 @@ def _compute_system_source_stats(events) -> Dict[str, Any]:
             stats[source]["total_pnl"] += ev.pnl_pct
         stats[source]["quality_sum"] += ev.quality
 
-    for source, data in stats.items():
+    for source, data in stats.items():  # noqa: B007
         if data["count"] > 0:
             data["avg_pnl"] = round(data["total_pnl"] / data["count"], 4)
             data["quality_avg"] = round(data["quality_sum"] / data["count"], 4)
@@ -237,7 +245,9 @@ def _compute_system_source_stats(events) -> Dict[str, Any]:
 
 
 def _save_output(
-    output: QMMOutput, out_dir: Path, gate_status: str = "OFFLINE",
+    output: QMMOutput,
+    out_dir: Path,
+    gate_status: str = "OFFLINE",
 ) -> None:
     """写入 QMM 快照和信号索引。"""
     out_dir.mkdir(parents=True, exist_ok=True)

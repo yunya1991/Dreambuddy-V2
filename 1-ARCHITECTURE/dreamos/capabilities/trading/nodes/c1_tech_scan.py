@@ -14,10 +14,10 @@ C1 技术扫描节点
 
 from __future__ import annotations
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 
 class C1TechScanNode(BaseNode):
@@ -51,11 +51,13 @@ class C1TechScanNode(BaseNode):
             scores.append(("SHORT", 0.25, "空头排列：价格<EMA20<EMA50<EMA200"))
         else:
             # 部分多头/空头
-            bull_count = sum([
-                price > ema20,
-                ema20 > ema50,
-                ema50 > ema200,
-            ])
+            bull_count = sum(
+                [
+                    price > ema20,
+                    ema20 > ema50,
+                    ema50 > ema200,
+                ]
+            )
             if bull_count == 3:
                 scores.append(("LONG", 0.25, "多头排列（3/3）"))
             elif bull_count == 2:
@@ -102,7 +104,9 @@ class C1TechScanNode(BaseNode):
         atr_pct = mkt.get("atr_pct", 0.02)
         regime = mkt.get("regime", "RANGE")
         if regime == "TREND" and atr_pct > 0.03:
-            scores.append(("LONG" if ch24 > 0 else "SHORT", 0.10, f"趋势行情+高波动（ATR {atr_pct:.1%}）"))
+            scores.append(
+                ("LONG" if ch24 > 0 else "SHORT", 0.10, f"趋势行情+高波动（ATR {atr_pct:.1%}）")
+            )
         elif regime == "RANGE":
             scores.append(("HOLD", 0.10, "震荡行情，建议观望"))
 
@@ -118,13 +122,23 @@ class C1TechScanNode(BaseNode):
             if ft_strategy_count >= 3 and ft_direction in ("LONG", "SHORT") and ft_conf > 0.55:
                 # 策略数≥3且高置信时，作为强技术信号
                 ft_weight = min(0.20, 0.08 + ft_strategy_count * 0.015 + (ft_conf - 0.5) * 0.2)
-                scores.append((ft_direction, ft_weight,
-                              f"Freqtrade策略({ft_strategy_count}个)看多 {ft_long_votes} vs 看空 {ft_short_votes}，置信 {ft_conf:.0%}"))
+                scores.append(
+                    (
+                        ft_direction,
+                        ft_weight,
+                        f"Freqtrade策略({ft_strategy_count}个)看多 {ft_long_votes} vs 看空 {ft_short_votes}，置信 {ft_conf:.0%}",
+                    )
+                )
             elif ft_strategy_count >= 2 and ft_direction in ("LONG", "SHORT"):
                 # 策略数较少时，作为中等强度信号
                 ft_weight = min(0.10, 0.05 + ft_strategy_count * 0.01)
-                scores.append((ft_direction, ft_weight,
-                              f"Freqtrade策略({ft_strategy_count}个)偏{ft_direction}，置信 {ft_conf:.0%}"))
+                scores.append(
+                    (
+                        ft_direction,
+                        ft_weight,
+                        f"Freqtrade策略({ft_strategy_count}个)偏{ft_direction}，置信 {ft_conf:.0%}",
+                    )
+                )
             elif ft_direction == "HOLD" or ft_strategy_count == 0:
                 scores.append(("HOLD", 0.05, "Freqtrade信号中性或策略不足"))
 
@@ -179,15 +193,17 @@ class C1TechScanNode(BaseNode):
             if price < ema50:
                 confidence *= 0.90  # 价格在 EMA50 之下做多，轻微降权
             if price < ema200:
-                confidence *= 0.95   # 价格在 EMA200 之下做多，极轻微降权
+                confidence *= 0.95  # 价格在 EMA200 之下做多，极轻微降权
         elif direction == "SHORT":
             if price > ema50:
                 confidence *= 0.90  # 价格在 EMA50 之上做空，轻微降权
             if price > ema200:
-                confidence *= 0.95   # 价格在 EMA200 之上做空，极轻微降权
+                confidence *= 0.95  # 价格在 EMA200 之上做空，极轻微降权
 
         rationale = [r for _, _, r in scores[:5]]
-        rationale.insert(0, f"[C1技术扫描] 价格=${price:.2f} | RSI={rsi:.1f} | 量比={vol_ratio:.2f}x")
+        rationale.insert(
+            0, f"[C1技术扫描] 价格=${price:.2f} | RSI={rsi:.1f} | 量比={vol_ratio:.2f}x"
+        )
         rationale.append(f"  方向: {direction} | 置信度: {confidence:.1%}")
 
         indicators = {
@@ -201,7 +217,11 @@ class C1TechScanNode(BaseNode):
             "vol_ratio": vol_ratio,
             "atr_pct": atr_pct,
             "regime": regime,
-            "scores": {"long": round(long_score, 3), "short": round(short_score, 3), "hold": round(hold_score, 3)},
+            "scores": {
+                "long": round(long_score, 3),
+                "short": round(short_score, 3),
+                "hold": round(hold_score, 3),
+            },
         }
 
         indicators["rationale"] = rationale

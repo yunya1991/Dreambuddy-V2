@@ -15,33 +15,43 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 
-import scripts.memory_l4.trading_utils as tu
-from unittest.mock import patch
-from scripts.memory_l4.bcrm2.exit_manager import (
-    ExitManager, ExitContext, ExitDecision,
-)
-from scripts.memory_l4.bcrm2.exit_strategies import (
-    P3EarlyExitStrategy, WashoutHoldStrategy, SignalReverseStrategy,
-    EvForceCloseStrategy, TimeoutProfitSwitchStrategy, EvAdjustStrategy,
-    TrailingStopStrategy,
-)
-from scripts.memory_l4.polling_trader import PollingTrader
+from unittest.mock import patch  # noqa: E402
 
+import scripts.memory_l4.trading_utils as tu  # noqa: E402
+from scripts.memory_l4.bcrm2.exit_manager import (  # noqa: E402
+    ExitContext,
+    ExitManager,
+)
+from scripts.memory_l4.bcrm2.exit_strategies import (  # noqa: E402
+    EvAdjustStrategy,
+    EvForceCloseStrategy,
+    P3EarlyExitStrategy,
+    SignalReverseStrategy,
+    TimeoutProfitSwitchStrategy,
+    TrailingStopStrategy,
+    WashoutHoldStrategy,
+)
+from scripts.memory_l4.polling_trader import PollingTrader  # noqa: E402
 
 # =============================================================
 # Part 1: TrailingStopStrategy 多币种场景模拟
 # =============================================================
 
+
 def test_trailing_multi_coin():
     """多币种 trailing 场景: 长/短/盈亏/峰值回撤/重开仓 peak 隔离"""
-    s = TrailingStopStrategy(
-        break_even_pct=0.02, trailing_arm_pct=0.04, trailing_retrace_pct=0.015
-    )
+    s = TrailingStopStrategy(break_even_pct=0.02, trailing_arm_pct=0.04, trailing_retrace_pct=0.015)
     results = []
 
     def ctx(coin, upl):
-        return ExitContext(coin=coin, inference={}, pos_info={"upl_ratio": upl},
-                           tracker_pos=None, in_protection=False, age_hours=1.0)
+        return ExitContext(
+            coin=coin,
+            inference={},
+            pos_info={"upl_ratio": upl},
+            tracker_pos=None,
+            in_protection=False,
+            age_hours=1.0,
+        )
 
     # --- Coin A: 多头, 盈利爬升至 +6% 峰值后回撤 ---
     # 0% → pass
@@ -52,30 +62,49 @@ def test_trailing_multi_coin():
     results.append(("A-LONG +1%", r.action == "pass"))
     # +3% → break_even
     r = s.evaluate(ctx("A-LONG", 0.03))
-    results.append(("A-LONG +3% break_even", r.action == "adjust_sl_tp"
-                    and r.params.get("mode") == "break_even"))
+    results.append(
+        (
+            "A-LONG +3% break_even",
+            r.action == "adjust_sl_tp" and r.params.get("mode") == "break_even",
+        )
+    )
     # +6% → trailing (peak=6%)
     r = s.evaluate(ctx("A-LONG", 0.06))
-    results.append(("A-LONG +6% trailing", r.action == "adjust_sl_tp"
-                    and r.params.get("mode") == "trailing"
-                    and abs(r.params.get("peak", 0) - 0.06) < 1e-9))
+    results.append(
+        (
+            "A-LONG +6% trailing",
+            r.action == "adjust_sl_tp"
+            and r.params.get("mode") == "trailing"
+            and abs(r.params.get("peak", 0) - 0.06) < 1e-9,
+        )
+    )
     # 回撤到 +2% → 仍 trailing (peak ratchet 保持 6%)
     r = s.evaluate(ctx("A-LONG", 0.02))
-    results.append(("A-LONG 回撤+2% still trailing", r.action == "adjust_sl_tp"
-                    and r.params.get("mode") == "trailing"
-                    and abs(r.params.get("peak", 0) - 0.06) < 1e-9))
+    results.append(
+        (
+            "A-LONG 回撤+2% still trailing",
+            r.action == "adjust_sl_tp"
+            and r.params.get("mode") == "trailing"
+            and abs(r.params.get("peak", 0) - 0.06) < 1e-9,
+        )
+    )
     # 回撤到 -1% → pass (亏损区交给 SL 兜底)
     r = s.evaluate(ctx("A-LONG", -0.01))
     results.append(("A-LONG -1% pass", r.action == "pass"))
 
     # --- Coin B: 空头, 盈利爬升至 +5% ---
     r = s.evaluate(ctx("B-SHORT", 0.05))
-    results.append(("B-SHORT +5% trailing", r.action == "adjust_sl_tp"
-                    and r.params.get("mode") == "trailing"))
+    results.append(
+        ("B-SHORT +5% trailing", r.action == "adjust_sl_tp" and r.params.get("mode") == "trailing")
+    )
     # peak 应为 5% (独立于 A 的 6%)
-    results.append(("B-SHORT peak isolated=5%",
-                    abs(s._peak_upl.get("B-SHORT", 0) - 0.05) < 1e-9
-                    and abs(s._peak_upl.get("A-LONG", 0) - 0.06) < 1e-9))
+    results.append(
+        (
+            "B-SHORT peak isolated=5%",
+            abs(s._peak_upl.get("B-SHORT", 0) - 0.05) < 1e-9
+            and abs(s._peak_upl.get("A-LONG", 0) - 0.06) < 1e-9,
+        )
+    )
 
     # --- Coin C: 盈利后平仓, 重开仓 peak 应重置 ---
     s.evaluate(ctx("C", 0.05))  # peak=5%
@@ -89,8 +118,9 @@ def test_trailing_multi_coin():
     # --- Coin D: 多币种并发, peak 互不污染 ---
     for coin in ["D1", "D2", "D3", "D4", "D5"]:
         s.evaluate(ctx(coin, 0.05))
-    all_isolated = all(abs(s._peak_upl.get(c, 0) - 0.05) < 1e-9
-                       for c in ["D1", "D2", "D3", "D4", "D5"])
+    all_isolated = all(
+        abs(s._peak_upl.get(c, 0) - 0.05) < 1e-9 for c in ["D1", "D2", "D3", "D4", "D5"]
+    )
     results.append(("D1-D5 peak isolated", all_isolated))
 
     passed = sum(1 for _, ok in results if ok)
@@ -105,6 +135,7 @@ def test_trailing_multi_coin():
 # Part 2: S3 recommend_exit_bars 多币种场景模拟
 # =============================================================
 
+
 def test_s3_multi_coin():
     """多币种 S3 场景: 覆盖两个盲区 + 全分支 + 多币种并发"""
 
@@ -113,9 +144,15 @@ def test_s3_multi_coin():
         HORIZON_PREP_EXIT_MARGIN = 3
         HORIZON_BAR_CANDIDATES = [1, 2, 3, 6, 10, 20, 30]
         bcrm2_adapters = {}
-        def _cache_get(self, k, ttl_cycles=1): return False, None
-        def _cache_set(self, k, v): pass
-        def _kline_to_dataframe(self, kd): return None
+
+        def _cache_get(self, k, ttl_cycles=1):
+            return False, None
+
+        def _cache_set(self, k, v):
+            pass
+
+        def _kline_to_dataframe(self, kd):
+            return None
 
     FakeTrader._recommend_exit_bars = PollingTrader._recommend_exit_bars
     t = FakeTrader()
@@ -126,15 +163,24 @@ def test_s3_multi_coin():
             horizons = []
             for k in k_candidates:
                 c = 0.90 if k == best_k else 0.5
-                horizons.append({"k_bar": k, "confidence": c,
-                                 "direction": best_dir, "expected_roi_pct": 0.0})
+                horizons.append(
+                    {"k_bar": k, "confidence": c, "direction": best_dir, "expected_roi_pct": 0.0}
+                )
             return {"horizons": horizons}
+
         # 使用 patch 确保 predict_multi_horizon 在测试后恢复（避免测试隔离泄漏）
         with patch.object(tu.RiskManager, "predict_multi_horizon", staticmethod(_fake_pred)):
             r = t._recommend_exit_bars(
-                coin=coin, pos_side=pos_side, held_k_bar=held,
-                inference={"confidence": 0.8, "direction": "UP", "price": 100.0,
-                           "volatility": 0.03, "pentagon_scores": {}},
+                coin=coin,
+                pos_side=pos_side,
+                held_k_bar=held,
+                inference={
+                    "confidence": 0.8,
+                    "direction": "UP",
+                    "price": 100.0,
+                    "volatility": 0.03,
+                    "pentagon_scores": {},
+                },
             )
         return r["recommended_action"]
 
@@ -178,6 +224,7 @@ def test_s3_multi_coin():
 # Part 3: 架构无冲突验证
 # =============================================================
 
+
 def test_architecture_no_conflict():
     """验证: 链序正确 / trailing 不阻塞 force_close / peak per-coin 隔离 /
     生产路径 register_chain 覆盖占位链"""
@@ -220,24 +267,45 @@ def test_architecture_no_conflict():
 
     # 4. TrailingStop 返回 adjust_sl_tp (不阻塞, 不 return)
     ts = chain[-1]
-    ctx = ExitContext(coin="X", inference={},
-                      pos_info={"upl_ratio": 0.05}, tracker_pos=None,
-                      in_protection=False, age_hours=1.0)
+    ctx = ExitContext(
+        coin="X",
+        inference={},
+        pos_info={"upl_ratio": 0.05},
+        tracker_pos=None,
+        in_protection=False,
+        age_hours=1.0,
+    )
     d = ts.evaluate(ctx)
-    results.append(("TrailingStop 返回 adjust_sl_tp (非 force_close)",
-                    d.action == "adjust_sl_tp"))
+    results.append(("TrailingStop 返回 adjust_sl_tp (非 force_close)", d.action == "adjust_sl_tp"))
 
     # 5. peak per-coin 隔离
     ts2 = TrailingStopStrategy()
-    ts2.evaluate(ExitContext(coin="C1", inference={},
-                             pos_info={"upl_ratio": 0.05}, tracker_pos=None,
-                             in_protection=False, age_hours=1.0))
-    ts2.evaluate(ExitContext(coin="C2", inference={},
-                             pos_info={"upl_ratio": 0.03}, tracker_pos=None,
-                             in_protection=False, age_hours=1.0))
-    results.append(("peak per-coin 隔离",
-                    abs(ts2._peak_upl["C1"] - 0.05) < 1e-9
-                    and abs(ts2._peak_upl["C2"] - 0.03) < 1e-9))
+    ts2.evaluate(
+        ExitContext(
+            coin="C1",
+            inference={},
+            pos_info={"upl_ratio": 0.05},
+            tracker_pos=None,
+            in_protection=False,
+            age_hours=1.0,
+        )
+    )
+    ts2.evaluate(
+        ExitContext(
+            coin="C2",
+            inference={},
+            pos_info={"upl_ratio": 0.03},
+            tracker_pos=None,
+            in_protection=False,
+            age_hours=1.0,
+        )
+    )
+    results.append(
+        (
+            "peak per-coin 隔离",
+            abs(ts2._peak_upl["C1"] - 0.05) < 1e-9 and abs(ts2._peak_upl["C2"] - 0.03) < 1e-9,
+        )
+    )
 
     passed = sum(1 for _, ok in results if ok)
     total = len(results)
@@ -250,6 +318,7 @@ def test_architecture_no_conflict():
 # =============================================================
 # Part 4: 生产路径占位链覆盖验证（关键架构修复）
 # =============================================================
+
 
 def test_production_chain_override():
     """验证生产导入路径下 register_chain 覆盖占位链，真实策略生效。
@@ -264,6 +333,8 @@ def test_production_chain_override():
         from scripts.memory_l4.bcrm2.exit_manager import ExitManager as ProdEM
         from scripts.memory_l4.bcrm2.exit_strategies import (
             P3EarlyExitStrategy as ProdP3,
+        )
+        from scripts.memory_l4.bcrm2.exit_strategies import (
             TrailingStopStrategy as ProdTS,
         )
     except Exception:
@@ -275,8 +346,7 @@ def test_production_chain_override():
 
     # 修复前: _chains["default"] 是占位策略
     has_placeholder = any(
-        s.__class__.__name__ == "_PortfolioChainPlaceholder"
-        for s in em._chains.get("default", [])
+        s.__class__.__name__ == "_PortfolioChainPlaceholder" for s in em._chains.get("default", [])
     )
     results.append(("修复前 _chains[default] 含占位策略", has_placeholder))
 
@@ -296,15 +366,22 @@ def test_production_chain_override():
         s.__class__.__name__ != "_PortfolioChainPlaceholder" for s in post_chain
     )
     results.append(("修复后 get_current_chain 无占位策略", post_no_placeholder))
-    results.append(("修复后链含真实 TrailingStop",
-                    any(isinstance(s, ProdTS) for s in post_chain)))
+    results.append(("修复后链含真实 TrailingStop", any(isinstance(s, ProdTS) for s in post_chain)))
 
     # 修复后真实策略 evaluate 生效
     from scripts.memory_l4.bcrm2.exit_manager import ExitContext as ProdCtx
+
     ts = next(s for s in post_chain if isinstance(s, ProdTS))
-    d = ts.evaluate(ProdCtx(coin="X", inference={},
-                            pos_info={"upl_ratio": 0.05}, tracker_pos=None,
-                            in_protection=False, age_hours=1.0))
+    d = ts.evaluate(
+        ProdCtx(
+            coin="X",
+            inference={},
+            pos_info={"upl_ratio": 0.05},
+            tracker_pos=None,
+            in_protection=False,
+            age_hours=1.0,
+        )
+    )
     results.append(("修复后真实策略 evaluate 生效", d.action == "adjust_sl_tp"))
 
     passed = sum(1 for _, ok in results if ok)
@@ -345,9 +422,11 @@ if __name__ == "__main__":
 
     print()
     print("=" * 60)
-    print(f"总结果: Trailing={'PASS' if t1 else 'FAIL'} | "
-          f"S3={'PASS' if t2 else 'FAIL'} | "
-          f"架构={'PASS' if t3 else 'FAIL'} | "
-          f"占位链覆盖={'PASS' if t4 else 'FAIL'}")
+    print(
+        f"总结果: Trailing={'PASS' if t1 else 'FAIL'} | "
+        f"S3={'PASS' if t2 else 'FAIL'} | "
+        f"架构={'PASS' if t3 else 'FAIL'} | "
+        f"占位链覆盖={'PASS' if t4 else 'FAIL'}"
+    )
     print("=" * 60)
     sys.exit(0 if (t1 and t2 and t3 and t4) else 1)

@@ -8,6 +8,7 @@ SPEC §2.4:
   - 并发: 单实例(各模式串行)
   - 调度: 被动训练优先级 > 主动训练
 """
+
 import heapq
 import time
 from dataclasses import dataclass, field
@@ -26,6 +27,7 @@ class TaskStatus(str, Enum):
 @dataclass
 class QueuedTask:
     """训练队列中的任务。"""
+
     task_id: str
     mode: str  # "active" or "passive"
     priority: int  # 0=highest(passive), 1=lower(active)
@@ -103,7 +105,8 @@ class TrainingQueue:
         """清理已完成/失败的任务，返回清理数。"""
         before = len(self._tasks)
         self._tasks = {
-            tid: t for tid, t in self._tasks.items()
+            tid: t
+            for tid, t in self._tasks.items()
             if t.status in ("pending", "retrying", "running")
         }
         self._heap = [t for t in self._heap if t.status in ("pending", "retrying", "running")]

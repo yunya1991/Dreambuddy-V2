@@ -3,6 +3,7 @@
 对候选路径做两两比较，输出可解释 dominance 矩阵与 Copeland 主导者。
 生产选择仍为 argmax；本模块只用于 shadow 对比，不改变 `optimal_path`。
 """
+
 from __future__ import annotations
 
 import logging
@@ -81,16 +82,12 @@ def _pair_delta(
     norm_right: float,
     primary_direction: str,
 ) -> tuple[float, dict]:
-    alignment_delta = _alignment(left, primary_direction) - _alignment(
-        right, primary_direction
-    )
+    alignment_delta = _alignment(left, primary_direction) - _alignment(right, primary_direction)
     strength_delta = norm_left - norm_right
-    continuation_delta = _clamp(
-        _num(left.get("continuation_score"), 0.5)
-    ) - _clamp(_num(right.get("continuation_score"), 0.5))
-    confidence_delta = _clamp(_num(left.get("confidence"))) - _clamp(
-        _num(right.get("confidence"))
+    continuation_delta = _clamp(_num(left.get("continuation_score"), 0.5)) - _clamp(
+        _num(right.get("continuation_score"), 0.5)
     )
+    confidence_delta = _clamp(_num(left.get("confidence"))) - _clamp(_num(right.get("confidence")))
     delta = (
         _ALIGNMENT_WEIGHT * alignment_delta
         + _STRENGTH_WEIGHT * strength_delta
@@ -123,12 +120,12 @@ def resolve(
         primary_direction = "neutral"
 
     ids = [_path_id(path, index) for index, path in enumerate(valid_paths)]
-    by_id = dict(zip(ids, valid_paths))
+    by_id = dict(zip(ids, valid_paths))  # noqa: B905
     norms = _normalized_scores(valid_paths)
     matrix: dict[str, dict[str, float]] = {path_id: {} for path_id in ids}
     pairwise: list[dict] = []
-    copeland: dict[str, int] = {path_id: 0 for path_id in ids}
-    total: dict[str, float] = {path_id: 0.0 for path_id in ids}
+    copeland: dict[str, int] = dict.fromkeys(ids, 0)
+    total: dict[str, float] = dict.fromkeys(ids, 0.0)
 
     for left_index, left in enumerate(valid_paths):
         for right_index in range(left_index + 1, len(valid_paths)):

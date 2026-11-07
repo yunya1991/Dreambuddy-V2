@@ -8,14 +8,13 @@
 - 审计哈希链查询与完整性验证
 - 评估门控（gate）评估
 """
+
 from __future__ import annotations
 
-import json
 import os
 import sys
 import uuid
 from pathlib import Path
-from typing import Any, Dict
 
 from flask import Flask, jsonify, request
 
@@ -24,18 +23,18 @@ _MODULE_DIR = Path(__file__).resolve().parent
 if str(_MODULE_DIR) not in sys.path:
     sys.path.insert(0, str(_MODULE_DIR))
 
-from governance.approval import engine as approval_engine
-from governance.audit.chain import (
+from governance.approval import engine as approval_engine  # noqa: E402
+from governance.audit.chain import (  # noqa: E402
     audit_query,
     audit_verify_chain,
     strategy_factory_audit,
 )
-from governance.changeset.builder import (
+from governance.changeset.builder import (  # noqa: E402
     _agent_changeset_draft_build,
     _agent_changeset_draft_lookup,
     _agent_config_patch_validate,
 )
-from governance.pipeline.state import (
+from governance.pipeline.state import (  # noqa: E402
     PIPELINE_STAGES,
     VALID_STATES,
     _pipeline_create_state,
@@ -44,10 +43,10 @@ from governance.pipeline.state import (
     _pipeline_save,
     _pipeline_update_stage,
 )
-from governance.utils import (
+from governance.utils import (  # noqa: E402
     CONFIG,
-    _audit_emit_action,
     _audit_base_payload,
+    _audit_emit_action,
     _config_save,
     _governance_env_name,
     _now_ms,
@@ -77,23 +76,27 @@ def _require_admin() -> bool:
 # 健康检查
 # ---------------------------------------------------------------------------
 
+
 @app.route("/health", methods=["GET"])
 def health():
     env = _governance_env_name()
     chain_status = audit_verify_chain()
-    return jsonify({
-        "ok": True,
-        "module": "27-策略治理审批系统",
-        "port": int(os.environ.get("GOVERNANCE_PORT", "8094")),
-        "governance_env": env,
-        "audit_chain": chain_status,
-        "config_keys": len(CONFIG),
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "module": "27-策略治理审批系统",
+            "port": int(os.environ.get("GOVERNANCE_PORT", "8094")),
+            "governance_env": env,
+            "audit_chain": chain_status,
+            "config_keys": len(CONFIG),
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # 流水线 API（C0-C8）
 # ---------------------------------------------------------------------------
+
 
 @app.route("/api/v1/pipeline/create", methods=["POST"])
 def pipeline_create():
@@ -105,9 +108,15 @@ def pipeline_create():
     state = _pipeline_create_state(trace_id, strategy_id, source_zip)
     _pipeline_save(state)
     try:
-        _audit_emit_action("pipeline.create", _audit_base_payload(
-            scope="governance", action="pipeline.create", trace_id=trace_id,
-            extra={"strategy_id": strategy_id, "source_zip": source_zip}))
+        _audit_emit_action(
+            "pipeline.create",
+            _audit_base_payload(
+                scope="governance",
+                action="pipeline.create",
+                trace_id=trace_id,
+                extra={"strategy_id": strategy_id, "source_zip": source_zip},
+            ),
+        )
     except Exception:
         pass
     return jsonify({"ok": True, "state": state})
@@ -128,20 +137,40 @@ def pipeline_update_stage(trace_id, stage):
     if not _require_admin():
         return jsonify({"ok": False, "error": "forbidden"}), 403
     if stage not in PIPELINE_STAGES:
-        return jsonify({"ok": False, "error": f"invalid_stage: {stage}", "valid_stages": PIPELINE_STAGES}), 400
+        return (
+            jsonify(
+                {"ok": False, "error": f"invalid_stage: {stage}", "valid_stages": PIPELINE_STAGES}
+            ),
+            400,
+        )
     body = request.get_json(force=True) or {}
     new_state = str(body.get("state") or "").strip().lower()
     if new_state not in VALID_STATES:
-        return jsonify({"ok": False, "error": f"invalid_state: {new_state}", "valid_states": list(VALID_STATES)}), 400
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "error": f"invalid_state: {new_state}",
+                    "valid_states": list(VALID_STATES),
+                }
+            ),
+            400,
+        )
     result = body.get("result")
     error = body.get("error")
     updated = _pipeline_update_stage(trace_id, stage, new_state, result=result, error=error)
     if updated is None:
         return jsonify({"ok": False, "error": "update_failed"}), 500
     try:
-        _audit_emit_action(f"pipeline.stage.{new_state}", _audit_base_payload(
-            scope="governance", action=f"pipeline.{stage}.{new_state}", trace_id=trace_id,
-            extra={"stage": stage, "state": new_state}))
+        _audit_emit_action(
+            f"pipeline.stage.{new_state}",
+            _audit_base_payload(
+                scope="governance",
+                action=f"pipeline.{stage}.{new_state}",
+                trace_id=trace_id,
+                extra={"stage": stage, "state": new_state},
+            ),
+        )
     except Exception:
         pass
     return jsonify({"ok": True, "state": updated})
@@ -161,6 +190,7 @@ def pipeline_list():
 # 变更包 API
 # ---------------------------------------------------------------------------
 
+
 @app.route("/api/v1/changeset/draft", methods=["POST"])
 def changeset_build_draft():
     """构建变更包草稿。"""
@@ -173,16 +203,22 @@ def changeset_build_draft():
     # 写入草稿日志
     try:
         from governance.utils import _agent_outbox_append_jsonl
+
         draft_id = hashlib_sha256(f"{draft.get('trace_id')}|{_now_ms()}")
         draft["id"] = draft_id
         _agent_outbox_append_jsonl("changeset_drafts.jsonl", draft)
     except Exception:
         pass
     try:
-        _audit_emit_action("changeset.draft_build", _audit_base_payload(
-            scope="governance", action="changeset.draft_build",
-            trace_id=str(draft.get("trace_id") or ""),
-            extra={"ok": True, "draft_id": draft.get("id")}))
+        _audit_emit_action(
+            "changeset.draft_build",
+            _audit_base_payload(
+                scope="governance",
+                action="changeset.draft_build",
+                trace_id=str(draft.get("trace_id") or ""),
+                extra={"ok": True, "draft_id": draft.get("id")},
+            ),
+        )
     except Exception:
         pass
     return jsonify(draft)
@@ -210,6 +246,7 @@ def changeset_validate_patch():
 # 审批 API
 # ---------------------------------------------------------------------------
 
+
 @app.route("/api/v1/approvals", methods=["POST"])
 def approval_create():
     """创建审批请求。"""
@@ -235,26 +272,27 @@ def approval_list():
     items = approval_engine._approval_list(limit=max(limit, 1))
     if decision_filter:
         df = decision_filter.strip().lower()
-        items = [
-            it for it in items
-            if str(it.get("decision") or "").strip().lower() == df
-        ]
+        items = [it for it in items if str(it.get("decision") or "").strip().lower() == df]
     pending_count = sum(
-        1 for it in items
+        1
+        for it in items
         if str(it.get("decision") or "").strip().lower() in ("pending", "awaiting", "")
     )
     approved_count = sum(
-        1 for it in items
+        1
+        for it in items
         if str(it.get("decision") or "").strip().lower()
         in ("approve", "approved", "ok", "pass", "yes")
     )
-    return jsonify({
-        "ok": True,
-        "count": len(items),
-        "pending_count": pending_count,
-        "approved_count": approved_count,
-        "items": items,
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "count": len(items),
+            "pending_count": pending_count,
+            "approved_count": approved_count,
+            "items": items,
+        }
+    )
 
 
 @app.route("/api/v1/approvals/<approval_id>", methods=["GET"])
@@ -276,6 +314,7 @@ def approval_check_ok(approval_id):
 # ---------------------------------------------------------------------------
 # 审计 API
 # ---------------------------------------------------------------------------
+
 
 @app.route("/api/v1/audit/query", methods=["GET"])
 def audit_query_api():
@@ -331,6 +370,7 @@ def audit_record_event():
 # Gate 评估 API
 # ---------------------------------------------------------------------------
 
+
 @app.route("/api/v1/gate/evaluate", methods=["POST"])
 def gate_evaluate():
     """评估 Gate 结果（基于 delta_metrics + lookahead 检测）。"""
@@ -348,6 +388,7 @@ def gate_evaluate():
         _lookahead_check,
         _lookahead_check_file,
     )
+
     env = _governance_env_name()
     judge = _governance_baseline_judge(delta_metrics)
     tighten_only = _governance_tighten_only(change_tags)
@@ -371,16 +412,18 @@ def gate_evaluate():
             final_decision = "soft_warn"
         final_reasons.append("lookahead_warn")
 
-    return jsonify({
-        "ok": True,
-        "env": env,
-        "baseline_judge": {**judge, "decision": final_decision, "reasons": final_reasons},
-        "tighten_only": tighten_only,
-        "has_improvement": has_improvement,
-        "delta_metrics": delta_metrics,
-        "change_tags": change_tags,
-        "lookahead": lookahead_result,
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "env": env,
+            "baseline_judge": {**judge, "decision": final_decision, "reasons": final_reasons},
+            "tighten_only": tighten_only,
+            "has_improvement": has_improvement,
+            "delta_metrics": delta_metrics,
+            "change_tags": change_tags,
+            "lookahead": lookahead_result,
+        }
+    )
 
 
 @app.route("/api/v1/gate/rollback", methods=["POST"])
@@ -412,19 +455,22 @@ def gate_rollback():
         },
         strategy_id=strategy_id,
     )
-    return jsonify({
-        "ok": True,
-        "strategy_id": strategy_id,
-        "rolled_back": True,
-        "reason": reason,
-        "trace_id": trace_id,
-        "event": event,
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "strategy_id": strategy_id,
+            "rolled_back": True,
+            "reason": reason,
+            "trace_id": trace_id,
+            "event": event,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # 配置 API
 # ---------------------------------------------------------------------------
+
 
 @app.route("/api/v1/config", methods=["GET"])
 def config_get():
@@ -448,8 +494,10 @@ def config_update():
 # 辅助
 # ---------------------------------------------------------------------------
 
+
 def hashlib_sha256(s: str) -> str:
     import hashlib
+
     return hashlib.sha256(s.encode("utf-8")).hexdigest()[:16]
 
 

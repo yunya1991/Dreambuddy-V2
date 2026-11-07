@@ -16,6 +16,7 @@
   TR-2.13 node_sequence 含理论工作流节点 (step/phase/section/classify)
   TR-2.14 每个 SKILL 生成多条 case (按章节拆分)
 """
+
 import os
 import sys
 import tempfile
@@ -47,7 +48,7 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
         os.makedirs(a0_dir, exist_ok=True)
         a0_file = os.path.join(a0_dir, "SKILL.md")
         with open(a0_file, "w") as f:
-            f.write(textwrap.dedent('''
+            f.write(textwrap.dedent("""
                 ---
                 name: dream-contradiction-theory
                 version: 1.1.0
@@ -102,14 +103,14 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
                 | A0-IRON-3 | 矛盾的主要方面决定方向 |
                 | A0-IRON-4 | 禁止用矛盾未消解作为等待理由 |
                 | A0-IRON-5 | 矛盾会转化 |
-            ''').strip())
+            """).strip())
 
         # 样本2: A2 第一性原理 (dream-first-principles)
         a2_dir = os.path.join(cls._skills_dir, "dream-first-principles")
         os.makedirs(a2_dir, exist_ok=True)
         a2_file = os.path.join(a2_dir, "SKILL.md")
         with open(a2_file, "w") as f:
-            f.write(textwrap.dedent('''
+            f.write(textwrap.dedent("""
                 ---
                 name: dream-first-principles
                 version: 2.6.1
@@ -157,14 +158,14 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
                 Phase 6: 综合推演
                 Phase 7: Regime分类
                 Phase 8: 顾问评审
-            ''').strip())
+            """).strip())
 
         # 样本3: A5 战术执行 (dream-tactical-executor)
         a5_dir = os.path.join(cls._skills_dir, "dream-tactical-executor")
         os.makedirs(a5_dir, exist_ok=True)
         a5_file = os.path.join(a5_dir, "SKILL.md")
         with open(a5_file, "w") as f:
-            f.write(textwrap.dedent('''
+            f.write(textwrap.dedent("""
                 ---
                 name: dream-tactical-executor
                 version: 3.8.0
@@ -191,14 +192,14 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
                 Phase 4: 仓位计算
                 Phase 5: 下单执行
                 Phase 6: 仓位同步
-            ''').strip())
+            """).strip())
 
         # 样本4: A9 离场决策 (dream-exit-skill-v2)
         a9_dir = os.path.join(cls._skills_dir, "dream-exit-skill-v2")
         os.makedirs(a9_dir, exist_ok=True)
         a9_file = os.path.join(a9_dir, "SKILL.md")
         with open(a9_file, "w") as f:
-            f.write(textwrap.dedent('''
+            f.write(textwrap.dedent("""
                 ---
                 name: dream-exit-skill-v2
                 version: 2.0.0
@@ -225,24 +226,25 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
                 - 趋势反转信号
                 - 矛盾转化触发
                 - A0方向改变
-            ''').strip())
+            """).strip())
 
         # 样本5: 非 A 系列 SKILL (不应被采集)
         other_dir = os.path.join(cls._skills_dir, "dream-data-analysis")
         os.makedirs(other_dir, exist_ok=True)
         other_file = os.path.join(other_dir, "SKILL.md")
         with open(other_file, "w") as f:
-            f.write(textwrap.dedent('''
+            f.write(textwrap.dedent("""
                 ---
                 name: dream-data-analysis
                 ---
                 # 数据分析部
                 这是一个工具SKILL，不是A系列理论。
-            ''').strip())
+            """).strip())
 
     @classmethod
     def tearDownClass(cls):
         import shutil
+
         shutil.rmtree(cls._tmpdir, ignore_errors=True)
 
     # ===== TR-2.1: 类存在且实现接口 =====
@@ -250,6 +252,7 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
         """TR-2.1: ASeriesTheoryCollector 应存在且实现 TrainingDataProvider."""
         from a_series_theory_collector import ASeriesTheoryCollector
         from interfaces.training_data_provider import TrainingDataProvider
+
         collector = ASeriesTheoryCollector()
         self.assertIsInstance(collector, TrainingDataProvider)
 
@@ -257,6 +260,7 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
     def test_2_2_source_name(self):
         """TR-2.2: get_source_name() 返回 'a_series_theory'."""
         from a_series_theory_collector import ASeriesTheoryCollector
+
         collector = ASeriesTheoryCollector()
         self.assertEqual(collector.get_source_name(), "a_series_theory")
 
@@ -264,6 +268,7 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
     def test_2_3_quality_threshold(self):
         """TR-2.3: get_quality_threshold() 返回 'A' (理论方法论=高置信度)."""
         from a_series_theory_collector import ASeriesTheoryCollector
+
         collector = ASeriesTheoryCollector()
         self.assertEqual(collector.get_quality_threshold(), "A")
 
@@ -271,11 +276,13 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
     def test_2_4_fetch_cases_returns_training_cases(self):
         """TR-2.4: fetch_cases() 从 6-TRADING/skills/ 采集 TrainingCase."""
         from a_series_theory_collector import ASeriesTheoryCollector
+
         collector = ASeriesTheoryCollector()
         collector.skills_root = self._skills_dir  # 注入测试路径
         cases = collector.fetch_cases(limit=100)
         self.assertGreater(len(cases), 0, "应至少采集到 1 条 case")
         from interfaces.training_data_provider import TrainingCase
+
         for c in cases:
             self.assertIsInstance(c, TrainingCase)
 
@@ -283,6 +290,7 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
     def test_2_5_intent_contains_a_phase(self):
         """TR-2.5: intent 含 A 阶段标识 (a0-a9)."""
         from a_series_theory_collector import ASeriesTheoryCollector
+
         collector = ASeriesTheoryCollector()
         collector.skills_root = self._skills_dir
         cases = collector.fetch_cases(limit=100)
@@ -292,27 +300,28 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
             intent_lower = c.intent.lower()
             self.assertTrue(
                 any(kw in intent_lower for kw in phase_keywords),
-                f"intent '{c.intent}' 应含 A 阶段标识"
+                f"intent '{c.intent}' 应含 A 阶段标识",
             )
 
     # ===== TR-2.6: node_sequence 长度 ≥5 =====
     def test_2_6_node_sequence_min_length(self):
         """TR-2.6: node_sequence 长度 ≥5 (方法论决策链)."""
         from a_series_theory_collector import ASeriesTheoryCollector
+
         collector = ASeriesTheoryCollector()
         collector.skills_root = self._skills_dir
         cases = collector.fetch_cases(limit=100)
         self.assertGreater(len(cases), 0)
         for c in cases:
             self.assertGreaterEqual(
-                len(c.actions), 5,
-                f"intent='{c.intent}' node_sequence 长度 {len(c.actions)} < 5"
+                len(c.actions), 5, f"intent='{c.intent}' node_sequence 长度 {len(c.actions)} < 5"
             )
 
     # ===== TR-2.7: layer_tags 含 DSH =====
     def test_2_7_layer_tags_contains_dsh(self):
         """TR-2.7: layer_tags 含 'DSH'."""
         from a_series_theory_collector import ASeriesTheoryCollector
+
         collector = ASeriesTheoryCollector()
         collector.skills_root = self._skills_dir
         cases = collector.fetch_cases(limit=100)
@@ -323,6 +332,7 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
     def test_2_8_outcome_is_success(self):
         """TR-2.8: metadata.outcome == 'success' (方法论=已验证可执行)."""
         from a_series_theory_collector import ASeriesTheoryCollector
+
         collector = ASeriesTheoryCollector()
         collector.skills_root = self._skills_dir
         cases = collector.fetch_cases(limit=100)
@@ -333,6 +343,7 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
     def test_2_9_metadata_contains_theory_skill(self):
         """TR-2.9: metadata 含 theory_skill 字段 (SKILL名称)."""
         from a_series_theory_collector import ASeriesTheoryCollector
+
         collector = ASeriesTheoryCollector()
         collector.skills_root = self._skills_dir
         cases = collector.fetch_cases(limit=100)
@@ -344,19 +355,18 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
     def test_2_10_recognizes_multiple_theory_types(self):
         """TR-2.10: 识别多种理论类型 (≥2 个不同 A 阶段)."""
         from a_series_theory_collector import ASeriesTheoryCollector
+
         collector = ASeriesTheoryCollector()
         collector.skills_root = self._skills_dir
         cases = collector.fetch_cases(limit=100)
         phases = {c.metadata.get("phase", "") for c in cases}
-        self.assertGreaterEqual(
-            len(phases), 2,
-            f"应识别 ≥2 种 A 阶段理论, 实际: {phases}"
-        )
+        self.assertGreaterEqual(len(phases), 2, f"应识别 ≥2 种 A 阶段理论, 实际: {phases}")
 
     # ===== TR-2.11: FAIL-OPEN 目录不存在 =====
     def test_2_11_fail_open_when_dir_not_exist(self):
         """TR-2.11: FAIL-OPEN: skills 目录不存在返回空列表."""
         from a_series_theory_collector import ASeriesTheoryCollector
+
         collector = ASeriesTheoryCollector()
         collector.skills_root = "/nonexistent/skills/path"
         cases = collector.fetch_cases(limit=100)
@@ -366,6 +376,7 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
     def test_2_12_fail_open_on_single_skill_error(self):
         """TR-2.12: FAIL-OPEN: 单个 SKILL.md 解析异常不影响其他."""
         from a_series_theory_collector import ASeriesTheoryCollector
+
         # 在测试目录下加一个损坏的 SKILL.md
         bad_dir = os.path.join(self._skills_dir, "dream-broken-skill")
         os.makedirs(bad_dir, exist_ok=True)
@@ -383,12 +394,25 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
     def test_2_13_node_sequence_contains_theory_nodes(self):
         """TR-2.13: node_sequence 含理论工作流节点 (step/phase/section/classify)."""
         from a_series_theory_collector import ASeriesTheoryCollector
+
         collector = ASeriesTheoryCollector()
         collector.skills_root = self._skills_dir
         cases = collector.fetch_cases(limit=100)
-        theory_keywords = ["step", "phase", "section", "classify", "identify",
-                           "analyze", "assess", "determine", "resolution",
-                           "iron_law", "contradiction", "principle", "resistance"]
+        theory_keywords = [
+            "step",
+            "phase",
+            "section",
+            "classify",
+            "identify",
+            "analyze",
+            "assess",
+            "determine",
+            "resolution",
+            "iron_law",
+            "contradiction",
+            "principle",
+            "resistance",
+        ]
         has_theory_node = False
         for c in cases:
             node_str = " ".join(c.actions).lower()
@@ -401,6 +425,7 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
     def test_2_14_multiple_cases_per_skill(self):
         """TR-2.14: 每个 SKILL 按章节拆分生成多条 case (至少1个SKILL产出≥2条)."""
         from a_series_theory_collector import ASeriesTheoryCollector
+
         collector = ASeriesTheoryCollector()
         collector.skills_root = self._skills_dir
         cases = collector.fetch_cases(limit=200)
@@ -412,8 +437,7 @@ class ASeriesTheoryCollectorTest(unittest.TestCase):
         # 至少有一个 SKILL 产出 ≥2 条 case (章节拆分)
         max_count = max(skill_counts.values()) if skill_counts else 0
         self.assertGreaterEqual(
-            max_count, 2,
-            f"至少1个SKILL应产出≥2条case(章节拆分), 实际分布: {skill_counts}"
+            max_count, 2, f"至少1个SKILL应产出≥2条case(章节拆分), 实际分布: {skill_counts}"
         )
 
 

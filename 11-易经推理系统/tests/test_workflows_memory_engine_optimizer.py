@@ -7,8 +7,16 @@ def test_update_bandit_scores_updates_mean_and_count():
 
     state = {}
     events = [
-        {"item_id": "TC_1", "episode": {"outcome": {"unrealized_pnl_pct": 2.0}}, "ts": "2026-05-10T00:00:00+08:00"},
-        {"item_id": "TC_1", "episode": {"outcome": {"unrealized_pnl_pct": -1.0}}, "ts": "2026-05-10T00:01:00+08:00"},
+        {
+            "item_id": "TC_1",
+            "episode": {"outcome": {"unrealized_pnl_pct": 2.0}},
+            "ts": "2026-05-10T00:00:00+08:00",
+        },
+        {
+            "item_id": "TC_1",
+            "episode": {"outcome": {"unrealized_pnl_pct": -1.0}},
+            "ts": "2026-05-10T00:01:00+08:00",
+        },
     ]
     new_state, updates = update_bandit_scores(events, state)
     item = new_state["TC_1"]
@@ -33,7 +41,13 @@ def test_unrealized_discount_applies():
     from workflows.memory.memory_engine.optimizer import update_bandit_scores
 
     state = {}
-    events = [{"item_id": "TC_1", "episode": {"outcome": {"unrealized_pnl_pct": 5.0}}, "ts": "2026-05-10T00:00:00+08:00"}]
+    events = [
+        {
+            "item_id": "TC_1",
+            "episode": {"outcome": {"unrealized_pnl_pct": 5.0}},
+            "ts": "2026-05-10T00:00:00+08:00",
+        }
+    ]
     new_state, _ = update_bandit_scores(events, state, unrealized_discount=0.5)
     assert new_state["TC_1"]["reward_mean"] <= 0.5
 
@@ -58,9 +72,27 @@ def test_write_bandit_audit_artifact_includes_reason_counts(tmp_path: Path):
     from workflows.memory.memory_engine.optimizer import write_bandit_audit_artifact
 
     updates = [
-        {"item_id": "TC_1", "reward": 0.4, "old_n": 0, "new_n": 1, "reason": "episode_close_realized"},
-        {"item_id": "TC_2", "reward": 0.3, "old_n": 2, "new_n": 3, "reason": "episode_ingest_estimated"},
-        {"item_id": "TC_3", "reward": 0.2, "old_n": 1, "new_n": 2, "reason": "episode_close_realized"},
+        {
+            "item_id": "TC_1",
+            "reward": 0.4,
+            "old_n": 0,
+            "new_n": 1,
+            "reason": "episode_close_realized",
+        },
+        {
+            "item_id": "TC_2",
+            "reward": 0.3,
+            "old_n": 2,
+            "new_n": 3,
+            "reason": "episode_ingest_estimated",
+        },
+        {
+            "item_id": "TC_3",
+            "reward": 0.2,
+            "old_n": 1,
+            "new_n": 2,
+            "reason": "episode_close_realized",
+        },
     ]
     path = write_bandit_audit_artifact(
         updates=updates,
@@ -126,11 +158,23 @@ def test_memory_engine_update_bandit_from_episodes_writes_daily_rollup(tmp_path:
     memory = MemoryEngine(bandit_state_path=state_path, audit_dir=audit_dir)
 
     memory.update_bandit_from_episodes(
-        events=[{"item_id": "TC_1", "episode": {"outcome": {"unrealized_pnl_pct": 1.2}}, "ts": "2026-05-10T00:00:00+08:00"}],
+        events=[
+            {
+                "item_id": "TC_1",
+                "episode": {"outcome": {"unrealized_pnl_pct": 1.2}},
+                "ts": "2026-05-10T00:00:00+08:00",
+            }
+        ],
         context={"trace_id": "R1", "reason": "episode_close_realized"},
     )
     memory.update_bandit_from_episodes(
-        events=[{"item_id": "TC_2", "episode": {"outcome": {"unrealized_pnl_pct": 0.8}}, "ts": "2026-05-10T00:01:00+08:00"}],
+        events=[
+            {
+                "item_id": "TC_2",
+                "episode": {"outcome": {"unrealized_pnl_pct": 0.8}},
+                "ts": "2026-05-10T00:01:00+08:00",
+            }
+        ],
         context={"trace_id": "R2", "reason": "episode_ingest_estimated"},
     )
 
@@ -183,7 +227,13 @@ def test_memory_engine_daily_rollup_recommended_threshold_adaptive_quantile(tmp_
 
     memory = MemoryEngine(bandit_state_path=state_path, audit_dir=audit_dir)
     memory.update_bandit_from_episodes(
-        events=[{"item_id": "TC_1", "episode": {"outcome": {"unrealized_pnl_pct": 1.2}}, "ts": "2026-05-10T00:00:00+08:00"}],
+        events=[
+            {
+                "item_id": "TC_1",
+                "episode": {"outcome": {"unrealized_pnl_pct": 1.2}},
+                "ts": "2026-05-10T00:00:00+08:00",
+            }
+        ],
         context={"trace_id": "R3", "reason": "episode_close_realized"},
     )
 

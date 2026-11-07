@@ -18,21 +18,22 @@
 文件: ml/ewave_backtest.py
 """
 
+import json
 import os
 import sys
-import json
 import time
+from typing import Dict
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Tuple
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.ewave_recognizer import ElliottWaveRecognizer, WAVE_SIGNALS
-from ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
-from ml.pitd_kinematics_engineer import KinematicsEngineer
-from ml.pitd_dynamics_engineer import DynamicsEngineer
+from ml.ewave_recognizer import ElliottWaveRecognizer  # noqa: E402
+from ml.pitd_confidence_scorer import ConfidenceWeights, PhysicsConfidenceScorer  # noqa: E402
+from ml.pitd_dynamics_engineer import DynamicsEngineer  # noqa: E402
+from ml.pitd_kinematics_engineer import KinematicsEngineer  # noqa: E402
 
 
 def load_coin_data(symbol: str = "BTC") -> pd.DataFrame:
@@ -106,9 +107,12 @@ def compute_physics_confidence(prices: pd.DataFrame) -> pd.DataFrame:
 
     # 最优参数（与方向1集成相同）
     weights = ConfidenceWeights(
-        w_eta=0.211, w_reversal=0.368,
-        w_support=0.211, w_kinetic=0.211,
-        position_lower=0.6, position_scale=1.0,
+        w_eta=0.211,
+        w_reversal=0.368,
+        w_support=0.211,
+        w_kinetic=0.211,
+        position_lower=0.6,
+        position_scale=1.0,
     )
     scorer = PhysicsConfidenceScorer(weights)
 
@@ -405,20 +409,26 @@ def run_ewave_backtest(symbols=None, zigzag_threshold=0.05, base_position=0.3):
         physics_df = compute_physics_confidence(prices)
 
         # 3. 信号分布
-        print(f"\n[Signal] 信号分布:")
+        print("\n[Signal] 信号分布:")
         for sig, cnt in wave_signals["wave_signal"].value_counts().items():
             print(f"  {sig}: {cnt} ({cnt/len(wave_signals)*100:.1f}%)")
 
         # 4. 回测: 波浪策略（无物理调节）
         result_no_phys, _ = backtest_wave_strategy(
-            prices, wave_signals, physics_df,
-            base_position=base_position, use_physics=False,
+            prices,
+            wave_signals,
+            physics_df,
+            base_position=base_position,
+            use_physics=False,
         )
 
         # 5. 回测: 波浪策略 + 物理调节
         result_with_phys, _ = backtest_wave_strategy(
-            prices, wave_signals, physics_df,
-            base_position=base_position, use_physics=True,
+            prices,
+            wave_signals,
+            physics_df,
+            base_position=base_position,
+            use_physics=True,
         )
 
         # 6. 基线: 买入持有
@@ -434,23 +444,37 @@ def run_ewave_backtest(symbols=None, zigzag_threshold=0.05, base_position=0.3):
         print(f"\n[Result] {symbol} 回测结果对比:")
         print(f"{'指标':<15} {'波浪(无物理)':<18} {'波浪+物理':<18} {'买入持有':<18}")
         print(f"{'-'*70}")
-        print(f"{'年化收益':<15} {result_no_phys['ann_return']*100:>10.2f}%    {result_with_phys['ann_return']*100:>10.2f}%    {result_bh['ann_return']*100:>10.2f}%")
-        print(f"{'夏普比':<15} {result_no_phys['sharpe']:>14.4f}    {result_with_phys['sharpe']:>14.4f}    {result_bh['sharpe']:>14.4f}")
-        print(f"{'最大回撤':<15} {result_no_phys['max_drawdown']*100:>10.2f}%    {result_with_phys['max_drawdown']*100:>10.2f}%    {result_bh['max_drawdown']*100:>10.2f}%")
-        print(f"{'Calmar比':<15} {result_no_phys['calmar']:>14.4f}    {result_with_phys['calmar']:>14.4f}    {result_bh['calmar']:>14.4f}")
-        print(f"{'交易次数':<15} {result_no_phys['trades']:>14d}    {result_with_phys['trades']:>14d}    {'N/A':>14}")
-        print(f"{'持仓天数':<15} {result_no_phys['holding_days']:>14d}    {result_with_phys['holding_days']:>14d}    {'N/A':>14}")
+        print(
+            f"{'年化收益':<15} {result_no_phys['ann_return']*100:>10.2f}%    {result_with_phys['ann_return']*100:>10.2f}%    {result_bh['ann_return']*100:>10.2f}%"
+        )
+        print(
+            f"{'夏普比':<15} {result_no_phys['sharpe']:>14.4f}    {result_with_phys['sharpe']:>14.4f}    {result_bh['sharpe']:>14.4f}"
+        )
+        print(
+            f"{'最大回撤':<15} {result_no_phys['max_drawdown']*100:>10.2f}%    {result_with_phys['max_drawdown']*100:>10.2f}%    {result_bh['max_drawdown']*100:>10.2f}%"
+        )
+        print(
+            f"{'Calmar比':<15} {result_no_phys['calmar']:>14.4f}    {result_with_phys['calmar']:>14.4f}    {result_bh['calmar']:>14.4f}"
+        )
+        print(
+            f"{'交易次数':<15} {result_no_phys['trades']:>14d}    {result_with_phys['trades']:>14d}    {'N/A':>14}"
+        )
+        print(
+            f"{'持仓天数':<15} {result_no_phys['holding_days']:>14d}    {result_with_phys['holding_days']:>14d}    {'N/A':>14}"
+        )
 
     # 总体总结
     print(f"\n{'='*70}")
     print("总体总结")
     print(f"{'='*70}")
-    print(f"\n币种 | 波浪年化 | 波浪+物理年化 | 买入持有年化 | 波浪夏普 | 波浪+物理夏普")
+    print("\n币种 | 波浪年化 | 波浪+物理年化 | 买入持有年化 | 波浪夏普 | 波浪+物理夏普")
     for sym, res in all_results.items():
         wp = res["wave_only"]
         wpp = res["wave_with_physics"]
         bh = res["buy_hold"]
-        print(f"{sym:<5} | {wp['ann_return']*100:>8.2f}% | {wpp['ann_return']*100:>10.2f}% | {bh['ann_return']*100:>10.2f}% | {wp['sharpe']:>8.4f} | {wpp['sharpe']:>10.4f}")
+        print(
+            f"{sym:<5} | {wp['ann_return']*100:>8.2f}% | {wpp['ann_return']*100:>10.2f}% | {bh['ann_return']*100:>10.2f}% | {wp['sharpe']:>8.4f} | {wpp['sharpe']:>10.4f}"
+        )
 
     # 保存结果
     output_path = os.path.join(BASE_DIR, "ml", "ewave_backtest_results.json")
@@ -459,7 +483,14 @@ def run_ewave_backtest(symbols=None, zigzag_threshold=0.05, base_position=0.3):
         serializable_results[sym] = {}
         for k, v in res.items():
             serializable_results[sym][k] = {
-                key: (val if not isinstance(val, dict) else {kk: int(vv) if isinstance(vv, (np.integer,)) else vv for kk, vv in val.items()})
+                key: (
+                    val
+                    if not isinstance(val, dict)
+                    else {
+                        kk: int(vv) if isinstance(vv, (np.integer,)) else vv
+                        for kk, vv in val.items()
+                    }
+                )
                 for key, val in v.items()
             }
     with open(output_path, "w") as f:
@@ -471,6 +502,7 @@ def run_ewave_backtest(symbols=None, zigzag_threshold=0.05, base_position=0.3):
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--symbols", nargs="+", default=["BTC", "ETH", "SOL", "UNI"])
     parser.add_argument("--zigzag", type=float, default=0.05)

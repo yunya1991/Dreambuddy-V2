@@ -1,4 +1,5 @@
 """RED 测试：DSH S33 节点 — S33_rea_analyze / S33_rea_trace / S33_rea_compare。"""
+
 import os
 import sys
 import tempfile
@@ -6,8 +7,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from dsh_nodes import S33_rea_analyze, S33_rea_trace, S33_rea_compare, DSH_NODE_REGISTRY, dispatch
-
+from dsh_nodes import (  # noqa: I001
+    S33_rea_analyze,
+    S33_rea_trace,
+    S33_rea_compare,
+    DSH_NODE_REGISTRY,
+    dispatch,
+)  # noqa: I001
 
 SAMPLE_PY = '''
 import os

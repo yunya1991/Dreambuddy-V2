@@ -10,13 +10,13 @@ CLI:
   python runner.py --symbol BTC --regime chop
   python runner.py --symbol BTC,NVDA,ETH --regime chop
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import logging
 import sys
-import time
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -30,10 +30,11 @@ for _p in [_YIJING_SCRIPTS, _SCRIPTS_16]:
     if _sp not in sys.path:
         sys.path.insert(0, _sp)
 
-from memory_l4.bcrm2.sl_tp_config import SLTPParams
-from param_center.adapters import get_all_adapters
-from param_center.aggregator import ParamProposal, StatAggregator
-from param_center.repository import get_repository
+from memory_l4.bcrm2.sl_tp_config import SLTPParams  # noqa: E402
+
+from param_center.adapters import get_all_adapters  # noqa: E402
+from param_center.aggregator import ParamProposal, StatAggregator  # noqa: E402
+from param_center.repository import get_repository  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +78,7 @@ def load_market_data(symbol: str, timeframe: str = "1H") -> Optional[dict]:
         recent = closes[-200:]
         ma_short = sum(recent[-20:]) / 20.0
         ma_long = sum(recent[-50:]) / 50.0
-        price = closes[-1]
+        price = closes[-1]  # noqa: F841
 
         # 波动率（最近 50 根的收益率标准差）
         rets = [(recent[i] - recent[i - 1]) / recent[i - 1] for i in range(-49, 0)]
@@ -121,7 +122,9 @@ def build_market_data_map(symbols: List[str]) -> Dict[str, dict]:
             md_map[sym] = md
             logger.debug(
                 "build_market_data_map: %s OK closes=%d regime=%s",
-                sym, len(md["closes"]), md["regime_name"],
+                sym,
+                len(md["closes"]),
+                md["regime_name"],
             )
     return md_map
 
@@ -151,7 +154,10 @@ def run_aggregation(
             observations.append(obs)
             logger.debug(
                 "Adapter[%s] observe OK symbol=%s params=%s conf=%.2f",
-                adapter.name, symbol_up, obs.params, obs.confidence,
+                adapter.name,
+                symbol_up,
+                obs.params,
+                obs.confidence,
             )
 
     if not observations:
@@ -167,6 +173,7 @@ def run_aggregation(
     # 获取静态 3D 表基准值（资产特定），用作聚合结果的锚点
     from memory_l4.bcrm2.asset_classifier import classify_asset
     from memory_l4.bcrm2.sl_tp_config import get_sltp_params as _get_static
+
     try:
         ac, mc = classify_asset(symbol_up)
         static = _get_static(ac, mc, market_regime)
@@ -190,8 +197,12 @@ def run_aggregation(
             "asset_clamp %s: static SL=%.3f%% TP=%.3f%% ATR=%.2f "
             "→ blend SL=%.3f%% TP=%.3f%% ATR=%.2f",
             symbol_up,
-            static.sl_floor * 100, static.tp_floor * 100, static_atr_mid,
-            final_sl * 100, final_tp * 100, final_atr,
+            static.sl_floor * 100,
+            static.tp_floor * 100,
+            static_atr_mid,
+            final_sl * 100,
+            final_tp * 100,
+            final_atr,
         )
     else:
         final_sl = agg_sl
@@ -211,9 +222,13 @@ def run_aggregation(
     logger.info(
         "run_aggregation symbol=%s regime=%s | sl=%.4f tp=%.4f atr=%.2f "
         "conf=%.2f adapters=%d weights=%s",
-        symbol_up, market_regime,
-        sltp.sl_floor, sltp.tp_floor, final_atr,
-        proposal.confidence, len(observations),
+        symbol_up,
+        market_regime,
+        sltp.sl_floor,
+        sltp.tp_floor,
+        final_atr,
+        proposal.confidence,
+        len(observations),
         json.dumps(proposal.weights, ensure_ascii=False),
     )
     return proposal
@@ -260,7 +275,8 @@ def main():
     md_map = build_market_data_map(symbols)
     logger.info(
         "K 线数据加载完成: %d/%d symbols 有数据",
-        len(md_map), len(symbols),
+        len(md_map),
+        len(symbols),
     )
 
     results = run_aggregation_for_symbols(symbols, args.regime, md_map)

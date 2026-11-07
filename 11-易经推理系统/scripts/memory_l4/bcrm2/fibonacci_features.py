@@ -20,10 +20,9 @@
   5. 波动率归一化的回撤深度
 """
 
-import numpy as np
+import numpy as np  # noqa: I001
 import pandas as pd
-from typing import List, Optional, Tuple, Dict
-
+from typing import List, Optional, Dict
 
 # 斐波那契关键比例
 FIB_RATIOS = {
@@ -48,6 +47,7 @@ EXTENSION_RATIOS = [0.618, 1.0, 1.272, 1.618, 2.0, 2.618]
 # ============================================================
 # 1. 斐波那契回撤特征
 # ============================================================
+
 
 def fibonacci_retracement_features(
     df: pd.DataFrame,
@@ -104,7 +104,7 @@ def fibonacci_retracement_features(
     feats["fib_retrace_depth"] = retrace_depth
 
     # 距离各回撤位的距离 (当前价 - 回撤位) / 摆动幅度
-    for i, ratio in enumerate(ratios):
+    for i, ratio in enumerate(ratios):  # noqa: B007
         ratio_name = f"{int(ratio*1000)}"
         # 上升回撤位 (从高点往下 = roll_high - ratio*range)
         retrace_level_bull = roll_high - ratio * swing_range_safe
@@ -134,9 +134,7 @@ def fibonacci_retracement_features(
 
     # 摆动区间的波动率归一化 (摆动幅度 / 平均波动率)
     atr_proxy = pd.Series(high - low).rolling(14).mean().values
-    feats["fib_swing_atr_ratio"] = np.where(
-        atr_proxy > 1e-10, swing_range / (atr_proxy * 10), 1.0
-    )
+    feats["fib_swing_atr_ratio"] = np.where(atr_proxy > 1e-10, swing_range / (atr_proxy * 10), 1.0)
     feats["fib_swing_atr_ratio"] = np.nan_to_num(feats["fib_swing_atr_ratio"], 1)
 
     return feats
@@ -145,6 +143,7 @@ def fibonacci_retracement_features(
 # ============================================================
 # 2. 斐波那契扩展特征
 # ============================================================
+
 
 def fibonacci_extension_features(
     df: pd.DataFrame,
@@ -195,7 +194,7 @@ def fibonacci_extension_features(
 
     # 最近的扩展目标位
     feats["fib_next_resistance"] = 0.0  # 最近的上方扩展位比例
-    feats["fib_next_support"] = 0.0     # 最近的下方扩展位比例
+    feats["fib_next_support"] = 0.0  # 最近的下方扩展位比例
 
     return feats
 
@@ -203,6 +202,7 @@ def fibonacci_extension_features(
 # ============================================================
 # 3. 波动率归一化的回撤深度
 # ============================================================
+
 
 def volatility_normalized_fib_features(
     df: pd.DataFrame,
@@ -238,11 +238,7 @@ def volatility_normalized_fib_features(
     # ATR计算
     tr = np.zeros(n)
     for i in range(1, n):
-        tr[i] = max(
-            high[i] - low[i],
-            abs(high[i] - close[i-1]),
-            abs(low[i] - close[i-1])
-        )
+        tr[i] = max(high[i] - low[i], abs(high[i] - close[i - 1]), abs(low[i] - close[i - 1]))
     atr = pd.Series(tr).rolling(atr_period).mean().values
     atr_safe = np.where(atr > 1e-10, atr, 1e-10)
 
@@ -302,6 +298,7 @@ def volatility_normalized_fib_features(
 # 4. 斐波那契时间周期特征
 # ============================================================
 
+
 def fibonacci_time_features(
     df: pd.DataFrame,
     swing_lookback: int = 120,
@@ -323,7 +320,7 @@ def fibonacci_time_features(
 
     high = df["high"].values.copy()
     low = df["low"].values.copy()
-    close = df["close"].values.copy()
+    close = df["close"].values.copy()  # noqa: F841
     n = len(df)
 
     # 斐波那契时间序列 (K线根数)
@@ -337,8 +334,8 @@ def fibonacci_time_features(
     lookback = swing_lookback
     for i in range(n):
         start = max(0, i - lookback + 1)
-        window_high = high[start:i+1]
-        window_low = low[start:i+1]
+        window_high = high[start : i + 1]
+        window_low = low[start : i + 1]
         if len(window_high) > 0:
             bars_since_high[i] = len(window_high) - 1 - np.argmax(window_high)
             bars_since_low[i] = len(window_low) - 1 - np.argmin(window_low)
@@ -364,14 +361,8 @@ def fibonacci_time_features(
 
     # 时间周期合成: 当前在时间窗口中的位置 (0=刚到变盘点, 1=远离)
     min_time_dist = np.minimum(
-        np.minimum.reduce([
-            np.abs(bars_since_high - p) / p
-            for p in fib_time_periods
-        ]),
-        np.minimum.reduce([
-            np.abs(bars_since_low - p) / p
-            for p in fib_time_periods
-        ])
+        np.minimum.reduce([np.abs(bars_since_high - p) / p for p in fib_time_periods]),
+        np.minimum.reduce([np.abs(bars_since_low - p) / p for p in fib_time_periods]),
     )
     feats["fib_time_nearest"] = np.clip(min_time_dist, 0, 1)
 
@@ -381,6 +372,7 @@ def fibonacci_time_features(
 # ============================================================
 # 5. 综合: 斐波那契特征引擎
 # ============================================================
+
 
 class FibonacciFeatures:
     """
@@ -413,7 +405,9 @@ class FibonacciFeatures:
         all_feats.append(ret_feats)
 
         # 2. 扩展特征 (精简版本，避免特征过多)
-        ext_feats = fibonacci_extension_features(df, self.swing_lookback, ratios=[1.0, 1.618, 2.618])
+        ext_feats = fibonacci_extension_features(
+            df, self.swing_lookback, ratios=[1.0, 1.618, 2.618]
+        )
         all_feats.append(ext_feats)
 
         # 3. 波动率归一化特征 (核心)
@@ -442,6 +436,6 @@ class FibonacciFeatures:
 
 
 # ===== FeatureRegistry 注册 =====
-from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry  # noqa: E402
 
 FeatureRegistry.register(name="fibonacci", factory=FibonacciFeatures)

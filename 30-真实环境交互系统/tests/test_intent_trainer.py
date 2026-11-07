@@ -3,11 +3,9 @@
 替代 spec §5.1 的 test_dynamic_recognizer_training.py（SD-6）。
 HC-1a 合规：训练逻辑在 30 系统内，不修改 dreamos/。
 """
-import json
-import sys
-from pathlib import Path
 
-import pytest
+import sys  # noqa: I001
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -18,11 +16,21 @@ from core.intent_trainer import IntentTrainer
 def _make_sample(confirmed=True, gold_intent="trend_following", scenario_id="TREND_UP"):
     return IntentSample(
         sample_id="s",
-        input={"user_query": "test", "scenario_id": scenario_id, "market_features": {"regime": "trending"}},
+        input={
+            "user_query": "test",
+            "scenario_id": scenario_id,
+            "market_features": {"regime": "trending"},
+        },
         gold={"gold_chain": "C", "gold_intent": gold_intent},
-        recognizer_output={"predicted_intent": gold_intent if confirmed else "other",
-                           "confidence": 0.8, "level": "rule"},
-        human_label={"confirmed": confirmed, "corrected_intent": None if confirmed else gold_intent},
+        recognizer_output={
+            "predicted_intent": gold_intent if confirmed else "other",
+            "confidence": 0.8,
+            "level": "rule",
+        },
+        human_label={
+            "confirmed": confirmed,
+            "corrected_intent": None if confirmed else gold_intent,
+        },
         dataset_split="train",
         created_at="2026-10-04T10:00:00Z",
     )
@@ -59,7 +67,9 @@ class TestIntentTrainer:
         rules_path = tmp_path / "rules.json"
         trainer = IntentTrainer(rules_path=rules_path, distill_accuracy_target=0.85)
         # 10 个样本，5 对 5 错 → 50% 准确率 < 85%
-        samples = [_make_sample(confirmed=True) for _ in range(5)] + [_make_sample(confirmed=False) for _ in range(5)]
+        samples = [_make_sample(confirmed=True) for _ in range(5)] + [
+            _make_sample(confirmed=False) for _ in range(5)
+        ]
         distilled = trainer.distill_to_rules(("trend_following", "TREND_UP"), samples)
         assert distilled is False
         assert not rules_path.exists()

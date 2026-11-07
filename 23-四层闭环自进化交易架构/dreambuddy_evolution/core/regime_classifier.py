@@ -12,11 +12,12 @@ Phase 4.2: 市场理解补齐 — BTC 强弱 regime
   HC-AGI-07: 默认关闭，Shadow 模式验证
   HC-FO: 任何异常 → "NEUTRAL" 兜底
 """
+
 from __future__ import annotations
 
 import logging
 import math
-from typing import List, Optional
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +25,10 @@ logger = logging.getLogger(__name__)
 # ====================================================================
 # 常量（硬约束对齐）
 # ====================================================================
-STRONG_CORR_THRESHOLD = 0.30      # |corr| < 0.30 → 强BTC（脱钩）
-WEAK_CORR_THRESHOLD = 0.60        # |corr| > 0.60 → 弱BTC（联动）
-ROLLING_WINDOW = 30               # 滚动窗口 30 日
-MIN_SAMPLES = 30                  # 最少样本数
+STRONG_CORR_THRESHOLD = 0.30  # |corr| < 0.30 → 强BTC（脱钩）
+WEAK_CORR_THRESHOLD = 0.60  # |corr| > 0.60 → 弱BTC（联动）
+ROLLING_WINDOW = 30  # 滚动窗口 30 日
+MIN_SAMPLES = 30  # 最少样本数
 
 
 class RegimeClassifier:
@@ -39,19 +40,19 @@ class RegimeClassifier:
       - NEUTRAL: 相关性不显著或数据不足
     """
 
-    def __init__(self,
-                 strong_threshold: float = STRONG_CORR_THRESHOLD,
-                 weak_threshold: float = WEAK_CORR_THRESHOLD,
-                 rolling_window: int = ROLLING_WINDOW,
-                 min_samples: int = MIN_SAMPLES):
+    def __init__(
+        self,
+        strong_threshold: float = STRONG_CORR_THRESHOLD,
+        weak_threshold: float = WEAK_CORR_THRESHOLD,
+        rolling_window: int = ROLLING_WINDOW,
+        min_samples: int = MIN_SAMPLES,
+    ):
         self.strong_threshold = strong_threshold
         self.weak_threshold = weak_threshold
         self.rolling_window = rolling_window
         self.min_samples = min_samples
 
-    def classify(self,
-                 btc_returns: List[float],
-                 spy_returns: List[float]) -> str:
+    def classify(self, btc_returns: List[float], spy_returns: List[float]) -> str:
         """分类 BTC-美股 regime
 
         Args:
@@ -107,9 +108,7 @@ class RegimeClassifier:
             logger.warning("[FO] RegimeClassifier.classify: %s", e)
             return "NEUTRAL"
 
-    def classify_with_detail(self,
-                             btc_returns: List[float],
-                             spy_returns: List[float]) -> dict:
+    def classify_with_detail(self, btc_returns: List[float], spy_returns: List[float]) -> dict:
         """分类并返回详细指标
 
         Returns:
@@ -126,13 +125,11 @@ class RegimeClassifier:
             spy_returns = list(spy_returns) if spy_returns is not None else []
 
             if not btc_returns or not spy_returns:
-                return {"regime": "NEUTRAL", "correlation": 0.0,
-                        "vol_ratio": 1.0, "n_samples": 0}
+                return {"regime": "NEUTRAL", "correlation": 0.0, "vol_ratio": 1.0, "n_samples": 0}
 
             n = min(len(btc_returns), len(spy_returns))
             if n < self.min_samples:
-                return {"regime": "NEUTRAL", "correlation": 0.0,
-                        "vol_ratio": 1.0, "n_samples": n}
+                return {"regime": "NEUTRAL", "correlation": 0.0, "vol_ratio": 1.0, "n_samples": n}
 
             btc = btc_returns[-n:]
             spy = spy_returns[-n:]
@@ -165,8 +162,7 @@ class RegimeClassifier:
 
         except Exception as e:
             logger.warning("[FO] RegimeClassifier.classify_with_detail: %s", e)
-            return {"regime": "NEUTRAL", "correlation": 0.0,
-                    "vol_ratio": 1.0, "n_samples": 0}
+            return {"regime": "NEUTRAL", "correlation": 0.0, "vol_ratio": 1.0, "n_samples": 0}
 
     # ----------------------------------------------------------------
     # 工具方法

@@ -17,20 +17,17 @@ Pass criteria:
 Usage:
     python3 walk_forward_validate.py --data-dir data/ai_datasets --out-dir data/ai_benchmarks
 """
+
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Tuple
 
-import numpy as np
 import torch
 import torch.nn as nn
-import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
@@ -38,11 +35,17 @@ from phase_d_models import BiLSTMAttentionBust, PatchTSTForDrawdown
 
 # Reuse training functions
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from augment_and_retrain import (
-    load_and_balance_data, smote_oversample, augment_data,
-    train_bilstm_focal, train_patchtst as train_patchtst_aug,
-    BILSTM_EPOCHS, PATCHTST_EPOCHS, BATCH_SIZE, LR, WEIGHT_DECAY,
-    BUST_THRESHOLD, SMOTE_RATIO, AUGMENT_FACTOR,
+from augment_and_retrain import (  # noqa: I001
+    load_and_balance_data,
+    smote_oversample,
+    augment_data,
+    train_bilstm_focal,
+    train_patchtst as train_patchtst_aug,
+    BILSTM_EPOCHS,
+    PATCHTST_EPOCHS,
+    BATCH_SIZE,
+    SMOTE_RATIO,
+    AUGMENT_FACTOR,
 )
 
 
@@ -116,58 +119,80 @@ def run_walk_forward(data_dir, out_dir, device):
             continue
 
         # Load data with P1 balanced labels
-        bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd = load_and_balance_data(str(train_path))
-        test_ohlcv, test_scalar, test_patchtst, test_bust, test_maxdd = load_and_balance_data(str(test_path))
+        bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd = load_and_balance_data(
+            str(train_path)
+        )
+        test_ohlcv, test_scalar, test_patchtst, test_bust, test_maxdd = load_and_balance_data(
+            str(test_path)
+        )
 
         n_train = bilstm_ohlcv.size(0)
         n_test = test_ohlcv.size(0)
-        print(f"  Train: {n_train} samples (pos={int(label_bust.sum())}), Test: {n_test} samples (pos={int(test_bust.sum())})")
+        print(
+            f"  Train: {n_train} samples (pos={int(label_bust.sum())}), Test: {n_test} samples (pos={int(test_bust.sum())})"
+        )
 
         # P1: SMOTE oversampling
         bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd = smote_oversample(
-            bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd, SMOTE_RATIO)
+            bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd, SMOTE_RATIO
+        )
         # P1: Noise augmentation
         bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd = augment_data(
-            bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd, AUGMENT_FACTOR)
+            bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd, AUGMENT_FACTOR
+        )
         print(f"  After SMOTE+Aug: {bilstm_ohlcv.size(0)} samples")
 
         # Train BiLSTM with Focal Loss
-        print(f"  Training BiLSTM (Focal Loss)...")
-        bilstm_model = BiLSTMAttentionBust(ohlcv_len=60, n_channels=5, n_scalar=7, hidden=48, n_layers=2)
+        print("  Training BiLSTM (Focal Loss)...")
+        bilstm_model = BiLSTMAttentionBust(
+            ohlcv_len=60, n_channels=5, n_scalar=7, hidden=48, n_layers=2
+        )
         train_ds = TensorDataset(bilstm_ohlcv, bilstm_scalar, label_bust)
         val_ds = TensorDataset(test_ohlcv, test_scalar, test_bust)
         train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
         val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False)
-        bilstm_result = train_bilstm_focal(bilstm_model, train_loader, val_loader, BILSTM_EPOCHS, device)
+        bilstm_result = train_bilstm_focal(
+            bilstm_model, train_loader, val_loader, BILSTM_EPOCHS, device
+        )
         bilstm_eval = evaluate_bilstm(bilstm_model, val_loader, device)
-        print(f"  BiLSTM: val_loss={bilstm_result['best_val_loss']}, acc={bilstm_eval['test_acc']}, P={bilstm_result.get('best_precision', 0)}, R={bilstm_result.get('best_recall', 0)}")
+        print(
+            f"  BiLSTM: val_loss={bilstm_result['best_val_loss']}, acc={bilstm_eval['test_acc']}, P={bilstm_result.get('best_precision', 0)}, R={bilstm_result.get('best_recall', 0)}"
+        )
 
         # Train PatchTST
-        print(f"  Training PatchTST...")
-        patchtst_model = PatchTSTForDrawdown(c_in=5, seq_len=120, patch_len=12, stride=6, d_model=32, n_layers=2, n_heads=4, d_ff=64)
+        print("  Training PatchTST...")
+        patchtst_model = PatchTSTForDrawdown(
+            c_in=5, seq_len=120, patch_len=12, stride=6, d_model=32, n_layers=2, n_heads=4, d_ff=64
+        )
         patchtst_in_t = patchtst_in.transpose(1, 2)
         test_patchtst_t = test_patchtst.transpose(1, 2)
         train_ds2 = TensorDataset(patchtst_in_t, label_maxdd)
         val_ds2 = TensorDataset(test_patchtst_t, test_maxdd)
         train_loader2 = DataLoader(train_ds2, batch_size=BATCH_SIZE, shuffle=True)
         val_loader2 = DataLoader(val_ds2, batch_size=BATCH_SIZE, shuffle=False)
-        patchtst_result = train_patchtst_aug(patchtst_model, train_loader2, val_loader2, PATCHTST_EPOCHS, device)
+        patchtst_result = train_patchtst_aug(
+            patchtst_model, train_loader2, val_loader2, PATCHTST_EPOCHS, device
+        )
         patchtst_eval = evaluate_patchtst(patchtst_model, val_loader2, device)
-        print(f"  PatchTST: val_loss={patchtst_result['best_val_loss']}, test_mae={patchtst_eval['test_mae']}")
+        print(
+            f"  PatchTST: val_loss={patchtst_result['best_val_loss']}, test_mae={patchtst_eval['test_mae']}"
+        )
 
-        wf_results.append({
-            "segment": seg,
-            "n_train": n_train,
-            "n_test": n_test,
-            "bilstm": {
-                "training": bilstm_result,
-                "evaluation": bilstm_eval,
-            },
-            "patchtst": {
-                "training": patchtst_result,
-                "evaluation": patchtst_eval,
-            },
-        })
+        wf_results.append(
+            {
+                "segment": seg,
+                "n_train": n_train,
+                "n_test": n_test,
+                "bilstm": {
+                    "training": bilstm_result,
+                    "evaluation": bilstm_eval,
+                },
+                "patchtst": {
+                    "training": patchtst_result,
+                    "evaluation": patchtst_eval,
+                },
+            }
+        )
 
     return wf_results
 
@@ -186,13 +211,15 @@ def compute_pass_criteria(wf_results):
     max_degradation = 0.0
 
     for r in wf_results:
-        seg = r["segment"]
+        seg = r["segment"]  # noqa: F841
         bilstm_loss = r["bilstm"]["evaluation"]["test_loss"]
         patchtst_loss = r["patchtst"]["evaluation"]["test_loss"]
 
         # Degradation: test loss relative to baseline
         bilstm_deg = abs(bilstm_loss - baseline_bilstm_loss) / max(1e-9, baseline_bilstm_loss)
-        patchtst_deg = abs(patchtst_loss - baseline_patchtst_loss) / max(1e-9, baseline_patchtst_loss)
+        patchtst_deg = abs(patchtst_loss - baseline_patchtst_loss) / max(
+            1e-9, baseline_patchtst_loss
+        )
         avg_deg = (bilstm_deg + patchtst_deg) / 2
 
         if avg_deg < 0.10:
@@ -240,7 +267,7 @@ def main(argv=None):
 
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
-    print(f"Walk-Forward 5-Segment Validation")
+    print("Walk-Forward 5-Segment Validation")
     print(f"Data: {args.data_dir}")
     print(f"Output: {args.out_dir}")
 
@@ -271,7 +298,7 @@ def main(argv=None):
         json.dump(report, f, indent=2, ensure_ascii=False)
 
     print(f"\n{'=' * 60}")
-    print(f"Walk-Forward Validation Complete")
+    print("Walk-Forward Validation Complete")
     print(f"{'=' * 60}")
     print(f"Report: {report_path}")
     print(f"Passed: {criteria['passed']}")
@@ -280,11 +307,11 @@ def main(argv=None):
     print(f"Positive gain segments: {criteria['positive_gain_segments']} (min: 3)")
 
     if criteria["passed"]:
-        print(f"\n✅ Phase D Walk-Forward validation PASSED!")
-        print(f"   Models are ready for production deployment.")
+        print("\n✅ Phase D Walk-Forward validation PASSED!")
+        print("   Models are ready for production deployment.")
     else:
-        print(f"\n⚠️  Phase D Walk-Forward validation did not fully pass.")
-        print(f"   Review the report for details.")
+        print("\n⚠️  Phase D Walk-Forward validation did not fully pass.")
+        print("   Review the report for details.")
 
 
 if __name__ == "__main__":

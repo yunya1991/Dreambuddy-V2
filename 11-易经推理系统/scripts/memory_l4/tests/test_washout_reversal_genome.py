@@ -28,12 +28,12 @@ TDD 测试清单:
   T12 / test_fail_open_exception                           — 异常 → signal=NONE
   T13 / test_no_llm_dependency                             — grep 确认无 LLM
 """
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Dict
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
@@ -54,10 +54,14 @@ for _p in (_BCRM2_SCRIPTS_ROOT, _ARCH_ROOT):
 # ============================================================
 # 导入（RED 阶段：模块不存在时 ImportError）
 # ============================================================
-from dreamos.evolution.washout_reversal_genome import (  # noqa: E402
-    WashoutReversalGenome,
-    WashoutReversalSignal,
+from scripts.memory_l4.bcrm2.washout_detector import (  # noqa: E402
+    WashoutDetector,
+    WashoutLabel,
+    WashoutVerdict,
 )
+
+from dreamos.evolution.washout_bayesian_updater import BayesianUpdater  # noqa: E402
+from dreamos.evolution.washout_case_library import WashoutCase  # noqa: E402
 from dreamos.evolution.washout_ending_detector import (  # noqa: E402
     EndingSignal,
     WashoutEndingDetector,
@@ -65,12 +69,9 @@ from dreamos.evolution.washout_ending_detector import (  # noqa: E402
 from dreamos.evolution.washout_reversal_case_library import (  # noqa: E402
     WashoutReversalCaseLibrary,
 )
-from dreamos.evolution.washout_case_library import WashoutCase  # noqa: E402
-from dreamos.evolution.washout_bayesian_updater import BayesianUpdater  # noqa: E402
-from scripts.memory_l4.bcrm2.washout_detector import (  # noqa: E402
-    WashoutDetector,
-    WashoutLabel,
-    WashoutVerdict,
+from dreamos.evolution.washout_reversal_genome import (  # noqa: E402
+    WashoutReversalGenome,
+    WashoutReversalSignal,
 )
 
 
@@ -110,15 +111,19 @@ def _make_ending_detector_stub(activated: bool = True, confidence: float = 0.75)
 def _make_test_df(n: int = 30) -> pd.DataFrame:
     """构造简单测试用 DataFrame."""
     import numpy as np
+
     rng = np.random.RandomState(42)
     idx = pd.date_range("2026-01-01", periods=n, freq="1h")
-    return pd.DataFrame({
-        "open": rng.randn(n) + 100,
-        "high": rng.randn(n) + 101,
-        "low": rng.randn(n) + 99,
-        "close": rng.randn(n) + 100,
-        "volume": rng.randn(n) * 100 + 1000,
-    }, index=idx)
+    return pd.DataFrame(
+        {
+            "open": rng.randn(n) + 100,
+            "high": rng.randn(n) + 101,
+            "low": rng.randn(n) + 99,
+            "close": rng.randn(n) + 100,
+            "volume": rng.randn(n) * 100 + 1000,
+        },
+        index=idx,
+    )
 
 
 # ============================================================
@@ -150,9 +155,7 @@ class TestReversalSignalDataclass:
 class TestDetectSignalFlow:
     def test_detect_signal_washout_high_confidence(self):
         """T2: WASHOUT+conf≥0.80 → EndingDetector 调用 → LONG signal."""
-        mock_det = _make_mock_washout_detector(
-            label=WashoutLabel.WASHOUT, confidence=0.85
-        )
+        mock_det = _make_mock_washout_detector(label=WashoutLabel.WASHOUT, confidence=0.85)
         ending_det = _make_ending_detector_stub(activated=True, confidence=0.75)
         genome = WashoutReversalGenome(
             washout_detector=mock_det,
@@ -170,9 +173,7 @@ class TestDetectSignalFlow:
 
     def test_detect_signal_weakness_skips_ending(self):
         """T3: WEAKNESS → EndingDetector 不被调用, signal=NONE."""
-        mock_det = _make_mock_washout_detector(
-            label=WashoutLabel.WEAKNESS, confidence=0.90
-        )
+        mock_det = _make_mock_washout_detector(label=WashoutLabel.WEAKNESS, confidence=0.90)
         ending_det = _make_ending_detector_stub()
         genome = WashoutReversalGenome(
             washout_detector=mock_det,
@@ -188,9 +189,7 @@ class TestDetectSignalFlow:
 
     def test_detect_signal_unknown_skips_ending(self):
         """T4: UNKNOWN → signal=NONE."""
-        mock_det = _make_mock_washout_detector(
-            label=WashoutLabel.UNKNOWN, confidence=0.50
-        )
+        mock_det = _make_mock_washout_detector(label=WashoutLabel.UNKNOWN, confidence=0.50)
         ending_det = _make_ending_detector_stub()
         genome = WashoutReversalGenome(
             washout_detector=mock_det,
@@ -369,12 +368,15 @@ class TestSwitchAndFailOpen:
 class TestNoLLMDependency:
     def test_no_llm_dependency(self):
         """T13: 源码中无 LLM/openai/anthropic 调用."""
-        source_path = (
-            _ARCH_ROOT / "dreamos" / "evolution"
-            / "washout_reversal_genome.py"
-        )
+        source_path = _ARCH_ROOT / "dreamos" / "evolution" / "washout_reversal_genome.py"
         if source_path.exists():
             source = source_path.read_text()
-            for kw in ("import openai", "from openai", "import anthropic", "from anthropic",
-                        "chat.completions.create", "messages.create"):
+            for kw in (
+                "import openai",
+                "from openai",
+                "import anthropic",
+                "from anthropic",
+                "chat.completions.create",
+                "messages.create",
+            ):
                 assert kw not in source.lower(), f"发现 LLM 依赖: {kw}"

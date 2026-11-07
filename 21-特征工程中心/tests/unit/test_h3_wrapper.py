@@ -5,25 +5,31 @@
   - =true → 走 FeatureHub
   - FeatureHub 异常 → 回退原始 FE
 """
+
 from __future__ import annotations
 
-import os
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
-import pytest
 
 
 def _sample_ohlcv(n=100):
     """合成 OHLCV。"""
     import numpy as np
-    rng = np.random.default_rng(42)
+
+    rng = np.random.default_rng(42)  # noqa: F841
     t = np.linspace(100, 200, n)
     idx = pd.date_range("2024-01-01", periods=n, freq="D")
-    return pd.DataFrame({
-        "open": t, "high": t * 1.01, "low": t * 0.99,
-        "close": t, "volume": 1e6,
-    }, index=idx)
+    return pd.DataFrame(
+        {
+            "open": t,
+            "high": t * 1.01,
+            "low": t * 0.99,
+            "close": t,
+            "volume": 1e6,
+        },
+        index=idx,
+    )
 
 
 # ── T1 · EN_FEATUREHUB 未设置 → 走原始 FE ───────────
@@ -50,7 +56,7 @@ def test_env_false_uses_original(monkeypatch):
     from feature_hub.h3_wrapper import wrap_featurehub
 
     original_fn = MagicMock(return_value=pd.DataFrame({"orig_feat": [1.0]}))
-    result = wrap_featurehub(
+    result = wrap_featurehub(  # noqa: F841
         strategy_name="test",
         ohlcv_df=_sample_ohlcv(),
         symbol="BTC",
@@ -78,7 +84,7 @@ def test_env_true_uses_featurehub(monkeypatch):
         mock_pipe.run.return_value = mock_fv
         mock_bp.return_value = mock_pipe
 
-        result = wrap_featurehub(
+        result = wrap_featurehub(  # noqa: F841
             strategy_name="test",
             ohlcv_df=_sample_ohlcv(),
             symbol="BTC",
@@ -159,7 +165,7 @@ def test_with_macro_df(monkeypatch):
         mock_pipe.run.return_value = mock_fv
         mock_bp.return_value = mock_pipe
 
-        result = wrap_featurehub(
+        result = wrap_featurehub(  # noqa: F841
             strategy_name="test",
             ohlcv_df=_sample_ohlcv(),
             symbol="BTC",

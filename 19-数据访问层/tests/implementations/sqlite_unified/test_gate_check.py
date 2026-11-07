@@ -19,6 +19,7 @@ gate_check 是 P2 切读前的最终门禁。G-1~G-5 任意一项不通过 = 不
   G-4: 回滚演练 30 分钟零事故（现场操作，需手动传入 pass/fail）
   G-5: 冷备份可用性（PRAGMA integrity_check + 抽样 10 条）
 """
+
 from __future__ import annotations
 
 import tempfile
@@ -46,6 +47,7 @@ def test_all_pass(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.gate_check import (
         run_gate_check,
     )
+
     # 写 100 条 APPLIED（G-1 0 fail）+ 100 条 MATCH（G-3 100%）
     with get_sqlite_connection(db_path) as conn:
         for i in range(100):
@@ -80,6 +82,7 @@ def test_g1_fail_blocks_all(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.gate_check import (
         run_gate_check,
     )
+
     with get_sqlite_connection(db_path) as conn:
         for i in range(9):
             conn.execute(
@@ -104,11 +107,11 @@ def test_g2_detects_db_locked(db_path, tmp_path):
     from dreambuddy_dal.implementations.sqlite_unified.gate_check import (
         run_gate_check,
     )
+
     log_dir = tmp_path / "logs"
     log_dir.mkdir()
     (log_dir / "trader_001.log").write_text(
-        "2026-08-24 ERROR: database is locked\n"
-        "2026-08-24 INFO: retry succeeded\n"
+        "2026-08-24 ERROR: database is locked\n" "2026-08-24 INFO: retry succeeded\n"
     )
     result = run_gate_check(db_path, log_dir=str(log_dir), rollback_drill_pass=True)
     assert result.g2_pass is False
@@ -122,6 +125,7 @@ def test_g2_pass_no_locked_errors(db_path, tmp_path):
     from dreambuddy_dal.implementations.sqlite_unified.gate_check import (
         run_gate_check,
     )
+
     log_dir = tmp_path / "logs"
     log_dir.mkdir()
     (log_dir / "trader_001.log").write_text("2026-08-24 INFO: all good\n")
@@ -137,6 +141,7 @@ def test_g4_rollback_drill_fail(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.gate_check import (
         run_gate_check,
     )
+
     result = run_gate_check(db_path, rollback_drill_pass=False)
     assert result.g4_pass is False
     assert result.all_pass is False
@@ -149,8 +154,11 @@ def test_g5_integrity_ok(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.gate_check import (
         run_gate_check,
     )
+
     # 用自身 DB 做冷备（测试简化）
     result = run_gate_check(
-        db_path, rollback_drill_pass=True, backup_db_path=db_path,
+        db_path,
+        rollback_drill_pass=True,
+        backup_db_path=db_path,
     )
     assert result.g5_pass is True

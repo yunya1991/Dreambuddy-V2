@@ -10,6 +10,7 @@
   TR-3.7  FAIL-OPEN: 文件不存在返回空列表
   TR-3.8  FAIL-OPEN: 空日志文件返回空列表
 """
+
 import os
 import sys
 import tempfile
@@ -45,51 +46,60 @@ class PollingTraderLogCollectorTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import shutil
+
         shutil.rmtree(cls._tmpdir, ignore_errors=True)
 
     def test_class_exists_and_implements_interface(self):
-        from polling_trader_log_collector import PollingTraderLogCollector
         from interfaces.training_data_provider import TrainingDataProvider
+        from polling_trader_log_collector import PollingTraderLogCollector
+
         self.assertIsInstance(PollingTraderLogCollector(), TrainingDataProvider)
 
     def test_get_source_name(self):
         from polling_trader_log_collector import PollingTraderLogCollector
+
         self.assertEqual(PollingTraderLogCollector().get_source_name(), "polling_trader_log")
 
     def test_get_quality_threshold(self):
         from polling_trader_log_collector import PollingTraderLogCollector
+
         self.assertEqual(PollingTraderLogCollector().get_quality_threshold(), "B")
 
     def test_fetch_cases_returns_training_cases(self):
         from polling_trader_log_collector import PollingTraderLogCollector
+
         c = PollingTraderLogCollector(log_path=self._logfile)
         cases = c.fetch_cases(limit=100)
         self.assertGreater(len(cases), 0, "应至少采集1条")
 
     def test_node_sequence_has_decision_nodes(self):
         from polling_trader_log_collector import PollingTraderLogCollector
+
         c = PollingTraderLogCollector(log_path=self._logfile)
         cases = c.fetch_cases(limit=100)
         # node_sequence 应含 BCRM2 或 持仓同步 或 Score_B 等决策节点
         all_actions = ",".join(a for case in cases for a in case.actions)
         self.assertTrue(
             any(kw in all_actions for kw in ["BCRM2", "持仓同步", "Score_B", "CBR", "BDSM"]),
-            f"node_sequence 应含决策节点, got: {all_actions[:200]}"
+            f"node_sequence 应含决策节点, got: {all_actions[:200]}",
         )
 
     def test_layer_tags_contains_dsh(self):
         from polling_trader_log_collector import PollingTraderLogCollector
+
         c = PollingTraderLogCollector(log_path=self._logfile)
         for case in c.fetch_cases(limit=10):
             self.assertIn("DSH", case.layer_tags)
 
     def test_fail_open_file_missing(self):
         from polling_trader_log_collector import PollingTraderLogCollector
+
         c = PollingTraderLogCollector(log_path="/nonexistent/log.log")
         self.assertEqual(c.fetch_cases(limit=10), [])
 
     def test_fail_open_empty_file(self):
         from polling_trader_log_collector import PollingTraderLogCollector
+
         empty = os.path.join(self._tmpdir, "empty.log")
         with open(empty, "w") as f:
             f.write("")

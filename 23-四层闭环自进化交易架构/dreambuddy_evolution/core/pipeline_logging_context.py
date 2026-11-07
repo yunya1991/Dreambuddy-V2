@@ -4,9 +4,10 @@
 集中日志持久化：FileHandler + RotatingFileHandler，确保运行日志可追溯落盘。
 FAIL-OPEN: 日志配置失败不影响主流程。
 """
+
 import logging
-from pathlib import Path
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 

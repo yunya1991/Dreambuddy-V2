@@ -18,12 +18,11 @@ RED 契约:
 
 参考: SPEC-CognitiveSystem-Evolution.md §4.3 P3-1 + §2.5.1
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
-
-import pytest
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR) not in sys.path:
@@ -134,13 +133,15 @@ class TestWorkspaceBusCore:
 
         bus = WorkspaceBus()
         for i in range(3):
-            bus.broadcast(WorkspaceContent(
-                intent={"type": f"query_{i}"},
-                memory_recall=[],
-                skill_match=[],
-                knowledge_retrieval=[],
-                confidence=0.5,
-            ))
+            bus.broadcast(
+                WorkspaceContent(
+                    intent={"type": f"query_{i}"},
+                    memory_recall=[],
+                    skill_match=[],
+                    knowledge_retrieval=[],
+                    confidence=0.5,
+                )
+            )
 
         state = bus.get_workspace_state()
         assert state["history_count"] >= 3
@@ -185,17 +186,27 @@ class TestWorkspaceBusCore:
             received.append(content)
 
         sub_id = bus.subscribe("test", callback)
-        bus.broadcast(WorkspaceContent(
-            intent={}, memory_recall=[], skill_match=[],
-            knowledge_retrieval=[], confidence=0.5,
-        ))
+        bus.broadcast(
+            WorkspaceContent(
+                intent={},
+                memory_recall=[],
+                skill_match=[],
+                knowledge_retrieval=[],
+                confidence=0.5,
+            )
+        )
         assert len(received) == 1
 
         bus.unsubscribe(sub_id)
-        bus.broadcast(WorkspaceContent(
-            intent={}, memory_recall=[], skill_match=[],
-            knowledge_retrieval=[], confidence=0.5,
-        ))
+        bus.broadcast(
+            WorkspaceContent(
+                intent={},
+                memory_recall=[],
+                skill_match=[],
+                knowledge_retrieval=[],
+                confidence=0.5,
+            )
+        )
         # 取消订阅后不再收到
         assert len(received) == 1
 
@@ -222,10 +233,13 @@ class TestWorkspaceBusCore:
         received = {"memory": 0, "skill": 0, "knowledge": 0, "docs": 0, "index": 0}
 
         for name in received:
+
             def make_cb(n):
                 def cb(content):
                     received[n] += 1
+
                 return cb
+
             bus.subscribe(name, make_cb(name))
 
         content = WorkspaceContent(
@@ -246,9 +260,9 @@ class TestCognitiveLoopEntryWorkspaceBus:
 
     def test_workspace_bus_attribute_exists(self):
         """RED: CognitiveLoopEntry 应有 workspace_bus 属性。"""
-        from cognitive_loop_entry import CognitiveLoopEntry
-
         import inspect
+
+        from cognitive_loop_entry import CognitiveLoopEntry
 
         src = inspect.getsource(CognitiveLoopEntry.__init__)
         assert "workspace_bus" in src

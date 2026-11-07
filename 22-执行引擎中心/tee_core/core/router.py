@@ -24,19 +24,21 @@ Urgency shifts the decision one *row*:
 endpoint is unreachable it falls back to ``DEFAULT_1MIN_VOLUME_USDT`` so
 a downstream decision is always possible — never raises.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
-from . import config as _cfg
 from ..core.contract import AlgoName, Urgency
+from . import config as _cfg
 
 
 # ── data shape ─────────────────────────────────────────────────────────
 @dataclass
 class RouterDecision:
     """Immutable return value of :meth:`OrderRouter.decide`."""
+
     algo: AlgoName
     params: Dict[str, Any] = field(default_factory=dict)
 
@@ -49,10 +51,10 @@ class RouterDecision:
 # ── ordered bucket list (used by both decide() and urgency shifting) ──
 _BUCKETS: list[tuple[str, AlgoName]] = [
     # (name, algo). ORDER IS CRITICAL: from MOST aggressive → MOST passive.
-    ("DIRECT",   AlgoName.DIRECT),
-    ("TWAP15",   AlgoName.TWAP15),
-    ("TWAP60",   AlgoName.TWAP60),
-    ("PASSIVE",  AlgoName.PASSIVE),
+    ("DIRECT", AlgoName.DIRECT),
+    ("TWAP15", AlgoName.TWAP15),
+    ("TWAP60", AlgoName.TWAP60),
+    ("PASSIVE", AlgoName.PASSIVE),
 ]
 _NB = len(_BUCKETS)
 
@@ -78,9 +80,9 @@ def _threshold_bucket(size_ratio: float) -> int:
 def _apply_urgency(bucket_idx: int, urgency: Urgency) -> int:
     """Shift the bucket index by one tier. Clamp to [0, NB-1]."""
     if urgency is Urgency.HIGH:
-        shifted = bucket_idx - 1                 # more aggressive → smaller idx
+        shifted = bucket_idx - 1  # more aggressive → smaller idx
     elif urgency is Urgency.LOW:
-        shifted = bucket_idx + 1                 # more passive → larger idx
+        shifted = bucket_idx + 1  # more passive → larger idx
     else:
         shifted = bucket_idx
     # Clamp (can't go more aggressive than DIRECT, more passive than PASSIVE)
@@ -88,10 +90,10 @@ def _apply_urgency(bucket_idx: int, urgency: Urgency) -> int:
 
 
 _OVERRIDE_ALIASES: Dict[str, AlgoName] = {
-    "direct":  AlgoName.DIRECT,
-    "twap":    AlgoName.TWAP15,
-    "twap15":  AlgoName.TWAP15,
-    "twap60":  AlgoName.TWAP60,
+    "direct": AlgoName.DIRECT,
+    "twap": AlgoName.TWAP15,
+    "twap15": AlgoName.TWAP15,
+    "twap60": AlgoName.TWAP60,
     "passive": AlgoName.PASSIVE,
 }
 
@@ -107,28 +109,28 @@ def _default_params_for(algo: AlgoName) -> Dict[str, Any]:
         return {}
     if algo is AlgoName.TWAP15:
         return {
-            "window_sec":      15 * 60,
-            "num_slices":      _cfg.TWAP_NUM_SLICES_TWAP15,
-            "jitter_pct":      _cfg.TWAP_JITTER_PCT,
-            "escalate_sec":    _cfg.TWAP_ESCALATE_SEC,
-            "escalate_bps":    _cfg.TWAP_ESCALATE_STEP_BPS,
-            "escalate_max":    _cfg.TWAP_ESCALATE_MAX_BPS,
-            "timeout_sec":     _cfg.TWAP_TIMEOUT_TO_MARKET_SEC,
+            "window_sec": 15 * 60,
+            "num_slices": _cfg.TWAP_NUM_SLICES_TWAP15,
+            "jitter_pct": _cfg.TWAP_JITTER_PCT,
+            "escalate_sec": _cfg.TWAP_ESCALATE_SEC,
+            "escalate_bps": _cfg.TWAP_ESCALATE_STEP_BPS,
+            "escalate_max": _cfg.TWAP_ESCALATE_MAX_BPS,
+            "timeout_sec": _cfg.TWAP_TIMEOUT_TO_MARKET_SEC,
         }
     if algo is AlgoName.TWAP60:
         return {
-            "window_sec":      60 * 60,
-            "num_slices":      _cfg.TWAP_NUM_SLICES_TWAP60,
-            "jitter_pct":      _cfg.TWAP_JITTER_PCT,
-            "escalate_sec":    _cfg.TWAP_ESCALATE_SEC,
-            "escalate_bps":    _cfg.TWAP_ESCALATE_STEP_BPS,
-            "escalate_max":    _cfg.TWAP_ESCALATE_MAX_BPS,
-            "timeout_sec":     _cfg.TWAP_TIMEOUT_TO_MARKET_SEC,
+            "window_sec": 60 * 60,
+            "num_slices": _cfg.TWAP_NUM_SLICES_TWAP60,
+            "jitter_pct": _cfg.TWAP_JITTER_PCT,
+            "escalate_sec": _cfg.TWAP_ESCALATE_SEC,
+            "escalate_bps": _cfg.TWAP_ESCALATE_STEP_BPS,
+            "escalate_max": _cfg.TWAP_ESCALATE_MAX_BPS,
+            "timeout_sec": _cfg.TWAP_TIMEOUT_TO_MARKET_SEC,
         }
     if algo is AlgoName.PASSIVE:
         return {
-            "rehang_sec":               _cfg.PASSIVE_REHANG_SEC,
-            "twap_fallback_sec":        _cfg.PASSIVE_TO_TWAP_SEC,
+            "rehang_sec": _cfg.PASSIVE_REHANG_SEC,
+            "twap_fallback_sec": _cfg.PASSIVE_TO_TWAP_SEC,
             "twap_fallback_fill_ratio": _cfg.PASSIVE_TO_TWAP_FILL_RATIO,
         }
     return {}
@@ -175,8 +177,7 @@ class OrderRouter:
                     f"Allowed: {sorted(_OVERRIDE_ALIASES)}"
                 )
             algo = _OVERRIDE_ALIASES[key]
-            return RouterDecision(algo=algo,
-                                  params=_default_params_for(algo))
+            return RouterDecision(algo=algo, params=_default_params_for(algo))
 
         # Pure threshold + urgency shift.
         bucket = _threshold_bucket(float(size_ratio))
@@ -185,8 +186,7 @@ class OrderRouter:
         return RouterDecision(algo=algo, params=_default_params_for(algo))
 
     # ── public: compute_size_ratio ────────────────────────────────────
-    def compute_size_ratio(self, inst_id: str,
-                           notional_usdt: float) -> float:
+    def compute_size_ratio(self, inst_id: str, notional_usdt: float) -> float:
         """order_notional / avg-1m USDT volume. FAIL-OPEN guarded.
 
         Returns:
@@ -230,7 +230,7 @@ class OrderRouter:
             for b in bars:
                 try:
                     close = float(b.get("c", 0.0) or 0.0)
-                    vol = float(b.get("vol", 0.0) or 0.0)   # base coin volume
+                    vol = float(b.get("vol", 0.0) or 0.0)  # base coin volume
                 except (TypeError, ValueError):
                     close = vol = 0.0
                 if close > 0 and vol > 0:

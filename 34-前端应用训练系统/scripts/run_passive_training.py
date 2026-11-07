@@ -14,6 +14,7 @@ SPEC §2.3 被动训练（纵深·Trae在线辅导）端到端流程:
   python scripts/run_passive_training.py --no-rea  # 禁用33-REA
   python scripts/run_passive_training.py --report-out report.md
 """
+
 import argparse
 import json
 import os
@@ -104,6 +105,7 @@ def run_passive_training(
     if frontend_url is None:
         frontend_url = os.environ.get("TRAINING_FRONTEND_URL", "http://localhost:3001")
     import urllib.request
+
     for layer in ["s", "dsh", "c", "g", "llm"]:
         try:
             url = f"{frontend_url}/api/training/{layer}"
@@ -166,7 +168,7 @@ def generate_report(result: dict) -> str:
     learned = case.get("learned", [])
     if learned:
         lines.append("### 经验提取")
-        for l in learned:
+        for l in learned:  # noqa: E741
             lines.append(f"- {l}")
         lines.append("")
 
@@ -239,7 +241,9 @@ def generate_report(result: dict) -> str:
                 step_delta = f"+{post_step - pre_step}"
             tr_success = "✅" if tr.get("success") else "❌"
             degraded = "是" if (pre.get("degraded") or post.get("degraded")) else "否"
-            lines.append(f"| {layer} | {pre_step} | {post_step} | {step_delta} | {tr_success} | {degraded} |")
+            lines.append(
+                f"| {layer} | {pre_step} | {post_step} | {step_delta} | {tr_success} | {degraded} |"
+            )
         lines.append("")
 
     # 5. 辅导报告
@@ -260,7 +264,9 @@ def generate_report(result: dict) -> str:
             lines.append("|---|---|---|")
             for log in monitoring_log:
                 passed = "✅" if log.get("passed") else "❌"
-                lines.append(f"| {log.get('check_name', '')} | {passed} | {log.get('detail', '')} |")
+                lines.append(
+                    f"| {log.get('check_name', '')} | {passed} | {log.get('detail', '')} |"
+                )
             lines.append("")
 
         # 纠正建议
@@ -334,7 +340,9 @@ def generate_report(result: dict) -> str:
     lines.append(f"- **辅导质量**: {quality}/100 — {verdict}")
     lines.append(f"- **纠正次数**: {corrections_count}")
     if improvement:
-        improved_layers = sum(1 for v in improvement.values() if v.get("available") and v.get("weight_delta", 0) > 0)
+        improved_layers = sum(
+            1 for v in improvement.values() if v.get("available") and v.get("weight_delta", 0) > 0
+        )
         lines.append(f"- **有效提升层**: {improved_layers}/{len(improvement)}")
     lines.append("")
     lines.append("### 闭环验证")
@@ -359,19 +367,25 @@ def main():
         description="被动训练端到端执行脚本 — 创建案例 + 触发训练 + 生成报告",
     )
     parser.add_argument(
-        "--case-json", default=None,
+        "--case-json",
+        default=None,
         help="自定义案例JSON路径（默认使用内置样本案例）",
     )
     parser.add_argument(
-        "--frontend-url", default=None,
+        "--frontend-url",
+        default=None,
         help="前端服务地址（默认 http://localhost:3001）",
     )
     parser.add_argument(
-        "--no-rea", dest="enable_rea", action="store_false", default=True,
+        "--no-rea",
+        dest="enable_rea",
+        action="store_false",
+        default=True,
         help="禁用33-REA解析",
     )
     parser.add_argument(
-        "--report-out", default=None,
+        "--report-out",
+        default=None,
         help="报告输出文件路径（默认输出到 stdout）",
     )
     args = parser.parse_args()

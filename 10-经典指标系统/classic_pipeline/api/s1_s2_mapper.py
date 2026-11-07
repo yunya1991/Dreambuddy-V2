@@ -6,14 +6,15 @@ classic-system-bridge.ts 定义的 S1ResearchOutput / S2AnalysisOutput 结构，
 
 字段命名严格对齐前端 TypeScript 接口定义。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-
 # ---------------------------------------------------------------------------
 # S1 调研映射
 # ---------------------------------------------------------------------------
+
 
 def map_to_s1(
     indicators: Dict[str, Any],
@@ -85,6 +86,7 @@ def map_to_s1(
 # S2 分析映射
 # ---------------------------------------------------------------------------
 
+
 def map_to_s2(
     signal_result: Dict[str, Any],
     regime: Optional[Dict[str, Any]] = None,
@@ -116,7 +118,7 @@ def map_to_s2(
     long_term = medium_term
 
     risks: list = []
-    details = sig.get("details") if isinstance(sig.get("details"), dict) else {}
+    details = sig.get("details") if isinstance(sig.get("details"), dict) else {}  # noqa: F841
     if confidence < 0.5:
         risks.append("信号置信度偏低")
     vol = str(reg.get("volatility") or "").strip().lower()
@@ -150,6 +152,7 @@ def map_to_s2(
 # 内部辅助
 # ---------------------------------------------------------------------------
 
+
 def _safe_float(v: Any, default: float = 0.0) -> float:
     try:
         f = float(v)
@@ -160,7 +163,9 @@ def _safe_float(v: Any, default: float = 0.0) -> float:
     return float(default)
 
 
-def _derive_trend(*, ema_fast: Optional[float], ema_slow: Optional[float], macd_hist: Optional[float]) -> str:
+def _derive_trend(
+    *, ema_fast: Optional[float], ema_slow: Optional[float], macd_hist: Optional[float]
+) -> str:
     """基于 EMA 快慢线和 MACD 柱状推导趋势。"""
     bullish = 0
     bearish = 0

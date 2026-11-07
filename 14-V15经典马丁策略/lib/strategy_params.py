@@ -7,27 +7,38 @@ V15-CT 策略参数计算模块
 - 三屏趋势过滤：周线+日线双周期趋势一致性检查（both_bear + MA104）
 - 资金计算：基于保证金和名义价值
 """
-import math
-from typing import List, Optional, Tuple, Dict, Any
-from datetime import datetime, timezone, timedelta
-from pathlib import Path
+
 import sys
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
 
 try:
-    from config_loader import load_config, get_config, get_config_float, get_config_int, get_config_list
+    from config_loader import (
+        get_config,
+        get_config_float,
+        get_config_int,
+        get_config_list,
+        load_config,
+    )
+
     load_config("v15")
 except Exception:
     pass
 
 # 统一交易对适配层
 try:
-    from symbol_mapper import to_swap, is_supported as _coin_supported
+    from symbol_mapper import is_supported as _coin_supported
+    from symbol_mapper import to_swap
 except Exception:
-    def to_swap(coin, exchange="okx"): return f"{coin}-USDT-SWAP"
-    def _coin_supported(coin, exchange="okx"): return True
+
+    def to_swap(coin, exchange="okx"):
+        return f"{coin}-USDT-SWAP"
+
+    def _coin_supported(coin, exchange="okx"):
+        return True
 
 
 def _calc_sma(closes: List[float], period: int) -> Optional[float]:
@@ -91,7 +102,7 @@ def calc_30d_volatility(klines_1d: List[Dict]) -> float:
     recent_returns = returns[-30:]
     avg = sum(recent_returns) / len(recent_returns)
     variance = sum((r - avg) ** 2 for r in recent_returns) / len(recent_returns)
-    return variance ** 0.5
+    return variance**0.5
 
 
 def calc_atr(klines: List[Dict], period: int = 14) -> Optional[float]:
@@ -108,7 +119,7 @@ def calc_atr(klines: List[Dict], period: int = 14) -> Optional[float]:
     trs = []
     for i in range(1, len(klines)):
         h = float(klines[i].get("h", klines[i].get("c", 0)))
-        l = float(klines[i].get("l", klines[i].get("c", 0)))
+        l = float(klines[i].get("l", klines[i].get("c", 0)))  # noqa: E741
         prev_c = float(klines[i - 1].get("c", 0))
         tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
         trs.append(tr)
@@ -133,11 +144,16 @@ def calc_atr_pct(klines: List[Dict], period: int = 14) -> Optional[float]:
     return (atr / current_price) * 100
 
 
-def get_dynamic_stop_loss(direction: str, current_price: float,
-                          daily_ma200: Optional[float], daily_ema200: Optional[float],
-                          weekly_ma200: Optional[float] = None, weekly_ema200: Optional[float] = None,
-                          last_daily_close: Optional[float] = None,
-                          last_weekly_close: Optional[float] = None) -> Dict:
+def get_dynamic_stop_loss(
+    direction: str,
+    current_price: float,
+    daily_ma200: Optional[float],
+    daily_ema200: Optional[float],
+    weekly_ma200: Optional[float] = None,
+    weekly_ema200: Optional[float] = None,
+    last_daily_close: Optional[float] = None,
+    last_weekly_close: Optional[float] = None,
+) -> Dict:
     """
     动态止损计算：
     1. 止损线 = 价格下方最近的一条均线（日MA200、日EMA200、周MA200、周EMA200）
@@ -161,15 +177,26 @@ def get_dynamic_stop_loss(direction: str, current_price: float,
         "above_weekly_ema200_close": None,
     }
 
-    if daily_ma200 is None and daily_ema200 is None and weekly_ma200 is None and weekly_ema200 is None:
+    if (
+        daily_ma200 is None
+        and daily_ema200 is None
+        and weekly_ma200 is None
+        and weekly_ema200 is None
+    ):
         return result
 
     if last_daily_close is not None:
         result["above_daily_ma200_close"] = last_daily_close > daily_ma200 if daily_ma200 else None
-        result["above_daily_ema200_close"] = last_daily_close > daily_ema200 if daily_ema200 else None
+        result["above_daily_ema200_close"] = (
+            last_daily_close > daily_ema200 if daily_ema200 else None
+        )
     if last_weekly_close is not None:
-        result["above_weekly_ma200_close"] = last_weekly_close > weekly_ma200 if weekly_ma200 else None
-        result["above_weekly_ema200_close"] = last_weekly_close > weekly_ema200 if weekly_ema200 else None
+        result["above_weekly_ma200_close"] = (
+            last_weekly_close > weekly_ma200 if weekly_ma200 else None
+        )
+        result["above_weekly_ema200_close"] = (
+            last_weekly_close > weekly_ema200 if weekly_ema200 else None
+        )
 
     if direction.upper() == "LONG":
         candidates = []
@@ -201,21 +228,39 @@ def get_dynamic_stop_loss(direction: str, current_price: float,
                 result["is_triggered"] = False
         else:
             all_below_daily = True
-            if daily_ma200 is not None and last_daily_close is not None and last_daily_close > daily_ma200:
+            if (
+                daily_ma200 is not None
+                and last_daily_close is not None
+                and last_daily_close > daily_ma200
+            ):
                 all_below_daily = False
-            if daily_ema200 is not None and last_daily_close is not None and last_daily_close > daily_ema200:
+            if (
+                daily_ema200 is not None
+                and last_daily_close is not None
+                and last_daily_close > daily_ema200
+            ):
                 all_below_daily = False
             all_below_weekly = True
-            if weekly_ma200 is not None and last_weekly_close is not None and last_weekly_close > weekly_ma200:
+            if (
+                weekly_ma200 is not None
+                and last_weekly_close is not None
+                and last_weekly_close > weekly_ma200
+            ):
                 all_below_weekly = False
-            if weekly_ema200 is not None and last_weekly_close is not None and last_weekly_close > weekly_ema200:
+            if (
+                weekly_ema200 is not None
+                and last_weekly_close is not None
+                and last_weekly_close > weekly_ema200
+            ):
                 all_below_weekly = False
 
             has_any_above = (not all_below_daily) or (not all_below_weekly)
 
             result["stop_loss_price"] = None
             result["stop_loss_pct"] = None
-            result["stop_type"] = "BELOW_ALL_MA_INTRADAY" if has_any_above else "BELOW_ALL_MA_CONFIRMED"
+            result["stop_type"] = (
+                "BELOW_ALL_MA_INTRADAY" if has_any_above else "BELOW_ALL_MA_CONFIRMED"
+            )
             result["is_triggered"] = not has_any_above
 
     elif direction.upper() == "SHORT":
@@ -319,7 +364,7 @@ def calc_elder_ray(klines: List[Dict], period: int = 13) -> Dict:
 
     ema_trend_up = ema_slope > 0.01  # 斜率 > 0.01% 视为上升
     ema_trend_down = ema_slope < -0.01  # 斜率 < -0.01% 视为下降
-    ema_trend_flat = not ema_trend_up and not ema_trend_down
+    ema_trend_flat = not ema_trend_up and not ema_trend_down  # noqa: F841
 
     # ── 2. 背离检测 ──
     # 看涨背离（做多信号）：价格创最近N日新低，但 Bear Power 未创新低
@@ -362,32 +407,32 @@ def calc_elder_ray(klines: List[Dict], period: int = 13) -> Dict:
 
     # ── 5. 趋势方向分类（基于三重滤网）──
     if ema_trend_up and current_bull > 0 and current_bear > 0:
-        direction = 'STRONG_BULL'
+        direction = "STRONG_BULL"
         strength_base = 80
     elif ema_trend_up and current_bull > 0 and current_bear <= 0:
-        direction = 'BULL_TREND'
+        direction = "BULL_TREND"
         strength_base = 65
     elif ema_trend_up and current_bull <= 0:
-        direction = 'BULL_REVERSAL'  # 上升趋势中Bull转负→可能逆转
+        direction = "BULL_REVERSAL"  # 上升趋势中Bull转负→可能逆转
         strength_base = 35
     elif ema_trend_down and current_bear < 0 and current_bull < 0:
-        direction = 'STRONG_BEAR'
+        direction = "STRONG_BEAR"
         strength_base = 20
     elif ema_trend_down and current_bear < 0 and current_bull >= 0:
-        direction = 'BEAR_TREND'
+        direction = "BEAR_TREND"
         strength_base = 35
     elif ema_trend_down and current_bear >= 0:
-        direction = 'BEAR_REVERSAL'  # 下降趋势中Bear转正→可能逆转
+        direction = "BEAR_REVERSAL"  # 下降趋势中Bear转正→可能逆转
         strength_base = 60
     else:  # 震荡
         if current_bull > 0 and current_bear > 0:
-            direction = 'SIDEWAYS_BULLISH'
+            direction = "SIDEWAYS_BULLISH"
             strength_base = 55
         elif current_bull < 0 and current_bear < 0:
-            direction = 'SIDEWAYS_BEARISH'
+            direction = "SIDEWAYS_BEARISH"
             strength_base = 45
         else:
-            direction = 'SIDEWAYS'
+            direction = "SIDEWAYS"
             strength_base = 50
 
     # 调整强度：加入斜率、背离、力量变化
@@ -453,12 +498,15 @@ def calc_elder_ray(klines: List[Dict], period: int = 13) -> Dict:
     }
 
 
-def get_vol_adjusted_params(coin_vol: float, btc_vol: float,
-                            base_tp_pct: float = None,
-                            base_addon_pct: float = None,
-                            coin_atr_pct: Optional[float] = None,
-                            btc_atr_pct: Optional[float] = None,
-                            leverage: float = None) -> Dict:
+def get_vol_adjusted_params(
+    coin_vol: float,
+    btc_vol: float,
+    base_tp_pct: float = None,
+    base_addon_pct: float = None,
+    coin_atr_pct: Optional[float] = None,
+    btc_atr_pct: Optional[float] = None,
+    leverage: float = None,
+) -> Dict:
     if base_tp_pct is None:
         base_tp_pct = get_config_float("BASE_TP_PCT", 0.04)
     if base_addon_pct is None:
@@ -487,8 +535,8 @@ def get_vol_adjusted_params(coin_vol: float, btc_vol: float,
     if leverage is None:
         leverage = get_config_float("LEVERAGE", 5.0)
     if leverage > 0:
-    # 第一档加仓跌幅上限 = 爆仓跌幅 × 0.7
-    # 总加仓跌幅上限 = 爆仓跌幅 × 0.9（4档累计不超过爆仓价的 90%）
+        # 第一档加仓跌幅上限 = 爆仓跌幅 × 0.7
+        # 总加仓跌幅上限 = 爆仓跌幅 × 0.9（4档累计不超过爆仓价的 90%）
         max_addon_pct_t1 = (1.0 / leverage) * 0.7
         if addon_pct > max_addon_pct_t1:
             addon_pct = max_addon_pct_t1
@@ -502,7 +550,7 @@ def get_vol_adjusted_params(coin_vol: float, btc_vol: float,
         "btc_atr_pct": round(btc_atr_pct, 4) if btc_atr_pct else None,
         "take_profit_pct": round(tp_pct * 100, 2),
         "addon_pct": round(addon_pct * 100, 2),
-        "tp_pct": round(tp_pct * 100, 2),          # 同义：Phase E apply_param_multipliers 读取 tp_pct
+        "tp_pct": round(tp_pct * 100, 2),  # 同义：Phase E apply_param_multipliers 读取 tp_pct
         "base_tp_pct": round(base_tp_pct * 100, 2),
         "base_addon_pct": round(base_addon_pct * 100, 2),
     }
@@ -528,7 +576,11 @@ def apply_param_multipliers(
         return result
 
     base_addon = float(base_params.get("addon_pct", base_params.get("base_addon_pct", 8.0)))
-    base_tp = float(base_params.get("tp_pct", base_params.get("take_profit_pct", base_params.get("base_tp_pct", 4.0))))
+    base_tp = float(
+        base_params.get(
+            "tp_pct", base_params.get("take_profit_pct", base_params.get("base_tp_pct", 4.0))
+        )
+    )
 
     mult_addon = float(action.get("addon_pct_mult", 1.0))
     mult_tp = float(action.get("tp_pct_mult", 1.0))
@@ -552,7 +604,6 @@ def apply_param_multipliers(
     return result
 
 
-
 # ── 三屏趋势过滤 ──────────────────────────────────────────────────────────
 
 TREND_FILTER_MODE = "none"
@@ -566,18 +617,20 @@ def calc_sma_value(closes: List[float], period: int) -> Optional[float]:
     return sum(closes[-period:]) / period
 
 
-def check_trend_filter(current_price: float,
-                       daily_klines: List[Dict],
-                       weekly_klines: List[Dict],
-                       mode: str = None,
-                       period: int = None) -> Dict:
+def check_trend_filter(
+    current_price: float,
+    daily_klines: List[Dict],
+    weekly_klines: List[Dict],
+    mode: str = None,
+    period: int = None,
+) -> Dict:
     """三屏趋势过滤检查
-    
+
     借用三屏策略的周线/日线趋势一致性思路：
     - both_bear: 周线+日线都看空（价格在均线下方）时禁止做多
     - weekly_bear: 仅周线看空时禁止做多
     - none: 不过滤
-    
+
     返回:
         {
             "blocked": bool,          # 是否禁止开多
@@ -594,7 +647,7 @@ def check_trend_filter(current_price: float,
         mode = get_config("TREND_FILTER_MODE", TREND_FILTER_MODE)
     if period is None:
         period = get_config_int("TREND_FILTER_PERIOD", TREND_FILTER_PERIOD)
-    
+
     result = {
         "blocked": False,
         "mode": mode,
@@ -605,32 +658,34 @@ def check_trend_filter(current_price: float,
         "daily_bear": False,
         "reason": "",
     }
-    
+
     if mode is None or str(mode).lower() == "none":
         result["reason"] = "趋势过滤未启用"
         return result
-    
+
     # 计算周线MA
     weekly_closes = [float(k["c"]) for k in weekly_klines if "c" in k]
     weekly_ma = calc_sma_value(weekly_closes, period)
     result["weekly_ma"] = weekly_ma
-    
+
     # 计算日线MA
     daily_closes = [float(k["c"]) for k in daily_klines if "c" in k]
     daily_ma = calc_sma_value(daily_closes, period)
     result["daily_ma"] = daily_ma
-    
+
     weekly_bear = weekly_ma is not None and current_price < weekly_ma
     daily_bear = daily_ma is not None and current_price < daily_ma
     result["weekly_bear"] = weekly_bear
     result["daily_bear"] = daily_bear
-    
+
     if mode == "both_bear":
         if weekly_bear and daily_bear:
             result["blocked"] = True
             result["reason"] = f"周线+日线均看空(价格<MA{period})，禁止做多"
         else:
-            result["reason"] = f"周线{'看空' if weekly_bear else '看多'} + 日线{'看空' if daily_bear else '看多'}，允许做多"
+            result["reason"] = (
+                f"周线{'看空' if weekly_bear else '看多'} + 日线{'看空' if daily_bear else '看多'}，允许做多"
+            )
     elif mode == "weekly_bear":
         if weekly_bear:
             result["blocked"] = True
@@ -639,7 +694,7 @@ def check_trend_filter(current_price: float,
             result["reason"] = f"周线看多(价格≥MA{period})，允许做多"
     else:
         result["reason"] = f"未知过滤模式: {mode}"
-    
+
     return result
 
 
@@ -649,14 +704,17 @@ def _get_okx_client():
     # 不切换则网络封锁环境阻塞调用 → current_price=0 → 入场必然中止（冒烟实测）
     try:
         from config_loader import get_config
+
         if get_config("V15_DATA_SOURCE", "").strip().lower() == "hyperliquid":
             from hl_data_adapter import HLDataAdapter
+
             return HLDataAdapter()
     except Exception:
         pass
     try:
-        from okx_client import OKXSimulatedClient
         from config_loader import get_config
+        from okx_client import OKXSimulatedClient
+
         config = {
             "api_key": get_config("OKX_API_KEY", ""),
             "secret_key": get_config("OKX_SECRET_KEY", ""),
@@ -678,20 +736,22 @@ def fetch_daily_klines(client, inst_id: str, limit: int = 250) -> List[Dict]:
         r = client._get(
             "/api/v5/market/candles",
             {"instId": inst_id, "bar": "1D", "limit": str(limit)},
-            auth=False
+            auth=False,
         )
         if r.get("code") == "0" and r.get("data"):
             data = r["data"]
             klines = []
             for k in data:
-                klines.append({
-                    "t": int(k[0]),
-                    "o": float(k[1]),
-                    "h": float(k[2]),
-                    "l": float(k[3]),
-                    "c": float(k[4]),
-                    "vol": float(k[5]) if len(k) > 5 else 0,
-                })
+                klines.append(
+                    {
+                        "t": int(k[0]),
+                        "o": float(k[1]),
+                        "h": float(k[2]),
+                        "l": float(k[3]),
+                        "c": float(k[4]),
+                        "vol": float(k[5]) if len(k) > 5 else 0,
+                    }
+                )
             klines.reverse()
             return klines
     except Exception:
@@ -704,20 +764,22 @@ def fetch_weekly_klines(client, inst_id: str, limit: int = 200) -> List[Dict]:
         r = client._get(
             "/api/v5/market/candles",
             {"instId": inst_id, "bar": "1W", "limit": str(limit)},
-            auth=False
+            auth=False,
         )
         if r.get("code") == "0" and r.get("data"):
             data = r["data"]
             klines = []
             for k in data:
-                klines.append({
-                    "t": int(k[0]),
-                    "o": float(k[1]),
-                    "h": float(k[2]),
-                    "l": float(k[3]),
-                    "c": float(k[4]),
-                    "vol": float(k[5]) if len(k) > 5 else 0,
-                })
+                klines.append(
+                    {
+                        "t": int(k[0]),
+                        "o": float(k[1]),
+                        "h": float(k[2]),
+                        "l": float(k[3]),
+                        "c": float(k[4]),
+                        "vol": float(k[5]) if len(k) > 5 else 0,
+                    }
+                )
             klines.reverse()
             return klines
     except Exception:
@@ -730,21 +792,23 @@ def fetch_klines(client, inst_id: str, bar: str = "4H", limit: int = 200) -> Lis
         r = client._get(
             "/api/v5/market/candles",
             {"instId": inst_id, "bar": bar, "limit": str(limit)},
-            auth=False
+            auth=False,
         )
         if r.get("code") == "0" and r.get("data"):
             data = r["data"]
             klines = []
             for k in data:
-                klines.append({
-                    "t": int(k[0]),
-                    "o": float(k[1]),
-                    "h": float(k[2]),
-                    "l": float(k[3]),
-                    "c": float(k[4]),
-                    "v": float(k[5]) if len(k) > 5 else 0,
-                    "vol": float(k[5]) if len(k) > 5 else 0,
-                })
+                klines.append(
+                    {
+                        "t": int(k[0]),
+                        "o": float(k[1]),
+                        "h": float(k[2]),
+                        "l": float(k[3]),
+                        "c": float(k[4]),
+                        "v": float(k[5]) if len(k) > 5 else 0,
+                        "vol": float(k[5]) if len(k) > 5 else 0,
+                    }
+                )
             klines.reverse()
             return klines
     except Exception:
@@ -752,8 +816,9 @@ def fetch_klines(client, inst_id: str, bar: str = "4H", limit: int = 200) -> Lis
     return []
 
 
-def _calc_fibonacci_fallback_sl(direction: str, current_price: float,
-                                  daily_closes: List[float]) -> Optional[Dict]:
+def _calc_fibonacci_fallback_sl(
+    direction: str, current_price: float, daily_closes: List[float]
+) -> Optional[Dict]:
     """
     斐波那契0.786回撤+swing low兜底SL计算。
 
@@ -859,7 +924,7 @@ def get_coin_strategy_params(symbol: str, direction: str = "LONG") -> Dict:
     daily_ma128 = calc_daily_ma128(coin_daily)
     daily_ema200 = calc_daily_ema200(coin_daily)
     daily_ema128 = calc_daily_ema128(coin_daily)  # FIX-A: MA200不足时fallback均线
-    daily_ma100  = calc_daily_ma100(coin_daily)   # FIX-A: 二级fallback均线
+    daily_ma100 = calc_daily_ma100(coin_daily)  # FIX-A: 二级fallback均线
     weekly_ma200 = calc_weekly_ma200(coin_weekly)
     weekly_ema200 = calc_weekly_ema200(coin_weekly)
 
@@ -869,13 +934,19 @@ def get_coin_strategy_params(symbol: str, direction: str = "LONG") -> Dict:
     ticker = client.get_ticker(inst_id)
     current_price = float(ticker.get("last", 0)) if ticker.get("ok") else 0
 
-    vol_params = get_vol_adjusted_params(coin_vol, btc_vol,
-                                          coin_atr_pct=coin_atr_pct,
-                                          btc_atr_pct=btc_atr_pct)
-    stop_loss = get_dynamic_stop_loss(direction, current_price,
-                                       daily_ma200, daily_ema200,
-                                       weekly_ma200, weekly_ema200,
-                                       last_daily_close, last_weekly_close)
+    vol_params = get_vol_adjusted_params(
+        coin_vol, btc_vol, coin_atr_pct=coin_atr_pct, btc_atr_pct=btc_atr_pct
+    )
+    stop_loss = get_dynamic_stop_loss(
+        direction,
+        current_price,
+        daily_ma200,
+        daily_ema200,
+        weekly_ma200,
+        weekly_ema200,
+        last_daily_close,
+        last_weekly_close,
+    )
 
     # ═════════════════════════════════════════════════════════════════
     # FIX-A: SL均线fallback兜底（MA200历史不足时永不裸奔）
@@ -886,9 +957,9 @@ def get_coin_strategy_params(symbol: str, direction: str = "LONG") -> Dict:
         _candidates = []  # (name, price, dist%)
         # --- 次优均线候选（保护性：LONG在当前下方，SHORT在当前上方） ---
         for _name, _val in [
-            ("日MA128",  daily_ma128),
+            ("日MA128", daily_ma128),
             ("日EMA128", daily_ema128),
-            ("日MA100",  daily_ma100),
+            ("日MA100", daily_ma100),
         ]:
             if _val is None or _val <= 0:
                 continue
@@ -902,11 +973,13 @@ def get_coin_strategy_params(symbol: str, direction: str = "LONG") -> Dict:
         _daily_closes = [float(k["c"]) for k in coin_daily if k and k.get("c")]
         _fib_result = _calc_fibonacci_fallback_sl(direction, current_price, _daily_closes)
         if _fib_result:
-            _candidates.append((
-                _fib_result["stop_type"].replace("(FB)", ""),
-                _fib_result["stop_loss_price"],
-                _fib_result["stop_loss_pct"] / 100,
-            ))
+            _candidates.append(
+                (
+                    _fib_result["stop_type"].replace("(FB)", ""),
+                    _fib_result["stop_loss_price"],
+                    _fib_result["stop_loss_pct"] / 100,
+                )
+            )
             stop_loss["fb_swing_high"] = _fib_result["fb_swing_high"]
             stop_loss["fb_swing_low"] = _fib_result["fb_swing_low"]
         # --- vol×2.5 fallback（以current_price为基准，最后防线）---
@@ -937,9 +1010,13 @@ def get_coin_strategy_params(symbol: str, direction: str = "LONG") -> Dict:
     elder_ray = calc_elder_ray(coin_daily_raw, period=13)
 
     tp_pct_decimal = vol_params["take_profit_pct"] / 100
-    addon_pct_decimal = vol_params["addon_pct"] / 100
+    addon_pct_decimal = vol_params["addon_pct"] / 100  # noqa: F841
 
-    take_profit_price = round(current_price * (1 + tp_pct_decimal), 4) if direction == "LONG" else round(current_price * (1 - tp_pct_decimal), 4)
+    take_profit_price = (
+        round(current_price * (1 + tp_pct_decimal), 4)
+        if direction == "LONG"
+        else round(current_price * (1 - tp_pct_decimal), 4)
+    )
 
     return {
         "symbol": symbol,
@@ -966,7 +1043,9 @@ def get_coin_strategy_params(symbol: str, direction: str = "LONG") -> Dict:
 
 
 def get_all_coins_params() -> Dict:
-    _raw = get_config_list("V15_COINS", default=["BTC", "ETH", "SOL", "ARB", "OP", "UNI", "HYPE", "OKB"])
+    _raw = get_config_list(
+        "V15_COINS", default=["BTC", "ETH", "SOL", "ARB", "OP", "UNI", "HYPE", "OKB"]
+    )
     coins = [c for c in _raw if _coin_supported(c, "okx")] or _raw
     result = {}
     for coin in coins:
@@ -979,5 +1058,6 @@ def get_all_coins_params() -> Dict:
 
 if __name__ == "__main__":
     import json
+
     params = get_all_coins_params()
     print(json.dumps(params, indent=2, ensure_ascii=False))

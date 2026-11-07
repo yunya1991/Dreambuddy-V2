@@ -12,13 +12,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import math
 import time
-import logging
-from pathlib import Path
-from typing import Dict, Any, List, Tuple
-from datetime import datetime
 from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +26,11 @@ logger = logging.getLogger(__name__)
 # 注意: 所有 pattern 必须包含 A4→A5→A9 执行节点, 否则无法生成 trade_order
 # A2 提供策略参数, 一并加入
 GRAPH_PATTERNS = {
-    "c_chain":     ["C1", "C2", "C3", "A2", "A4", "A5", "A9"],
-    "c_f_chain":   ["C1", "C2", "F1", "F3", "A2", "A4", "A5", "A9"],
-    "full_chain":  ["C1", "C2", "F2", "G1", "A2", "A4", "A5", "A9"],
-    "f_chain":     ["F1", "F2", "F3", "F4", "A2", "A4", "A5", "A9"],
-    "c_g_chain":   ["C1", "C3", "G1", "A2", "A4", "A5", "A9"],
+    "c_chain": ["C1", "C2", "C3", "A2", "A4", "A5", "A9"],
+    "c_f_chain": ["C1", "C2", "F1", "F3", "A2", "A4", "A5", "A9"],
+    "full_chain": ["C1", "C2", "F2", "G1", "A2", "A4", "A5", "A9"],
+    "f_chain": ["F1", "F2", "F3", "F4", "A2", "A4", "A5", "A9"],
+    "c_g_chain": ["C1", "C3", "G1", "A2", "A4", "A5", "A9"],
 }
 
 
@@ -39,8 +39,14 @@ class ScenarioPatternOptimizer:
 
     def __init__(self, data_dir: str = None):
         if data_dir is None:
-            data_dir = str(Path(__file__).parent.parent.parent.parent.parent
-                           / "10-经典指标系统" / "user_data" / "data" / "aggregated" / "futures")
+            data_dir = str(
+                Path(__file__).parent.parent.parent.parent.parent
+                / "10-经典指标系统"
+                / "user_data"
+                / "data"
+                / "aggregated"
+                / "futures"
+            )
         self.data_dir = data_dir
         self._agent = None
         self._classifier = None
@@ -50,18 +56,21 @@ class ScenarioPatternOptimizer:
     def get_agent(self):
         if self._agent is None:
             from dreamos.apps.trading_agent.agent import TradingAgent
+
             self._agent = TradingAgent(budget_mode="lean")
         return self._agent
 
     def get_classifier(self):
         if self._classifier is None:
             from dreamos.core.sense.scenario_classifier import ScenarioClassifier
+
             self._classifier = ScenarioClassifier()
         return self._classifier
 
     def get_memory(self):
         if self._memory is None:
             from dreamos.core.memory.orchestration_memory import OrchestrationMemory
+
             self._memory = OrchestrationMemory()
             self._memory.load()
         return self._memory
@@ -77,9 +86,9 @@ class ScenarioPatternOptimizer:
         klines = []
         for k in data:
             if isinstance(k, list) and len(k) >= 6:
-                klines.append([
-                    int(k[0]), float(k[1]), float(k[2]), float(k[3]), float(k[4]), float(k[5])
-                ])
+                klines.append(
+                    [int(k[0]), float(k[1]), float(k[2]), float(k[3]), float(k[4]), float(k[5])]
+                )
         klines.sort(key=lambda x: x[0])
         return klines
 
@@ -100,20 +109,29 @@ class ScenarioPatternOptimizer:
         change_24h = self._pct_change(closes, min(24, len(closes) - 1))
         atr_pct = self._atr_pct(highs, lows, closes, 14)
         rsi14 = self._rsi(closes, 14)
-        high_24h = max(highs[-min(24, len(highs)):])
-        low_24h = min(lows[-min(24, len(lows)):])
+        high_24h = max(highs[-min(24, len(highs)) :])
+        low_24h = min(lows[-min(24, len(lows)) :])
         vol_ratio = 1.0
         if len(volumes) >= 20:
             recent_vol = sum(volumes[-5:]) / 5
             avg_vol = sum(volumes[-20:]) / 20
             vol_ratio = recent_vol / avg_vol if avg_vol > 0 else 1.0
         return {
-            "symbol": symbol, "price": price,
-            "ema20": ema20, "ema50": ema50, "ema200": ema200,
-            "change_1h": change_1h, "change_4h": change_4h, "change_24h": change_24h,
-            "atr_pct": atr_pct, "rsi14": rsi14,
-            "high_24h": high_24h, "low_24h": low_24h,
-            "vol_ratio": vol_ratio, "fgi": 50, "funding_rate": 0.0,
+            "symbol": symbol,
+            "price": price,
+            "ema20": ema20,
+            "ema50": ema50,
+            "ema200": ema200,
+            "change_1h": change_1h,
+            "change_4h": change_4h,
+            "change_24h": change_24h,
+            "atr_pct": atr_pct,
+            "rsi14": rsi14,
+            "high_24h": high_24h,
+            "low_24h": low_24h,
+            "vol_ratio": vol_ratio,
+            "fgi": 50,
+            "funding_rate": 0.0,
         }
 
     def _ema(self, values, period):
@@ -140,7 +158,7 @@ class ScenarioPatternOptimizer:
             return 0.02
         trs = []
         for i in range(-period, 0):
-            h, l = highs[i], lows[i]
+            h, l = highs[i], lows[i]  # noqa: E741
             pc = closes[i - 1]
             tr = max(h - l, abs(h - pc), abs(l - pc))
             trs.append(tr)
@@ -159,8 +177,9 @@ class ScenarioPatternOptimizer:
             return 100.0
         return 100 - 100 / (1 + avg_g / avg_l)
 
-    def backtest_pattern(self, symbol: str, pattern_name: str, pattern_nodes: List[str],
-                         interval: str = "1h") -> Dict[str, Any]:
+    def backtest_pattern(
+        self, symbol: str, pattern_name: str, pattern_nodes: List[str], interval: str = "1h"
+    ) -> Dict[str, Any]:
         """对单个symbol的单个pattern进行回测，返回各场景的交易结果"""
         window_size = 48
         step = 4
@@ -180,8 +199,8 @@ class ScenarioPatternOptimizer:
 
         for i in range(0, len(klines) - window_size - hold_periods, step):
             total_windows += 1
-            window = klines[i:i + window_size]
-            future = klines[i + window_size:i + window_size + hold_periods]
+            window = klines[i : i + window_size]
+            future = klines[i + window_size : i + window_size + hold_periods]
 
             market_data = self.build_market_data(window, symbol)
             if market_data is None:
@@ -212,7 +231,11 @@ class ScenarioPatternOptimizer:
             a5_out = outputs.get("A5", {})
             trade_order = a5_out.get("trade_order", {})
 
-            if not trade_order or trade_order.get("action") == "HOLD" or not trade_order.get("entry_price"):
+            if (
+                not trade_order
+                or trade_order.get("action") == "HOLD"
+                or not trade_order.get("entry_price")
+            ):
                 continue
 
             direction = trade_order.get("action", "HOLD")
@@ -272,10 +295,14 @@ class ScenarioPatternOptimizer:
             for pattern_name, pattern_nodes in GRAPH_PATTERNS.items():
                 logger.info(f"  测试 {pattern_name}...")
                 t0 = time.time()
-                scenario_returns = self.backtest_pattern(symbol, pattern_name, pattern_nodes, interval)
+                scenario_returns = self.backtest_pattern(
+                    symbol, pattern_name, pattern_nodes, interval
+                )
                 elapsed = time.time() - t0
                 total = sum(len(v) for v in scenario_returns.values())
-                logger.info(f"    {total} 笔交易, 覆盖 {len(scenario_returns)} 场景, 耗时 {elapsed:.1f}s")
+                logger.info(
+                    f"    {total} 笔交易, 覆盖 {len(scenario_returns)} 场景, 耗时 {elapsed:.1f}s"
+                )
                 for sid, returns in scenario_returns.items():
                     all_data[sid][pattern_name].extend(returns)
 
@@ -307,17 +334,13 @@ class ScenarioPatternOptimizer:
         updated_count = 0
         for sid, opt in scenario_opt.items():
             # 无条件更新：即使 score=0 也要写入，避免记忆表永远停留在 sparse=true
-            total_samples = sum(
-                v.get("sample_count", 0)
-                for v in opt["pattern_scores"].values()
-            )
+            total_samples = sum(v.get("sample_count", 0) for v in opt["pattern_scores"].values())
             memory.update_from_evolution(
                 scenario_id=sid,
                 new_pattern=opt["best_pattern"],
                 nodes=GRAPH_PATTERNS[opt["best_pattern"]],
                 score=opt["best_score"],
-                evidence={"source": "scenario_optimization",
-                          "sample_count": total_samples},
+                evidence={"source": "scenario_optimization", "sample_count": total_samples},
             )
             updated_count += 1
         memory.save()
@@ -370,6 +393,7 @@ class ScenarioPatternOptimizer:
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="场景化编排优化器")
     parser.add_argument("--symbols", default="BTC,ETH,SOL", help="回测币种，逗号分隔")
     parser.add_argument("--interval", default="1h", choices=["1h", "30m"])
@@ -393,7 +417,9 @@ def main():
     report_lines.append(f"优化币种: {', '.join(symbols)}")
     report_lines.append(f"回测周期: {args.interval}")
     report_lines.append(f"耗时: {elapsed:.1f}s")
-    report_lines.append(f"优化场景数: {result['scenarios_optimized']} / {result['total_scenarios']}")
+    report_lines.append(
+        f"优化场景数: {result['scenarios_optimized']} / {result['total_scenarios']}"
+    )
     report_lines.append("")
 
     # 场景详情
@@ -414,6 +440,7 @@ def main():
 
     # 各pattern使用统计
     from collections import Counter
+
     pattern_counts = Counter(
         opt["best_pattern"] for opt in result["scenario_optimization"].values()
     )
@@ -429,7 +456,8 @@ def main():
         output_path = Path(args.output)
     else:
         output_path = (
-            Path(__file__).parent / "reports"
+            Path(__file__).parent
+            / "reports"
             / f"scenario_opt_{args.interval}_{datetime.now().strftime('%Y%m%d_%H%M')}.md"
         )
     output_path.parent.mkdir(parents=True, exist_ok=True)

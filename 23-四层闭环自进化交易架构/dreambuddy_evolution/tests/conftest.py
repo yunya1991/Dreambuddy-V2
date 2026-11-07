@@ -2,6 +2,7 @@
 合并自 21-特征工程中心/tests/conftest.py + 4-MEMORY/tests/conftest.py
 Fixtures: tmp_gene_dir / fake_alerts / fake_sentiment_0
 """
+
 from __future__ import annotations
 
 import json
@@ -10,7 +11,9 @@ from pathlib import Path
 
 import pytest
 
-REPO = Path(__file__).resolve().parents[2]  # tests/ → dreambuddy_evolution/ → 23-四层闭环自进化交易架构/
+REPO = (
+    Path(__file__).resolve().parents[2]
+)  # tests/ → dreambuddy_evolution/ → 23-四层闭环自进化交易架构/
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 # 跨模块依赖：event_driven 包位于仓库根的 29-事件驱动策略系统/
@@ -57,7 +60,9 @@ def tmp_gene_dir(tmp_path, monkeypatch):
         },
         "version": "1.0",
     }
-    (cond_dir / "CD-MA200-GT-FIB0786.json").write_text(json.dumps(ok_cond, indent=2), encoding="utf-8")
+    (cond_dir / "CD-MA200-GT-FIB0786.json").write_text(
+        json.dumps(ok_cond, indent=2), encoding="utf-8"
+    )
 
     # 2. 最小合法 ACTION 样本
     ok_action = {
@@ -78,7 +83,9 @@ def tmp_gene_dir(tmp_path, monkeypatch):
         },
         "version": "1.0",
     }
-    (act_dir / "AC-LONG-3SL-6TP-05SIZE.json").write_text(json.dumps(ok_action, indent=2), encoding="utf-8")
+    (act_dir / "AC-LONG-3SL-6TP-05SIZE.json").write_text(
+        json.dumps(ok_action, indent=2), encoding="utf-8"
+    )
 
     # 3. 恶意注入 CONDITION 样本（TR-SG-08 恶意注入 不 crash 只跳过）
     bad_cond_xss = {
@@ -87,8 +94,10 @@ def tmp_gene_dir(tmp_path, monkeypatch):
         "condition_type": "indicator",
         "expression": "1 > 0",
         "parameters": {},
-        "code_ref": {"file": f"<script src='evil.js'>{'.'*1000}</script>",
-                     "lines": {"low": 1, "high": 2}},
+        "code_ref": {
+            "file": f"<script src='evil.js'>{'.'*1000}</script>",
+            "lines": {"low": 1, "high": 2},
+        },
         "version": "1.0",
     }
     (cond_dir / "BAD-XSS.json").write_text(json.dumps(bad_cond_xss, indent=2), encoding="utf-8")
@@ -128,6 +137,7 @@ def tmp_gene_dir(tmp_path, monkeypatch):
 @pytest.fixture
 def fake_alerts(monkeypatch):
     """monkeypatch dreambuddy_evolution.alert_bridge.send_alert → FakeAlert 计数"""
+
     class FakeAlert:
         counts: dict[str, int] = {"warn": 0, "critical": 0, "error": 0, "info": 0}
         last_messages: list[str] = []
@@ -142,6 +152,7 @@ def fake_alerts(monkeypatch):
 
     try:
         from dreambuddy_evolution import alert_bridge as ab
+
         monkeypatch.setattr(ab, "send_alert", FakeAlert.send, raising=False)
     except Exception:
         pass
@@ -156,12 +167,14 @@ def fake_sentiment_0(monkeypatch):
     """模拟 SentimentEngine USE_FINBERT=0 → FO-1：quality_score -0.15pp（TR-RV-06）"""
     try:
         from dreambuddy_evolution.core import resistance_vector as rf_mod
+
         monkeypatch.setattr(rf_mod, "_SENTIMENT_FO1_ACTIVE", True, raising=False)
     except Exception:
         pass
 
     class _FakeEngine:
         USE_FINBERT: int = 0
+
         def get_sentiment(self, *a, **kw) -> float:
             return 0.5
 
@@ -176,6 +189,7 @@ def _reset_agi_switches():
     """每个测试前后保存并恢复所有 AGI 开关状态，防止 set_switch 污染后续测试."""
     try:
         from dreambuddy_evolution.agi_config import AGI_SWITCHES, set_switch
+
         snapshot = dict(AGI_SWITCHES)
     except Exception:
         snapshot = None

@@ -17,32 +17,30 @@
   - 宏观离场信号 + 技术不支持 → 降级（减仓而非平仓）
 """
 
-import math
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, Any  # noqa: I001
 from datetime import datetime, timezone
 from dataclasses import dataclass
 
 try:
-    from .skill_engine import register_skill
+    from .skill_engine import register_skill  # noqa: I001
     from .strategy_exit_adapter import (
         evaluate_exit_rationality,
         get_strategy_exit_design,
-        ExitDesignPhilosophy,
-        MacroExitInfluenceLevel,
+        ExitDesignPhilosophy,  # noqa: F401
+        MacroExitInfluenceLevel,  # noqa: F401
     )
 except ImportError:
     from skill_engine import register_skill
     from strategy_exit_adapter import (
         evaluate_exit_rationality,
         get_strategy_exit_design,
-        ExitDesignPhilosophy,
-        MacroExitInfluenceLevel,
     )
 
 
 @dataclass
 class TechnicalExitSignal:
     """技术离场信号"""
+
     action: str = "HOLD"
     urgency: str = "LOW"
     confidence: float = 0.5
@@ -77,7 +75,11 @@ def _calc_simple_technical_signals(
         current_price = entry_price * (1 + unrealized_pnl_pct / 100)
 
     atr_pct = float(market_state.get("atr_pct", 2.0)) if isinstance(market_state, dict) else 2.0
-    rsi = float(market_state.get("rsi_1h", market_state.get("rsi_14", 50))) if isinstance(market_state, dict) else 50
+    rsi = (
+        float(market_state.get("rsi_1h", market_state.get("rsi_14", 50)))
+        if isinstance(market_state, dict)
+        else 50
+    )
 
     signals = []
     p0_triggered = False
@@ -92,26 +94,30 @@ def _calc_simple_technical_signals(
     max_loss_pct = -8.0 * leverage
     if pnl_eff <= max_loss_pct:
         p0_triggered = True
-        signals.append({
-            "layer": "P0",
-            "type": "max_loss",
-            "action": "CLOSE",
-            "urgency": "CRITICAL",
-            "confidence": 0.95,
-            "detail": f"有效盈亏 {pnl_eff:.1f}% 触及最大亏损阈值 {max_loss_pct:.1f}%",
-        })
+        signals.append(
+            {
+                "layer": "P0",
+                "type": "max_loss",
+                "action": "CLOSE",
+                "urgency": "CRITICAL",
+                "confidence": 0.95,
+                "detail": f"有效盈亏 {pnl_eff:.1f}% 触及最大亏损阈值 {max_loss_pct:.1f}%",
+            }
+        )
 
     liq_buffer_pct = 3.0 * leverage
     if pnl_eff <= -(100 - liq_buffer_pct):
         p0_triggered = True
-        signals.append({
-            "layer": "P0",
-            "type": "liquidation_risk",
-            "action": "CLOSE",
-            "urgency": "CRITICAL",
-            "confidence": 0.99,
-            "detail": f"接近强平价，缓冲不足 {liq_buffer_pct:.1f}%",
-        })
+        signals.append(
+            {
+                "layer": "P0",
+                "type": "liquidation_risk",
+                "action": "CLOSE",
+                "urgency": "CRITICAL",
+                "confidence": 0.99,
+                "detail": f"接近强平价，缓冲不足 {liq_buffer_pct:.1f}%",
+            }
+        )
 
     if open_time_str:
         try:
@@ -122,87 +128,104 @@ def _calc_simple_technical_signals(
 
             if hold_hours > max_hold_hours:
                 p0_triggered = True
-                signals.append({
-                    "layer": "P0",
-                    "type": "max_hold_time",
-                    "action": "CLOSE",
-                    "urgency": "HIGH",
-                    "confidence": 0.7,
-                    "detail": f"持仓 {hold_hours:.1f}h 超过最大持仓时间 {max_hold_hours}h",
-                })
+                signals.append(
+                    {
+                        "layer": "P0",
+                        "type": "max_hold_time",
+                        "action": "CLOSE",
+                        "urgency": "HIGH",
+                        "confidence": 0.7,
+                        "detail": f"持仓 {hold_hours:.1f}h 超过最大持仓时间 {max_hold_hours}h",
+                    }
+                )
         except (ValueError, TypeError):
             pass
 
     stop_loss_atr = 2.0 * atr_pct
     if pnl_eff <= -stop_loss_atr * leverage:
         p1_triggered = True
-        signals.append({
-            "layer": "P1",
-            "type": "atr_stop_loss",
-            "action": "CLOSE",
-            "urgency": "HIGH",
-            "confidence": 0.75,
-            "detail": f"有效盈亏 {pnl_eff:.1f}% 触发 ATR 止损 (2×ATR={stop_loss_atr:.1f}%)",
-        })
+        signals.append(
+            {
+                "layer": "P1",
+                "type": "atr_stop_loss",
+                "action": "CLOSE",
+                "urgency": "HIGH",
+                "confidence": 0.75,
+                "detail": f"有效盈亏 {pnl_eff:.1f}% 触发 ATR 止损 (2×ATR={stop_loss_atr:.1f}%)",
+            }
+        )
 
     take_profit_atr = 3.0 * atr_pct
     if pnl_eff >= take_profit_atr * leverage:
         p1_triggered = True
-        signals.append({
-            "layer": "P1",
-            "type": "atr_take_profit",
-            "action": "REDUCE",
-            "urgency": "MEDIUM",
-            "confidence": 0.65,
-            "detail": f"有效盈亏 {pnl_eff:.1f}% 触发 ATR 止盈 (3×ATR={take_profit_atr:.1f}%)",
-        })
+        signals.append(
+            {
+                "layer": "P1",
+                "type": "atr_take_profit",
+                "action": "REDUCE",
+                "urgency": "MEDIUM",
+                "confidence": 0.65,
+                "detail": f"有效盈亏 {pnl_eff:.1f}% 触发 ATR 止盈 (3×ATR={take_profit_atr:.1f}%)",
+            }
+        )
 
     if direction == "LONG":
         if rsi >= 75:
             p1_triggered = True
-            signals.append({
-                "layer": "P1",
-                "type": "rsi_overbought",
-                "action": "REDUCE",
-                "urgency": "MEDIUM",
-                "confidence": 0.6,
-                "detail": f"RSI={rsi:.1f} 超买区域，多头持仓考虑减仓",
-            })
+            signals.append(
+                {
+                    "layer": "P1",
+                    "type": "rsi_overbought",
+                    "action": "REDUCE",
+                    "urgency": "MEDIUM",
+                    "confidence": 0.6,
+                    "detail": f"RSI={rsi:.1f} 超买区域，多头持仓考虑减仓",
+                }
+            )
         elif rsi <= 25 and unrealized_pnl_pct < 0:
             p1_triggered = True
-            signals.append({
-                "layer": "P1",
-                "type": "rsi_oversold_loss",
-                "action": "HOLD",
-                "urgency": "LOW",
-                "confidence": 0.55,
-                "detail": f"RSI={rsi:.1f} 超卖，亏损持仓不宜再割",
-            })
+            signals.append(
+                {
+                    "layer": "P1",
+                    "type": "rsi_oversold_loss",
+                    "action": "HOLD",
+                    "urgency": "LOW",
+                    "confidence": 0.55,
+                    "detail": f"RSI={rsi:.1f} 超卖，亏损持仓不宜再割",
+                }
+            )
     elif direction == "SHORT":
         if rsi <= 25:
             p1_triggered = True
-            signals.append({
-                "layer": "P1",
-                "type": "rsi_oversold_short",
-                "action": "REDUCE",
-                "urgency": "MEDIUM",
-                "confidence": 0.6,
-                "detail": f"RSI={rsi:.1f} 超卖区域，空头持仓考虑减仓",
-            })
+            signals.append(
+                {
+                    "layer": "P1",
+                    "type": "rsi_oversold_short",
+                    "action": "REDUCE",
+                    "urgency": "MEDIUM",
+                    "confidence": 0.6,
+                    "detail": f"RSI={rsi:.1f} 超卖区域，空头持仓考虑减仓",
+                }
+            )
         elif rsi >= 75 and unrealized_pnl_pct < 0:
             p1_triggered = True
-            signals.append({
-                "layer": "P1",
-                "type": "rsi_overbought_loss",
-                "action": "HOLD",
-                "urgency": "LOW",
-                "confidence": 0.55,
-                "detail": f"RSI={rsi:.1f} 超买，亏损空单不宜再追",
-            })
+            signals.append(
+                {
+                    "layer": "P1",
+                    "type": "rsi_overbought_loss",
+                    "action": "HOLD",
+                    "urgency": "LOW",
+                    "confidence": 0.55,
+                    "detail": f"RSI={rsi:.1f} 超买，亏损空单不宜再追",
+                }
+            )
 
     if p0_triggered:
         p0_signals = [s for s in signals if s["layer"] == "P0"]
-        worst = max(p0_signals, key=lambda s: {"CRITICAL": 3, "HIGH": 2, "MEDIUM": 1, "LOW": 0}[s["urgency"]])
+        worst = max(
+            p0_signals,
+            key=lambda s: {"CRITICAL": 3, "HIGH": 2, "MEDIUM": 1, "LOW": 0}[s["urgency"]],
+        )
         final_action = worst["action"]
         final_urgency = worst["urgency"]
         final_confidence = worst["confidence"]
@@ -345,19 +368,25 @@ def fuse_macro_technical(
                 final_urgency = "HIGH"
                 final_confidence = adjusted_macro_confidence
                 fusion_mode = "macro_overrides_p0"
-                fusion_reason = f"P0触发但宏观置信度{adjusted_macro_confidence:.0%}≥90%，策略允许覆盖，宏观优先"
+                fusion_reason = (
+                    f"P0触发但宏观置信度{adjusted_macro_confidence:.0%}≥90%，策略允许覆盖，宏观优先"
+                )
             else:
                 final_action = tech_action
                 final_urgency = tech_urgency
                 final_confidence = tech_confidence
                 fusion_mode = "technical_p0_veto"
-                fusion_reason = f"技术P0硬退出触发，宏观置信度不足覆盖，执行P0。{technical_signal.reason}"
+                fusion_reason = (
+                    f"技术P0硬退出触发，宏观置信度不足覆盖，执行P0。{technical_signal.reason}"
+                )
         else:
             final_action = tech_action
             final_urgency = tech_urgency
             final_confidence = tech_confidence
             fusion_mode = "technical_p0_veto"
-            fusion_reason = f"技术P0硬退出触发，策略不允许宏观覆盖，一票否决。{technical_signal.reason}"
+            fusion_reason = (
+                f"技术P0硬退出触发，策略不允许宏观覆盖，一票否决。{technical_signal.reason}"
+            )
 
     # ==========================================
     # 第3层：宏观+技术融合
@@ -367,9 +396,9 @@ def fuse_macro_technical(
         macro_conf_final = adjusted_macro_confidence
 
         same_direction = (
-            (macro_action_final == tech_action) or
-            (macro_action_final in ("CLOSE", "REDUCE") and tech_action in ("CLOSE", "REDUCE")) or
-            (macro_action_final in ("HOLD", "RAISE_TP") and tech_action in ("HOLD", "RAISE_TP"))
+            (macro_action_final == tech_action)
+            or (macro_action_final in ("CLOSE", "REDUCE") and tech_action in ("CLOSE", "REDUCE"))
+            or (macro_action_final in ("HOLD", "RAISE_TP") and tech_action in ("HOLD", "RAISE_TP"))
         )
 
         if same_direction:
@@ -380,13 +409,23 @@ def fuse_macro_technical(
                 fusion_mode = "mutual_confirm_hold"
                 fusion_reason = "宏观+技术均无离场信号，相互确认持有"
             else:
-                final_action = macro_action_final if action_rank[macro_action_final] >= action_rank[tech_action] else tech_action
-                final_urgency = macro_urgency if urgency_rank[macro_urgency] >= urgency_rank[tech_urgency] else tech_urgency
+                final_action = (
+                    macro_action_final
+                    if action_rank[macro_action_final] >= action_rank[tech_action]
+                    else tech_action
+                )
+                final_urgency = (
+                    macro_urgency
+                    if urgency_rank[macro_urgency] >= urgency_rank[tech_urgency]
+                    else tech_urgency
+                )
                 final_confidence = min(0.95, (macro_conf_final + tech_confidence) / 2 + 0.1)
                 fusion_mode = "mutual_confirm_strengthen"
                 fusion_reason = f"宏观({macro_action_final})与技术({tech_action})方向一致，信号强化"
         else:
-            macro_strength = action_rank[macro_action_final] * urgency_rank[macro_urgency] * macro_conf_final
+            macro_strength = (
+                action_rank[macro_action_final] * urgency_rank[macro_urgency] * macro_conf_final
+            )
             tech_strength = action_rank[tech_action] * urgency_rank[tech_urgency] * tech_confidence
 
             if macro_strength > tech_strength:
@@ -394,19 +433,25 @@ def fuse_macro_technical(
                 final_urgency = _downgrade_urgency(macro_urgency)
                 final_confidence = max(0.3, macro_conf_final - 0.2)
                 fusion_mode = "macro_primary_tech_contradict"
-                fusion_reason = f"宏观({macro_action_final})主导但与技术({tech_action})矛盾，建议降级执行"
+                fusion_reason = (
+                    f"宏观({macro_action_final})主导但与技术({tech_action})矛盾，建议降级执行"
+                )
             elif tech_strength > macro_strength:
                 final_action = _downgrade_action(tech_action)
                 final_urgency = _downgrade_urgency(tech_urgency)
                 final_confidence = max(0.3, tech_confidence - 0.2)
                 fusion_mode = "tech_primary_macro_contradict"
-                fusion_reason = f"技术({tech_action})主导但与宏观({macro_action_final})矛盾，建议降级执行"
+                fusion_reason = (
+                    f"技术({tech_action})主导但与宏观({macro_action_final})矛盾，建议降级执行"
+                )
             else:
                 final_action = "HOLD"
                 final_urgency = "LOW"
                 final_confidence = 0.4
                 fusion_mode = "contradict_hold"
-                fusion_reason = f"宏观({macro_action_final})与技术({tech_action})矛盾，信号抵消，建议观望"
+                fusion_reason = (
+                    f"宏观({macro_action_final})与技术({tech_action})矛盾，信号抵消，建议观望"
+                )
 
     params = macro_evaluation.get("parameters", {})
     if final_action == "REDUCE":
@@ -447,7 +492,9 @@ def fuse_macro_technical(
             "strategy_id": strategy_id,
             "strategy_name": strategy_design.strategy_name if strategy_design else "未知策略",
             "philosophy": strategy_design.philosophy.value if strategy_design else "unknown",
-            "macro_influence_level": strategy_design.macro_influence_level.value if strategy_design else "unknown",
+            "macro_influence_level": (
+                strategy_design.macro_influence_level.value if strategy_design else "unknown"
+            ),
             "macro_weight": strategy_design.macro_signal_weight if strategy_design else 0.5,
             "technical_weight": strategy_design.technical_signal_weight if strategy_design else 0.5,
         },
@@ -504,25 +551,31 @@ def technical_exit_handler(inputs: Dict[str, Any], engine) -> Dict[str, Any]:
     evaluations = []
     for pos in positions:
         tech_signal = _calc_simple_technical_signals(pos, market, market_state)
-        evaluations.append({
-            "position": {
-                "symbol": pos.get("symbol", ""),
-                "system": pos.get("system", ""),
-                "direction": pos.get("direction", ""),
-            },
-            "technical_action": tech_signal.action,
-            "technical_urgency": tech_signal.urgency,
-            "technical_confidence": tech_signal.confidence,
-            "technical_reason": tech_signal.reason,
-            "signal_layers": tech_signal.source_layers,
-        })
+        evaluations.append(
+            {
+                "position": {
+                    "symbol": pos.get("symbol", ""),
+                    "system": pos.get("system", ""),
+                    "direction": pos.get("direction", ""),
+                },
+                "technical_action": tech_signal.action,
+                "technical_urgency": tech_signal.urgency,
+                "technical_confidence": tech_signal.confidence,
+                "technical_reason": tech_signal.reason,
+                "signal_layers": tech_signal.source_layers,
+            }
+        )
 
     return {
         "technical_evaluations": evaluations,
         "summary": {
             "total_positions": len(evaluations),
-            "p0_triggered_count": sum(1 for e in evaluations if e["signal_layers"].get("p0_triggered")),
-            "p1_triggered_count": sum(1 for e in evaluations if e["signal_layers"].get("p1_triggered")),
+            "p0_triggered_count": sum(
+                1 for e in evaluations if e["signal_layers"].get("p0_triggered")
+            ),
+            "p1_triggered_count": sum(
+                1 for e in evaluations if e["signal_layers"].get("p1_triggered")
+            ),
             "close_count": sum(1 for e in evaluations if e["technical_action"] == "CLOSE"),
             "reduce_count": sum(1 for e in evaluations if e["technical_action"] == "REDUCE"),
             "hold_count": sum(1 for e in evaluations if e["technical_action"] == "HOLD"),

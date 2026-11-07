@@ -4,6 +4,7 @@
 - P2-4: git_history 路径解析失败返回 unknown 而非静默空
 - P2-5: algorithm_reducer 模式库扩展（梯度更新/相似性检索/贝叶斯更新/状态机）
 """
+
 import os
 import sys
 import tempfile
@@ -11,23 +12,22 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.evidence import Evidence
+from core.evidence import Evidence  # noqa: I001
 from core.investigation_workflow import investigate, InvestigationWorkflow
 from core.git_history import trace_git_history
 from core.algorithm_reducer import reduce_algorithm
-
 
 # ---------------------------------------------------------------------------
 # P2-3: evidence 去重
 # ---------------------------------------------------------------------------
 
-SAMPLE_PROJECT = '''
+SAMPLE_PROJECT = """
 def main():
     svc = UserService()
     users = svc.get_users()
     for u in users:
         print(u)
-'''
+"""
 
 
 def _setup_project(d):
@@ -52,9 +52,7 @@ def test_investigate_top_level_evidence_no_duplicate_ids():
 
     ids = [e.evidence_id for e in result["evidence"]]
     assert len(ids) > 0
-    assert len(ids) == len(set(ids)), (
-        f"evidence 存在重复: {len(ids)} 条中仅 {len(set(ids))} 唯一"
-    )
+    assert len(ids) == len(set(ids)), f"evidence 存在重复: {len(ids)} 条中仅 {len(set(ids))} 唯一"
 
 
 def test_phase_annotate_dedup_keeps_first_occurrence():
@@ -80,32 +78,33 @@ def test_phase_annotate_dedup_keeps_first_occurrence():
     # 共享证据应只出现一次，且顺序为首次出现（locate 在前）
     assert ids[0] == shared.evidence_id
     # P3-2 追加的架构债务 Evidence 不计入夹具集合，故用子集断言
-    assert {shared.evidence_id, only_a.evidence_id, only_b.evidence_id}.issubset(
-        set(ids)
-    )
+    assert {shared.evidence_id, only_a.evidence_id, only_b.evidence_id}.issubset(set(ids))
 
 
 # ---------------------------------------------------------------------------
 # P2-4: git_history 路径失败返回 unknown
 # ---------------------------------------------------------------------------
 
+
 def test_git_history_nonexistent_file_returns_unknown_level():
     """P2-4: 不存在路径应返回 level=unknown 的 Evidence 且 known_gaps 非空。"""
     with tempfile.TemporaryDirectory() as d:
         import subprocess
+
         subprocess.run(["git", "init"], cwd=d, capture_output=True, check=True)
         result = trace_git_history(d, os.path.join(d, "不存在_嵌套/missing.py"))
 
     assert len(result["evidence"]) > 0
     unknown_evs = [
-        e for e in result["evidence"]
+        e
+        for e in result["evidence"]
         if (e.level.value if hasattr(e.level, "value") else str(e.level)) == "unknown"
     ]
     assert unknown_evs, "文件不存在时应返回 level=unknown 的 Evidence"
     assert any(e.known_gaps for e in unknown_evs), "unknown Evidence 的 known_gaps 应非空"
-    assert any("路径解析失败" in g for e in unknown_evs for g in e.known_gaps), (
-        "known_gaps 应包含 '路径解析失败' 及原因"
-    )
+    assert any(
+        "路径解析失败" in g for e in unknown_evs for g in e.known_gaps
+    ), "known_gaps 应包含 '路径解析失败' 及原因"
 
 
 def test_git_history_git_log_failure_returns_unknown(monkeypatch):
@@ -123,13 +122,15 @@ def test_git_history_git_log_failure_returns_unknown(monkeypatch):
 
     with tempfile.TemporaryDirectory() as d:
         import subprocess
+
         subprocess.run(["git", "init"], cwd=d, capture_output=True, check=True)
         f = os.path.join(d, "sample.py")
         Path(f).write_text("def a():\n    return 1\n")
         result = trace_git_history(d, f)
 
     unknown_evs = [
-        e for e in result["evidence"]
+        e
+        for e in result["evidence"]
         if (e.level.value if hasattr(e.level, "value") else str(e.level)) == "unknown"
     ]
     assert unknown_evs, "git log 失败时应返回 level=unknown 的 Evidence"
@@ -140,6 +141,7 @@ def test_git_history_normal_path_unchanged():
     """P2-4: 正常路径行为不变（有提交历史时仍返回 observation/derivation 证据）。"""
     with tempfile.TemporaryDirectory() as d:
         import subprocess
+
         subprocess.run(["git", "init"], cwd=d, capture_output=True, check=True)
         subprocess.run(["git", "config", "user.email", "t@t.com"], cwd=d, capture_output=True)
         subprocess.run(["git", "config", "user.name", "T"], cwd=d, capture_output=True)
@@ -152,8 +154,7 @@ def test_git_history_normal_path_unchanged():
 
     assert result["change_count"] >= 1
     levels = {
-        (e.level.value if hasattr(e.level, "value") else str(e.level))
-        for e in result["evidence"]
+        (e.level.value if hasattr(e.level, "value") else str(e.level)) for e in result["evidence"]
     }
     assert "unknown" not in levels, "正常路径不应出现 unknown 证据"
 
@@ -162,34 +163,34 @@ def test_git_history_normal_path_unchanged():
 # P2-5: algorithm_reducer 模式库扩展
 # ---------------------------------------------------------------------------
 
-GRADIENT_SAMPLE = '''
+GRADIENT_SAMPLE = """
 def train_step(param, lr):
     grad = compute_grad(param)
     param -= lr * grad
     return param
-'''
+"""
 
-SIMILARITY_SAMPLE = '''
+SIMILARITY_SAMPLE = """
 def retrieve(query_emb, keys, k=3):
     scores = [cosine_sim(query_emb, key) for key in keys]
     top_k = np.argsort(scores)[-k:]
     return top_k
-'''
+"""
 
-BAYES_SAMPLE = '''
+BAYES_SAMPLE = """
 def update_belief(prior, likelihood):
     posterior = likelihood * prior
     return posterior
-'''
+"""
 
-STATE_MACHINE_SAMPLE = '''
+STATE_MACHINE_SAMPLE = """
 def on_event(state, event):
     if state == "idle" and event == "start":
         state = "running"
     elif state == "running" and event == "stop":
         state = "idle"
     return state
-'''
+"""
 
 
 def _reduce_sample(code: str, func: str) -> dict:
@@ -201,27 +202,27 @@ def _reduce_sample(code: str, func: str) -> dict:
 
 def test_pattern_library_total_at_least_7():
     """P2-5: 模式库总数应 ≥ 7（现有6种 + 新增领域模式）。"""
-    recursion = '''
+    recursion = """
 def factorial(n):
     if n <= 1:
         return 1
     return n * factorial(n - 1)
-'''
-    iteration = '''
+"""
+    iteration = """
 def sum_list(items):
     total = 0
     for item in items:
         total += item
     return total
-'''
-    divide_conquer = '''
+"""
+    divide_conquer = """
 def merge_sort(items):
     if len(items) <= 1:
         return items
     mid = items[:len(items) // 2]
     return merge(merge_sort(mid), merge_sort(items[len(items) // 2:]))
-'''
-    dp = '''
+"""
+    dp = """
 def fib(n, memo=None):
     if memo is None:
         memo = {}
@@ -231,7 +232,7 @@ def fib(n, memo=None):
         return n
     memo[n] = fib(n - 1, memo) + fib(n - 2, memo)
     return memo[n]
-'''
+"""
     samples = [
         (recursion, "factorial"),
         (iteration, "sum_list"),
@@ -250,18 +251,27 @@ def fib(n, memo=None):
 
     # 6 种基础模式 + 新增领域模式，可识别类型总数应 ≥ 7
     # （通过多样化样本驱动检测器，断言识别出的模式种类数）
-    base = {"递归 recursion", "迭代 iteration", "累加器 accumulator",
-            "条件分支 conditional_branch", "分治 divide_and_conquer",
-            "动态规划 dynamic_programming"}
-    new = {"梯度更新 gradient_update", "相似性检索 similarity_search",
-           "贝叶斯更新 bayesian_update", "状态机 state_machine"}
+    base = {
+        "递归 recursion",
+        "迭代 iteration",
+        "累加器 accumulator",
+        "条件分支 conditional_branch",
+        "分治 divide_and_conquer",
+        "动态规划 dynamic_programming",
+    }
+    new = {
+        "梯度更新 gradient_update",
+        "相似性检索 similarity_search",
+        "贝叶斯更新 bayesian_update",
+        "状态机 state_machine",
+    }
     known = base | new
     unknown_types = detected_types - known
     assert not unknown_types, f"出现未知模式类型: {unknown_types}"
     # 本测试样本集至少应命中 7 种不同模式
-    assert len(detected_types) >= 7, (
-        f"样本集仅识别出 {len(detected_types)} 种模式: {detected_types}"
-    )
+    assert (
+        len(detected_types) >= 7
+    ), f"样本集仅识别出 {len(detected_types)} 种模式: {detected_types}"
 
 
 def test_gradient_update_pattern_detected():

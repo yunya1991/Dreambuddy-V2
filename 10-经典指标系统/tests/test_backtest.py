@@ -1,4 +1,5 @@
 """测试 classic_pipeline.backtest 模块。"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -13,13 +14,15 @@ def ohlcv_df() -> pd.DataFrame:
     base = 100.0
     returns = np.random.randn(n) * 0.01
     close = base * np.cumprod(1 + returns)
-    return pd.DataFrame({
-        "open": close * 0.999,
-        "high": close * 1.005,
-        "low": close * 0.995,
-        "close": close,
-        "volume": np.random.randint(1000, 5000, n),
-    })
+    return pd.DataFrame(
+        {
+            "open": close * 0.999,
+            "high": close * 1.005,
+            "low": close * 0.995,
+            "close": close,
+            "volume": np.random.randint(1000, 5000, n),
+        }
+    )
 
 
 class TestRunBacktest:

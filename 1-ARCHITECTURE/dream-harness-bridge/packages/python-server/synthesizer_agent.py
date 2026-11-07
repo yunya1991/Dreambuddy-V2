@@ -10,6 +10,7 @@
   - signals_ref / charts_ref 引用已聚合数据, 不重新生成
   - 与 aggregator.py 解耦: synthesize(aggregated_dict) → List[SynthesizedCard]
 """
+
 from __future__ import annotations
 
 import json
@@ -18,10 +19,10 @@ import traceback
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
-
 # ============================================================
 # 数据结构
 # ============================================================
+
 
 @dataclass
 class SynthesizedCard:
@@ -32,6 +33,7 @@ class SynthesizedCard:
         - "recommendation": 行动建议 (关注 / 规避 / 调整仓位)
     signals_ref / charts_ref: 引用聚合结果, 不重新生成原始数据
     """
+
     card_type: str  # "insight" | "recommendation"
     title: str
     content: str
@@ -55,6 +57,7 @@ class SynthesizedCard:
 # ============================================================
 # SynthesizerAgent
 # ============================================================
+
 
 class SynthesizerAgent:
     """聚合层 LLM 综合器
@@ -210,7 +213,7 @@ class SynthesizerAgent:
 - 正文用中文, 逻辑清晰, 论据充分, 每个论点都有数据支撑.
 - insights 至少 3 条, 不超过 6 条; recommendations 1-2 条.
 - 每条 content 控制在 500 字以内, 但要包含足够的数据细节.
-"""
+"""  # noqa: B905
 
     def _parse_llm_response(self, resp: str) -> Dict[str, Any]:
         """解析 LLM 返回的 JSON
@@ -251,28 +254,32 @@ class SynthesizerAgent:
         avg_conf = aggregated.get("avg_confidence", 0.0)
 
         for ins in parsed.get("insights", []):
-            cards.append(SynthesizedCard(
-                card_type="insight",
-                title=ins.get("title", "洞察"),
-                content=ins.get("content", ""),
-                signals_ref=top_signals,
-                charts_ref=charts,
-                confidence=avg_conf,
-                source_modules=modules,
-            ))
+            cards.append(
+                SynthesizedCard(
+                    card_type="insight",
+                    title=ins.get("title", "洞察"),
+                    content=ins.get("content", ""),
+                    signals_ref=top_signals,
+                    charts_ref=charts,
+                    confidence=avg_conf,
+                    source_modules=modules,
+                )
+            )
 
         for rec in parsed.get("recommendations", []):
             action = rec.get("action", "建议")
             reason = rec.get("reason", "")
-            cards.append(SynthesizedCard(
-                card_type="recommendation",
-                title=action,
-                content=reason,
-                signals_ref=top_signals,
-                charts_ref=charts,
-                confidence=avg_conf,
-                source_modules=modules,
-            ))
+            cards.append(
+                SynthesizedCard(
+                    card_type="recommendation",
+                    title=action,
+                    content=reason,
+                    signals_ref=top_signals,
+                    charts_ref=charts,
+                    confidence=avg_conf,
+                    source_modules=modules,
+                )
+            )
 
         return cards
 
@@ -287,7 +294,7 @@ class SynthesizerAgent:
 
         基于 consensus_direction + top_signals 拼装模板卡片
         """
-        summaries = aggregated.get("summaries", [])
+        summaries = aggregated.get("summaries", [])  # noqa: F841
         top_signals = aggregated.get("top_signals", [])
         charts = aggregated.get("all_charts", [])
         consensus = aggregated.get("consensus_direction", "neutral")
@@ -321,15 +328,17 @@ class SynthesizerAgent:
                 f"平均置信度 {avg_conf:.2f}, 建议观望."
             )
 
-        cards.append(SynthesizedCard(
-            card_type="insight",
-            title=insight_title,
-            content=insight_content,
-            signals_ref=top_signals,
-            charts_ref=charts,
-            confidence=avg_conf,
-            source_modules=modules,
-        ))
+        cards.append(
+            SynthesizedCard(
+                card_type="insight",
+                title=insight_title,
+                content=insight_content,
+                signals_ref=top_signals,
+                charts_ref=charts,
+                confidence=avg_conf,
+                source_modules=modules,
+            )
+        )
 
         # Recommendation 卡片: 基于 consensus 给出行动建议
         if consensus == "long":
@@ -342,15 +351,17 @@ class SynthesizerAgent:
             rec_action = "保持观望"
             rec_reason = "多空信号均衡, 等待方向明确后再行动"
 
-        cards.append(SynthesizedCard(
-            card_type="recommendation",
-            title=rec_action,
-            content=rec_reason,
-            signals_ref=top_signals,
-            charts_ref=charts,
-            confidence=avg_conf,
-            source_modules=modules,
-        ))
+        cards.append(
+            SynthesizedCard(
+                card_type="recommendation",
+                title=rec_action,
+                content=rec_reason,
+                signals_ref=top_signals,
+                charts_ref=charts,
+                confidence=avg_conf,
+                source_modules=modules,
+            )
+        )
 
         return cards
 
@@ -363,9 +374,7 @@ class SynthesizerAgent:
         try:
             consensus = aggregated.get("consensus_direction", "neutral")
             context = f"synthesizer,共识={consensus},聚合层综合"
-            return self._cognitive.recall(
-                context=context, top_k=5, min_quality="C"
-            )
+            return self._cognitive.recall(context=context, top_k=5, min_quality="C")
         except Exception:  # noqa: BLE001 FAIL-OPEN
             return []
 
@@ -399,6 +408,7 @@ class SynthesizerAgent:
 # ============================================================
 # IPC handler (供 server.py 路由)
 # ============================================================
+
 
 def handle_synthesizer_agent(params: dict) -> dict:
     """IPC handler: synthesizer_agent 综合器

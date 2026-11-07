@@ -3,10 +3,10 @@
 SPEC v2.0-rc3 第 7 节：NullBot 用于内部辩论模式（不发送 Telegram）。
 实现 TelegramDualBot 接口但只存储消息，不发送。
 """
+
 from __future__ import annotations
 
 import pytest
-
 from core.null_bot import NullBot
 
 

@@ -3,14 +3,13 @@
 对齐 SPEC-20261004 §3.2 / §3.3 + SPEC-20260929 §2.1 IntentSample 格式。
 HC-1a：本模块在 30 系统内，不修改 dreamos/。
 """
+
 from __future__ import annotations
 
 import json
-import uuid
-from dataclasses import dataclass, asdict
-from datetime import datetime, timezone
-from pathlib import Path
 from collections import defaultdict
+from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 
@@ -27,6 +26,7 @@ class IntentSample:
     - dataset_split: train | eval
     - created_at: ISO8601
     """
+
     sample_id: str
     input: Dict[str, Any]
     gold: Dict[str, str]
@@ -56,7 +56,11 @@ class IntentSamplePipeline:
         distill_accuracy_target: float = 0.85,
         trigger_fn: Optional[Callable] = None,
     ):
-        self.STORAGE_PATH = Path(storage_path) if storage_path else Path("30-真实环境交互系统/training/intent_samples/")
+        self.STORAGE_PATH = (
+            Path(storage_path)
+            if storage_path
+            else Path("30-真实环境交互系统/training/intent_samples/")
+        )
         self.BUCKET_THRESHOLD = bucket_threshold
         self.DISTILL_ACCURACY_TARGET = distill_accuracy_target
         self._trigger_fn = trigger_fn
@@ -79,7 +83,9 @@ class IntentSamplePipeline:
             self._bucket_counter[bucket_key] = 0  # 触发后清零，避免重复
 
     def _persist(self, sample: IntentSample) -> None:
-        bucket_dir = self.STORAGE_PATH / f"{sample.gold['gold_intent']}_{sample.input['scenario_id']}"
+        bucket_dir = (
+            self.STORAGE_PATH / f"{sample.gold['gold_intent']}_{sample.input['scenario_id']}"
+        )
         bucket_dir.mkdir(parents=True, exist_ok=True)
         with open(bucket_dir / f"{sample.sample_id}.json", "w", encoding="utf-8") as f:
             json.dump(sample.to_dict(), f, ensure_ascii=False, indent=2)
@@ -92,6 +98,7 @@ class IntentSamplePipeline:
             return
         # 默认调用 IntentTrainer（Task 3 实现，懒导入避免循环依赖）
         from core.intent_trainer import IntentTrainer
+
         trainer = IntentTrainer()
         trainer.update_weights(bucket_key, samples)
         if accuracy >= self.DISTILL_ACCURACY_TARGET and len(samples) >= self.BUCKET_THRESHOLD:

@@ -1,4 +1,4 @@
-import unittest
+import unittest  # noqa: I001
 
 import os
 import json
@@ -14,15 +14,17 @@ class TestArenaEntryGate(unittest.TestCase):
         self._orig_config = dict(svc.CONFIG)
         self._orig_elastic_state = dict(getattr(svc, "ELASTIC_STATE", {}))
 
-        svc.CONFIG.update({
-            "arena_entry_min_votes": 3,
-            "arena_entry_min_weight_sum": 0.55,
-            "arena_entry_weight_sum_floor_votes": 2,
-            "arena_entry_vote_eligible_only": True,
-            "arena_capital_floor_u": 0.0,
-            "elastic_gating_enabled": False,
-            "elastic_vote_rule": "auto",
-        })
+        svc.CONFIG.update(
+            {
+                "arena_entry_min_votes": 3,
+                "arena_entry_min_weight_sum": 0.55,
+                "arena_entry_weight_sum_floor_votes": 2,
+                "arena_entry_vote_eligible_only": True,
+                "arena_capital_floor_u": 0.0,
+                "elastic_gating_enabled": False,
+                "elastic_vote_rule": "auto",
+            }
+        )
         try:
             svc.ELASTIC_STATE.clear()
             svc.ELASTIC_STATE.update({"by_group": {}})
@@ -117,8 +119,20 @@ class TestArenaEntryGate(unittest.TestCase):
         arena_evt = {
             "threshold": 0.70,
             "models": {
-                "A": {"eligible": True, "capital_u": 100.0, "pc": 0.71, "take": False, "weight": 0.1},
-                "B": {"eligible": True, "capital_u": 100.0, "pc": 0.75, "take": False, "weight": 0.1},
+                "A": {
+                    "eligible": True,
+                    "capital_u": 100.0,
+                    "pc": 0.71,
+                    "take": False,
+                    "weight": 0.1,
+                },
+                "B": {
+                    "eligible": True,
+                    "capital_u": 100.0,
+                    "pc": 0.75,
+                    "take": False,
+                    "weight": 0.1,
+                },
             },
         }
         out = svc._arena_entry_gate(arena_evt)
@@ -269,28 +283,30 @@ class TestArenaDiversityAntiCorrelationBonus(unittest.TestCase):
         svc.ARENA_STATE.clear()
         svc.ARENA_STATE.update({"inited": True, "models": {}, "history": []})
 
-        svc.CONFIG.update({
-            "arena_select_method": "weight",
-            "arena_use_capital_in_selection": False,
-            "arena_capital_floor_u": 0.0,
-            "arena_diversity_enabled": True,
-            "arena_diversity_use_recent_count": False,
-            "arena_diversity_recent_k": 0,
-            "arena_diversity_lambda": 0.0,
-            "arena_diversity_use_feature": False,
-            "arena_diversity_feature_lambda": 0.0,
-            "arena_diversity_use_corr": True,
-            "arena_diversity_corr_metric": "edge",
-            "arena_diversity_corr_window": 200,
-            "arena_diversity_corr_min_overlap": 2,
-            "arena_diversity_corr_start": 0.7,
-            "arena_diversity_corr_use_abs": False,
-            "arena_diversity_corr_lambda": 0.0,
-            "arena_diversity_corr_anti_start": 0.2,
-            "arena_diversity_corr_anti_lambda": 3.0,
-            "arena_diversity_corr_anti_cap": 2.0,
-            "arena_diversity_ref": "recent_top",
-        })
+        svc.CONFIG.update(
+            {
+                "arena_select_method": "weight",
+                "arena_use_capital_in_selection": False,
+                "arena_capital_floor_u": 0.0,
+                "arena_diversity_enabled": True,
+                "arena_diversity_use_recent_count": False,
+                "arena_diversity_recent_k": 0,
+                "arena_diversity_lambda": 0.0,
+                "arena_diversity_use_feature": False,
+                "arena_diversity_feature_lambda": 0.0,
+                "arena_diversity_use_corr": True,
+                "arena_diversity_corr_metric": "edge",
+                "arena_diversity_corr_window": 200,
+                "arena_diversity_corr_min_overlap": 2,
+                "arena_diversity_corr_start": 0.7,
+                "arena_diversity_corr_use_abs": False,
+                "arena_diversity_corr_lambda": 0.0,
+                "arena_diversity_corr_anti_start": 0.2,
+                "arena_diversity_corr_anti_lambda": 3.0,
+                "arena_diversity_corr_anti_cap": 2.0,
+                "arena_diversity_ref": "recent_top",
+            }
+        )
 
         svc._arena_feature_jaccard = lambda *_args, **_kwargs: 0.0
 
@@ -339,26 +355,30 @@ class TestQuantAutoBtcaltsTick(unittest.TestCase):
         self._orig_macro_dir = svc._macro_btc_dir_snapshot
         self._orig_macro_shape = svc._entry_macro_btceth_shape_at
 
-        svc.CONFIG.update({
-            "quant_auto_enabled": True,
-            "quant_auto_btcalts_enabled": True,
-            "quant_auto_mode": "paper",
-            "quant_auto_btcalts_max_open_pairs": 1,
-            "quant_auto_btcalts_scan_n": 10,
-            "quant_auto_btcalts_selector_topk": 3,
-            "quant_auto_btcalts_cooldown_bars": 3,
-            "quant_auto_btcalts_btc_hedge_frac": "",
-            "quant_pairs_btcalt_notional_usdc": 123.0,
-        })
+        svc.CONFIG.update(
+            {
+                "quant_auto_enabled": True,
+                "quant_auto_btcalts_enabled": True,
+                "quant_auto_mode": "paper",
+                "quant_auto_btcalts_max_open_pairs": 1,
+                "quant_auto_btcalts_scan_n": 10,
+                "quant_auto_btcalts_selector_topk": 3,
+                "quant_auto_btcalts_cooldown_bars": 3,
+                "quant_auto_btcalts_btc_hedge_frac": "",
+                "quant_pairs_btcalt_notional_usdc": 123.0,
+            }
+        )
 
         try:
             svc.TRACKER_STATE.clear()
         except Exception:
             pass
-        svc.TRACKER_STATE.update({
-            "quant_open_positions": {},
-            "quant_auto_btcalts_cooldown": {},
-        })
+        svc.TRACKER_STATE.update(
+            {
+                "quant_open_positions": {},
+                "quant_auto_btcalts_cooldown": {},
+            }
+        )
 
         try:
             svc.UNIVERSE_STATE.clear()
@@ -372,7 +392,11 @@ class TestQuantAutoBtcaltsTick(unittest.TestCase):
         svc._build_universe_pipeline = lambda *_args, **_kwargs: None
 
         svc._macro_btc_dir_snapshot = lambda **_kw: {"ok": True, "dir": 0}
-        svc._entry_macro_btceth_shape_at = lambda *_a, **_kw: {"ok": True, "valid": True, "shape": "neutral"}
+        svc._entry_macro_btceth_shape_at = lambda *_a, **_kw: {
+            "ok": True,
+            "valid": True,
+            "shape": "neutral",
+        }
 
         self._calls = {"open": [], "close": [], "status": []}
 
@@ -386,9 +410,19 @@ class TestQuantAutoBtcaltsTick(unittest.TestCase):
             if not isinstance(op, dict):
                 op = {}
                 svc.TRACKER_STATE["quant_open_positions"] = op
-            op["BTC-PERP"] = {"side": "long", "notional_usdc": 100.0, "strategy_id": sid, "tag": tag}
+            op["BTC-PERP"] = {
+                "side": "long",
+                "notional_usdc": 100.0,
+                "strategy_id": sid,
+                "tag": tag,
+            }
             if alt:
-                op[f"{alt}-PERP"] = {"side": "short", "notional_usdc": 100.0, "strategy_id": sid, "tag": tag}
+                op[f"{alt}-PERP"] = {
+                    "side": "short",
+                    "notional_usdc": 100.0,
+                    "strategy_id": sid,
+                    "tag": tag,
+                }
             return svc.jsonify({"ok": True, "payload": payload})
 
         def _stub_close():
@@ -427,9 +461,16 @@ class TestQuantAutoBtcaltsTick(unittest.TestCase):
         svc._entry_macro_btceth_shape_at = self._orig_macro_shape
 
     def test_open_ignores_other_quant_positions_when_btcalts_capacity_allows(self):
-        svc.TRACKER_STATE["quant_open_positions"].update({
-            "SOL-PERP": {"side": "long", "notional_usdc": 50.0, "strategy_id": "other", "tag": "other"},
-        })
+        svc.TRACKER_STATE["quant_open_positions"].update(
+            {
+                "SOL-PERP": {
+                    "side": "long",
+                    "notional_usdc": 50.0,
+                    "strategy_id": "other",
+                    "tag": "other",
+                },
+            }
+        )
 
         svc._universe_btc_alt_candidates = lambda: ["ETH", "XRP"]
 
@@ -437,14 +478,16 @@ class TestQuantAutoBtcaltsTick(unittest.TestCase):
             alt = str(svc.request.args.get("alt") or "").upper().strip()
             self._calls["status"].append(alt)
             score = 1.0 if alt == "ETH" else 2.0
-            return svc.jsonify({
-                "ok": True,
-                "alt": alt,
-                "action": "long_alt_short_btc",
-                "latest": {"z": score},
-                "regime": {"latest": {"regime": "range"}},
-                "rs": {"latest": {"rs_score": score}},
-            })
+            return svc.jsonify(
+                {
+                    "ok": True,
+                    "alt": alt,
+                    "action": "long_alt_short_btc",
+                    "latest": {"z": score},
+                    "regime": {"latest": {"regime": "range"}},
+                    "rs": {"latest": {"rs_score": score}},
+                }
+            )
 
         svc.quant_pairs_btcalt_status = _stub_status
 
@@ -456,10 +499,22 @@ class TestQuantAutoBtcaltsTick(unittest.TestCase):
         self.assertEqual(str(self._calls["open"][0].get("alt") or "").upper().strip(), "XRP")
 
     def test_exit_sets_cooldown_after_successful_close(self):
-        svc.TRACKER_STATE["quant_open_positions"].update({
-            "BTC-PERP": {"side": "short", "notional_usdc": 100.0, "strategy_id": "quant_auto_btcalts", "tag": "quant_auto_btcalts|g"},
-            "ETH-PERP": {"side": "long", "notional_usdc": 100.0, "strategy_id": "quant_auto_btcalts", "tag": "quant_auto_btcalts|g"},
-        })
+        svc.TRACKER_STATE["quant_open_positions"].update(
+            {
+                "BTC-PERP": {
+                    "side": "short",
+                    "notional_usdc": 100.0,
+                    "strategy_id": "quant_auto_btcalts",
+                    "tag": "quant_auto_btcalts|g",
+                },
+                "ETH-PERP": {
+                    "side": "long",
+                    "notional_usdc": 100.0,
+                    "strategy_id": "quant_auto_btcalts",
+                    "tag": "quant_auto_btcalts|g",
+                },
+            }
+        )
 
         def _stub_status():
             alt = str(svc.request.args.get("alt") or "").upper().strip()
@@ -484,14 +539,16 @@ class TestQuantAutoBtcaltsTick(unittest.TestCase):
             alt = str(svc.request.args.get("alt") or "").upper().strip()
             self._calls["status"].append(alt)
             score = 10.0 if alt == "ETH" else 1.0
-            return svc.jsonify({
-                "ok": True,
-                "alt": alt,
-                "action": "long_alt_short_btc",
-                "latest": {"z": score},
-                "regime": {"latest": {"regime": "range"}},
-                "rs": {"latest": {"rs_score": score}},
-            })
+            return svc.jsonify(
+                {
+                    "ok": True,
+                    "alt": alt,
+                    "action": "long_alt_short_btc",
+                    "latest": {"z": score},
+                    "regime": {"latest": {"regime": "range"}},
+                    "rs": {"latest": {"rs_score": score}},
+                }
+            )
 
         svc.quant_pairs_btcalt_status = _stub_status
 
@@ -511,14 +568,16 @@ class TestQuantAutoBtcaltsTick(unittest.TestCase):
             self._calls["status"].append(alt)
             z_map = {"A": 3.0, "B": 2.0, "C": 1.0}
             corr_map = {"A": 0.2, "B": 0.9, "C": 0.1}
-            return svc.jsonify({
-                "ok": True,
-                "alt": alt,
-                "action": "long_alt_short_btc",
-                "latest": {"z": z_map.get(alt, 0.0), "corr": corr_map.get(alt, 0.0)},
-                "regime": {"latest": {"regime": "range"}},
-                "rs": {"latest": {"rs_score": z_map.get(alt, 0.0)}},
-            })
+            return svc.jsonify(
+                {
+                    "ok": True,
+                    "alt": alt,
+                    "action": "long_alt_short_btc",
+                    "latest": {"z": z_map.get(alt, 0.0), "corr": corr_map.get(alt, 0.0)},
+                    "regime": {"latest": {"regime": "range"}},
+                    "rs": {"latest": {"rs_score": z_map.get(alt, 0.0)}},
+                }
+            )
 
         svc.quant_pairs_btcalt_status = _stub_status
 
@@ -538,14 +597,16 @@ class TestQuantAutoBtcaltsTick(unittest.TestCase):
             self._calls["status"].append(alt)
             z_map = {"A": 4.0, "B": 3.0, "C": 2.0, "D": 1.0}
             corr_map = {"A": 0.1, "B": 0.2, "C": 0.5, "D": 0.99}
-            return svc.jsonify({
-                "ok": True,
-                "alt": alt,
-                "action": "long_alt_short_btc",
-                "latest": {"z": z_map.get(alt, 0.0), "corr": corr_map.get(alt, 0.0)},
-                "regime": {"latest": {"regime": "range"}},
-                "rs": {"latest": {"rs_score": z_map.get(alt, 0.0)}},
-            })
+            return svc.jsonify(
+                {
+                    "ok": True,
+                    "alt": alt,
+                    "action": "long_alt_short_btc",
+                    "latest": {"z": z_map.get(alt, 0.0), "corr": corr_map.get(alt, 0.0)},
+                    "regime": {"latest": {"regime": "range"}},
+                    "rs": {"latest": {"rs_score": z_map.get(alt, 0.0)}},
+                }
+            )
 
         svc.quant_pairs_btcalt_status = _stub_status
 
@@ -558,22 +619,31 @@ class TestQuantAutoBtcaltsTick(unittest.TestCase):
 
     def test_btc_leg_busy_blocks_open(self):
         svc.CONFIG["quant_auto_btcalts_strategy_mode"] = "B"
-        svc.TRACKER_STATE["quant_open_positions"].update({
-            "BTC-PERP": {"side": "long", "notional_usdc": 50.0, "strategy_id": "other", "tag": "other"},
-        })
+        svc.TRACKER_STATE["quant_open_positions"].update(
+            {
+                "BTC-PERP": {
+                    "side": "long",
+                    "notional_usdc": 50.0,
+                    "strategy_id": "other",
+                    "tag": "other",
+                },
+            }
+        )
         svc._universe_btc_alt_candidates = lambda: ["ETH"]
 
         def _stub_status():
             alt = str(svc.request.args.get("alt") or "").upper().strip()
             self._calls["status"].append(alt)
-            return svc.jsonify({
-                "ok": True,
-                "alt": alt,
-                "action": "long_alt_short_btc",
-                "latest": {"z": 10.0},
-                "regime": {"latest": {"regime": "range"}},
-                "rs": {"latest": {"rs_score": 10.0}},
-            })
+            return svc.jsonify(
+                {
+                    "ok": True,
+                    "alt": alt,
+                    "action": "long_alt_short_btc",
+                    "latest": {"z": 10.0},
+                    "regime": {"latest": {"regime": "range"}},
+                    "rs": {"latest": {"rs_score": 10.0}},
+                }
+            )
 
         svc.quant_pairs_btcalt_status = _stub_status
 
@@ -590,14 +660,16 @@ class TestQuantAutoBtcaltsTick(unittest.TestCase):
         def _stub_status():
             alt = str(svc.request.args.get("alt") or "").upper().strip()
             self._calls["status"].append(alt)
-            return svc.jsonify({
-                "ok": True,
-                "alt": alt,
-                "action": "long_alt_short_btc",
-                "latest": {"z": 10.0},
-                "regime": {"latest": {"regime": "range"}},
-                "rs": {"latest": {"rs_score": 10.0}},
-            })
+            return svc.jsonify(
+                {
+                    "ok": True,
+                    "alt": alt,
+                    "action": "long_alt_short_btc",
+                    "latest": {"z": 10.0},
+                    "regime": {"latest": {"regime": "range"}},
+                    "rs": {"latest": {"rs_score": 10.0}},
+                }
+            )
 
         svc.quant_pairs_btcalt_status = _stub_status
 
@@ -616,14 +688,16 @@ class TestQuantAutoBtcaltsTick(unittest.TestCase):
         def _stub_status():
             alt = str(svc.request.args.get("alt") or "").upper().strip()
             self._calls["status"].append(alt)
-            return svc.jsonify({
-                "ok": True,
-                "alt": alt,
-                "action": "long_alt_short_btc",
-                "latest": {"z": 10.0},
-                "regime": {"latest": {"regime": "range"}},
-                "rs": {"latest": {"rs_score": 10.0}},
-            })
+            return svc.jsonify(
+                {
+                    "ok": True,
+                    "alt": alt,
+                    "action": "long_alt_short_btc",
+                    "latest": {"z": 10.0},
+                    "regime": {"latest": {"regime": "range"}},
+                    "rs": {"latest": {"rs_score": 10.0}},
+                }
+            )
 
         svc.quant_pairs_btcalt_status = _stub_status
 
@@ -637,21 +711,28 @@ class TestQuantAutoBtcaltsTick(unittest.TestCase):
     def test_b_strong_trend_filters_inverse_direction_before_budget_and_rank(self):
         svc.CONFIG["quant_auto_btcalts_strategy_mode"] = "B"
         svc.CONFIG["quant_auto_btcalts_macro_strong_chg_strength_min"] = 0.01
-        svc._macro_btc_dir_snapshot = lambda **_kw: {"ok": True, "dir_h": 1, "dir_short": 1, "chg_strength": 1.0}
+        svc._macro_btc_dir_snapshot = lambda **_kw: {
+            "ok": True,
+            "dir_h": 1,
+            "dir_short": 1,
+            "chg_strength": 1.0,
+        }
         svc._universe_btc_alt_candidates = lambda: ["ETH"]
 
         def _stub_status():
             alt = str(svc.request.args.get("alt") or "").upper().strip()
             self._calls["status"].append(alt)
-            return svc.jsonify({
-                "ok": True,
-                "alt": alt,
-                "action": "short_alt_long_btc",
-                "latest": {"z": 10.0},
-                "regime": {"latest": {"regime": "trend"}},
-                "rs": {"latest": {"rs_score": -10.0}},
-                "trade_mode": "trend",
-            })
+            return svc.jsonify(
+                {
+                    "ok": True,
+                    "alt": alt,
+                    "action": "short_alt_long_btc",
+                    "latest": {"z": 10.0},
+                    "regime": {"latest": {"regime": "trend"}},
+                    "rs": {"latest": {"rs_score": -10.0}},
+                    "trade_mode": "trend",
+                }
+            )
 
         svc.quant_pairs_btcalt_status = _stub_status
 
@@ -669,14 +750,16 @@ class TestQuantAutoBtcaltsTick(unittest.TestCase):
         def _stub_status():
             alt = str(svc.request.args.get("alt") or "").upper().strip()
             self._calls["status"].append(alt)
-            return svc.jsonify({
-                "ok": True,
-                "alt": alt,
-                "action": "long_alt_short_btc",
-                "latest": {"z": 10.0},
-                "regime": {"latest": {"regime": "range"}},
-                "rs": {"latest": {"rs_score": 10.0}},
-            })
+            return svc.jsonify(
+                {
+                    "ok": True,
+                    "alt": alt,
+                    "action": "long_alt_short_btc",
+                    "latest": {"z": 10.0},
+                    "regime": {"latest": {"regime": "range"}},
+                    "rs": {"latest": {"rs_score": 10.0}},
+                }
+            )
 
         svc.quant_pairs_btcalt_status = _stub_status
 
@@ -686,22 +769,31 @@ class TestQuantAutoBtcaltsTick(unittest.TestCase):
         self.assertEqual(len(self._calls["open"]), 0)
 
     def test_dangling_btc_leg_blocks_open(self):
-        svc.TRACKER_STATE["quant_open_positions"].update({
-            "BTC-PERP": {"side": "short", "notional_usdc": 100.0, "strategy_id": "quant_auto_btcalts", "tag": "quant_auto_btcalts|g"},
-        })
+        svc.TRACKER_STATE["quant_open_positions"].update(
+            {
+                "BTC-PERP": {
+                    "side": "short",
+                    "notional_usdc": 100.0,
+                    "strategy_id": "quant_auto_btcalts",
+                    "tag": "quant_auto_btcalts|g",
+                },
+            }
+        )
         svc._universe_btc_alt_candidates = lambda: ["ETH"]
 
         def _stub_status():
             alt = str(svc.request.args.get("alt") or "").upper().strip()
             self._calls["status"].append(alt)
-            return svc.jsonify({
-                "ok": True,
-                "alt": alt,
-                "action": "long_alt_short_btc",
-                "latest": {"z": 10.0},
-                "regime": {"latest": {"regime": "range"}},
-                "rs": {"latest": {"rs_score": 10.0}},
-            })
+            return svc.jsonify(
+                {
+                    "ok": True,
+                    "alt": alt,
+                    "action": "long_alt_short_btc",
+                    "latest": {"z": 10.0},
+                    "regime": {"latest": {"regime": "range"}},
+                    "rs": {"latest": {"rs_score": 10.0}},
+                }
+            )
 
         svc.quant_pairs_btcalt_status = _stub_status
 
@@ -740,24 +832,28 @@ class TestQuantPairsBtcAltCorrGatePositiveOnly(unittest.TestCase):
             pass
         svc.TRACKER_STATE.update({"quant_open_positions": {}})
 
-        svc.CONFIG.update({
-            "quant_pairs_btcalt_timeframe": "1h",
-            "quant_pairs_btcalt_window_ols": 30,
-            "quant_pairs_btcalt_window_z": 30,
-            "quant_pairs_btcalt_entry_z": 2.0,
-            "quant_pairs_btcalt_exit_z": 0.5,
-            "quant_pairs_btcalt_stop_z": 4.0,
-            "quant_pairs_btcalt_corr_min": 0.6,
-            "entry_macro_gate_enabled": False,
-            "trade_whitelist_enabled": False,
-        })
+        svc.CONFIG.update(
+            {
+                "quant_pairs_btcalt_timeframe": "1h",
+                "quant_pairs_btcalt_window_ols": 30,
+                "quant_pairs_btcalt_window_z": 30,
+                "quant_pairs_btcalt_entry_z": 2.0,
+                "quant_pairs_btcalt_exit_z": 0.5,
+                "quant_pairs_btcalt_stop_z": 4.0,
+                "quant_pairs_btcalt_corr_min": 0.6,
+                "entry_macro_gate_enabled": False,
+                "trade_whitelist_enabled": False,
+            }
+        )
 
-        svc._quant_pairs_btcalt_resolve_alt = lambda alt0, tf, prefer_universe=True, validate=False: {
-            "ok": True,
-            "alt": "ETH",
-            "source": "stub",
-            "candidates": ["ETH"],
-        }
+        svc._quant_pairs_btcalt_resolve_alt = (
+            lambda alt0, tf, prefer_universe=True, validate=False: {
+                "ok": True,
+                "alt": "ETH",
+                "source": "stub",
+                "candidates": ["ETH"],
+            }
+        )
 
         self._corr_last = -0.8
         self._z_last = -3.0
@@ -788,17 +884,44 @@ class TestQuantPairsBtcAltCorrGatePositiveOnly(unittest.TestCase):
 
         svc._quant_pairs_rolling_pairstats_alt_btc = _pairstats
 
-        svc._quant_pairs_btcalt_btc_regime_eval_aligned = lambda **_kwargs: {"ok": True, "latest": {"regime": "range"}}
-        svc._quant_pairs_btcalt_rs_eval = lambda **_kwargs: {"ok": True, "latest": {"rs_score": 0.0}, "entry": 1.0, "exit": 0.0}
-        svc._quant_pairs_btcalt_stationarity_gate_eval = lambda **_kwargs: {"ok": True, "enabled": False, "blocked": False, "valid": True, "pass": True}
+        svc._quant_pairs_btcalt_btc_regime_eval_aligned = lambda **_kwargs: {
+            "ok": True,
+            "latest": {"regime": "range"},
+        }
+        svc._quant_pairs_btcalt_rs_eval = lambda **_kwargs: {
+            "ok": True,
+            "latest": {"rs_score": 0.0},
+            "entry": 1.0,
+            "exit": 0.0,
+        }
+        svc._quant_pairs_btcalt_stationarity_gate_eval = lambda **_kwargs: {
+            "ok": True,
+            "enabled": False,
+            "blocked": False,
+            "valid": True,
+            "pass": True,
+        }
         svc._quant_pairs_btcalt_cost_params = lambda: {}
         svc._quant_pairs_btcalt_cost_estimate = lambda *_args, **_kwargs: {"ok": True}
         svc._quant_pairs_btcalt_cost_z_buffer = lambda **_kwargs: {"ok": True, "z": 0.0}
         svc._quant_pairs_btceth_latest_spread_sigma = lambda **_kwargs: 1.0
-        svc._quant_pairs_btcalt_cojump_eval = lambda **_kwargs: {"ok": True, "enabled": False, "blocked": False}
+        svc._quant_pairs_btcalt_cojump_eval = lambda **_kwargs: {
+            "ok": True,
+            "enabled": False,
+            "blocked": False,
+        }
         svc._quant_pairs_btcalt_funding_snapshot = lambda **_kwargs: {"ok": True}
-        svc._quant_pairs_btcalt_corr_gate_eval = lambda **_kwargs: {"ok": True, "enabled": False, "blocked": False}
-        svc._quant_pairs_btcalt_operational_gate_eval = lambda **_kwargs: {"ok": True, "enabled": False, "blocked": False, "components": {}}
+        svc._quant_pairs_btcalt_corr_gate_eval = lambda **_kwargs: {
+            "ok": True,
+            "enabled": False,
+            "blocked": False,
+        }
+        svc._quant_pairs_btcalt_operational_gate_eval = lambda **_kwargs: {
+            "ok": True,
+            "enabled": False,
+            "blocked": False,
+            "components": {},
+        }
         svc._macro_btc_dir_snapshot = lambda **_kwargs: {"ok": True, "dir_h": 0, "dir_short": 0}
         svc._quant_pairs_btcalt_sub_pool_snapshot = lambda **_kwargs: {"ok": True}
         svc._quant_pairs_btcalt_portfolio_params = lambda **_kwargs: {"ok": True}
@@ -864,26 +987,28 @@ class TestArenaDiversityCorrelationPenalty(unittest.TestCase):
         svc.ARENA_STATE.clear()
         svc.ARENA_STATE.update({"inited": True, "models": {}, "history": [{"chosen": "A"}]})
 
-        svc.CONFIG.update({
-            "arena_select_method": "weight",
-            "arena_use_capital_in_selection": False,
-            "arena_capital_floor_u": 0.0,
-            "arena_diversity_enabled": True,
-            "arena_diversity_use_recent_count": False,
-            "arena_diversity_recent_k": 0,
-            "arena_diversity_lambda": 0.0,
-            "arena_diversity_use_feature": False,
-            "arena_diversity_feature_lambda": 0.0,
-            "arena_diversity_use_corr": True,
-            "arena_diversity_corr_metric": "edge",
-            "arena_diversity_corr_window": 200,
-            "arena_diversity_corr_min_overlap": 2,
-            "arena_diversity_corr_start": 0.7,
-            "arena_diversity_corr_use_abs": False,
-            "arena_diversity_corr_lambda": 5.0,
-            "arena_diversity_corr_anti_lambda": 0.0,
-            "arena_diversity_ref": "recent_top",
-        })
+        svc.CONFIG.update(
+            {
+                "arena_select_method": "weight",
+                "arena_use_capital_in_selection": False,
+                "arena_capital_floor_u": 0.0,
+                "arena_diversity_enabled": True,
+                "arena_diversity_use_recent_count": False,
+                "arena_diversity_recent_k": 0,
+                "arena_diversity_lambda": 0.0,
+                "arena_diversity_use_feature": False,
+                "arena_diversity_feature_lambda": 0.0,
+                "arena_diversity_use_corr": True,
+                "arena_diversity_corr_metric": "edge",
+                "arena_diversity_corr_window": 200,
+                "arena_diversity_corr_min_overlap": 2,
+                "arena_diversity_corr_start": 0.7,
+                "arena_diversity_corr_use_abs": False,
+                "arena_diversity_corr_lambda": 5.0,
+                "arena_diversity_corr_anti_lambda": 0.0,
+                "arena_diversity_ref": "recent_top",
+            }
+        )
 
         svc._arena_feature_jaccard = lambda *_args, **_kwargs: 0.0
 
@@ -922,29 +1047,50 @@ class TestQuantExecutionPositionExistsSimulated(unittest.TestCase):
         self._orig_beta = svc._quant_pairs_btceth_latest_beta
         self._orig_open_leg = svc._pairs_quant_open_leg
 
-        svc.CONFIG.update({
-            "execute_guard_enabled": False,
-            "dry_run": False,
-            "live_trading_enabled": True,
-            "quant_live_trading_enabled": True,
-            "quant_pairs_btceth_live_enabled": True,
-        })
+        svc.CONFIG.update(
+            {
+                "execute_guard_enabled": False,
+                "dry_run": False,
+                "live_trading_enabled": True,
+                "quant_live_trading_enabled": True,
+                "quant_pairs_btceth_live_enabled": True,
+            }
+        )
 
         try:
             svc.TRACKER_STATE.clear()
         except Exception:
             pass
-        svc.TRACKER_STATE.update({
-            "quant_open_positions": {
-                "BTC-PERP": {"pair": "BTC-PERP", "mode": "dry-run", "simulated": True, "side": "long", "notional_usdc": 100.0},
-                "ETH-PERP": {"pair": "ETH-PERP", "mode": "dry-run", "simulated": True, "side": "short", "notional_usdc": 100.0},
-            },
-            "open_positions": {},
-            "order_ts": [],
-        })
+        svc.TRACKER_STATE.update(
+            {
+                "quant_open_positions": {
+                    "BTC-PERP": {
+                        "pair": "BTC-PERP",
+                        "mode": "dry-run",
+                        "simulated": True,
+                        "side": "long",
+                        "notional_usdc": 100.0,
+                    },
+                    "ETH-PERP": {
+                        "pair": "ETH-PERP",
+                        "mode": "dry-run",
+                        "simulated": True,
+                        "side": "short",
+                        "notional_usdc": 100.0,
+                    },
+                },
+                "open_positions": {},
+                "order_ts": [],
+            }
+        )
 
         svc._order_gate_open = lambda **_kw: ({"ok": True}, None)
-        svc._quant_pairs_btceth_latest_beta = lambda *_a, **_kw: {"ok": True, "ts": 1700000000000, "beta": 1.0, "btc_px": 100000.0}
+        svc._quant_pairs_btceth_latest_beta = lambda *_a, **_kw: {
+            "ok": True,
+            "ts": 1700000000000,
+            "beta": 1.0,
+            "btc_px": 100000.0,
+        }
 
         def _stub_open_leg(**_kw):
             return {"ok": False, "error": "stub_stop"}, 502
@@ -1019,12 +1165,14 @@ class TestConfigSetLiveSensitive(unittest.TestCase):
 
     def test_non_sensitive_change_no_confirm_required_when_live(self):
         svc.CONFIG.clear()
-        svc.CONFIG.update({
-            "dry_run": False,
-            "live_trading_enabled": True,
-            "execution_venue": "aster",
-            "elastic_vote_rule": {"mode": "strict"},
-        })
+        svc.CONFIG.update(
+            {
+                "dry_run": False,
+                "live_trading_enabled": True,
+                "execution_venue": "aster",
+                "elastic_vote_rule": {"mode": "strict"},
+            }
+        )
 
         c = svc.app.test_client()
         r = c.post("/config/set", json={"elastic_vote_rule": {"mode": "loose"}})
@@ -1034,11 +1182,13 @@ class TestConfigSetLiveSensitive(unittest.TestCase):
 
     def test_enabling_live_requires_confirm_live(self):
         svc.CONFIG.clear()
-        svc.CONFIG.update({
-            "dry_run": True,
-            "live_trading_enabled": False,
-            "execution_venue": "aster",
-        })
+        svc.CONFIG.update(
+            {
+                "dry_run": True,
+                "live_trading_enabled": False,
+                "execution_venue": "aster",
+            }
+        )
 
         c = svc.app.test_client()
         r = c.post("/config/set", json={"dry_run": False})
@@ -1050,8 +1200,28 @@ class TestConfigSetLiveSensitive(unittest.TestCase):
 class TestBacktestMetricsAggregation(unittest.TestCase):
     def test_bt_summaries_aggregate_basic(self):
         summaries = [
-            {"key": "S1", "trades": 10, "wins": 6, "losses": 4, "draws": 0, "profit_total_pct": 1.0, "profit_total_abs": 100.0, "profit_factor": 1.5, "max_drawdown_account": 0.2},
-            {"key": "S2", "trades": 5, "wins": 2, "losses": 3, "draws": 0, "profit_total_pct": -0.5, "profit_total_abs": -50.0, "profit_factor": 0.8, "max_drawdown_account": 0.4},
+            {
+                "key": "S1",
+                "trades": 10,
+                "wins": 6,
+                "losses": 4,
+                "draws": 0,
+                "profit_total_pct": 1.0,
+                "profit_total_abs": 100.0,
+                "profit_factor": 1.5,
+                "max_drawdown_account": 0.2,
+            },
+            {
+                "key": "S2",
+                "trades": 5,
+                "wins": 2,
+                "losses": 3,
+                "draws": 0,
+                "profit_total_pct": -0.5,
+                "profit_total_abs": -50.0,
+                "profit_factor": 0.8,
+                "max_drawdown_account": 0.4,
+            },
         ]
         out = svc._bt_summaries_aggregate(summaries)
         self.assertIsInstance(out, dict)
@@ -1068,8 +1238,23 @@ class TestBacktestMetricsAggregation(unittest.TestCase):
     def test_bt_metrics_pick_and_slim(self):
         metrics = {
             "strategies": [
-                {"key": "Strategy005", "trades": 3, "wins": 2, "losses": 1, "profit_total_pct": 0.3, "profit_factor": 1.2, "extra": "x"},
-                {"key": "Other", "trades": 1, "wins": 0, "losses": 1, "profit_total_pct": -0.1, "profit_factor": 0.7},
+                {
+                    "key": "Strategy005",
+                    "trades": 3,
+                    "wins": 2,
+                    "losses": 1,
+                    "profit_total_pct": 0.3,
+                    "profit_factor": 1.2,
+                    "extra": "x",
+                },
+                {
+                    "key": "Other",
+                    "trades": 1,
+                    "wins": 0,
+                    "losses": 1,
+                    "profit_total_pct": -0.1,
+                    "profit_factor": 0.7,
+                },
             ]
         }
         picked = svc._bt_metrics_pick_strategy(metrics, "Strategy005")
@@ -1093,17 +1278,19 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
         except Exception:
             pass
 
-        svc.CONFIG.update({
-            "quant_pairs_btceth_gate_enabled": True,
-            "quant_pairs_btceth_gate_k_fail": 3,
-            "quant_pairs_btceth_gate_window": 30,
-            "quant_pairs_btceth_gate_freq_bars": 1,
-            "quant_pairs_btceth_gate_freq_bars_highvol": 1,
-            "quant_pairs_btceth_gate_test_count": 1,
-            "trade_whitelist_enabled": False,
-            "entry_macro_gate_enabled": False,
-            "entry_macro_btceth_hard_gate_enabled": False,
-        })
+        svc.CONFIG.update(
+            {
+                "quant_pairs_btceth_gate_enabled": True,
+                "quant_pairs_btceth_gate_k_fail": 3,
+                "quant_pairs_btceth_gate_window": 30,
+                "quant_pairs_btceth_gate_freq_bars": 1,
+                "quant_pairs_btceth_gate_freq_bars_highvol": 1,
+                "quant_pairs_btceth_gate_test_count": 1,
+                "trade_whitelist_enabled": False,
+                "entry_macro_gate_enabled": False,
+                "entry_macro_btceth_hard_gate_enabled": False,
+            }
+        )
 
     def tearDown(self):
         svc._quant_pairs_btceth_adf_kpss_fallback = self._orig_fallback
@@ -1219,15 +1406,17 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
 
         rollback_calls = []
         try:
-            svc.CONFIG.update({
-                "dry_run": False,
-                "live_trading_enabled": True,
-                "quant_live_trading_enabled": True,
-                "aster_max_notional_usdc": 500.0,
-                "quant_pairs_btceth_maker_enabled": True,
-                "quant_pairs_btceth_live_enabled": True,
-                "execute_guard_enabled": False,
-            })
+            svc.CONFIG.update(
+                {
+                    "dry_run": False,
+                    "live_trading_enabled": True,
+                    "quant_live_trading_enabled": True,
+                    "aster_max_notional_usdc": 500.0,
+                    "quant_pairs_btceth_maker_enabled": True,
+                    "quant_pairs_btceth_live_enabled": True,
+                    "execute_guard_enabled": False,
+                }
+            )
             svc.TRACKER_STATE["open_positions"] = {}
 
             svc._quant_pairs_btceth_latest_beta = lambda tf: {
@@ -1242,8 +1431,14 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
             }
             svc._order_gate_open = lambda **_kwargs: ({"ok": True}, 200)
             svc._aster_enabled_for_trading = lambda: True
-            svc._aster_mid = lambda coin, owner=None: (100000.0 if str(coin).upper() == "BTC" else 3000.0)
-            svc._aster_qty_from_notional = lambda coin, notional, allow_adjust=False, mid=None, owner=None: (0.001 if str(coin).upper() == "BTC" else 0.02)
+            svc._aster_mid = lambda coin, owner=None: (
+                100000.0 if str(coin).upper() == "BTC" else 3000.0
+            )
+            svc._aster_qty_from_notional = (
+                lambda coin, notional, allow_adjust=False, mid=None, owner=None: (
+                    0.001 if str(coin).upper() == "BTC" else 0.02
+                )
+            )
             svc._aster_symbol_from_coin = lambda coin: f"{str(coin).upper()}USDT"
             svc._aster_maker_price = lambda coin, is_buy, offset_bps=0.0, owner=None: {
                 "symbol": f"{str(coin).upper()}USDT",
@@ -1257,21 +1452,55 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
                 "price": float(100000.0 if str(coin).upper() == "BTC" else 3000.0),
             }
 
-            def _limit_order_qty(coin: str, side: str, qty: float, price: float, reduce_only: bool = False, post_only: bool = False, owner: str = None):
+            def _limit_order_qty(
+                coin: str,
+                side: str,
+                qty: float,
+                price: float,
+                reduce_only: bool = False,
+                post_only: bool = False,
+                owner: str = None,
+            ):
                 oid = "1" if str(coin).upper() == "BTC" else "2"
                 return {"resp": {"orderId": oid, "status": "NEW"}}
 
-            def _wait_fill(symbol: str, order_id, timeout_sec: float, poll_ms: int = 250, owner: str = None):
+            def _wait_fill(
+                symbol: str, order_id, timeout_sec: float, poll_ms: int = 250, owner: str = None
+            ):
                 if str(order_id) == "1":
-                    return {"ok": True, "done": True, "filled": True, "last": {"status": "FILLED", "executedQty": "0.001"}, "status": "FILLED"}
-                return {"ok": True, "done": False, "filled": False, "last": {"status": "NEW", "executedQty": "0"}, "status": "NEW"}
+                    return {
+                        "ok": True,
+                        "done": True,
+                        "filled": True,
+                        "last": {"status": "FILLED", "executedQty": "0.001"},
+                        "status": "FILLED",
+                    }
+                return {
+                    "ok": True,
+                    "done": False,
+                    "filled": False,
+                    "last": {"status": "NEW", "executedQty": "0"},
+                    "status": "NEW",
+                }
 
             svc._aster_limit_order_qty = _limit_order_qty
             svc._aster_wait_fill = _wait_fill
-            svc._aster_order_cancel = lambda symbol, order_id, owner=None: {"ok": True, "status": "CANCELED"}
-            svc._aster_order_query = lambda symbol, order_id, owner=None: ({"status": "CANCELED", "executedQty": "0"} if str(order_id) == "2" else {"status": "FILLED", "executedQty": "0.001"})
+            svc._aster_order_cancel = lambda symbol, order_id, owner=None: {
+                "ok": True,
+                "status": "CANCELED",
+            }
+            svc._aster_order_query = lambda symbol, order_id, owner=None: (
+                {"status": "CANCELED", "executedQty": "0"}
+                if str(order_id) == "2"
+                else {"status": "FILLED", "executedQty": "0.001"}
+            )
 
-            svc._pairs_btceth_close_leg = lambda venue, coin, execute, tag, sz=None, force=True: (rollback_calls.append({"venue": venue, "coin": coin, "execute": execute, "tag": tag, "sz": sz}) or ({"ok": True}, 200))
+            svc._pairs_btceth_close_leg = lambda venue, coin, execute, tag, sz=None, force=True: (
+                rollback_calls.append(
+                    {"venue": venue, "coin": coin, "execute": execute, "tag": tag, "sz": sz}
+                )
+                or ({"ok": True}, 200)
+            )
 
             r = c.post(
                 "/execution/pairs/btceth/market_open",
@@ -1320,27 +1549,52 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
 
         calls = []
         try:
-            svc.CONFIG.update({
-                "execute_guard_enabled": False,
-                "quant_pairs_btcalt_doge_ignore_post_close_freeze": True,
-                "quant_pairs_btcalt_ignore_post_close_freeze": False,
-                "quant_pairs_btcalt_ignore_cooldown": False,
-            })
+            svc.CONFIG.update(
+                {
+                    "execute_guard_enabled": False,
+                    "quant_pairs_btcalt_doge_ignore_post_close_freeze": True,
+                    "quant_pairs_btcalt_ignore_post_close_freeze": False,
+                    "quant_pairs_btcalt_ignore_cooldown": False,
+                }
+            )
 
             svc._check_execute_guard = lambda _data: None
-            svc._quant_pairs_btcalt_resolve_alt = lambda alt0, tf, prefer_universe=True, validate=True: {
+            svc._quant_pairs_btcalt_resolve_alt = (
+                lambda alt0, tf, prefer_universe=True, validate=True: {
+                    "ok": True,
+                    "alt": "DOGE",
+                    "source": "stub",
+                    "candidates": ["DOGE"],
+                    "snap": {
+                        "ok": True,
+                        "ts": 1_700_000_000_000,
+                        "timeframe": str(tf),
+                        "btc_px": 100000.0,
+                        "alt_px": 0.1,
+                        "beta": 1.0,
+                        "corr": 0.8,
+                        "z": 0.0,
+                    },
+                }
+            )
+            svc._quant_pairs_btcalt_sub_pool_snapshot = lambda now_ms: {
                 "ok": True,
-                "alt": "DOGE",
-                "source": "stub",
-                "candidates": ["DOGE"],
-                "snap": {"ok": True, "ts": 1_700_000_000_000, "timeframe": str(tf), "btc_px": 100000.0, "alt_px": 0.1, "beta": 1.0, "corr": 0.8, "z": 0.0},
+                "cap_usdc": 1e9,
+                "used_usdc": 0.0,
             }
-            svc._quant_pairs_btcalt_sub_pool_snapshot = lambda now_ms: {"ok": True, "cap_usdc": 1e9, "used_usdc": 0.0}
-            svc._quant_pairs_macro_trend_veto = lambda direction, force_aster=False: {"ok": True, "blocked": False}
+            svc._quant_pairs_macro_trend_veto = lambda direction, force_aster=False: {
+                "ok": True,
+                "blocked": False,
+            }
 
             def _open_leg(**kwargs):
                 calls.append(dict(kwargs))
-                return {"ok": True, "coin": str(kwargs.get("coin")), "side": str(kwargs.get("side")), "order": {"size": 1.0}}, 200
+                return {
+                    "ok": True,
+                    "coin": str(kwargs.get("coin")),
+                    "side": str(kwargs.get("side")),
+                    "order": {"size": 1.0},
+                }, 200
 
             svc._pairs_quant_open_leg = _open_leg
 
@@ -1363,7 +1617,9 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
                 self.assertTrue(bool(it.get("ignore_post_close_freeze")))
         finally:
             svc._quant_pairs_btcalt_resolve_alt = orig["_quant_pairs_btcalt_resolve_alt"]
-            svc._quant_pairs_btcalt_sub_pool_snapshot = orig["_quant_pairs_btcalt_sub_pool_snapshot"]
+            svc._quant_pairs_btcalt_sub_pool_snapshot = orig[
+                "_quant_pairs_btcalt_sub_pool_snapshot"
+            ]
             svc._quant_pairs_macro_trend_veto = orig["_quant_pairs_macro_trend_veto"]
             svc._pairs_quant_open_leg = orig["_pairs_quant_open_leg"]
             svc._check_execute_guard = orig["_check_execute_guard"]
@@ -1383,35 +1639,71 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
 
         calls = []
         try:
-            svc.CONFIG.update({
-                "execute_guard_enabled": False,
-                "quant_pairs_btcalt_doge_force_range_when_auto": True,
-                "quant_pairs_btcalt_trend_follow_require_btc_trend": True,
-                "quant_pairs_btcalt_trend_follow_fallback_to_range": False,
-            })
+            svc.CONFIG.update(
+                {
+                    "execute_guard_enabled": False,
+                    "quant_pairs_btcalt_doge_force_range_when_auto": True,
+                    "quant_pairs_btcalt_trend_follow_require_btc_trend": True,
+                    "quant_pairs_btcalt_trend_follow_fallback_to_range": False,
+                }
+            )
 
             svc._check_execute_guard = lambda _data: None
-            svc._quant_pairs_btcalt_resolve_alt = lambda alt0, tf, prefer_universe=True, validate=True: {
+            svc._quant_pairs_btcalt_resolve_alt = (
+                lambda alt0, tf, prefer_universe=True, validate=True: {
+                    "ok": True,
+                    "alt": "DOGE",
+                    "source": "stub",
+                    "candidates": ["DOGE"],
+                    "snap": {
+                        "ok": True,
+                        "ts": 1_700_000_000_000,
+                        "timeframe": str(tf),
+                        "btc_px": 100000.0,
+                        "alt_px": 0.1,
+                        "beta": 1.0,
+                        "corr": 0.8,
+                        "z": 0.0,
+                    },
+                }
+            )
+            svc._quant_pairs_btcalt_sub_pool_snapshot = lambda now_ms: {
                 "ok": True,
-                "alt": "DOGE",
-                "source": "stub",
-                "candidates": ["DOGE"],
-                "snap": {"ok": True, "ts": 1_700_000_000_000, "timeframe": str(tf), "btc_px": 100000.0, "alt_px": 0.1, "beta": 1.0, "corr": 0.8, "z": 0.0},
+                "cap_usdc": 1e9,
+                "used_usdc": 0.0,
             }
-            svc._quant_pairs_btcalt_sub_pool_snapshot = lambda now_ms: {"ok": True, "cap_usdc": 1e9, "used_usdc": 0.0}
-            svc._quant_pairs_macro_trend_veto = lambda direction, force_aster=False: {"ok": True, "blocked": False}
+            svc._quant_pairs_macro_trend_veto = lambda direction, force_aster=False: {
+                "ok": True,
+                "blocked": False,
+            }
 
             ms = int(svc._hl_interval_to_ms("1h"))
             t0 = 1_700_000_000_000
             ts = [t0 + i * ms for i in range(300)]
             btc = [10000.0 + float(i) * 1.0 for i in range(300)]
             alt = [100.0 + float(i) * 0.1 for i in range(300)]
-            svc._quant_pairs_close_series = lambda coin, tf, limit=800, force_aster=False, allow_fallback=True, disable_aster=False: (ts[-int(limit):], (btc[-int(limit):] if str(coin).upper() == "BTC" else alt[-int(limit):]))
-            svc._quant_pairs_rolling_pairstats_alt_btc = lambda ts, btc_close, alt_close, window_ols, window_z: {"ts": ts, "spread": [0.0] * len(ts), "z": [-3.0] * len(ts), "beta": [1.0] * len(ts), "corr": [0.9] * len(ts)}
+            svc._quant_pairs_close_series = lambda coin, tf, limit=800, force_aster=False, allow_fallback=True, disable_aster=False: (
+                ts[-int(limit) :],
+                (btc[-int(limit) :] if str(coin).upper() == "BTC" else alt[-int(limit) :]),
+            )
+            svc._quant_pairs_rolling_pairstats_alt_btc = (
+                lambda ts, btc_close, alt_close, window_ols, window_z: {
+                    "ts": ts,
+                    "spread": [0.0] * len(ts),
+                    "z": [-3.0] * len(ts),
+                    "beta": [1.0] * len(ts),
+                    "corr": [0.9] * len(ts),
+                }
+            )
 
             def _open_leg(**kwargs):
                 calls.append(dict(kwargs))
-                return {"ok": True, "coin": str(kwargs.get("coin")), "side": str(kwargs.get("side")), "order": {"size": 1.0}}, 200
+                return {
+                    "ok": True,
+                    "coin": str(kwargs.get("coin")),
+                    "side": str(kwargs.get("side")),
+                    "order": {"size": 1.0},
+                }, 200
 
             svc._pairs_quant_open_leg = _open_leg
 
@@ -1436,9 +1728,13 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
             self.assertEqual(len(calls), 2)
         finally:
             svc._quant_pairs_btcalt_resolve_alt = orig["_quant_pairs_btcalt_resolve_alt"]
-            svc._quant_pairs_btcalt_sub_pool_snapshot = orig["_quant_pairs_btcalt_sub_pool_snapshot"]
+            svc._quant_pairs_btcalt_sub_pool_snapshot = orig[
+                "_quant_pairs_btcalt_sub_pool_snapshot"
+            ]
             svc._quant_pairs_close_series = orig["_quant_pairs_close_series"]
-            svc._quant_pairs_rolling_pairstats_alt_btc = orig["_quant_pairs_rolling_pairstats_alt_btc"]
+            svc._quant_pairs_rolling_pairstats_alt_btc = orig[
+                "_quant_pairs_rolling_pairstats_alt_btc"
+            ]
             svc._quant_pairs_macro_trend_veto = orig["_quant_pairs_macro_trend_veto"]
             svc._pairs_quant_open_leg = orig["_pairs_quant_open_leg"]
             svc._check_execute_guard = orig["_check_execute_guard"]
@@ -1497,33 +1793,35 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
         }
 
         try:
-            svc.CONFIG.update({
-                "quant_pairs_btceth_timeframe": "1h",
-                "quant_pairs_btceth_window_ols": 30,
-                "quant_pairs_btceth_window_z": 30,
-                "quant_pairs_btceth_entry_z": 3.0,
-                "quant_pairs_btceth_exit_z": 0.5,
-                "quant_pairs_btceth_stop_z": 10.0,
-                "quant_pairs_btceth_corr_min": 0.0,
-                "quant_pairs_btceth_max_hold_bars": 50,
-                "quant_pairs_btceth_wfo_enabled": True,
-                "quant_pairs_btceth_wfo_apply": True,
-                "quant_pairs_btceth_wfo_is_bars": 80,
-                "quant_pairs_btceth_wfo_oos_bars": 40,
-                "quant_pairs_btceth_wfo_step_bars": 80,
-                "quant_pairs_btceth_wfo_embargo_bars": 0,
-                "quant_pairs_btceth_wfo_grid": {
-                    "entry_z": {"values": [1.0]},
-                    "exit_z": {"values": [0.5]},
-                    "window_ols": {"values": [30]},
-                    "window_z": {"values": [30]},
-                    "stop_z": {"values": [10.0]},
-                    "corr_min": {"values": [0.0]},
-                    "max_hold_bars": {"values": [50]},
-                },
-                "quant_pairs_btceth_gate_enabled": False,
-                "quant_pairs_btceth_cojump_enabled": False,
-            })
+            svc.CONFIG.update(
+                {
+                    "quant_pairs_btceth_timeframe": "1h",
+                    "quant_pairs_btceth_window_ols": 30,
+                    "quant_pairs_btceth_window_z": 30,
+                    "quant_pairs_btceth_entry_z": 3.0,
+                    "quant_pairs_btceth_exit_z": 0.5,
+                    "quant_pairs_btceth_stop_z": 10.0,
+                    "quant_pairs_btceth_corr_min": 0.0,
+                    "quant_pairs_btceth_max_hold_bars": 50,
+                    "quant_pairs_btceth_wfo_enabled": True,
+                    "quant_pairs_btceth_wfo_apply": True,
+                    "quant_pairs_btceth_wfo_is_bars": 80,
+                    "quant_pairs_btceth_wfo_oos_bars": 40,
+                    "quant_pairs_btceth_wfo_step_bars": 80,
+                    "quant_pairs_btceth_wfo_embargo_bars": 0,
+                    "quant_pairs_btceth_wfo_grid": {
+                        "entry_z": {"values": [1.0]},
+                        "exit_z": {"values": [0.5]},
+                        "window_ols": {"values": [30]},
+                        "window_z": {"values": [30]},
+                        "stop_z": {"values": [10.0]},
+                        "corr_min": {"values": [0.0]},
+                        "max_hold_bars": {"values": [50]},
+                    },
+                    "quant_pairs_btceth_gate_enabled": False,
+                    "quant_pairs_btceth_cojump_enabled": False,
+                }
+            )
             svc.TRACKER_STATE["open_positions"] = {}
 
             ms = int(svc._hl_interval_to_ms("1h"))
@@ -1540,13 +1838,44 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
                 return ts[-limit:], eth[-limit:]
 
             svc._quant_pairs_close_series = _series
-            svc._quant_pairs_btceth_stationarity_gate_eval = lambda **_kwargs: {"ok": True, "enabled": False, "blocked": False}
-            svc._quant_pairs_btceth_cost_params = lambda: {"slip_mu": 0.0, "slip_beta": 1e-9, "slip_alpha": 0.0, "depth_threshold_btc": 10.0, "avg_depth_btc": 10.0, "maker_fee": 0.0, "taker_fee": 0.0, "maker_timeout_sec": 10.0, "slip_quantile": 0.95}
-            svc._quant_pairs_btceth_cost_estimate = lambda **_kwargs: {"ok": True, "fee_rate": 0.0, "slippage_rate": 0.0, "mode": "maker", "maker_timeout_sec": 10.0}
-            svc._quant_pairs_btceth_cost_z_buffer = lambda **_kwargs: {"ok": True, "z": 0.0, "cost_total_rate": 0.0}
-            svc._quant_pairs_btceth_cojump_eval = lambda **_kwargs: {"ok": True, "enabled": False, "blocked": False}
+            svc._quant_pairs_btceth_stationarity_gate_eval = lambda **_kwargs: {
+                "ok": True,
+                "enabled": False,
+                "blocked": False,
+            }
+            svc._quant_pairs_btceth_cost_params = lambda: {
+                "slip_mu": 0.0,
+                "slip_beta": 1e-9,
+                "slip_alpha": 0.0,
+                "depth_threshold_btc": 10.0,
+                "avg_depth_btc": 10.0,
+                "maker_fee": 0.0,
+                "taker_fee": 0.0,
+                "maker_timeout_sec": 10.0,
+                "slip_quantile": 0.95,
+            }
+            svc._quant_pairs_btceth_cost_estimate = lambda **_kwargs: {
+                "ok": True,
+                "fee_rate": 0.0,
+                "slippage_rate": 0.0,
+                "mode": "maker",
+                "maker_timeout_sec": 10.0,
+            }
+            svc._quant_pairs_btceth_cost_z_buffer = lambda **_kwargs: {
+                "ok": True,
+                "z": 0.0,
+                "cost_total_rate": 0.0,
+            }
+            svc._quant_pairs_btceth_cojump_eval = lambda **_kwargs: {
+                "ok": True,
+                "enabled": False,
+                "blocked": False,
+            }
             svc._quant_pairs_btceth_funding_snapshot = lambda **_kwargs: {"ok": True}
-            svc._quant_pairs_btceth_margin_status = lambda **_kwargs: {"ok": True, "recommend": "ok"}
+            svc._quant_pairs_btceth_margin_status = lambda **_kwargs: {
+                "ok": True,
+                "recommend": "ok",
+            }
 
             r = c.get("/quant/pairs/btceth/status?wfo_run=1&limit=220")
             self.assertEqual(r.status_code, 200)
@@ -1559,7 +1888,9 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
             self.assertIn(payload.get("action"), ("short_btc_long_eth", "hold", "pause"))
         finally:
             svc._quant_pairs_close_series = orig["_quant_pairs_close_series"]
-            svc._quant_pairs_btceth_stationarity_gate_eval = orig["_quant_pairs_btceth_stationarity_gate_eval"]
+            svc._quant_pairs_btceth_stationarity_gate_eval = orig[
+                "_quant_pairs_btceth_stationarity_gate_eval"
+            ]
             svc._quant_pairs_btceth_cost_params = orig["_quant_pairs_btceth_cost_params"]
             svc._quant_pairs_btceth_cost_estimate = orig["_quant_pairs_btceth_cost_estimate"]
             svc._quant_pairs_btceth_cost_z_buffer = orig["_quant_pairs_btceth_cost_z_buffer"]
@@ -1572,7 +1903,9 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
 
         orig = {
             "_quant_pairs_close_series": svc._quant_pairs_close_series,
-            "_quant_pairs_btceth_operational_gate_eval": getattr(svc, "_quant_pairs_btceth_operational_gate_eval", None),
+            "_quant_pairs_btceth_operational_gate_eval": getattr(
+                svc, "_quant_pairs_btceth_operational_gate_eval", None
+            ),
         }
 
         try:
@@ -1589,7 +1922,12 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
                 return ts[-limit:], eth[-limit:]
 
             svc._quant_pairs_close_series = _series
-            svc._quant_pairs_btceth_operational_gate_eval = lambda **_kwargs: {"ok": True, "enabled": True, "blocked": False, "components": {}}
+            svc._quant_pairs_btceth_operational_gate_eval = lambda **_kwargs: {
+                "ok": True,
+                "enabled": True,
+                "blocked": False,
+                "components": {},
+            }
 
             r = c.get("/quant/pairs/btceth/status?limit=60")
             self.assertEqual(r.status_code, 200)
@@ -1600,7 +1938,9 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
         finally:
             svc._quant_pairs_close_series = orig["_quant_pairs_close_series"]
             if orig["_quant_pairs_btceth_operational_gate_eval"] is not None:
-                svc._quant_pairs_btceth_operational_gate_eval = orig["_quant_pairs_btceth_operational_gate_eval"]
+                svc._quant_pairs_btceth_operational_gate_eval = orig[
+                    "_quant_pairs_btceth_operational_gate_eval"
+                ]
 
     def test_pairs_btceth_research_split_capacity_margin_stress(self):
         c = svc.app.test_client()
@@ -1610,25 +1950,31 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
         }
 
         try:
-            svc.CONFIG.update({
-                "quant_pairs_btceth_timeframe": "1h",
-                "quant_pairs_btceth_window_ols": 30,
-                "quant_pairs_btceth_window_z": 30,
-                "quant_pairs_btceth_entry_z": 2.0,
-                "quant_pairs_btceth_exit_z": 0.5,
-                "quant_pairs_btceth_stop_z": 6.0,
-                "quant_pairs_btceth_corr_min": 0.0,
-                "quant_pairs_btceth_max_hold_bars": 50,
-            })
+            svc.CONFIG.update(
+                {
+                    "quant_pairs_btceth_timeframe": "1h",
+                    "quant_pairs_btceth_window_ols": 30,
+                    "quant_pairs_btceth_window_z": 30,
+                    "quant_pairs_btceth_entry_z": 2.0,
+                    "quant_pairs_btceth_exit_z": 0.5,
+                    "quant_pairs_btceth_stop_z": 6.0,
+                    "quant_pairs_btceth_corr_min": 0.0,
+                    "quant_pairs_btceth_max_hold_bars": 50,
+                }
+            )
 
             ms = int(svc._hl_interval_to_ms("1h"))
             t0 = 1_700_000_000_000
             n = 520
             ts_all = [t0 + i * ms for i in range(n)]
-            btc_all = [10000.0 + float(i) * 2.0 + 50.0 * math.sin(float(i) / 20.0) for i in range(n)]
+            btc_all = [
+                10000.0 + float(i) * 2.0 + 50.0 * math.sin(float(i) / 20.0) for i in range(n)
+            ]
             eth_all = [300.0 + float(i) * 0.1 + 5.0 * math.sin(float(i) / 17.0) for i in range(n)]
 
-            def _series_range(coin: str, _tf: str, start_ts_ms=None, end_ts_ms=None, limit: int = 0, **_kwargs):
+            def _series_range(
+                coin: str, _tf: str, start_ts_ms=None, end_ts_ms=None, limit: int = 0, **_kwargs
+            ):
                 if str(coin).upper() == "BTC":
                     xs = ts_all
                     ys = btc_all
@@ -1650,13 +1996,15 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
                 xs2 = xs[a:b]
                 ys2 = ys[a:b]
                 if int(limit) > 0 and len(xs2) > int(limit):
-                    xs2 = xs2[-int(limit):]
-                    ys2 = ys2[-int(limit):]
+                    xs2 = xs2[-int(limit) :]
+                    ys2 = ys2[-int(limit) :]
                 return xs2, ys2
 
             svc._quant_pairs_close_series_range = _series_range
 
-            r1 = c.get("/quant/pairs/btceth/research/split?timeframe=1h&subset=full&window_ols=30&window_z=30&purge_bars=5&embargo_bars=5&gap_bars=0")
+            r1 = c.get(
+                "/quant/pairs/btceth/research/split?timeframe=1h&subset=full&window_ols=30&window_z=30&purge_bars=5&embargo_bars=5&gap_bars=0"
+            )
             self.assertEqual(r1.status_code, 200)
             p1 = r1.get_json() or {}
             self.assertTrue(bool(p1.get("ok")))
@@ -1664,7 +2012,9 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
             self.assertIn("ranges", p1)
             self.assertFalse(bool(p1.get("exported")))
 
-            r2 = c.get("/quant/pairs/btceth/research/capacity?timeframe=1h&subset=full&limit=520&notionals=100,200")
+            r2 = c.get(
+                "/quant/pairs/btceth/research/capacity?timeframe=1h&subset=full&limit=520&notionals=100,200"
+            )
             self.assertEqual(r2.status_code, 200)
             p2 = r2.get_json() or {}
             self.assertTrue(bool(p2.get("ok")))
@@ -1673,7 +2023,9 @@ class TestQuantPairsBtcEthAddons(unittest.TestCase):
             self.assertTrue(isinstance(items[0], dict))
             self.assertIn("metrics", items[0])
 
-            r3 = c.get("/quant/pairs/btceth/research/margin_stress?timeframe=1h&lookback_bars=300&paths=500")
+            r3 = c.get(
+                "/quant/pairs/btceth/research/margin_stress?timeframe=1h&lookback_bars=300&paths=500"
+            )
             self.assertEqual(r3.status_code, 200)
             p3 = r3.get_json() or {}
             self.assertTrue(bool(p3.get("ok")))
@@ -1724,19 +2076,21 @@ class TestServingCanaryBumpGuard(unittest.TestCase):
 
     def test_canary_bump_too_large_holds(self):
         svc.CONFIG.clear()
-        svc.CONFIG.update({
-            "dry_run": False,
-            "live_trading_enabled": True,
-            "execution_venue": "aster",
-            "strategy_live_trading_policy": "inherit",
-            "serving_shadow_mode": False,
-            "serving_canary_enabled": True,
-            "serving_canary_size_frac": 0.2,
-            "serving_canary_pairs": ["BTC/USDT:USDT"],
-            "aster_min_notional_usdc": 10.0,
-            "aster_max_bump_ratio": 2.0,
-            "entry_fixed_notional_enabled": False,
-        })
+        svc.CONFIG.update(
+            {
+                "dry_run": False,
+                "live_trading_enabled": True,
+                "execution_venue": "aster",
+                "strategy_live_trading_policy": "inherit",
+                "serving_shadow_mode": False,
+                "serving_canary_enabled": True,
+                "serving_canary_size_frac": 0.2,
+                "serving_canary_pairs": ["BTC/USDT:USDT"],
+                "aster_min_notional_usdc": 10.0,
+                "aster_max_bump_ratio": 2.0,
+                "entry_fixed_notional_enabled": False,
+            }
+        )
 
         svc._get_threshold = lambda _regime: 0.0
         svc._get_regime = lambda _features, **_kwargs: "trend"
@@ -1758,15 +2112,17 @@ class TestServingCanaryBumpGuard(unittest.TestCase):
 
         svc._aster_preflight_notional = _pf
 
-        out, code = svc._decision_entry_impl({
-            "pair": "BTC/USDT:USDT",
-            "side": "long",
-            "features": {"close": 100000.0, "atr_pct": 0.02},
-            "tag": "unit_test",
-            "ts": 0,
-            "threshold": 0.0,
-            "threshold_final": True,
-        })
+        out, code = svc._decision_entry_impl(
+            {
+                "pair": "BTC/USDT:USDT",
+                "side": "long",
+                "features": {"close": 100000.0, "atr_pct": 0.02},
+                "tag": "unit_test",
+                "ts": 0,
+                "threshold": 0.0,
+                "threshold_final": True,
+            }
+        )
 
         self.assertEqual(int(code), 200)
         self.assertTrue(bool(out.get("ok")))
@@ -1778,22 +2134,24 @@ class TestServingCanaryBumpGuard(unittest.TestCase):
 
     def test_canary_min_notional_bump_over_cap_but_under_pre_is_allowed(self):
         svc.CONFIG.clear()
-        svc.CONFIG.update({
-            "arena_enabled": False,
-            "dry_run": False,
-            "live_trading_enabled": True,
-            "execution_venue": "aster",
-            "strategy_live_trading_policy": "inherit",
-            "serving_shadow_mode": False,
-            "serving_canary_enabled": True,
-            "serving_canary_size_frac": 0.05,
-            "serving_canary_pairs": ["BTC/USDT:USDT"],
-            "book_execution_account_id_by_venue": {"strategy": {"aster": "ut_strategy_aster"}},
-            "aster_min_notional_usdc": 10.0,
-            "aster_max_bump_ratio": 2.0,
-            "entry_fixed_notional_enabled": False,
-            "trade_whitelist_enabled": False,
-        })
+        svc.CONFIG.update(
+            {
+                "arena_enabled": False,
+                "dry_run": False,
+                "live_trading_enabled": True,
+                "execution_venue": "aster",
+                "strategy_live_trading_policy": "inherit",
+                "serving_shadow_mode": False,
+                "serving_canary_enabled": True,
+                "serving_canary_size_frac": 0.05,
+                "serving_canary_pairs": ["BTC/USDT:USDT"],
+                "book_execution_account_id_by_venue": {"strategy": {"aster": "ut_strategy_aster"}},
+                "aster_min_notional_usdc": 10.0,
+                "aster_max_bump_ratio": 2.0,
+                "entry_fixed_notional_enabled": False,
+                "trade_whitelist_enabled": False,
+            }
+        )
 
         svc._get_threshold = lambda _regime: 0.0
         svc._get_regime = lambda _features, **_kwargs: "trend"
@@ -1809,18 +2167,22 @@ class TestServingCanaryBumpGuard(unittest.TestCase):
         svc._aster_set_margin_type = lambda **_kwargs: {"ok": True}
         svc._aster_mid = lambda _coin: 100000.0
         svc._aster_qty_from_notional = lambda *_args, **_kwargs: 0.001
-        svc._aster_market_order_qty = lambda **_kwargs: {"resp": {"status": "FILLED", "orderId": "ut"}}
+        svc._aster_market_order_qty = lambda **_kwargs: {
+            "resp": {"status": "FILLED", "orderId": "ut"}
+        }
         svc._aster_preflight_notional = lambda **_kwargs: {"ok": True, "will_bump": False}
 
-        out, code = svc._decision_entry_impl({
-            "pair": "BTC/USDT:USDT",
-            "side": "long",
-            "features": {"close": 100000.0, "atr_pct": 0.02},
-            "tag": "unit_test",
-            "ts": 0,
-            "threshold": 0.0,
-            "threshold_final": True,
-        })
+        out, code = svc._decision_entry_impl(
+            {
+                "pair": "BTC/USDT:USDT",
+                "side": "long",
+                "features": {"close": 100000.0, "atr_pct": 0.02},
+                "tag": "unit_test",
+                "ts": 0,
+                "threshold": 0.0,
+                "threshold_final": True,
+            }
+        )
 
         self.assertEqual(int(code), 200)
         self.assertTrue(bool(out.get("ok")))
@@ -1893,20 +2255,22 @@ class TestDecisionEntryNotionalAndWhitelist(unittest.TestCase):
         svc._calibrate = lambda _p, **_kwargs: 1.0
 
     def test_entry_notional_clips_to_entry_max(self):
-        svc.CONFIG.update({
-            "arena_enabled": False,
-            "dry_run": True,
-            "live_trading_enabled": True,
-            "execution_venue": "aster",
-            "entry_fixed_notional_enabled": False,
-            "trade_whitelist_enabled": True,
-            "trade_whitelist_enforcement": "hard",
-            "trade_whitelist": ["BTCUSDT"],
-            "min_trade_size": 800.0,
-            "max_trade_size": 1100.0,
-            "aster_min_notional_usdc": 10.0,
-            "aster_max_notional_usdc": 5000.0,
-        })
+        svc.CONFIG.update(
+            {
+                "arena_enabled": False,
+                "dry_run": True,
+                "live_trading_enabled": True,
+                "execution_venue": "aster",
+                "entry_fixed_notional_enabled": False,
+                "trade_whitelist_enabled": True,
+                "trade_whitelist_enforcement": "hard",
+                "trade_whitelist": ["BTCUSDT"],
+                "min_trade_size": 800.0,
+                "max_trade_size": 1100.0,
+                "aster_min_notional_usdc": 10.0,
+                "aster_max_notional_usdc": 5000.0,
+            }
+        )
 
         self._force_pass_threshold()
         svc._hl_coin_from_pair = lambda _pair: "BTC"
@@ -1937,24 +2301,26 @@ class TestDecisionEntryNotionalAndWhitelist(unittest.TestCase):
 
         r2 = c.get(f"/order/{oid}")
         self.assertEqual(int(r2.status_code), 200)
-        order = ((r2.get_json() or {}).get("order") or {})
+        order = (r2.get_json() or {}).get("order") or {}
         self.assertAlmostEqual(float(order.get("size")), 1100.0, places=12)
 
     def test_trade_whitelist_rejects_non_whitelisted_coin(self):
-        svc.CONFIG.update({
-            "arena_enabled": False,
-            "dry_run": True,
-            "live_trading_enabled": True,
-            "execution_venue": "aster",
-            "entry_fixed_notional_enabled": False,
-            "trade_whitelist_enabled": True,
-            "trade_whitelist_enforcement": "hard",
-            "trade_whitelist": ["BTCUSDT"],
-            "entry_min_notional_usdc": 10.0,
-            "entry_max_notional_usdc": 5000.0,
-            "aster_min_notional_usdc": 10.0,
-            "aster_max_notional_usdc": 5000.0,
-        })
+        svc.CONFIG.update(
+            {
+                "arena_enabled": False,
+                "dry_run": True,
+                "live_trading_enabled": True,
+                "execution_venue": "aster",
+                "entry_fixed_notional_enabled": False,
+                "trade_whitelist_enabled": True,
+                "trade_whitelist_enforcement": "hard",
+                "trade_whitelist": ["BTCUSDT"],
+                "entry_min_notional_usdc": 10.0,
+                "entry_max_notional_usdc": 5000.0,
+                "aster_min_notional_usdc": 10.0,
+                "aster_max_notional_usdc": 5000.0,
+            }
+        )
 
         self._force_pass_threshold()
         svc._hl_coin_from_pair = lambda _pair: "S"
@@ -1981,22 +2347,24 @@ class TestDecisionEntryNotionalAndWhitelist(unittest.TestCase):
         self.assertEqual(out.get("reason"), "trade_whitelist_not_allowed")
 
     def test_qty_compute_failed_is_returned_as_decision_error(self):
-        svc.CONFIG.update({
-            "arena_enabled": False,
-            "dry_run": False,
-            "live_trading_enabled": True,
-            "execution_venue": "aster",
-            "strategy_live_trading_policy": "inherit",
-            "entry_fixed_notional_enabled": False,
-            "trade_whitelist_enabled": True,
-            "trade_whitelist_enforcement": "hard",
-            "trade_whitelist": ["BTCUSDT"],
-            "entry_min_notional_usdc": 10.0,
-            "entry_max_notional_usdc": 5000.0,
-            "aster_min_notional_usdc": 10.0,
-            "aster_max_notional_usdc": 5000.0,
-            "book_execution_account_id_by_venue": {"strategy": {"aster": "ut_strategy_aster"}},
-        })
+        svc.CONFIG.update(
+            {
+                "arena_enabled": False,
+                "dry_run": False,
+                "live_trading_enabled": True,
+                "execution_venue": "aster",
+                "strategy_live_trading_policy": "inherit",
+                "entry_fixed_notional_enabled": False,
+                "trade_whitelist_enabled": True,
+                "trade_whitelist_enforcement": "hard",
+                "trade_whitelist": ["BTCUSDT"],
+                "entry_min_notional_usdc": 10.0,
+                "entry_max_notional_usdc": 5000.0,
+                "aster_min_notional_usdc": 10.0,
+                "aster_max_notional_usdc": 5000.0,
+                "book_execution_account_id_by_venue": {"strategy": {"aster": "ut_strategy_aster"}},
+            }
+        )
 
         self._force_pass_threshold()
         svc._strategy_live_trading_allowed = lambda *_args, **_kwargs: True
@@ -2007,7 +2375,9 @@ class TestDecisionEntryNotionalAndWhitelist(unittest.TestCase):
         svc._aster_enabled_for_trading = lambda: True
         svc._aster_set_margin_type = lambda **_kwargs: {"ok": True}
         svc._aster_mid = lambda _coin: 100000.0
-        svc._aster_qty_from_notional = lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("aster_symbol_unavailable:unknown_symbol:BTCUSDT"))
+        svc._aster_qty_from_notional = lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            RuntimeError("aster_symbol_unavailable:unknown_symbol:BTCUSDT")
+        )
         svc._aster_market_order_qty = lambda **_kwargs: {"resp": {"status": "REJECTED"}}
 
         c = svc.app.test_client()
@@ -2050,7 +2420,14 @@ class TestAgentChatLocalLLMDriver(unittest.TestCase):
         svc._agent_chat_context_snapshot = lambda limit_chars=9000: {
             "ts": 0,
             "metrics": {"signals": 0, "orders_total": 0, "active_model": None},
-            "config": {"dry_run": True, "live_trading_enabled": False, "execution_venue": "", "max_open_trades": 0, "threshold_trend": 0.0, "threshold_chop": 0.0},
+            "config": {
+                "dry_run": True,
+                "live_trading_enabled": False,
+                "execution_venue": "",
+                "max_open_trades": 0,
+                "threshold_trend": 0.0,
+                "threshold_chop": 0.0,
+            },
         }
         svc._agent_llm_chat = lambda *_args, **_kwargs: {"ok": False, "error": "stub_failed"}
 
@@ -2061,20 +2438,33 @@ class TestAgentChatLocalLLMDriver(unittest.TestCase):
         svc.CONFIG.update(self._orig_config)
 
     def _last_result(self):
-        done = [x for x in self.items if isinstance(x, dict) and x.get("type") == "chat.result" and x.get("status") == "succeeded"]
+        done = [
+            x
+            for x in self.items
+            if isinstance(x, dict)
+            and x.get("type") == "chat.result"
+            and x.get("status") == "succeeded"
+        ]
         self.assertTrue(bool(done))
         return done[-1]
 
     def test_risk_uncertain_upgrades_to_p1(self):
         svc._agent_chat_driver_process(
-            {"trace_id": "t-risk", "risk_level": "BAD", "intent": {"text": "状态怎么样"}, "tool_plan": []},
+            {
+                "trace_id": "t-risk",
+                "risk_level": "BAD",
+                "intent": {"text": "状态怎么样"},
+                "tool_plan": [],
+            },
             {"enabled": False, "provider": "ollama", "model": "", "timeout_sec": 10},
         )
         res = self._last_result()
         self.assertEqual(res.get("risk_level"), "P1")
         self.assertTrue(bool((res.get("driver") or {}).get("risk_uncertain")))
         plan = res.get("tool_plan_suggested") or []
-        self.assertFalse(any((s.get("tool") == "approval.request") for s in plan if isinstance(s, dict)))
+        self.assertFalse(
+            any((s.get("tool") == "approval.request") for s in plan if isinstance(s, dict))
+        )
 
     def test_busy_degraded_when_semaphore_unavailable(self):
         held = 0
@@ -2085,7 +2475,12 @@ class TestAgentChatLocalLLMDriver(unittest.TestCase):
         self.assertGreater(held, 0)
         try:
             svc._agent_chat_driver_process(
-                {"trace_id": "t-busy", "risk_level": "P2", "intent": {"text": "解释一下"}, "tool_plan": []},
+                {
+                    "trace_id": "t-busy",
+                    "risk_level": "P2",
+                    "intent": {"text": "解释一下"},
+                    "tool_plan": [],
+                },
                 {"enabled": False, "provider": "ollama", "model": "", "timeout_sec": 10},
             )
         finally:
@@ -2099,8 +2494,18 @@ class TestAgentChatLocalLLMDriver(unittest.TestCase):
 
     def test_llm_failed_degrades_to_template(self):
         svc._agent_chat_driver_process(
-            {"trace_id": "t-llm", "risk_level": "P2", "intent": {"text": "回测一下"}, "tool_plan": []},
-            {"enabled": True, "provider": "ollama", "model": "qwen2.5:7b-instruct", "timeout_sec": 10},
+            {
+                "trace_id": "t-llm",
+                "risk_level": "P2",
+                "intent": {"text": "回测一下"},
+                "tool_plan": [],
+            },
+            {
+                "enabled": True,
+                "provider": "ollama",
+                "model": "qwen2.5:7b-instruct",
+                "timeout_sec": 10,
+            },
         )
         res = self._last_result()
         self.assertEqual((res.get("driver") or {}).get("mode"), "llm_failed_degraded")
@@ -2110,25 +2515,60 @@ class TestAgentChatLocalLLMDriver(unittest.TestCase):
         artifacts = svc._agent_chat_fixed_workflow_artifacts(
             intent_text="系统出现重复拒单，想自动止血",
             doc_refs=[],
-            doc_snippets=[{"doc_path": "交易AI Agent 技术文档2.0.md", "section": "FAQ: 拒单", "title": "FAQ"}],
+            doc_snippets=[
+                {"doc_path": "交易AI Agent 技术文档2.0.md", "section": "FAQ: 拒单", "title": "FAQ"}
+            ],
             tool_results_compact=[],
             suggested_tool_plan=[
-                {"tool": "pipeline.r2_param", "input": {"config_patch": {"max_daily_loss": -0.03}}, "requires_approval": True},
-                {"tool": "pipeline.r3_bugfix", "input": {"reason": "needs_code_change"}, "requires_approval": True},
+                {
+                    "tool": "pipeline.r2_param",
+                    "input": {"config_patch": {"max_daily_loss": -0.03}},
+                    "requires_approval": True,
+                },
+                {
+                    "tool": "pipeline.r3_bugfix",
+                    "input": {"reason": "needs_code_change"},
+                    "requires_approval": True,
+                },
             ],
             assistant_analysis_text="",
-            sandbox_plan=[{"tool": "sandbox.backtest", "input": {"strategy": "S", "timerange": "20240101-20240201"}}],
+            sandbox_plan=[
+                {
+                    "tool": "sandbox.backtest",
+                    "input": {"strategy": "S", "timerange": "20240101-20240201"},
+                }
+            ],
             sandbox_results=[{"tool": "sandbox.backtest", "result": {"ok": True, "zip": "z"}}],
         )
         fr = (artifacts.get("final_recommendations") or {}) if isinstance(artifacts, dict) else {}
         auto_fix = fr.get("auto_fix") if isinstance(fr.get("auto_fix"), dict) else {}
-        eligible = auto_fix.get("eligible_actions") if isinstance(auto_fix.get("eligible_actions"), list) else []
-        self.assertTrue(any(isinstance(x, dict) and x.get("type") == "pipeline.r2_param" and bool(x.get("eligible")) for x in eligible))
-        self.assertTrue(any(isinstance(x, dict) and x.get("type") == "faq_runbook" and bool(x.get("eligible")) for x in eligible))
+        eligible = (
+            auto_fix.get("eligible_actions")
+            if isinstance(auto_fix.get("eligible_actions"), list)
+            else []
+        )
+        self.assertTrue(
+            any(
+                isinstance(x, dict)
+                and x.get("type") == "pipeline.r2_param"
+                and bool(x.get("eligible"))
+                for x in eligible
+            )
+        )
+        self.assertTrue(
+            any(
+                isinstance(x, dict) and x.get("type") == "faq_runbook" and bool(x.get("eligible"))
+                for x in eligible
+            )
+        )
 
         human = fr.get("human_review") if isinstance(fr.get("human_review"), dict) else {}
-        required = human.get("required_actions") if isinstance(human.get("required_actions"), list) else []
-        self.assertTrue(any(isinstance(x, dict) and x.get("type") == "pipeline.r3_bugfix" for x in required))
+        required = (
+            human.get("required_actions") if isinstance(human.get("required_actions"), list) else []
+        )
+        self.assertTrue(
+            any(isinstance(x, dict) and x.get("type") == "pipeline.r3_bugfix" for x in required)
+        )
 
 
 class TestAgentOpenAICompatProvider(unittest.TestCase):
@@ -2154,7 +2594,18 @@ class TestAgentOpenAICompatProvider(unittest.TestCase):
             if "/v1/models" in url or url.rstrip("/").endswith("/models"):
                 return _Resp({"data": [{"id": "qwen3.5-4b"}]})
             if "/v1/chat/completions" in url or "/chat/completions" in url:
-                return _Resp({"choices": [{"message": {"role": "assistant", "content": "{\"assistant_text\":\"pong\"}"}}]})
+                return _Resp(
+                    {
+                        "choices": [
+                            {
+                                "message": {
+                                    "role": "assistant",
+                                    "content": '{"assistant_text":"pong"}',
+                                }
+                            }
+                        ]
+                    }
+                )
             raise RuntimeError("unexpected_url:" + str(url))
 
         svc.urllib_request.urlopen = _stub
@@ -2175,11 +2626,14 @@ class TestAgentOpenAICompatProvider(unittest.TestCase):
         self.assertTrue(bool(resp.get("ok")))
         data = resp.get("data") if isinstance(resp.get("data"), dict) else {}
         msg = data.get("message") if isinstance(data.get("message"), dict) else {}
-        self.assertEqual(str(msg.get("content") or "").strip(), "{\"assistant_text\":\"pong\"}")
+        self.assertEqual(str(msg.get("content") or "").strip(), '{"assistant_text":"pong"}')
 
     def test_openai_compat_health_endpoint_is_healthy(self):
         c = svc.app.test_client()
-        r = c.get("/agent/llm/health?provider=openai_compat&model=qwen3.5-4b", environ_base={"REMOTE_ADDR": "127.0.0.1"})
+        r = c.get(
+            "/agent/llm/health?provider=openai_compat&model=qwen3.5-4b",
+            environ_base={"REMOTE_ADDR": "127.0.0.1"},
+        )
         self.assertEqual(int(r.status_code), 200)
         out = r.get_json(force=True) or {}
         self.assertTrue(bool(out.get("ok")))
@@ -2231,7 +2685,12 @@ class TestSmartLLMRouter(unittest.TestCase):
         self.assertEqual(str(sel.get("provider")), "ollama")
         self.assertTrue(bool(str(sel.get("model") or "").strip()))
         self.assertEqual(str(sel.get("route")), "code")
-        self.assertTrue(any(isinstance(x, dict) and str(x.get("route")) == "code" for x in (sel.get("matched_rules") or [])))
+        self.assertTrue(
+            any(
+                isinstance(x, dict) and str(x.get("route")) == "code"
+                for x in (sel.get("matched_rules") or [])
+            )
+        )
 
     def test_router_switches_to_remote_for_explore(self):
         sel = svc._agent_llm_route(
@@ -2262,30 +2721,81 @@ class TestSmartLLMRouterStats(unittest.TestCase):
         now_ms = int(svc._now_ms())
         p = os.path.join(self._td.name, "chat.jsonl")
         rows = [
-            {"id": "1", "trace_id": "t1", "ts": now_ms - 1000, "type": "chat.result", "status": "succeeded", "llm_selected": {"route": "small", "provider": "openai_compat", "model": "qwen3.5-4b", "matched_rules": [{"id": "base_small", "route": "small", "delta": 10.0}]}},
-            {"id": "2", "trace_id": "t2", "ts": now_ms - 900, "type": "chat.result", "status": "succeeded", "llm_selected": {"route": "code", "provider": "ollama", "model": "qwen2.5-coder:latest", "matched_rules": [{"id": "intent_level_L2", "route": "code", "delta": 110.0}, {"id": "kw_stacktrace_cn", "route": "code", "delta": 60.0}]}},
-            {"id": "3", "trace_id": "t3", "ts": now_ms - 800, "type": "chat.result", "status": "succeeded", "llm_selected": {"route": "code", "provider": "ollama", "model": "qwen2.5-coder:latest", "matched_rules": [{"id": "intent_level_L2", "route": "code", "delta": 110.0}]}},
+            {
+                "id": "1",
+                "trace_id": "t1",
+                "ts": now_ms - 1000,
+                "type": "chat.result",
+                "status": "succeeded",
+                "llm_selected": {
+                    "route": "small",
+                    "provider": "openai_compat",
+                    "model": "qwen3.5-4b",
+                    "matched_rules": [{"id": "base_small", "route": "small", "delta": 10.0}],
+                },
+            },
+            {
+                "id": "2",
+                "trace_id": "t2",
+                "ts": now_ms - 900,
+                "type": "chat.result",
+                "status": "succeeded",
+                "llm_selected": {
+                    "route": "code",
+                    "provider": "ollama",
+                    "model": "qwen2.5-coder:latest",
+                    "matched_rules": [
+                        {"id": "intent_level_L2", "route": "code", "delta": 110.0},
+                        {"id": "kw_stacktrace_cn", "route": "code", "delta": 60.0},
+                    ],
+                },
+            },
+            {
+                "id": "3",
+                "trace_id": "t3",
+                "ts": now_ms - 800,
+                "type": "chat.result",
+                "status": "succeeded",
+                "llm_selected": {
+                    "route": "code",
+                    "provider": "ollama",
+                    "model": "qwen2.5-coder:latest",
+                    "matched_rules": [{"id": "intent_level_L2", "route": "code", "delta": 110.0}],
+                },
+            },
         ]
         with open(p, "w", encoding="utf-8") as f:
             for r in rows:
                 f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
         c = svc.app.test_client()
-        r = c.get("/agent/llm/route/stats?window_sec=3600&limit=10", environ_base={"REMOTE_ADDR": "127.0.0.1"})
+        r = c.get(
+            "/agent/llm/route/stats?window_sec=3600&limit=10",
+            environ_base={"REMOTE_ADDR": "127.0.0.1"},
+        )
         self.assertEqual(int(r.status_code), 200)
         out = r.get_json(force=True) or {}
         self.assertTrue(bool(out.get("ok")))
         top = out.get("top_rules") or []
-        self.assertTrue(any(isinstance(x, dict) and str(x.get("id")) == "intent_level_L2" and int(x.get("count") or 0) == 2 for x in top))
+        self.assertTrue(
+            any(
+                isinstance(x, dict)
+                and str(x.get("id")) == "intent_level_L2"
+                and int(x.get("count") or 0) == 2
+                for x in top
+            )
+        )
 
 
 class TestCarryFundingScheduleRouting(unittest.TestCase):
     def setUp(self):
         self._orig_config = dict(svc.CONFIG)
-        svc.CONFIG.update({
-            "carry_trade_mode": "hedge",
-            "carry_trade_venue": "hyperliquid",
-        })
+        svc.CONFIG.update(
+            {
+                "carry_trade_mode": "hedge",
+                "carry_trade_venue": "hyperliquid",
+            }
+        )
         self.client = svc.app.test_client()
 
     def tearDown(self):
@@ -2345,8 +2855,12 @@ class TestHyperliquidOwnerKeyIsolation(unittest.TestCase):
 
         svc.os.environ["HYPERLIQUID_API_PRIVATE_KEY_STRATEGY"] = "pk_strategy"
         svc.os.environ["HYPERLIQUID_API_PRIVATE_KEY_QUANT"] = "pk_quant"
-        svc.os.environ["HYPERLIQUID_ACCOUNT_ADDRESS_STRATEGY"] = "0x1111111111111111111111111111111111111111"
-        svc.os.environ["HYPERLIQUID_ACCOUNT_ADDRESS_QUANT"] = "0x2222222222222222222222222222222222222222"
+        svc.os.environ["HYPERLIQUID_ACCOUNT_ADDRESS_STRATEGY"] = (
+            "0x1111111111111111111111111111111111111111"
+        )
+        svc.os.environ["HYPERLIQUID_ACCOUNT_ADDRESS_QUANT"] = (
+            "0x2222222222222222222222222222222222222222"
+        )
         svc.os.environ.pop("HYPERLIQUID_API_PRIVATE_KEY", None)
         svc.os.environ.pop("HYPERLIQUID_ACCOUNT_ADDRESS", None)
         svc.os.environ.pop("HYPERLIQUID_VAULT_ADDRESS", None)
@@ -2367,7 +2881,9 @@ class TestHyperliquidOwnerKeyIsolation(unittest.TestCase):
                 return _WalletStub(str(pk))
 
         class _ExchangeStub:
-            def __init__(self, wallet, base_url: str = None, vault_address=None, account_address: str = None):
+            def __init__(
+                self, wallet, base_url: str = None, vault_address=None, account_address: str = None
+            ):
                 self.wallet = wallet
                 self.base_url = base_url
                 self.vault_address = vault_address
@@ -2392,8 +2908,12 @@ class TestHyperliquidOwnerKeyIsolation(unittest.TestCase):
         svc.Account = self._orig_account
 
     def test_hl_env_get_for_owner_prefers_owner_specific(self):
-        self.assertEqual(svc._hl_env_get_for_owner("HYPERLIQUID_API_PRIVATE_KEY", "strategy"), "pk_strategy")
-        self.assertEqual(svc._hl_env_get_for_owner("HYPERLIQUID_API_PRIVATE_KEY", "quant"), "pk_quant")
+        self.assertEqual(
+            svc._hl_env_get_for_owner("HYPERLIQUID_API_PRIVATE_KEY", "strategy"), "pk_strategy"
+        )
+        self.assertEqual(
+            svc._hl_env_get_for_owner("HYPERLIQUID_API_PRIVATE_KEY", "quant"), "pk_quant"
+        )
 
     def test_hl_clients_isolated_by_owner(self):
         _, ex_s, acct_s = svc._hl_clients(owner="strategy")
@@ -2485,17 +3005,19 @@ class TestAsterProtectOrdersOnOpen(unittest.TestCase):
         self._orig_aster_enabled = svc._aster_enabled_for_trading_for_owner
         self._orig_book_iso = svc._book_isolation_enforce_exec_or_error
 
-        svc.CONFIG.update({
-            "dry_run": False,
-            "live_trading_enabled": True,
-            "aster_trading_enabled": True,
-            "execute_guard_enabled": False,
-            "aster_protect_on_open_enabled": True,
-            "aster_protect_stop_loss_pct": 0.02,
-            "aster_protect_take_profit_pct": 0.0,
-            "aster_protect_trailing_callback_rate": 0.0,
-            "aster_protect_min_distance_bps": 10.0,
-        })
+        svc.CONFIG.update(
+            {
+                "dry_run": False,
+                "live_trading_enabled": True,
+                "aster_trading_enabled": True,
+                "execute_guard_enabled": False,
+                "aster_protect_on_open_enabled": True,
+                "aster_protect_stop_loss_pct": 0.02,
+                "aster_protect_take_profit_pct": 0.0,
+                "aster_protect_trailing_callback_rate": 0.0,
+                "aster_protect_min_distance_bps": 10.0,
+            }
+        )
 
         svc._live_trading_enabled_for_owner = lambda _owner: True
         svc._aster_enabled_for_trading_for_owner = lambda _owner: True
@@ -2503,15 +3025,31 @@ class TestAsterProtectOrdersOnOpen(unittest.TestCase):
 
         svc._aster_auth_mode = lambda owner=None: "v1"
         svc._aster_symbol_from_coin = lambda coin: f"{str(coin).upper()}USDT"
-        svc._aster_symbol_filters = lambda _symbol: {"stepSize": "0.001", "tickSize": "0.01", "status": "TRADING"}
+        svc._aster_symbol_filters = lambda _symbol: {
+            "stepSize": "0.001",
+            "tickSize": "0.01",
+            "status": "TRADING",
+        }
         svc._aster_mid = lambda _coin, owner=None: 100.0
-        svc._aster_qty_from_notional = lambda _coin, _notional, allow_adjust=False, mid=None, owner=None: 0.1
-        svc._aster_market_order = lambda **_kwargs: {"resp": {"orderId": 123, "status": "FILLED", "avgPrice": "100.0", "executedQty": "0.1"}}
+        svc._aster_qty_from_notional = (
+            lambda _coin, _notional, allow_adjust=False, mid=None, owner=None: 0.1
+        )
+        svc._aster_market_order = lambda **_kwargs: {
+            "resp": {"orderId": 123, "status": "FILLED", "avgPrice": "100.0", "executedQty": "0.1"}
+        }
 
         self.calls = []
 
         def _http(method: str, path: str, params=None, signed=False, timeout_sec=10.0, owner=None):
-            self.calls.append({"method": method, "path": path, "params": dict(params or {}), "signed": signed, "owner": owner})
+            self.calls.append(
+                {
+                    "method": method,
+                    "path": path,
+                    "params": dict(params or {}),
+                    "signed": signed,
+                    "owner": owner,
+                }
+            )
             return {"orderId": 999, "status": "NEW"}
 
         svc._aster_http = _http
@@ -2567,9 +3105,11 @@ class TestAsterMarketOpenIsolationEnforcement(unittest.TestCase):
         self._orig_exec_acct = svc._execution_account_id_for_book
         self.calls = []
 
-        svc.CONFIG.update({
-            "dry_run": False,
-        })
+        svc.CONFIG.update(
+            {
+                "dry_run": False,
+            }
+        )
 
         svc._live_trading_enabled_for_owner = lambda _owner: True
         svc._aster_enabled_for_trading_for_owner = lambda _owner: True
@@ -2583,7 +3123,9 @@ class TestAsterMarketOpenIsolationEnforcement(unittest.TestCase):
         svc._entry_base_leverage_for_venue = lambda _venue: 1
         svc._entry_hard_clip_leverage = lambda lev: int(lev or 1)
         svc._aster_mid = lambda _coin, owner=None: 100.0
-        svc._aster_qty_from_notional = lambda _coin, _notional, allow_adjust=False, mid=None, owner=None: 0.1
+        svc._aster_qty_from_notional = (
+            lambda _coin, _notional, allow_adjust=False, mid=None, owner=None: 0.1
+        )
         svc._aster_set_margin_type = lambda **_kwargs: {"ok": True}
         svc._aster_update_leverage = lambda **_kwargs: {"ok": True}
         svc._aster_market_order = lambda **_kwargs: {"resp": {"orderId": "oid", "status": "FILLED"}}
@@ -2627,13 +3169,15 @@ class TestQuantBtcAltCapacityCap(unittest.TestCase):
 
         try:
             svc.UNIVERSE_STATE.clear()
-            svc.UNIVERSE_STATE.update({
-                "metadata": {
-                    "candidates": [
-                        {"coin": "ETH", "liq": {"turnover_7d_median": 100000.0}},
-                    ],
-                },
-            })
+            svc.UNIVERSE_STATE.update(
+                {
+                    "metadata": {
+                        "candidates": [
+                            {"coin": "ETH", "liq": {"turnover_7d_median": 100000.0}},
+                        ],
+                    },
+                }
+            )
         except Exception:
             pass
 
@@ -2699,55 +3243,67 @@ class TestDiagnosticsIsolationScan(unittest.TestCase):
 
         try:
             svc.EVENTS.clear()
-            svc.EVENTS.update({
-                "e1": {
-                    "id": "e1",
-                    "event_id": "e1",
-                    "ts": 1700000000000,
-                    "ingested_ms": 1700000001000,
-                    "pair": "BTC-PERP",
-                    "side": "long",
-                    "action": "open",
-                    "strategy_id": "quant_pairs_btceth",
-                    "ab_owner": "strategy",
-                    "book_id": "strategy",
-                    "arena": {"models": {}},
-                },
-            })
+            svc.EVENTS.update(
+                {
+                    "e1": {
+                        "id": "e1",
+                        "event_id": "e1",
+                        "ts": 1700000000000,
+                        "ingested_ms": 1700000001000,
+                        "pair": "BTC-PERP",
+                        "side": "long",
+                        "action": "open",
+                        "strategy_id": "quant_pairs_btceth",
+                        "ab_owner": "strategy",
+                        "book_id": "strategy",
+                        "arena": {"models": {}},
+                    },
+                }
+            )
         except Exception:
             pass
 
         try:
             svc.TRACKER_STATE.clear()
-            svc.TRACKER_STATE.update({
-                "quant_open_positions": {
-                    "BTC-PERP": {"system_id": "strategy", "ab_owner": "quant", "book_id": "quant", "strategy_id": "quant_pairs_btceth", "event_id": "e1"},
-                },
-                "open_positions": {},
-                "carry_open_positions": {},
-                "three_screen_open_positions": {},
-            })
+            svc.TRACKER_STATE.update(
+                {
+                    "quant_open_positions": {
+                        "BTC-PERP": {
+                            "system_id": "strategy",
+                            "ab_owner": "quant",
+                            "book_id": "quant",
+                            "strategy_id": "quant_pairs_btceth",
+                            "event_id": "e1",
+                        },
+                    },
+                    "open_positions": {},
+                    "carry_open_positions": {},
+                    "three_screen_open_positions": {},
+                }
+            )
         except Exception:
             pass
 
         def _fake_orders_recent_candidates(*_args, **_kwargs):
-            return [{
-                "id": "o1",
-                "event_id": "e1",
-                "ts": 1700000002000,
-                "ingested_ms": 1700000003000,
-                "pair": "BTC-PERP",
-                "side": "long",
-                "action": "open",
-                "strategy_id": "quant_pairs_btceth",
-                "mode": "real",
-                "ab_owner": "strategy",
-                "system_id": "strategy",
-                "execution_account_id": None,
-                "book_id": None,
-                "book_run_id": None,
-                "exec": {"execute": True, "venue": "aster"},
-            }]
+            return [
+                {
+                    "id": "o1",
+                    "event_id": "e1",
+                    "ts": 1700000002000,
+                    "ingested_ms": 1700000003000,
+                    "pair": "BTC-PERP",
+                    "side": "long",
+                    "action": "open",
+                    "strategy_id": "quant_pairs_btceth",
+                    "mode": "real",
+                    "ab_owner": "strategy",
+                    "system_id": "strategy",
+                    "execution_account_id": None,
+                    "book_id": None,
+                    "book_run_id": None,
+                    "exec": {"execute": True, "venue": "aster"},
+                }
+            ]
 
         svc._orders_recent_candidates = _fake_orders_recent_candidates
         if callable(self._orig_book_iso_enabled):
@@ -2771,7 +3327,9 @@ class TestDiagnosticsIsolationScan(unittest.TestCase):
 
     def test_diagnostics_isolation_scan_returns_layers(self):
         c = svc.app.test_client()
-        resp = c.get("/diagnostics/isolation/scan?limit_events=10&limit_orders=10&max_findings=50&include_shadow=1&include_positions=1")
+        resp = c.get(
+            "/diagnostics/isolation/scan?limit_events=10&limit_orders=10&max_findings=50&include_shadow=1&include_positions=1"
+        )
         self.assertEqual(int(resp.status_code), 200)
         j = resp.get_json() or {}
         self.assertTrue(bool(j.get("ok")))
@@ -2794,49 +3352,59 @@ class TestAutomationSkillIntents(unittest.TestCase):
 
         def _fake_bugfix():
             data = svc.request.get_json(force=True) or {}
-            return svc.jsonify({
-                "ok": True,
-                "trace_id": str(data.get("trace_id") or ""),
-                "approval": {"approval_id": "appr-mock"},
-                "confirm_live_required": True,
-                "guard": {"allow_auto_exec": bool(data.get("allow_auto_exec", False))},
-            })
+            return svc.jsonify(
+                {
+                    "ok": True,
+                    "trace_id": str(data.get("trace_id") or ""),
+                    "approval": {"approval_id": "appr-mock"},
+                    "confirm_live_required": True,
+                    "guard": {"allow_auto_exec": bool(data.get("allow_auto_exec", False))},
+                }
+            )
 
         def _fake_paramopt():
             data = svc.request.get_json(force=True) or {}
-            return svc.jsonify({
-                "ok": True,
-                "trace_id": str(data.get("trace_id") or ""),
-                "mode": str(data.get("mode") or ""),
-                "scopes": data.get("scopes") if isinstance(data.get("scopes"), list) else [],
-                "confirm_apply": bool(data.get("confirm_apply", False)),
-            })
+            return svc.jsonify(
+                {
+                    "ok": True,
+                    "trace_id": str(data.get("trace_id") or ""),
+                    "mode": str(data.get("mode") or ""),
+                    "scopes": data.get("scopes") if isinstance(data.get("scopes"), list) else [],
+                    "confirm_apply": bool(data.get("confirm_apply", False)),
+                }
+            )
 
         def _fake_paramopt_trigger():
             data = svc.request.get_json(force=True) or {}
-            return svc.jsonify({
-                "ok": True,
-                "trace_id": str(data.get("trace_id") or ""),
-                "confirm_live": bool(data.get("confirm_live", False)),
-                "trigger_event": str(data.get("trigger_event") or ""),
-            })
+            return svc.jsonify(
+                {
+                    "ok": True,
+                    "trace_id": str(data.get("trace_id") or ""),
+                    "confirm_live": bool(data.get("confirm_live", False)),
+                    "trigger_event": str(data.get("trigger_event") or ""),
+                }
+            )
 
         def _fake_gtw():
             data = svc.request.get_json(force=True) or {}
-            return svc.jsonify({
-                "ok": True,
-                "force": bool(data.get("force", False)),
-                "trigger_event": str(data.get("trigger_event") or ""),
-            })
+            return svc.jsonify(
+                {
+                    "ok": True,
+                    "force": bool(data.get("force", False)),
+                    "trigger_event": str(data.get("trigger_event") or ""),
+                }
+            )
 
         def _fake_shadow():
             data = svc.request.get_json(force=True) or {}
-            return svc.jsonify({
-                "ok": True,
-                "trace_id": str(data.get("trace_id") or ""),
-                "mode": str(data.get("mode") or "new"),
-                "trigger_event": str(data.get("trigger_event") or ""),
-            })
+            return svc.jsonify(
+                {
+                    "ok": True,
+                    "trace_id": str(data.get("trace_id") or ""),
+                    "mode": str(data.get("mode") or "new"),
+                    "trigger_event": str(data.get("trigger_event") or ""),
+                }
+            )
 
         svc.automation_system_monitor_run = _fake_bugfix
         svc.agent_paramopt_run = _fake_paramopt
@@ -2870,7 +3438,9 @@ class TestAutomationSkillIntents(unittest.TestCase):
                 payload = {"scenario": "E", "mode": "sandbox"}
             if action == "automation.system_monitor.run":
                 payload = {"pair": "BTC-USDT", "request_approval": True}
-            content = json.dumps({"action": action, "payload": payload, "reason": "qwen_plan"}, ensure_ascii=False)
+            content = json.dumps(
+                {"action": action, "payload": payload, "reason": "qwen_plan"}, ensure_ascii=False
+            )
             return {"ok": True, "data": {"message": {"role": "assistant", "content": content}}}
 
         svc._agent_llm_chat = _fake_qwen_chat
@@ -2912,7 +3482,10 @@ class TestAutomationSkillIntents(unittest.TestCase):
             "trace_id": "t-bugfix-skill",
             "async": False,
             "tool_plan": [
-                {"tool": "bugfix.triage_and_draft", "input": {"pair": "BTC-USDT", "lookback_days": 5}},
+                {
+                    "tool": "bugfix.triage_and_draft",
+                    "input": {"pair": "BTC-USDT", "lookback_days": 5},
+                },
             ],
         }
         r = c.post("/agent/skills/execute", json=payload, environ_base={"REMOTE_ADDR": "127.0.0.1"})
@@ -3047,31 +3620,97 @@ class TestNanoclawUpgradeMonitor(unittest.TestCase):
         self._p_audit = os.path.join(self._base, "audit_actions.jsonl")
 
         with open(self._p_rca, "w", encoding="utf-8") as f:
-            f.write(json.dumps({
-                "id": "r1",
-                "trace_id": "tr-1",
-                "ts": int(self._now),
-                "event_type": "system.monitor.report",
-                "severity": "P2",
-                "result": {"summary": {"faq_hits": ["reject_rate_spike"], "changeset_draft_id": "d1", "approval_id": "a1"}},
-            }, ensure_ascii=False) + "\n")
-            f.write(json.dumps({
-                "id": "r2",
-                "trace_id": "tr-2",
-                "ts": int(self._now),
-                "event_type": "system.monitor.report",
-                "severity": "P3",
-                "result": {"summary": {"faq_hits": [], "changeset_draft_id": None, "approval_id": None}},
-            }, ensure_ascii=False) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "id": "r1",
+                        "trace_id": "tr-1",
+                        "ts": int(self._now),
+                        "event_type": "system.monitor.report",
+                        "severity": "P2",
+                        "result": {
+                            "summary": {
+                                "faq_hits": ["reject_rate_spike"],
+                                "changeset_draft_id": "d1",
+                                "approval_id": "a1",
+                            }
+                        },
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+            f.write(
+                json.dumps(
+                    {
+                        "id": "r2",
+                        "trace_id": "tr-2",
+                        "ts": int(self._now),
+                        "event_type": "system.monitor.report",
+                        "severity": "P3",
+                        "result": {
+                            "summary": {
+                                "faq_hits": [],
+                                "changeset_draft_id": None,
+                                "approval_id": None,
+                            }
+                        },
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
 
         with open(self._p_appr, "w", encoding="utf-8") as f:
-            f.write(json.dumps({"id": "a1", "trace_id": "tr-1", "ts": int(self._now), "decision": "approved"}, ensure_ascii=False) + "\n")
-            f.write(json.dumps({"id": "a2", "trace_id": "tr-2", "ts": int(self._now), "decision": "rejected"}, ensure_ascii=False) + "\n")
+            f.write(
+                json.dumps(
+                    {"id": "a1", "trace_id": "tr-1", "ts": int(self._now), "decision": "approved"},
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+            f.write(
+                json.dumps(
+                    {"id": "a2", "trace_id": "tr-2", "ts": int(self._now), "decision": "rejected"},
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
 
         with open(self._p_audit, "w", encoding="utf-8") as f:
-            f.write(json.dumps({"name": "governance.changeset.apply", "ts": int(self._now), "payload": {"ok": True, "approval_id": "a1"}}, ensure_ascii=False) + "\n")
-            f.write(json.dumps({"name": "automation.config.set", "ts": int(self._now), "payload": {"ok": True, "approval_id": "a2"}}, ensure_ascii=False) + "\n")
-            f.write(json.dumps({"name": "governance.changeset.rollback", "ts": int(self._now), "payload": {"ok": True, "rollback": {"ok": True}}}, ensure_ascii=False) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "name": "governance.changeset.apply",
+                        "ts": int(self._now),
+                        "payload": {"ok": True, "approval_id": "a1"},
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+            f.write(
+                json.dumps(
+                    {
+                        "name": "automation.config.set",
+                        "ts": int(self._now),
+                        "payload": {"ok": True, "approval_id": "a2"},
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+            f.write(
+                json.dumps(
+                    {
+                        "name": "governance.changeset.rollback",
+                        "ts": int(self._now),
+                        "payload": {"ok": True, "rollback": {"ok": True}},
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
 
         def _fake_recent_paths(stem: str, days: int, now_ms: int):
             if str(stem) == "rca":
@@ -3083,15 +3722,29 @@ class TestNanoclawUpgradeMonitor(unittest.TestCase):
             return []
 
         svc._agent_outbox_recent_paths = _fake_recent_paths
-        svc._agent_push_channel_throttle_ok = lambda channel, idempotency_key, now_ms: (True, {"ok": True})
+        svc._agent_push_channel_throttle_ok = lambda channel, idempotency_key, now_ms: (
+            True,
+            {"ok": True},
+        )
 
-        def _fake_push_enqueue_local(*, channel, message, severity, extras=None, trace_id=None, idempotency_key=None, expires_at=None):
-            self._alerts.append({
-                "channel": channel,
-                "message": message,
-                "severity": severity,
-                "extras": (extras if isinstance(extras, dict) else {}),
-            })
+        def _fake_push_enqueue_local(
+            *,
+            channel,
+            message,
+            severity,
+            extras=None,
+            trace_id=None,
+            idempotency_key=None,
+            expires_at=None,
+        ):
+            self._alerts.append(
+                {
+                    "channel": channel,
+                    "message": message,
+                    "severity": severity,
+                    "extras": (extras if isinstance(extras, dict) else {}),
+                }
+            )
             return {"ok": True, "queued": True, "id": "alert-mock"}
 
         svc._agent_push_enqueue_local = _fake_push_enqueue_local
@@ -3113,7 +3766,10 @@ class TestNanoclawUpgradeMonitor(unittest.TestCase):
 
     def test_monitor_endpoint_reports_expected_indicators(self):
         c = svc.app.test_client()
-        r = c.get("/automation/nanoclaw/upgrade/monitor?lookback_hours=24", environ_base={"REMOTE_ADDR": "127.0.0.1"})
+        r = c.get(
+            "/automation/nanoclaw/upgrade/monitor?lookback_hours=24",
+            environ_base={"REMOTE_ADDR": "127.0.0.1"},
+        )
         self.assertEqual(int(r.status_code), 200)
         out = r.get_json(force=True) or {}
         self.assertTrue(bool(out.get("ok")))
@@ -3135,13 +3791,20 @@ class TestNanoclawUpgradeMonitor(unittest.TestCase):
         svc.AUTOMATION["nanoclaw_threshold_approval_pass_rate_min"] = 0.8
         svc.AUTOMATION["nanoclaw_threshold_rollback_rate_max"] = 0.2
         c = svc.app.test_client()
-        r = c.get("/automation/nanoclaw/upgrade/monitor?lookback_hours=24", environ_base={"REMOTE_ADDR": "127.0.0.1"})
+        r = c.get(
+            "/automation/nanoclaw/upgrade/monitor?lookback_hours=24",
+            environ_base={"REMOTE_ADDR": "127.0.0.1"},
+        )
         self.assertEqual(int(r.status_code), 200)
         out = r.get_json(force=True) or {}
-        policy = out.get("threshold_policy") if isinstance(out.get("threshold_policy"), dict) else {}
+        policy = (
+            out.get("threshold_policy") if isinstance(out.get("threshold_policy"), dict) else {}
+        )
         breaches = policy.get("breaches") if isinstance(policy.get("breaches"), list) else []
         self.assertTrue(len(breaches) >= 1)
-        auto_downgrade = policy.get("auto_downgrade") if isinstance(policy.get("auto_downgrade"), dict) else {}
+        auto_downgrade = (
+            policy.get("auto_downgrade") if isinstance(policy.get("auto_downgrade"), dict) else {}
+        )
         self.assertTrue(bool(auto_downgrade.get("downgraded")))
         self.assertEqual(str(svc.AUTOMATION.get("nanoclaw_upgrade_stage") or ""), "B")
         alerting = policy.get("alerting") if isinstance(policy.get("alerting"), dict) else {}
@@ -3176,7 +3839,10 @@ class TestApprovalAnalystLadder(unittest.TestCase):
             "available": True,
             "reason": "ok",
         }
-        svc.TRACKER_STATE["approval_analyst_probe"] = {"preferred_tier": "remote", "remote": {"ok": True}}
+        svc.TRACKER_STATE["approval_analyst_probe"] = {
+            "preferred_tier": "remote",
+            "remote": {"ok": True},
+        }
 
     def tearDown(self):
         svc._agent_llm_chat = self._orig_llm_chat
@@ -3192,7 +3858,13 @@ class TestApprovalAnalystLadder(unittest.TestCase):
 
     @staticmethod
     def _sample_approval_and_draft():
-        approval = {"id": "ap-1", "draft_id": "dr-1", "trace_id": "tr-1", "action": "config.apply", "reason": "test"}
+        approval = {
+            "id": "ap-1",
+            "draft_id": "dr-1",
+            "trace_id": "tr-1",
+            "action": "config.apply",
+            "reason": "test",
+        }
         draft_entry = {
             "id": "dr-1",
             "trace_id": "tr-1",
@@ -3203,18 +3875,41 @@ class TestApprovalAnalystLadder(unittest.TestCase):
                 "change_bundle_draft": {
                     "change_id": "chg-1",
                     "change_tags": ["tighten"],
-                    "config_diff": {"changes": [{"key": "x", "from": 1, "to": 2, "direction": "tighten"}]},
-                    "delta_metrics": {"profit_factor": {"baseline": 1.0, "candidate": 1.1, "delta": 0.1}},
+                    "config_diff": {
+                        "changes": [{"key": "x", "from": 1, "to": 2, "direction": "tighten"}]
+                    },
+                    "delta_metrics": {
+                        "profit_factor": {"baseline": 1.0, "candidate": 1.1, "delta": 0.1}
+                    },
                     "governance": {"baseline_judge": {"decision": "pass"}},
                 },
-                "changeset": {"rollback_point_id": "rb-1", "expires_at": int(svc._now_ms()) + 3600_000},
+                "changeset": {
+                    "rollback_point_id": "rb-1",
+                    "expires_at": int(svc._now_ms()) + 3600_000,
+                },
             },
         }
         return approval, draft_entry
 
     def test_remote_success_used_first(self):
         def _fake_llm(provider, model, messages, timeout_sec=60):
-            return {"ok": True, "data": {"message": {"role": "assistant", "content": json.dumps({"decision": "warn", "blockers": [], "reasons": ["remote"], "required_followups": []}, ensure_ascii=False)}}}
+            return {
+                "ok": True,
+                "data": {
+                    "message": {
+                        "role": "assistant",
+                        "content": json.dumps(
+                            {
+                                "decision": "warn",
+                                "blockers": [],
+                                "reasons": ["remote"],
+                                "required_followups": [],
+                            },
+                            ensure_ascii=False,
+                        ),
+                    }
+                },
+            }
 
         svc._agent_llm_chat = _fake_llm
         ap, dr = self._sample_approval_and_draft()
@@ -3230,7 +3925,23 @@ class TestApprovalAnalystLadder(unittest.TestCase):
             calls["n"] += 1
             if calls["n"] == 1:
                 return {"ok": False, "error": "remote_down"}
-            return {"ok": True, "data": {"message": {"role": "assistant", "content": json.dumps({"decision": "warn", "blockers": [], "reasons": ["local"], "required_followups": []}, ensure_ascii=False)}}}
+            return {
+                "ok": True,
+                "data": {
+                    "message": {
+                        "role": "assistant",
+                        "content": json.dumps(
+                            {
+                                "decision": "warn",
+                                "blockers": [],
+                                "reasons": ["local"],
+                                "required_followups": [],
+                            },
+                            ensure_ascii=False,
+                        ),
+                    }
+                },
+            }
 
         svc._agent_llm_chat = _fake_llm
         ap, dr = self._sample_approval_and_draft()
@@ -3305,9 +4016,27 @@ class TestApprovalBriefHealth(unittest.TestCase):
         out = r.get_json(force=True) or {}
         self.assertEqual(str(out.get("selected_tier") or ""), "rule")
         tiers = out.get("tiers") if isinstance(out.get("tiers"), dict) else {}
-        self.assertFalse(bool(((tiers.get("remote") if isinstance(tiers.get("remote"), dict) else {}) or {}).get("available")))
-        self.assertFalse(bool(((tiers.get("local") if isinstance(tiers.get("local"), dict) else {}) or {}).get("available")))
-        self.assertTrue(bool(((tiers.get("rule") if isinstance(tiers.get("rule"), dict) else {}) or {}).get("available")))
+        self.assertFalse(
+            bool(
+                ((tiers.get("remote") if isinstance(tiers.get("remote"), dict) else {}) or {}).get(
+                    "available"
+                )
+            )
+        )
+        self.assertFalse(
+            bool(
+                ((tiers.get("local") if isinstance(tiers.get("local"), dict) else {}) or {}).get(
+                    "available"
+                )
+            )
+        )
+        self.assertTrue(
+            bool(
+                ((tiers.get("rule") if isinstance(tiers.get("rule"), dict) else {}) or {}).get(
+                    "available"
+                )
+            )
+        )
 
 
 if __name__ == "__main__":

@@ -9,7 +9,6 @@
 """
 
 import json
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -21,11 +20,9 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 # 报告模板
 # =============================================================================
 
+
 def generate_comprehensive_report(
-    news_signal: dict,
-    flow_signal: dict,
-    fused_signal: dict,
-    extra_notes: str = None
+    news_signal: dict, flow_signal: dict, fused_signal: dict, extra_notes: str = None
 ) -> str:
     """
     生成综合分析报告
@@ -85,10 +82,10 @@ def generate_comprehensive_report(
 """
 
     # 添加类型统计
-    by_type = news_signal.get('breakdown', {}).get('by_type', {})
+    by_type = news_signal.get("breakdown", {}).get("by_type", {})
     if by_type:
         for event_type, stats in list(by_type.items())[:5]:
-            avg_sentiment = stats['sentiment_sum'] / stats['count'] if stats['count'] > 0 else 0
+            avg_sentiment = stats["sentiment_sum"] / stats["count"] if stats["count"] > 0 else 0
             report += f"| {event_type} | {stats['count']} | {avg_sentiment:+.2f} |\n"
     else:
         report += "| 无数据 | - | - |\n"
@@ -133,7 +130,7 @@ def generate_comprehensive_report(
 """
 
     # 添加风险等级
-    risk_level = fused_signal.get('fused_signal', 0)
+    risk_level = fused_signal.get("fused_signal", 0)
     if risk_level > 0.5:
         report += "- ✅ 低风险：信号一致向好，可积极配置"
     elif risk_level > 0:
@@ -155,6 +152,7 @@ def generate_comprehensive_report(
 
     return report
 
+
 def interpret_sentiment(sentiment: float) -> str:
     """解读新闻情感信号"""
     if sentiment > 0.5:
@@ -167,6 +165,7 @@ def interpret_sentiment(sentiment: float) -> str:
         return "负面"
     else:
         return "强烈负面"
+
 
 def interpret_flow(composite: float) -> str:
     """解读资金流信号"""
@@ -181,6 +180,7 @@ def interpret_flow(composite: float) -> str:
     else:
         return "资金流一致看空"
 
+
 def interpret_fused(fused: float) -> str:
     """解读融合信号"""
     if fused > 0.5:
@@ -194,11 +194,12 @@ def interpret_fused(fused: float) -> str:
     else:
         return "强烈卖出信号"
 
+
 def generate_position_advice(fused_signal: dict) -> str:
     """生成仓位建议"""
-    fused = fused_signal.get('fused_signal', 0)
-    confidence = fused_signal.get('confidence', 0.5)
-    conflict = fused_signal.get('conflict_flag', False)
+    fused = fused_signal.get("fused_signal", 0)
+    confidence = fused_signal.get("confidence", 0.5)
+    conflict = fused_signal.get("conflict_flag", False)
 
     if conflict:
         return "**建议**: 降低仓位，等待信号一致\n**仓位**: 30-40%"
@@ -217,26 +218,27 @@ def generate_position_advice(fused_signal: dict) -> str:
     else:
         return "**建议**: 防守为主\n**仓位**: 10-20%"
 
+
 def generate_risk_warnings(news_signal: dict, flow_signal: dict, fused_signal: dict) -> str:
     """生成风险警示"""
     warnings = []
 
     # 检查信号冲突
-    if fused_signal.get('conflict_flag'):
+    if fused_signal.get("conflict_flag"):
         warnings.append("⚠️ **信号冲突警告**: 新闻与资金流方向不一致，建议降低风险敞口")
 
     # 检查极端新闻情感
-    news_sentiment = news_signal.get('sentiment', 0)
+    news_sentiment = news_signal.get("sentiment", 0)
     if abs(news_sentiment) > 0.7:
         warnings.append(f"⚠️ **极端新闻情感**: {news_sentiment:+.2f}，可能存在情绪化波动")
 
     # 检查极端资金流
-    flow_composite = flow_signal.get('composite', 0)
+    flow_composite = flow_signal.get("composite", 0)
     if abs(flow_composite) > 0.7:
         warnings.append(f"⚠️ **极端资金流**: {flow_composite:+.2f}，可能存在大幅波动")
 
     # 检查置信度
-    confidence = flow_signal.get('confidence', 0.5)
+    confidence = flow_signal.get("confidence", 0.5)
     if confidence < 0.4:
         warnings.append(f"⚠️ **低置信度**: {confidence:.2f}，信号可靠性较低")
 
@@ -245,9 +247,11 @@ def generate_risk_warnings(news_signal: dict, flow_signal: dict, fused_signal: d
     else:
         return "✅ 无重大风险信号"
 
+
 # =============================================================================
 # 保存报告
 # =============================================================================
+
 
 def save_comprehensive_report(result: dict, extra_notes: str = None) -> str:
     """
@@ -265,10 +269,10 @@ def save_comprehensive_report(result: dict, extra_notes: str = None) -> str:
     filepath = OUTPUT_DIR / filename
 
     report = generate_comprehensive_report(
-        news_signal=result.get('news_signal', {}),
-        flow_signal=result.get('flow_signal', {}),
-        fused_signal=result.get('fused_signal', {}),
-        extra_notes=extra_notes
+        news_signal=result.get("news_signal", {}),
+        flow_signal=result.get("flow_signal", {}),
+        fused_signal=result.get("fused_signal", {}),
+        extra_notes=extra_notes,
     )
 
     with open(filepath, "w", encoding="utf-8") as f:
@@ -276,6 +280,7 @@ def save_comprehensive_report(result: dict, extra_notes: str = None) -> str:
 
     print(f"[REPORT] Saved comprehensive report: {filepath}")
     return str(filepath)
+
 
 # =============================================================================
 # 命令行入口

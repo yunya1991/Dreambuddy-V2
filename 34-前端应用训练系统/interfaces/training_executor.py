@@ -3,18 +3,20 @@
 定义训练系统执行训练的统一接口。
 SPL的5个层专属训练器（S/DSH/C/G/LLM）通过适配器实现此协议。
 """
+
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 class TrainingLayer(str, Enum):
     """训练层枚举（对齐SPL 5层）。"""
-    S = "S"           # 意图识别层
-    DSH = "DSH"       # DSH执行路径层
-    C = "C"           # C层反射决策
-    G = "G"           # G层图结构
-    LLM = "LLM"       # LLM Prompt优化层
+
+    S = "S"  # 意图识别层
+    DSH = "DSH"  # DSH执行路径层
+    C = "C"  # C层反射决策
+    G = "G"  # G层图结构
+    LLM = "LLM"  # LLM Prompt优化层
 
 
 class TrainingResult:

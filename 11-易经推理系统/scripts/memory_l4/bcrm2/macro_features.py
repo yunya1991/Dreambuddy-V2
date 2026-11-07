@@ -27,6 +27,7 @@
 特征级开关用于贝叶斯优化/特征选择，可精确控制 36 个（或 37 含残差）特征的启用/禁用。
 FAIL-OPEN：所有新特征缺源时直接跳过，不生成全 NaN 列（字节等价旧逻辑）。
 """
+
 from __future__ import annotations
 
 import logging
@@ -41,50 +42,61 @@ logger = logging.getLogger(__name__)
 # ============================================================
 # [P2] 模块级 YAML 配置路径 + 硬编码默认值（FAIL-OPEN fallback）
 # ============================================================
-import os as _os
-_here = _os.path.dirname(_os.path.abspath(__file__))       # bcrm2/
-_l4   = _os.path.dirname(_here)                            # memory_l4/
-_scripts = _os.path.dirname(_l4)                           # scripts/
-_ROOT = _os.path.dirname(_scripts)                         # 11-易经推理系统/
+import os as _os  # noqa: E402
+
+_here = _os.path.dirname(_os.path.abspath(__file__))  # bcrm2/
+_l4 = _os.path.dirname(_here)  # memory_l4/
+_scripts = _os.path.dirname(_l4)  # scripts/
+_ROOT = _os.path.dirname(_scripts)  # 11-易经推理系统/
 _YAML_PATH = _os.path.join(_ROOT, "configs", "macro_features.yaml")
 
-_DEFAULT_FEATURE_TO_DIM: Dict[str, str] = {
+_DEFAULT_FEATURE_TO_DIM: Dict[str, str] = {  # noqa: F821
     # sentiment
-    "fgi_zscore": "sentiment", "fgi_extreme_fear": "sentiment",
-    "fgi_extreme_greed": "sentiment", "fgi_divergence": "sentiment",
+    "fgi_zscore": "sentiment",
+    "fgi_extreme_fear": "sentiment",
+    "fgi_extreme_greed": "sentiment",
+    "fgi_divergence": "sentiment",
     "fgi_trend_7d": "sentiment",
     # funding
-    "funding_rate_zscore": "funding", "funding_extreme_positive": "funding",
-    "funding_extreme_negative": "funding", "oi_change_rate": "funding",
+    "funding_rate_zscore": "funding",
+    "funding_extreme_positive": "funding",
+    "funding_extreme_negative": "funding",
+    "oi_change_rate": "funding",
     "funding_divergence": "funding",
     # liquidity
-    "stablecoin_growth": "liquidity", "liquidity_expanding": "liquidity",
-    "liquidity_contracting": "liquidity", "tvl_change_7d": "liquidity",
+    "stablecoin_growth": "liquidity",
+    "liquidity_expanding": "liquidity",
+    "liquidity_contracting": "liquidity",
+    "tvl_change_7d": "liquidity",
     # onchain
-    "hash_rate_trend": "onchain", "miner_accumulation": "onchain",
+    "hash_rate_trend": "onchain",
+    "miner_accumulation": "onchain",
     "miners_revenue_zscore": "onchain",
     # smart_money
-    "smart_money_direction": "smart_money", "smart_money_divergence": "smart_money",
-    "social_hype_zscore": "smart_money", "hype_extreme": "smart_money",
+    "smart_money_direction": "smart_money",
+    "smart_money_divergence": "smart_money",
+    "social_hype_zscore": "smart_money",
+    "hype_extreme": "smart_money",
     # valuation
-    "market_cap_rank": "valuation", "ath_drop_pct": "valuation",
+    "market_cap_rank": "valuation",
+    "ath_drop_pct": "valuation",
     "undervalued": "valuation",
     # ── 宏观金融扩展（Panewslab） ──
-    "vix_zone":              "macro_finance_ext",
-    "us_macro_regime":       "macro_finance_ext",
-    "sp500_7d_break":        "macro_finance_ext",
-    "dxy_strength":          "macro_finance_ext",
-    "btc_etf_flow_3d":       "macro_finance_ext",
-    "rwa_liquidity_pulse":   "macro_finance_ext",
+    "vix_zone": "macro_finance_ext",
+    "us_macro_regime": "macro_finance_ext",
+    "sp500_7d_break": "macro_finance_ext",
+    "dxy_strength": "macro_finance_ext",
+    "btc_etf_flow_3d": "macro_finance_ext",
+    "rwa_liquidity_pulse": "macro_finance_ext",
     "treasury_balance_delta": "macro_finance_ext",
     # 残差去共线性列（流动性维度归因为稳定币 vs RWA）
-    "stablecoin_minus_rwa":  "macro_finance_ext",
+    "stablecoin_minus_rwa": "macro_finance_ext",
     # ── BTC 链上扩展 ──
-    "whale_netflow_pulse":   "btc_onchain_ext",
-    "exchange_btc_30d":      "btc_onchain_ext",
-    "defi_breadth":          "btc_onchain_ext",
-    "oi_liq_pressure":       "btc_onchain_ext",
-    "btc_dom_delta":         "btc_onchain_ext",
+    "whale_netflow_pulse": "btc_onchain_ext",
+    "exchange_btc_30d": "btc_onchain_ext",
+    "defi_breadth": "btc_onchain_ext",
+    "oi_liq_pressure": "btc_onchain_ext",
+    "btc_dom_delta": "btc_onchain_ext",
 }
 
 
@@ -93,12 +105,18 @@ class MacroFeatures:
 
     # 预期的宏观数据列
     REQUIRED_COLS = {
-        "fear_greed_index", "fear_greed_trend_7d",
-        "funding_rate", "open_interest",
-        "stablecoin_supply", "tvl",
-        "hash_rate", "miners_revenue",
-        "smart_money_direction", "social_hype_score",
-        "market_cap", "ath_drop_pct",
+        "fear_greed_index",
+        "fear_greed_trend_7d",
+        "funding_rate",
+        "open_interest",
+        "stablecoin_supply",
+        "tvl",
+        "hash_rate",
+        "miners_revenue",
+        "smart_money_direction",
+        "social_hype_score",
+        "market_cap",
+        "ath_drop_pct",
     }
 
     # [P2] 特征→维度映射（初始=默认值，模块末尾 _load_yaml_config() 可覆盖）
@@ -198,7 +216,9 @@ class MacroFeatures:
         # oi_change_rate 使用真实 open_interest
         if _has_data("open_interest") and _feat_enabled("oi_change_rate"):
             oi = macro["open_interest"]
-            features["oi_change_rate"] = oi.pct_change(12, fill_method=None).replace([np.inf, -np.inf], np.nan)
+            features["oi_change_rate"] = oi.pct_change(12, fill_method=None).replace(
+                [np.inf, -np.inf], np.nan
+            )
 
         # ============================================================
         # 流动性维度 (4)
@@ -214,7 +234,9 @@ class MacroFeatures:
                 features["liquidity_contracting"] = (sc_growth < -0.02).astype(float)
 
         if _has_data("tvl") and _feat_enabled("tvl_change_7d"):
-            features["tvl_change_7d"] = macro["tvl"].pct_change(24 * 7, fill_method=None).replace([np.inf, -np.inf], np.nan)
+            features["tvl_change_7d"] = (
+                macro["tvl"].pct_change(24 * 7, fill_method=None).replace([np.inf, -np.inf], np.nan)
+            )
 
         # ============================================================
         # 链上维度 (3, 仅 BTC 有数据)
@@ -278,7 +300,9 @@ class MacroFeatures:
         # 2. 宏观 regime：基于 FedFunds + CPI（美林时钟简化到宽松/中性/紧缩 3 分类）
         #    宽松: FedFunds < 4.0 且 CPI < 2.5； 紧缩: FedFunds>=5.0 且 CPI>=3.5； 其余 中性
         #    FAIL-OPEN：若 CPI 缺（Panewslab 不常给 CPI），则只看 FFR 单独判定（宽松 FFR<4 / 紧缩 FFR>=5 / 其余中性）。
-        if (_has_data("pn_us_fedfunds") or _has_data("pn_us_cpi_yoy")) and _feat_enabled("us_macro_regime"):
+        if (_has_data("pn_us_fedfunds") or _has_data("pn_us_cpi_yoy")) and _feat_enabled(
+            "us_macro_regime"
+        ):
             ffr = macro.get("pn_us_fedfunds")
             cpi = macro.get("pn_us_cpi_yoy")
             if ffr is None:
@@ -294,11 +318,11 @@ class MacroFeatures:
             tight_w_cpi = (ffr >= 5.0) & (cpi >= 3.5)
             tight_no_cpi = (ffr >= 5.0) & cpi.isna()  # CPI 缺时 FFR 单边紧缩判定
             tight = tight_w_cpi | tight_no_cpi
-            regime = regime.where(~loose, 0.0)          # 宽松
-            regime = regime.where(~tight, 2.0)          # 紧缩
+            regime = regime.where(~loose, 0.0)  # 宽松
+            regime = regime.where(~tight, 2.0)  # 紧缩
             # 中性：非紧非松，且至少有一个指标（ffr or cpi）非 NaN
             neutral_mask = (~loose & ~tight) & (ffr.notna() | cpi.notna())
-            regime = regime.where(~neutral_mask, 1.0)   # 中性
+            regime = regime.where(~neutral_mask, 1.0)  # 中性
             features["us_macro_regime"] = regime.astype(float)
 
         # 3. sp500_7d_break: S&P 7 日累计涨跌的 30 日滚动 z-score
@@ -313,13 +337,19 @@ class MacroFeatures:
             else:
                 sp_level = macro["pn_us_sp500"]
                 # level→近似 1-bar 回报率（1h bar 回报太小，放大到 24-bar 日回报）
-                sp_daily_ret = sp_level.pct_change(24, fill_method=None).replace([np.inf, -np.inf], np.nan)
+                sp_daily_ret = sp_level.pct_change(24, fill_method=None).replace(  # noqa: F841
+                    [np.inf, -np.inf], np.nan
+                )
                 # 7 日累计回报 ≈ rolling 7 日 (168 bar) 的 24-bar 日回报求和 / 24？不对：
                 # 因为对齐后 level 值在尾段 4 bars 都是同一 snapshot 值，pct_change(24) 肯定为 NaN（相邻 24 条里只有 4 条非空）。
                 # 所以退而求其次：直接用 7 bar（1 天内 4 条有效 ≈ 7 bar 覆盖）的 raw 回报率，然后做 zscore，保持 FAIL-OPEN 少量数据。
-                sp_1bar_ret = sp_level.pct_change(1, fill_method=None).replace([np.inf, -np.inf], np.nan)
+                sp_1bar_ret = sp_level.pct_change(1, fill_method=None).replace(
+                    [np.inf, -np.inf], np.nan
+                )
                 # 7d(168h) 累计，对 1-bar 在尾段少数值也能勉强有输出：用 168 bar rolling prod 近似累计，sum 对 return 也可。
-                roll7_raw = (1.0 + sp_1bar_ret.fillna(0)).rolling(168, min_periods=2).apply(np.prod, raw=True) - 1.0
+                roll7_raw = (1.0 + sp_1bar_ret.fillna(0)).rolling(168, min_periods=2).apply(
+                    np.prod, raw=True
+                ) - 1.0
                 roll7 = roll7_raw.replace([np.inf, -np.inf, 1.0], np.nan) * 100.0  # 转 % 量级
             features["sp500_7d_break"] = self._zscore(roll7, window=30)
 
@@ -349,26 +379,42 @@ class MacroFeatures:
         #    所以候选列名把两套都加进去，哪套命中就用哪套；FAIL-OPEN 字节等价保持。
         btc_etf_cols = (
             "pn_btc_etf_daily_flow_usd_millions",
-            "pn_btc_etf_daily_flow_usd", "btc_etf_daily_flow_usd",
+            "pn_btc_etf_daily_flow_usd",
+            "btc_etf_daily_flow_usd",
             "eth_etf_daily_flow_usd",
             "pn_btc_etf_flow_norm",
-            "pn_btc_etf_total_aum_usd", "btc_etf_total_aum_usd",
+            "pn_btc_etf_total_aum_usd",
+            "btc_etf_total_aum_usd",
             "eth_etf_total_aum_usd",
         )
         etf_has = any(_has_data(c) for c in btc_etf_cols)
         if etf_has and _feat_enabled("btc_etf_flow_3d"):
             # 选一个「BTC 日净流入 USD」列；优先 BTC 精确列；缺时退 ETH（作为大盘 ETF 流动代理）
-            btc_flow_col = next((c for c in ("pn_btc_etf_daily_flow_usd_millions",
-                                             "pn_btc_etf_daily_flow_usd", "btc_etf_daily_flow_usd",
-                                             "eth_etf_daily_flow_usd", "pn_eth_etf_daily_flow_usd")
-                                 if _has_data(c)), None)
+            btc_flow_col = next(
+                (
+                    c
+                    for c in (
+                        "pn_btc_etf_daily_flow_usd_millions",
+                        "pn_btc_etf_daily_flow_usd",
+                        "btc_etf_daily_flow_usd",
+                        "eth_etf_daily_flow_usd",
+                        "pn_eth_etf_daily_flow_usd",
+                    )
+                    if _has_data(c)
+                ),
+                None,
+            )
             if btc_flow_col == "pn_btc_etf_daily_flow_usd_millions":
                 f = macro["pn_btc_etf_daily_flow_usd_millions"]
                 etf_nonnull = int(f.notna().sum())
                 mp_sum = 2 if etf_nonnull <= 10 else 12
                 sum3 = f.rolling(72, min_periods=mp_sum).sum() / 24.0
-            elif btc_flow_col in ("pn_btc_etf_daily_flow_usd", "btc_etf_daily_flow_usd",
-                                  "eth_etf_daily_flow_usd", "pn_eth_etf_daily_flow_usd"):
+            elif btc_flow_col in (
+                "pn_btc_etf_daily_flow_usd",
+                "btc_etf_daily_flow_usd",
+                "eth_etf_daily_flow_usd",
+                "pn_eth_etf_daily_flow_usd",
+            ):
                 # 转为 millions（除以 1e6），再 rolling 3 日求和
                 f_m = macro[btc_flow_col] / 1_000_000.0
                 etf_nonnull = int(f_m.notna().sum())
@@ -400,9 +446,12 @@ class MacroFeatures:
         #    输入兼容：pn_rwa_change7d_pct（首选直接 7d 增速）或 pn_rwa_tvl_usd_billions（十亿单位）
         #    或 pn_rwa_tvl_usd（实际 SQLite 返回的是美元整数，非 billions → 自动 /1e9）。
         #    FAIL-OPEN：4 bars nonnull 时 pct_change(168) 全 NaN → 用 Δbar 自适应百分比差分缩放至 7 天口径。
-        rwa_cols_ok = (_has_data("pn_rwa_change7d_pct")
-                       or _has_data("pn_rwa_tvl_usd_billions")
-                       or _has_data("pn_rwa_tvl_usd"))
+        rwa_cols_ok = (
+            _has_data("pn_rwa_change7d_pct")
+            or _has_data("pn_rwa_tvl_usd_billions")
+            or _has_data("pn_rwa_tvl_usd")
+        )
+
         # 局部 helper: Δbar 自适应 pct_change（按相邻 nonnull 对算百分比，再按 Δbar 缩放至 target_days 量级）
         def _adapt_pct(s: pd.Series, target_days: int = 7) -> pd.Series:
             vals = s.values
@@ -431,14 +480,24 @@ class MacroFeatures:
             elif _has_data("pn_rwa_tvl_usd_billions"):
                 tvl = macro["pn_rwa_tvl_usd_billions"].astype(float)
                 rwa_nn = int(tvl.notna().sum())
-                raw = _adapt_pct(tvl, target_days=7) if rwa_nn <= 20 else (
-                    tvl.pct_change(168, fill_method=None).replace([np.inf, -np.inf], np.nan) * 100.0
+                raw = (
+                    _adapt_pct(tvl, target_days=7)
+                    if rwa_nn <= 20
+                    else (
+                        tvl.pct_change(168, fill_method=None).replace([np.inf, -np.inf], np.nan)
+                        * 100.0
+                    )
                 )
             else:
                 tvl = macro["pn_rwa_tvl_usd"].astype(float) / 1_000_000_000.0
                 rwa_nn = int(tvl.notna().sum())
-                raw = _adapt_pct(tvl, target_days=7) if rwa_nn <= 20 else (
-                    tvl.pct_change(168, fill_method=None).replace([np.inf, -np.inf], np.nan) * 100.0
+                raw = (
+                    _adapt_pct(tvl, target_days=7)
+                    if rwa_nn <= 20
+                    else (
+                        tvl.pct_change(168, fill_method=None).replace([np.inf, -np.inf], np.nan)
+                        * 100.0
+                    )
                 )
             raw_nn = int(raw.notna().sum())
             minp_z = 2 if raw_nn <= 10 else max(2, min(72, len(df) // 3))
@@ -447,12 +506,18 @@ class MacroFeatures:
             denom = s.replace(0, np.nan)
             pulse_raw = (raw - m) / denom
             pulse_safe = pulse_raw.where(~s.eq(0) | raw.isna(), 0.0)
-            features["rwa_liquidity_pulse"] = pulse_safe.astype(float).replace([np.inf, -np.inf], np.nan)
+            features["rwa_liquidity_pulse"] = pulse_safe.astype(float).replace(
+                [np.inf, -np.inf], np.nan
+            )
 
         # 7. treasury_balance_delta: 各国/企业国库 BTC 净增量 — 7 日均值
         #    输入兼容：pn_treasury_total_btc_holdings（首选）/ pn_treasury_btc_total（Panewslab 实际返回名）
         #    / pn_holdings_treasury_btc（SQLite reader 派生字段名）
-        tb_cols = ("pn_treasury_total_btc_holdings", "pn_treasury_btc_total", "pn_holdings_treasury_btc")
+        tb_cols = (
+            "pn_treasury_total_btc_holdings",
+            "pn_treasury_btc_total",
+            "pn_holdings_treasury_btc",
+        )
         tb_has = next((c for c in tb_cols if _has_data(c)), None)
         if tb_has is not None and _feat_enabled("treasury_balance_delta"):
             tb = macro[tb_has]
@@ -478,7 +543,9 @@ class MacroFeatures:
                     days_apart = delta_bars / 24.0
                     daily_change = (val_cur - val_prev) / days_apart if days_apart > 0 else np.nan
                     delta_daily_arr[idx_cur] = float(daily_change)
-            features["treasury_balance_delta"] = pd.Series(delta_daily_arr, index=tb.index).replace([np.inf, -np.inf], np.nan)
+            features["treasury_balance_delta"] = pd.Series(delta_daily_arr, index=tb.index).replace(
+                [np.inf, -np.inf], np.nan
+            )
 
         # 7b. stablecoin_minus_rwa 残差去共线性（当稳定币供给或总市值与 RWA 增速同时存在时）
         #    输入兼容：首选 stablecoin_supply（旧口径），否则用 stablecoin_transparency 真实输出
@@ -487,14 +554,16 @@ class MacroFeatures:
         #    再缺时用 {pn_, 无前缀} global_market_cap_usd 的差分近似（因为稳定币在总市值中占比稳定，
         #    总市值变化 ≈ 稳定币变化 × 常数；保持 FAIL-OPEN 语义）。
         #    FAIL-OPEN: nonnull<=20 时 pct_change(168) 全 NaN → Δbar 自适应 pct_change 缩放。
-        stab_cols_ok = (_has_data("stablecoin_supply")
-                        or _has_data("stablecoin_mcap_bln")
-                        or _has_data("usdt_circulating_bln")
-                        or _has_data("usdc_circulating_bln")
-                        or _has_data("change_7d_pct")
-                        or _has_data("stablecoin_change_rate")
-                        or _has_data("pn_global_market_cap_usd")
-                        or _has_data("global_market_cap_usd"))
+        stab_cols_ok = (
+            _has_data("stablecoin_supply")
+            or _has_data("stablecoin_mcap_bln")
+            or _has_data("usdt_circulating_bln")
+            or _has_data("usdc_circulating_bln")
+            or _has_data("change_7d_pct")
+            or _has_data("stablecoin_change_rate")
+            or _has_data("pn_global_market_cap_usd")
+            or _has_data("global_market_cap_usd")
+        )
         if (stab_cols_ok and rwa_cols_ok) and _feat_enabled("stablecoin_minus_rwa"):
             # 局部 helper 同 rwa 块
             def _adapt_pct2(s: pd.Series, target_days: int = 7) -> pd.Series:
@@ -526,31 +595,65 @@ class MacroFeatures:
             elif _has_data("stablecoin_mcap_bln"):
                 sc = macro["stablecoin_mcap_bln"].astype(float)
                 sc_nn = int(sc.notna().sum())
-                sc_7d = _adapt_pct2(sc, 7) if sc_nn <= 20 else (
-                    sc.pct_change(168, fill_method=None).replace([np.inf, -np.inf], np.nan) * 100.0
+                sc_7d = (
+                    _adapt_pct2(sc, 7)
+                    if sc_nn <= 20
+                    else (
+                        sc.pct_change(168, fill_method=None).replace([np.inf, -np.inf], np.nan)
+                        * 100.0
+                    )
                 )
             elif _has_data("usdt_circulating_bln") or _has_data("usdc_circulating_bln"):
-                usdt = macro["usdt_circulating_bln"].astype(float) if _has_data("usdt_circulating_bln") else 0.0
-                usdc = macro["usdc_circulating_bln"].astype(float) if _has_data("usdc_circulating_bln") else 0.0
+                usdt = (
+                    macro["usdt_circulating_bln"].astype(float)
+                    if _has_data("usdt_circulating_bln")
+                    else 0.0
+                )
+                usdc = (
+                    macro["usdc_circulating_bln"].astype(float)
+                    if _has_data("usdc_circulating_bln")
+                    else 0.0
+                )
                 sc_sum = (usdt + usdc).replace(0.0, np.nan)
                 sc_nn = int(sc_sum.notna().sum())
-                sc_7d = _adapt_pct2(sc_sum, 7) if sc_nn <= 20 else (
-                    sc_sum.pct_change(168, fill_method=None).replace([np.inf, -np.inf], np.nan) * 100.0
+                sc_7d = (
+                    _adapt_pct2(sc_sum, 7)
+                    if sc_nn <= 20
+                    else (
+                        sc_sum.pct_change(168, fill_method=None).replace([np.inf, -np.inf], np.nan)
+                        * 100.0
+                    )
                 )
             elif _has_data("stablecoin_supply"):
                 sc = macro["stablecoin_supply"].astype(float)
                 sc_nn = int(sc.notna().sum())
-                sc_7d = _adapt_pct2(sc, 7) if sc_nn <= 20 else (
-                    sc.pct_change(168, fill_method=None).replace([np.inf, -np.inf], np.nan) * 100.0
+                sc_7d = (
+                    _adapt_pct2(sc, 7)
+                    if sc_nn <= 20
+                    else (
+                        sc.pct_change(168, fill_method=None).replace([np.inf, -np.inf], np.nan)
+                        * 100.0
+                    )
                 )
             else:
                 # 近似：总市值 7 日增速（包含 BTC/ETH，但作为 stablecoin 代理 FAIL-OPEN 仍有意义）
-                gcap_col = next((c for c in ("pn_global_market_cap_usd", "global_market_cap_usd") if _has_data(c)),
-                                "pn_global_market_cap_usd")
+                gcap_col = next(
+                    (
+                        c
+                        for c in ("pn_global_market_cap_usd", "global_market_cap_usd")
+                        if _has_data(c)
+                    ),
+                    "pn_global_market_cap_usd",
+                )
                 gcap = macro[gcap_col].astype(float)
                 gcap_nn = int(gcap.notna().sum())
-                sc_7d = _adapt_pct2(gcap, 7) if gcap_nn <= 20 else (
-                    gcap.pct_change(168, fill_method=None).replace([np.inf, -np.inf], np.nan) * 100.0
+                sc_7d = (
+                    _adapt_pct2(gcap, 7)
+                    if gcap_nn <= 20
+                    else (
+                        gcap.pct_change(168, fill_method=None).replace([np.inf, -np.inf], np.nan)
+                        * 100.0
+                    )
                 )
             # RWA 7 日增速（同 rwa_liquidity_pulse 的 pct 计算，但非 zscore，保持同比 %）
             if _has_data("pn_rwa_change7d_pct"):
@@ -558,14 +661,24 @@ class MacroFeatures:
             elif _has_data("pn_rwa_tvl_usd_billions"):
                 tvl = macro["pn_rwa_tvl_usd_billions"].astype(float)
                 tvl_nn = int(tvl.notna().sum())
-                rwa_7d = _adapt_pct2(tvl, 7) if tvl_nn <= 20 else (
-                    tvl.pct_change(168, fill_method=None).replace([np.inf, -np.inf], np.nan) * 100.0
+                rwa_7d = (
+                    _adapt_pct2(tvl, 7)
+                    if tvl_nn <= 20
+                    else (
+                        tvl.pct_change(168, fill_method=None).replace([np.inf, -np.inf], np.nan)
+                        * 100.0
+                    )
                 )
             else:
                 tvl = macro["pn_rwa_tvl_usd"].astype(float) / 1_000_000_000.0
                 tvl_nn = int(tvl.notna().sum())
-                rwa_7d = _adapt_pct2(tvl, 7) if tvl_nn <= 20 else (
-                    tvl.pct_change(168, fill_method=None).replace([np.inf, -np.inf], np.nan) * 100.0
+                rwa_7d = (
+                    _adapt_pct2(tvl, 7)
+                    if tvl_nn <= 20
+                    else (
+                        tvl.pct_change(168, fill_method=None).replace([np.inf, -np.inf], np.nan)
+                        * 100.0
+                    )
                 )
             # 残差 = 纯链上投机性流动 = 稳定币增速 - RWA 增速（RWA 是国债/法币锚定，增速差值≈纯交易性资金变化）
             features["stablecoin_minus_rwa"] = (sc_7d - rwa_7d).replace([np.inf, -np.inf], np.nan)
@@ -585,41 +698,67 @@ class MacroFeatures:
         #        → / spot1_BTC_mcap 转 %（作为 cap_pct 近似，FAIL-OPEN 保底）
         #      · spot1_BTC_nf24 / spot10_WBTC_nf24：巨鲸级币种 24h 净流量（spot1_BTC/spot10_WBTC）
         #        → / spot{1,10}_*_mcap 归一，作为巨鲸资金流 proxy（数据源接入前的 FAIL-OPEN 近似）
-        _whale_pct_col = next((c for c in ("pn_whale_netflow_cap_pct", "whale_netflow_cap_pct")
-                               if _has_data(c)), None)
-        _whale_usd_col = next((c for c in ("pn_whale_netflow_to_ex_usd", "whale_netflow_to_ex_usd")
-                               if _has_data(c)), None)
-        _whale_has = (_whale_pct_col is not None
-                      or _whale_usd_col is not None
-                      or _has_data("spot1_BTC_nf24")
-                      or _has_data("spot10_WBTC_nf24"))
+        _whale_pct_col = next(
+            (c for c in ("pn_whale_netflow_cap_pct", "whale_netflow_cap_pct") if _has_data(c)), None
+        )
+        _whale_usd_col = next(
+            (c for c in ("pn_whale_netflow_to_ex_usd", "whale_netflow_to_ex_usd") if _has_data(c)),
+            None,
+        )
+        _whale_has = (
+            _whale_pct_col is not None
+            or _whale_usd_col is not None
+            or _has_data("spot1_BTC_nf24")
+            or _has_data("spot10_WBTC_nf24")
+        )
         if _whale_has and _feat_enabled("whale_netflow_pulse"):
             if _whale_pct_col is not None:
                 w = macro[_whale_pct_col].astype(float)
             elif _whale_usd_col is not None:
                 # USD 净流量 / 总市值近似归一化（spot1_BTC_mcap 或 btc_etf_total_aum_usd 作分母）
-                denom_col = next((c for c in ("spot1_BTC_mcap", "pn_btc_etf_total_aum_usd",
-                                              "btc_etf_total_aum_usd", "global_market_cap_usd")
-                                  if _has_data(c)), None)
+                denom_col = next(
+                    (
+                        c
+                        for c in (
+                            "spot1_BTC_mcap",
+                            "pn_btc_etf_total_aum_usd",
+                            "btc_etf_total_aum_usd",
+                            "global_market_cap_usd",
+                        )
+                        if _has_data(c)
+                    ),
+                    None,
+                )
                 if denom_col is not None:
                     denom = macro[denom_col].astype(float).replace(0, np.nan)
-                    w = (macro[_whale_usd_col].astype(float) / denom * 100.0)  # 转 % 与 cap_pct 同量级
+                    w = (
+                        macro[_whale_usd_col].astype(float) / denom * 100.0
+                    )  # 转 % 与 cap_pct 同量级
                 else:
                     w = macro[_whale_usd_col].astype(float)
             else:
                 # 用 spot1_BTC_nf24 / spot10_WBTC_nf24 作为巨鲸级净流量 proxy，÷对应 mcap 归一
                 parts = []
                 if _has_data("spot1_BTC_nf24") and _has_data("spot1_BTC_mcap"):
-                    p1 = (macro["spot1_BTC_nf24"].astype(float)
-                          / macro["spot1_BTC_mcap"].astype(float).replace(0, np.nan) * 100.0)
+                    p1 = (
+                        macro["spot1_BTC_nf24"].astype(float)
+                        / macro["spot1_BTC_mcap"].astype(float).replace(0, np.nan)
+                        * 100.0
+                    )
                     parts.append(p1)
                 if _has_data("spot10_WBTC_nf24") and _has_data("spot10_WBTC_mcap"):
-                    p2 = (macro["spot10_WBTC_nf24"].astype(float)
-                          / macro["spot10_WBTC_mcap"].astype(float).replace(0, np.nan) * 100.0)
+                    p2 = (
+                        macro["spot10_WBTC_nf24"].astype(float)
+                        / macro["spot10_WBTC_mcap"].astype(float).replace(0, np.nan)
+                        * 100.0
+                    )
                     parts.append(p2)
                 if parts:
                     import functools
-                    w = functools.reduce(lambda a, b: a.add(b, fill_value=0), parts) / float(len(parts))
+
+                    w = functools.reduce(lambda a, b: a.add(b, fill_value=0), parts) / float(
+                        len(parts)
+                    )
                 else:
                     # 兜底：spot{1,10} nf24 原始归一 到 (0-1) 量级
                     col = "spot1_BTC_nf24" if _has_data("spot1_BTC_nf24") else "spot10_WBTC_nf24"
@@ -651,8 +790,12 @@ class MacroFeatures:
         # 3. defi_breadth: DeFi 广度区间标签（0~3），直接透传
         #    兼容：首选 defi_breadth_currentRange（战略层 reader 精确名），退而用
         #    bb_*_range 或 pn_cycle_bottom_hit_ratio_pct（链上近似值，FAIL-OPEN 保底透传）。
-        defi_col_options = ("defi_breadth_currentRange", "bb_defi_range_tag",
-                            "blockbeats_signal_overall", "pn_cycle_sentiment_norm")
+        defi_col_options = (
+            "defi_breadth_currentRange",
+            "bb_defi_range_tag",
+            "blockbeats_signal_overall",
+            "pn_cycle_sentiment_norm",
+        )
         defi_has = next((c for c in defi_col_options if _has_data(c)), None)
         if defi_has is not None and _feat_enabled("defi_breadth"):
             features["defi_breadth"] = macro[defi_has].astype(float)
@@ -661,13 +804,18 @@ class MacroFeatures:
         #    兼容精确列名（M/B 拆分）或 Panewslab pn_* 统一列（原始 USD 整数）。
         #    优先：pn_liq_atr_percentile_proxy（SQLite 已归一化代理）；否则用 raw 列计算 M/B 比。
         liq_pressure_cols_ok = (
-            (_has_data("fut_liq_long_24h_usd_millions") and _has_data("fut_open_interest_usd_billions"))
+            (
+                _has_data("fut_liq_long_24h_usd_millions")
+                and _has_data("fut_open_interest_usd_billions")
+            )
             or (_has_data("pn_fut_liquidation_24h_usd") and _has_data("pn_fut_open_interest_usd"))
             or _has_data("pn_liq_atr_percentile_proxy")
             or (_has_data("pn_fut_long_liq_ratio") and _has_data("pn_leverage_ratio_oi_cap"))
         )
         if liq_pressure_cols_ok and _feat_enabled("oi_liq_pressure"):
-            if _has_data("fut_liq_long_24h_usd_millions") and _has_data("fut_open_interest_usd_billions"):
+            if _has_data("fut_liq_long_24h_usd_millions") and _has_data(
+                "fut_open_interest_usd_billions"
+            ):
                 liq_long_M = macro["fut_liq_long_24h_usd_millions"].astype(float)
                 oi_B = macro["fut_open_interest_usd_billions"].astype(float)
                 ratio = (liq_long_M / oi_B.replace(0, np.nan)).replace([np.inf, -np.inf], np.nan)
@@ -678,7 +826,9 @@ class MacroFeatures:
                 # pn_* 原始美元单位：24h 爆仓 (USD) / OI (USD) → 无量纲比，×1000 便于数量级可读
                 liq_usd = macro["pn_fut_liquidation_24h_usd"].astype(float)
                 oi_usd = macro["pn_fut_open_interest_usd"].astype(float)
-                ratio = (liq_usd / oi_usd.replace(0, np.nan)).replace([np.inf, -np.inf], np.nan) * 1000.0
+                ratio = (liq_usd / oi_usd.replace(0, np.nan)).replace(
+                    [np.inf, -np.inf], np.nan
+                ) * 1000.0
             else:
                 # fallback: long_liq_ratio（多空爆仓比）× leverage 作为压力近似（高杠杆 + 多头爆仓比 = 压力）
                 lr = macro["pn_fut_long_liq_ratio"].astype(float)
@@ -755,6 +905,7 @@ def _load_yaml_config() -> bool:
     """
     try:
         import yaml
+
         with open(_YAML_PATH, "r", encoding="utf-8") as f:
             raw = yaml.safe_load(f)
         if not isinstance(raw, dict):
@@ -763,7 +914,7 @@ def _load_yaml_config() -> bool:
         if not isinstance(features, dict):
             raise ValueError(f"'features' key is {type(features).__name__}, expected dict")
 
-        new_map: Dict[str, str] = {}
+        new_map: Dict[str, str] = {}  # noqa: F821
         for k, v in features.items():
             if not isinstance(k, str) or not isinstance(v, str):
                 logger.warning("macro_features.yaml bad entry: %r=%r, skipped", k, v)
@@ -796,7 +947,7 @@ _load_yaml_config()
 # ============================================================
 # FeatureRegistry 注册
 # ============================================================
-from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry  # noqa: E402
 
 FeatureRegistry.register(
     name="macro",

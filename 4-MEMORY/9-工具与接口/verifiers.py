@@ -11,17 +11,18 @@
 2. FactualityVerifier: 检查事实声明可信度（版本号、数值合理性）
 3. ApplicabilityVerifier: 计算记忆与 context 的关键词重叠度
 """
+
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from verification_record import VerificationSignal
-
 
 # ---------------------------------------------------------------------------
 # BaseVerifier
 # ---------------------------------------------------------------------------
+
 
 class BaseVerifier:
     """验证器抽象基类。
@@ -29,25 +30,34 @@ class BaseVerifier:
     子类实现 _verify() 返回 verdict 字符串 ("pass"/"fail"/"abstain")。
     verify() 包装 FAIL-OPEN：空内容/异常 → abstain。
     """
+
     stage: str = "base"
     verifier_id: str = "base_verifier"
 
-    def verify(self, content: str, context: Optional[str] = None, **kwargs: Any) -> VerificationSignal:
+    def verify(
+        self, content: str, context: Optional[str] = None, **kwargs: Any
+    ) -> VerificationSignal:
         """执行验证，返回 VerificationSignal。FAIL-OPEN。"""
         try:
             if not content or not str(content).strip():
                 return VerificationSignal(
-                    stage=self.stage, verdict="abstain", verifier_id=self.verifier_id,
+                    stage=self.stage,
+                    verdict="abstain",
+                    verifier_id=self.verifier_id,
                 )
             verdict = self._verify(str(content), context=context, **kwargs)
             if verdict not in ("pass", "fail", "abstain"):
                 verdict = "abstain"
             return VerificationSignal(
-                stage=self.stage, verdict=verdict, verifier_id=self.verifier_id,
+                stage=self.stage,
+                verdict=verdict,
+                verifier_id=self.verifier_id,
             )
         except Exception:
             return VerificationSignal(
-                stage=self.stage, verdict="abstain", verifier_id=self.verifier_id,
+                stage=self.stage,
+                verdict="abstain",
+                verifier_id=self.verifier_id,
             )
 
     def _verify(self, content: str, context: Optional[str] = None, **kwargs: Any) -> str:
@@ -60,11 +70,25 @@ class BaseVerifier:
 
 # 反义词对（中文 + 英文），用于矛盾检测
 _OPPOSITE_PAIRS = [
-    ("上升", "下降"), ("上涨", "下跌"), ("增加", "减少"), ("提高", "降低"),
-    ("开启", "关闭"), ("启用", "禁用"), ("应该", "不要"), ("必须", "禁止"),
-    ("正确", "错误"), ("成功", "失败"), ("真", "假"), ("是", "否"),
-    ("up", "down"), ("increase", "decrease"), ("enable", "disable"),
-    ("true", "false"), ("yes", "no"), ("on", "off"), ("pass", "fail"),
+    ("上升", "下降"),
+    ("上涨", "下跌"),
+    ("增加", "减少"),
+    ("提高", "降低"),
+    ("开启", "关闭"),
+    ("启用", "禁用"),
+    ("应该", "不要"),
+    ("必须", "禁止"),
+    ("正确", "错误"),
+    ("成功", "失败"),
+    ("真", "假"),
+    ("是", "否"),
+    ("up", "down"),
+    ("increase", "decrease"),
+    ("enable", "disable"),
+    ("true", "false"),
+    ("yes", "no"),
+    ("on", "off"),
+    ("pass", "fail"),
 ]
 
 
@@ -77,9 +101,10 @@ class CycleConsistencyVerifier(BaseVerifier):
     - 扫描反义词对，若同一对的两个词都出现 → fail
     - 否则 → pass
     """
+
     stage = "cycle_consistency"
     verifier_id = "cycle_consistency_v1"
-    _FAIL_LENGTH = 15   # < 15 字符 → fail
+    _FAIL_LENGTH = 15  # < 15 字符 → fail
     _ABSTAIN_LENGTH = 30  # 15-30 字符 → abstain
 
     def _verify(self, content: str, context: Optional[str] = None, **kwargs: Any) -> str:
@@ -117,6 +142,7 @@ class FactualityVerifier(BaseVerifier):
     - 无事实声明（无数字/版本号）→ abstain
     - 否则 → pass（信任记忆来源）
     """
+
     stage = "factuality"
     verifier_id = "factuality_v1"
 
@@ -161,13 +187,60 @@ class FactualityVerifier(BaseVerifier):
 # ---------------------------------------------------------------------------
 
 # 停用词（不参与重叠计算）
-_STOPWORDS = frozenset({
-    "的", "了", "是", "在", "和", "与", "或", "等", "中", "上", "下",
-    "有", "无", "不", "也", "都", "就", "而", "及", "这", "那",
-    "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-    "to", "of", "in", "on", "at", "by", "for", "with", "from", "as",
-    "and", "or", "not", "no", "yes", "but", "if", "then", "else",
-})
+_STOPWORDS = frozenset(
+    {
+        "的",
+        "了",
+        "是",
+        "在",
+        "和",
+        "与",
+        "或",
+        "等",
+        "中",
+        "上",
+        "下",
+        "有",
+        "无",
+        "不",
+        "也",
+        "都",
+        "就",
+        "而",
+        "及",
+        "这",
+        "那",
+        "the",
+        "a",
+        "an",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "to",
+        "of",
+        "in",
+        "on",
+        "at",
+        "by",
+        "for",
+        "with",
+        "from",
+        "as",
+        "and",
+        "or",
+        "not",
+        "no",
+        "yes",
+        "but",
+        "if",
+        "then",
+        "else",
+    }
+)
 
 
 def _tokenize(text: str) -> List[str]:
@@ -193,6 +266,7 @@ class ApplicabilityVerifier(BaseVerifier):
     - 计算记忆 token 与 context token 的重叠比例
     - 重叠比例 >= 阈值 → pass，否则 → fail
     """
+
     stage = "applicability"
     verifier_id = "applicability_v1"
     _THRESHOLD = 0.3  # 重叠比例阈值
@@ -218,6 +292,7 @@ class ApplicabilityVerifier(BaseVerifier):
 # ---------------------------------------------------------------------------
 # 注册表 & 便捷函数
 # ---------------------------------------------------------------------------
+
 
 def get_default_verifiers() -> List[BaseVerifier]:
     """获取默认验证器列表（三个全开）。"""

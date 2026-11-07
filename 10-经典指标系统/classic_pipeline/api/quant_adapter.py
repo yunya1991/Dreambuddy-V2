@@ -2,6 +2,7 @@
 
 承接单体 quant/signals 路由的核心计算签名，委托给 classic_pipeline.signals.quant_signal。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -9,12 +10,12 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 
 from classic_pipeline.signals.quant_signal import (
-    signal_confidence,
-    strategy_weight,
-    strategy_perf,
-    vote,
-    risk_gate,
     compute,
+    risk_gate,
+    signal_confidence,
+    strategy_perf,
+    strategy_weight,
+    vote,
 )
 
 

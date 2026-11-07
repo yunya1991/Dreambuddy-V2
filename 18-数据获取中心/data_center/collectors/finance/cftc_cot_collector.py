@@ -17,11 +17,14 @@ v3 修复（2026-10-27）：只上报最新报告期记录。历史记录已入�
 
 fail-open：网络/HTTP 异常返回空列表，不抛异常。
 """
+
 from __future__ import annotations
+
 import json
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
+
 from data_center.collectors._base import BaseCollector
 from data_center.core.contract import DataRecord, validate_record
 
@@ -54,11 +57,13 @@ class CftcCotCollector(BaseCollector):
 
     @staticmethod
     def _fetch_rows(limit: int) -> list[dict]:
-        query = urllib.parse.urlencode({
-            "$limit": limit,
-            "commodity_name": "BITCOIN",
-            "$order": "report_date_as_yyyy_mm_dd DESC",
-        })
+        query = urllib.parse.urlencode(
+            {
+                "$limit": limit,
+                "commodity_name": "BITCOIN",
+                "$order": "report_date_as_yyyy_mm_dd DESC",
+            }
+        )
         url = f"{_CFTC_API}?{query}"
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
         with urllib.request.urlopen(req, timeout=30) as resp:
@@ -68,22 +73,17 @@ class CftcCotCollector(BaseCollector):
     def _build_records(rows: list[dict], market: str) -> list[DataRecord]:
         # 主合约：CHICAGO MERCANTILE 的 BITCOIN（非 Nano/Micro）
         cme = [
-            r for r in rows
+            r
+            for r in rows
             if "CHICAGO MERCANTILE" in r.get("market_and_exchange_names", "")
             and r.get("contract_market_name", "").strip() == "BITCOIN"
         ]
         # v3：只上报最新报告期记录，避免历史记录触发新鲜度门禁整批拦截
-        dates = [
-            d for d in ((r.get("report_date_as_yyyy_mm_dd") or "")[:10] for r in cme)
-            if d
-        ]
+        dates = [d for d in ((r.get("report_date_as_yyyy_mm_dd") or "")[:10] for r in cme) if d]
         if not dates:
             return []
         latest_date = max(dates)
-        cme = [
-            r for r in cme
-            if (r.get("report_date_as_yyyy_mm_dd") or "")[:10] == latest_date
-        ]
+        cme = [r for r in cme if (r.get("report_date_as_yyyy_mm_dd") or "")[:10] == latest_date]
         recs: list[DataRecord] = []
         for r in cme:
             date_str = (r.get("report_date_as_yyyy_mm_dd") or "")[:10]

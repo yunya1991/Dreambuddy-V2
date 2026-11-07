@@ -56,6 +56,7 @@ class Embedder:
                 return
             try:
                 from sentence_transformers import SentenceTransformer
+
                 model = SentenceTransformer(self.model_name)
                 # 试编码一句，确认模型可用
                 model.encode(["自检"], normalize_embeddings=True)
@@ -106,7 +107,8 @@ class Embedder:
             return np.vstack([self._tfidf_embed(t) for t in texts])
         try:
             vecs = self._model.encode(
-                texts, normalize_embeddings=True,
+                texts,
+                normalize_embeddings=True,
                 batch_size=config.BATCH_SIZE,
             )
             return np.asarray(vecs, dtype=np.float32)

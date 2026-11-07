@@ -15,12 +15,11 @@ RED 契约:
 
 参考: SPEC-CognitiveSystem-Evolution.md §4.3 P2-5
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
-
-import pytest
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR) not in sys.path:
@@ -37,7 +36,6 @@ class TestGraphRAGCommunityCore:
     def test_detect_communities_two_groups(self):
         """RED: 两个明显社区的图应被正确分组。"""
         import networkx as nx
-
         from graphrag_community import GraphRAGCommunity
 
         g = nx.Graph()
@@ -61,7 +59,6 @@ class TestGraphRAGCommunityCore:
     def test_detect_communities_returns_list_of_sets(self):
         """RED: detect_communities() 返回社区列表（每个是节点集合）。"""
         import networkx as nx
-
         from graphrag_community import GraphRAGCommunity
 
         g = nx.Graph()
@@ -76,7 +73,6 @@ class TestGraphRAGCommunityCore:
     def test_summarize_communities(self):
         """RED: summarize_communities() 为每个社区生成摘要。"""
         import networkx as nx
-
         from graphrag_community import GraphRAGCommunity
 
         g = nx.Graph()
@@ -92,7 +88,7 @@ class TestGraphRAGCommunityCore:
         assert isinstance(summaries, dict)
         assert len(summaries) == len(communities)
         # 每个摘要应含 community_id 和节点信息
-        for cid, summary in summaries.items():
+        for cid, summary in summaries.items():  # noqa: B007
             assert "community_id" in summary
             assert "size" in summary
             assert "entities" in summary
@@ -100,7 +96,6 @@ class TestGraphRAGCommunityCore:
     def test_query_community(self):
         """RED: query_community() 返回指定社区的实体列表。"""
         import networkx as nx
-
         from graphrag_community import GraphRAGCommunity
 
         g = nx.Graph()
@@ -120,7 +115,6 @@ class TestGraphRAGCommunityCore:
     def test_hierarchical_summary(self):
         """RED: hierarchical_summary() 生成分层摘要结构。"""
         import networkx as nx
-
         from graphrag_community import GraphRAGCommunity
 
         g = nx.Graph()
@@ -137,7 +131,6 @@ class TestGraphRAGCommunityCore:
     def test_failopen_empty_graph(self):
         """RED: 空图 → FAIL-OPEN 返回空列表。"""
         import networkx as nx
-
         from graphrag_community import GraphRAGCommunity
 
         g = nx.Graph()
@@ -156,7 +149,6 @@ class TestGraphRAGCommunityCore:
     def test_community_stats(self):
         """RED: stats() 返回社区统计信息。"""
         import networkx as nx
-
         from graphrag_community import GraphRAGCommunity
 
         g = nx.Graph()
@@ -174,9 +166,9 @@ class TestCognitiveLoopEntryGraphRAG:
 
     def test_graphrag_attribute_exists(self):
         """RED: CognitiveLoopEntry 应有 graphrag 属性。"""
-        from cognitive_loop_entry import CognitiveLoopEntry
-
         import inspect
+
+        from cognitive_loop_entry import CognitiveLoopEntry
 
         src = inspect.getsource(CognitiveLoopEntry.__init__)
         assert "graphrag" in src

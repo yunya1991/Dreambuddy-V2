@@ -14,25 +14,25 @@
   4. FeaturePipeline 能消费 GoldReader 的输出
   5. EN_SILVER=false 时跳过清洗，直接返回原始 records
 """
+
 from __future__ import annotations
 
-import os
 import sqlite3
-from datetime import datetime, timezone, timedelta
-from decimal import Decimal
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import pandas as pd
 import pytest
-
 from data_center.core.contract import DataRecord
 
 
 # ── 临时 SQLite DAL fixture ─────────────────────────
 @pytest.fixture()
 def sqlite_repo(tmp_path):
+    from dreambuddy_dal.implementations.sqlite_unified.market_macro_impl import (
+        SqliteMarketMacroRepository,
+    )
     from dreambuddy_dal.implementations.sqlite_unified.schema_init import init_db_schema
-    from dreambuddy_dal.implementations.sqlite_unified.market_macro_impl import SqliteMarketMacroRepository
 
     db_path = str(tmp_path / "silver_e2e.db")
     conn = sqlite3.connect(db_path)
@@ -60,12 +60,9 @@ def _make_fear_greed_records():
             metrics={},
             events=[],
             timeseries=[
-                {"value": 25, "value_classification": "Extreme Fear",
-                 "timestamp": t0.isoformat()},
-                {"value": 45, "value_classification": "Fear",
-                 "timestamp": t1.isoformat()},
-                {"value": 72, "value_classification": "Greed",
-                 "timestamp": t2.isoformat()},
+                {"value": 25, "value_classification": "Extreme Fear", "timestamp": t0.isoformat()},
+                {"value": 45, "value_classification": "Fear", "timestamp": t1.isoformat()},
+                {"value": 72, "value_classification": "Greed", "timestamp": t2.isoformat()},
             ],
             raw={},
         ),
@@ -86,6 +83,7 @@ def test_silver_chain_writes_to_dal(sqlite_repo, monkeypatch):
 
     # patch DalSink 使用我们的 SQLite repo
     from data_cleaning.dal_sink import DalSink
+
     original_init = DalSink.__init__
 
     def patched_init(self, mm_repo=None):
@@ -98,6 +96,7 @@ def test_silver_chain_writes_to_dal(sqlite_repo, monkeypatch):
     from data_center.core.registry import Registry
 
     reg = Registry()
+
     # 注册 mock collector（签名对齐 BaseCollector.fetch(self, params: dict)）
     class MockCollector:
         def __init__(self, config=None):
@@ -119,6 +118,7 @@ def test_silver_chain_writes_to_dal(sqlite_repo, monkeypatch):
 
     # 验证：DAL 中有数据
     from feature_hub.gold_reader import GoldReader
+
     reader = GoldReader(mm_repo=sqlite_repo)
     start, end = _read_window()
     macro_df = reader.read_fear_greed(start, end)
@@ -134,6 +134,7 @@ def test_silver_disabled_skips_cleaning(sqlite_repo, monkeypatch):
     monkeypatch.setenv("EN_SILVER", "false")
 
     from data_cleaning.dal_sink import DalSink
+
     original_init = DalSink.__init__
 
     def patched_init(self, mm_repo=None):
@@ -164,6 +165,7 @@ def test_silver_disabled_skips_cleaning(sqlite_repo, monkeypatch):
 
     # 验证：DAL 中无数据
     from feature_hub.gold_reader import GoldReader
+
     reader = GoldReader(mm_repo=sqlite_repo)
     start, end = _read_window()
     macro_df = reader.read_fear_greed(start, end)
@@ -178,6 +180,7 @@ def test_dal_read_to_feature_pipeline(sqlite_repo, monkeypatch):
     monkeypatch.setenv("SILVER_FAIL_OPEN", "true")
 
     from data_cleaning.dal_sink import DalSink
+
     original_init = DalSink.__init__
 
     def patched_init(self, mm_repo=None):
@@ -205,6 +208,7 @@ def test_dal_read_to_feature_pipeline(sqlite_repo, monkeypatch):
 
     # Step 2: DAL 读取
     from feature_hub.gold_reader import GoldReader
+
     reader = GoldReader(mm_repo=sqlite_repo)
     start, end = _read_window()
     macro_df = reader.read_all_macro("BTC", start, end)
@@ -229,13 +233,15 @@ def test_dal_read_to_feature_pipeline(sqlite_repo, monkeypatch):
     pipe.register_set("e2e_silver", ["test_macro"])
 
     # 构造 OHLCV
-    ohlcv = pd.DataFrame({
-        "open": [40000, 41000, 42000],
-        "high": [41000, 42000, 43000],
-        "low": [39000, 40000, 41000],
-        "close": [41000, 42000, 42500],
-        "volume": [100, 120, 110],
-    })
+    ohlcv = pd.DataFrame(
+        {
+            "open": [40000, 41000, 42000],
+            "high": [41000, 42000, 43000],
+            "low": [39000, 40000, 41000],
+            "close": [41000, 42000, 42500],
+            "volume": [100, 120, 110],
+        }
+    )
 
     fv = pipe.run(set_name="e2e_silver", df=ohlcv, symbol="BTC", macro_df=macro_df)
 

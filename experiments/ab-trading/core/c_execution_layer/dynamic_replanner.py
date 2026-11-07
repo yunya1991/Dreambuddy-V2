@@ -20,8 +20,8 @@ C层 - 动态重规划器
 """
 
 import uuid
-from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
 
 
 def _gen_id(prefix: str) -> str:
@@ -32,9 +32,11 @@ def _gen_id(prefix: str) -> str:
 # 重规划结果
 # ============================================================
 
+
 @dataclass
 class ReplanningResult:
     """重规划结果"""
+
     replan_id: str = field(default_factory=lambda: _gen_id("replan"))
     success: bool = False
     reason: str = ""
@@ -68,6 +70,7 @@ class ReplanningResult:
 # ============================================================
 # 动态重规划器
 # ============================================================
+
 
 class DynamicReplanner:
     """动态重规划器
@@ -145,13 +148,11 @@ class DynamicReplanner:
         try:
             if self.use_llm:
                 result = self._replan_with_llm(
-                    current_blueprint, failed_node_id, reason,
-                    execution_history, context
+                    current_blueprint, failed_node_id, reason, execution_history, context
                 )
             else:
                 result = self._replan_with_rules(
-                    current_blueprint, failed_node_id, reason,
-                    execution_history, context
+                    current_blueprint, failed_node_id, reason, execution_history, context
                 )
 
             result.replan_count = self.replan_count + 1
@@ -178,14 +179,12 @@ class DynamicReplanner:
             from ..llm_client import llm_chat
         except ImportError:
             return self._replan_with_rules(
-                current_blueprint, failed_node_id, reason,
-                execution_history, context
+                current_blueprint, failed_node_id, reason, execution_history, context
             )
 
         # 构建提示词
         prompt = self._build_replan_prompt(
-            current_blueprint, failed_node_id, reason,
-            execution_history, context
+            current_blueprint, failed_node_id, reason, execution_history, context
         )
 
         system_prompt = """你是专业的交易系统执行规划师。你的任务是根据执行过程中出现的问题，
@@ -225,8 +224,7 @@ class DynamicReplanner:
 
         # LLM失败，降级到规则
         return self._replan_with_rules(
-            current_blueprint, failed_node_id, reason,
-            execution_history, context
+            current_blueprint, failed_node_id, reason, execution_history, context
         )
 
     def _build_replan_prompt(
@@ -254,8 +252,7 @@ class DynamicReplanner:
 
         parts.append("## 已完成节点")
         completed = [
-            r.node_id for r in execution_history
-            if hasattr(r, 'is_success') and r.is_success
+            r.node_id for r in execution_history if hasattr(r, "is_success") and r.is_success
         ]
         parts.append(f"- 已完成: {completed}")
         parts.append("")
@@ -287,7 +284,7 @@ class DynamicReplanner:
             start = llm_output.find("{")
             end = llm_output.rfind("}")
             if start >= 0 and end >= 0:
-                json_str = llm_output[start:end + 1]
+                json_str = llm_output[start : end + 1]
 
             data = json.loads(json_str)
 
@@ -328,7 +325,7 @@ class DynamicReplanner:
         result.reason = reason
 
         # 规则1：如果是可选节点失败，跳过它
-        if current_blueprint and hasattr(current_blueprint, 'node_sequence'):
+        if current_blueprint and hasattr(current_blueprint, "node_sequence"):
             node_seq = current_blueprint.node_sequence
 
             # 找到失败节点的位置
@@ -337,7 +334,7 @@ class DynamicReplanner:
 
                 # 简单策略：跳过失败节点，继续后续节点
                 new_blueprint = self._clone_blueprint(current_blueprint)
-                new_sequence = node_seq[:idx] + node_seq[idx + 1:]
+                new_sequence = node_seq[:idx] + node_seq[idx + 1 :]
                 new_blueprint.node_sequence = new_sequence
 
                 result.success = True
@@ -350,4 +347,5 @@ class DynamicReplanner:
     def _clone_blueprint(self, blueprint: Any) -> Any:
         """克隆蓝图"""
         import copy
+
         return copy.deepcopy(blueprint)

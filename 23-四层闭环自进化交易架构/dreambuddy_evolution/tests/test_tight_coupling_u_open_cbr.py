@@ -15,6 +15,7 @@
     11-易经推理系统/scripts/memory_l4/tests/test_evolution_u_open_cbr_coupling.py
     （polling_trader 导入需要 --import-mode=importlib 环境）
 """
+
 from __future__ import annotations
 
 import sys
@@ -32,6 +33,7 @@ if str(_REPO) not in sys.path:
 # 缺陷E+F.2: TightCouplingOrchestrator.experiment 耦合约束（未来扩展预留）
 # ============================================================================
 
+
 class TestExperimentUOpenCbrCoupling:
     """experiment() u_open/cbr_sim 耦合约束测试（为未来 u_open>0.5 预留）.
 
@@ -43,7 +45,10 @@ class TestExperimentUOpenCbrCoupling:
     @pytest.fixture
     def orchestrator(self):
         """构造 TightCouplingOrchestrator 实例."""
-        from dreambuddy_evolution.engines.tight_coupling_orchestrator import TightCouplingOrchestrator
+        from dreambuddy_evolution.engines.tight_coupling_orchestrator import (
+            TightCouplingOrchestrator,
+        )
+
         return TightCouplingOrchestrator(mode="Phase2")
 
     def test_aligned_low_cbr_still_open_small(self, orchestrator):
@@ -52,12 +57,21 @@ class TestExperimentUOpenCbrCoupling:
         场景: 当前 u_open 只会是 0.1（< 0.5），耦合约束不触发
         """
         # R_up=0.1 最低（< R_smooth*R_refl=0.25）→ d_star="long"，ess_dir="long" → aligned=True
-        r_vector = {"R_up": 0.1, "R_down": 0.7, "R_smooth": 0.5,
-                    "R_flow": 0.5, "R_reflexivity": 0.5}
+        r_vector = {
+            "R_up": 0.1,
+            "R_down": 0.7,
+            "R_smooth": 0.5,
+            "R_flow": 0.5,
+            "R_reflexivity": 0.5,
+        }
         hyp = {"inference_formed": True, "ess_dir": "long"}
         result = orchestrator.experiment(
-            r_vector=r_vector, hyp=hyp, symbol="BTC",
-            ess_id="test", cbr_sim=0.37, cluster_id="c1",
+            r_vector=r_vector,
+            hyp=hyp,
+            symbol="BTC",
+            ess_id="test",
+            cbr_sim=0.37,
+            cluster_id="c1",
         )
         # u_open=0.1 < 0.5，耦合约束不触发，正常开仓
         assert result["action"] == "long"
@@ -65,12 +79,21 @@ class TestExperimentUOpenCbrCoupling:
 
     def test_aligned_high_cbr_normal_open(self, orchestrator):
         """aligned=True + cbr_sim=0.6 → 正常开仓 u_open=0.1."""
-        r_vector = {"R_up": 0.1, "R_down": 0.7, "R_smooth": 0.5,
-                    "R_flow": 0.5, "R_reflexivity": 0.5}
+        r_vector = {
+            "R_up": 0.1,
+            "R_down": 0.7,
+            "R_smooth": 0.5,
+            "R_flow": 0.5,
+            "R_reflexivity": 0.5,
+        }
         hyp = {"inference_formed": True, "ess_dir": "long"}
         result = orchestrator.experiment(
-            r_vector=r_vector, hyp=hyp, symbol="BTC",
-            ess_id="test", cbr_sim=0.6, cluster_id="c1",
+            r_vector=r_vector,
+            hyp=hyp,
+            symbol="BTC",
+            ess_id="test",
+            cbr_sim=0.6,
+            cluster_id="c1",
         )
         assert result["action"] == "long"
         assert result["u_open"] == 0.1
@@ -78,12 +101,21 @@ class TestExperimentUOpenCbrCoupling:
     def test_not_aligned_does_not_open(self, orchestrator):
         """aligned=False → u_open=0.0, action=WAIT（与 cbr_sim 无关）."""
         # R_up=0.1 最低 → d_star="long"，但 ess_dir="short" → aligned=False
-        r_vector = {"R_up": 0.1, "R_down": 0.7, "R_smooth": 0.5,
-                    "R_flow": 0.5, "R_reflexivity": 0.5}
+        r_vector = {
+            "R_up": 0.1,
+            "R_down": 0.7,
+            "R_smooth": 0.5,
+            "R_flow": 0.5,
+            "R_reflexivity": 0.5,
+        }
         hyp = {"inference_formed": True, "ess_dir": "short"}  # 方向不一致
         result = orchestrator.experiment(
-            r_vector=r_vector, hyp=hyp, symbol="BTC",
-            ess_id="test", cbr_sim=0.6, cluster_id="c1",
+            r_vector=r_vector,
+            hyp=hyp,
+            symbol="BTC",
+            ess_id="test",
+            cbr_sim=0.6,
+            cluster_id="c1",
         )
         assert result["action"] == "WAIT"
         assert result["u_open"] == 0.0

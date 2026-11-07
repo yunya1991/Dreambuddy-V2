@@ -7,11 +7,12 @@
 通过 HTTP 调用 M26 策略管理模块的 registry API 获取策略数据。
 FAIL-OPEN：M26 不可用时返回空列表，不阻断 M25 其他功能。
 """
+
 import json
 import os
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 from typing import Any, Dict, List, Optional
 
 # M26 策略管理模块地址
@@ -20,7 +21,7 @@ _STRATEGY_LIB_BASE = os.environ.get("STRATEGY_LIB_BASE", "http://127.0.0.1:8093"
 # 基线策略来源
 _BASELINE_SOURCES = [
     "classic_10_strategies",  # 内置经典10策略
-    "registry_tier_ab",        # 注册表中 tier>=B 的策略
+    "registry_tier_ab",  # 注册表中 tier>=B 的策略
 ]
 
 # 内存缓存（60 秒）
@@ -37,7 +38,13 @@ def _http_get_json(url: str, timeout: float = 5.0) -> Optional[Dict[str, Any]]:
                 return None
             data = json.loads(resp.read().decode("utf-8"))
             return data if isinstance(data, dict) else None
-    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, OSError, ValueError):
+    except (
+        urllib.error.URLError,
+        urllib.error.HTTPError,
+        json.JSONDecodeError,
+        OSError,
+        ValueError,
+    ):
         return None
 
 
@@ -52,16 +59,18 @@ def _fetch_from_registry() -> List[Dict[str, Any]]:
     for entry in entries:
         if not isinstance(entry, dict):
             continue
-        items.append({
-            "strategy_id": entry.get("strategy_id"),
-            "source_zip": entry.get("source_zip"),
-            "family": entry.get("family"),
-            "stage": entry.get("stage"),
-            "tier": entry.get("tier"),
-            "tags": entry.get("tags", []),
-            "updated_at": entry.get("updated_at"),
-            "metrics_summary": None,  # list 接口不含 metrics，get 时再取
-        })
+        items.append(
+            {
+                "strategy_id": entry.get("strategy_id"),
+                "source_zip": entry.get("source_zip"),
+                "family": entry.get("family"),
+                "stage": entry.get("stage"),
+                "tier": entry.get("tier"),
+                "tags": entry.get("tags", []),
+                "updated_at": entry.get("updated_at"),
+                "metrics_summary": None,  # list 接口不含 metrics，get 时再取
+            }
+        )
     return items
 
 
@@ -101,7 +110,9 @@ def baseline_get(strategy_id: str, source_zip: Optional[str] = None) -> Optional
     }
 
 
-def baseline_metrics(strategy_id: str, source_zip: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def baseline_metrics(
+    strategy_id: str, source_zip: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
     """获取基线策略的回测指标。"""
     entry = baseline_get(strategy_id, source_zip)
     if entry:

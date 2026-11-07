@@ -7,6 +7,7 @@
   4. 质量分计算（全通过/部分通过/无记录）
   5. 报告输出
 """
+
 import os
 import sys
 import unittest
@@ -20,7 +21,7 @@ for _p in [_THIS_DIR, _CORE_DIR, _34_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from coaching_loop import CoachingSession
+from coaching_loop import CoachingSession  # noqa: E402
 
 
 class CoachingSessionTest(unittest.TestCase):

@@ -5,6 +5,7 @@ SPEC §3.1 接口契约：
 
 子系统通过此 API 查询参数中心，零延迟附单 OKX。
 """
+
 from __future__ import annotations
 
 from memory_l4.bcrm2.sl_tp_config import SLTPParams

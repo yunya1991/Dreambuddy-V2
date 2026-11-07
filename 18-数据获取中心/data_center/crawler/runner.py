@@ -5,6 +5,7 @@
   - engine=http/dynamic/stealthy: ScraplingEngine（带 FAIL-OPEN 回退到 static）
 → adapt → DataRecord(category=web)。
 """
+
 from __future__ import annotations
 
 import logging
@@ -20,9 +21,7 @@ from data_center.crawler.scrapling_engine import ScraplingEngine
 
 logger = logging.getLogger("data_center.crawler.runner")
 
-_DEFAULT_CONFIG = os.path.join(
-    os.path.dirname(__file__), "..", "..", "config", "sites.yaml"
-)
+_DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), "..", "..", "config", "sites.yaml")
 
 # engine 为 static 或未配置时走原链路
 _LEGACY_ENGINES = {"static", None}
@@ -85,7 +84,10 @@ class CrawlerRunner:
         except Exception as exc:  # noqa: BLE003 — 双保险：ScraplingEngine 已内部捕获
             logger.warning(
                 "[CrawlerRunner] site=%s engine=%s 异常，返回空: %s: %s",
-                name, engine, type(exc).__name__, str(exc)[:120],
+                name,
+                engine,
+                type(exc).__name__,
+                str(exc)[:120],
             )
             items = []
         return adapt_items(items, site)

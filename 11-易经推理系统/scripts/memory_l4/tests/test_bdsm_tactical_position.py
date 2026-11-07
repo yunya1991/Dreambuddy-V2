@@ -4,6 +4,7 @@
 - tactical_entry_check：5 条入场条件
 - tactical_exit_check：5 条退出条件
 """
+
 import sys
 from pathlib import Path
 
@@ -11,12 +12,12 @@ _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.bdsm_tactical_position import (
-    tactical_entry_check,
-    tactical_exit_check,
+from force_vector.bdsm_tactical_position import (  # noqa: E402
+    TACTICAL_E8_EXIT_THRESHOLD,
     TACTICAL_MICRO_BUDGET_USDT,
     TACTICAL_STOP_LOSS_PCT,
-    TACTICAL_E8_EXIT_THRESHOLD,
+    tactical_entry_check,
+    tactical_exit_check,
 )
 
 
@@ -25,7 +26,7 @@ def _make_entry(**overrides):
     entry = {
         "bds_score": 0.4,
         "phase": "P2_REVENUE_EXPANSION",
-        "cvs": 0.2,           # < 0.3 → 非标准仓覆盖
+        "cvs": 0.2,  # < 0.3 → 非标准仓覆盖
         "valuation_percentile": 85.0,  # > 80 → 非标准仓覆盖
         "technical_assessment": {"rsi_14": 75.0},  # > 70 → 非标准仓覆盖
         "trend_stop": {"action": "none"},
@@ -53,22 +54,22 @@ class TestTacticalEntryCheck:
 
     def test_entry_fail_when_trend_stop_active(self):
         """trend_stop.action != none → False。"""
-        assert tactical_entry_check(
-            _make_entry(trend_stop={"action": "reduce30"})
-        ) is False
+        assert tactical_entry_check(_make_entry(trend_stop={"action": "reduce30"})) is False
 
     def test_entry_fail_when_value_exit_full_exit(self):
         """value_exit.action == full_exit → False。"""
-        assert tactical_entry_check(
-            _make_entry(value_exit={"action": "full_exit"})
-        ) is False
+        assert tactical_entry_check(_make_entry(value_exit={"action": "full_exit"})) is False
 
     def test_entry_fail_when_standard_covered(self):
         """标准仓已覆盖（cvs≥0.3 且估值≤80 且 rsi≤70）→ False。"""
-        assert tactical_entry_check(
-            _make_entry(cvs=0.5, valuation_percentile=70.0,
-                        technical_assessment={"rsi_14": 60.0})
-        ) is False
+        assert (
+            tactical_entry_check(
+                _make_entry(
+                    cvs=0.5, valuation_percentile=70.0, technical_assessment={"rsi_14": 60.0}
+                )
+            )
+            is False
+        )
 
     def test_entry_fail_on_missing_data(self):
         """缺失数据 → False（FAIL-OPEN）。"""

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """TDD RED: P2b 清理历史C级噪声记忆"""
+
 import json
 import os
 import shutil
@@ -31,34 +32,106 @@ def _make_test_db(tmpdir: str) -> str:
         )
     """)
     # 插入高价值记忆（不应被清理）
-    conn.execute("INSERT INTO memories VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                 ("VM-VALID-A", "MCP单例mock失效的解法", b"\x00"*16, "A", 0.85,
-                  "[]", "experience", "认知闭环开发-2026-07-29",
-                  "2026-07-29", "2026-07-30", 9))
-    conn.execute("INSERT INTO memories VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                 ("VM-VALID-S", "公理级经验", b"\x00"*16, "S", 0.99,
-                  "[]", "experience", "git-post-commit",
-                  "2026-07-29", "2026-07-29", 20))
-    conn.execute("INSERT INTO memories VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                 ("VM-VALID-B-DAEMON", "B级daemon记忆有验证", b"\x00"*16, "B", 0.7,
-                  "[]", "experience", "cognitive-daemon",  # daemon来源但B级有验证
-                  "2026-07-29", "2026-07-29", 3))
+    conn.execute(
+        "INSERT INTO memories VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        (
+            "VM-VALID-A",
+            "MCP单例mock失效的解法",
+            b"\x00" * 16,
+            "A",
+            0.85,
+            "[]",
+            "experience",
+            "认知闭环开发-2026-07-29",
+            "2026-07-29",
+            "2026-07-30",
+            9,
+        ),
+    )
+    conn.execute(
+        "INSERT INTO memories VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        (
+            "VM-VALID-S",
+            "公理级经验",
+            b"\x00" * 16,
+            "S",
+            0.99,
+            "[]",
+            "experience",
+            "git-post-commit",
+            "2026-07-29",
+            "2026-07-29",
+            20,
+        ),
+    )
+    conn.execute(
+        "INSERT INTO memories VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        (
+            "VM-VALID-B-DAEMON",
+            "B级daemon记忆有验证",
+            b"\x00" * 16,
+            "B",
+            0.7,
+            "[]",
+            "experience",
+            "cognitive-daemon",  # daemon来源但B级有验证
+            "2026-07-29",
+            "2026-07-29",
+            3,
+        ),
+    )
     # 插入 P1-1 前的 daemon 噪声（C级，0验证，低置信）
     for i in range(5):
-        conn.execute("INSERT INTO memories VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                     (f"VM-NOISE-{i}", f"[开发活动] 修改 {i} 个文件", b"\x00"*16, "C", 0.1,
-                      '["file-change","daemon"]', "experience", "cognitive-daemon",
-                      "2026-07-30", "2026-07-30", 0))
+        conn.execute(
+            "INSERT INTO memories VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                f"VM-NOISE-{i}",
+                f"[开发活动] 修改 {i} 个文件",
+                b"\x00" * 16,
+                "C",
+                0.1,
+                '["file-change","daemon"]',
+                "experience",
+                "cognitive-daemon",
+                "2026-07-30",
+                "2026-07-30",
+                0,
+            ),
+        )
     # 插入边界: daemon来源但verify_count>0（不应清理）
-    conn.execute("INSERT INTO memories VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                 ("VM-NOISE-BUT-VERIFIED", "已验证的daemon记忆", b"\x00"*16, "C", 0.1,
-                  "[]", "experience", "cognitive-daemon",
-                  "2026-07-30", "2026-07-30", 1))
+    conn.execute(
+        "INSERT INTO memories VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        (
+            "VM-NOISE-BUT-VERIFIED",
+            "已验证的daemon记忆",
+            b"\x00" * 16,
+            "C",
+            0.1,
+            "[]",
+            "experience",
+            "cognitive-daemon",
+            "2026-07-30",
+            "2026-07-30",
+            1,
+        ),
+    )
     # 边界: daemon来源但 confidence=0.3（>0.2阈值）
-    conn.execute("INSERT INTO memories VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                 ("VM-NOISE-BUT-CONF-HIGH", "高置信daemon记忆", b"\x00"*16, "C", 0.3,
-                  "[]", "experience", "cognitive-daemon",
-                  "2026-07-30", "2026-07-30", 0))
+    conn.execute(
+        "INSERT INTO memories VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        (
+            "VM-NOISE-BUT-CONF-HIGH",
+            "高置信daemon记忆",
+            b"\x00" * 16,
+            "C",
+            0.3,
+            "[]",
+            "experience",
+            "cognitive-daemon",
+            "2026-07-30",
+            "2026-07-30",
+            0,
+        ),
+    )
     conn.commit()
     conn.close()
     return db_path
@@ -73,16 +146,30 @@ def _make_test_solution_paths(tmpdir: str) -> str:
     for i in range(3):
         p = os.path.join(sp_dir, f"APP-C-{i}.json")
         with open(p, "w") as f:
-            json.dump({"template_id": f"APP-C-{i}", "quality_level": "C",
-                       "confidence": 0.3, "verify_count": 0,
-                       "content": f"Noise {i}"}, f)
+            json.dump(
+                {
+                    "template_id": f"APP-C-{i}",
+                    "quality_level": "C",
+                    "confidence": 0.3,
+                    "verify_count": 0,
+                    "content": f"Noise {i}",
+                },
+                f,
+            )
     # 噪声: quarantined x1
     with open(os.path.join(sp_dir, "APP-Q-1.json"), "w") as f:
         json.dump({"template_id": "APP-Q-1", "quality_level": "quarantined"}, f)
     # 边界: B级（应保留）
     with open(os.path.join(sp_dir, "APP-B-good.json"), "w") as f:
-        json.dump({"template_id": "APP-B-good", "quality_level": "B",
-                   "verify_count": 5, "content": "Valid"}, f)
+        json.dump(
+            {
+                "template_id": "APP-B-good",
+                "quality_level": "B",
+                "verify_count": 5,
+                "content": "Valid",
+            },
+            f,
+        )
     return sp_dir
 
 
@@ -116,8 +203,9 @@ def test_sqlite_cleanup_strategy_no_false_positives():
         assert id_to_q.get("VM-NOISE-BUT-CONF-HIGH") == "C", "高置信C级daemon应保留"
         # 噪声被标记为 archived（不再被 min_quality=C 召回）
         for i in range(5):
-            assert id_to_q.get(f"VM-NOISE-{i}") == "archived", \
-                f"Noise {i} 应被标记为 archived, 实际={id_to_q.get(f'VM-NOISE-{i}')}"
+            assert (
+                id_to_q.get(f"VM-NOISE-{i}") == "archived"
+            ), f"Noise {i} 应被标记为 archived, 实际={id_to_q.get(f'VM-NOISE-{i}')}"
         conn.close()
         print("✅ test_sqlite_cleanup_strategy_no_false_positives 通过")
         return True
@@ -143,8 +231,9 @@ def test_solution_paths_archive_only_noise():
         # 验证归档目录 + 存活目录
         archived_dir = os.path.join(sp_dir, "_archived")
         archived = sorted(os.listdir(archived_dir)) if os.path.exists(archived_dir) else []
-        remaining = sorted([f for f in os.listdir(sp_dir)
-                            if f.endswith(".json") and f != "_archived"])
+        remaining = sorted(
+            [f for f in os.listdir(sp_dir) if f.endswith(".json") and f != "_archived"]
+        )
         assert len(archived) == 4, f"归档目录应有4个: {archived}"
         assert "APP-B-good.json" in remaining, f"B级应保留: {remaining}"
         assert len(remaining) == 1, f"只剩1个B级: {remaining}"

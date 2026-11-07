@@ -4,6 +4,7 @@
 复用 experiments/ab-trading/core/llm_client.py 的成熟实现，
 支持千问 3.8 MAX / DeepSeek / Trae / Claude，带配额管理和自动降级。
 """
+
 from __future__ import annotations
 
 import os
@@ -16,8 +17,8 @@ _AB_TRADING_DIR = Path(__file__).resolve().parents[2] / "experiments" / "ab-trad
 if str(_AB_TRADING_DIR) not in sys.path:
     sys.path.insert(0, str(_AB_TRADING_DIR))
 
-from core.llm_client import llm_chat as _ab_llm_chat  # noqa: E402
 from core.llm_client import llm_available as _ab_llm_available  # noqa: E402
+from core.llm_client import llm_chat as _ab_llm_chat  # noqa: E402
 
 
 def call_llm(

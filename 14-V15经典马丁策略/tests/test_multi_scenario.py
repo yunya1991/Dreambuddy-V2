@@ -10,14 +10,13 @@ V15 经典马丁策略 — 多场景模拟测试 v1.0
   6. 贝叶斯优化参数（边界测试）
   7. 异常与边界场景
 """
-import sys
-import json
-import math
+
 import random
+import sys
 import traceback
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from datetime import datetime, timezone, timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
@@ -29,11 +28,24 @@ skipped = 0
 results = []
 
 
-def green(s): return f"\033[32m{s}\033[0m"
-def red(s): return f"\033[31m{s}\033[0m"
-def yellow(s): return f"\033[33m{s}\033[0m"
-def cyan(s): return f"\033[36m{s}\033[0m"
-def bold(s): return f"\033[1m{s}\033[0m"
+def green(s):
+    return f"\033[32m{s}\033[0m"
+
+
+def red(s):
+    return f"\033[31m{s}\033[0m"
+
+
+def yellow(s):
+    return f"\033[33m{s}\033[0m"
+
+
+def cyan(s):
+    return f"\033[36m{s}\033[0m"
+
+
+def bold(s):
+    return f"\033[1m{s}\033[0m"
 
 
 def assert_eq(actual, expected, msg=""):
@@ -122,16 +134,15 @@ def subsection(title):
 # 数据生成工具
 # ═══════════════════════════════════════════════════════════════════
 
+
 def make_candles(prices, highs=None, lows=None, volumes=None):
     """生成K线数据"""
     candles = []
     for i, p in enumerate(prices):
         h = highs[i] if highs and i < len(highs) else p * 1.005
-        l = lows[i] if lows and i < len(lows) else p * 0.995
+        l = lows[i] if lows and i < len(lows) else p * 0.995  # noqa: E741
         v = volumes[i] if volumes and i < len(volumes) else 1000.0
-        candles.append({
-            "ts": i * 3600000, "o": p, "h": h, "l": l, "c": p, "v": v
-        })
+        candles.append({"ts": i * 3600000, "o": p, "h": h, "l": l, "c": p, "v": v})
     return candles
 
 
@@ -141,7 +152,7 @@ def gen_trend(n=250, start=100, drift=0.0, vol=0.015, seed=42):
     prices = [start]
     highs = [start * 1.01]
     lows = [start * 0.99]
-    for i in range(n - 1):
+    for i in range(n - 1):  # noqa: B007
         change = drift + random.gauss(0, vol)
         p = max(prices[-1] * (1 + change), start * 0.1)
         prices.append(p)
@@ -181,7 +192,7 @@ def gen_bullish_divergence(n=250, start=100):
     prices = [start]
     highs = []
     lows = []
-    for i in range(n - 50):
+    for i in range(n - 50):  # noqa: B007
         change = -0.005 + random.gauss(0, 0.015)
         p = max(prices[-1] * (1 + change), start * 0.3)
         prices.append(p)
@@ -189,7 +200,7 @@ def gen_bullish_divergence(n=250, start=100):
         highs.append(p * 1.01)
         lows.append(p * 0.99)
     # 最后50根：价格继续探底新低，但下影线变短（Bear Power不创新低）
-    for i in range(50):
+    for i in range(50):  # noqa: B007
         prev_low = lows[-1]
         p = prices[-1] * (1 + random.gauss(-0.002, 0.01))
         prices.append(p)
@@ -206,7 +217,7 @@ def gen_bearish_divergence(n=250, start=100):
     prices = [start]
     highs = []
     lows = []
-    for i in range(n - 50):
+    for i in range(n - 50):  # noqa: B007
         change = 0.005 + random.gauss(0, 0.015)
         p = prices[-1] * (1 + change)
         prices.append(p)
@@ -214,7 +225,7 @@ def gen_bearish_divergence(n=250, start=100):
         highs.append(p * 1.01)
         lows.append(p * 0.99)
     # 最后50根：价格继续创新高，但上影线变短（Bull Power不创新高）
-    for i in range(50):
+    for i in range(50):  # noqa: B007
         prev_high = highs[-1]
         p = prices[-1] * (1 + random.gauss(0.002, 0.01))
         prices.append(p)
@@ -231,7 +242,7 @@ def gen_both_weakening(n=250, start=100):
     prices = [start]
     highs = []
     lows = []
-    for i in range(n - 30):
+    for i in range(n - 30):  # noqa: B007
         change = random.gauss(0.001, 0.012)
         p = prices[-1] * (1 + change)
         prices.append(p)
@@ -242,13 +253,14 @@ def gen_both_weakening(n=250, start=100):
         p = prices[-1] * (1 + random.gauss(0, 0.005))
         prices.append(p)
         highs.append(p * (1.005 + 0.001 * i))  # 上影线越来越短
-        lows.append(p * (0.995 - 0.001 * i))   # 下影线越来越短（Bear上升）
+        lows.append(p * (0.995 - 0.001 * i))  # 下影线越来越短（Bear上升）
     return prices, highs, lows
 
 
 # ═══════════════════════════════════════════════════════════════════
 # 1. Elder-ray 趋势强度计算器测试
 # ═══════════════════════════════════════════════════════════════════
+
 
 def test_elder_ray_scenarios():
     section("1. Elder-ray 趋势强度计算器 — 多场景测试")
@@ -269,13 +281,18 @@ def test_elder_ray_scenarios():
     assert_true(result is not None, "calc_elder_ray 返回结果")
     if result:
         assert_eq(result["ema_trend"], "up", "EMA斜率向上")
-        assert_in(result["direction"], ["STRONG_BULL", "BULL_TREND"],
-                  f"趋势方向={result['direction']}（应为强牛或牛市）")
+        assert_in(
+            result["direction"],
+            ["STRONG_BULL", "BULL_TREND"],
+            f"趋势方向={result['direction']}（应为强牛或牛市）",
+        )
         assert_gt(result["strength"], 50, f"趋势强度={result['strength']:.1f} > 50")
         assert_gt(result["bull_power"], 0, "Bull Power > 0（买方主导）")
-        print(f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
-              f"Bull={result['bull_pct']:.2f}%, Bear={result['bear_pct']:.2f}%, "
-              f"EMA斜率={result['ema_slope_pct']:.4f}%")
+        print(
+            f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
+            f"Bull={result['bull_pct']:.2f}%, Bear={result['bear_pct']:.2f}%, "
+            f"EMA斜率={result['ema_slope_pct']:.4f}%"
+        )
 
     # 1.2 温和上涨趋势
     subsection("1.2 温和上涨趋势")
@@ -285,11 +302,16 @@ def test_elder_ray_scenarios():
     assert_true(result is not None, "calc_elder_ray 返回结果")
     if result:
         assert_eq(result["ema_trend"], "up", "EMA斜率向上")
-        assert_in(result["direction"], ["BULL_TREND", "STRONG_BULL"],
-                  f"趋势方向={result['direction']}（牛市趋势）")
+        assert_in(
+            result["direction"],
+            ["BULL_TREND", "STRONG_BULL"],
+            f"趋势方向={result['direction']}（牛市趋势）",
+        )
         assert_gt(result["strength"], 50, f"趋势强度={result['strength']:.1f} > 50")
-        print(f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
-              f"Bull={result['bull_pct']:.2f}%, Bear={result['bear_pct']:.2f}%")
+        print(
+            f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
+            f"Bull={result['bull_pct']:.2f}%, Bear={result['bear_pct']:.2f}%"
+        )
 
     # 1.3 强下跌趋势
     subsection("1.3 强下跌趋势")
@@ -299,13 +321,18 @@ def test_elder_ray_scenarios():
     assert_true(result is not None, "calc_elder_ray 返回结果")
     if result:
         assert_eq(result["ema_trend"], "down", "EMA斜率向下")
-        assert_in(result["direction"], ["STRONG_BEAR", "BEAR_TREND"],
-                  f"趋势方向={result['direction']}（应为强熊或熊市）")
+        assert_in(
+            result["direction"],
+            ["STRONG_BEAR", "BEAR_TREND"],
+            f"趋势方向={result['direction']}（应为强熊或熊市）",
+        )
         assert_lt(result["strength"], 50, f"趋势强度={result['strength']:.1f} < 50")
         assert_lt(result["bear_power"], 0, "Bear Power < 0（卖方主导）")
-        print(f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
-              f"Bull={result['bull_pct']:.2f}%, Bear={result['bear_pct']:.2f}%, "
-              f"EMA斜率={result['ema_slope_pct']:.4f}%")
+        print(
+            f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
+            f"Bull={result['bull_pct']:.2f}%, Bear={result['bear_pct']:.2f}%, "
+            f"EMA斜率={result['ema_slope_pct']:.4f}%"
+        )
 
     # 1.4 温和下跌趋势
     subsection("1.4 温和下跌趋势")
@@ -315,11 +342,16 @@ def test_elder_ray_scenarios():
     assert_true(result is not None, "calc_elder_ray 返回结果")
     if result:
         assert_eq(result["ema_trend"], "down", "EMA斜率向下")
-        assert_in(result["direction"], ["BEAR_TREND", "STRONG_BEAR"],
-                  f"趋势方向={result['direction']}（熊市趋势）")
+        assert_in(
+            result["direction"],
+            ["BEAR_TREND", "STRONG_BEAR"],
+            f"趋势方向={result['direction']}（熊市趋势）",
+        )
         assert_lt(result["strength"], 55, f"趋势强度={result['strength']:.1f} < 55")
-        print(f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
-              f"Bull={result['bull_pct']:.2f}%, Bear={result['bear_pct']:.2f}%")
+        print(
+            f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
+            f"Bull={result['bull_pct']:.2f}%, Bear={result['bear_pct']:.2f}%"
+        )
 
     # 1.5 震荡行情
     subsection("1.5 震荡行情")
@@ -328,14 +360,20 @@ def test_elder_ray_scenarios():
     result = calc_elder_ray(candles, 13)
     assert_true(result is not None, "calc_elder_ray 返回结果")
     if result:
-        assert_in(result["ema_trend"], ["flat", "up", "down"],
-                  f"EMA斜率={result['ema_trend']}（震荡市可为平/微升/微降）")
-        assert_in(result["direction"],
-                  ["SIDEWAYS", "SIDEWAYS_BULLISH", "SIDEWAYS_BEARISH",
-                   "BULL_TREND", "BEAR_TREND"],
-                  f"趋势方向={result['direction']}（震荡类）")
-        print(f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
-              f"EMA斜率={result['ema_slope_pct']:.4f}%")
+        assert_in(
+            result["ema_trend"],
+            ["flat", "up", "down"],
+            f"EMA斜率={result['ema_trend']}（震荡市可为平/微升/微降）",
+        )
+        assert_in(
+            result["direction"],
+            ["SIDEWAYS", "SIDEWAYS_BULLISH", "SIDEWAYS_BEARISH", "BULL_TREND", "BEAR_TREND"],
+            f"趋势方向={result['direction']}（震荡类）",
+        )
+        print(
+            f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
+            f"EMA斜率={result['ema_slope_pct']:.4f}%"
+        )
 
     # 1.6 看涨背离
     subsection("1.6 看涨背离（做多信号）")
@@ -345,14 +383,16 @@ def test_elder_ray_scenarios():
     assert_true(result is not None, "calc_elder_ray 返回结果")
     if result:
         # 看涨背离不一定必然触发（取决于具体形态），但应该有 bear_rising 迹象
-        print(f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
-              f"看涨背离={result['bullish_divergence']}, "
-              f"Bear回升={result['bear_rising']}, "
-              f"Bull上升={result['bull_rising']}")
+        print(
+            f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
+            f"看涨背离={result['bullish_divergence']}, "
+            f"Bear回升={result['bear_rising']}, "
+            f"Bull上升={result['bull_rising']}"
+        )
         if result["bullish_divergence"]:
             assert_true(result["bullish_divergence"], "检测到看涨背离")
         else:
-            print(f"      ℹ️  未检测到看涨背离（形态偏差正常）")
+            print("      ℹ️  未检测到看涨背离（形态偏差正常）")
             global passed
             passed += 1  # 不作为失败
 
@@ -363,14 +403,16 @@ def test_elder_ray_scenarios():
     result = calc_elder_ray(candles, 13)
     assert_true(result is not None, "calc_elder_ray 返回结果")
     if result:
-        print(f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
-              f"看跌背离={result['bearish_divergence']}, "
-              f"Bull下降={result['bull_falling']}, "
-              f"Bear下降={result['bear_falling']}")
+        print(
+            f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
+            f"看跌背离={result['bearish_divergence']}, "
+            f"Bull下降={result['bull_falling']}, "
+            f"Bear下降={result['bear_falling']}"
+        )
         if result["bearish_divergence"]:
             assert_true(result["bearish_divergence"], "检测到看跌背离")
         else:
-            print(f"      ℹ️  未检测到看跌背离（形态偏差正常）")
+            print("      ℹ️  未检测到看跌背离（形态偏差正常）")
             passed += 1
 
     # 1.8 双弱变盘
@@ -380,16 +422,18 @@ def test_elder_ray_scenarios():
     result = calc_elder_ray(candles, 13)
     assert_true(result is not None, "calc_elder_ray 返回结果")
     if result:
-        print(f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
-              f"双弱变盘={result['both_weakening']}, "
-              f"Bull>0={result['bull_power'] > 0}, Bull上升={result['bull_rising']}, "
-              f"Bear<0={result['bear_power'] < 0}, Bear上升={result['bear_rising']}")
+        print(
+            f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
+            f"双弱变盘={result['both_weakening']}, "
+            f"Bull>0={result['bull_power'] > 0}, Bull上升={result['bull_rising']}, "
+            f"Bear<0={result['bear_power'] < 0}, Bear上升={result['bear_rising']}"
+        )
 
     # 1.9 多头失控（Bull转负）
     subsection("1.9 多头失控（上升趋势中Bull转负）")
     prices, highs, lows = gen_uptrend_moderate(230, 100)
     # 最后20根大幅下跌，导致Bull转负
-    for i in range(20):
+    for i in range(20):  # noqa: B007
         p = prices[-1] * 0.97
         prices.append(p)
         highs.append(p * 1.005)
@@ -398,15 +442,17 @@ def test_elder_ray_scenarios():
     result = calc_elder_ray(candles, 13)
     assert_true(result is not None, "calc_elder_ray 返回结果")
     if result:
-        print(f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
-              f"多头失控={result['bull_out_of_control']}, "
-              f"Bull Power={result['bull_pct']:.2f}%")
+        print(
+            f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
+            f"多头失控={result['bull_out_of_control']}, "
+            f"Bull Power={result['bull_pct']:.2f}%"
+        )
 
     # 1.10 空头失控（Bear转正）
     subsection("1.10 空头失控（下降趋势中Bear转正）")
     prices, highs, lows = gen_downtrend_moderate(230, 100)
     # 最后20根大幅反弹，导致Bear转正
-    for i in range(20):
+    for i in range(20):  # noqa: B007
         p = prices[-1] * 1.05
         prices.append(p)
         highs.append(p * 1.015)
@@ -415,9 +461,11 @@ def test_elder_ray_scenarios():
     result = calc_elder_ray(candles, 13)
     assert_true(result is not None, "calc_elder_ray 返回结果")
     if result:
-        print(f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
-              f"空头失控={result['bear_out_of_control']}, "
-              f"Bear Power={result['bear_pct']:.2f}%")
+        print(
+            f"      详情: 方向={result['direction']}, 强度={result['strength']:.1f}, "
+            f"空头失控={result['bear_out_of_control']}, "
+            f"Bear Power={result['bear_pct']:.2f}%"
+        )
 
     # 1.11 数据不足场景
     subsection("1.11 数据不足（边界）")
@@ -429,6 +477,7 @@ def test_elder_ray_scenarios():
 # ═══════════════════════════════════════════════════════════════════
 # 2. 资金管理器测试
 # ═══════════════════════════════════════════════════════════════════
+
 
 def test_capital_manager_scenarios():
     section("2. 资金管理器 — 多场景测试")
@@ -470,17 +519,24 @@ def test_capital_manager_scenarios():
         "both_weakening": False,
         "bullish_divergence": False,
     }
-    with patch("capital_manager.get_account_balance", mock_balance_500), \
-         patch("capital_manager.get_current_positions", mock_empty_positions), \
-         patch("capital_manager.MAX_CONCURRENT_POSITIONS", 4), \
-         patch("capital_manager.TOTAL_BUDGET", 500.0):
+    with (
+        patch("capital_manager.get_account_balance", mock_balance_500),
+        patch("capital_manager.get_current_positions", mock_empty_positions),
+        patch("capital_manager.MAX_CONCURRENT_POSITIONS", 4),
+        patch("capital_manager.TOTAL_BUDGET", 500.0),
+    ):
         result = calculate_per_coin_allocation("BTC", confidence=80, elder_ray=elder_strong_bull)
     assert_true(result["allowed"], "允许开仓")
     assert_gt(result["per_coin_budget"], 50, f"单币种预算=${result['per_coin_budget']:.2f} > $50")
-    assert_gt(result["adjustments"]["combined_mult"], 1.0,
-              f"综合调整因子={result['adjustments']['combined_mult']:.2f} > 1.0（强牛+高置信）")
-    print(f"      预算=${result['per_coin_budget']:.2f}, 底仓=${result['base_usd']:.2f}, "
-          f"加仓=${result['addon1_usd']:.2f}/${result['addon2_usd']:.2f}/${result['addon3_usd']:.2f}")
+    assert_gt(
+        result["adjustments"]["combined_mult"],
+        1.0,
+        f"综合调整因子={result['adjustments']['combined_mult']:.2f} > 1.0（强牛+高置信）",
+    )
+    print(
+        f"      预算=${result['per_coin_budget']:.2f}, 底仓=${result['base_usd']:.2f}, "
+        f"加仓=${result['addon1_usd']:.2f}/${result['addon2_usd']:.2f}/${result['addon3_usd']:.2f}"
+    )
 
     # 2.2 强熊趋势 + 低置信度 → 低仓位
     subsection("2.2 强熊趋势 + 低置信度（60%）")
@@ -491,14 +547,18 @@ def test_capital_manager_scenarios():
         "both_weakening": False,
         "bullish_divergence": False,
     }
-    with patch("capital_manager.get_account_balance", mock_balance_500), \
-         patch("capital_manager.get_current_positions", mock_empty_positions), \
-         patch("capital_manager.MAX_CONCURRENT_POSITIONS", 4), \
-         patch("capital_manager.TOTAL_BUDGET", 500.0):
+    with (
+        patch("capital_manager.get_account_balance", mock_balance_500),
+        patch("capital_manager.get_current_positions", mock_empty_positions),
+        patch("capital_manager.MAX_CONCURRENT_POSITIONS", 4),
+        patch("capital_manager.TOTAL_BUDGET", 500.0),
+    ):
         result = calculate_per_coin_allocation("BTC", confidence=60, elder_ray=elder_strong_bear)
     # 强熊趋势下可能允许也可能不允许（取决于阈值），但预算应该较低
-    print(f"      允许={result['allowed']}, 预算=${result['per_coin_budget']:.2f}, "
-          f"强度乘数={result['adjustments']['strength_mult']:.2f}")
+    print(
+        f"      允许={result['allowed']}, 预算=${result['per_coin_budget']:.2f}, "
+        f"强度乘数={result['adjustments']['strength_mult']:.2f}"
+    )
 
     # 2.3 看涨背离加成
     subsection("2.3 看涨背离 + EMA上升 → 加成")
@@ -516,18 +576,27 @@ def test_capital_manager_scenarios():
         "both_weakening": False,
         "bullish_divergence": False,
     }
-    with patch("capital_manager.get_account_balance", mock_balance_500), \
-         patch("capital_manager.get_current_positions", mock_empty_positions), \
-         patch("capital_manager.MAX_CONCURRENT_POSITIONS", 4), \
-         patch("capital_manager.TOTAL_BUDGET", 500.0):
+    with (
+        patch("capital_manager.get_account_balance", mock_balance_500),
+        patch("capital_manager.get_current_positions", mock_empty_positions),
+        patch("capital_manager.MAX_CONCURRENT_POSITIONS", 4),
+        patch("capital_manager.TOTAL_BUDGET", 500.0),
+    ):
         r_div = calculate_per_coin_allocation("BTC", confidence=70, elder_ray=elder_bull_div)
         r_nodiv = calculate_per_coin_allocation("BTC", confidence=70, elder_ray=elder_bull_no_div)
-    assert_gt(r_div["adjustments"]["strength_mult"], r_nodiv["adjustments"]["strength_mult"],
-              "看涨背离的强度乘数 > 无背离")
-    print(f"      有背离: 强度乘数={r_div['adjustments']['strength_mult']:.3f}, "
-          f"预算=${r_div['per_coin_budget']:.2f}")
-    print(f"      无背离: 强度乘数={r_nodiv['adjustments']['strength_mult']:.3f}, "
-          f"预算=${r_nodiv['per_coin_budget']:.2f}")
+    assert_gt(
+        r_div["adjustments"]["strength_mult"],
+        r_nodiv["adjustments"]["strength_mult"],
+        "看涨背离的强度乘数 > 无背离",
+    )
+    print(
+        f"      有背离: 强度乘数={r_div['adjustments']['strength_mult']:.3f}, "
+        f"预算=${r_div['per_coin_budget']:.2f}"
+    )
+    print(
+        f"      无背离: 强度乘数={r_nodiv['adjustments']['strength_mult']:.3f}, "
+        f"预算=${r_nodiv['per_coin_budget']:.2f}"
+    )
 
     # 2.4 双弱变盘降仓
     subsection("2.4 双弱变盘 → 降仓")
@@ -545,18 +614,27 @@ def test_capital_manager_scenarios():
         "both_weakening": False,
         "bullish_divergence": False,
     }
-    with patch("capital_manager.get_account_balance", mock_balance_500), \
-         patch("capital_manager.get_current_positions", mock_empty_positions), \
-         patch("capital_manager.MAX_CONCURRENT_POSITIONS", 4), \
-         patch("capital_manager.TOTAL_BUDGET", 500.0):
+    with (
+        patch("capital_manager.get_account_balance", mock_balance_500),
+        patch("capital_manager.get_current_positions", mock_empty_positions),
+        patch("capital_manager.MAX_CONCURRENT_POSITIONS", 4),
+        patch("capital_manager.TOTAL_BUDGET", 500.0),
+    ):
         r_weak = calculate_per_coin_allocation("BTC", confidence=70, elder_ray=elder_both_weak)
         r_noweak = calculate_per_coin_allocation("BTC", confidence=70, elder_ray=elder_no_weak)
-    assert_lt(r_weak["adjustments"]["strength_mult"], r_noweak["adjustments"]["strength_mult"],
-              "双弱变盘的强度乘数 < 不变盘")
-    print(f"      双弱变盘: 强度乘数={r_weak['adjustments']['strength_mult']:.3f}, "
-          f"预算=${r_weak['per_coin_budget']:.2f}")
-    print(f"      无变盘: 强度乘数={r_noweak['adjustments']['strength_mult']:.3f}, "
-          f"预算=${r_noweak['per_coin_budget']:.2f}")
+    assert_lt(
+        r_weak["adjustments"]["strength_mult"],
+        r_noweak["adjustments"]["strength_mult"],
+        "双弱变盘的强度乘数 < 不变盘",
+    )
+    print(
+        f"      双弱变盘: 强度乘数={r_weak['adjustments']['strength_mult']:.3f}, "
+        f"预算=${r_weak['per_coin_budget']:.2f}"
+    )
+    print(
+        f"      无变盘: 强度乘数={r_noweak['adjustments']['strength_mult']:.3f}, "
+        f"预算=${r_noweak['per_coin_budget']:.2f}"
+    )
 
     # 2.5 置信度影响
     subsection("2.5 不同置信度对比")
@@ -567,25 +645,36 @@ def test_capital_manager_scenarios():
         "both_weakening": False,
         "bullish_divergence": False,
     }
-    with patch("capital_manager.get_account_balance", mock_balance_500), \
-         patch("capital_manager.get_current_positions", mock_empty_positions), \
-         patch("capital_manager.MAX_CONCURRENT_POSITIONS", 4), \
-         patch("capital_manager.TOTAL_BUDGET", 500.0):
+    with (
+        patch("capital_manager.get_account_balance", mock_balance_500),
+        patch("capital_manager.get_current_positions", mock_empty_positions),
+        patch("capital_manager.MAX_CONCURRENT_POSITIONS", 4),
+        patch("capital_manager.TOTAL_BUDGET", 500.0),
+    ):
         r_high = calculate_per_coin_allocation("BTC", confidence=90, elder_ray=elder_normal)
         r_low = calculate_per_coin_allocation("BTC", confidence=60, elder_ray=elder_normal)
-    assert_gt(r_high["adjustments"]["conf_mult"], r_low["adjustments"]["conf_mult"],
-              "高置信度的置信乘数 > 低置信度")
-    print(f"      置信90%: 置信乘数={r_high['adjustments']['conf_mult']:.3f}, "
-          f"预算=${r_high['per_coin_budget']:.2f}")
-    print(f"      置信60%: 置信乘数={r_low['adjustments']['conf_mult']:.3f}, "
-          f"预算=${r_low['per_coin_budget']:.2f}")
+    assert_gt(
+        r_high["adjustments"]["conf_mult"],
+        r_low["adjustments"]["conf_mult"],
+        "高置信度的置信乘数 > 低置信度",
+    )
+    print(
+        f"      置信90%: 置信乘数={r_high['adjustments']['conf_mult']:.3f}, "
+        f"预算=${r_high['per_coin_budget']:.2f}"
+    )
+    print(
+        f"      置信60%: 置信乘数={r_low['adjustments']['conf_mult']:.3f}, "
+        f"预算=${r_low['per_coin_budget']:.2f}"
+    )
 
     # 2.6 最大持仓数已满
     subsection("2.6 最大持仓数已满 → 拒绝开仓")
-    with patch("capital_manager.get_account_balance", mock_balance_500), \
-         patch("capital_manager.get_current_positions", mock_3_positions), \
-         patch("capital_manager.MAX_CONCURRENT_POSITIONS", 3), \
-         patch("capital_manager.TOTAL_BUDGET", 500.0):
+    with (
+        patch("capital_manager.get_account_balance", mock_balance_500),
+        patch("capital_manager.get_current_positions", mock_3_positions),
+        patch("capital_manager.MAX_CONCURRENT_POSITIONS", 3),
+        patch("capital_manager.TOTAL_BUDGET", 500.0),
+    ):
         result = calculate_per_coin_allocation("BTC", confidence=80, elder_ray=elder_strong_bull)
     assert_true(not result["allowed"], "持仓已满时拒绝开仓")
     assert_eq(result["remaining_slots"], 0, "剩余仓位=0")
@@ -593,40 +682,61 @@ def test_capital_manager_scenarios():
 
     # 2.7 小资金场景
     subsection("2.7 小资金场景（$100）")
-    with patch("capital_manager.get_account_balance", mock_balance_100), \
-         patch("capital_manager.get_current_positions", mock_empty_positions), \
-         patch("capital_manager.MAX_CONCURRENT_POSITIONS", 4), \
-         patch("capital_manager.TOTAL_BUDGET", 100.0):
+    with (
+        patch("capital_manager.get_account_balance", mock_balance_100),
+        patch("capital_manager.get_current_positions", mock_empty_positions),
+        patch("capital_manager.MAX_CONCURRENT_POSITIONS", 4),
+        patch("capital_manager.TOTAL_BUDGET", 100.0),
+    ):
         result = calculate_per_coin_allocation("BTC", confidence=70, elder_ray=elder_normal)
-    print(f"      允许={result['allowed']}, 预算=${result['per_coin_budget']:.2f}, "
-          f"底仓=${result['base_usd']:.2f}")
+    print(
+        f"      允许={result['allowed']}, 预算=${result['per_coin_budget']:.2f}, "
+        f"底仓=${result['base_usd']:.2f}"
+    )
 
     # 2.8 无Elder-ray数据（降级）
     subsection("2.8 无Elder-ray数据 → 降级为中性")
-    with patch("capital_manager.get_account_balance", mock_balance_500), \
-         patch("capital_manager.get_current_positions", mock_empty_positions), \
-         patch("capital_manager.MAX_CONCURRENT_POSITIONS", 4), \
-         patch("capital_manager.TOTAL_BUDGET", 500.0):
+    with (
+        patch("capital_manager.get_account_balance", mock_balance_500),
+        patch("capital_manager.get_current_positions", mock_empty_positions),
+        patch("capital_manager.MAX_CONCURRENT_POSITIONS", 4),
+        patch("capital_manager.TOTAL_BUDGET", 500.0),
+    ):
         result = calculate_per_coin_allocation("BTC", confidence=70, elder_ray=None)
     assert_true(result["allowed"], "无Elder-ray数据时仍允许开仓（降级）")
     assert_eq(result["adjustments"]["strength_mult"], 1.0, "无数据时强度乘数=1.0（中性）")
-    print(f"      允许={result['allowed']}, 强度乘数=1.0（中性）, "
-          f"预算=${result['per_coin_budget']:.2f}")
+    print(
+        f"      允许={result['allowed']}, 强度乘数=1.0（中性）, "
+        f"预算=${result['per_coin_budget']:.2f}"
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════
 # 3. 入场信号系统测试
 # ═══════════════════════════════════════════════════════════════════
 
+
 def test_signal_scenarios():
     section("3. 入场信号系统 — 多场景测试")
 
     try:
         from v15_signal import (
-            determine_position, calc_sma, calc_rsi, calc_fibonacci,
-            calc_bollinger_bands, calc_macd, calc_adx, calc_pivot_points,
-            calc_obv, calc_supertrend, calc_keltner_channel,
-            calc_stochrsi, calc_vortex, calc_tema, calc_golden_cross, calc_ema_align
+            calc_adx,  # noqa: F401
+            calc_bollinger_bands,
+            calc_ema_align,  # noqa: F401
+            calc_fibonacci,  # noqa: F401
+            calc_golden_cross,  # noqa: F401
+            calc_keltner_channel,  # noqa: F401
+            calc_macd,
+            calc_obv,  # noqa: F401
+            calc_pivot_points,  # noqa: F401
+            calc_rsi,
+            calc_sma,
+            calc_stochrsi,  # noqa: F401
+            calc_supertrend,  # noqa: F401
+            calc_tema,  # noqa: F401
+            calc_vortex,  # noqa: F401
+            determine_position,
         )
     except ImportError as e:
         print(f"  ⚠️  无法导入信号模块: {e}")
@@ -677,7 +787,9 @@ def test_signal_scenarios():
     macd = calc_macd(prices)
     assert_true(macd is not None, "MACD计算成功")
     if macd:
-        print(f"      MACD={macd['macd']:.4f}, Signal={macd['signal']:.4f}, Hist={macd['hist']:.4f}")
+        print(
+            f"      MACD={macd['macd']:.4f}, Signal={macd['signal']:.4f}, Hist={macd['hist']:.4f}"
+        )
 
     # 3.7 数据不足边界
     subsection("3.7 数据不足（边界）")
@@ -691,6 +803,7 @@ def test_signal_scenarios():
 # ═══════════════════════════════════════════════════════════════════
 # 4. 动态止损系统测试
 # ═══════════════════════════════════════════════════════════════════
+
 
 def test_stop_loss_scenarios():
     section("4. 动态止损系统 — 多场景测试")
@@ -718,8 +831,10 @@ def test_stop_loss_scenarios():
     assert_true(result["stop_loss_price"] is not None, "存在止损线")
     assert_gt(result["stop_loss_price"], 0, "止损价格 > 0")
     assert_eq(result["is_triggered"], False, "未触发止损")
-    print(f"      止损线=${result['stop_loss_price']:.0f} ({result['stop_type']}), "
-          f"距当前={result['stop_loss_pct']:.2f}%, 触发={result['is_triggered']}")
+    print(
+        f"      止损线=${result['stop_loss_price']:.0f} ({result['stop_type']}), "
+        f"距当前={result['stop_loss_pct']:.2f}%, 触发={result['is_triggered']}"
+    )
 
     # 4.2 价格跌破日MA200，但收盘在上方 → 不触发
     subsection("4.2 实时价跌破日MA200，但昨收在上方 → 不触发")
@@ -735,8 +850,10 @@ def test_stop_loss_scenarios():
     )
     assert_eq(result["is_triggered"], False, "昨收在均线上方 → 不触发")
     assert_eq(result["above_daily_ma200_close"], True, "昨收在日MA200上方")
-    print(f"      止损线=${result['stop_loss_price']:.0f} ({result['stop_type']}), "
-          f"触发={result['is_triggered']}")
+    print(
+        f"      止损线=${result['stop_loss_price']:.0f} ({result['stop_type']}), "
+        f"触发={result['is_triggered']}"
+    )
 
     # 4.3 昨收跌破所有下方均线中最近的一条 → 触发止损
     subsection("4.3 昨收跌破止损线（最近的下方均线）→ 触发止损")
@@ -753,8 +870,10 @@ def test_stop_loss_scenarios():
     )
     assert_eq(result["is_triggered"], True, "昨收跌破最近的下方均线 → 触发止损")
     assert_eq(result["stop_type"], "日EMA200", "止损线=日EMA200（最近的下方均线）")
-    print(f"      止损线=${result['stop_loss_price']:.0f} ({result['stop_type']}), "
-          f"触发={result['is_triggered']}")
+    print(
+        f"      止损线=${result['stop_loss_price']:.0f} ({result['stop_type']}), "
+        f"触发={result['is_triggered']}"
+    )
 
     # 4.4 所有均线收盘价全破 → 无条件止损
     subsection("4.4 所有均线收盘价全破 → 无条件止损")
@@ -769,8 +888,10 @@ def test_stop_loss_scenarios():
         last_weekly_close=54000,  # 上周收在所有周线均线下方
     )
     assert_eq(result["is_triggered"], True, "所有均线全破 → 触发止损")
-    print(f"      触发={result['is_triggered']}, 日MA200上方={result['above_daily_ma200_close']}, "
-          f"周MA200上方={result['above_weekly_ma200_close']}")
+    print(
+        f"      触发={result['is_triggered']}, 日MA200上方={result['above_daily_ma200_close']}, "
+        f"周MA200上方={result['above_weekly_ma200_close']}"
+    )
 
     # 4.5 无上下方均线（极端）
     subsection("4.5 所有均线数据缺失 → 无止损线")
@@ -791,12 +912,13 @@ def test_stop_loss_scenarios():
 # 5. 持仓超时与离场系统测试
 # ═══════════════════════════════════════════════════════════════════
 
+
 def test_timeout_exit_scenarios():
     global passed, failed
     section("5. 持仓超时与离场系统 — 多场景测试")
 
     try:
-        from v15_trader import check_time_exit
+        from v15_trader import check_time_exit  # noqa: F401
     except ImportError as e:
         print(f"  ⚠️  无法导入 check_time_exit: {e}")
         global skipped
@@ -817,7 +939,7 @@ def test_timeout_exit_scenarios():
     }
     # 因为需要mock很多东西，这里只测试时间判断逻辑
     # 实际功能在 v15_trader 中已有集成测试
-    print(f"      持仓时间=24h, 阈值=48h → 不触发（预期）")
+    print("      持仓时间=24h, 阈值=48h → 不触发（预期）")
 
     # 5.2 底仓阶段，已超时
     subsection("5.2 底仓阶段 — 已超时（72h）")
@@ -829,7 +951,7 @@ def test_timeout_exit_scenarios():
         "sz": 10,
         "inst_id": "BTC-USDT-SWAP",
     }
-    print(f"      持仓时间=72h, 阈值=48h → 触发离场评估（预期）")
+    print("      持仓时间=72h, 阈值=48h → 触发离场评估（预期）")
 
     # 5.3 加仓后，黄金窗口内
     subsection("5.3 加仓后 — 黄金窗口内（6h）")
@@ -842,7 +964,7 @@ def test_timeout_exit_scenarios():
         "sz": 20,
         "inst_id": "BTC-USDT-SWAP",
     }
-    print(f"      加仓后6h, 黄金窗口=12h → 不触发（让反弹充分发展）")
+    print("      加仓后6h, 黄金窗口=12h → 不触发（让反弹充分发展）")
 
     # 5.4 加仓后，黄金窗口外但未超时
     subsection("5.4 加仓后 — 黄金窗口外但未超时（18h）")
@@ -855,11 +977,11 @@ def test_timeout_exit_scenarios():
         "sz": 20,
         "inst_id": "BTC-USDT-SWAP",
     }
-    print(f"      加仓后18h, 黄金窗口=12h, 超时=24h → 不触发（预期）")
+    print("      加仓后18h, 黄金窗口=12h, 超时=24h → 不触发（预期）")
 
     # 5.5 加仓后，已超时
     subsection("5.5 加仓后 — 已超时（36h）")
-    pos = {
+    pos = {  # noqa: F841
         "entry_price": 90,
         "open_time": (now - timedelta(hours=80)).isoformat(),
         "last_addon_time": (now - timedelta(hours=36)).isoformat(),
@@ -868,22 +990,23 @@ def test_timeout_exit_scenarios():
         "sz": 20,
         "inst_id": "BTC-USDT-SWAP",
     }
-    print(f"      加仓后36h, 超时=24h → 触发离场评估（预期）")
+    print("      加仓后36h, 超时=24h → 触发离场评估（预期）")
 
     # 5.6 分层计时逻辑验证
     subsection("5.6 分层计时逻辑验证")
-    print(f"      底仓计时基准: open_time, 阈值: max_base_holding_hours")
-    print(f"      加仓后计时基准: last_addon_time, 先过黄金窗口，再判断超时")
-    print(f"      超时后 → 调用 ClassicExitSystem.evaluate_full()")
-    print(f"      四种动作: CLOSE / REDUCE / RAISE_TP / HOLD")
-    print(f"      降级方案: 经典系统不可用时 → 保本平仓")
+    print("      底仓计时基准: open_time, 阈值: max_base_holding_hours")
+    print("      加仓后计时基准: last_addon_time, 先过黄金窗口，再判断超时")
+    print("      超时后 → 调用 ClassicExitSystem.evaluate_full()")
+    print("      四种动作: CLOSE / REDUCE / RAISE_TP / HOLD")
+    print("      降级方案: 经典系统不可用时 → 保本平仓")
     passed += 1
-    print(f"  ✅ 分层计时逻辑正确（文档级验证）")
+    print("  ✅ 分层计时逻辑正确（文档级验证）")
 
 
 # ═══════════════════════════════════════════════════════════════════
 # 6. 贝叶斯优化参数边界测试
 # ═══════════════════════════════════════════════════════════════════
+
 
 def test_bayesian_param_bounds():
     section("6. 贝叶斯优化参数 — 边界测试")
@@ -903,9 +1026,13 @@ def test_bayesian_param_bounds():
         param_bounds = optimizer.params_space
 
         expected_params = [
-            'addon1_pct', 'addon2_pct', 'addon3_pct',
-            'max_concurrent_positions',
-            'max_base_holding_hours', 'max_post_addon_hours', 'golden_window_hours'
+            "addon1_pct",
+            "addon2_pct",
+            "addon3_pct",
+            "max_concurrent_positions",
+            "max_base_holding_hours",
+            "max_post_addon_hours",
+            "golden_window_hours",
         ]
 
         for param in expected_params:
@@ -913,9 +1040,9 @@ def test_bayesian_param_bounds():
             bounds = param_bounds[param]
             assert_eq(len(bounds), 2, f"{param} 有上下界")
             assert_lt(bounds[0], bounds[1], f"{param} 下界 < 上界")
-            if param == 'max_concurrent_positions':
+            if param == "max_concurrent_positions":
                 print(f"      {param}: {int(bounds[0])} - {int(bounds[1])}")
-            elif 'hours' in param:
+            elif "hours" in param:
                 print(f"      {param}: {bounds[0]:.1f} - {bounds[1]:.1f}h")
             else:
                 print(f"      {param}: [{bounds[0]:.4f}, {bounds[1]:.4f}]")
@@ -935,10 +1062,12 @@ def test_bayesian_param_bounds():
         bounds = optimizer.params_space
         base_pct = optimizer.fixed_base_position_pct
         # 理论最大总比例
-        max_total = (base_pct + bounds['addon1_pct'][1] +
-                     bounds['addon2_pct'][1] + bounds['addon3_pct'][1])
-        min_total = (base_pct + bounds['addon1_pct'][0] +
-                     bounds['addon2_pct'][0] + bounds['addon3_pct'][0])
+        max_total = (
+            base_pct + bounds["addon1_pct"][1] + bounds["addon2_pct"][1] + bounds["addon3_pct"][1]
+        )
+        min_total = (
+            base_pct + bounds["addon1_pct"][0] + bounds["addon2_pct"][0] + bounds["addon3_pct"][0]
+        )
         print(f"      底仓固定: {base_pct:.0%}")
         print(f"      最小总比例: {min_total:.1%}")
         print(f"      最大总比例: {max_total:.1%}")
@@ -952,13 +1081,22 @@ def test_bayesian_param_bounds():
     subsection("6.3 持仓时间参数范围")
     try:
         bounds = optimizer.params_space
-        print(f"      底仓最大持仓: {bounds['max_base_holding_hours'][0]}h - {bounds['max_base_holding_hours'][1]}h")
-        print(f"      加仓后最大持仓: {bounds['max_post_addon_hours'][0]}h - {bounds['max_post_addon_hours'][1]}h")
-        print(f"      黄金窗口: {bounds['golden_window_hours'][0]}h - {bounds['golden_window_hours'][1]}h")
+        print(
+            f"      底仓最大持仓: {bounds['max_base_holding_hours'][0]}h - {bounds['max_base_holding_hours'][1]}h"
+        )
+        print(
+            f"      加仓后最大持仓: {bounds['max_post_addon_hours'][0]}h - {bounds['max_post_addon_hours'][1]}h"
+        )
+        print(
+            f"      黄金窗口: {bounds['golden_window_hours'][0]}h - {bounds['golden_window_hours'][1]}h"
+        )
 
         # 黄金窗口应该 <= 加仓后最大持仓时间
-        assert_lt(bounds['golden_window_hours'][1], bounds['max_post_addon_hours'][1] + 1,
-                  "黄金窗口上界 <= 加仓后最大持仓上界（逻辑自洽）")
+        assert_lt(
+            bounds["golden_window_hours"][1],
+            bounds["max_post_addon_hours"][1] + 1,
+            "黄金窗口上界 <= 加仓后最大持仓上界（逻辑自洽）",
+        )
     except Exception as e:
         print(f"      ⚠️  计算失败: {e}")
         traceback.print_exc()
@@ -967,6 +1105,7 @@ def test_bayesian_param_bounds():
 # ═══════════════════════════════════════════════════════════════════
 # 7. 异常与边界场景测试
 # ═══════════════════════════════════════════════════════════════════
+
 
 def test_edge_cases():
     global passed, failed
@@ -1005,11 +1144,11 @@ def test_edge_cases():
         if result:
             print(f"      零价格: Bull={result['bull_pct']:.2f}%, Bear={result['bear_pct']:.2f}%")
             passed += 1
-            print(f"  ✅ 零价格不崩溃")
+            print("  ✅ 零价格不崩溃")
         else:
-            print(f"      零价格返回None（也是合理的）")
+            print("      零价格返回None（也是合理的）")
             passed += 1
-            print(f"  ✅ 零价格安全处理")
+            print("  ✅ 零价格安全处理")
     except Exception as e:
         print(f"      ❌ 零价格崩溃: {e}")
         failed += 1
@@ -1033,23 +1172,32 @@ def test_edge_cases():
         def mock_pos():
             return []
 
-        with patch("capital_manager.get_account_balance", mock_bal), \
-             patch("capital_manager.get_current_positions", mock_pos), \
-             patch("capital_manager.MAX_CONCURRENT_POSITIONS", 4), \
-             patch("capital_manager.TOTAL_BUDGET", 500.0):
+        with (
+            patch("capital_manager.get_account_balance", mock_bal),
+            patch("capital_manager.get_current_positions", mock_pos),
+            patch("capital_manager.MAX_CONCURRENT_POSITIONS", 4),
+            patch("capital_manager.TOTAL_BUDGET", 500.0),
+        ):
 
             # 置信度0%
             r0 = calculate_per_coin_allocation("BTC", confidence=0, elder_ray=elder)
-            print(f"      置信0%: 置信乘数={r0['adjustments']['conf_mult']:.2f}, "
-                  f"允许={r0['allowed']}")
+            print(
+                f"      置信0%: 置信乘数={r0['adjustments']['conf_mult']:.2f}, "
+                f"允许={r0['allowed']}"
+            )
 
             # 置信度100%
             r100 = calculate_per_coin_allocation("BTC", confidence=100, elder_ray=elder)
-            print(f"      置信100%: 置信乘数={r100['adjustments']['conf_mult']:.2f}, "
-                  f"允许={r100['allowed']}")
+            print(
+                f"      置信100%: 置信乘数={r100['adjustments']['conf_mult']:.2f}, "
+                f"允许={r100['allowed']}"
+            )
 
-            assert_lt(r0["adjustments"]["conf_mult"], r100["adjustments"]["conf_mult"],
-                      "0%置信的乘数 < 100%置信的乘数")
+            assert_lt(
+                r0["adjustments"]["conf_mult"],
+                r100["adjustments"]["conf_mult"],
+                "0%置信的乘数 < 100%置信的乘数",
+            )
     except Exception as e:
         print(f"      ⚠️  测试失败: {e}")
 
@@ -1070,7 +1218,7 @@ def test_edge_cases():
         )
         print(f"      零价格: 止损线={result['stop_loss_price']}, 触发={result['is_triggered']}")
         passed += 1
-        print(f"  ✅ 零价格不崩溃")
+        print("  ✅ 零价格不崩溃")
     except Exception as e:
         print(f"      ❌ 零价格崩溃: {e}")
         failed += 1
@@ -1092,6 +1240,7 @@ def test_edge_cases():
 # 主程序
 # ═══════════════════════════════════════════════════════════════════
 
+
 def main():
     print(bold(cyan("""
 ╔══════════════════════════════════════════════════════════════════╗
@@ -1103,13 +1252,13 @@ def main():
     print(f"{bold('测试环境:')} Python {sys.version.split()[0]}")
 
     # 运行所有测试
-    test_elder_ray_scenarios()       # 10+ 场景
+    test_elder_ray_scenarios()  # 10+ 场景
     test_capital_manager_scenarios()  # 8+ 场景
-    test_signal_scenarios()           # 6+ 场景
-    test_stop_loss_scenarios()        # 5+ 场景
-    test_timeout_exit_scenarios()     # 6+ 场景
-    test_bayesian_param_bounds()      # 3+ 场景
-    test_edge_cases()                 # 5+ 场景
+    test_signal_scenarios()  # 6+ 场景
+    test_stop_loss_scenarios()  # 5+ 场景
+    test_timeout_exit_scenarios()  # 6+ 场景
+    test_bayesian_param_bounds()  # 3+ 场景
+    test_edge_cases()  # 5+ 场景
 
     # 总结
     total = passed + failed
@@ -1117,8 +1266,14 @@ def main():
     print(f"{bold(cyan('  测试总结'))}")
     print(f"{bold(cyan('━' * 70))}")
     print(f"  总测试项: {total}")
-    print(f"  {green('通过: ' + str(passed))}  ({passed/total*100:.1f}%)" if total > 0 else "  通过: 0")
-    print(f"  {red('失败: ' + str(failed))}  ({failed/total*100:.1f}%)" if total > 0 else "  失败: 0")
+    print(
+        f"  {green('通过: ' + str(passed))}  ({passed/total*100:.1f}%)"
+        if total > 0
+        else "  通过: 0"
+    )
+    print(
+        f"  {red('失败: ' + str(failed))}  ({failed/total*100:.1f}%)" if total > 0 else "  失败: 0"
+    )
     print(f"  {yellow('跳过: ' + str(skipped))}")
     print()
 

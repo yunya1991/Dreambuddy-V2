@@ -24,12 +24,12 @@ _META_DIR = _SCRIPT_DIR.parent / ".." / "0-元记忆"
 MAPPINGS_FILE = _META_DIR / "template_mappings.json"
 
 LEGACY_TO_NEW: Dict[str, str] = {
-    "TDD-001":        "test-driven-development",
-    "DEBUG-001":      "systematic-debugging",
-    "REFACTOR-001":   "test-driven-development",
-    "REVIEW-001":     "requesting-code-review",
-    "DESIGN-001":     "brainstorming",
-    "TDD-DEBUG-001":  "subagent-driven-development",
+    "TDD-001": "test-driven-development",
+    "DEBUG-001": "systematic-debugging",
+    "REFACTOR-001": "test-driven-development",
+    "REVIEW-001": "requesting-code-review",
+    "DESIGN-001": "brainstorming",
+    "TDD-DEBUG-001": "subagent-driven-development",
 }
 
 
@@ -48,7 +48,9 @@ def save_mappings(path: Path, data: Dict[str, Any]) -> None:
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
-def compute_migrated(data: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, List[str]], Dict[str, Dict[str, int]]]:
+def compute_migrated(
+    data: Dict[str, Any],
+) -> Tuple[Dict[str, Any], Dict[str, List[str]], Dict[str, Dict[str, int]]]:
     """
     返回：
       (new_data, parent_change_map, merge_stats)
@@ -80,7 +82,9 @@ def compute_migrated(data: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Li
             }
         else:
             existing = new_grouped[key]
-            existing["success_count"] = existing.get("success_count", 0) + entry.get("success_count", 0)
+            existing["success_count"] = existing.get("success_count", 0) + entry.get(
+                "success_count", 0
+            )
             existing["fail_count"] = existing.get("fail_count", 0) + entry.get("fail_count", 0)
             existing["last_verified"] = max(
                 existing.get("last_verified", 0.0),
@@ -88,12 +92,12 @@ def compute_migrated(data: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Li
             )
 
     new_mappings: List[Dict[str, Any]] = []
-    merge_stats: Dict[str, Dict[str, int]] = defaultdict(lambda: {
-        "success": 0, "fail": 0, "total": 0, "merged_groups": 0
-    })
+    merge_stats: Dict[str, Dict[str, int]] = defaultdict(
+        lambda: {"success": 0, "fail": 0, "total": 0, "merged_groups": 0}
+    )
 
     new_parent_to_old_counts: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
-    for (new_parent, applied_id), entry in new_grouped.items():
+    for (new_parent, applied_id), entry in new_grouped.items():  # noqa: B007
         sc = entry.get("success_count", 0)
         fc = entry.get("fail_count", 0)
         tc = sc + fc
@@ -148,8 +152,10 @@ def print_comparison(
     print(f"  原始 mapping 条目数: {len(orig_mappings)}")
     print(f"  迁移后 mapping 条目数: {len(new_mappings)}")
     if len(orig_mappings) != len(new_mappings):
-        print(f"  ⚠️  条目数变化: {len(orig_mappings)} → {len(new_mappings)} "
-              f"(相差 {len(new_mappings) - len(orig_mappings)}，因同 parent+applied 合并)")
+        print(
+            f"  ⚠️  条目数变化: {len(orig_mappings)} → {len(new_mappings)} "
+            f"(相差 {len(new_mappings) - len(orig_mappings)}，因同 parent+applied 合并)"
+        )
     print()
 
     print("=" * 70)
@@ -162,8 +168,10 @@ def print_comparison(
             print(f"     来源旧 parent_id: {', '.join(old_list)}")
             if stats.get("merged_groups", 0) > 1:
                 print(f"     ⚠️  合并 {stats['merged_groups']} 组旧 parent_id")
-            print(f"     合并计数 success={stats.get('success', 0)} / "
-                  f"fail={stats.get('fail', 0)} / total={stats.get('total', 0)}")
+            print(
+                f"     合并计数 success={stats.get('success', 0)} / "
+                f"fail={stats.get('fail', 0)} / total={stats.get('total', 0)}"
+            )
             print()
     else:
         print("  (无 parent_id 需要变更，所有已是新版 skill_id)")
@@ -179,13 +187,15 @@ def print_comparison(
     print()
 
     changed_applied = []
-    for o, n in zip(
+    for o, n in zip(  # noqa: B905
         sorted(orig_mappings, key=lambda x: (x.get("parent_id", ""), x.get("applied_id", ""))),
         sorted(new_mappings, key=lambda x: (x.get("parent_id", ""), x.get("applied_id", ""))),
     ):
-        if o.get("parent_id") != n.get("parent_id") or \
-           o.get("success_count") != n.get("success_count") or \
-           o.get("fail_count") != n.get("fail_count"):
+        if (
+            o.get("parent_id") != n.get("parent_id")
+            or o.get("success_count") != n.get("success_count")
+            or o.get("fail_count") != n.get("fail_count")
+        ):
             changed_applied.append((o, n))
 
     if changed_applied:
@@ -194,10 +204,14 @@ def print_comparison(
         print("=" * 70)
         for i, (o, n) in enumerate(changed_applied[:10], 1):
             print(f"  [{i}] applied_id={o.get('applied_id', '?')}")
-            print(f"       旧: parent={o.get('parent_id')} sc={o.get('success_count', 0)} "
-                  f"fc={o.get('fail_count', 0)} tc={o.get('total_count', 0)}")
-            print(f"       新: parent={n.get('parent_id')} sc={n.get('success_count', 0)} "
-                  f"fc={n.get('fail_count', 0)} tc={n.get('total_count', 0)}")
+            print(
+                f"       旧: parent={o.get('parent_id')} sc={o.get('success_count', 0)} "
+                f"fc={o.get('fail_count', 0)} tc={o.get('total_count', 0)}"
+            )
+            print(
+                f"       新: parent={n.get('parent_id')} sc={n.get('success_count', 0)} "
+                f"fc={n.get('fail_count', 0)} tc={n.get('total_count', 0)}"
+            )
             print()
 
 
@@ -213,7 +227,7 @@ def find_latest_backup(mappings_file: Path) -> Path:
 
 def cmd_dry_run() -> None:
     print(f"[DRY-RUN] 读取: {MAPPINGS_FILE}")
-    print(f"[DRY-RUN] 不写盘，仅显示差异\n")
+    print("[DRY-RUN] 不写盘，仅显示差异\n")
     original = load_mappings(MAPPINGS_FILE)
     new_data, change_map, merge_stats = compute_migrated(original)
     print_comparison(original, new_data, change_map, merge_stats)
@@ -284,14 +298,16 @@ def main() -> None:
         description="template_mappings.json: 自创 parent_id (TDD-001 等) → 原版 Superpowers skill_id 迁移工具",
     )
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--dry-run", action="store_true", default=True,
-                      help="默认模式：只打印迁移前后对比，不写盘")
-    mode.add_argument("--apply", action="store_true",
-                      help="真正写盘：先备份 .bak_时间戳 再覆盖写盘")
-    mode.add_argument("--restore", action="store_true",
-                      help="回滚：从最近的 .bak_* 备份文件恢复")
-    parser.add_argument("--force", action="store_true",
-                        help="--apply 时跳过交互式确认（脚本/CI 用）")
+    mode.add_argument(
+        "--dry-run", action="store_true", default=True, help="默认模式：只打印迁移前后对比，不写盘"
+    )
+    mode.add_argument(
+        "--apply", action="store_true", help="真正写盘：先备份 .bak_时间戳 再覆盖写盘"
+    )
+    mode.add_argument("--restore", action="store_true", help="回滚：从最近的 .bak_* 备份文件恢复")
+    parser.add_argument(
+        "--force", action="store_true", help="--apply 时跳过交互式确认（脚本/CI 用）"
+    )
     args = parser.parse_args()
 
     if args.apply:

@@ -10,6 +10,7 @@ test_causal_engine — CausalEngine 单元测试
   - FAIL-OPEN（样本不足/异常）
   - 硬约束 HC-AGI-08（最小样本量≥500）
 """
+
 import sys
 from pathlib import Path
 
@@ -20,7 +21,7 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.core.causal_engine import CausalEngine
+from dreambuddy_evolution.core.causal_engine import CausalEngine  # noqa: E402
 
 
 # ------------------------------------------------------------------
@@ -133,6 +134,7 @@ class TestInsufficientWarnDedup:
     def test_insufficient_warning_logged_once(self, engine, caplog):
         """重复调用只应产生 1 条 WARNING，后续降级 DEBUG."""
         import logging
+
         from dreambuddy_evolution.core import causal_engine as ce
 
         ce._INSUFFICIENT_WARNED.discard("estimate_ate")
@@ -143,9 +145,11 @@ class TestInsufficientWarnDedup:
             for _ in range(5):
                 res = engine.estimate_ate(X, t, y)
                 assert res["method"] == "insufficient_samples"  # FAIL-OPEN 语义不变
-        warnings = [r for r in caplog.records
-                    if "ATE样本量不足" in r.getMessage()
-                    and r.levelno == logging.WARNING]
+        warnings = [
+            r
+            for r in caplog.records
+            if "ATE样本量不足" in r.getMessage() and r.levelno == logging.WARNING
+        ]
         assert len(warnings) == 1
 
 

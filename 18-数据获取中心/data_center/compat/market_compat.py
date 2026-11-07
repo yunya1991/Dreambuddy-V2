@@ -3,6 +3,7 @@
 fetch_candles 用 ccxt 替换 OKX SDK 直连，inst_id/bar 格式自动转换；
 resample_candles 是纯数据变换，直接复用老逻辑。
 """
+
 from __future__ import annotations
 
 import ccxt

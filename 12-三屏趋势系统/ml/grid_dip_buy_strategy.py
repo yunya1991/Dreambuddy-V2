@@ -9,8 +9,9 @@
 不改变做空逻辑，只优化抄底部分。
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import numpy as np
@@ -92,10 +93,12 @@ class GridDipBuyStrategy(EnhancedMA200Strategy):
         self.hs_min_depth_pct = hs_min_depth_pct
         self.hs_boost_pct = hs_boost_pct
 
-        self.stats.update({
-            "bb_grid_buy_days": 0,
-            "hs_confirmed_days": 0,
-        })
+        self.stats.update(
+            {
+                "bb_grid_buy_days": 0,
+                "hs_confirmed_days": 0,
+            }
+        )
 
     def _compute_bollinger_bands(self, close: np.ndarray) -> tuple:
         n = len(close)
@@ -103,7 +106,7 @@ class GridDipBuyStrategy(EnhancedMA200Strategy):
         mid = np.full(n, np.nan)
         lower = np.full(n, np.nan)
         for i in range(self.bb_period - 1, n):
-            window = close[i - self.bb_period + 1:i + 1]
+            window = close[i - self.bb_period + 1 : i + 1]
             m = np.mean(window)
             s = np.std(window)
             mid[i] = m
@@ -115,8 +118,8 @@ class GridDipBuyStrategy(EnhancedMA200Strategy):
         """简化版双底/头肩底检测"""
         if i < self.hs_lookback:
             return False
-        window = close[i - self.hs_lookback + 1:i + 1]
-        n = len(window)
+        window = close[i - self.hs_lookback + 1 : i + 1]
+        n = len(window)  # noqa: F841
         low_idx = np.argmin(window)
         low_price = window[low_idx]
         window_high = np.max(window)
@@ -125,8 +128,8 @@ class GridDipBuyStrategy(EnhancedMA200Strategy):
             return False
 
         # 左右各找一个低点
-        left_half = window[:max(1, low_idx)]
-        right_half = window[low_idx + 1:]
+        left_half = window[: max(1, low_idx)]
+        right_half = window[low_idx + 1 :]
         if len(left_half) < 3 or len(right_half) < 3:
             return False
 
@@ -142,7 +145,7 @@ class GridDipBuyStrategy(EnhancedMA200Strategy):
         right_low_idx = low_idx + 1 + np.argmin(right_half)
         if right_low_idx <= low_idx + 1:
             return False
-        mid_seg = window[low_idx + 1:right_low_idx]
+        mid_seg = window[low_idx + 1 : right_low_idx]
         if len(mid_seg) < 2:
             return False
         neckline = np.max(mid_seg)
@@ -155,7 +158,9 @@ class GridDipBuyStrategy(EnhancedMA200Strategy):
         positions = np.zeros(n)
         close = prices["close"].values
 
-        ma_series = pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        ma_series = (
+            pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        )
         ma = ma_series.values
 
         ma_slope = np.zeros(n)
@@ -163,10 +168,18 @@ class GridDipBuyStrategy(EnhancedMA200Strategy):
             if not np.isnan(ma[i]) and not np.isnan(ma[i - self.slope_period]):
                 ma_slope[i] = (ma[i] / ma[i - self.slope_period] - 1) * 100
 
-        weekly_ma200 = self._compute_weekly_ma200(prices) if (self.is_btc and self.weekly_ma200_dip_buy) else None
-        btc_regime = self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        weekly_ma200 = (
+            self._compute_weekly_ma200(prices)
+            if (self.is_btc and self.weekly_ma200_dip_buy)
+            else None
+        )
+        btc_regime = (
+            self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        )
 
-        bb_upper, bb_mid, bb_lower = self._compute_bollinger_bands(close) if self.use_bb_grid else (None, None, None)
+        bb_upper, bb_mid, bb_lower = (
+            self._compute_bollinger_bands(close) if self.use_bb_grid else (None, None, None)
+        )
 
         last_state = "init"
         short_entry_price = None
@@ -206,15 +219,20 @@ class GridDipBuyStrategy(EnhancedMA200Strategy):
                     dip_buy_pos = 0.0
 
                     # v2的越跌越买逻辑（基础仓位）
-                    if self.weekly_ma200_dip_buy and not np.isnan(weekly_ma200[i]) and weekly_ma200[i] > 0:
+                    if (
+                        self.weekly_ma200_dip_buy
+                        and not np.isnan(weekly_ma200[i])
+                        and weekly_ma200[i] > 0
+                    ):
                         weekly_below_pct = (weekly_ma200[i] - close[i]) / weekly_ma200[i] * 100
                         if weekly_below_pct > 0:
                             levels_filled = min(
-                                int(weekly_below_pct / self.dip_buy_step_pct),
-                                self.dip_buy_levels
+                                int(weekly_below_pct / self.dip_buy_step_pct), self.dip_buy_levels
                             )
                             if levels_filled > 0:
-                                dip_buy_pos = (levels_filled / self.dip_buy_levels) * self.dip_buy_max_position
+                                dip_buy_pos = (
+                                    levels_filled / self.dip_buy_levels
+                                ) * self.dip_buy_max_position
 
                     if dip_buy_pos > 0:
                         # === 抄底模式 ===
@@ -241,7 +259,7 @@ class GridDipBuyStrategy(EnhancedMA200Strategy):
                         hs_boost = self.hs_boost_pct if hs_confirmed else 0.0
                         target_pos = min(
                             dip_buy_pos + bb_extra_position + hs_boost,
-                            self.dip_buy_max_position + self.bb_max_extra + self.hs_boost_pct
+                            self.dip_buy_max_position + self.bb_max_extra + self.hs_boost_pct,
                         )
 
                         self.stats["dip_buy_days"] += 1
@@ -264,7 +282,11 @@ class GridDipBuyStrategy(EnhancedMA200Strategy):
                         if base_short > 0 and short_entry_price is None:
                             short_entry_price = close[i]
 
-                        if base_short > 0 and short_entry_price is not None and self.fib_take_profit:
+                        if (
+                            base_short > 0
+                            and short_entry_price is not None
+                            and self.fib_take_profit
+                        ):
                             fib_pos = self._calc_fib_tp_position(
                                 close[i], short_entry_price, True, base_short
                             )
@@ -278,15 +300,20 @@ class GridDipBuyStrategy(EnhancedMA200Strategy):
                     # 价格在MA200上方但斜率不为正（震荡）
                     # 沿用v2逻辑：如果有抄底信号则维持，否则空仓
                     dip_buy_pos = 0.0
-                    if self.weekly_ma200_dip_buy and not np.isnan(weekly_ma200[i]) and weekly_ma200[i] > 0:
+                    if (
+                        self.weekly_ma200_dip_buy
+                        and not np.isnan(weekly_ma200[i])
+                        and weekly_ma200[i] > 0
+                    ):
                         weekly_below_pct = (weekly_ma200[i] - close[i]) / weekly_ma200[i] * 100
                         if weekly_below_pct > 0:
                             levels_filled = min(
-                                int(weekly_below_pct / self.dip_buy_step_pct),
-                                self.dip_buy_levels
+                                int(weekly_below_pct / self.dip_buy_step_pct), self.dip_buy_levels
                             )
                             if levels_filled > 0:
-                                dip_buy_pos = (levels_filled / self.dip_buy_levels) * self.dip_buy_max_position
+                                dip_buy_pos = (
+                                    levels_filled / self.dip_buy_levels
+                                ) * self.dip_buy_max_position
 
                     if dip_buy_pos > 0:
                         current_state = "dip_buy"
@@ -294,7 +321,7 @@ class GridDipBuyStrategy(EnhancedMA200Strategy):
                         hs_boost = self.hs_boost_pct if hs_confirmed else 0.0
                         target_pos = min(
                             dip_buy_pos + bb_extra_position + hs_boost,
-                            self.dip_buy_max_position + self.bb_max_extra + self.hs_boost_pct
+                            self.dip_buy_max_position + self.bb_max_extra + self.hs_boost_pct,
                         )
                         self.stats["dip_buy_days"] += 1
                     else:
@@ -342,7 +369,7 @@ class GridDipBuyStrategy(EnhancedMA200Strategy):
 
 
 if __name__ == "__main__":
-    import json
+    import json  # noqa: I001
     from ml.scenario_backtest_engine import ScenarioBacktestEngine
 
     with open("data/historical/BTC_1D_730d.json") as f:
@@ -359,20 +386,30 @@ if __name__ == "__main__":
     print("v2 基线...")
     v2 = EnhancedMA200Strategy(is_btc=True)
     v2_r = engine.run_scenario_backtest(prices, v2, "v2", symbol="BTC", experiment_name="v33_v2")
-    print(f"  夏普 {v2_r.overall_sharpe:.3f} | 收益 {v2_r.overall_total_return:.1%} | 评分 {v2_r.composite_score:.3f}")
+    print(
+        f"  夏普 {v2_r.overall_sharpe:.3f} | 收益 {v2_r.overall_total_return:.1%} | 评分 {v2_r.composite_score:.3f}"
+    )
 
     print()
     print("v3.3 网格抄底...")
     v33 = GridDipBuyStrategy(is_btc=True)
-    v33_r = engine.run_scenario_backtest(prices, v33, "v33", symbol="BTC", experiment_name="v33_grid")
-    print(f"  夏普 {v33_r.overall_sharpe:.3f} | 收益 {v33_r.overall_total_return:.1%} | 评分 {v33_r.composite_score:.3f}")
+    v33_r = engine.run_scenario_backtest(
+        prices, v33, "v33", symbol="BTC", experiment_name="v33_grid"
+    )
+    print(
+        f"  夏普 {v33_r.overall_sharpe:.3f} | 收益 {v33_r.overall_total_return:.1%} | 评分 {v33_r.composite_score:.3f}"
+    )
 
     print()
     print("DIP_BUY对比：")
     v2_dip = v2_r.objective_metrics["dip_buy"]
     v33_dip = v33_r.objective_metrics["dip_buy"]
-    print(f"  胜率: {v2_dip.win_rate:.2%} → {v33_dip.win_rate:.2%} ({v33_dip.win_rate - v2_dip.win_rate:+.2%})")
-    print(f"  收益: {v2_dip.avg_return:.2%} → {v33_dip.avg_return:.2%} ({v33_dip.avg_return - v2_dip.avg_return:+.2%})")
+    print(
+        f"  胜率: {v2_dip.win_rate:.2%} → {v33_dip.win_rate:.2%} ({v33_dip.win_rate - v2_dip.win_rate:+.2%})"
+    )
+    print(
+        f"  收益: {v2_dip.avg_return:.2%} → {v33_dip.avg_return:.2%} ({v33_dip.avg_return - v2_dip.avg_return:+.2%})"
+    )
 
     print()
     print("状态统计:")

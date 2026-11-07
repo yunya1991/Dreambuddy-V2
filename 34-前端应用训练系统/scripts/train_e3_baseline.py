@@ -8,6 +8,7 @@
 产出：models/e3_baseline_intent/ 与 models/e3_baseline_evaluator/ + 指标报告
 用法：venv-trading/bin/python scripts/train_e3_baseline.py
 """
+
 import json
 import os
 import random
@@ -17,7 +18,11 @@ from collections import Counter
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, get_linear_schedule_with_warmup
+from transformers import (
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    get_linear_schedule_with_warmup,
+)
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _SYS_DIR = os.path.dirname(_THIS_DIR)
@@ -55,7 +60,13 @@ class TextClsDataset(Dataset):
 
     def __getitem__(self, i):
         it = self.items[i]
-        enc = self.tok(self.text_fn(it), truncation=True, max_length=MAX_LEN, padding="max_length", return_tensors="pt")
+        enc = self.tok(
+            self.text_fn(it),
+            truncation=True,
+            max_length=MAX_LEN,
+            padding="max_length",
+            return_tensors="pt",
+        )
         return {
             "input_ids": enc["input_ids"][0],
             "attention_mask": enc["attention_mask"][0],
@@ -90,7 +101,7 @@ def train_task(name, items, text_fn, out_dir, class_weighted=False, eval_ratio=0
     print(f"\n===== 任务 {name}: {len(items)} 条 =====")
     labels = [it["label"] for it in items]
     label_list = sorted(set(labels))
-    label2id = {l: i for i, l in enumerate(label_list)}
+    label2id = {l: i for i, l in enumerate(label_list)}  # noqa: E741
     print(f"类别数: {len(label_list)} | 分布: {dict(Counter(labels))}")
 
     # 划分（按类分层）
@@ -98,7 +109,7 @@ def train_task(name, items, text_fn, out_dir, class_weighted=False, eval_ratio=0
     for it in items:
         by_label.setdefault(it["label"], []).append(it)
     train_items, test_items = [], []
-    for lab, lst in by_label.items():
+    for lab, lst in by_label.items():  # noqa: B007
         random.shuffle(lst)
         n_test = max(1, int(len(lst) * eval_ratio)) if len(lst) >= 5 else 0
         test_items.extend(lst[:n_test])
@@ -106,17 +117,36 @@ def train_task(name, items, text_fn, out_dir, class_weighted=False, eval_ratio=0
     print(f"训练 {len(train_items)} / 测试 {len(test_items)}")
 
     tok = AutoTokenizer.from_pretrained(BASE_MODEL)
-    model = AutoModelForSequenceClassification.from_pretrained(BASE_MODEL, num_labels=len(label_list))
+    model = AutoModelForSequenceClassification.from_pretrained(
+        BASE_MODEL, num_labels=len(label_list)
+    )
     model.to(DEVICE)
 
-    train_loader = DataLoader(TextClsDataset(train_items, label2id, tok, text_fn), batch_size=BATCH, shuffle=True, collate_fn=collate)
-    test_loader = DataLoader(TextClsDataset(test_items, label2id, tok, text_fn), batch_size=BATCH, shuffle=False, collate_fn=collate) if test_items else None
+    train_loader = DataLoader(
+        TextClsDataset(train_items, label2id, tok, text_fn),
+        batch_size=BATCH,
+        shuffle=True,
+        collate_fn=collate,
+    )
+    test_loader = (
+        DataLoader(
+            TextClsDataset(test_items, label2id, tok, text_fn),
+            batch_size=BATCH,
+            shuffle=False,
+            collate_fn=collate,
+        )
+        if test_items
+        else None
+    )
 
     # 类加权（SPEC §5 规则 3：verdict 102:1:1 极不平衡）；统一显式 CE（transformers 5.x 无 labels 时 out.loss 为 None）
     cnt = Counter(it["label"] for it in train_items)
     total = len(train_items)
     if class_weighted:
-        weights = torch.tensor([total / (len(label_list) * cnt.get(l, 1)) for l in label_list], dtype=torch.float)
+        weights = torch.tensor(
+            [total / (len(label_list) * cnt.get(l, 1)) for l in label_list],  # noqa: E741
+            dtype=torch.float,  # noqa: E741
+        )
         loss_fn = nn.CrossEntropyLoss(weight=weights)
         print(f"类权重: {[round(w, 2) for w in weights.tolist()]}")
     else:
@@ -143,9 +173,13 @@ def train_task(name, items, text_fn, out_dir, class_weighted=False, eval_ratio=0
         print(f"epoch {ep + 1}/{EPOCHS} avg_loss={ep_loss / max(n, 1):.4f}")
 
     train_acc, _, _ = evaluate(model, train_loader)
-    test_acc, preds, golds = (evaluate(model, test_loader) if test_loader else (None, [], []))
+    test_acc, preds, golds = evaluate(model, test_loader) if test_loader else (None, [], [])
     dur = round(time.time() - t0, 1)
-    print(f"训练集准确率: {train_acc:.4f}" + (f" | 测试集准确率: {test_acc:.4f}" if test_acc is not None else "") + f" | 耗时 {dur}s")
+    print(
+        f"训练集准确率: {train_acc:.4f}"
+        + (f" | 测试集准确率: {test_acc:.4f}" if test_acc is not None else "")
+        + f" | 耗时 {dur}s"
+    )
 
     model.save_pretrained(out_dir)
     tok.save_pretrained(out_dir)
@@ -168,7 +202,10 @@ def train_task(name, items, text_fn, out_dir, class_weighted=False, eval_ratio=0
 
 def main():
     # 任务 A：意图分类
-    intent_items = [{"message": d["message"], "label": d["intent"]} for d in load_jsonl(os.path.join(CORPUS, "intent_pairs.jsonl"))]
+    intent_items = [
+        {"message": d["message"], "label": d["intent"]}
+        for d in load_jsonl(os.path.join(CORPUS, "intent_pairs.jsonl"))
+    ]
     # 类别归一化（v2）：样本数 <3 的低频类别归并为 other（缓解 432 类碎片化，370 类仅 1 条样本）
     _cnt = Counter(it["label"] for it in intent_items)
     _merged = sum(1 for it in intent_items if _cnt[it["label"]] < 3)
@@ -176,7 +213,9 @@ def main():
         if _cnt[it["label"]] < 3:
             it["label"] = "other"
     print(f"[v2] 低频类别归并: {_merged} 条样本归入 other")
-    rep_a = train_task("A-意图分类", intent_items, lambda it: it["message"], OUT_INTENT, class_weighted=False)
+    rep_a = train_task(
+        "A-意图分类", intent_items, lambda it: it["message"], OUT_INTENT, class_weighted=False
+    )
 
     # 任务 B：评测器三分类（类加权）
     def eval_text(it):
@@ -184,7 +223,10 @@ def main():
         metrics_str = f"案例数{m.get('case_count', '?')} 噪声率{m.get('noise_ratio', '?')} 重叠数{m.get('overlap_count', '?')} 描述完备{m.get('desc_complete', '?')}"
         return f"提案: {it.get('name', '')}。描述: {it.get('description', '')[:120]}。关键词: {'、'.join(it.get('keywords', []))}。指标: {metrics_str}"
 
-    eval_items = [{**d, "label": d["verdict"]} for d in load_jsonl(os.path.join(CORPUS, "evaluator_labels.jsonl"))]
+    eval_items = [
+        {**d, "label": d["verdict"]}
+        for d in load_jsonl(os.path.join(CORPUS, "evaluator_labels.jsonl"))
+    ]
     rep_b = train_task("B-评测器三分类", eval_items, eval_text, OUT_EVAL, class_weighted=True)
 
     report = {

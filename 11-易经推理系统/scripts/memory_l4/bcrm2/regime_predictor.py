@@ -12,11 +12,11 @@
   市场广度组（BreadthMarketFeatures 的 8 列）→ × 1.5
   其他特征 → × 1.0
 """
+
 from __future__ import annotations
 
 import json
 import logging
-import os
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -29,40 +29,59 @@ logger = logging.getLogger(__name__)
 DEFAULT_FEATURE_GROUPS: Dict[str, List[str]] = {
     # Phase 0 - morphology_core 12 特征
     "morphology": [
-        "adx_14", "adx_plus_di", "adx_minus_di", "adx_trend_strength_bucket",
-        "hurst_exp_50", "hurst_exp_100", "hurst_state",
-        "bb_width_percentile_252", "bb_squeeze_signal",
-        "distance_to_high_60d", "distance_to_high_120d",
+        "adx_14",
+        "adx_plus_di",
+        "adx_minus_di",
+        "adx_trend_strength_bucket",
+        "hurst_exp_50",
+        "hurst_exp_100",
+        "hurst_state",
+        "bb_width_percentile_252",
+        "bb_squeeze_signal",
+        "distance_to_high_60d",
+        "distance_to_high_120d",
         "distance_to_high_lt_5_pct",
     ],
     # Phase 0 - breadth_market 8 特征
     "breadth": [
-        "breadth_ma128_align", "breadth_ma128_align_change_20d",
-        "breadth_ma128_slope_align", "breadth_ma128_slope_align_change_20d",
+        "breadth_ma128_align",
+        "breadth_ma128_align_change_20d",
+        "breadth_ma128_slope_align",
+        "breadth_ma128_slope_align_change_20d",
         "breadth_dispersion_10d",
-        "btc_dominance_change_20d", "btc_dominance_rolling_5d",
+        "btc_dominance_change_20d",
+        "btc_dominance_rolling_5d",
         "breadth_new_high_3_ratio_ma20",
     ],
     # MA200 牛熊分界 + 价格驱动周期特征 10 列（v2：移除 halving 日期）
     "ma200_cycle": [
-        "ma200_distance_pct", "ma200_above", "ma200_slope_20d",
-        "cycle_distance_from_365d_high", "cycle_distance_from_365d_low",
-        "cycle_position_in_range", "cycle_time_since_peak",
-        "cycle_momentum_180d", "cycle_vol_regime_90d", "cycle_trend_365d",
+        "ma200_distance_pct",
+        "ma200_above",
+        "ma200_slope_20d",
+        "cycle_distance_from_365d_high",
+        "cycle_distance_from_365d_low",
+        "cycle_position_in_range",
+        "cycle_time_since_peak",
+        "cycle_momentum_180d",
+        "cycle_vol_regime_90d",
+        "cycle_trend_365d",
     ],
     # 多时间框架特征 6 列
     "multi_timeframe": [
-        "ma_alignment_score", "ma_cross_50_200_signal",
-        "log_ret_30d", "log_ret_90d",
-        "vol_60d_percentile_252d", "volume_ma20_ratio",
+        "ma_alignment_score",
+        "ma_cross_50_200_signal",
+        "log_ret_30d",
+        "log_ret_90d",
+        "vol_60d_percentile_252d",
+        "volume_ma20_ratio",
     ],
 }
 
 DEFAULT_WEIGHTS: Dict[str, float] = {
     "morphology": 2.5,
     "breadth": 1.5,
-    "ma200_cycle": 2.0,        # MA200+周期：经典经验，高权重
-    "multi_timeframe": 1.8,    # 多时间框架：跨周期结构，较高权重
+    "ma200_cycle": 2.0,  # MA200+周期：经典经验，高权重
+    "multi_timeframe": 1.8,  # 多时间框架：跨周期结构，较高权重
     "other": 1.0,
 }
 
@@ -110,8 +129,8 @@ class RegimePredictor:
         self.lookback_bars = lookback_bars
 
         self._config = self._load_config(config_path, config_dict)
-        self._feature_groups: Dict[str, List[str]] = (
-            self._config.get("feature_groups") or dict(DEFAULT_FEATURE_GROUPS)
+        self._feature_groups: Dict[str, List[str]] = self._config.get("feature_groups") or dict(
+            DEFAULT_FEATURE_GROUPS
         )
         self._weights: Dict[str, float] = dict(
             DEFAULT_WEIGHTS, **(self._config.get("feature_weights") or {})
@@ -134,6 +153,7 @@ class RegimePredictor:
         # 父类兼容的 regime params（与 market_regime.DEFAULT_REGIME_PARAMS 对齐）
         try:
             from .market_regime import DEFAULT_REGIME_PARAMS
+
             self._regime_params = dict(DEFAULT_REGIME_PARAMS)
         except Exception:
             self._regime_params = {}
@@ -141,9 +161,7 @@ class RegimePredictor:
     # ============================================================
     # 配置加载
     # ============================================================
-    def _load_config(
-        self, config_path: Optional[str], config_dict: Optional[dict]
-    ) -> dict:
+    def _load_config(self, config_path: Optional[str], config_dict: Optional[dict]) -> dict:
         cfg = dict(config_dict) if config_dict else {}
         if config_path and Path(config_path).exists():
             with open(config_path, "r", encoding="utf-8") as f:
@@ -223,9 +241,7 @@ class RegimePredictor:
         if feature_names is None:
             feature_names = [f"f{i}" for i in range(X_np.shape[1])]
         if len(feature_names) != X_np.shape[1]:
-            raise ValueError(
-                f"feature_names 长度 {len(feature_names)} != X 列数 {X_np.shape[1]}"
-            )
+            raise ValueError(f"feature_names 长度 {len(feature_names)} != X 列数 {X_np.shape[1]}")
         self._feature_names = list(feature_names)
         self._group_idx = self._resolve_group_indices(self._feature_names)
 
@@ -233,7 +249,7 @@ class RegimePredictor:
         X_scaled = self._apply_feature_weights(X_np, self._feature_names)
 
         # 标签编码
-        label_set = sorted(self.REGIME_ORDER)
+        label_set = sorted(self.REGIME_ORDER)  # noqa: F841
         label_to_code = {name: i for i, name in enumerate(self.REGIME_ORDER)}
         y_codes = []
         for v in y_np:
@@ -277,15 +293,15 @@ class RegimePredictor:
                 "num_class": len(self.REGIME_ORDER),
                 "metric": "multi_logloss",
                 "learning_rate": 0.03,
-                "num_leaves": 15,               # 限制叶节点数防过拟合
-                "feature_fraction": 0.85,        # 特征采样
-                "bagging_fraction": 0.85,        # 样本采样
+                "num_leaves": 15,  # 限制叶节点数防过拟合
+                "feature_fraction": 0.85,  # 特征采样
+                "bagging_fraction": 0.85,  # 样本采样
                 "bagging_freq": 5,
-                "min_data_in_leaf": 20,           # 叶节点最小样本数
-                "lambda_l1": 1.0,                 # L1 正则
-                "lambda_l2": 5.0,                 # L2 正则
-                "max_depth": 6,                   # 限制树深
-                "min_gain_to_split": 0.01,       # 最小分裂增益
+                "min_data_in_leaf": 20,  # 叶节点最小样本数
+                "lambda_l1": 1.0,  # L1 正则
+                "lambda_l2": 5.0,  # L2 正则
+                "max_depth": 6,  # 限制树深
+                "min_gain_to_split": 0.01,  # 最小分裂增益
                 "verbose": -1,
                 "seed": 42,
                 "num_boost_round": 400,
@@ -295,10 +311,15 @@ class RegimePredictor:
 
             # 早停：20% 数据做验证，50 轮无提升则停止
             from sklearn.model_selection import train_test_split
+
             if len(X_scaled) > 100:
                 X_tr, X_val, y_tr, y_val, w_tr, w_val = train_test_split(
-                    X_scaled, y_codes, sample_w, test_size=0.2,
-                    random_state=42, stratify=y_codes if len(np.unique(y_codes)) > 1 else None
+                    X_scaled,
+                    y_codes,
+                    sample_w,
+                    test_size=0.2,
+                    random_state=42,
+                    stratify=y_codes if len(np.unique(y_codes)) > 1 else None,
                 )
                 train_data = lgb.Dataset(X_tr, label=y_tr, weight=w_tr)
                 valid_data = lgb.Dataset(X_val, label=y_val, weight=w_val, reference=train_data)
@@ -337,7 +358,7 @@ class RegimePredictor:
             # 回退：sklearn LogisticRegression
             from sklearn.linear_model import LogisticRegression
 
-            lr_params = dict(
+            lr_params = dict(  # noqa: C408
                 multi_class="ovr",
                 class_weight="balanced",
                 C=1.0,
@@ -407,7 +428,7 @@ class RegimePredictor:
             # sklearn fallback：predict_proba 返回 (n, n_classes)，注意类别顺序
             proba = self._model.predict_proba(X_scaled)
             # 若类别少于 8 类，补零对齐
-            n_classes_train = getattr(self._model, "n_classes_train_", proba.shape[1])
+            n_classes_train = getattr(self._model, "n_classes_train_", proba.shape[1])  # noqa: F841
             if proba.shape[1] < len(self.REGIME_ORDER):
                 classes = getattr(self._model, "classes_", None)
                 full = np.zeros((proba.shape[0], len(self.REGIME_ORDER)))
@@ -558,14 +579,16 @@ class RegimePredictor:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         try:
-            import lightgbm as lgb
+
             self._model.save_model(str(path.with_suffix(".lgb")))
         except Exception:
             try:
                 import joblib
+
                 joblib.dump(self._model, str(path.with_suffix(".skl.joblib")))
             except Exception:
                 import pickle
+
                 with path.with_suffix(".pkl").open("wb") as f:
                     pickle.dump(self._model, f)
         meta = {
@@ -586,10 +609,12 @@ class RegimePredictor:
         with meta_path.open("r", encoding="utf-8") as f:
             meta = json.load(f)
 
-        obj = cls(config_dict={
-            "feature_groups": meta.get("feature_groups"),
-            "feature_weights": meta.get("weights"),
-        })
+        obj = cls(
+            config_dict={
+                "feature_groups": meta.get("feature_groups"),
+                "feature_weights": meta.get("weights"),
+            }
+        )
         obj._feature_names = meta["feature_names"]
         obj._group_idx = obj._resolve_group_indices(obj._feature_names)
 
@@ -598,12 +623,15 @@ class RegimePredictor:
         pkl_path = path.with_suffix(".pkl")
         if lgb_path.exists():
             import lightgbm as lgb
+
             obj._model = lgb.Booster(model_file=str(lgb_path))
         elif skl_path.exists():
             import joblib
+
             obj._model = joblib.load(str(skl_path))
         elif pkl_path.exists():
             import pickle
+
             with pkl_path.open("rb") as f:
                 obj._model = pickle.load(f)
         else:

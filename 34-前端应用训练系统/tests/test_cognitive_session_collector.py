@@ -12,6 +12,7 @@
   TR-2.9  FAIL-OPEN: 目录不存在返回空列表
   TR-2.10 FAIL-OPEN: session.json 损坏跳过不崩溃
 """
+
 import json
 import os
 import sys
@@ -42,44 +43,77 @@ class CognitiveSessionCollectorTest(unittest.TestCase):
         os.makedirs(s1_dir)
         # session.json
         with open(os.path.join(s1_dir, "session.json"), "w") as f:
-            json.dump({
-                "id": sid1,
-                "start_time": 1786238933.44,
-                "end_time": 1786240861.67,
-                "status": "ended",
-                "task_type": "memory-system",
-                "action_count": 3,
-                "recalled_memory_ids": ["VM-001", "VM-002", "VM-003"],
-                "recalled_processes": [
-                    {"skill_id": "brainstorming", "match_score": 6.1},
-                ],
-            }, f)
+            json.dump(
+                {
+                    "id": sid1,
+                    "start_time": 1786238933.44,
+                    "end_time": 1786240861.67,
+                    "status": "ended",
+                    "task_type": "memory-system",
+                    "action_count": 3,
+                    "recalled_memory_ids": ["VM-001", "VM-002", "VM-003"],
+                    "recalled_processes": [
+                        {"skill_id": "brainstorming", "match_score": 6.1},
+                    ],
+                },
+                f,
+            )
         # action_chain.jsonl
         with open(os.path.join(s1_dir, "action_chain.jsonl"), "w") as f:
-            f.write(json.dumps({"timestamp": 1786238933.49, "session_id": sid1,
-                                "action_type": "file_change",
-                                "detail": "modified: test.py", "file": "test.py"}) + "\n")
-            f.write(json.dumps({"timestamp": 1786239393.82, "session_id": sid1,
-                                "action_type": "git_commit",
-                                "detail": "feat: test commit", "commit_hash": "abc123"}) + "\n")
-            f.write(json.dumps({"timestamp": 1786239407.23, "session_id": sid1,
-                                "action_type": "file_change",
-                                "detail": "added: new.py", "file": "new.py"}) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "timestamp": 1786238933.49,
+                        "session_id": sid1,
+                        "action_type": "file_change",
+                        "detail": "modified: test.py",
+                        "file": "test.py",
+                    }
+                )
+                + "\n"
+            )
+            f.write(
+                json.dumps(
+                    {
+                        "timestamp": 1786239393.82,
+                        "session_id": sid1,
+                        "action_type": "git_commit",
+                        "detail": "feat: test commit",
+                        "commit_hash": "abc123",
+                    }
+                )
+                + "\n"
+            )
+            f.write(
+                json.dumps(
+                    {
+                        "timestamp": 1786239407.23,
+                        "session_id": sid1,
+                        "action_type": "file_change",
+                        "detail": "added: new.py",
+                        "file": "new.py",
+                    }
+                )
+                + "\n"
+            )
 
         # 会话2: 仅 session.json (无 action_chain)
         sid2 = "CS-TEST-0002"
         s2_dir = os.path.join(cls._sessions_dir, sid2)
         os.makedirs(s2_dir)
         with open(os.path.join(s2_dir, "session.json"), "w") as f:
-            json.dump({
-                "id": sid2,
-                "start_time": 1786240081.0,
-                "end_time": 1786240090.0,
-                "status": "ended",
-                "task_type": "bugfix",
-                "action_count": 0,
-                "recalled_memory_ids": ["VM-004"],
-            }, f)
+            json.dump(
+                {
+                    "id": sid2,
+                    "start_time": 1786240081.0,
+                    "end_time": 1786240090.0,
+                    "status": "ended",
+                    "task_type": "bugfix",
+                    "action_count": 0,
+                    "recalled_memory_ids": ["VM-004"],
+                },
+                f,
+            )
 
         # 会话3: 损坏的 session.json (应被跳过)
         sid3 = "CS-TEST-0003"
@@ -91,28 +125,33 @@ class CognitiveSessionCollectorTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import shutil
+
         shutil.rmtree(cls._tmpdir, ignore_errors=True)
 
     # ===== TR-2.1 =====
     def test_class_exists_and_implements_interface(self):
         from cognitive_session_collector import CognitiveSessionCollector
         from interfaces.training_data_provider import TrainingDataProvider
+
         c = CognitiveSessionCollector()
         self.assertIsInstance(c, TrainingDataProvider)
 
     # ===== TR-2.2 =====
     def test_get_source_name(self):
         from cognitive_session_collector import CognitiveSessionCollector
+
         self.assertEqual(CognitiveSessionCollector().get_source_name(), "cognitive_session")
 
     # ===== TR-2.3 =====
     def test_get_quality_threshold(self):
         from cognitive_session_collector import CognitiveSessionCollector
+
         self.assertEqual(CognitiveSessionCollector().get_quality_threshold(), "B")
 
     # ===== TR-2.4 =====
     def test_fetch_cases_returns_training_cases(self):
         from cognitive_session_collector import CognitiveSessionCollector
+
         c = CognitiveSessionCollector(sessions_dir=self._sessions_dir)
         cases = c.fetch_cases(limit=100)
         self.assertGreater(len(cases), 0, "应至少采集1条")
@@ -123,6 +162,7 @@ class CognitiveSessionCollectorTest(unittest.TestCase):
     # ===== TR-2.5 =====
     def test_node_sequence_has_session_markers(self):
         from cognitive_session_collector import CognitiveSessionCollector
+
         c = CognitiveSessionCollector(sessions_dir=self._sessions_dir)
         cases = c.fetch_cases(limit=100)
         for case in cases:
@@ -133,6 +173,7 @@ class CognitiveSessionCollectorTest(unittest.TestCase):
     # ===== TR-2.6 =====
     def test_node_sequence_has_recall_nodes(self):
         from cognitive_session_collector import CognitiveSessionCollector
+
         c = CognitiveSessionCollector(sessions_dir=self._sessions_dir)
         cases = c.fetch_cases(limit=100)
         # 至少有一条 case 含 recall 节点
@@ -142,6 +183,7 @@ class CognitiveSessionCollectorTest(unittest.TestCase):
     # ===== TR-2.7 =====
     def test_node_sequence_has_action_nodes(self):
         from cognitive_session_collector import CognitiveSessionCollector
+
         c = CognitiveSessionCollector(sessions_dir=self._sessions_dir)
         cases = c.fetch_cases(limit=100)
         # 会话1 有 action_chain → node_sequence 应含 action 节点
@@ -153,6 +195,7 @@ class CognitiveSessionCollectorTest(unittest.TestCase):
     # ===== TR-2.8 =====
     def test_layer_tags_contains_dsh(self):
         from cognitive_session_collector import CognitiveSessionCollector
+
         c = CognitiveSessionCollector(sessions_dir=self._sessions_dir)
         cases = c.fetch_cases(limit=100)
         for case in cases:
@@ -161,6 +204,7 @@ class CognitiveSessionCollectorTest(unittest.TestCase):
     # ===== TR-2.9 =====
     def test_fail_open_dir_missing(self):
         from cognitive_session_collector import CognitiveSessionCollector
+
         c = CognitiveSessionCollector(sessions_dir="/nonexistent/sessions")
         cases = c.fetch_cases(limit=10)
         self.assertEqual(cases, [])
@@ -169,6 +213,7 @@ class CognitiveSessionCollectorTest(unittest.TestCase):
     def test_fail_open_corrupt_session(self):
         """损坏的 session.json 应跳过不崩溃。"""
         from cognitive_session_collector import CognitiveSessionCollector
+
         c = CognitiveSessionCollector(sessions_dir=self._sessions_dir)
         cases = c.fetch_cases(limit=100)
         # CS-TEST-0003 损坏,不应出现在结果中

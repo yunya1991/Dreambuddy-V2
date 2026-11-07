@@ -5,10 +5,10 @@ facets 维度：domain / task_type / potency / resource_cost / execution_mode
 
 工程约束：HC-1a（独立模块）/ FAIL-OPEN / 零回归
 """
+
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 # 分面键定义
 FACET_KEYS = ("domain", "task_type", "potency", "resource_cost", "execution_mode")

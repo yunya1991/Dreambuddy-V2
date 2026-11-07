@@ -7,7 +7,13 @@ from pandas import DataFrame
 from typing import Optional, Dict
 from datetime import datetime, timezone
 
-from freqtrade.strategy import IStrategy, IntParameter, DecimalParameter, BooleanParameter, merge_informative_pair
+from freqtrade.strategy import (
+    IStrategy,
+    IntParameter,
+    DecimalParameter,
+    BooleanParameter,
+    merge_informative_pair,
+)
 from freqtrade.persistence import Trade
 import talib.abstract as ta
 from technical import qtpylib
@@ -39,6 +45,7 @@ class RegimeHybridStrategy(IStrategy):
     - Base timeframe: 5m
     - 4h gate / regime detection, trend uses TrendConfirmation-like entry, chop uses SimpleStrategy-like MR
     """
+
     INTERFACE_VERSION = 3
 
     timeframe = "5m"
@@ -116,14 +123,14 @@ class RegimeHybridStrategy(IStrategy):
         dataframe["bb_lowerband"] = bb["lower"]
         dataframe["bb_middleband"] = bb["mid"]
         dataframe["bb_upperband"] = bb["upper"]
-    
+
     def _vwap(self, dataframe: DataFrame, window: int = 20):
         tp = (dataframe["high"] + dataframe["low"] + dataframe["close"]) / 3.0
         vol = dataframe["volume"].fillna(0)
         num = (tp * vol).rolling(window=window, min_periods=1).sum()
         den = vol.rolling(window=window, min_periods=1).sum()
         dataframe["vwap"] = (num / den).replace([np.inf, -np.inf], np.nan).ffill()
-    
+
     def _supertrend(self, dataframe: DataFrame, period: int = 10, multiplier: float = 3.0):
         atr = ta.ATR(dataframe, timeperiod=period)
         if isinstance(atr, pd.Series):
@@ -145,8 +152,16 @@ class RegimeHybridStrategy(IStrategy):
         final_lb[0] = lb[0]
 
         for i in range(1, len(dataframe)):
-            final_ub[i] = ub[i] if (ub[i] < final_ub[i - 1] or close[i - 1] > final_ub[i - 1]) else final_ub[i - 1]
-            final_lb[i] = lb[i] if (lb[i] > final_lb[i - 1] or close[i - 1] < final_lb[i - 1]) else final_lb[i - 1]
+            final_ub[i] = (
+                ub[i]
+                if (ub[i] < final_ub[i - 1] or close[i - 1] > final_ub[i - 1])
+                else final_ub[i - 1]
+            )
+            final_lb[i] = (
+                lb[i]
+                if (lb[i] > final_lb[i - 1] or close[i - 1] < final_lb[i - 1])
+                else final_lb[i - 1]
+            )
 
             if trend[i - 1] == 1:
                 trend[i] = -1 if close[i] <= final_lb[i] else 1
@@ -156,7 +171,7 @@ class RegimeHybridStrategy(IStrategy):
         dataframe["supertrend_ub"] = final_ub
         dataframe["supertrend_lb"] = final_lb
         dataframe["supertrend_direction"] = trend.astype(int)
-    
+
     def _chandelier_long(self, dataframe: DataFrame, period: int = 22, k: float = 3.0):
         atr = ta.ATR(dataframe, timeperiod=period)
         hh = dataframe["high"].rolling(window=period, min_periods=1).max()
@@ -171,7 +186,15 @@ class RegimeHybridStrategy(IStrategy):
         ema20 = dataframe.get("ema20_4h")
         ema40 = dataframe.get("ema40_4h")
 
-        if adx is None or plus_di is None or minus_di is None or bb_width is None or bb_width_ma is None or ema20 is None or ema40 is None:
+        if (
+            adx is None
+            or plus_di is None
+            or minus_di is None
+            or bb_width is None
+            or bb_width_ma is None
+            or ema20 is None
+            or ema40 is None
+        ):
             return pd.Series("range", index=dataframe.index)
 
         a = pd.to_numeric(adx, errors="coerce")
@@ -184,15 +207,17 @@ class RegimeHybridStrategy(IStrategy):
 
         di_spread = (p - m).abs()
         w_ok = np.isfinite(w)
-        is_expanding = w_ok & np.isfinite(wma) & (wma > 0) & (w >= wma * float(self.bb_width_expand_mult.value))
+        is_expanding = (
+            w_ok
+            & np.isfinite(wma)
+            & (wma > 0)
+            & (w >= wma * float(self.bb_width_expand_mult.value))
+        )
 
         cond_no_trade_expanding = is_expanding & (a < float(self.adx_4h_trend.value))
-        cond_range = (
-            (a <= float(self.adx_4h_range.value))
-            & (
-                (w_ok & (w <= float(self.bb_width_range_max.value)))
-                | ((~w_ok) & (di_spread <= 1.5 * float(self.di_spread_min.value)))
-            )
+        cond_range = (a <= float(self.adx_4h_range.value)) & (
+            (w_ok & (w <= float(self.bb_width_range_max.value)))
+            | ((~w_ok) & (di_spread <= 1.5 * float(self.di_spread_min.value)))
         )
         cond_trend = (
             (a >= float(self.adx_4h_trend.value))
@@ -238,14 +263,18 @@ class RegimeHybridStrategy(IStrategy):
         dataframe["tema"] = ta.TEMA(dataframe, timeperiod=9)
         dataframe["sar"] = ta.SAR(dataframe)
         dataframe["atr"] = ta.ATR(dataframe, timeperiod=14)
-        dataframe["atr_pct"] = (dataframe["atr"] / dataframe["close"]).replace([np.inf, -np.inf], np.nan)
+        dataframe["atr_pct"] = (dataframe["atr"] / dataframe["close"]).replace(
+            [np.inf, -np.inf], np.nan
+        )
         dataframe["volume_mean"] = dataframe["volume"].rolling(window=20).mean()
         self._vwap(dataframe, window=20)
         self._supertrend(dataframe, period=10, multiplier=3.0)
         self._chandelier_long(dataframe, period=22, k=3.0)
 
         n = int(self.donchian_period.value)
-        dataframe["donchian_high"] = dataframe["high"].rolling(window=n, min_periods=n).max().shift(1)
+        dataframe["donchian_high"] = (
+            dataframe["high"].rolling(window=n, min_periods=n).max().shift(1)
+        )
         dataframe["donchian_low"] = dataframe["low"].rolling(window=n, min_periods=n).min().shift(1)
 
         if "date" in dataframe.columns:
@@ -264,15 +293,21 @@ class RegimeHybridStrategy(IStrategy):
             ohlcv.index = base_idx
             resampled = (
                 ohlcv.resample("4H", label="right", closed="right")
-                .agg({"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"})
+                .agg(
+                    {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
+                )
                 .dropna()
             )
             if len(resampled) > 30:
                 bb4 = qtpylib.bollinger_bands(qtpylib.typical_price(resampled), window=20, stds=2)
                 resampled["bb_lower"] = bb4["lower"]
                 resampled["bb_upper"] = bb4["upper"]
-                resampled["bb_width"] = ((bb4["upper"] - bb4["lower"]) / bb4["mid"]).replace([np.inf, -np.inf], np.nan)
-                resampled["bb_width_ma"] = resampled["bb_width"].rolling(window=10, min_periods=5).mean()
+                resampled["bb_width"] = ((bb4["upper"] - bb4["lower"]) / bb4["mid"]).replace(
+                    [np.inf, -np.inf], np.nan
+                )
+                resampled["bb_width_ma"] = (
+                    resampled["bb_width"].rolling(window=10, min_periods=5).mean()
+                )
                 resampled["bb_middle"] = bb4["mid"]
                 resampled["adx"] = ta.ADX(resampled)
                 resampled["plus_di"] = ta.PLUS_DI(resampled)
@@ -305,7 +340,11 @@ class RegimeHybridStrategy(IStrategy):
                 dataframe["volume_mean_4h"] = aligned["volume_mean"].to_numpy()
                 dataframe["supertrend_direction_4h"] = aligned["supertrend_direction"].to_numpy()
                 dataframe["atr_4h"] = aligned["atr"].to_numpy()
-                dataframe["atr_pct_4h"] = (aligned["atr"] / aligned["close"]).replace([np.inf, -np.inf], np.nan).to_numpy()
+                dataframe["atr_pct_4h"] = (
+                    (aligned["atr"] / aligned["close"])
+                    .replace([np.inf, -np.inf], np.nan)
+                    .to_numpy()
+                )
 
         # BTC 4h bear filter
         btc_4h = self.dp.get_pair_dataframe("BTC/USDT", "4h")
@@ -335,7 +374,9 @@ class RegimeHybridStrategy(IStrategy):
         if e20 is None or e40 is None:
             dataframe["btc_bear4h"] = False
         else:
-            dataframe["btc_bear4h"] = (pd.to_numeric(e20, errors="coerce") < pd.to_numeric(e40, errors="coerce")).fillna(False)
+            dataframe["btc_bear4h"] = (
+                pd.to_numeric(e20, errors="coerce") < pd.to_numeric(e40, errors="coerce")
+            ).fillna(False)
 
         return dataframe
 
@@ -370,7 +411,7 @@ class RegimeHybridStrategy(IStrategy):
         vol_regime_4h = dataframe.get("vol_regime_4h")
         if vol_regime_4h is None or isinstance(vol_regime_4h, str):
             vol_regime_4h = pd.Series("mid", index=dataframe.index)
-        allow_range_by_vol = (vol_regime_4h != "high")
+        allow_range_by_vol = vol_regime_4h != "high"
         bear4h = dataframe.get("btc_bear4h")
         if bear4h is None or isinstance(bear4h, bool):
             bear4h = pd.Series(False, index=dataframe.index)
@@ -398,25 +439,43 @@ class RegimeHybridStrategy(IStrategy):
         bull_gate = bull4h | pair_bull4h
 
         donch_hi = dataframe["donchian_high"]
-        trend_filter = (dataframe["close"] > dataframe["ema_medium"]) & (dataframe["supertrend_direction"] == 1)
+        trend_filter = (dataframe["close"] > dataframe["ema_medium"]) & (
+            dataframe["supertrend_direction"] == 1
+        )
 
         vote_conditions_4h = []
-        if "ema_fast_4h" in dataframe.columns and "ema_medium_4h" in dataframe.columns and "ema_slow_4h" in dataframe.columns:
+        if (
+            "ema_fast_4h" in dataframe.columns
+            and "ema_medium_4h" in dataframe.columns
+            and "ema_slow_4h" in dataframe.columns
+        ):
             vote_conditions_4h.append(
-                (dataframe["ema_fast_4h"] > dataframe["ema_medium_4h"]) & (dataframe["ema_medium_4h"] > dataframe["ema_slow_4h"])
+                (dataframe["ema_fast_4h"] > dataframe["ema_medium_4h"])
+                & (dataframe["ema_medium_4h"] > dataframe["ema_slow_4h"])
             )
-        if "adx_4h" in dataframe.columns and "plus_di_4h" in dataframe.columns and "minus_di_4h" in dataframe.columns:
+        if (
+            "adx_4h" in dataframe.columns
+            and "plus_di_4h" in dataframe.columns
+            and "minus_di_4h" in dataframe.columns
+        ):
             vote_conditions_4h.append(
-                (dataframe["adx_4h"] >= float(self.adx_4h_trend.value)) & (dataframe["plus_di_4h"] > dataframe["minus_di_4h"])
+                (dataframe["adx_4h"] >= float(self.adx_4h_trend.value))
+                & (dataframe["plus_di_4h"] > dataframe["minus_di_4h"])
             )
         if "bb_middle_4h" in dataframe.columns:
             vote_conditions_4h.append(dataframe["close"] > dataframe["bb_middle_4h"])
         if "volume_4h" in dataframe.columns and "volume_mean_4h" in dataframe.columns:
-            vote_conditions_4h.append(dataframe["volume_4h"] >= dataframe["volume_mean_4h"] * float(self.volume_vote_mult.value))
+            vote_conditions_4h.append(
+                dataframe["volume_4h"]
+                >= dataframe["volume_mean_4h"] * float(self.volume_vote_mult.value)
+            )
         if "supertrend_direction_4h" in dataframe.columns:
             vote_conditions_4h.append(dataframe["supertrend_direction_4h"] == 1)
         if "close_4h" in dataframe.columns:
-            vote_conditions_4h.append((dataframe["close_4h"] > dataframe["close_4h"].shift(1)) | (dataframe["close_4h"] > dataframe["close_4h"].shift(2)))
+            vote_conditions_4h.append(
+                (dataframe["close_4h"] > dataframe["close_4h"].shift(1))
+                | (dataframe["close_4h"] > dataframe["close_4h"].shift(2))
+            )
 
         if vote_conditions_4h:
             dataframe["entry_votes_4h"] = sum(cond.astype(int) for cond in vote_conditions_4h)
@@ -428,7 +487,9 @@ class RegimeHybridStrategy(IStrategy):
         breakout_level = donch_hi + float(self.breakout_atr_buffer.value) * atr
         breakout_active = donch_hi.notna() & (dataframe["close"] > breakout_level)
 
-        st_stable_ok = (dataframe["supertrend_direction"] == 1) & (dataframe["supertrend_direction"].shift(1) == 1)
+        st_stable_ok = (dataframe["supertrend_direction"] == 1) & (
+            dataframe["supertrend_direction"].shift(1) == 1
+        )
 
         bb4h_ok = pd.Series(True, index=dataframe.index)
         if "bb_width_4h" in dataframe.columns and "bb_width_ma_4h" in dataframe.columns:
@@ -436,7 +497,9 @@ class RegimeHybridStrategy(IStrategy):
             wma = pd.to_numeric(dataframe["bb_width_ma_4h"], errors="coerce")
             bb4h_ok = (np.isfinite(w) & np.isfinite(wma) & (wma > 0) & (w >= wma)).fillna(False)
 
-        not_too_extended = dataframe["close"] <= (breakout_level + float(self.breakout_max_atr_extension.value) * atr)
+        not_too_extended = dataframe["close"] <= (
+            breakout_level + float(self.breakout_max_atr_extension.value) * atr
+        )
         breakout_signal = (
             breakout_active
             & qtpylib.crossed_above(dataframe["close"], breakout_level)
@@ -445,33 +508,51 @@ class RegimeHybridStrategy(IStrategy):
             & not_too_extended
             & (dataframe["adx"] >= adx_cut)
             & (dataframe["plus_di"] > dataframe["minus_di"])
-            & (dataframe["volume"] >= dataframe["volume_mean"] * float(self.volume_mult.value) * float(self.breakout_volume_factor.value))
+            & (
+                dataframe["volume"]
+                >= dataframe["volume_mean"]
+                * float(self.volume_mult.value)
+                * float(self.breakout_volume_factor.value)
+            )
             & (dataframe["rsi"] < 70)
         )
 
         pullback = (
-            (dataframe["low"] <= dataframe["ema_medium"]) &
-            (dataframe["close"] > dataframe["ema_medium"]) &
-            (dataframe["close"] > dataframe["open"]) &
-            (dataframe["volume"] >= dataframe["volume_mean"] * 0.5) &
-            (dataframe["rsi"] > 35) &
-            (dataframe["rsi"] < 75)
+            (dataframe["low"] <= dataframe["ema_medium"])
+            & (dataframe["close"] > dataframe["ema_medium"])
+            & (dataframe["close"] > dataframe["open"])
+            & (dataframe["volume"] >= dataframe["volume_mean"] * 0.5)
+            & (dataframe["rsi"] > 35)
+            & (dataframe["rsi"] < 75)
         )
 
-        trend_momo_ok = (
-            (dataframe["macdhist"] > 0) &
-            (dataframe["macd"] >= dataframe["macdsignal"])
-        )
+        trend_momo_ok = (dataframe["macdhist"] > 0) & (dataframe["macd"] >= dataframe["macdsignal"])
         if bool(self.enable_trend_breakout.value):
             dataframe.loc[
-                is_trend & (~is_no_trade) & (~bear_gate) & trend_filter & breakout_signal & trend_momo_ok,
+                is_trend
+                & (~is_no_trade)
+                & (~bear_gate)
+                & trend_filter
+                & breakout_signal
+                & trend_momo_ok,
                 ["enter_long", "enter_tag"],
             ] = [1, "trend_breakout"]
-        dataframe.loc[is_trend & (~is_no_trade) & (~bear_gate) & trend_filter & pullback & ~breakout_active & trend_momo_ok, ["enter_long", "enter_tag"]] = [1, "trend_pullback"]
+        dataframe.loc[
+            is_trend
+            & (~is_no_trade)
+            & (~bear_gate)
+            & trend_filter
+            & pullback
+            & ~breakout_active
+            & trend_momo_ok,
+            ["enter_long", "enter_tag"],
+        ] = [1, "trend_pullback"]
 
         conditions_5m = [
-            (dataframe["ema_fast"] > dataframe["ema_medium"]) & (dataframe["ema_medium"] > dataframe["ema_slow"]),
-            (dataframe["adx"] >= float(self.adx_threshold.value)) & (dataframe["plus_di"] > dataframe["minus_di"]),
+            (dataframe["ema_fast"] > dataframe["ema_medium"])
+            & (dataframe["ema_medium"] > dataframe["ema_slow"]),
+            (dataframe["adx"] >= float(self.adx_threshold.value))
+            & (dataframe["plus_di"] > dataframe["minus_di"]),
             dataframe["close"] > dataframe["bb_middleband"],
             (dataframe["low"] > dataframe["ema_medium"]) | (dataframe["close"] > dataframe["vwap"]),
             dataframe["volume"] >= dataframe["volume_mean"] * float(self.volume_mult.value),
@@ -479,22 +560,27 @@ class RegimeHybridStrategy(IStrategy):
             dataframe["close"] > dataframe["chandelier_long"],
             (dataframe["macd"] >= dataframe["macdsignal"]) & (dataframe["macdhist"] > 0),
             (dataframe["rsi"] < 70) & (dataframe["rsi"] > 30),
-            (dataframe["close"] > dataframe["close"].shift(1)) | (dataframe["close"] > dataframe["close"].shift(2)),
+            (dataframe["close"] > dataframe["close"].shift(1))
+            | (dataframe["close"] > dataframe["close"].shift(2)),
         ]
         dataframe["entry_votes_5m"] = sum(cond.astype(int) for cond in conditions_5m)
 
         trend_confirm_pullback = (
-            (dataframe["low"] <= dataframe["ema_fast"]) &
-            (dataframe["close"] > dataframe["ema_fast"]) &
-            (dataframe["close"] > dataframe["ema_medium"]) &
-            (dataframe["close"] <= (dataframe["ema_fast"] + 0.5 * dataframe["atr"]))
+            (dataframe["low"] <= dataframe["ema_fast"])
+            & (dataframe["close"] > dataframe["ema_fast"])
+            & (dataframe["close"] > dataframe["ema_medium"])
+            & (dataframe["close"] <= (dataframe["ema_fast"] + 0.5 * dataframe["atr"]))
         )
 
         st_lb = dataframe.get("supertrend_lb")
         if st_lb is None:
             st_lb = pd.Series(np.nan, index=dataframe.index)
-        st_dist_ok = dataframe["close"] > (pd.to_numeric(st_lb, errors="coerce") + 0.15 * dataframe["atr"])
-        st_stable_ok = (dataframe["supertrend_direction"] == 1) & (dataframe["supertrend_direction"].shift(1) == 1)
+        st_dist_ok = dataframe["close"] > (
+            pd.to_numeric(st_lb, errors="coerce") + 0.15 * dataframe["atr"]
+        )
+        st_stable_ok = (dataframe["supertrend_direction"] == 1) & (
+            dataframe["supertrend_direction"].shift(1) == 1
+        )
         trend_confirm_entry = (
             is_trend
             & (~is_no_trade)
@@ -536,48 +622,84 @@ class RegimeHybridStrategy(IStrategy):
         )
         dataframe.loc[fallback_trend, ["enter_long", "enter_tag"]] = [1, "trend_confirm"]
 
-        was_below_lower = (dataframe["close"].shift(1) < dataframe["bb_lowerband"].shift(1)) | (dataframe["low"] < dataframe["bb_lowerband"])
-        range_trend_ok = (dataframe["ema_medium"] >= dataframe["ema_slow"]) & (dataframe["close"] >= dataframe["vwap"])
+        was_below_lower = (dataframe["close"].shift(1) < dataframe["bb_lowerband"].shift(1)) | (
+            dataframe["low"] < dataframe["bb_lowerband"]
+        )
+        range_trend_ok = (dataframe["ema_medium"] >= dataframe["ema_slow"]) & (
+            dataframe["close"] >= dataframe["vwap"]
+        )
 
         range_gate_4h = pd.Series(True, index=dataframe.index)
         if "adx_4h" in dataframe.columns:
-            range_gate_4h = range_gate_4h & (pd.to_numeric(dataframe["adx_4h"], errors="coerce") <= float(self.adx_4h_range.value))
+            range_gate_4h = range_gate_4h & (
+                pd.to_numeric(dataframe["adx_4h"], errors="coerce")
+                <= float(self.adx_4h_range.value)
+            )
         if "bb_width_4h" in dataframe.columns:
-            range_gate_4h = range_gate_4h & (pd.to_numeric(dataframe["bb_width_4h"], errors="coerce") <= float(self.bb_width_range_max.value))
+            range_gate_4h = range_gate_4h & (
+                pd.to_numeric(dataframe["bb_width_4h"], errors="coerce")
+                <= float(self.bb_width_range_max.value)
+            )
         range_gate_4h = range_gate_4h.fillna(False)
         reclaim = (
-            was_below_lower &
-            (dataframe["close"] > dataframe["bb_lowerband"]) &
-            (dataframe["close"] > dataframe["close"].shift(1)) &
-            (dataframe["tema"] > dataframe["tema"].shift(1)) &
-            (dataframe["rsi"] <= min(int(self.buy_rsi.value) + 12, 45)) &
-            (dataframe["volume"] >= dataframe["volume_mean"] * 0.3) &
-            ((dataframe["atr"] / dataframe["close"]) <= 0.02)
+            was_below_lower
+            & (dataframe["close"] > dataframe["bb_lowerband"])
+            & (dataframe["close"] > dataframe["close"].shift(1))
+            & (dataframe["tema"] > dataframe["tema"].shift(1))
+            & (dataframe["rsi"] <= min(int(self.buy_rsi.value) + 12, 45))
+            & (dataframe["volume"] >= dataframe["volume_mean"] * 0.3)
+            & ((dataframe["atr"] / dataframe["close"]) <= 0.02)
         )
-        dataframe.loc[(dataframe["enter_long"] == 0) & (~is_no_trade) & is_range & allow_range_by_vol & range_gate_4h & reclaim & range_trend_ok & (~bear4h), ["enter_long", "enter_tag"]] = [1, "range_reclaim"]
+        dataframe.loc[
+            (dataframe["enter_long"] == 0)
+            & (~is_no_trade)
+            & is_range
+            & allow_range_by_vol
+            & range_gate_4h
+            & reclaim
+            & range_trend_ok
+            & (~bear4h),
+            ["enter_long", "enter_tag"],
+        ] = [1, "range_reclaim"]
 
         dip = (
-            (dataframe["close"] < dataframe["bb_lowerband"] * 0.997) &
-            (dataframe["close"] > dataframe["close"].shift(1)) &
-            (dataframe["tema"] > dataframe["tema"].shift(1)) &
-            (dataframe["rsi"] <= min(int(self.buy_rsi.value) + 6, 40)) &
-            (dataframe["volume"] >= dataframe["volume_mean"] * 0.3) &
-            ((dataframe["atr"] / dataframe["close"]) <= 0.02)
+            (dataframe["close"] < dataframe["bb_lowerband"] * 0.997)
+            & (dataframe["close"] > dataframe["close"].shift(1))
+            & (dataframe["tema"] > dataframe["tema"].shift(1))
+            & (dataframe["rsi"] <= min(int(self.buy_rsi.value) + 6, 40))
+            & (dataframe["volume"] >= dataframe["volume_mean"] * 0.3)
+            & ((dataframe["atr"] / dataframe["close"]) <= 0.02)
         )
-        bear_dip_ok = (
-            (dataframe["rsi"] <= min(int(self.buy_rsi.value) + 3, 36))
-            & (dataframe["close"] < dataframe["bb_lowerband"] * 0.997)
+        bear_dip_ok = (dataframe["rsi"] <= min(int(self.buy_rsi.value) + 3, 36)) & (
+            dataframe["close"] < dataframe["bb_lowerband"] * 0.997
         )
         dip_ok = (~bear4h) | (bear4h & bear_dip_ok)
-        dataframe.loc[(dataframe["enter_long"] == 0) & (~is_no_trade) & is_range & allow_range_by_vol & range_gate_4h & dip & ~reclaim & range_trend_ok & dip_ok, ["enter_long", "enter_tag"]] = [1, "range_dip"]
+        dataframe.loc[
+            (dataframe["enter_long"] == 0)
+            & (~is_no_trade)
+            & is_range
+            & allow_range_by_vol
+            & range_gate_4h
+            & dip
+            & ~reclaim
+            & range_trend_ok
+            & dip_ok,
+            ["enter_long", "enter_tag"],
+        ] = [1, "range_dip"]
 
         donch_lo = dataframe["donchian_low"]
-        trend_filter_short = (dataframe["close"] < dataframe["ema_medium"]) & (dataframe["supertrend_direction"] == -1)
+        trend_filter_short = (dataframe["close"] < dataframe["ema_medium"]) & (
+            dataframe["supertrend_direction"] == -1
+        )
         adx_cut_short = max(float(self.adx_threshold.value) - 5.0, 15.0)
         breakdown_level = donch_lo - float(self.breakout_atr_buffer.value) * atr
         breakdown_active = donch_lo.notna() & (dataframe["close"] < breakdown_level)
-        st_stable_short_ok = (dataframe["supertrend_direction"] == -1) & (dataframe["supertrend_direction"].shift(1) == -1)
-        not_too_extended_short = dataframe["close"] >= (breakdown_level - float(self.breakout_max_atr_extension.value) * atr)
+        st_stable_short_ok = (dataframe["supertrend_direction"] == -1) & (
+            dataframe["supertrend_direction"].shift(1) == -1
+        )
+        not_too_extended_short = dataframe["close"] >= (
+            breakdown_level - float(self.breakout_max_atr_extension.value) * atr
+        )
         breakout_signal_short = (
             breakdown_active
             & qtpylib.crossed_below(dataframe["close"], breakdown_level)
@@ -586,7 +708,12 @@ class RegimeHybridStrategy(IStrategy):
             & not_too_extended_short
             & (dataframe["adx"] >= adx_cut_short)
             & (dataframe["minus_di"] > dataframe["plus_di"])
-            & (dataframe["volume"] >= dataframe["volume_mean"] * float(self.volume_mult.value) * float(self.breakout_volume_factor.value))
+            & (
+                dataframe["volume"]
+                >= dataframe["volume_mean"]
+                * float(self.volume_mult.value)
+                * float(self.breakout_volume_factor.value)
+            )
             & (dataframe["rsi"] > 30)
         )
         breakdown_followthrough = (
@@ -595,13 +722,18 @@ class RegimeHybridStrategy(IStrategy):
             & bb4h_ok
             & (dataframe["adx"] >= max(adx_cut_short - 3.0, 13.0))
             & (dataframe["minus_di"] > dataframe["plus_di"])
-            & (dataframe["volume"] >= dataframe["volume_mean"] * float(self.volume_mult.value) * 0.8)
+            & (
+                dataframe["volume"]
+                >= dataframe["volume_mean"] * float(self.volume_mult.value) * 0.8
+            )
             & (dataframe["rsi"] > 32)
             & (dataframe["rsi"] < 68)
         )
         short_stop_dist = (atr * float(self.atr_multiplier.value)).clip(lower=1e-9)
         short_target_price = np.minimum(
-            pd.to_numeric(dataframe.get("bb_middleband"), errors="coerce").fillna(dataframe["close"]),
+            pd.to_numeric(dataframe.get("bb_middleband"), errors="coerce").fillna(
+                dataframe["close"]
+            ),
             pd.to_numeric(donch_lo, errors="coerce").fillna(dataframe["close"]),
         )
         short_reward_dist = (dataframe["close"] - short_target_price).clip(lower=0.0)
@@ -612,26 +744,31 @@ class RegimeHybridStrategy(IStrategy):
             & (short_reward_dist > 0.0015 * dataframe["close"])
         )
         pullback_short = (
-            (dataframe["high"] >= dataframe["ema_medium"]) &
-            (dataframe["close"] < dataframe["ema_medium"]) &
-            (dataframe["close"] < dataframe["open"]) &
-            (dataframe["volume"] >= dataframe["volume_mean"] * 0.5) &
-            (dataframe["rsi"] < 65) &
-            (dataframe["rsi"] > 25)
+            (dataframe["high"] >= dataframe["ema_medium"])
+            & (dataframe["close"] < dataframe["ema_medium"])
+            & (dataframe["close"] < dataframe["open"])
+            & (dataframe["volume"] >= dataframe["volume_mean"] * 0.5)
+            & (dataframe["rsi"] < 65)
+            & (dataframe["rsi"] > 25)
         )
-        trend_momo_short_ok = (
-            (dataframe["macdhist"] < 0) &
-            (dataframe["macd"] <= dataframe["macdsignal"])
+        trend_momo_short_ok = (dataframe["macdhist"] < 0) & (
+            dataframe["macd"] <= dataframe["macdsignal"]
         )
         vol_regime_4h = dataframe.get("vol_regime_4h")
         if vol_regime_4h is None:
             vol_regime_4h = pd.Series("mid", index=dataframe.index)
-        vol_high_4h = pd.Series(vol_regime_4h, index=dataframe.index).astype(str).str.lower().eq("high")
-        regime_no_trade_4h = pd.Series(regime, index=dataframe.index).astype(str).str.lower().eq("no_trade")
+        vol_high_4h = (
+            pd.Series(vol_regime_4h, index=dataframe.index).astype(str).str.lower().eq("high")
+        )
+        regime_no_trade_4h = (
+            pd.Series(regime, index=dataframe.index).astype(str).str.lower().eq("no_trade")
+        )
         risk_off_score_short = (
             bear_gate.astype(int)
             + (dataframe["close"] < dataframe["ema_slow"]).astype(int)
-            + ((dataframe["minus_di"] > dataframe["plus_di"]) & (dataframe["macdhist"] < 0)).astype(int)
+            + ((dataframe["minus_di"] > dataframe["plus_di"]) & (dataframe["macdhist"] < 0)).astype(
+                int
+            )
             + (vol_high_4h | regime_no_trade_4h).astype(int)
         )
         risk_off_short_threshold = 1
@@ -644,11 +781,24 @@ class RegimeHybridStrategy(IStrategy):
         )
         if bool(self.enable_trend_breakout.value):
             dataframe.loc[
-                short_regime_state & risk_off_short_bucket & trend_short_gate & trend_filter_short & short_rr_quality & (breakout_signal_short | breakdown_followthrough) & trend_momo_short_ok,
+                short_regime_state
+                & risk_off_short_bucket
+                & trend_short_gate
+                & trend_filter_short
+                & short_rr_quality
+                & (breakout_signal_short | breakdown_followthrough)
+                & trend_momo_short_ok,
                 ["enter_short", "enter_tag"],
             ] = [1, "trend_breakdown"]
         dataframe.loc[
-            short_regime_state & risk_off_short_bucket & trend_short_gate & trend_filter_short & short_rr_quality & pullback_short & ~breakdown_active & trend_momo_short_ok,
+            short_regime_state
+            & risk_off_short_bucket
+            & trend_short_gate
+            & trend_filter_short
+            & short_rr_quality
+            & pullback_short
+            & ~breakdown_active
+            & trend_momo_short_ok,
             ["enter_short", "enter_tag"],
         ] = [1, "trend_reject"]
         fallback_trend_short = (
@@ -664,36 +814,58 @@ class RegimeHybridStrategy(IStrategy):
             & (dataframe["macdhist"] < 0)
         )
         dataframe.loc[fallback_trend_short, ["enter_short", "enter_tag"]] = [1, "trend_reject"]
-        was_above_upper = (dataframe["close"].shift(1) > dataframe["bb_upperband"].shift(1)) | (dataframe["high"] > dataframe["bb_upperband"])
-        range_trend_short_ok = (dataframe["ema_medium"] <= dataframe["ema_slow"]) & (dataframe["close"] <= dataframe["vwap"])
+        was_above_upper = (dataframe["close"].shift(1) > dataframe["bb_upperband"].shift(1)) | (
+            dataframe["high"] > dataframe["bb_upperband"]
+        )
+        range_trend_short_ok = (dataframe["ema_medium"] <= dataframe["ema_slow"]) & (
+            dataframe["close"] <= dataframe["vwap"]
+        )
         reject = (
-            was_above_upper &
-            (dataframe["close"] < dataframe["bb_upperband"]) &
-            (dataframe["close"] < dataframe["close"].shift(1)) &
-            (dataframe["tema"] < dataframe["tema"].shift(1)) &
-            (dataframe["rsi"] >= max(int(self.sell_rsi.value) - 12, 55)) &
-            (dataframe["volume"] >= dataframe["volume_mean"] * 0.3) &
-            ((dataframe["atr"] / dataframe["close"]) <= 0.02)
+            was_above_upper
+            & (dataframe["close"] < dataframe["bb_upperband"])
+            & (dataframe["close"] < dataframe["close"].shift(1))
+            & (dataframe["tema"] < dataframe["tema"].shift(1))
+            & (dataframe["rsi"] >= max(int(self.sell_rsi.value) - 12, 55))
+            & (dataframe["volume"] >= dataframe["volume_mean"] * 0.3)
+            & ((dataframe["atr"] / dataframe["close"]) <= 0.02)
         )
         dataframe.loc[
-            (dataframe["enter_short"] == 0) & (~is_no_trade) & is_range & allow_range_by_vol & range_gate_4h & risk_off_short_bucket & short_rr_quality & reject & range_trend_short_ok & (~bull4h),
+            (dataframe["enter_short"] == 0)
+            & (~is_no_trade)
+            & is_range
+            & allow_range_by_vol
+            & range_gate_4h
+            & risk_off_short_bucket
+            & short_rr_quality
+            & reject
+            & range_trend_short_ok
+            & (~bull4h),
             ["enter_short", "enter_tag"],
         ] = [1, "range_reject"]
         pop = (
-            (dataframe["close"] > dataframe["bb_upperband"] * 1.003) &
-            (dataframe["close"] < dataframe["close"].shift(1)) &
-            (dataframe["tema"] < dataframe["tema"].shift(1)) &
-            (dataframe["rsi"] >= max(int(self.sell_rsi.value) - 8, 60)) &
-            (dataframe["volume"] >= dataframe["volume_mean"] * 0.3) &
-            ((dataframe["atr"] / dataframe["close"]) <= 0.02)
+            (dataframe["close"] > dataframe["bb_upperband"] * 1.003)
+            & (dataframe["close"] < dataframe["close"].shift(1))
+            & (dataframe["tema"] < dataframe["tema"].shift(1))
+            & (dataframe["rsi"] >= max(int(self.sell_rsi.value) - 8, 60))
+            & (dataframe["volume"] >= dataframe["volume_mean"] * 0.3)
+            & ((dataframe["atr"] / dataframe["close"]) <= 0.02)
         )
-        bull_pop_ok = (
-            (dataframe["rsi"] >= max(int(self.sell_rsi.value) - 4, 65))
-            & (dataframe["close"] > dataframe["bb_upperband"] * 1.003)
+        bull_pop_ok = (dataframe["rsi"] >= max(int(self.sell_rsi.value) - 4, 65)) & (
+            dataframe["close"] > dataframe["bb_upperband"] * 1.003
         )
         pop_ok = (~bull4h) | (bull4h & bull_pop_ok)
         dataframe.loc[
-            (dataframe["enter_short"] == 0) & (~is_no_trade) & is_range & allow_range_by_vol & range_gate_4h & risk_off_short_bucket & short_rr_quality & pop & ~reject & range_trend_short_ok & pop_ok,
+            (dataframe["enter_short"] == 0)
+            & (~is_no_trade)
+            & is_range
+            & allow_range_by_vol
+            & range_gate_4h
+            & risk_off_short_bucket
+            & short_rr_quality
+            & pop
+            & ~reject
+            & range_trend_short_ok
+            & pop_ok,
             ["enter_short", "enter_tag"],
         ] = [1, "range_pop"]
         range_counter_short = (
@@ -709,7 +881,10 @@ class RegimeHybridStrategy(IStrategy):
             & (dataframe["macdhist"] < dataframe["macdhist"].shift(1))
             & (dataframe["volume"] >= dataframe["volume_mean"] * 0.4)
         )
-        dataframe.loc[range_counter_short, ["enter_short", "enter_tag"]] = [1, "range_counter_short"]
+        dataframe.loc[range_counter_short, ["enter_short", "enter_tag"]] = [
+            1,
+            "range_counter_short",
+        ]
 
         return dataframe
 
@@ -753,11 +928,24 @@ class RegimeHybridStrategy(IStrategy):
             dataframe["sell_tag"] = ""
         return dataframe
 
-    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
-                        current_rate: float, current_profit: float, **kwargs) -> float:
+    def custom_stoploss(
+        self,
+        pair: str,
+        trade: Trade,
+        current_time: datetime,
+        current_rate: float,
+        current_profit: float,
+        **kwargs,
+    ) -> float:
         try:
+
             def sl_from_price(stop_price: float) -> float:
-                if not np.isfinite(stop_price) or stop_price <= 0 or not np.isfinite(current_rate) or current_rate <= 0:
+                if (
+                    not np.isfinite(stop_price)
+                    or stop_price <= 0
+                    or not np.isfinite(current_rate)
+                    or current_rate <= 0
+                ):
                     return self.stoploss
                 if bool(getattr(trade, "is_short", False)):
                     if stop_price <= current_rate:
@@ -830,14 +1018,25 @@ class RegimeHybridStrategy(IStrategy):
             r_pct = float((atr_at_entry * initial_mult) / trade.open_rate)
             if np.isfinite(r_pct) and r_pct > 0 and current_profit >= 0.8 * r_pct:
                 trail_distance = current_atr * trail_mult
-                stop_price = min(current_rate + trail_distance, trade.open_rate) if is_short else max(current_rate - trail_distance, trade.open_rate)
+                stop_price = (
+                    min(current_rate + trail_distance, trade.open_rate)
+                    if is_short
+                    else max(current_rate - trail_distance, trade.open_rate)
+                )
                 return sl_from_price(float(stop_price))
             return sl_from_price(float(initial_sl_price))
         except Exception:
             return self.stoploss
 
-    def custom_exit(self, pair: str, trade: Trade, current_time: datetime,
-                    current_rate: float, current_profit: float, **kwargs) -> Optional[str]:
+    def custom_exit(
+        self,
+        pair: str,
+        trade: Trade,
+        current_time: datetime,
+        current_rate: float,
+        current_profit: float,
+        **kwargs,
+    ) -> Optional[str]:
         try:
             hold_hours = (current_time - trade.open_date_utc).total_seconds() / 3600.0
             is_short = bool(getattr(trade, "is_short", False))
@@ -911,7 +1110,9 @@ class RegimeHybridStrategy(IStrategy):
                     macd = float(last.get("macd", 0.0))
                     macds = float(last.get("macdsignal", 0.0))
                     macdh = float(last.get("macdhist", 0.0))
-                    if current_profit >= take_15r and ((tema > tema_prev) or (macd > macds) or (st_dir > 0)):
+                    if current_profit >= take_15r and (
+                        (tema > tema_prev) or (macd > macds) or (st_dir > 0)
+                    ):
                         return "trend_take_1p5r_short"
                     if current_profit >= take_10r and ((tema > tema_prev) and (rsi < 45)):
                         return "trend_take_1r_short"
@@ -928,7 +1129,11 @@ class RegimeHybridStrategy(IStrategy):
                     return "range_take_mid_short"
                 if current_profit >= take_10r and close <= bb_low:
                     return "range_take_low_short"
-                if current_profit >= max(take_05r, 0.006) and (tema > tema_prev) and (close < bb_mid):
+                if (
+                    current_profit >= max(take_05r, 0.006)
+                    and (tema > tema_prev)
+                    and (close < bb_mid)
+                ):
                     return "range_reject_short"
                 if rsi < float(self.buy_rsi.value) and (tema > tema_prev) and (tema < bb_mid):
                     return "range_rsi_tema_up_short"
@@ -959,7 +1164,9 @@ class RegimeHybridStrategy(IStrategy):
                     if current_profit >= take_05r and (close < ema_fast) and (rsi > 52):
                         return "tc_protect"
 
-                if current_profit >= take_15r and ((tema < tema_prev) or (macd < macds) or (close < chandelier)):
+                if current_profit >= take_15r and (
+                    (tema < tema_prev) or (macd < macds) or (close < chandelier)
+                ):
                     return "trend_take_1p5r"
                 if current_profit >= take_10r and ((tema < tema_prev) and (rsi > 55)):
                     return "trend_take_1r"
@@ -1034,7 +1241,9 @@ class RegimeHybridStrategy(IStrategy):
 
             target = float(self.vt_target_atr_pct.value)
             scale = float(target / float(atr_pct))
-            scale = float(np.clip(scale, float(self.vt_min_scale.value), float(self.vt_max_scale.value)))
+            scale = float(
+                np.clip(scale, float(self.vt_min_scale.value), float(self.vt_max_scale.value))
+            )
             stake = float(proposed_stake) * scale
 
             stake = max(float(min_stake), stake)
@@ -1057,6 +1266,9 @@ class RegimeHybridStrategy(IStrategy):
             "subplots": {
                 "MACD": {"macd": {"color": "blue"}, "macdsignal": {"color": "orange"}},
                 "RSI": {"rsi": {"color": "red"}},
-                "Volume": {"volume": {"color": "gray", "type": "bar"}, "volume_mean": {"color": "blue"}},
+                "Volume": {
+                    "volume": {"color": "gray", "type": "bar"},
+                    "volume_mean": {"color": "blue"},
+                },
             },
         }

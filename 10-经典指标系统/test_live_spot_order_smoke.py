@@ -13,18 +13,22 @@ class TestLiveSpotOrderSmoke(unittest.TestCase):
 
         os.environ["WEBHOOK_EXECUTE_TOKEN"] = "testtoken"
 
-        svc.CONFIG.update({
-            "execution_venue": "aster",
-            "dry_run": False,
-            "live_trading_enabled": True,
-            "aster_trading_enabled": True,
-            "aster_spot_trading_enabled": True,
-            "execute_guard_enabled": True,
-            "live_execute_allow_remote": False,
-            "book_execution_account_id_by_venue": {"strategy": {"aster": "ut_strategy_aster"}},
-        })
+        svc.CONFIG.update(
+            {
+                "execution_venue": "aster",
+                "dry_run": False,
+                "live_trading_enabled": True,
+                "aster_trading_enabled": True,
+                "aster_spot_trading_enabled": True,
+                "execute_guard_enabled": True,
+                "live_execute_allow_remote": False,
+                "book_execution_account_id_by_venue": {"strategy": {"aster": "ut_strategy_aster"}},
+            }
+        )
 
-        def _stub_spot_market_order(symbol: str, side: str, quote_qty=None, qty=None, timeout_sec: float = 10.0):
+        def _stub_spot_market_order(
+            symbol: str, side: str, quote_qty=None, qty=None, timeout_sec: float = 10.0
+        ):
             _ = (quote_qty, qty, timeout_sec)
             return {"orderId": 123456789, "symbol": symbol, "side": side, "status": "FILLED"}
 
@@ -87,7 +91,9 @@ class TestLiveSpotOrderSmoke(unittest.TestCase):
         old = svc.aster_spot_market_open_internal
 
         def _wrap(**kwargs):
-            ent = (svc.TRACKER_STATE.get("execute_idempotency") or {}).get(str(payload.get("idempotency_key")) or "") or {}
+            ent = (svc.TRACKER_STATE.get("execute_idempotency") or {}).get(
+                str(payload.get("idempotency_key")) or ""
+            ) or {}
             self.assertEqual(str(ent.get("state") or ""), "inflight")
             return old(**kwargs)
 

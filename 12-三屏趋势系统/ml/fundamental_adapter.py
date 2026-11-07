@@ -19,8 +19,7 @@
 适配器输出：标准化的基本面特征字典（全部数值化，-1~1 或 0~1 归一化）
 """
 
-from typing import Dict, Any, Optional, List
-import numpy as np
+from typing import Any, Dict, List, Optional  # noqa: I001
 
 
 def _safe_float(v: Any, default: float = 0.0) -> float:
@@ -97,7 +96,9 @@ class FundamentalFeatureAdapter:
         max_score = _safe_float(screen1_data.get("max_score", 100))
         feats["screen1_total_score"] = _normalize_score(total_score, max_score)
         feats["screen1_direction"] = _direction_to_score(screen1_data.get("direction", "NEUTRAL"))
-        feats["screen1_confidence"] = _confidence_to_score(screen1_data.get("confidence", "MODERATE"))
+        feats["screen1_confidence"] = _confidence_to_score(
+            screen1_data.get("confidence", "MODERATE")
+        )
 
         # 六维评分
         dimensions = screen1_data.get("dimensions", {})
@@ -157,7 +158,12 @@ class FundamentalFeatureAdapter:
             feats["f9_res_acceleration"] = max(-1.0, min(1.0, acceleration))
             feats["f9_res_confidence"] = max(0.0, min(1.0, confidence))
         else:
-            for k in ["f9_res_direction", "f9_res_velocity", "f9_res_acceleration", "f9_res_confidence"]:
+            for k in [
+                "f9_res_direction",
+                "f9_res_velocity",
+                "f9_res_acceleration",
+                "f9_res_confidence",
+            ]:
                 feats[k] = 0.0
 
         # 模块分数
@@ -165,9 +171,16 @@ class FundamentalFeatureAdapter:
         core = metrics.get("core", metrics)  # 兼容新旧格式
 
         module_keys = [
-            "flow", "valuation", "onchain", "macro",
-            "news", "sentiment", "breadth", "intermarket",
-            "narrative", "calendar"
+            "flow",
+            "valuation",
+            "onchain",
+            "macro",
+            "news",
+            "sentiment",
+            "breadth",
+            "intermarket",
+            "narrative",
+            "calendar",
         ]
 
         for mod in module_keys:
@@ -187,7 +200,9 @@ class FundamentalFeatureAdapter:
                 total_direction += direction * strength
             feats["f9_sig_count"] = min(1.0, len(signals) / 10.0)
             feats["f9_sig_strength"] = min(1.0, total_strength)
-            feats["f9_sig_net_direction"] = max(-1.0, min(1.0, total_direction / max(total_strength, 0.01)))
+            feats["f9_sig_net_direction"] = max(
+                -1.0, min(1.0, total_direction / max(total_strength, 0.01))
+            )
         else:
             feats["f9_sig_count"] = 0.0
             feats["f9_sig_strength"] = 0.0

@@ -8,16 +8,22 @@
     - laya_fn 通过 handle_laya_judge 调用本地 Laya 模型
     - jev degraded 时自动 fallback 到 laya
 """
-import traceback
-import sys
+
 import os
+import sys
+import traceback
 
 # 确保 dreamos 路径可达 (1-ARCHITECTURE/dreamos 的父目录)
 # __file__ = .../dream-harness-bridge/packages/python-server/intent_evaluator_ipc.py
 # ../../.. = .../1-ARCHITECTURE
-_dreamos_root = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), "..", "..", "..",
-))
+_dreamos_root = os.path.abspath(
+    os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "..",
+        "..",
+    )
+)
 if _dreamos_root not in sys.path:
     sys.path.insert(0, _dreamos_root)
 
@@ -26,24 +32,30 @@ _server_dir = os.path.dirname(os.path.abspath(__file__))
 if _server_dir not in sys.path:
     sys.path.insert(0, _server_dir)
 
-from dreamos.core.sense.evaluators.intent_evaluator_agent import (
-    IntentEvaluatorAgent, EvalResult,
+import jev_judge  # noqa: E402
+import laya_judge  # noqa: E402
+
+from dreamos.core.sense.evaluators.intent_evaluator_agent import (  # noqa: E402
+    EvalResult,
+    IntentEvaluatorAgent,
 )
-import jev_judge
-import laya_judge
 
 
 def _make_jev_fn():
     """构造 jev_fn 闭包, 内部调用 handle_jev_judge"""
+
     def jev_fn(state, questions):
         return jev_judge.handle_jev_judge({"state": state, "questions": questions})
+
     return jev_fn
 
 
 def _make_laya_fn():
     """构造 laya_fn 闭包, 内部调用 handle_laya_judge"""
+
     def laya_fn(state, questions):
         return laya_judge.handle_laya_judge({"state": state, "questions": questions})
+
     return laya_fn
 
 

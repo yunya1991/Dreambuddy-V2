@@ -15,8 +15,7 @@
 - 市场状态识别：根据价格趋势和波动率区分牛/熊/震荡
 """
 
-import json
-import sys
+import json  # noqa: I001
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
@@ -29,6 +28,7 @@ import argparse
 @dataclass
 class BacktestConfig:
     """回测配置 - V9.3 优化版"""
+
     start_date: str
     end_date: str
     initial_capital: float = 100000.0
@@ -37,14 +37,14 @@ class BacktestConfig:
     hold_period: int = 1
 
     # V9.3 优化参数
-    bull_threshold: float = 0.3      # 牛市信号阈值（更低，顺势而为）
-    bear_threshold: float = 0.3      # 熊市信号阈值（更敏感）
+    bull_threshold: float = 0.3  # 牛市信号阈值（更低，顺势而为）
+    bear_threshold: float = 0.3  # 熊市信号阈值（更敏感）
     neutral_threshold: float = 0.15  # 震荡市信号阈值（更高，过滤噪音）
 
     # 仓位管理
-    max_position: float = 0.8        # 最大仓位
-    min_position: float = 0.1        # 最小仓位
-    stop_loss: float = -0.10         # 止损线 -10%
+    max_position: float = 0.8  # 最大仓位
+    min_position: float = 0.1  # 最小仓位
+    stop_loss: float = -0.10  # 止损线 -10%
 
     use_market_state: bool = True
     ma_lookback: int = 20
@@ -54,6 +54,7 @@ class BacktestConfig:
 @dataclass
 class Trade:
     """交易记录"""
+
     entry_date: str
     entry_price: float
     exit_date: Optional[str] = None
@@ -69,6 +70,7 @@ class Trade:
 @dataclass
 class BacktestResult:
     """回测结果"""
+
     trades: List[Trade]
     total_return: float
     annualized_return: float
@@ -99,14 +101,16 @@ class OptimizedBacktester:
         self.daily_equity: List[Dict] = []
         self.market_state_history: List[str] = []
 
-    def load_historical_ledger(self, data_dir: Path, ledger_path: Optional[Path] = None) -> List[Dict]:
+    def load_historical_ledger(
+        self, data_dir: Path, ledger_path: Optional[Path] = None
+    ) -> List[Dict]:
         """加载历史事件账本数据"""
         if ledger_path is not None:
             if not ledger_path.exists():
                 print(f"[ERROR] 指定账本不存在：{ledger_path}")
                 return []
             entries: List[Dict] = []
-            with open(ledger_path, 'r', encoding='utf-8') as f:
+            with open(ledger_path, "r", encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if not line:
@@ -127,14 +131,14 @@ class OptimizedBacktester:
         entries = []
         for ledger_file in ledger_files:
             if ledger_file.exists():
-                with open(ledger_file, 'r', encoding='utf-8') as f:
+                with open(ledger_file, "r", encoding="utf-8") as f:
                     for line in f:
                         line = line.strip()
                         if line:
                             try:
                                 entry = json.loads(line)
                                 entries.append(entry)
-                            except:
+                            except:  # noqa: E722
                                 continue
                 print(f"[INFO] 加载事件账本：{ledger_file.name} - {len(entries)} 条")
                 break
@@ -150,13 +154,13 @@ class OptimizedBacktester:
         """从历史新闻生成模拟事件账本"""
         news_file = data_dir / "backtest_result.json"
         if news_file.exists():
-            with open(news_file, 'r') as f:
+            with open(news_file, "r") as f:
                 data = json.load(f)
                 equity_data = data.get("daily_equity", [])
 
         # 使用现有的回测结果中的信号数据
         entries = []
-        if 'equity_data' in dir():
+        if "equity_data" in dir():
             for day in equity_data:
                 date = day.get("date")
                 signal = day.get("signal", 0)
@@ -166,15 +170,17 @@ class OptimizedBacktester:
                     sentiment = 1.0 if signal > 0 else -1.0
                     event_type = "onchain_data" if abs(signal) > 0.3 else "market_analysis"
 
-                    entries.append({
-                        "date": date,
-                        "event_type": event_type,
-                        "sentiment_score": sentiment * min(abs(signal), 1.0),
-                        "confidence_level": 0.7,
-                        "window": "T0" if abs(signal) > 0.2 else "T1",
-                        "surprise_bucket": "major" if abs(signal) > 0.3 else "moderate",
-                        "influencer_weight": 1.0
-                    })
+                    entries.append(
+                        {
+                            "date": date,
+                            "event_type": event_type,
+                            "sentiment_score": sentiment * min(abs(signal), 1.0),
+                            "confidence_level": 0.7,
+                            "window": "T0" if abs(signal) > 0.2 else "T1",
+                            "surprise_bucket": "major" if abs(signal) > 0.3 else "moderate",
+                            "influencer_weight": 1.0,
+                        }
+                    )
 
         return entries
 
@@ -186,7 +192,7 @@ class OptimizedBacktester:
             print("[WARN] 价格数据文件不存在，使用回测结果中的数据")
             backtest_file = data_dir / "backtest_result.json"
             if backtest_file.exists():
-                with open(backtest_file, 'r') as f:
+                with open(backtest_file, "r") as f:
                     data = json.load(f)
                     equity_data = data.get("daily_equity", [])
                     prices = {}
@@ -195,15 +201,17 @@ class OptimizedBacktester:
                             "close": day["price"],
                             "open": day["price"] * 0.98,
                             "high": day["price"] * 1.02,
-                            "low": day["price"] * 0.97
+                            "low": day["price"] * 0.97,
                         }
                     return prices
             return {}
 
-        with open(price_file, 'r', encoding='utf-8') as f:
+        with open(price_file, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    def identify_market_state(self, prices: Dict[str, Dict], date: str, lookback: Optional[int] = None) -> str:
+    def identify_market_state(
+        self, prices: Dict[str, Dict], date: str, lookback: Optional[int] = None
+    ) -> str:
         """
         识别市场状态
 
@@ -238,7 +246,7 @@ class OptimizedBacktester:
 
         # 计算波动率
         if len(closes) > 1:
-            returns = [(closes[i] - closes[i-1]) / closes[i-1] for i in range(1, len(closes))]
+            returns = [(closes[i] - closes[i - 1]) / closes[i - 1] for i in range(1, len(closes))]
             volatility = statistics.stdev(returns) if len(returns) > 1 else 0
         else:
             volatility = 0
@@ -257,7 +265,9 @@ class OptimizedBacktester:
         else:
             return "sideways"  # 震荡市
 
-    def calculate_signal_from_events(self, date: str, entries: List[Dict], lookback_days: int = 7) -> Tuple[float, float, int]:
+    def calculate_signal_from_events(
+        self, date: str, entries: List[Dict], lookback_days: int = 7
+    ) -> Tuple[float, float, int]:
         """
         从事件账本计算信号（V9.3 方法）
 
@@ -274,7 +284,7 @@ class OptimizedBacktester:
                 pub_dt = datetime.strptime(pub_date, "%Y-%m-%d")
                 if lookback_start <= pub_dt <= date_dt:
                     relevant.append(e)
-            except:
+            except:  # noqa: E722
                 continue
 
         if not relevant:
@@ -299,19 +309,14 @@ class OptimizedBacktester:
             "unknown": 0.5,
         }
 
-        window_weights = {
-            "T0": 1.0,
-            "T1": 0.7,
-            "T2": 0.4,
-            "T3": 0.2
-        }
+        window_weights = {"T0": 1.0, "T1": 0.7, "T2": 0.4, "T3": 0.2}
 
         surprise_weights = {
             "shock": 1.5,
             "major": 1.2,
             "moderate": 1.0,
             "mild": 0.8,
-            "expected": 0.6
+            "expected": 0.6,
         }
 
         # 计算加权信号
@@ -379,7 +384,9 @@ class OptimizedBacktester:
         trades = []
         high_watermark = equity
 
-        print(f"\n[INFO] 开始回测：{dates[0] if dates else 'N/A'} 至 {dates[-1] if dates else 'N/A'}")
+        print(
+            f"\n[INFO] 开始回测：{dates[0] if dates else 'N/A'} 至 {dates[-1] if dates else 'N/A'}"
+        )
 
         for date in dates:
             if date not in prices:
@@ -392,7 +399,7 @@ class OptimizedBacktester:
 
             if prev_price > 0:
                 price_return = (current_price - prev_price) / prev_price
-                equity *= (1 + position * price_return)
+                equity *= 1 + position * price_return
 
             # 识别市场状态
             market_state = self.identify_market_state(prices, date)
@@ -431,7 +438,7 @@ class OptimizedBacktester:
                         market_state=market_state,
                         pnl=pnl,
                         pnl_pct=pnl,
-                        event_count=event_count
+                        event_count=event_count,
                     )
                     trades.append(trade)
                 entry_price = 0
@@ -447,20 +454,24 @@ class OptimizedBacktester:
             # 计算回撤
             drawdown = (high_watermark - equity) / high_watermark if high_watermark > 0 else 0
 
-            prev_equity = daily_results[-1]["equity"] if daily_results else self.config.initial_capital
+            prev_equity = (
+                daily_results[-1]["equity"] if daily_results else self.config.initial_capital
+            )
             daily_pnl = equity - prev_equity
             daily_pnl_pct = (daily_pnl / prev_equity) if prev_equity > 0 else 0.0
-            daily_results.append({
-                "date": date,
-                "equity": equity,
-                "price": current_price,
-                "signal": signal,
-                "position": position,
-                "market_state": market_state,
-                "daily_pnl": daily_pnl,
-                "daily_pnl_pct": daily_pnl_pct,
-                "drawdown": drawdown
-            })
+            daily_results.append(
+                {
+                    "date": date,
+                    "equity": equity,
+                    "price": current_price,
+                    "signal": signal,
+                    "position": position,
+                    "market_state": market_state,
+                    "daily_pnl": daily_pnl,
+                    "daily_pnl_pct": daily_pnl_pct,
+                    "drawdown": drawdown,
+                }
+            )
 
         if entry_date and entry_price > 0 and prev_price > 0 and position > 0:
             last_date = dates[-1]
@@ -487,12 +498,16 @@ class OptimizedBacktester:
         # 年化收益
         days = len(dates)
         years = days / 365
-        annualized_return = ((equity / self.config.initial_capital) ** (1 / years) - 1) if years > 0 else 0
+        annualized_return = (
+            ((equity / self.config.initial_capital) ** (1 / years) - 1) if years > 0 else 0
+        )
 
         # 夏普比率
         daily_returns = [d["daily_pnl_pct"] for d in daily_results]
         if len(daily_returns) > 1 and statistics.stdev(daily_returns) > 0:
-            sharpe_ratio = (statistics.mean(daily_returns) / statistics.stdev(daily_returns)) * math.sqrt(252)
+            sharpe_ratio = (
+                statistics.mean(daily_returns) / statistics.stdev(daily_returns)
+            ) * math.sqrt(252)
         else:
             sharpe_ratio = 0
 
@@ -513,7 +528,7 @@ class OptimizedBacktester:
         market_state_stats = {
             "bull_days": self.market_state_history.count("bull"),
             "bear_days": self.market_state_history.count("bear"),
-            "sideways_days": self.market_state_history.count("sideways")
+            "sideways_days": self.market_state_history.count("sideways"),
         }
 
         return BacktestResult(
@@ -527,21 +542,33 @@ class OptimizedBacktester:
             avg_trade_pnl=statistics.mean([t.pnl for t in trades]) if trades else 0,
             total_trades=len(trades),
             daily_equity=daily_results,
-            market_state_stats=market_state_stats
+            market_state_stats=market_state_stats,
         )
 
 
 def main():
     """主函数"""
     parser = argparse.ArgumentParser(description="加密新闻技能回测 - V9.3/V9.8 优化版")
-    parser.add_argument("--data-dir", type=str, default="", help="historical_data 目录（默认使用仓库内）")
+    parser.add_argument(
+        "--data-dir", type=str, default="", help="historical_data 目录（默认使用仓库内）"
+    )
     parser.add_argument("--ledger-path", type=str, default="", help="指定事件账本 JSONL 路径")
     parser.add_argument("--output-file", type=str, default="", help="输出结果 JSON 路径")
-    parser.add_argument("--market-state", type=str, default="on", choices=["on", "off"], help="是否启用市场状态识别与动态阈值")
+    parser.add_argument(
+        "--market-state",
+        type=str,
+        default="on",
+        choices=["on", "off"],
+        help="是否启用市场状态识别与动态阈值",
+    )
     parser.add_argument("--ma-lookback", type=int, default=20, help="市场状态识别均线回看天数")
-    parser.add_argument("--ma-band", type=float, default=0.05, help="均线偏离带宽（例如 0.05 表示 正负5pct）")
+    parser.add_argument(
+        "--ma-band", type=float, default=0.05, help="均线偏离带宽（例如 0.05 表示 正负5pct）"
+    )
     args = parser.parse_args()
-    data_dir = Path(args.data_dir) if args.data_dir else (Path(__file__).parent.parent / "historical_data")
+    data_dir = (
+        Path(args.data_dir) if args.data_dir else (Path(__file__).parent.parent / "historical_data")
+    )
     ledger_path = Path(args.ledger_path) if args.ledger_path else None
 
     print("=" * 70)
@@ -620,7 +647,11 @@ def main():
         print("❌ 回撤过大：需要加强风控")
 
     # 保存结果
-    output_file = Path(args.output_file) if args.output_file else (data_dir / "backtest_result_v93_optimized.json")
+    output_file = (
+        Path(args.output_file)
+        if args.output_file
+        else (data_dir / "backtest_result_v93_optimized.json")
+    )
     output_data = {
         "config": {
             "start_date": config.start_date,
@@ -642,7 +673,7 @@ def main():
             "max_drawdown": result.max_drawdown,
             "win_rate": result.win_rate,
             "profit_factor": result.profit_factor,
-            "total_trades": result.total_trades
+            "total_trades": result.total_trades,
         },
         "market_state_stats": result.market_state_stats,
         "daily_equity": result.daily_equity,
@@ -656,16 +687,16 @@ def main():
                 "signal": t.signal,
                 "market_state": t.market_state,
                 "pnl": t.pnl,
-                "pnl_pct": t.pnl_pct
+                "pnl_pct": t.pnl_pct,
             }
             for t in result.trades
-        ]
+        ],
     }
 
-    with open(output_file, 'w', encoding='utf-8') as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         json.dump(output_data, f, indent=2)
 
-    print(f"\n【详细结果已保存】")
+    print("\n【详细结果已保存】")
     print(f"  {output_file}")
     print("=" * 70)
 

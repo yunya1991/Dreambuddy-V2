@@ -5,13 +5,11 @@ Popen 启动的 polling_trader 子进程也不继承。需要显式构造 env �
 
 方案：提取辅助函数 _build_popen_env()，在 run_polling_trader() 的 Popen 调用中使用。
 """
-from __future__ import annotations
 
-import os
+from __future__ import annotations  # noqa: I001
+
 import sys
 from pathlib import Path
-
-import pytest
 
 THIS_DIR = Path(__file__).resolve().parent
 _REPO = THIS_DIR.parent
@@ -24,6 +22,7 @@ if str(_REPO / "scripts" / "memory_l4") not in sys.path:
 
 def _get_build_popen_env():
     from yijing_monitor import _build_popen_env
+
     return _build_popen_env
 
 

@@ -16,8 +16,9 @@
 只对BTC生效，小币沿用v2逻辑。
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import numpy as np
@@ -115,13 +116,19 @@ class EnhancedMA200V3Strategy(BaseStrategy):
             df = df.set_index("date")
         else:
             df.index = pd.to_datetime(df.index)
-        weekly = df.resample("W").agg({
-            "open": "first",
-            "high": "max",
-            "low": "min",
-            "close": "last",
-            "volume": "sum",
-        }).dropna()
+        weekly = (
+            df.resample("W")
+            .agg(
+                {
+                    "open": "first",
+                    "high": "max",
+                    "low": "min",
+                    "close": "last",
+                    "volume": "sum",
+                }
+            )
+            .dropna()
+        )
         return weekly
 
     def _compute_weekly_ma200(self, prices: pd.DataFrame) -> np.ndarray:
@@ -145,7 +152,12 @@ class EnhancedMA200V3Strategy(BaseStrategy):
             return None
         btc_close = self.btc_prices["close"].values
         n_btc = len(btc_close)
-        btc_ma = pd.Series(btc_close).rolling(window=self.ma_period, min_periods=self.ma_period).mean().values
+        btc_ma = (
+            pd.Series(btc_close)
+            .rolling(window=self.ma_period, min_periods=self.ma_period)
+            .mean()
+            .values
+        )
         btc_slope = np.zeros(n_btc)
         for i in range(self.warmup_periods, n_btc):
             if not np.isnan(btc_ma[i]) and not np.isnan(btc_ma[i - self.slope_period]):
@@ -202,10 +214,7 @@ class EnhancedMA200V3Strategy(BaseStrategy):
         if below_pct <= 0:
             return current_long_pos
 
-        levels_filled = min(
-            int(below_pct / self.ma128_exit_step_pct),
-            self.ma128_exit_levels
-        )
+        levels_filled = min(int(below_pct / self.ma128_exit_step_pct), self.ma128_exit_levels)
         if levels_filled <= 0:
             return current_long_pos
 
@@ -223,7 +232,7 @@ class EnhancedMA200V3Strategy(BaseStrategy):
         """检测是否为反弹（从近期低点上涨超过阈值）"""
         if i < lookback:
             return False
-        recent_low = np.min(close[i - lookback:i])
+        recent_low = np.min(close[i - lookback : i])
         bounce_pct = (close[i] - recent_low) / recent_low
         return bounce_pct >= bounce_threshold
 
@@ -233,10 +242,14 @@ class EnhancedMA200V3Strategy(BaseStrategy):
         close = prices["close"].values
 
         # 计算指标
-        ma_series = pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        ma_series = (
+            pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        )
         ma = ma_series.values
 
-        ma128_series = pd.Series(close).rolling(window=self.ma128_period, min_periods=self.ma128_period).mean()
+        ma128_series = (
+            pd.Series(close).rolling(window=self.ma128_period, min_periods=self.ma128_period).mean()
+        )
         ma128 = ma128_series.values
 
         ma_slope = np.zeros(n)
@@ -244,8 +257,14 @@ class EnhancedMA200V3Strategy(BaseStrategy):
             if not np.isnan(ma[i]) and not np.isnan(ma[i - self.slope_period]):
                 ma_slope[i] = (ma[i] / ma[i - self.slope_period] - 1) * 100
 
-        weekly_ma200 = self._compute_weekly_ma200(prices) if (self.is_btc and self.weekly_ma200_dip_buy) else None
-        btc_regime = self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        weekly_ma200 = (
+            self._compute_weekly_ma200(prices)
+            if (self.is_btc and self.weekly_ma200_dip_buy)
+            else None
+        )
+        btc_regime = (
+            self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        )
 
         last_state = "init"
         short_entry_price = None
@@ -274,7 +293,7 @@ class EnhancedMA200V3Strategy(BaseStrategy):
 
                 # 计算近期高点（用于判断是否进入逃顶模式）
                 if i >= exit_mode_lookback:
-                    recent_high = np.max(close[i - exit_mode_lookback:i + 1])
+                    recent_high = np.max(close[i - exit_mode_lookback : i + 1])
                     drawdown_from_high = (recent_high - close[i]) / recent_high
                 else:
                     recent_high = close[i]
@@ -291,10 +310,7 @@ class EnhancedMA200V3Strategy(BaseStrategy):
                         drawdown_from_high >= exit_drawdown_threshold
                         and ma_slope[i] < 0.5  # MA200斜率走平或微负
                     )
-                    just_broke_ma200 = (
-                        not price_above_ma200
-                        and last_state in ("bull", "bull_exit")
-                    )
+                    just_broke_ma200 = not price_above_ma200 and last_state in ("bull", "bull_exit")
                     if bearish_setup or just_broke_ma200:
                         exit_mode_active = True
                         exit_mode_high = recent_high
@@ -303,7 +319,7 @@ class EnhancedMA200V3Strategy(BaseStrategy):
                     # 检查是否退出逃顶模式（创新高且斜率转正）
                     if close[i] >= recent_high * 0.99 and slope_pos and price_above_ma200:
                         exit_mode_active = False
-                        exit_mode_high = None
+                        exit_mode_high = None  # noqa: F841
                         bounce_sell_accumulated = 0.0
 
                 # 1. 牛市判断：价格在MA200上方 且 斜率为正
@@ -312,7 +328,12 @@ class EnhancedMA200V3Strategy(BaseStrategy):
                     base_long = self.max_position
 
                     # 逃顶：仅在逃顶模式下才启用MA128破位卖出和反弹卖出
-                    if exit_mode_active and self.use_ma128_exit and not np.isnan(ma128[i]) and ma128[i] > 0:
+                    if (
+                        exit_mode_active
+                        and self.use_ma128_exit
+                        and not np.isnan(ma128[i])
+                        and ma128[i] > 0
+                    ):
                         ma128_pos = self._calc_ma128_exit_position(close[i], ma128[i], base_long)
                         if ma128_pos < base_long:
                             self.stats["ma128_exit_days"] += 1
@@ -350,25 +371,36 @@ class EnhancedMA200V3Strategy(BaseStrategy):
 
                     # 2a. 抄底逻辑：价格接近/跌破周线MA200
                     dip_buy_pos = 0.0
-                    if self.weekly_ma200_dip_buy and not np.isnan(weekly_ma200[i]) and weekly_ma200[i] > 0:
+                    if (
+                        self.weekly_ma200_dip_buy
+                        and not np.isnan(weekly_ma200[i])
+                        and weekly_ma200[i] > 0
+                    ):
                         weekly_below_pct = (weekly_ma200[i] - close[i]) / weekly_ma200[i] * 100
 
                         if weekly_below_pct > 0:
                             # 越跌越买：每跌step_pct加一档
                             levels_filled = min(
-                                int(weekly_below_pct / self.dip_buy_step_pct),
-                                self.dip_buy_levels
+                                int(weekly_below_pct / self.dip_buy_step_pct), self.dip_buy_levels
                             )
                             if levels_filled > 0:
                                 # 初始轻仓 + 逐步加仓
                                 # 第一档是初始仓位，之后每档均匀增加
                                 if levels_filled == 1:
-                                    dip_buy_pos = self.dip_buy_initial_pct * self.dip_buy_max_position
+                                    dip_buy_pos = (
+                                        self.dip_buy_initial_pct * self.dip_buy_max_position
+                                    )
                                 else:
                                     remaining_levels = levels_filled - 1
-                                    remaining_pct = self.dip_buy_max_position - self.dip_buy_initial_pct * self.dip_buy_max_position
+                                    remaining_pct = (
+                                        self.dip_buy_max_position
+                                        - self.dip_buy_initial_pct * self.dip_buy_max_position
+                                    )
                                     add_per_level = remaining_pct / (self.dip_buy_levels - 1)
-                                    dip_buy_pos = self.dip_buy_initial_pct * self.dip_buy_max_position + remaining_levels * add_per_level
+                                    dip_buy_pos = (
+                                        self.dip_buy_initial_pct * self.dip_buy_max_position
+                                        + remaining_levels * add_per_level
+                                    )
 
                                 dip_buy_pos = min(dip_buy_pos, self.dip_buy_max_position)
 
@@ -402,7 +434,11 @@ class EnhancedMA200V3Strategy(BaseStrategy):
                         if base_short > 0 and short_entry_price is None:
                             short_entry_price = close[i]
 
-                        if base_short > 0 and short_entry_price is not None and self.fib_take_profit:
+                        if (
+                            base_short > 0
+                            and short_entry_price is not None
+                            and self.fib_take_profit
+                        ):
                             fib_pos = self._calc_fib_tp_position(
                                 close[i], short_entry_price, True, base_short
                             )
@@ -413,7 +449,7 @@ class EnhancedMA200V3Strategy(BaseStrategy):
                             target_pos = -base_short
 
                         dip_buy_active = False
-                        dip_buy_entry_price = None
+                        dip_buy_entry_price = None  # noqa: F841
 
                 # 3. 价格在MA200上方但斜率不明确（震荡）
                 else:
@@ -477,7 +513,7 @@ class EnhancedMA200V3Strategy(BaseStrategy):
 
 
 if __name__ == "__main__":
-    import json
+    import json  # noqa: I001
     from backtest.engine import BacktestEngine
 
     # 快速测试

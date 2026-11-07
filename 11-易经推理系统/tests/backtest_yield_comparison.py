@@ -12,13 +12,11 @@
 注：Bug1(48h超时)是polling_trader层门控，不在classic_exit_system回测范围内，
     但会统计历史数据中>48h的交易占比，评估Bug1的潜在影响。
 """
-import sys
-import os
+
 import json
+import sys
 import time
-import math
 from pathlib import Path
-from copy import deepcopy
 
 # 路径配置
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,24 +28,22 @@ if SCRIPT_DIR in sys.path:
 PROJECT_ROOT = str(BASE_DIR)
 sys.path.insert(0, PROJECT_ROOT)
 
-import pandas as pd
-import numpy as np
+from scripts.memory_l4.classic_exit_system import ExitConfig  # noqa: E402
 
-from scripts.memory_l4.classic_exit_system import ExitConfig
 # 复用现有回测引擎
-from scripts.memory_l4.exit_backtest_optimize import (
-    run_backtest, compute_metrics, compute_account_equity,
-    load_trades, load_klines, SYMBOLS, LEVERAGE,
-    BacktestMetrics, TradeResult,
+from scripts.memory_l4.exit_backtest_optimize import (  # noqa: E402
+    LEVERAGE,
+    SYMBOLS,
+    load_trades,
+    run_backtest,
 )
-
 
 # ============================================================
 # 三组参数配置
 # ============================================================
 
 # 通用基础参数（与polling_trader.py中一致的部分）
-_BASE_PARAMS = dict(
+_BASE_PARAMS = dict(  # noqa: C408
     l0_max_loss_pct=-0.05,
     l1_enabled=True,
     l2_close_threshold=0.75,
@@ -72,9 +68,9 @@ CONFIG_BEFORE_FIX = ExitConfig(
     l0_risk_gate_close_enabled=False,
     l0_risk_gate_cooldown_min=60.0,
     l0_risk_gate_confirm_n=3,
-    l0_risk_gate_long_thr=0.50,        # Bug2: 原始过低阈值
+    l0_risk_gate_long_thr=0.50,  # Bug2: 原始过低阈值
     l0_risk_gate_short_thr=0.50,
-    l0_risk_gate_min_hold_sec=0.0,     # Bug2: 无保护期
+    l0_risk_gate_min_hold_sec=0.0,  # Bug2: 无保护期
     l0_risk_gate_profit_bypass_pct=0.03,  # Bug2: 3%过低
 )
 
@@ -85,8 +81,8 @@ CONFIG_AFTER_FIX = ExitConfig(
     l0_risk_gate_close_enabled=False,
     l0_risk_gate_cooldown_min=60.0,
     l0_risk_gate_confirm_n=3,
-    l0_risk_gate_long_thr=0.65,        # Bug2修复: 0.5→0.65
-    l0_risk_gate_short_thr=0.60,       # Bug2修复: 比例同步
+    l0_risk_gate_long_thr=0.65,  # Bug2修复: 0.5→0.65
+    l0_risk_gate_short_thr=0.60,  # Bug2修复: 比例同步
     l0_risk_gate_min_hold_sec=3600.0,  # Bug2修复: 1h保护期
     l0_risk_gate_profit_bypass_pct=0.05,  # Bug2修复: 3%→5%
 )
@@ -94,7 +90,7 @@ CONFIG_AFTER_FIX = ExitConfig(
 # ── Config C: 完全关闭risk_gate（参照组，验证risk_gate本身的价值）──
 CONFIG_NO_RISK_GATE = ExitConfig(
     **_BASE_PARAMS,
-    l0_risk_gate_enabled=False,        # 完全关闭risk_gate
+    l0_risk_gate_enabled=False,  # 完全关闭risk_gate
 )
 
 
@@ -105,9 +101,11 @@ def run_config_backtest(name: str, config: ExitConfig) -> dict:
     """运行一组配置的回测，返回指标dict"""
     print(f"\n{'─'*60}")
     print(f"  运行回测: {name}")
-    print(f"  long_thr={config.l0_risk_gate_long_thr} "
-          f"min_hold={config.l0_risk_gate_min_hold_sec}s "
-          f"bypass={config.l0_risk_gate_profit_bypass_pct}")
+    print(
+        f"  long_thr={config.l0_risk_gate_long_thr} "
+        f"min_hold={config.l0_risk_gate_min_hold_sec}s "
+        f"bypass={config.l0_risk_gate_profit_bypass_pct}"
+    )
     print(f"{'─'*60}")
 
     t0 = time.time()
@@ -115,9 +113,11 @@ def run_config_backtest(name: str, config: ExitConfig) -> dict:
     elapsed = time.time() - t0
 
     print(f"  完成: {metrics.total_trades}笔交易, 耗时{elapsed:.1f}s")
-    print(f"  胜率={metrics.win_rate:.2f}%  总收益={metrics.total_return_pct:.2f}%  "
-          f"夏普={metrics.sharpe_ratio:.2f}  回撤={metrics.max_drawdown_pct_account:.2f}%  "
-          f"盈亏比={metrics.profit_factor:.2f}")
+    print(
+        f"  胜率={metrics.win_rate:.2f}%  总收益={metrics.total_return_pct:.2f}%  "
+        f"夏普={metrics.sharpe_ratio:.2f}  回撤={metrics.max_drawdown_pct_account:.2f}%  "
+        f"盈亏比={metrics.profit_factor:.2f}"
+    )
     print(f"  exit_reason分布: {metrics.exit_reason_dist}")
 
     return {
@@ -151,7 +151,7 @@ def run_config_backtest(name: str, config: ExitConfig) -> dict:
 def analyze_48h_timeout_impact() -> dict:
     """分析历史数据中>48h交易占比（Bug1影响评估）"""
     print(f"\n{'─'*60}")
-    print(f"  Bug1影响评估: 历史数据中>48h持仓占比")
+    print("  Bug1影响评估: 历史数据中>48h持仓占比")
     print(f"{'─'*60}")
 
     total_trades = 0
@@ -186,19 +186,23 @@ def compare_exit_reason_dist(before: dict, after: dict, no_gate: dict) -> list:
     after_dist = after["metrics"]["exit_reason_dist"]
     no_gate_dist = no_gate["metrics"]["exit_reason_dist"]
 
-    all_reasons = set(list(before_dist.keys()) + list(after_dist.keys()) + list(no_gate_dist.keys()))
+    all_reasons = set(
+        list(before_dist.keys()) + list(after_dist.keys()) + list(no_gate_dist.keys())
+    )
 
     for reason in sorted(all_reasons):
         b = before_dist.get(reason, 0)
         a = after_dist.get(reason, 0)
         n = no_gate_dist.get(reason, 0)
-        comparisons.append({
-            "exit_reason": reason,
-            "before_fix": b,
-            "after_fix": a,
-            "no_risk_gate": n,
-            "delta_after_vs_before": a - b,
-        })
+        comparisons.append(
+            {
+                "exit_reason": reason,
+                "before_fix": b,
+                "after_fix": a,
+                "no_risk_gate": n,
+                "delta_after_vs_before": a - b,
+            }
+        )
 
     # L0_RISK_GATE 触发率对比
     l0_before = before_dist.get("L0_RISK_GATE", 0)
@@ -206,7 +210,7 @@ def compare_exit_reason_dist(before: dict, after: dict, no_gate: dict) -> list:
     l0_no_gate = no_gate_dist.get("L0_RISK_GATE", 0)
     total = before["metrics"]["total_trades"]
 
-    print(f"\n  L0_RISK_GATE触发率对比:")
+    print("\n  L0_RISK_GATE触发率对比:")
     print(f"    修复前: {l0_before}/{total} = {l0_before/total*100:.1f}%")
     print(f"    修复后: {l0_after}/{total} = {l0_after/total*100:.1f}%")
     print(f"    关闭gate: {l0_no_gate}/{total} = {l0_no_gate/total*100:.1f}%")
@@ -241,30 +245,46 @@ def main():
     m_no_gate = result_no_gate["metrics"]
 
     print(f"\n{'='*70}")
-    print(f"  【收益率核心对比】")
+    print("  【收益率核心对比】")
     print(f"{'='*70}")
     print(f"{'指标':<20} {'修复前':>12} {'修复后':>12} {'关闭gate':>12} {'修复后vs前':>12}")
     print(f"{'─'*70}")
-    print(f"{'总收益率(%)':<20} {m_before['total_return_pct']:>12.2f} {m_after['total_return_pct']:>12.2f} {m_no_gate['total_return_pct']:>12.2f} {m_after['total_return_pct']-m_before['total_return_pct']:>+12.2f}")
-    print(f"{'账户收益率(%)':<20} {m_before['total_return_account_pct']:>12.2f} {m_after['total_return_account_pct']:>12.2f} {m_no_gate['total_return_account_pct']:>12.2f} {m_after['total_return_account_pct']-m_before['total_return_account_pct']:>+12.2f}")
-    print(f"{'胜率(%)':<20} {m_before['win_rate']:>12.2f} {m_after['win_rate']:>12.2f} {m_no_gate['win_rate']:>12.2f} {m_after['win_rate']-m_before['win_rate']:>+12.2f}")
-    print(f"{'夏普比率':<20} {m_before['sharpe_ratio']:>12.2f} {m_after['sharpe_ratio']:>12.2f} {m_no_gate['sharpe_ratio']:>12.2f} {m_after['sharpe_ratio']-m_before['sharpe_ratio']:>+12.2f}")
-    print(f"{'最大回撤(%)':<20} {m_before['max_drawdown_pct_account']:>12.2f} {m_after['max_drawdown_pct_account']:>12.2f} {m_no_gate['max_drawdown_pct_account']:>12.2f} {m_after['max_drawdown_pct_account']-m_before['max_drawdown_pct_account']:>+12.2f}")
-    print(f"{'盈亏比':<20} {m_before['profit_factor']:>12.2f} {m_after['profit_factor']:>12.2f} {m_no_gate['profit_factor']:>12.2f} {m_after['profit_factor']-m_before['profit_factor']:>+12.2f}")
-    print(f"{'平均持仓(bars)':<20} {m_before['avg_hold_bars']:>12.2f} {m_after['avg_hold_bars']:>12.2f} {m_no_gate['avg_hold_bars']:>12.2f} {m_after['avg_hold_bars']-m_before['avg_hold_bars']:>+12.2f}")
+    print(
+        f"{'总收益率(%)':<20} {m_before['total_return_pct']:>12.2f} {m_after['total_return_pct']:>12.2f} {m_no_gate['total_return_pct']:>12.2f} {m_after['total_return_pct']-m_before['total_return_pct']:>+12.2f}"
+    )
+    print(
+        f"{'账户收益率(%)':<20} {m_before['total_return_account_pct']:>12.2f} {m_after['total_return_account_pct']:>12.2f} {m_no_gate['total_return_account_pct']:>12.2f} {m_after['total_return_account_pct']-m_before['total_return_account_pct']:>+12.2f}"
+    )
+    print(
+        f"{'胜率(%)':<20} {m_before['win_rate']:>12.2f} {m_after['win_rate']:>12.2f} {m_no_gate['win_rate']:>12.2f} {m_after['win_rate']-m_before['win_rate']:>+12.2f}"
+    )
+    print(
+        f"{'夏普比率':<20} {m_before['sharpe_ratio']:>12.2f} {m_after['sharpe_ratio']:>12.2f} {m_no_gate['sharpe_ratio']:>12.2f} {m_after['sharpe_ratio']-m_before['sharpe_ratio']:>+12.2f}"
+    )
+    print(
+        f"{'最大回撤(%)':<20} {m_before['max_drawdown_pct_account']:>12.2f} {m_after['max_drawdown_pct_account']:>12.2f} {m_no_gate['max_drawdown_pct_account']:>12.2f} {m_after['max_drawdown_pct_account']-m_before['max_drawdown_pct_account']:>+12.2f}"
+    )
+    print(
+        f"{'盈亏比':<20} {m_before['profit_factor']:>12.2f} {m_after['profit_factor']:>12.2f} {m_no_gate['profit_factor']:>12.2f} {m_after['profit_factor']-m_before['profit_factor']:>+12.2f}"
+    )
+    print(
+        f"{'平均持仓(bars)':<20} {m_before['avg_hold_bars']:>12.2f} {m_after['avg_hold_bars']:>12.2f} {m_no_gate['avg_hold_bars']:>12.2f} {m_after['avg_hold_bars']-m_before['avg_hold_bars']:>+12.2f}"
+    )
 
     # exit_reason分布表
     print(f"\n{'='*70}")
-    print(f"  【exit_reason分布对比】")
+    print("  【exit_reason分布对比】")
     print(f"{'='*70}")
     print(f"{'exit_reason':<25} {'修复前':>8} {'修复后':>8} {'关闭gate':>8} {'后vs前':>8}")
     print(f"{'─'*70}")
     for rc in reason_comparison:
-        print(f"{rc['exit_reason']:<25} {rc['before_fix']:>8} {rc['after_fix']:>8} {rc['no_risk_gate']:>8} {rc['delta_after_vs_before']:>+8}")
+        print(
+            f"{rc['exit_reason']:<25} {rc['before_fix']:>8} {rc['after_fix']:>8} {rc['no_risk_gate']:>8} {rc['delta_after_vs_before']:>+8}"
+        )
 
     # 按币种对比
     print(f"\n{'='*70}")
-    print(f"  【按币种收益率对比】")
+    print("  【按币种收益率对比】")
     print(f"{'='*70}")
     print(f"{'币种':<8} {'修复前收益':>12} {'修复后收益':>12} {'关闭gate':>12} {'后vs前':>10}")
     print(f"{'─'*60}")
@@ -279,12 +299,14 @@ def main():
 
     # Bug1影响
     print(f"\n{'='*70}")
-    print(f"  【Bug1(48h超时)影响评估】")
+    print("  【Bug1(48h超时)影响评估】")
     print(f"{'='*70}")
-    print(f"  历史交易中>48h持仓: {bug1_impact['timeout_trades_48h']}/{bug1_impact['total_trades']} "
-          f"({bug1_impact['timeout_ratio_pct']:.1f}%)")
-    print(f"  说明: Bug1修复在polling_trader层（全局门控），回测中classic层不直接体现")
-    print(f"        但>48h的老仓位在修复后会被强制降级classic，避免无限调整SL/TP")
+    print(
+        f"  历史交易中>48h持仓: {bug1_impact['timeout_trades_48h']}/{bug1_impact['total_trades']} "
+        f"({bug1_impact['timeout_ratio_pct']:.1f}%)"
+    )
+    print("  说明: Bug1修复在polling_trader层（全局门控），回测中classic层不直接体现")
+    print("        但>48h的老仓位在修复后会被强制降级classic，避免无限调整SL/TP")
 
     # 保存JSON报告
     report = {
@@ -305,16 +327,22 @@ def main():
             "no_risk_gate": {k: v for k, v in result_no_gate.items() if k != "raw_results"},
         },
         "summary": {
-            "total_return_delta": round(m_after["total_return_pct"] - m_before["total_return_pct"], 2),
+            "total_return_delta": round(
+                m_after["total_return_pct"] - m_before["total_return_pct"], 2
+            ),
             "win_rate_delta": round(m_after["win_rate"] - m_before["win_rate"], 2),
             "sharpe_delta": round(m_after["sharpe_ratio"] - m_before["sharpe_ratio"], 2),
             "l0_risk_gate_before_pct": round(
-                result_before["metrics"]["exit_reason_dist"].get("L0_RISK_GATE", 0) /
-                max(1, m_before["total_trades"]) * 100, 1
+                result_before["metrics"]["exit_reason_dist"].get("L0_RISK_GATE", 0)
+                / max(1, m_before["total_trades"])
+                * 100,
+                1,
             ),
             "l0_risk_gate_after_pct": round(
-                result_after["metrics"]["exit_reason_dist"].get("L0_RISK_GATE", 0) /
-                max(1, m_after["total_trades"]) * 100, 1
+                result_after["metrics"]["exit_reason_dist"].get("L0_RISK_GATE", 0)
+                / max(1, m_after["total_trades"])
+                * 100,
+                1,
             ),
         },
     }

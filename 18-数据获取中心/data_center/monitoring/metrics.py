@@ -2,15 +2,15 @@
 
 无外部依赖，仅用标准库 dataclasses / threading / collections。
 """
+
 from __future__ import annotations
 
 import threading
 import uuid
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Optional
-
 
 _ALLOWED_STATUS = frozenset({"ok", "error"})
 

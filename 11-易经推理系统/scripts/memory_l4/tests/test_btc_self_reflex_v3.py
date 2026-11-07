@@ -21,7 +21,6 @@ TDD RED 阶段：验证 BTC 自反调控闸门的 5 重门槛 + λ 公式 + 冷�
 from __future__ import annotations
 
 import sys
-import time
 from pathlib import Path
 
 import pytest
@@ -37,6 +36,7 @@ sys.path.insert(0, str(_PROJECT_ROOT))
 @pytest.fixture
 def valve_enabled():
     from scripts.memory_l4.btc_self_reflex_valve import BTCSelfReflexValve
+
     v = BTCSelfReflexValve(enable=True)
     # 重置冷却和单日状态，避免测试间耦合
     v._state.last_n_rev_ts = 0.0
@@ -55,7 +55,7 @@ def full_hit_ctx():
         "btc_cont_grade": "ALIGN_BASIC",
         "s_btc_only": 0.65,
         "n_rev": 5,
-        "n_windows": 7,           # 5/7 = 71.4% ≥ 60%
+        "n_windows": 7,  # 5/7 = 71.4% ≥ 60%
         "s_bcrm_global": 0.75,
         "fuse_blocked_24h": False,
     }
@@ -67,21 +67,35 @@ def full_hit_ctx():
 def test_t6_01_skip_non_btc_long(valve_enabled):
     """ETH LONG / BTC SHORT 都应该跳过，返回 λ=1.0"""
     # ETH 多头
-    lam, sh = valve_enabled.get_lambda({
-        "symbol": "ETHUSDT", "direction": "LONG",
-        "d_pe_sign": +1, "btc_cont_grade": "ALIGN_FULL",
-        "s_btc_only": 0.80, "n_rev": 7, "n_windows": 7,
-        "s_bcrm_global": 0.90, "fuse_blocked_24h": False,
-    })
+    lam, sh = valve_enabled.get_lambda(
+        {
+            "symbol": "ETHUSDT",
+            "direction": "LONG",
+            "d_pe_sign": +1,
+            "btc_cont_grade": "ALIGN_FULL",
+            "s_btc_only": 0.80,
+            "n_rev": 7,
+            "n_windows": 7,
+            "s_bcrm_global": 0.90,
+            "fuse_blocked_24h": False,
+        }
+    )
     assert abs(lam - 1.0) < 1e-9 and sh["reason"].startswith("skip_")
 
     # BTC 空头（方向不对）
-    lam2, sh2 = valve_enabled.get_lambda({
-        "symbol": "BTC", "direction": "SHORT",
-        "d_pe_sign": +1, "btc_cont_grade": "ALIGN_FULL",
-        "s_btc_only": 0.80, "n_rev": 7, "n_windows": 7,
-        "s_bcrm_global": 0.90, "fuse_blocked_24h": False,
-    })
+    lam2, sh2 = valve_enabled.get_lambda(
+        {
+            "symbol": "BTC",
+            "direction": "SHORT",
+            "d_pe_sign": +1,
+            "btc_cont_grade": "ALIGN_FULL",
+            "s_btc_only": 0.80,
+            "n_rev": 7,
+            "n_windows": 7,
+            "s_bcrm_global": 0.90,
+            "fuse_blocked_24h": False,
+        }
+    )
     assert abs(lam2 - 1.0) < 1e-9 and sh2["reason"].startswith("skip_")
 
 
@@ -126,6 +140,7 @@ def test_t6_04_p9_2_cont_below_align_basic(valve_enabled, full_hit_ctx):
 # ============================================================
 def test_t6_05_p9_3_s_btc_below_threshold(valve_enabled, full_hit_ctx):
     from scripts.memory_l4 import phase_c_constants as C
+
     full_hit_ctx["s_btc_only"] = 0.59  # 刚好差一点到 0.60
     lam, sh = valve_enabled.get_lambda(full_hit_ctx)
     assert abs(lam - 1.0) < 1e-9
@@ -168,6 +183,7 @@ def test_t6_07_p9_5_fuse_blocked_24h(valve_enabled, full_hit_ctx):
 # ============================================================
 def test_t6_08_all_five_hit_applied(valve_enabled, full_hit_ctx):
     from scripts.memory_l4 import phase_c_constants as C
+
     lam, sh = valve_enabled.get_lambda(full_hit_ctx)
     assert C.BTC_REFLEX_LAMBDA_LOW - 1e-9 <= lam <= C.BTC_REFLEX_LAMBDA_HIGH + 1e-9
     assert sh["reason"] == "applied"
@@ -188,9 +204,7 @@ def test_t6_09_lambda_formula_precision(valve_enabled, full_hit_ctx):
     full_hit_ctx["s_bcrm_global"] = 0.80
     full_hit_ctx["n_windows"] = 5  # 3/5 = 0.60 刚好命中门槛
     lam, sh = valve_enabled.get_lambda(full_hit_ctx)
-    assert abs(lam - 0.68) < 1e-6, (
-        f"λ={lam:.8f} 预期 0.68，sh={sh}"
-    )
+    assert abs(lam - 0.68) < 1e-6, f"λ={lam:.8f} 预期 0.68，sh={sh}"
     assert abs(sh["penalty"] - 0.32) < 1e-6
 
 
@@ -228,6 +242,7 @@ def test_t6_11_daily_penalty_cap_070(valve_enabled, full_hit_ctx):
     后续惩罚不再累加，λ 不低于 1-0.70=0.30（实际 clip 到 0.60 更严）
     """
     from scripts.memory_l4 import phase_c_constants as C
+
     # 先让冷却立刻过期（每次都能 applied）
     full_hit_ctx["n_rev"] = 1
     full_hit_ctx["s_bcrm_global"] = 1.0
@@ -243,9 +258,9 @@ def test_t6_11_daily_penalty_cap_070(valve_enabled, full_hit_ctx):
         assert sh["reason"] == "applied", f"第{i}次 reason={sh['reason']}"
     acc = valve_enabled._state.last_daily_penalty_acc
     # 单日累计 ≤ 0.70 + 浮点误差
-    assert acc <= C.P9_BTC_PENALTY_DAILY_CAP + 1e-9, (
-        f"单日累计 penalty={acc:.6f} > cap={C.P9_BTC_PENALTY_DAILY_CAP}"
-    )
+    assert (
+        acc <= C.P9_BTC_PENALTY_DAILY_CAP + 1e-9
+    ), f"单日累计 penalty={acc:.6f} > cap={C.P9_BTC_PENALTY_DAILY_CAP}"
     # 最终 λ ≥ 1 - 0.70 = 0.30（但实际还会 clip 到 0.60，所以肯定 ≥ 0.60）
     assert last_lam >= C.BTC_REFLEX_LAMBDA_LOW - 1e-9
 

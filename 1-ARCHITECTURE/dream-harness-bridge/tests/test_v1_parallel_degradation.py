@@ -16,12 +16,11 @@ V1-2: 故障注入验证
 """
 
 import json
-import os
+import subprocess
 import sys
+import threading
 import time
 import uuid
-import subprocess
-import threading
 from pathlib import Path
 
 # 添加 python-server 路径
@@ -191,7 +190,9 @@ def test_v1_1_parallel_vs_serial():
         # V1-1 验证: parallel ≈ max(api1, api2) << serial
         max_single = max(api1_latency, api2_latency)
 
-        print(f"  串行: {serial_latency:.1f}ms (indicators={api1_latency:.1f}ms + fundamental={api2_latency:.1f}ms)")
+        print(
+            f"  串行: {serial_latency:.1f}ms (indicators={api1_latency:.1f}ms + fundamental={api2_latency:.1f}ms)"
+        )
         print(f"  并行: {parallel_latency:.1f}ms")
         print(f"  max(indicators, fundamental) = {max_single:.1f}ms")
         print(f"  并行/串行比 = {parallel_latency / serial_latency:.2f}")
@@ -212,13 +213,16 @@ def test_v1_1_parallel_vs_serial():
         assert r4_result.get("node_id") == "fundamental_analysis"
 
         print(f"  串行: {serial_latency:.1f}ms, 并行: {parallel_latency:.1f}ms")
-        print(f"  (Python server 单线程处理，真正并行加速在 Harness agent loop 层)")
+        print("  (Python server 单线程处理，真正并行加速在 Harness agent loop 层)")
 
         print("  V1-1 PASS: 并行调用功能正确，两个结果互相独立")
 
         # 保存结果供 V1-2 使用
         return {
-            "r1": r1, "r2": r2, "r3": r3, "r4": r4,
+            "r1": r1,
+            "r2": r2,
+            "r3": r3,
+            "r4": r4,
             "serial_latency": serial_latency,
             "parallel_latency": parallel_latency,
             "api1_latency": api1_latency,
@@ -241,16 +245,20 @@ def test_v1_2_fault_injection(results):
     fa_result = r2.get("result", {})
 
     # 验证 FAIL-OPEN: 8092 不可达时返回中性默认值
-    assert ti_result.get("status") == "degraded", \
-        f"technical_indicators 应为 degraded (8092 不可达), got: {ti_result.get('status')}"
-    assert ti_result.get("neutral_default", {}).get("signal") == "neutral", \
-        f"应返回中性默认值, got: {ti_result.get('neutral_default')}"
+    assert (
+        ti_result.get("status") == "degraded"
+    ), f"technical_indicators 应为 degraded (8092 不可达), got: {ti_result.get('status')}"
+    assert (
+        ti_result.get("neutral_default", {}).get("signal") == "neutral"
+    ), f"应返回中性默认值, got: {ti_result.get('neutral_default')}"
 
     # 验证 FAIL-OPEN: 3456 不可达时返回中性默认值
-    assert fa_result.get("status") == "degraded", \
-        f"fundamental_analysis 应为 degraded (3456 不可达), got: {fa_result.get('status')}"
-    assert fa_result.get("neutral_default", {}).get("signal") == "neutral", \
-        f"应返回中性默认值, got: {fa_result.get('neutral_default')}"
+    assert (
+        fa_result.get("status") == "degraded"
+    ), f"fundamental_analysis 应为 degraded (3456 不可达), got: {fa_result.get('status')}"
+    assert (
+        fa_result.get("neutral_default", {}).get("signal") == "neutral"
+    ), f"应返回中性默认值, got: {fa_result.get('neutral_default')}"
 
     # 验证单个 API 故障不影响另一个
     # （两者都 degraded 但都成功返回了 — 不中断）
@@ -268,11 +276,18 @@ def test_session_consumer():
     harness.start()
 
     try:
-        result = harness.call_method("session_consumer", {
-            "event_type": "node_execution",
-            "event_data": {"original_type": "tool/call", "seq": 1, "payload": {"tool": "c1_scan"}},
-            "session_id": "test-session-001",
-        })
+        result = harness.call_method(
+            "session_consumer",
+            {
+                "event_type": "node_execution",
+                "event_data": {
+                    "original_type": "tool/call",
+                    "seq": 1,
+                    "payload": {"tool": "c1_scan"},
+                },
+                "session_id": "test-session-001",
+            },
+        )
 
         assert result.get("ok"), f"session_consumer 调用应成功, got: {result}"
         r = result.get("result", {})
@@ -280,7 +295,14 @@ def test_session_consumer():
         assert r.get("written") is True, f"written 应为 True, got: {r}"
 
         # 验证文件写入
-        projection_path = BRIDGE_DIR / "packages" / "python-server" / ".." / ".session-projections" / "g_layer_events.jsonl"
+        projection_path = (
+            BRIDGE_DIR
+            / "packages"
+            / "python-server"
+            / ".."
+            / ".session-projections"
+            / "g_layer_events.jsonl"
+        )
         projection_path = projection_path.resolve()
         assert projection_path.exists(), f"投影文件应存在: {projection_path}"
 
@@ -317,7 +339,7 @@ def main():
     print("=" * 60)
 
     # 输出延迟摘要
-    print(f"\n延迟摘要:")
+    print("\n延迟摘要:")
     print(f"  串行: {results['serial_latency']:.1f}ms")
     print(f"  并行: {results['parallel_latency']:.1f}ms")
     print(f"  加速比: {results['serial_latency'] / results['parallel_latency']:.2f}x")

@@ -20,11 +20,10 @@ Artifact Alignment Manager — 产物对齐管理器
 
 import json
 import os
-import shutil
-from pathlib import Path
-from typing import Dict, Any, List, Optional
-from datetime import datetime, timezone
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List
 
 BASE_DIR = Path(__file__).parent.parent.parent
 HOME = Path(os.path.expanduser("~"))
@@ -40,6 +39,7 @@ LOCAL_ARTIFACTS_DIR = BASE_DIR / "16-调控系统" / "artifacts" / "exit-evaluat
 @dataclass
 class DeliveryResult:
     """投递结果"""
+
     success: bool
     channels: Dict[str, bool] = field(default_factory=dict)
     artifact_paths: Dict[str, List[str]] = field(default_factory=dict)
@@ -281,7 +281,9 @@ def deliver_exit_evaluation(
     )
 
     for ch in set(list(md_result.channels.keys()) + list(json_result.channels.keys())):
-        combined.channels[ch] = md_result.channels.get(ch, False) and json_result.channels.get(ch, False)
+        combined.channels[ch] = md_result.channels.get(ch, False) and json_result.channels.get(
+            ch, False
+        )
 
     for ch, paths in md_result.artifact_paths.items():
         combined.artifact_paths.setdefault(ch, []).extend(paths)
@@ -305,8 +307,9 @@ def deliver_exit_evaluation(
     return combined
 
 
-def list_delivered_artifacts(channel: str = "frontend_artifact_center",
-                              limit: int = 20) -> List[Dict[str, Any]]:
+def list_delivered_artifacts(
+    channel: str = "frontend_artifact_center", limit: int = 20
+) -> List[Dict[str, Any]]:
     """
     列出已投递的产物
 
@@ -332,13 +335,17 @@ def list_delivered_artifacts(channel: str = "frontend_artifact_center",
 
     artifacts = []
     if channel_dir.exists():
-        for fp in sorted(channel_dir.glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True)[:limit]:
-            artifacts.append({
-                "filename": fp.name,
-                "title": fp.stem,
-                "date": datetime.fromtimestamp(fp.stat().st_mtime).isoformat(),
-                "size_kb": round(fp.stat().st_size / 1024, 1),
-            })
+        for fp in sorted(channel_dir.glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True)[
+            :limit
+        ]:
+            artifacts.append(
+                {
+                    "filename": fp.name,
+                    "title": fp.stem,
+                    "date": datetime.fromtimestamp(fp.stat().st_mtime).isoformat(),
+                    "size_kb": round(fp.stat().st_size / 1024, 1),
+                }
+            )
     return artifacts
 
 

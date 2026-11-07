@@ -11,6 +11,7 @@
 用法: /home/luke/venv-trading/bin/python3 gen_case_statistics.py
 边界: 描述性统计报表，方向性结论的消费归 23 门禁体系（SPEC §9.10.3 强制）
 """
+
 import json
 import os
 from collections import defaultdict
@@ -55,7 +56,11 @@ def stat_group(cases):
     n = len(cases)
     if n == 0:
         return None
-    pnls = [c["result"]["pnl"] for c in cases if isinstance(c.get("result", {}).get("pnl"), (int, float))]
+    pnls = [
+        c["result"]["pnl"]
+        for c in cases
+        if isinstance(c.get("result", {}).get("pnl"), (int, float))
+    ]
     if not pnls:
         return {"n": n, "note": "无有效盈亏数据"}
     wins = [p for p in pnls if p > 0]
@@ -108,7 +113,9 @@ def main():
     print(f"[OK] P-案例统计完成: {len(stats)} 个统计组 -> {OUT_PATH}")
     for key, s in sorted(stats.items(), key=lambda kv: -kv[1]["n"])[:12]:
         if isinstance(s, dict) and "win_rate" in s:
-            print(f"     {key}: n={s['n']}, 胜率 {s['win_rate']:.0%}, 均盈亏 {s['avg_pnl']}U, 证据 {s['evidence']}")
+            print(
+                f"     {key}: n={s['n']}, 胜率 {s['win_rate']:.0%}, 均盈亏 {s['avg_pnl']}U, 证据 {s['evidence']}"
+            )
 
 
 if __name__ == "__main__":

@@ -9,12 +9,13 @@
 - FAIL-OPEN：产品中台不可用时不阻断 M26 主流程
 - 字段映射：M26 registry entry → 产品中台 RecommendedStrategyWrite
 """
+
 from __future__ import annotations
 
 import json
 import os
-import urllib.request
 import urllib.error
+import urllib.request
 from typing import Any, Dict, List, Optional
 
 from . import registry as reg
@@ -35,8 +36,14 @@ def _tier_to_library_score(tier: Optional[str]) -> int:
 def _map_entry_to_product_hub_strategy(entry: Dict[str, Any]) -> Dict[str, Any]:
     """将 M26 registry entry 映射为产品中台 RecommendedStrategyWrite 格式。"""
     strategy_id = str(entry.get("strategy_id") or "").strip()
-    backtest_spec = entry.get("backtest_spec") if isinstance(entry.get("backtest_spec"), dict) else {}
-    metrics = backtest_spec.get("metrics_summary") if isinstance(backtest_spec.get("metrics_summary"), dict) else {}
+    backtest_spec = (
+        entry.get("backtest_spec") if isinstance(entry.get("backtest_spec"), dict) else {}
+    )
+    metrics = (
+        backtest_spec.get("metrics_summary")
+        if isinstance(backtest_spec.get("metrics_summary"), dict)
+        else {}
+    )
     tier = str(entry.get("tier") or "").strip().upper()
 
     is_in_library = tier in ("S", "A", "B")
@@ -82,7 +89,9 @@ def _map_entry_to_product_hub_strategy(entry: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _http_post_json(url: str, payload: Dict[str, Any], timeout: float = 5.0) -> Optional[Dict[str, Any]]:
+def _http_post_json(
+    url: str, payload: Dict[str, Any], timeout: float = 5.0
+) -> Optional[Dict[str, Any]]:
     """发送 POST JSON 请求。失败返回 None（FAIL-OPEN）。"""
     try:
         headers = {"Content-Type": "application/json"}
@@ -99,7 +108,14 @@ def _http_post_json(url: str, payload: Dict[str, Any], timeout: float = 5.0) -> 
                 return None
             data = json.loads(resp.read().decode("utf-8"))
             return data if isinstance(data, dict) else None
-    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, OSError, ValueError, Exception):
+    except (
+        urllib.error.URLError,
+        urllib.error.HTTPError,
+        json.JSONDecodeError,
+        OSError,
+        ValueError,
+        Exception,
+    ):
         return None
 
 
@@ -116,7 +132,7 @@ def sync_strategies_to_product_hub() -> Dict[str, Any]:
     skipped = 0
     errors: List[str] = []
 
-    for key, entry in entries.items():
+    for key, entry in entries.items():  # noqa: B007
         if not isinstance(entry, dict):
             skipped += 1
             continue
@@ -132,7 +148,9 @@ def sync_strategies_to_product_hub() -> Dict[str, Any]:
         # 映射字段
         strategy = _map_entry_to_product_hub_strategy(entry)
         payload = {"action": "create_strategy", "strategy": strategy}
-        result = _http_post_json(f"{_PRODUCT_HUB_BASE}/api/recommendation-engine/internal/strategy", payload)
+        result = _http_post_json(
+            f"{_PRODUCT_HUB_BASE}/api/recommendation-engine/internal/strategy", payload
+        )
         if result and result.get("success"):
             synced += 1
         else:

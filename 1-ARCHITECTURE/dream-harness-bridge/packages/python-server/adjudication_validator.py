@@ -10,6 +10,7 @@ Layer 1 Adjudicator 用 LLM 产出评分后，用 jev 做二次校验：
 
 HC-J1: FAIL-OPEN — jev 不可用时不影响 LLM 评分
 """
+
 from __future__ import annotations
 
 import logging
@@ -25,6 +26,7 @@ SCORE_REASONABLE_THRESHOLD = 0.5
 @dataclass
 class ValidationResult:
     """评审校验结果。"""
+
     score_reasonable: bool
     winner_consistent: bool
     noul: float
@@ -90,8 +92,12 @@ class AdjudicationValidator:
         # HC-J1: 无 jev_fn → 降级
         if self._jev_fn is None:
             return ValidationResult(
-                score_reasonable=True, winner_consistent=True,
-                noul=0.0, suggested_winner="", degraded=True)
+                score_reasonable=True,
+                winner_consistent=True,
+                noul=0.0,
+                suggested_winner="",
+                degraded=True,
+            )
 
         # 构建 state
         state = self._build_state(topic, transcript, adjudication_result)
@@ -105,14 +111,22 @@ class AdjudicationValidator:
         except Exception as e:  # noqa: BLE001 FAIL-OPEN
             logger.warning("评审校验 jev 异常(FAIL-OPEN): %s", e)
             return ValidationResult(
-                score_reasonable=True, winner_consistent=True,
-                noul=0.0, suggested_winner="", degraded=True)
+                score_reasonable=True,
+                winner_consistent=True,
+                noul=0.0,
+                suggested_winner="",
+                degraded=True,
+            )
 
         # jev 降级
         if not isinstance(resp, dict) or resp.get("degraded", False):
             return ValidationResult(
-                score_reasonable=True, winner_consistent=True,
-                noul=0.0, suggested_winner="", degraded=True)
+                score_reasonable=True,
+                winner_consistent=True,
+                noul=0.0,
+                suggested_winner="",
+                degraded=True,
+            )
 
         answers = resp.get("answers", {})
 
@@ -136,12 +150,13 @@ class AdjudicationValidator:
             suggested_winner = str(winner_ans.get("choice", ""))
 
         current_winner = getattr(adjudication_result, "winner", "draw")
-        winner_consistent = (suggested_winner == current_winner)
+        winner_consistent = suggested_winner == current_winner
 
         # 胜方不一致 → 取 jev 建议
         if not winner_consistent and suggested_winner in ("bull", "bear", "draw"):
-            logger.info("胜方不一致: LLM=%s, jev=%s → 采用 jev 建议",
-                        current_winner, suggested_winner)
+            logger.info(
+                "胜方不一致: LLM=%s, jev=%s → 采用 jev 建议", current_winner, suggested_winner
+            )
             adjudication_result.winner = suggested_winner
 
         return ValidationResult(

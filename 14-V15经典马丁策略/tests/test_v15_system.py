@@ -2,24 +2,31 @@
 V15 经典马丁策略系统性压力测试
 覆盖: 7层信号全验证 / 边界条件 / 集成链路 / 异常数据 / 回归场景
 """
+
 import sys
-import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
 sys.path.insert(0, str(BASE_DIR / "core"))
 
-import math
-import json
-from v15_signal import (
-    v15_decision,
-    calc_bollinger_bands as _calc_bollinger_bands,
-    calc_macd as _calc_macd,
+import math  # noqa: E402
+
+from v15_signal import (  # noqa: E402
     calc_adx as _calc_adx,
+)
+from v15_signal import (  # noqa: E402
+    calc_bollinger_bands as _calc_bollinger_bands,
+)
+from v15_signal import (  # noqa: E402
+    calc_macd as _calc_macd,
+)
+from v15_signal import (  # noqa: E402
     calc_rsi as _calc_rsi,
 )
-
+from v15_signal import (  # noqa: E402
+    v15_decision,
+)
 
 passed = 0
 failed = 0
@@ -88,12 +95,18 @@ def gen_synthetic_candles(
     for i, p in enumerate(prices):
         o = prices[i - 1] if i > 0 else p
         h = max(o, p) * (1 + vol_pct * 0.3)
-        l = min(o, p) * (1 - vol_pct * 0.3)
+        l = min(o, p) * (1 - vol_pct * 0.3)  # noqa: E741
         v = 1000 + i * 10
-        candles.append({
-            "ts": 1700000000 + i * 14400000,
-            "o": str(o), "h": str(h), "l": str(l), "c": str(p), "v": str(v)
-        })
+        candles.append(
+            {
+                "ts": 1700000000 + i * 14400000,
+                "o": str(o),
+                "h": str(h),
+                "l": str(l),
+                "c": str(p),
+                "v": str(v),
+            }
+        )
     return candles
 
 
@@ -101,6 +114,7 @@ def mock_candles(candles):
     """mock fetch_candles (market_data + v15_signal 两个绑定)"""
     import market_data
     import v15_signal
+
     original_md = market_data.fetch_candles
     original_v15 = v15_signal.fetch_candles
 
@@ -115,6 +129,7 @@ def mock_candles(candles):
 def restore_candles(original):
     import market_data
     import v15_signal
+
     original_md, original_v15 = original
     market_data.fetch_candles = original_md
     v15_signal.fetch_candles = original_v15
@@ -166,30 +181,40 @@ def test_position_determination():
     # 构造: SMA200=55000, SMA30=65000, 当前价=60000 → 在均线之间
     prices = []
     # 前100根高价 (让SMA200偏高)
-    for i in range(100):
+    for i in range(100):  # noqa: B007
         prices.append(70000.0)
     # 接下来70根中价 (让SMA128中等, SMA65偏低)
-    for i in range(70):
+    for i in range(70):  # noqa: B007
         prices.append(55000.0)
     # 最后30根中高价 (让SMA30偏高)
-    for i in range(30):
+    for i in range(30):  # noqa: B007
         prices.append(65000.0)
     # 共200根，当前价62000
     prices.append(62000.0)
     prices = prices[-200:]
     candles = []
     for i, p in enumerate(prices):
-        o = prices[i-1] if i > 0 else p
+        o = prices[i - 1] if i > 0 else p
         h = p * 1.01
-        l = p * 0.99
-        candles.append({
-            "ts": 1700000000 + i * 14400000,
-            "o": str(o), "h": str(h), "l": str(l), "c": str(p), "v": "1000"
-        })
+        l = p * 0.99  # noqa: E741
+        candles.append(
+            {
+                "ts": 1700000000 + i * 14400000,
+                "o": str(o),
+                "h": str(h),
+                "l": str(l),
+                "c": str(p),
+                "v": "1000",
+            }
+        )
     orig = mock_candles(candles)
     r = v15_decision("BTC-USDT")
     restore_candles(orig)
-    assert_eq(r["position"], "IN_ZONE", f"价格在均线之间 → IN_ZONE (实际smas={r['smas']}, price={prices[-1]})")
+    assert_eq(
+        r["position"],
+        "IN_ZONE",
+        f"价格在均线之间 → IN_ZONE (实际smas={r['smas']}, price={prices[-1]})",
+    )
 
 
 def test_bollinger_bands():
@@ -278,7 +303,7 @@ def test_below_all_all_tiers():
     # 构造: SMA200=80000, 价格40000 → BELOW_ALL
     prices_full = []
     # 前170根高价 (让所有SMA都偏高)
-    for i in range(170):
+    for i in range(170):  # noqa: B007
         prices_full.append(80000.0)
     # 最后30根低价
     for i in range(30):
@@ -287,14 +312,20 @@ def test_below_all_all_tiers():
 
     candles = []
     for i, p in enumerate(prices_full):
-        o = prices_full[i-1] if i > 0 else p
+        o = prices_full[i - 1] if i > 0 else p
         h = p * 1.01
-        l = p * 0.99
+        l = p * 0.99  # noqa: E741
         v = 1000 + i
-        candles.append({
-            "ts": 1700000000 + i * 14400000,
-            "o": str(o), "h": str(h), "l": str(l), "c": str(p), "v": str(v)
-        })
+        candles.append(
+            {
+                "ts": 1700000000 + i * 14400000,
+                "o": str(o),
+                "h": str(h),
+                "l": str(l),
+                "c": str(p),
+                "v": str(v),
+            }
+        )
 
     orig = mock_candles(candles)
     r = v15_decision("BTC-USDT")
@@ -309,7 +340,11 @@ def test_below_all_all_tiers():
         print(f"  f382: {fib.get('f382')}, f500: {fib.get('f500')}, f618: {fib.get('f618')}")
     print(f"  smas: {r['smas']}")
 
-    assert_eq(r["position"], "BELOW_ALL", f"位置 = BELOW_ALL (smas={r['smas']}, price={prices_full[-1]:.0f})")
+    assert_eq(
+        r["position"],
+        "BELOW_ALL",
+        f"位置 = BELOW_ALL (smas={r['smas']}, price={prices_full[-1]:.0f})",
+    )
 
 
 def test_above_all_all_tiers():
@@ -320,7 +355,7 @@ def test_above_all_all_tiers():
     # 构造: SMA200=40000, 价格75000 → ABOVE_ALL
     prices_full = []
     # 前170根低价 (让所有SMA都偏低)
-    for i in range(170):
+    for i in range(170):  # noqa: B007
         prices_full.append(40000.0)
     # 最后30根高价
     for i in range(30):
@@ -329,13 +364,19 @@ def test_above_all_all_tiers():
 
     candles = []
     for i, p in enumerate(prices_full):
-        o = prices_full[i-1] if i > 0 else p
+        o = prices_full[i - 1] if i > 0 else p
         h = p * 1.01
-        l = p * 0.99
-        candles.append({
-            "ts": 1700000000 + i * 14400000,
-            "o": str(o), "h": str(h), "l": str(l), "c": str(p), "v": str(1000 + i)
-        })
+        l = p * 0.99  # noqa: E741
+        candles.append(
+            {
+                "ts": 1700000000 + i * 14400000,
+                "o": str(o),
+                "h": str(h),
+                "l": str(l),
+                "c": str(p),
+                "v": str(1000 + i),
+            }
+        )
 
     orig = mock_candles(candles)
     r = v15_decision("BTC-USDT")
@@ -346,7 +387,11 @@ def test_above_all_all_tiers():
     print(f"  boll_signal: {r.get('boll_signal')}, RSI: {r.get('rsi')}")
     print(f"  smas: {r['smas']}")
 
-    assert_eq(r["position"], "ABOVE_ALL", f"位置 = ABOVE_ALL (smas={r['smas']}, price={prices_full[-1]:.0f})")
+    assert_eq(
+        r["position"],
+        "ABOVE_ALL",
+        f"位置 = ABOVE_ALL (smas={r['smas']}, price={prices_full[-1]:.0f})",
+    )
 
 
 def test_in_zone_rsi_extremes():
@@ -357,7 +402,7 @@ def test_in_zone_rsi_extremes():
     # IN_ZONE + RSI超卖
     prices = []
     # 让SMA200在中间，价格先在上面100天，下面100天
-    for i in range(100):
+    for i in range(100):  # noqa: B007
         prices.append(65000)
     # 最后暴跌，RSI变低
     for i in range(100):
@@ -368,13 +413,19 @@ def test_in_zone_rsi_extremes():
 
     candles = []
     for i, p in enumerate(prices[:200]):
-        o = prices[i-1] if i > 0 else p
+        o = prices[i - 1] if i > 0 else p
         h = p * 1.01
-        l = p * 0.99
-        candles.append({
-            "ts": 1700000000 + i * 14400000,
-            "o": str(o), "h": str(h), "l": str(l), "c": str(p), "v": "1000"
-        })
+        l = p * 0.99  # noqa: E741
+        candles.append(
+            {
+                "ts": 1700000000 + i * 14400000,
+                "o": str(o),
+                "h": str(h),
+                "l": str(l),
+                "c": str(p),
+                "v": "1000",
+            }
+        )
 
     orig = mock_candles(candles)
     r = v15_decision("BTC-USDT")
@@ -396,10 +447,10 @@ def test_vol_mult_consistency():
     for i in range(60):
         prices_full.append(70000 + i * 100)  # 到76000
     for i in range(80):
-        prices_full.append(76000 - i * 50)   # 跌到36000? 不，是跌到 76000-4000=3600... 不对
+        prices_full.append(76000 - i * 50)  # 跌到36000? 不，是跌到 76000-4000=3600... 不对
     # 重新构造: swing_high=80000, swing_low=40000, 当前价=55000 (f382=55279, f500=60000, f618=64721)
     prices_full = []
-    for i in range(80):
+    for i in range(80):  # noqa: B007
         prices_full.append(80000)
     for i in range(60):
         prices_full.append(80000 - i * 667)  # 跌到 80000-40000=40000
@@ -408,13 +459,19 @@ def test_vol_mult_consistency():
 
     candles = []
     for i, p in enumerate(prices_full[:200]):
-        o = prices_full[i-1] if i > 0 else p
+        o = prices_full[i - 1] if i > 0 else p
         h = p * 1.005
-        l = p * 0.995
-        candles.append({
-            "ts": 1700000000 + i * 14400000,
-            "o": str(o), "h": str(h), "l": str(l), "c": str(p), "v": "1000"
-        })
+        l = p * 0.995  # noqa: E741
+        candles.append(
+            {
+                "ts": 1700000000 + i * 14400000,
+                "o": str(o),
+                "h": str(h),
+                "l": str(l),
+                "c": str(p),
+                "v": "1000",
+            }
+        )
 
     orig = mock_candles(candles)
     r = v15_decision("BTC-USDT")
@@ -428,17 +485,23 @@ def test_vol_mult_consistency():
     assert_lt(r["vol_mult"], 2.0, "vol_mult < 2.0 (无夸张放大)")
 
     # Fib黄金区的vol_mult应该 > RSI极端触发的vol_mult
-    rsi_extreme_vm = None
+    rsi_extreme_vm = None  # noqa: F841
     # 找一个纯RSI触发的
     prices2 = [60000] * 200
     prices2[-15:] = [60000 - i * 800 for i in range(15)]  # 15天暴跌
     candles2 = []
     for i, p in enumerate(prices2):
-        o = prices2[i-1] if i > 0 else p
-        candles2.append({
-            "ts": 1700000000 + i * 14400000,
-            "o": str(o), "h": str(p*1.01), "l": str(p*0.99), "c": str(p), "v": "1000"
-        })
+        o = prices2[i - 1] if i > 0 else p
+        candles2.append(
+            {
+                "ts": 1700000000 + i * 14400000,
+                "o": str(o),
+                "h": str(p * 1.01),
+                "l": str(p * 0.99),
+                "c": str(p),
+                "v": "1000",
+            }
+        )
     orig2 = mock_candles(candles2)
     r2 = v15_decision("BTC-USDT")
     restore_candles(orig2)
@@ -494,9 +557,21 @@ def test_return_value_structure():
     restore_candles(orig)
 
     required_fields = [
-        "action", "confidence", "reasons", "mode", "vol_mult",
-        "position", "fib_zone", "trend_signal", "boll_signal",
-        "rsi", "smas", "fib", "boll", "macd", "adx"
+        "action",
+        "confidence",
+        "reasons",
+        "mode",
+        "vol_mult",
+        "position",
+        "fib_zone",
+        "trend_signal",
+        "boll_signal",
+        "rsi",
+        "smas",
+        "fib",
+        "boll",
+        "macd",
+        "adx",
     ]
 
     for field in required_fields:
@@ -511,11 +586,10 @@ def test_price_zero_or_negative():
     # 价格为0
     prices = [0] * 200
     candles = []
-    for i, p in enumerate(prices):
-        candles.append({
-            "ts": 1700000000 + i * 14400000,
-            "o": "0", "h": "0", "l": "0", "c": "0", "v": "0"
-        })
+    for i, p in enumerate(prices):  # noqa: B007
+        candles.append(
+            {"ts": 1700000000 + i * 14400000, "o": "0", "h": "0", "l": "0", "c": "0", "v": "0"}
+        )
     orig = mock_candles(candles)
     r = v15_decision("BTC-USDT")
     restore_candles(orig)
@@ -564,6 +638,7 @@ def test_large_random_suite():
     print("测试17: 大规模随机场景 (1000次)")
     print("=" * 60)
     import random
+
     random.seed(42)
 
     scenarios = [
@@ -599,10 +674,14 @@ def test_large_random_suite():
             restore_candles(orig)
 
     total = sum(counts.values())
-    print(f"  分布: WAIT={counts['WAIT']} ({counts['WAIT']/total*100:.1f}%), "
-          f"BULL={counts['OPEN_BULL']} ({counts['OPEN_BULL']/total*100:.1f}%), "
-          f"BEAR={counts['OPEN_BEAR']} ({counts['OPEN_BEAR']/total*100:.1f}%)")
-    print(f"  位置: ABOVE_ALL={pos_counts['ABOVE_ALL']}, BELOW_ALL={pos_counts['BELOW_ALL']}, IN_ZONE={pos_counts['IN_ZONE']}")
+    print(
+        f"  分布: WAIT={counts['WAIT']} ({counts['WAIT']/total*100:.1f}%), "
+        f"BULL={counts['OPEN_BULL']} ({counts['OPEN_BULL']/total*100:.1f}%), "
+        f"BEAR={counts['OPEN_BEAR']} ({counts['OPEN_BEAR']/total*100:.1f}%)"
+    )
+    print(
+        f"  位置: ABOVE_ALL={pos_counts['ABOVE_ALL']}, BELOW_ALL={pos_counts['BELOW_ALL']}, IN_ZONE={pos_counts['IN_ZONE']}"
+    )
     print(f"  错误: {errors}")
 
     assert_eq(errors, 0, "1000次随机场景零崩溃")

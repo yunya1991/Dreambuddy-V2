@@ -11,13 +11,13 @@ NeuralSDE 架构升级 — forecast 函数接收 history 序列, 通过 path-sig
 
 参考: .trae/specs/neural-sde-architecture-upgrade/spec.md §5
 """
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
@@ -45,9 +45,9 @@ class TestForecastUsesHistorySignature:
         assert paths.shape == (100, 21)
         assert np.isfinite(paths).all()
         # 起点应等于 history[-1] (路径依赖: 从最近价格出发)
-        assert abs(paths[0, 0] - history[-1]) < 1e-6, (
-            f"起点 {paths[0, 0]} ≠ history[-1] {history[-1]}"
-        )
+        assert (
+            abs(paths[0, 0] - history[-1]) < 1e-6
+        ), f"起点 {paths[0, 0]} ≠ history[-1] {history[-1]}"
 
     def test_forecast_long_history_uses_signature(self):
         """history ≥ N_step=32 时使用 path-signature, drift_net 输入 7 维."""
@@ -120,9 +120,9 @@ class TestForecastFailOpenSignatureLibsUnavailable:
         model._activated = True
         history = np.cumsum(np.random.randn(64)) + 50000.0
         paths = model.forecast(history, horizon=20, n_paths=50)
-        assert paths is not None, (
-            "FAIL-OPEN Level 2.5: signatory+esig 不可用时 log_sig pad zeros 仍应返回路径"
-        )
+        assert (
+            paths is not None
+        ), "FAIL-OPEN Level 2.5: signatory+esig 不可用时 log_sig pad zeros 仍应返回路径"
         assert paths.shape == (50, 21)
         assert np.isfinite(paths).all()
         # 起点应等于 history[-1]

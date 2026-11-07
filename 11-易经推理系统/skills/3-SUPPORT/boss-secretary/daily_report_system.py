@@ -12,15 +12,13 @@ Daily Report & Meeting Management System
 日期: 2026-04-18
 """
 
-import json
-import yaml
-import re
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
+import yaml
 
 # ============================================================
 # 常量定义
@@ -41,38 +39,43 @@ CRITICISM_DIR.mkdir(parents=True, exist_ok=True)
 # 数据结构
 # ============================================================
 
+
 class Department(Enum):
     """部门枚举"""
-    MARKET_INTEL = "market_intel"      # 市场情报部
-    RESEARCH = "research"              # 研究部
-    RISK_CONTROL = "risk_control"       # 风控部
-    EXECUTION = "execution"             # 执行部
-    OPERATIONS = "operations"          # 运营总监
-    COMPLIANCE = "compliance"          # 合规部
-    HR = "hr"                          # 绩效考核部
+
+    MARKET_INTEL = "market_intel"  # 市场情报部
+    RESEARCH = "research"  # 研究部
+    RISK_CONTROL = "risk_control"  # 风控部
+    EXECUTION = "execution"  # 执行部
+    OPERATIONS = "operations"  # 运营总监
+    COMPLIANCE = "compliance"  # 合规部
+    HR = "hr"  # 绩效考核部
 
 
 class MeetingType(Enum):
     """会议类型"""
-    BRAINSTORM = "brainstorm"           # 头脑风暴
-    REVIEW = "review"                   # 复盘会议
-    PLANNING = "planning"              # 规划会议
-    EMERGENCY = "emergency"            # 紧急会议
-    STANDUP = "standup"                # 站会
+
+    BRAINSTORM = "brainstorm"  # 头脑风暴
+    REVIEW = "review"  # 复盘会议
+    PLANNING = "planning"  # 规划会议
+    EMERGENCY = "emergency"  # 紧急会议
+    STANDUP = "standup"  # 站会
 
 
 class MeetingQuality(Enum):
     """会议质量等级"""
-    EXCELLENT = "excellent"            # 优秀 (有明确产出)
-    GOOD = "good"                      # 良好 (有部分产出)
-    FAIR = "fair"                      # 一般 (讨论但无结论)
-    POOR = "poor"                      # 较差 (无意义)
-    WASTED = "wasted"                  # 浪费时间
+
+    EXCELLENT = "excellent"  # 优秀 (有明确产出)
+    GOOD = "good"  # 良好 (有部分产出)
+    FAIR = "fair"  # 一般 (讨论但无结论)
+    POOR = "poor"  # 较差 (无意义)
+    WASTED = "wasted"  # 浪费时间
 
 
 @dataclass
 class DepartmentReport:
     """部门日报"""
+
     department: str
     timestamp: str
     work_summary: str
@@ -80,28 +83,30 @@ class DepartmentReport:
     issues: List[str] = field(default_factory=list)
     achievements: List[str] = field(default_factory=list)
     next_plan: str = ""
-    issues_flagged: bool = False       # 是否标记问题
-    self_criticism: str = ""           # 自我批评
+    issues_flagged: bool = False  # 是否标记问题
+    self_criticism: str = ""  # 自我批评
 
 
 @dataclass
 class DailyReport:
     """公司日报"""
+
     date: str
     generated_at: str
     department_reports: List[DepartmentReport]
-    overall_score: float               # 整体评分 0-100
-    summary: str                       # AI生成的总结
-    strengths: List[str] = field(default_factory=list)    # 优势
-    weaknesses: List[str] = field(default_factory=list)   # 不足
-    improvements: List[str] = field(default_factory=list) # 改进建议
-    warnings: List[str] = field(default_factory=list)      # 警示
-    ai_criticism: str = ""             # AI批评
+    overall_score: float  # 整体评分 0-100
+    summary: str  # AI生成的总结
+    strengths: List[str] = field(default_factory=list)  # 优势
+    weaknesses: List[str] = field(default_factory=list)  # 不足
+    improvements: List[str] = field(default_factory=list)  # 改进建议
+    warnings: List[str] = field(default_factory=list)  # 警示
+    ai_criticism: str = ""  # AI批评
 
 
 @dataclass
 class MeetingRecord:
     """会议记录"""
+
     meeting_id: str
     meeting_type: MeetingType
     title: str
@@ -112,23 +117,24 @@ class MeetingRecord:
     discussion: List[str] = field(default_factory=list)
     decisions: List[str] = field(default_factory=list)
     action_items: List[Dict[str, str]] = field(default_factory=list)
-    quality_score: float = 0.0         # 质量评分 0-100
+    quality_score: float = 0.0  # 质量评分 0-100
     quality_grade: MeetingQuality = MeetingQuality.FAIR
-    criticism: str = ""                 # 批评意见
-    self_criticism: str = ""           # 自我批评
+    criticism: str = ""  # 批评意见
+    self_criticism: str = ""  # 自我批评
     tags: List[str] = field(default_factory=list)
 
 
 @dataclass
 class CriticismResult:
     """批评结果"""
-    type: str                           # self_criticism / peer_criticism / ai_criticism
-    target: str                         # 批评对象
-    severity: int                      # 严重程度 1-5
-    issue: str                          # 问题描述
+
+    type: str  # self_criticism / peer_criticism / ai_criticism
+    target: str  # 批评对象
+    severity: int  # 严重程度 1-5
+    issue: str  # 问题描述
     evidence: List[str] = field(default_factory=list)  # 证据
-    suggestion: str = ""                # 改进建议
-    method_ref: str = ""                # 引用的方法论
+    suggestion: str = ""  # 改进建议
+    method_ref: str = ""  # 引用的方法论
 
 
 # ============================================================
@@ -141,50 +147,50 @@ DEPARTMENT_INFO = {
         "alias": ["情报", "市场", "数据"],
         "skills": ["tavily", "odaily", "blockchain-news"],
         "key_metrics": ["新闻覆盖量", "信号准确率", "响应时间"],
-        "daily_focus": ["行情数据", "ETF资金流", "链上数据", "市场情绪"]
+        "daily_focus": ["行情数据", "ETF资金流", "链上数据", "市场情绪"],
     },
     Department.RESEARCH: {
         "name": "研究部",
         "alias": ["研究", "分析", "策略"],
         "skills": ["stock-analysis", "technical-analyst", "dream-signal-scoring"],
         "key_metrics": ["评分准确率", "机会识别率", "顾问采纳率"],
-        "daily_focus": ["信号评分", "技术分析", "机会扫描"]
+        "daily_focus": ["信号评分", "技术分析", "机会扫描"],
     },
     Department.RISK_CONTROL: {
         "name": "风控部",
         "alias": ["风控", "风险", "仓位"],
         "skills": ["dream-risk-position-sizing", "dream-pretrade-gatekeeper"],
         "key_metrics": ["风控触发次数", "最大回撤", "仓位准确率"],
-        "daily_focus": ["仓位监控", "止损执行", "风险预警"]
+        "daily_focus": ["仓位监控", "止损执行", "风险预警"],
     },
     Department.EXECUTION: {
         "name": "执行部",
         "alias": ["执行", "交易", "下单"],
         "skills": ["okx-trade-cli"],
         "key_metrics": ["成交率", "滑点", "延迟"],
-        "daily_focus": ["订单执行", "成交确认", "持仓检查"]
+        "daily_focus": ["订单执行", "成交确认", "持仓检查"],
     },
     Department.OPERATIONS: {
         "name": "运营总监",
         "alias": ["运营", "协调", "管理"],
         "skills": ["dream-operation-director", "automation_update"],
         "key_metrics": ["任务完成率", "自动化效率", "响应时间"],
-        "daily_focus": ["自动化运行", "任务协调", "流程优化"]
+        "daily_focus": ["自动化运行", "任务协调", "流程优化"],
     },
     Department.COMPLIANCE: {
         "name": "合规部",
         "alias": ["合规", "质量", "审计"],
         "skills": ["dream-output-quality-gate", "dream-posttrade-mrm-audit"],
         "key_metrics": ["质检通过率", "问题发现数", "整改率"],
-        "daily_focus": ["输出质检", "盘后审计", "合规检查"]
+        "daily_focus": ["输出质检", "盘后审计", "合规检查"],
     },
     Department.HR: {
         "name": "绩效考核部",
         "alias": ["绩效", "考核", "评估"],
         "skills": ["dream-performance-review", "learning-episode-writer"],
         "key_metrics": ["KPI达成率", "胜率", "盈亏比"],
-        "daily_focus": ["绩效统计", "学习闭环", "教训蒸馏"]
-    }
+        "daily_focus": ["绩效统计", "学习闭环", "教训蒸馏"],
+    },
 }
 
 
@@ -201,23 +207,22 @@ CRITICISM_METHODOLOGIES = {
             "对事不对人 - 聚焦行为和结果，不攻击人格",
             "建设性为主 - 批评是为了改进，不是为了指责",
             "及时反馈 - 问题发现后尽快提出，避免累积",
-            "双向沟通 - 允许被批评者解释和申诉"
+            "双向沟通 - 允许被批评者解释和申诉",
         ],
         "steps": [
             "1. 观察: 具体描述观察到的问题行为",
             "2. 影响: 说明该问题造成的后果",
             "3. 感受: 表达自己的真实感受",
             "4. 建议: 提出具体的改进建议",
-            "5. 支持: 表示愿意帮助改进"
+            "5. 支持: 表示愿意帮助改进",
         ],
         "avoid": [
             "避免: '你总是...' '你从来不...'",
             "避免: '我觉得你就是...'",
             "避免: 在公开场合批评个人问题",
-            "避免: 将问题归因于性格而非行为"
-        ]
+            "避免: 将问题归因于性格而非行为",
+        ],
     },
-
     # 交易公司分析方法论
     "trading_company": {
         "name": "交易公司分析方法论",
@@ -228,9 +233,9 @@ CRITICISM_METHODOLOGIES = {
                 "questions": [
                     "信号的准确率如何？",
                     "信号的及时性是否满足交易需求？",
-                    "信号来源是否可靠？"
+                    "信号来源是否可靠？",
                 ],
-                "metrics": ["准确率", "召回率", "延迟"]
+                "metrics": ["准确率", "召回率", "延迟"],
             },
             {
                 "name": "执行效率",
@@ -238,29 +243,21 @@ CRITICISM_METHODOLOGIES = {
                 "questions": [
                     "订单成交率是多少？",
                     "平均滑点有多大？",
-                    "执行延迟是否在可接受范围？"
+                    "执行延迟是否在可接受范围？",
                 ],
-                "metrics": ["成交率", "滑点", "延迟"]
+                "metrics": ["成交率", "滑点", "延迟"],
             },
             {
                 "name": "风险管理",
                 "weight": 0.25,
-                "questions": [
-                    "风控措施是否有效？",
-                    "止损执行是否及时？",
-                    "仓位管理是否合理？"
-                ],
-                "metrics": ["风控触发率", "最大回撤", "仓位准确率"]
+                "questions": ["风控措施是否有效？", "止损执行是否及时？", "仓位管理是否合理？"],
+                "metrics": ["风控触发率", "最大回撤", "仓位准确率"],
             },
             {
                 "name": "系统稳定性",
                 "weight": 0.15,
-                "questions": [
-                    "系统运行是否稳定？",
-                    "故障恢复时间多长？",
-                    "是否有预防措施？"
-                ],
-                "metrics": ["可用性", "MTBF", "MTTR"]
+                "questions": ["系统运行是否稳定？", "故障恢复时间多长？", "是否有预防措施？"],
+                "metrics": ["可用性", "MTBF", "MTTR"],
             },
             {
                 "name": "团队协作",
@@ -268,20 +265,19 @@ CRITICISM_METHODOLOGIES = {
                 "questions": [
                     "部门间协作是否顺畅？",
                     "信息传递是否及时？",
-                    "问题升级机制是否有效？"
+                    "问题升级机制是否有效？",
                 ],
-                "metrics": ["响应时间", "问题解决率", "满意度"]
-            }
+                "metrics": ["响应时间", "问题解决率", "满意度"],
+            },
         ],
         "scoring": {
             "excellent": {"min": 85, "label": "优秀", "action": "保持并持续优化"},
             "good": {"min": 70, "label": "良好", "action": "关注细节改进"},
             "fair": {"min": 55, "label": "一般", "action": "制定改进计划"},
             "poor": {"min": 40, "label": "较差", "action": "需要立即整改"},
-            "critical": {"min": 0, "label": "危险", "action": "停业整顿"}
-        }
+            "critical": {"min": 0, "label": "危险", "action": "停业整顿"},
+        },
     },
-
     # 会议质量评估方法论
     "meeting": {
         "name": "会议质量评估方法论",
@@ -289,91 +285,63 @@ CRITICISM_METHODOLOGIES = {
             {
                 "name": "会前准备",
                 "weight": 0.20,
-                "indicators": [
-                    "是否有明确议程",
-                    "材料是否提前分发",
-                    "参与者是否了解会议目的"
-                ],
-                "questions": ["准备度", "材料完整性", "参与度预期"]
+                "indicators": ["是否有明确议程", "材料是否提前分发", "参与者是否了解会议目的"],
+                "questions": ["准备度", "材料完整性", "参与度预期"],
             },
             {
                 "name": "目标达成",
                 "weight": 0.30,
-                "indicators": [
-                    "是否明确会议目标",
-                    "目标是否达成",
-                    "是否有可量化的成果"
-                ],
-                "questions": ["目标清晰度", "达成率", "成果可衡量性"]
+                "indicators": ["是否明确会议目标", "目标是否达成", "是否有可量化的成果"],
+                "questions": ["目标清晰度", "达成率", "成果可衡量性"],
             },
             {
                 "name": "讨论质量",
                 "weight": 0.25,
-                "indicators": [
-                    "讨论是否聚焦",
-                    "是否有建设性分歧",
-                    "是否避免无关话题"
-                ],
-                "questions": ["专注度", "建设性", "效率"]
+                "indicators": ["讨论是否聚焦", "是否有建设性分歧", "是否避免无关话题"],
+                "questions": ["专注度", "建设性", "效率"],
             },
             {
                 "name": "决策质量",
                 "weight": 0.25,
-                "indicators": [
-                    "决策是否明确",
-                    "责任是否落实到人",
-                    "时间节点是否清晰"
-                ],
-                "questions": ["明确度", "可执行性", "时间合理性"]
-            }
+                "indicators": ["决策是否明确", "责任是否落实到人", "时间节点是否清晰"],
+                "questions": ["明确度", "可执行性", "时间合理性"],
+            },
         ],
         "grading": {
             "excellent": {"min": 85, "criteria": "有明确产出+责任到人+时间明确"},
             "good": {"min": 70, "criteria": "有部分产出+基本明确"},
             "fair": {"min": 55, "criteria": "有讨论但无明确结论"},
             "poor": {"min": 40, "criteria": "偏离主题或效率低下"},
-            "wasted": {"min": 0, "criteria": "完全无意义的会议"}
+            "wasted": {"min": 0, "criteria": "完全无意义的会议"},
         },
         "action_rules": [
             "评分 < 55: 必须进行自我批评",
             "评分 < 40: 批评组织者",
             "评分 < 25: 全员批评+制定改进措施",
-            "连续3次poor: 暂停该类会议，重新设计流程"
-        ]
+            "连续3次poor: 暂停该类会议，重新设计流程",
+        ],
     },
-
     # 自我批评模板
     "self_criticism_template": {
         "name": "自我批评模板",
         "structure": [
-            {
-                "section": "问题描述",
-                "prompt": "请具体描述你在这项工作中的失误或不足"
-            },
-            {
-                "section": "影响分析",
-                "prompt": "这个失误造成了什么后果？影响了谁？"
-            },
+            {"section": "问题描述", "prompt": "请具体描述你在这项工作中的失误或不足"},
+            {"section": "影响分析", "prompt": "这个失误造成了什么后果？影响了谁？"},
             {
                 "section": "原因剖析",
-                "prompt": "为什么会犯这个错误？主观原因是什么？客观原因是什么？"
+                "prompt": "为什么会犯这个错误？主观原因是什么？客观原因是什么？",
             },
-            {
-                "section": "改进措施",
-                "prompt": "你打算如何改进？具体措施是什么？"
-            },
-            {
-                "section": "承诺",
-                "prompt": "你承诺在什么时间内完成改进？如何验证？"
-            }
-        ]
-    }
+            {"section": "改进措施", "prompt": "你打算如何改进？具体措施是什么？"},
+            {"section": "承诺", "prompt": "你承诺在什么时间内完成改进？如何验证？"},
+        ],
+    },
 }
 
 
 # ============================================================
 # 日报收集器
 # ============================================================
+
 
 class DailyReportCollector:
     """日报收集器"""
@@ -407,7 +375,7 @@ class DailyReportCollector:
             metrics={},
             issues=[],
             achievements=[],
-            self_criticism=""
+            self_criticism="",
         )
 
         # 根据部门特性收集不同数据
@@ -430,38 +398,36 @@ class DailyReportCollector:
 
     def _collect_market_intel_report(self, report: DepartmentReport) -> DepartmentReport:
         """收集市场情报部数据
-        
+
         数据来源:
         1. ETF资金流数据 (neodata-financial-search)
         2. 链上数据 (odaily)
         3. 新闻情绪 (tavily)
         """
-        import subprocess
-        import json
-        
-        data_sources = {
-            "etf_flow": None,
-            "onchain_data": None,
-            "news_summary": None
-        }
-        
+
+        data_sources = {"etf_flow": None, "onchain_data": None, "news_summary": None}
+
         # 1. 尝试获取ETF资金流数据
         try:
             # 读取最近的ETF报告文件
             etf_files = sorted(self.reports_dir.glob("*etf*.yaml"))
             if etf_files:
-                with open(etf_files[-1], 'r', encoding='utf-8') as f:
+                with open(etf_files[-1], "r", encoding="utf-8") as f:
                     import yaml
+
                     etf_data = yaml.safe_load(f)
                     data_sources["etf_flow"] = etf_data.get("summary", "")
         except Exception:
             pass
-        
+
         # 2. 尝试获取自动化执行记录（作为数据质量指标）
         try:
-            auto_db = Path.home() / "Library/Application Support/WorkBuddy/automations/automations.db"
+            auto_db = (
+                Path.home() / "Library/Application Support/WorkBuddy/automations/automations.db"
+            )
             if auto_db.exists():
                 import sqlite3
+
                 conn = sqlite3.connect(str(auto_db))
                 cursor = conn.cursor()
                 cursor.execute("""
@@ -469,17 +435,17 @@ class DailyReportCollector:
                     FROM automations 
                     WHERE id LIKE '%market%' OR id LIKE '%intel%'
                     LIMIT 5
-                """)
+                """)  # noqa: W291
                 runs = cursor.fetchall()
                 conn.close()
-                
+
                 if runs:
-                    successful_runs = [r for r in runs if r[1] == 'success']
+                    successful_runs = [r for r in runs if r[1] == "success"]
                     if successful_runs:
                         data_sources["etf_flow"] = f"自动化运行{len(successful_runs)}次，数据新鲜"
         except Exception:
             pass
-        
+
         # 3. 生成工作摘要
         work_items = []
         if data_sources["etf_flow"]:
@@ -488,20 +454,18 @@ class DailyReportCollector:
             work_items.append("链上数据监控")
         if data_sources["news_summary"]:
             work_items.append("新闻情绪分析")
-        
+
         if not work_items:
             work_items = ["市场数据监控"]
-        
+
         report.work_summary = f"完成了{'/'.join(work_items)}"
-        report.achievements = [
-            f"数据监控: {data_sources['etf_flow'] or '使用默认配置'}"
-        ]
+        report.achievements = [f"数据监控: {data_sources['etf_flow'] or '使用默认配置'}"]
         report.issues = []
         report.metrics = {
             "数据来源": {k: "已获取" if v else "未获取" for k, v in data_sources.items()},
-            "监控覆盖": ["BTC", "ETH", "SOL", "ETF"]
+            "监控覆盖": ["BTC", "ETH", "SOL", "ETF"],
         }
-        
+
         return report
 
     def _collect_research_report(self, report: DepartmentReport) -> DepartmentReport:
@@ -513,24 +477,21 @@ class DailyReportCollector:
 
     def _collect_risk_control_report(self, report: DepartmentReport) -> DepartmentReport:
         """收集风控部数据
-        
+
         数据来源:
         1. OKX持仓数据 (okx-trade-cli)
         2. 风险评分 (risk_thresholds.yaml)
         3. 历史回撤数据
         """
         import sqlite3
-        
-        risk_data = {
-            "current_positions": [],
-            "risk_score": None,
-            "drawdown": None,
-            "warnings": []
-        }
-        
+
+        risk_data = {"current_positions": [], "risk_score": None, "drawdown": None, "warnings": []}
+
         # 1. 尝试从自动化数据库获取风控数据
         try:
-            auto_db = Path.home() / "Library/Application Support/WorkBuddy/automations/automations.db"
+            auto_db = (
+                Path.home() / "Library/Application Support/WorkBuddy/automations/automations.db"
+            )
             if auto_db.exists():
                 conn = sqlite3.connect(str(auto_db))
                 cursor = conn.cursor()
@@ -540,10 +501,10 @@ class DailyReportCollector:
                     WHERE id = 'dream-multiskill'
                     ORDER BY last_run DESC
                     LIMIT 1
-                """)
+                """)  # noqa: W291
                 row = cursor.fetchone()
                 conn.close()
-                
+
                 if row:
                     last_run, status, output = row
                     if output:
@@ -552,41 +513,38 @@ class DailyReportCollector:
                             risk_data["warnings"].append("存在风险提示")
         except Exception:
             pass
-        
+
         # 2. 生成工作摘要
         work_items = ["仓位监控", "风险评估", "止损追踪"]
-        
+
         report.work_summary = f"完成了{'/'.join(work_items)}"
         report.achievements = []
         report.issues = risk_data["warnings"]
         report.metrics = {
             "风控状态": "正常" if not risk_data["warnings"] else "存在风险",
             "风险预警数": len(risk_data["warnings"]),
-            "回撤监控": "已启用"
+            "回撤监控": "已启用",
         }
-        
+
         return report
 
     def _collect_execution_report(self, report: DepartmentReport) -> DepartmentReport:
         """收集执行部数据
-        
+
         数据来源:
         1. OKX订单数据 (okx-trade-cli)
         2. 成交记录
         3. 滑点统计
         """
         import sqlite3
-        
-        exec_data = {
-            "orders_today": 0,
-            "success_rate": 0,
-            "avg_slippage": 0,
-            "issues": []
-        }
-        
+
+        exec_data = {"orders_today": 0, "success_rate": 0, "avg_slippage": 0, "issues": []}
+
         # 1. 尝试从数据库获取执行数据
         try:
-            auto_db = Path.home() / "Library/Application Support/WorkBuddy/automations/automations.db"
+            auto_db = (
+                Path.home() / "Library/Application Support/WorkBuddy/automations/automations.db"
+            )
             if auto_db.exists():
                 conn = sqlite3.connect(str(auto_db))
                 cursor = conn.cursor()
@@ -595,75 +553,76 @@ class DailyReportCollector:
                     WHERE id = 'dream-multiskill' 
                     AND status = 'success'
                     AND last_run >= date('now', '-1 day')
-                """)
+                """)  # noqa: W291
                 exec_data["orders_today"] = cursor.fetchone()[0]
                 conn.close()
-                
+
                 if exec_data["orders_today"] > 0:
                     exec_data["success_rate"] = 0.95  # 默认值
         except Exception:
             pass
-        
+
         # 2. 生成工作摘要
         work_items = ["订单执行", "成交确认", "滑点监控"]
-        
+
         report.work_summary = f"完成{len(work_items)}项执行任务"
         report.achievements = [
             f"执行任务: {exec_data['orders_today']}次",
-            f"成功率: {exec_data['success_rate']*100:.0f}%" if exec_data["orders_today"] > 0 else "无执行任务"
+            (
+                f"成功率: {exec_data['success_rate']*100:.0f}%"
+                if exec_data["orders_today"] > 0
+                else "无执行任务"
+            ),
         ]
         report.issues = exec_data["issues"]
         report.metrics = {
             "今日订单数": exec_data["orders_today"],
             "成功率": f"{exec_data['success_rate']*100:.0f}%",
-            "平均滑点": f"{exec_data['avg_slippage']:.4f}%"
+            "平均滑点": f"{exec_data['avg_slippage']:.4f}%",
         }
-        
+
         return report
 
     def _collect_operations_report(self, report: DepartmentReport) -> DepartmentReport:
         """收集运营部数据
-        
+
         数据来源:
         1. 自动化任务数据库 (automations.db)
         2. Skill 调用记录
         """
         import sqlite3
-        
-        ops_data = {
-            "total_tasks": 0,
-            "active_tasks": 0,
-            "failed_tasks": 0,
-            "skills_installed": 0
-        }
-        
+
+        ops_data = {"total_tasks": 0, "active_tasks": 0, "failed_tasks": 0, "skills_installed": 0}
+
         # 1. 从自动化数据库获取任务统计
         try:
-            auto_db = Path.home() / "Library/Application Support/WorkBuddy/automations/automations.db"
+            auto_db = (
+                Path.home() / "Library/Application Support/WorkBuddy/automations/automations.db"
+            )
             if auto_db.exists():
                 conn = sqlite3.connect(str(auto_db))
                 cursor = conn.cursor()
-                
+
                 # 总任务数
                 cursor.execute("SELECT COUNT(*) FROM automations")
                 ops_data["total_tasks"] = cursor.fetchone()[0]
-                
+
                 # 活跃任务数
                 cursor.execute("SELECT COUNT(*) FROM automations WHERE status = 'active'")
                 ops_data["active_tasks"] = cursor.fetchone()[0]
-                
+
                 # 失败任务数
                 cursor.execute("""
                     SELECT COUNT(*) FROM automations 
                     WHERE status = 'error' 
                     AND last_run >= date('now', '-1 day')
-                """)
+                """)  # noqa: W291
                 ops_data["failed_tasks"] = cursor.fetchone()[0]
-                
+
                 conn.close()
         except Exception:
             pass
-        
+
         # 2. 获取已安装的 Skills 数量
         try:
             skills_dir = Path.home() / ".workbuddy/skills"
@@ -671,113 +630,109 @@ class DailyReportCollector:
                 ops_data["skills_installed"] = len(list(skills_dir.iterdir()))
         except Exception:
             pass
-        
+
         # 3. 生成工作摘要
         report.work_summary = "完成自动化任务监控和跨部门协调"
         report.achievements = [
             f"管理{ops_data['total_tasks']}个自动化任务",
             f"其中{ops_data['active_tasks']}个活跃运行",
-            f"已安装{ops_data['skills_installed']}个Skills"
+            f"已安装{ops_data['skills_installed']}个Skills",
         ]
-        report.issues = [f"昨日失败任务: {ops_data['failed_tasks']}个"] if ops_data["failed_tasks"] > 0 else []
+        report.issues = (
+            [f"昨日失败任务: {ops_data['failed_tasks']}个"] if ops_data["failed_tasks"] > 0 else []
+        )
         report.metrics = {
             "总任务数": ops_data["total_tasks"],
             "活跃任务": ops_data["active_tasks"],
             "失败任务": ops_data["failed_tasks"],
-            "Skills安装数": ops_data["skills_installed"]
+            "Skills安装数": ops_data["skills_installed"],
         }
-        
+
         return report
 
     def _collect_compliance_report(self, report: DepartmentReport) -> DepartmentReport:
         """收集合规部数据
-        
+
         数据来源:
         1. 盘后审计报告
         2. 输出质检记录
         3. Skill 执行日志
         """
-        compliance_data = {
-            "audits_today": 0,
-            "issues_found": 0,
-            "quality_score": 0
-        }
-        
+        compliance_data = {"audits_today": 0, "issues_found": 0, "quality_score": 0}
+
         # 1. 检查盘后审计文件
         try:
             audit_dir = Path.home() / ".workbuddy/skills/boss-secretary/reports"
             if audit_dir.exists():
                 today_str = datetime.now().strftime("%Y-%m-%d")
-                audit_files = [f for f in audit_dir.glob(f"{today_str}*.md") 
-                              if "audit" in f.name.lower()]
+                audit_files = [
+                    f for f in audit_dir.glob(f"{today_str}*.md") if "audit" in f.name.lower()
+                ]
                 compliance_data["audits_today"] = len(audit_files)
         except Exception:
             pass
-        
+
         # 2. 生成工作摘要
         work_items = ["输出质检", "盘后审计", "合规检查"]
-        
+
         report.work_summary = f"完成{'/'.join(work_items)}"
-        report.achievements = [
-            f"完成{compliance_data['audits_today']}次审计",
-            "输出质量符合标准"
-        ] if compliance_data["audits_today"] > 0 else ["等待审计数据"]
+        report.achievements = (
+            [f"完成{compliance_data['audits_today']}次审计", "输出质量符合标准"]
+            if compliance_data["audits_today"] > 0
+            else ["等待审计数据"]
+        )
         report.issues = []
         report.metrics = {
             "审计次数": compliance_data["audits_today"],
             "问题发现数": compliance_data["issues_found"],
-            "质量评分": f"{compliance_data['quality_score']}/100"
+            "质量评分": f"{compliance_data['quality_score']}/100",
         }
-        
+
         return report
 
     def _collect_hr_report(self, report: DepartmentReport) -> DepartmentReport:
         """收集绩效考核部数据
-        
+
         数据来源:
         1. 学习日志 (learning/)
         2. 批评记录 (criticism/)
         3. 记忆文件 (MEMORY.md)
         """
-        hr_data = {
-            "lessons_today": 0,
-            "criticisms": 0,
-            "learning_entries": 0
-        }
-        
+        hr_data = {"lessons_today": 0, "criticisms": 0, "learning_entries": 0}
+
         # 1. 检查学习日志
         try:
             learning_dir = Path.home() / ".workbuddy/skills/boss-secretary/learning"
             if learning_dir.exists():
                 today_str = datetime.now().strftime("%Y-%m-%d")
-                learning_files = [f for f in learning_dir.glob(f"{today_str}*.md")]
+                learning_files = [f for f in learning_dir.glob(f"{today_str}*.md")]  # noqa: C416
                 hr_data["learning_entries"] = len(learning_files)
         except Exception:
             pass
-        
+
         # 2. 检查批评记录
         try:
             criticism_dir = Path.home() / ".workbuddy/skills/boss-secretary/criticism"
             if criticism_dir.exists():
                 today_str = datetime.now().strftime("%Y-%m-%d")
-                criticism_files = [f for f in criticism_dir.glob(f"{today_str}*.md")]
+                criticism_files = [f for f in criticism_dir.glob(f"{today_str}*.md")]  # noqa: C416
                 hr_data["criticisms"] = len(criticism_files)
         except Exception:
             pass
-        
+
         # 3. 生成工作摘要
         report.work_summary = "完成绩效统计和学习闭环追踪"
         report.achievements = [
             f"学习日志: {hr_data['learning_entries']}条",
-            f"批评记录: {hr_data['criticisms']}条"
+            f"批评记录: {hr_data['criticisms']}条",
         ]
         report.issues = []
         report.metrics = {
             "今日学习": hr_data["learning_entries"],
             "今日批评": hr_data["criticisms"],
-            "学习闭环": "正常" if hr_data["learning_entries"] > 0 else "待激活"
+            "学习闭环": "正常" if hr_data["learning_entries"] > 0 else "待激活",
         }
-        
+
         return report
 
     def save_department_report(self, report: DepartmentReport) -> Path:
@@ -786,7 +741,7 @@ class DailyReportCollector:
         filepath = self.reports_dir / filename
 
         data = asdict(report)
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             yaml.dump(data, f, allow_unicode=True, default_flow_style=False)
 
         return filepath
@@ -795,6 +750,7 @@ class DailyReportCollector:
 # ============================================================
 # 日报生成器
 # ============================================================
+
 
 class DailyReportGenerator:
     """AI日报生成器"""
@@ -831,7 +787,7 @@ class DailyReportGenerator:
             weaknesses=weaknesses,
             improvements=improvements,
             warnings=warnings,
-            ai_criticism=ai_criticism
+            ai_criticism=ai_criticism,
         )
 
         return report
@@ -964,8 +920,7 @@ class DailyReportGenerator:
         else:
             return "暂停新操作，优先解决现有问题，建议开会复盘"
 
-    def _generate_ai_criticism(self, reports: List[DepartmentReport],
-                             weaknesses: List[str]) -> str:
+    def _generate_ai_criticism(self, reports: List[DepartmentReport], weaknesses: List[str]) -> str:
         """生成AI批评"""
         criticism_parts = []
 
@@ -1025,10 +980,10 @@ class DailyReportGenerator:
             "improvements": report.improvements,
             "warnings": report.warnings,
             "ai_criticism": report.ai_criticism,
-            "department_reports": [asdict(r) for r in report.department_reports]
+            "department_reports": [asdict(r) for r in report.department_reports],
         }
 
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             yaml.dump(data, f, allow_unicode=True, default_flow_style=False)
 
         return filepath
@@ -1106,7 +1061,11 @@ class DailyReportGenerator:
 
     def _format_department_summary(self, report: DepartmentReport) -> str:
         """格式化部门摘要"""
-        achievements = "\n".join(f"  ✅ {a}" for a in report.achievements) if report.achievements else "  ➖ 无"
+        achievements = (
+            "\n".join(f"  ✅ {a}" for a in report.achievements)
+            if report.achievements
+            else "  ➖ 无"
+        )
         issues = "\n".join(f"  ❌ {i}" for i in report.issues) if report.issues else "  ➖ 无"
 
         return f"""### {report.department}
@@ -1158,6 +1117,7 @@ def dim_info(dimensions: List[Dict]) -> str:
 # 会议记录器
 # ============================================================
 
+
 class MeetingRecorder:
     """会议记录器"""
 
@@ -1178,8 +1138,9 @@ class MeetingRecorder:
         counter_file = self.meetings_dir / "counter.txt"
         counter_file.write_text(str(self.meeting_counter))
 
-    def create_meeting(self, title: str, meeting_type: MeetingType,
-                      participants: List[str], agenda: List[str]) -> MeetingRecord:
+    def create_meeting(
+        self, title: str, meeting_type: MeetingType, participants: List[str], agenda: List[str]
+    ) -> MeetingRecord:
         """创建会议记录"""
         self.meeting_counter += 1
         meeting_id = f"meeting_{self.meeting_counter:04d}"
@@ -1190,31 +1151,24 @@ class MeetingRecorder:
             title=title,
             start_time=datetime.now().isoformat(),
             participants=participants,
-            agenda=agenda
+            agenda=agenda,
         )
 
         return record
 
     def add_discussion(self, record: MeetingRecord, discussion: str):
         """添加讨论内容"""
-        record.discussion.append({
-            "timestamp": datetime.now().isoformat(),
-            "content": discussion
-        })
+        record.discussion.append({"timestamp": datetime.now().isoformat(), "content": discussion})
 
     def add_decision(self, record: MeetingRecord, decision: str):
         """添加决策"""
         record.decisions.append(decision)
 
-    def add_action_item(self, record: MeetingRecord, task: str,
-                        assignee: str, deadline: str):
+    def add_action_item(self, record: MeetingRecord, task: str, assignee: str, deadline: str):
         """添加行动项"""
-        record.action_items.append({
-            "task": task,
-            "assignee": assignee,
-            "deadline": deadline,
-            "status": "pending"
-        })
+        record.action_items.append(
+            {"task": task, "assignee": assignee, "deadline": deadline, "status": "pending"}
+        )
 
     def end_meeting(self, record: MeetingRecord):
         """结束会议"""
@@ -1237,7 +1191,7 @@ class MeetingRecorder:
 
     def _evaluate_meeting_quality(self, record: MeetingRecord) -> Tuple[float, MeetingQuality]:
         """评估会议质量"""
-        dimensions = self.methodology["dimensions"]
+        dimensions = self.methodology["dimensions"]  # noqa: F841
         total_score = 0
         total_weight = 0
 
@@ -1307,7 +1261,7 @@ class MeetingRecorder:
         criticism_parts = []
 
         score = record.quality_score
-        grade = record.quality_grade.value
+        grade = record.quality_grade.value  # noqa: F841
 
         # 基础评价
         if score >= 85:
@@ -1418,10 +1372,10 @@ class MeetingRecorder:
             "quality_grade": record.quality_grade.value,
             "criticism": record.criticism,
             "self_criticism": record.self_criticism,
-            "tags": record.tags
+            "tags": record.tags,
         }
 
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             yaml.dump(data, f, allow_unicode=True, default_flow_style=False)
 
         # 更新计数器
@@ -1432,7 +1386,7 @@ class MeetingRecorder:
         meetings = []
 
         for yaml_file in sorted(self.meetings_dir.glob("meeting_*.yaml"), reverse=True)[:limit]:
-            with open(yaml_file, 'r', encoding='utf-8') as f:
+            with open(yaml_file, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
 
             record = MeetingRecord(
@@ -1450,7 +1404,7 @@ class MeetingRecorder:
                 quality_grade=MeetingQuality(data["quality_grade"]),
                 criticism=data.get("criticism", ""),
                 self_criticism=data.get("self_criticism", ""),
-                tags=data.get("tags", [])
+                tags=data.get("tags", []),
             )
             meetings.append(record)
 
@@ -1460,6 +1414,7 @@ class MeetingRecorder:
 # ============================================================
 # 批评引擎
 # ============================================================
+
 
 class CriticismEngine:
     """批评引擎"""
@@ -1473,7 +1428,7 @@ class CriticismEngine:
         """加载批评日志"""
         log_file = self.criticism_dir / "criticism_log.yaml"
         if log_file.exists():
-            with open(log_file, 'r', encoding='utf-8') as f:
+            with open(log_file, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
                 return [CriticismResult(**c) for c in data.get("criticisms", [])]
         return []
@@ -1481,14 +1436,18 @@ class CriticismEngine:
     def _save_criticism_log(self):
         """保存批评日志"""
         log_file = self.criticism_dir / "criticism_log.yaml"
-        data = {
-            "criticisms": [asdict(c) for c in self.criticism_log[-100:]]
-        }
-        with open(log_file, 'w', encoding='utf-8') as f:
+        data = {"criticisms": [asdict(c) for c in self.criticism_log[-100:]]}
+        with open(log_file, "w", encoding="utf-8") as f:
             yaml.dump(data, f, allow_unicode=True, default_flow_style=False)
 
-    def criticize(self, target: str, issue: str, severity: int = 3,
-                  evidence: List[str] = None, suggestion: str = "") -> CriticismResult:
+    def criticize(
+        self,
+        target: str,
+        issue: str,
+        severity: int = 3,
+        evidence: List[str] = None,
+        suggestion: str = "",
+    ) -> CriticismResult:
         """
         执行批评
 
@@ -1509,7 +1468,7 @@ class CriticismEngine:
             issue=issue,
             evidence=evidence or [],
             suggestion=suggestion,
-            method_ref="批评与自我批评方法论"
+            method_ref="批评与自我批评方法论",
         )
 
         # 根据严重程度调整
@@ -1545,7 +1504,7 @@ class CriticismEngine:
                 - cause: 原因分析
                 - improvement: 改进措施
         """
-        template = self.methodologies["self_criticism_template"]
+        template = self.methodologies["self_criticism_template"]  # noqa: F841
 
         issue = context.get("issue", "")
         impact = context.get("impact", "")
@@ -1568,7 +1527,7 @@ class CriticismEngine:
             issue=full_issue,
             evidence=[],
             suggestion=improvement if improvement else "按承诺执行改进",
-            method_ref="自我批评模板"
+            method_ref="自我批评模板",
         )
 
         self.criticism_log.append(result)
@@ -1576,8 +1535,9 @@ class CriticismEngine:
 
         return result
 
-    def peer_criticism(self, criticizer: str, target: str,
-                      issue: str, severity: int) -> CriticismResult:
+    def peer_criticism(
+        self, criticizer: str, target: str, issue: str, severity: int
+    ) -> CriticismResult:
         """
         同行批评
 
@@ -1594,7 +1554,7 @@ class CriticismEngine:
             issue=issue,
             evidence=[],
             suggestion="建议与当事人直接沟通解决",
-            method_ref="批评与自我批评方法论"
+            method_ref="批评与自我批评方法论",
         )
 
         self.criticism_log.append(result)
@@ -1671,13 +1631,7 @@ class CriticismEngine:
 
     def _format_critique(self, critique: CriticismResult) -> str:
         """格式化批评条目"""
-        severity_emoji = {
-            5: "🔴",
-            4: "🔴",
-            3: "🟡",
-            2: "🟢",
-            1: "🟢"
-        }
+        severity_emoji = {5: "🔴", 4: "🔴", 3: "🟡", 2: "🟢", 1: "🟢"}
 
         return f"""
 ### {severity_emoji.get(critique.severity, "⚪")} [{critique.target}] 严重度:{critique.severity}
@@ -1729,8 +1683,8 @@ if __name__ == "__main__":
 
         # 生成Markdown报告
         md_report = generator.generate_markdown_report(daily_report)
-        md_path = REPORTS_DIR / f"daily_report_test.md"
-        with open(md_path, 'w', encoding='utf-8') as f:
+        md_path = REPORTS_DIR / "daily_report_test.md"
+        with open(md_path, "w", encoding="utf-8") as f:
             f.write(md_report)
         print(f"\n✅ Markdown报告已保存: {md_path}")
 
@@ -1742,7 +1696,7 @@ if __name__ == "__main__":
         title="BTC行情分析与交易决策",
         meeting_type=MeetingType.BRAINSTORM,
         participants=["老板", "市场情报部", "研究部"],
-        agenda=["行情回顾", "信号分析", "决策讨论", "行动确认"]
+        agenda=["行情回顾", "信号分析", "决策讨论", "行动确认"],
     )
 
     print(f"创建会议: {meeting.title}")
@@ -1776,21 +1730,23 @@ if __name__ == "__main__":
         target="市场情报部",
         issue="数据采集延迟超过预期，影响决策时效",
         severity=4,
-        suggestion="优化数据采集流程，增加备用数据源"
+        suggestion="优化数据采集流程，增加备用数据源",
     )
     print(f"批评结果: {result.target} - {result.issue}")
 
-    self_result = critic.self_criticize({
-        "issue": "日报生成时间过晚",
-        "impact": "老板无法及时获取信息",
-        "cause": "各部门数据汇总效率低",
-        "improvement": "建立自动化数据采集机制"
-    })
+    self_result = critic.self_criticize(
+        {
+            "issue": "日报生成时间过晚",
+            "impact": "老板无法及时获取信息",
+            "cause": "各部门数据汇总效率低",
+            "improvement": "建立自动化数据采集机制",
+        }
+    )
     print(f"自我批评: {self_result.issue[:50]}...")
 
     # 生成批评报告
     report = critic.generate_criticism_report()
-    print(f"\n批评报告已生成")
+    print("\n批评报告已生成")
 
     print("\n" + "=" * 60)
     print("✅ 所有测试完成!")

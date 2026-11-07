@@ -10,7 +10,7 @@ F-06: 原生库惰性隔离（lazy/optional import）
 来源: SPEC v0.3 七补.1 + 七补.2
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import json
 import sys
@@ -37,12 +37,15 @@ def lazy_import_heavy(lib_name: str) -> Any:
         try:
             if lib_name == "cv2":
                 import cv2  # type: ignore[import]
+
                 _HEAVY_NATIVE_LIBS[lib_name] = cv2
             elif lib_name == "causalml":
                 import causalml  # type: ignore[import]
+
                 _HEAVY_NATIVE_LIBS[lib_name] = causalml
             elif lib_name == "shap":
                 import shap  # type: ignore[import]
+
                 _HEAVY_NATIVE_LIBS[lib_name] = shap
             else:
                 # 尝试通用 import
@@ -79,7 +82,7 @@ def _send_stderr(level: str, message: str) -> None:
 # F-01: 协议 server
 # 兼容直接运行和模块运行两种模式
 try:
-    from .sdk import (
+    from .sdk import (  # noqa: I001
         create_protocol_server,
         ProtocolHandshakeError,
         CURRENT_SCHEMA_VERSION,
@@ -87,8 +90,9 @@ try:
 except ImportError:
     # 直接运行 python server.py 时，相对导入不可用
     import os
+
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from sdk import (
+    from sdk import (  # noqa: I001
         create_protocol_server,
         ProtocolHandshakeError,
         CURRENT_SCHEMA_VERSION,
@@ -127,27 +131,21 @@ def check_hard_constraints(method: str, params: dict[str, Any]) -> dict[str, Any
     is_trading = True
 
     # 模拟硬约束检查（Phase 0 占位）
-    node_id = params.get("node_id", "")
+    node_id = params.get("node_id", "")  # noqa: F841
     if "MAX_TRIAL_POSITIONS" in str(params.get("check", "")):
         # BCRM2.0 测试仓上限检查
         trial_count = params.get("trial_count", 0)
         if trial_count >= 2:
-            violations.append(
-                f"MAX_TRIAL_POSITIONS exceeded: {trial_count} >= 2"
-            )
+            violations.append(f"MAX_TRIAL_POSITIONS exceeded: {trial_count} >= 2")
 
     if "direction_constraint" in params:
         # BDSM direction_constraint 检查
         constraint = params["direction_constraint"]
         direction = params.get("direction", "")
         if constraint == "LONG_ONLY" and direction == "SHORT":
-            violations.append(
-                f"BDSM direction_constraint=LONG_ONLY, but direction=SHORT"
-            )
+            violations.append("BDSM direction_constraint=LONG_ONLY, but direction=SHORT")
         elif constraint == "SHORT_ONLY" and direction == "LONG":
-            violations.append(
-                f"BDSM direction_constraint=SHORT_ONLY, but direction=LONG"
-            )
+            violations.append("BDSM direction_constraint=SHORT_ONLY, but direction=LONG")
 
     return {
         "passed": len(violations) == 0,
@@ -332,8 +330,7 @@ def _handle_execute_c_chain(params: dict[str, Any]) -> dict[str, Any]:
         "confidence": confidence,
         "details": details,
         "reflect_decisions": [
-            {"node_id": d.get("node_id"), "action": d.get("action")}
-            for d in report.reflect_history
+            {"node_id": d.get("node_id"), "action": d.get("action")} for d in report.reflect_history
         ],
         "execution_stats": {
             "total_nodes": report.total_nodes,
@@ -386,10 +383,7 @@ def _query_dal_for_market_data(symbol: str) -> dict[str, Any]:
     查询内容: fear_greed/funding_rate/open_interest/long_short_ratio/taker_volume
     """
     try:
-        dal_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "..",
-            "19-数据访问层"
-        )
+        dal_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "19-数据访问层")
         if dal_path not in sys.path:
             sys.path.insert(0, dal_path)
         from dreambuddy_dal.connection import get_connection
@@ -410,6 +404,7 @@ def _query_dal_for_market_data(symbol: str) -> dict[str, Any]:
         # 查询 funding rate
         try:
             from datetime import datetime, timedelta
+
             now = datetime.utcnow()
             start = now - timedelta(hours=24)
             fr = repo.query_funding_by_time(symbol, start, now)
@@ -454,21 +449,26 @@ def _fetch_ticker_via_ccxt(symbol: str) -> dict[str, Any]:
             "price": float(ticker.get("last", 0)),
             "change_1h": 0.0,  # ccxt ticker 不含 1h 变化
             "change_24h": float(ticker.get("percentage", 0)),
-            "vol_ratio": float(ticker.get("quoteVolume", 0)) / 1e9 if ticker.get("quoteVolume") else 1.0,
+            "vol_ratio": (
+                float(ticker.get("quoteVolume", 0)) / 1e9 if ticker.get("quoteVolume") else 1.0
+            ),
         }
         # 获取 OHLCV 计算简单指标
         ohlcv = exchange.fetch_ohlcv(pair, "1h", limit=200)
         if ohlcv and len(ohlcv) >= 50:
             import numpy as np
+
             closes = np.array([c[4] for c in ohlcv], dtype=float)
             highs = np.array([c[2] for c in ohlcv], dtype=float)
             lows = np.array([c[3] for c in ohlcv], dtype=float)
-            volumes = np.array([c[5] for c in ohlcv], dtype=float)
+            volumes = np.array([c[5] for c in ohlcv], dtype=float)  # noqa: F841
 
             # EMA
             result["ema20"] = float(closes[-20:].mean())
             result["ema50"] = float(closes[-50:].mean())
-            result["ema200"] = float(closes[-200:].mean()) if len(closes) >= 200 else float(closes.mean())
+            result["ema200"] = (
+                float(closes[-200:].mean()) if len(closes) >= 200 else float(closes.mean())
+            )
 
             # RSI 14
             deltas = np.diff(closes)
@@ -495,9 +495,13 @@ def _fetch_ticker_via_ccxt(symbol: str) -> dict[str, Any]:
             result["bb_width"] = float(4 * std / result["ema20"])
 
             # ATR
-            tr = np.maximum(highs[-14:] - lows[-14:],
-                           np.maximum(np.abs(highs[-14:] - np.roll(closes, 1)[-14:]),
-                                      np.abs(lows[-14:] - np.roll(closes, 1)[-14:])))
+            tr = np.maximum(
+                highs[-14:] - lows[-14:],
+                np.maximum(
+                    np.abs(highs[-14:] - np.roll(closes, 1)[-14:]),
+                    np.abs(lows[-14:] - np.roll(closes, 1)[-14:]),
+                ),
+            )
             atr = tr.mean()
             result["atr"] = float(atr)
             result["atr_pct"] = float(atr / result["price"]) if result["price"] else 0.01
@@ -515,6 +519,7 @@ def _fetch_ticker_via_ccxt(symbol: str) -> dict[str, Any]:
 def _fetch_from_indicators_api(symbol: str) -> dict[str, Any]:
     """尝试从经典指标系统 API (8092) 获取数据"""
     import urllib.request
+
     try:
         url = "http://127.0.0.1:8092/signals/recent?limit=1"
         req = urllib.request.Request(url, method="GET")
@@ -536,6 +541,7 @@ def _generate_symbol_specific_defaults(symbol: str) -> dict[str, Any]:
     方案: 用符号 hash 生成确定性的差异化数据
     """
     import hashlib
+
     h = int(hashlib.md5(symbol.encode()).hexdigest(), 16)
     # 基础价格根据符号不同（BTC ~67000, ETH ~3500, SOL ~150, etc.）
     price_map = {"BTC": 67000, "ETH": 3500, "SOL": 150, "BNB": 600, "DOGE": 0.12}
@@ -551,7 +557,7 @@ def _generate_symbol_specific_defaults(symbol: str) -> dict[str, Any]:
     macd_val = ((h % 200) - 100) / 10.0
     # EMA 排列: 根据 hash 决定多头/空头排列
     trend_up = (h % 2) == 0
-    ema_offset = base_price * 0.01
+    ema_offset = base_price * 0.01  # noqa: F841
 
     return {
         "price": round(price, 2),
@@ -803,7 +809,8 @@ def _trigger_cognitive_record(event_entry: dict[str, Any]) -> None:
         # 尝试调用认知系统 MCP record
         # 通过子进程调用 cognitive_mcp_server 的 record 工具
         import subprocess
-        record_payload = {
+
+        record_payload = {  # noqa: F841
             "jsonrpc": "2.0",
             "method": "tools/call",
             "params": {
@@ -820,7 +827,9 @@ def _trigger_cognitive_record(event_entry: dict[str, Any]) -> None:
         # 非阻塞调用：启动子进程但不等待
         cognitive_server = str(
             Path(__file__).resolve().parent.parent.parent.parent.parent
-            / "4-MEMORY" / "9-工具与接口" / "cognitive_mcp_server.py"
+            / "4-MEMORY"
+            / "9-工具与接口"
+            / "cognitive_mcp_server.py"
         )
         if Path(cognitive_server).exists():
             subprocess.Popen(
@@ -844,11 +853,13 @@ def _try_mcp_record(content: str, tags: str) -> None:
         # 直接导入认知闭环
         cog_path = str(
             Path(__file__).resolve().parent.parent.parent.parent.parent
-            / "4-MEMORY" / "9-工具与接口"
+            / "4-MEMORY"
+            / "9-工具与接口"
         )
         if cog_path not in sys.path:
             sys.path.insert(0, cog_path)
         from cognitive_loop_entry import get_cle
+
         cle = get_cle()
         cle.record(content=content, quality_level="C", tags=tags)
     except Exception:
@@ -878,13 +889,21 @@ def _handle_artifact_index(params: dict[str, Any]) -> dict[str, Any]:
 
     try:
         if not os.path.isdir(_ARTIFACTS_ROOT):
-            return {"node_id": "artifact_index", "status": "degraded",
-                    "reason": "artifacts_root_not_found", "items": []}
+            return {
+                "node_id": "artifact_index",
+                "status": "degraded",
+                "reason": "artifacts_root_not_found",
+                "items": [],
+            }
 
         if action == "list":
             items = _scan_artifacts_index()
-            return {"node_id": "artifact_index", "status": "ok",
-                    "total": len(items), "items": items}
+            return {
+                "node_id": "artifact_index",
+                "status": "ok",
+                "total": len(items),
+                "items": items,
+            }
 
         elif action == "detail":
             slug = params.get("slug", "")
@@ -894,36 +913,49 @@ def _handle_artifact_index(params: dict[str, Any]) -> dict[str, Any]:
         elif action == "relations":
             items = _scan_artifacts_index()
             relations = _build_artifact_relations(items)
-            return {"node_id": "artifact_index", "status": "ok",
-                    "relations": relations}
+            return {"node_id": "artifact_index", "status": "ok", "relations": relations}
 
         elif action == "phase_groups":
             limit = params.get("limit", 3)
             items = _scan_artifacts_index()
             relations = _build_artifact_relations(items)
             groups = _group_by_phase(relations, limit)
-            return {"node_id": "artifact_index", "status": "ok",
-                    "phase_groups": groups}
+            return {"node_id": "artifact_index", "status": "ok", "phase_groups": groups}
 
         elif action == "search":
             query = params.get("query", "").lower()
             category = params.get("category", "")
             items = _scan_artifacts_index()
             filtered = [
-                item for item in items
-                if (not query or query in item.get("title", "").lower()
-                    or query in item.get("category", "").lower())
+                item
+                for item in items
+                if (
+                    not query
+                    or query in item.get("title", "").lower()
+                    or query in item.get("category", "").lower()
+                )
                 and (not category or item.get("category") == category)
             ]
-            return {"node_id": "artifact_index", "status": "ok",
-                    "total": len(filtered), "items": filtered}
+            return {
+                "node_id": "artifact_index",
+                "status": "ok",
+                "total": len(filtered),
+                "items": filtered,
+            }
 
-        return {"node_id": "artifact_index", "status": "error",
-                "reason": f"unknown_action: {action}"}
+        return {
+            "node_id": "artifact_index",
+            "status": "error",
+            "reason": f"unknown_action: {action}",
+        }
 
     except Exception as e:
-        return {"node_id": "artifact_index", "status": "degraded",
-                "reason": str(e)[:100], "items": []}
+        return {
+            "node_id": "artifact_index",
+            "status": "degraded",
+            "reason": str(e)[:100],
+            "items": [],
+        }
 
 
 def _scan_artifacts_index() -> list[dict[str, Any]]:
@@ -942,29 +974,33 @@ def _scan_artifacts_index() -> list[dict[str, Any]]:
                         data = json.load(f)
                         if isinstance(data, list):
                             for rec in data:
-                                items.append({
-                                    "category": category,
-                                    "artifact_id": rec.get("id", rec.get("artifactId", "")),
-                                    "title": rec.get("title", ""),
-                                    "type": rec.get("type", ""),
-                                    "phase": rec.get("phase", ""),
-                                    "tags": rec.get("tags", []),
-                                    "updated": rec.get("updated", rec.get("last_updated", "")),
-                                })
+                                items.append(
+                                    {
+                                        "category": category,
+                                        "artifact_id": rec.get("id", rec.get("artifactId", "")),
+                                        "title": rec.get("title", ""),
+                                        "type": rec.get("type", ""),
+                                        "phase": rec.get("phase", ""),
+                                        "tags": rec.get("tags", []),
+                                        "updated": rec.get("updated", rec.get("last_updated", "")),
+                                    }
+                                )
                     except json.JSONDecodeError:
                         pass
             # 也扫描 .md 文件
             for sub in os.scandir(entry.path):
                 if sub.is_file() and sub.name.endswith(".md"):
-                    items.append({
-                        "category": category,
-                        "artifact_id": sub.name.replace(".md", ""),
-                        "title": sub.name.replace(".md", "").replace("_", " "),
-                        "type": "markdown",
-                        "phase": "",
-                        "tags": [],
-                        "updated": "",
-                    })
+                    items.append(
+                        {
+                            "category": category,
+                            "artifact_id": sub.name.replace(".md", ""),
+                            "title": sub.name.replace(".md", "").replace("_", " "),
+                            "type": "markdown",
+                            "phase": "",
+                            "tags": [],
+                            "updated": "",
+                        }
+                    )
     except Exception:
         pass
     return items
@@ -984,8 +1020,7 @@ def _get_artifact_detail(slug: str) -> dict[str, Any]:
             return {"slug": slug, "found": False}
         with open(filepath, "r", encoding="utf-8") as f:
             content = f.read()
-        return {"slug": slug, "found": True, "content": content[:2000],
-                "size": len(content)}
+        return {"slug": slug, "found": True, "content": content[:2000], "size": len(content)}
     except Exception:
         return {"slug": slug, "found": False}
 
@@ -1000,13 +1035,15 @@ def _build_artifact_relations(items: list[dict[str, Any]]) -> list[dict[str, Any
             by_phase.setdefault(phase, []).append(item)
     for phase, group in by_phase.items():
         for i, item in enumerate(group):
-            relations.append({
-                "artifact_id": item.get("artifact_id", ""),
-                "category": item.get("category", ""),
-                "phase": phase,
-                "position": i,
-                "total_in_phase": len(group),
-            })
+            relations.append(
+                {
+                    "artifact_id": item.get("artifact_id", ""),
+                    "category": item.get("category", ""),
+                    "phase": phase,
+                    "position": i,
+                    "total_in_phase": len(group),
+                }
+            )
     return relations
 
 
@@ -1025,6 +1062,7 @@ def _group_by_phase(relations: list[dict[str, Any]], limit: int) -> dict[str, li
 # ============================================================
 # G8+G9: 交易索引 IPC 方法
 # ============================================================
+
 
 def _handle_trade_index(params: dict[str, Any]) -> dict[str, Any]:
     """G8+G9: 交易索引查询 — A7/A8 反思输入 + 认知回流
@@ -1048,8 +1086,13 @@ def _handle_trade_index(params: dict[str, Any]) -> dict[str, Any]:
             return _record_trades_to_cognitive(index_path, params)
 
         if not index_path.exists():
-            return {"node_id": "trade_index", "status": "degraded",
-                    "reason": "index_not_found", "trades": [], "total": 0}
+            return {
+                "node_id": "trade_index",
+                "status": "degraded",
+                "reason": "index_not_found",
+                "trades": [],
+                "total": 0,
+            }
 
         trades = _load_trade_index(index_path)
 
@@ -1064,19 +1107,32 @@ def _handle_trade_index(params: dict[str, Any]) -> dict[str, Any]:
 
         filtered = trades
         if symbol:
-            filtered = [t for t in filtered if t.get("coin", "").upper() == symbol.upper()
-                        or t.get("symbol", "").upper() == symbol.upper()]
+            filtered = [
+                t
+                for t in filtered
+                if t.get("coin", "").upper() == symbol.upper()
+                or t.get("symbol", "").upper() == symbol.upper()
+            ]
         if direction:
             filtered = [t for t in filtered if t.get("direction", "").upper() == direction.upper()]
         if source:
             filtered = [t for t in filtered if t.get("source_system", "") == source]
 
-        return {"node_id": "trade_index", "status": "ok",
-                "total": len(filtered), "trades": filtered[:limit]}
+        return {
+            "node_id": "trade_index",
+            "status": "ok",
+            "total": len(filtered),
+            "trades": filtered[:limit],
+        }
 
     except Exception as e:
-        return {"node_id": "trade_index", "status": "degraded",
-                "reason": str(e)[:100], "trades": [], "total": 0}
+        return {
+            "node_id": "trade_index",
+            "status": "degraded",
+            "reason": str(e)[:100],
+            "trades": [],
+            "total": 0,
+        }
 
 
 def _load_trade_index(index_path: Path) -> list[dict[str, Any]]:
@@ -1099,8 +1155,11 @@ def _load_trade_index(index_path: Path) -> list[dict[str, Any]]:
 def _compute_trade_stats(trades: list[dict[str, Any]]) -> dict[str, Any]:
     """计算交易统计"""
     if not trades:
-        return {"node_id": "trade_index", "status": "ok", "stats": {
-            "total": 0, "wins": 0, "losses": 0, "win_rate": 0.0}}
+        return {
+            "node_id": "trade_index",
+            "status": "ok",
+            "stats": {"total": 0, "wins": 0, "losses": 0, "win_rate": 0.0},
+        }
 
     wins = sum(1 for t in trades if t.get("pnl", 0) > 0)
     losses = sum(1 for t in trades if t.get("pnl", 0) < 0)
@@ -1116,12 +1175,20 @@ def _compute_trade_stats(trades: list[dict[str, Any]]) -> dict[str, Any]:
         s = t.get("source_system", "unknown")
         by_source[s] = by_source.get(s, 0) + 1
 
-    return {"node_id": "trade_index", "status": "ok", "stats": {
-        "total": len(trades), "wins": wins, "losses": losses,
-        "win_rate": wins / len(trades) if trades else 0.0,
-        "total_pnl": round(total_pnl, 2),
-        "by_symbol": by_symbol, "by_direction": by_direction,
-        "by_source": by_source}}
+    return {
+        "node_id": "trade_index",
+        "status": "ok",
+        "stats": {
+            "total": len(trades),
+            "wins": wins,
+            "losses": losses,
+            "win_rate": wins / len(trades) if trades else 0.0,
+            "total_pnl": round(total_pnl, 2),
+            "by_symbol": by_symbol,
+            "by_direction": by_direction,
+            "by_source": by_source,
+        },
+    }
 
 
 def _record_trades_to_cognitive(index_path: Path, params: dict[str, Any]) -> dict[str, Any]:
@@ -1129,18 +1196,19 @@ def _record_trades_to_cognitive(index_path: Path, params: dict[str, Any]) -> dic
     try:
         trades = _load_trade_index(index_path) if index_path.exists() else []
         if not trades:
-            return {"node_id": "trade_index", "status": "degraded",
-                    "reason": "no_trades_to_record"}
+            return {"node_id": "trade_index", "status": "degraded", "reason": "no_trades_to_record"}
 
         recorded = 0
         try:
             cog_path = str(
                 Path(__file__).resolve().parent.parent.parent.parent.parent
-                / "4-MEMORY" / "9-工具与接口"
+                / "4-MEMORY"
+                / "9-工具与接口"
             )
             if cog_path not in sys.path:
                 sys.path.insert(0, cog_path)
             from cognitive_loop_entry import get_cle
+
             cle = get_cle()
 
             for t in trades[-20:]:  # 最近20条
@@ -1155,17 +1223,21 @@ def _record_trades_to_cognitive(index_path: Path, params: dict[str, Any]) -> dic
         except Exception:
             pass  # FAIL-OPEN
 
-        return {"node_id": "trade_index", "status": "ok",
-                "recorded": recorded, "total_trades": len(trades)}
+        return {
+            "node_id": "trade_index",
+            "status": "ok",
+            "recorded": recorded,
+            "total_trades": len(trades),
+        }
 
     except Exception as e:
-        return {"node_id": "trade_index", "status": "degraded",
-                "reason": str(e)[:100]}
+        return {"node_id": "trade_index", "status": "degraded", "reason": str(e)[:100]}
 
 
 # ============================================================
 # G10: 向量索引构建 IPC 方法
 # ============================================================
+
 
 def _handle_build_vector_index(params: dict[str, Any]) -> dict[str, Any]:
     """G10: 触发知识库向量索引增量构建
@@ -1179,41 +1251,46 @@ def _handle_build_vector_index(params: dict[str, Any]) -> dict[str, Any]:
     force = params.get("force", False)
 
     try:
-        kb_path = str(
-            Path(__file__).resolve().parent.parent.parent.parent.parent
-            / "2-KNOWLEDGE"
-        )
+        kb_path = str(Path(__file__).resolve().parent.parent.parent.parent.parent / "2-KNOWLEDGE")
         if not os.path.isdir(kb_path):
-            return {"node_id": "vector_index", "status": "degraded",
-                    "reason": "knowledge_base_not_found"}
+            return {
+                "node_id": "vector_index",
+                "status": "degraded",
+                "reason": "knowledge_base_not_found",
+            }
 
         # 尝试调用 build_index
         vs_path = str(
             Path(__file__).resolve().parent.parent.parent.parent.parent
-            / "2-KNOWLEDGE" / "9-RAG-INFRA" / "vector_store"
+            / "2-KNOWLEDGE"
+            / "9-RAG-INFRA"
+            / "vector_store"
         )
         if vs_path not in sys.path:
             sys.path.insert(0, vs_path)
 
         try:
             from build_index import build_index
+
             stats = build_index(kb_path, force=force)
-            return {"node_id": "vector_index", "status": "ok",
-                    "stats": stats, "force": force}
+            return {"node_id": "vector_index", "status": "ok", "stats": stats, "force": force}
         except ImportError:
             # ChromaDB 可能未安装 — 降级为文件扫描统计
             md_count = 0
-            for root, dirs, files in os.walk(kb_path):
+            for root, dirs, files in os.walk(kb_path):  # noqa: B007
                 for f in files:
                     if f.endswith(".md"):
                         md_count += 1
-            return {"node_id": "vector_index", "status": "degraded",
-                    "reason": "chromadb_not_available",
-                    "total_md_files": md_count, "force": force}
+            return {
+                "node_id": "vector_index",
+                "status": "degraded",
+                "reason": "chromadb_not_available",
+                "total_md_files": md_count,
+                "force": force,
+            }
 
     except Exception as e:
-        return {"node_id": "vector_index", "status": "degraded",
-                "reason": str(e)[:100]}
+        return {"node_id": "vector_index", "status": "degraded", "reason": str(e)[:100]}
 
 
 def _handle_session_consumer(params: dict[str, Any]) -> dict[str, Any]:
@@ -1321,6 +1398,7 @@ def _handle_graph_planner(params: dict[str, Any]) -> dict[str, Any]:
                 nodes_yaml = os.path.join(_DREAMOS_ARCH_DIR, "dreamos", "config", "nodes.yaml")
                 if os.path.exists(nodes_yaml):
                     from dreamos.registry import load_from_yaml
+
                     load_from_yaml(nodes_yaml, registry)
         except Exception:
             pass  # FAIL-OPEN: registry 为空时回退到 STANDARD_CHAINS
@@ -1506,15 +1584,18 @@ def _handle_reflection_decide(params: dict[str, Any]) -> dict[str, Any]:
 
         # 构建轻量 Graph（含当前节点、前序节点、收尾节点、矛盾补充节点）
         conflict_nodes = ["A0", "C1", "F1"]  # CONFLICT_NODE_MAP 的 value 集合
-        all_node_ids = list(dict.fromkeys(
-            [current_node_id] + list(results_dict.keys()) + ["A9", "G2", "C5"] + conflict_nodes
-        ))
+        all_node_ids = list(
+            dict.fromkeys(
+                [current_node_id] + list(results_dict.keys()) + ["A9", "G2", "C5"] + conflict_nodes
+            )
+        )
         graph = _LightweightGraph(node_ids=all_node_ids)
 
         # 构建执行记录（重试次数）
         record = None
         if retries > 0:
             from dreamos.core.compute.types import NodeExecutionRecord
+
             record = NodeExecutionRecord(node_id=current_node_id, retries=retries)
 
         # 调用真实 Reflector.decide()
@@ -1531,7 +1612,9 @@ def _handle_reflection_decide(params: dict[str, Any]) -> dict[str, Any]:
         )
 
         # 映射 ReflectAction → 协议 decision 字符串
-        action_value = decision.action.value if hasattr(decision.action, "value") else str(decision.action)
+        action_value = (
+            decision.action.value if hasattr(decision.action, "value") else str(decision.action)
+        )
         protocol_decision = _REFLECT_ACTION_TO_DECISION.get(action_value, "CONTINUE")
 
         # 构建回传参数（含 decision + 决策上下文）
@@ -1590,9 +1673,7 @@ class _LightweightNode:
         self.node_id = node_id
 
 
-def handle_request(
-    raw_line: str, protocol_server
-) -> Optional[dict[str, Any]]:
+def handle_request(raw_line: str, protocol_server) -> Optional[dict[str, Any]]:
     """处理 IPC 请求
 
     返回响应 dict，或 None（不需要响应时）
@@ -1689,7 +1770,9 @@ def handle_request(
 
 def main() -> int:
     """主循环：读取 stdin NDJSON，处理请求，写入 stdout NDJSON"""
-    _send_stderr("INFO", f"Python IPC server 启动 (version={CURRENT_SCHEMA_VERSION}, pid={os.getpid()})")
+    _send_stderr(
+        "INFO", f"Python IPC server 启动 (version={CURRENT_SCHEMA_VERSION}, pid={os.getpid()})"
+    )
 
     protocol_server = create_protocol_server()
 
@@ -1716,17 +1799,19 @@ def main() -> int:
                 req_id = json.loads(line).get("id", str(uuid.uuid4()))
             except Exception:
                 req_id = str(uuid.uuid4())
-            _send_stdout({
-                "schema_version": CURRENT_SCHEMA_VERSION,
-                "message_type": "response",
-                "ok": False,
-                "error": {
-                    "code": "INTERNAL_ERROR",
-                    "message": f"{type(e).__name__}: {e}",
-                },
-                "id": req_id,
-                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            })
+            _send_stdout(
+                {
+                    "schema_version": CURRENT_SCHEMA_VERSION,
+                    "message_type": "response",
+                    "ok": False,
+                    "error": {
+                        "code": "INTERNAL_ERROR",
+                        "message": f"{type(e).__name__}: {e}",
+                    },
+                    "id": req_id,
+                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                }
+            )
 
         # F-08: 心跳（每 5s）
         if time.time() - last_heartbeat > 5:

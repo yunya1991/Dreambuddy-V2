@@ -35,16 +35,16 @@ Superpowers流程模板系统 — 元认知与应用认知双层架构
   其中 Process = 元认知流程 + 应用认知流程
 """
 
-import json
-import os
-import sys
-import re
-import time
-import yaml
 import hashlib
-from dataclasses import dataclass, field, asdict
+import json
+import re
+import sys
+import time
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+import yaml
 
 _SCRIPT_DIR = Path(__file__).parent
 if str(_SCRIPT_DIR) not in sys.path:
@@ -54,6 +54,7 @@ if str(_SCRIPT_DIR) not in sys.path:
 # ============================================================
 # 元认知流程（Meta-Cognition）= 总记忆层
 # ============================================================
+
 
 class ProcessTemplate:
     """
@@ -167,6 +168,7 @@ class ProcessTemplate:
 # 元→应用映射（Meta→Applied Mapping）
 # ============================================================
 
+
 class TemplateMapping:
     """元认知流程 → 应用认知流程的映射关系（单条）。"""
 
@@ -235,9 +237,7 @@ class TemplateMappingRegistry:
         if storage_path:
             self.storage_path = Path(storage_path)
         else:
-            self.storage_path = (
-                _SCRIPT_DIR / ".." / "0-元记忆" / "template_mappings.json"
-            )
+            self.storage_path = _SCRIPT_DIR / ".." / "0-元记忆" / "template_mappings.json"
         self.storage_path.parent.mkdir(parents=True, exist_ok=True)
         # parent_id → {applied_id: TemplateMapping}
         self._mapping: Dict[str, Dict[str, TemplateMapping]] = {}
@@ -298,9 +298,7 @@ class TemplateMappingRegistry:
             "updated_at": time.time(),
             "mappings": [m.to_dict() for m in self.list_all()],
         }
-        self.storage_path.write_text(
-            json.dumps(data, indent=2, ensure_ascii=False)
-        )
+        self.storage_path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
 
     def load(self):
         if not self.storage_path.exists():
@@ -404,6 +402,7 @@ def resolve_unit_for_task(task_type: str) -> Optional[Dict[str, Any]]:
 # ============================================================
 # 流程模板注册表（元 + 应用 双层）
 # ============================================================
+
 
 class ProcessTemplateRegistry:
     """
@@ -610,9 +609,7 @@ class ProcessTemplateRegistry:
 
     # ---------- 查询 ----------
     def get(self, template_id: str) -> Optional[ProcessTemplate]:
-        return self._meta_templates.get(template_id) or self._applied_templates.get(
-            template_id
-        )
+        return self._meta_templates.get(template_id) or self._applied_templates.get(template_id)
 
     def get_meta(self, template_id: str) -> Optional[ProcessTemplate]:
         return self._meta_templates.get(template_id)
@@ -700,12 +697,7 @@ class ProcessTemplateRegistry:
         dd_score = _clip((15.0 - max_drawdown_pct) / 15.0)
         win_score = _clip((win_rate - 0.5) / 0.3)
 
-        path_advantage = (
-            pnl_score * 0.4
-            + sharpe_score * 0.3
-            + dd_score * 0.2
-            + win_score * 0.1
-        )
+        path_advantage = pnl_score * 0.4 + sharpe_score * 0.3 + dd_score * 0.2 + win_score * 0.1
 
         # 存入 outcome_metrics
         applied.metadata["outcome_metrics"] = {
@@ -746,17 +738,19 @@ class ProcessTemplateRegistry:
                     injection = f"## {t.name}\n{t.description}"
             else:
                 injection = f"## {t.name}\n{t.description}"
-            results.append({
-                "applied_id": t.template_id,
-                "title": t.name,
-                "quality_level": t.quality_level,
-                "confidence": t.confidence,
-                "verify_count": t.verify_count,
-                "parent_skill": parent_skill,
-                "path_advantage": path_adv,
-                "evaluation_count": t.evaluation_count,
-                "injection": injection,
-            })
+            results.append(
+                {
+                    "applied_id": t.template_id,
+                    "title": t.name,
+                    "quality_level": t.quality_level,
+                    "confidence": t.confidence,
+                    "verify_count": t.verify_count,
+                    "parent_skill": parent_skill,
+                    "path_advantage": path_adv,
+                    "evaluation_count": t.evaluation_count,
+                    "injection": injection,
+                }
+            )
         # P5: C级惩罚 — quality_level 为主排序键(S>A>B>C)，verify_count 为次排序键
         # 高等级优先召回，C 级仅在高等级不足时填充，避免低质噪声抢占名额
         _ql_order = {"S": 4, "A": 3, "B": 2, "C": 1}
@@ -775,16 +769,10 @@ class ProcessTemplateRegistry:
     def list_applied(self, unit_id: Optional[str] = None) -> List[ProcessTemplate]:
         if not unit_id:
             return list(self._applied_templates.values())
-        return [
-            t
-            for t in self._applied_templates.values()
-            if t.metadata.get("unit_id") == unit_id
-        ]
+        return [t for t in self._applied_templates.values() if t.metadata.get("unit_id") == unit_id]
 
     def list_all(self) -> List[ProcessTemplate]:
-        return list(self._meta_templates.values()) + list(
-            self._applied_templates.values()
-        )
+        return list(self._meta_templates.values()) + list(self._applied_templates.values())
 
     def list_by_layer(self, layer: str) -> List[ProcessTemplate]:
         if layer == "meta":
@@ -795,11 +783,7 @@ class ProcessTemplateRegistry:
 
     def get_children(self, parent_id: str) -> List[ProcessTemplate]:
         """获取某个元认知流程的所有应用实例。"""
-        return [
-            t
-            for t in self._applied_templates.values()
-            if t.parent_template_id == parent_id
-        ]
+        return [t for t in self._applied_templates.values() if t.parent_template_id == parent_id]
 
     # ---------- 持久化 ----------
     def save(self):
@@ -810,9 +794,7 @@ class ProcessTemplateRegistry:
 
     def _save_meta_templates(self):
         data = {tid: t.to_dict() for tid, t in self._meta_templates.items()}
-        self.meta_storage.write_text(
-            json.dumps(data, indent=2, ensure_ascii=False)
-        )
+        self.meta_storage.write_text(json.dumps(data, indent=2, ensure_ascii=False))
 
     def _persist_applied_template(self, template: ProcessTemplate):
         """将单个应用模板持久化到对应应用记忆单元的 solution_paths。"""
@@ -850,9 +832,7 @@ class ProcessTemplateRegistry:
 
         target_dir.mkdir(parents=True, exist_ok=True)
         file_path = target_dir / f"{template.template_id}.json"
-        file_path.write_text(
-            json.dumps(template.to_dict(), indent=2, ensure_ascii=False)
-        )
+        file_path.write_text(json.dumps(template.to_dict(), indent=2, ensure_ascii=False))
 
     def load(self):
         """从文件重新加载所有模板（元 + 应用）。"""
@@ -890,6 +870,7 @@ def _build_keyword_index(registry: ProcessTemplateRegistry) -> Dict[str, List[st
 # ============================================================
 # 检索相关流程
 # ============================================================
+
 
 def retrieve_relevant_processes(
     query: str,
@@ -930,7 +911,12 @@ def retrieve_relevant_processes(
                     tags=sk.trigger_keywords[:5],
                     layer="meta",
                 )
-                w.metadata = {"match_score": sc, "match_reason": rs, "hard_gates": sk.hard_gates, "checklists": sk.checklists}
+                w.metadata = {
+                    "match_score": sc,
+                    "match_reason": rs,
+                    "hard_gates": sk.hard_gates,
+                    "checklists": sk.checklists,
+                }
                 wrappers.append(w)
             return wrappers
         # 全 0 → 退化到旧 registry 逻辑（fallback）
@@ -978,6 +964,7 @@ def retrieve_relevant_processes(
 # 格式化流程建议
 # ============================================================
 
+
 def format_process_suggestions(templates: List[ProcessTemplate]) -> str:
     """生成AI可读的流程建议文本（非约束）。"""
     lines = [
@@ -993,9 +980,7 @@ def format_process_suggestions(templates: List[ProcessTemplate]) -> str:
         steps_str = " → ".join(t.steps)
         lines.append(f"## {i}. [{ql}][{layer_label}] {t.name}")
         lines.append(f"   ID: {t.template_id}")
-        lines.append(
-            f"   置信度: {t.confidence:.2f} | 验证次数: {t.verify_count}"
-        )
+        lines.append(f"   置信度: {t.confidence:.2f} | 验证次数: {t.verify_count}")
         lines.append(f"   步骤: {steps_str}")
         if t.description:
             lines.append(f"   说明: {t.description}")
@@ -1018,6 +1003,7 @@ def format_process_suggestions(templates: List[ProcessTemplate]) -> str:
 # 校验是否遵循流程
 # ============================================================
 
+
 def verify_process_followed(
     template: ProcessTemplate,
     action_chain: List[Dict[str, Any]],
@@ -1027,9 +1013,7 @@ def verify_process_followed(
 
     策略：检查行动链中是否出现流程步骤的关键词或同义词。
     """
-    action_text = " ".join(
-        str(a.get("detail", "")) for a in action_chain
-    ).lower()
+    action_text = " ".join(str(a.get("detail", "")) for a in action_chain).lower()
 
     matched_steps = 0
     step_matches: List[str] = []
@@ -1079,6 +1063,7 @@ def _get_step_synonyms(step: str) -> List[str]:
 # 贝叶斯更新
 # ============================================================
 
+
 def update_process_confidence(
     template: ProcessTemplate,
     success: bool,
@@ -1103,6 +1088,7 @@ def update_process_confidence(
 # 元→应用反馈（应用→元 置信度反哺）
 # ============================================================
 
+
 def feedback_to_meta_template(
     registry: ProcessTemplateRegistry,
     applied_template_id: str,
@@ -1116,9 +1102,7 @@ def feedback_to_meta_template(
       1. 更新映射表的 success/fail 计数
       2. 按比例（映射数越多，单个实例权重越低）反哺元模板置信度
     """
-    mapping = registry.mapping_registry.record_verification(
-        applied_template_id, success
-    )
+    mapping = registry.mapping_registry.record_verification(applied_template_id, success)
     if not mapping:
         return None
 
@@ -1131,7 +1115,7 @@ def feedback_to_meta_template(
     siblings = registry.get_children(parent_id)
     total = len(siblings)
     # 权重: 1/√total （平滑衰减）
-    weight = 1.0 / (total ** 0.5) if total > 0 else 1.0
+    weight = 1.0 / (total**0.5) if total > 0 else 1.0
 
     # 加权贝叶斯更新
     if success:
@@ -1149,6 +1133,7 @@ def feedback_to_meta_template(
 # ============================================================
 # 主入口
 # ============================================================
+
 
 def main():
     import argparse
@@ -1169,7 +1154,9 @@ def main():
         print("📋 已注册流程模板（元+应用）:")
         for t in registry.list_all():
             layer = "元" if t.layer == "meta" else "用"
-            print(f"  [{t.quality_level}][{layer}] {t.template_id}: {t.name} (conf={t.confidence:.2f})")
+            print(
+                f"  [{t.quality_level}][{layer}] {t.template_id}: {t.name} (conf={t.confidence:.2f})"
+            )
         print(f"  合计: 元 {len(registry.list_meta())} / 应用 {len(registry.list_applied())}")
 
     elif args.list_meta:
@@ -1221,9 +1208,11 @@ if __name__ == "__main__":
 # Part A: SuperpowersSkill 数据类（设计节 2.2）
 # ============================================================
 
+
 @dataclass
 class SuperpowersSkill:
     """SKILL.md 解析结果（设计节 2.2 SuperpowersSkill 数据模型）"""
+
     skill_id: str
     display_name: str
     description: str
@@ -1248,12 +1237,14 @@ class SuperpowersSkill:
 # Part B: SkillLoader 类（设计节 2.2-2.3）
 # ============================================================
 
+
 class SkillLoader:
     """
     SKILL.md 加载器。
     SKILLS_ROOT = <repo_root>/4-MEMORY/0-元记忆/superpowers/skills（动态解析，跨机器可移植）
     INDEX_PATH = SKILLS_ROOT 父目录下 /skills-index.json
     """
+
     # COG-FIX-20260809: 原 macOS 硬编码路径改为相对本文件动态解析（parents[2] = 仓库根）
     _REPO_ROOT = Path(__file__).resolve().parents[2]
     SKILLS_ROOT = _REPO_ROOT / "4-MEMORY" / "0-元记忆" / "superpowers" / "skills"
@@ -1264,10 +1255,18 @@ class SkillLoader:
     TRADING_INDEX_PATH = TRADING_SKILLS_ROOT.parent / "trading-skills-index.json"
 
     # P1: 交易类 task_type 集合（用于 retrieve 路由）
-    _TRADING_TASK_TYPES = frozenset([
-        "trading-system", "trading-data", "strategy-state", "risk-control",
-        "strategy-research", "strategy-backtest", "strategy-execution", "strategy-governance",
-    ])
+    _TRADING_TASK_TYPES = frozenset(
+        [
+            "trading-system",
+            "trading-data",
+            "strategy-state",
+            "risk-control",
+            "strategy-research",
+            "strategy-backtest",
+            "strategy-execution",
+            "strategy-governance",
+        ]
+    )
 
     def __init__(self):
         self.skills: Dict[str, SuperpowersSkill] = {}
@@ -1280,19 +1279,29 @@ class SkillLoader:
         """FAIL FAST。校验 frontmatter 分隔符必须是 ---，不得用 *** / ===== / ____"""
         lines = content.splitlines()
         if not lines:
-            raise ValueError(f"[SKILL_LOADER_ERROR] File: {path} Line: 0 Error: 文件为空 Suggested fix: 添加合法的 YAML frontmatter（--- 分隔符包裹）")
+            raise ValueError(
+                f"[SKILL_LOADER_ERROR] File: {path} Line: 0 Error: 文件为空 Suggested fix: 添加合法的 YAML frontmatter（--- 分隔符包裹）"
+            )
 
         line0 = lines[0].strip()
         if line0 != "---":
             line_no = 1
             if lines[0].startswith("***"):
-                raise ValueError(f"[SKILL_LOADER_ERROR] File: {path} Line: {line_no} Error: frontmatter 起始分隔符使用了 '***' 而非 '---' Suggested fix: 将第 1 行和闭合分隔符都改为 '---'")
+                raise ValueError(
+                    f"[SKILL_LOADER_ERROR] File: {path} Line: {line_no} Error: frontmatter 起始分隔符使用了 '***' 而非 '---' Suggested fix: 将第 1 行和闭合分隔符都改为 '---'"
+                )
             elif lines[0].startswith("==="):
-                raise ValueError(f"[SKILL_LOADER_ERROR] File: {path} Line: {line_no} Error: frontmatter 起始分隔符使用了 '===' 而非 '---' Suggested fix: 将第 1 行和闭合分隔符都改为 '---'")
+                raise ValueError(
+                    f"[SKILL_LOADER_ERROR] File: {path} Line: {line_no} Error: frontmatter 起始分隔符使用了 '===' 而非 '---' Suggested fix: 将第 1 行和闭合分隔符都改为 '---'"
+                )
             elif lines[0].startswith("___"):
-                raise ValueError(f"[SKILL_LOADER_ERROR] File: {path} Line: {line_no} Error: frontmatter 起始分隔符使用了 '___' 而非 '---' Suggested fix: 将第 1 行和闭合分隔符都改为 '---'")
+                raise ValueError(
+                    f"[SKILL_LOADER_ERROR] File: {path} Line: {line_no} Error: frontmatter 起始分隔符使用了 '___' 而非 '---' Suggested fix: 将第 1 行和闭合分隔符都改为 '---'"
+                )
             else:
-                raise ValueError(f"[SKILL_LOADER_ERROR] File: {path} Line: {line_no} Error: frontmatter 起始分隔符必须是 '---'（当前第 1 行为 {line0!r}）Suggested fix: 第 1 行必须严格为 '---'")
+                raise ValueError(
+                    f"[SKILL_LOADER_ERROR] File: {path} Line: {line_no} Error: frontmatter 起始分隔符必须是 '---'（当前第 1 行为 {line0!r}）Suggested fix: 第 1 行必须严格为 '---'"
+                )
 
         close_idx = None
         for i in range(1, min(len(lines), 100)):
@@ -1301,19 +1310,39 @@ class SkillLoader:
                 break
 
         if close_idx is None:
-            raise ValueError(f"[SKILL_LOADER_ERROR] File: {path} Line: 1 Error: 未找到 frontmatter 闭合分隔符 '---' Suggested fix: 在 frontmatter 结束后添加独立的一行 '---'")
+            raise ValueError(
+                f"[SKILL_LOADER_ERROR] File: {path} Line: 1 Error: 未找到 frontmatter 闭合分隔符 '---' Suggested fix: 在 frontmatter 结束后添加独立的一行 '---'"
+            )
 
         for j in range(0, min(len(lines), 10)):
             raw_line = lines[j]
             if j == 0 or j == close_idx:
                 continue
             stripped = raw_line.strip()
-            if stripped.startswith("***") and len(stripped) >= 3 and all(c == '*' for c in stripped):
-                raise ValueError(f"[SKILL_LOADER_ERROR] File: {path} Line: {j+1} Error: 在前 10 行发现疑似分隔符 '***' Suggested fix: frontmatter 只允许用 '---'，不要用 ***")
-            if stripped.startswith("===") and len(stripped) >= 3 and all(c == '=' for c in stripped):
-                raise ValueError(f"[SKILL_LOADER_ERROR] File: {path} Line: {j+1} Error: 在前 10 行发现疑似分隔符 '===' Suggested fix: frontmatter 只允许用 '---'，不要用 ===")
-            if stripped.startswith("___") and len(stripped) >= 3 and all(c == '_' for c in stripped):
-                raise ValueError(f"[SKILL_LOADER_ERROR] File: {path} Line: {j+1} Error: 在前 10 行发现疑似分隔符 '___' Suggested fix: frontmatter 只允许用 '---'，不要用 ___")
+            if (
+                stripped.startswith("***")
+                and len(stripped) >= 3
+                and all(c == "*" for c in stripped)
+            ):
+                raise ValueError(
+                    f"[SKILL_LOADER_ERROR] File: {path} Line: {j+1} Error: 在前 10 行发现疑似分隔符 '***' Suggested fix: frontmatter 只允许用 '---'，不要用 ***"
+                )
+            if (
+                stripped.startswith("===")
+                and len(stripped) >= 3
+                and all(c == "=" for c in stripped)
+            ):
+                raise ValueError(
+                    f"[SKILL_LOADER_ERROR] File: {path} Line: {j+1} Error: 在前 10 行发现疑似分隔符 '===' Suggested fix: frontmatter 只允许用 '---'，不要用 ==="
+                )
+            if (
+                stripped.startswith("___")
+                and len(stripped) >= 3
+                and all(c == "_" for c in stripped)
+            ):
+                raise ValueError(
+                    f"[SKILL_LOADER_ERROR] File: {path} Line: {j+1} Error: 在前 10 行发现疑似分隔符 '___' Suggested fix: frontmatter 只允许用 '---'，不要用 ___"
+                )
 
     def _parse_skill_md(self, content: str) -> Tuple[dict, List[str], List[str]]:
         """解析 SKILL.md → (frontmatter_dict, hard_gates, checklists)"""
@@ -1366,10 +1395,42 @@ class SkillLoader:
         return None
 
     _EN_STOPWORDS_2 = {
-        "on","in","to","it","an","of","or","at","by","do","is","be","as","so","we","if","go","no","up","my","he","me","hi","ok","ex","vs","al","eg","id","pm","am"
+        "on",
+        "in",
+        "to",
+        "it",
+        "an",
+        "of",
+        "or",
+        "at",
+        "by",
+        "do",
+        "is",
+        "be",
+        "as",
+        "so",
+        "we",
+        "if",
+        "go",
+        "no",
+        "up",
+        "my",
+        "he",
+        "me",
+        "hi",
+        "ok",
+        "ex",
+        "vs",
+        "al",
+        "eg",
+        "id",
+        "pm",
+        "am",
     }
 
-    def _extract_trigger_keywords(self, fm: dict, hg: List[str], cl: List[str], sup: Optional[str]) -> List[str]:
+    def _extract_trigger_keywords(
+        self, fm: dict, hg: List[str], cl: List[str], sup: Optional[str]
+    ) -> List[str]:
         """汇总 name + description + hg 词元 + cl 词元 + supplement 词元，去重后返回。
 
         防 C1 子串匹配噪音：
@@ -1450,7 +1511,9 @@ class SkillLoader:
                             skill_dir = self.SKILLS_ROOT / sid
                             skill_md = skill_dir / "SKILL.md"
                             if skill_md.exists():
-                                actual_md5 = hashlib.md5(skill_md.read_text(encoding="utf-8").encode()).hexdigest()
+                                actual_md5 = hashlib.md5(
+                                    skill_md.read_text(encoding="utf-8").encode()
+                                ).hexdigest()
                                 if actual_md5 != sk.md5_of_base:
                                     all_valid = False
                                     break
@@ -1489,7 +1552,9 @@ class SkillLoader:
 
                 md5_of_base = hashlib.md5(content.encode()).hexdigest()
 
-                trigger_keywords = self._extract_trigger_keywords(fm, hard_gates, checklists, supplement)
+                trigger_keywords = self._extract_trigger_keywords(
+                    fm, hard_gates, checklists, supplement
+                )
 
                 localized = supplement is not None
 
@@ -1544,7 +1609,9 @@ class SkillLoader:
                 self._validate_frontmatter_format(content, str(skill_md_path))
                 fm, hard_gates, checklists = self._parse_skill_md(content)
                 supplement = self._load_supplement(skill_dir)
-                trigger_keywords = self._extract_trigger_keywords(fm, hard_gates, checklists, supplement)
+                trigger_keywords = self._extract_trigger_keywords(
+                    fm, hard_gates, checklists, supplement
+                )
 
                 display_name = str(fm.get("name") or skill_id)
                 description = str(fm.get("description") or "")
@@ -1554,7 +1621,7 @@ class SkillLoader:
                     skill_id=skill_id,
                     display_name=display_name,
                     description=description,
-                    version=f"trading-cognition v0.1",
+                    version="trading-cognition v0.1",
                     raw_skill_md=content,
                     hard_gates=hard_gates,
                     checklists=checklists,
@@ -1577,7 +1644,14 @@ class SkillLoader:
         )
 
     # --- 检索（设计节 2.3）----
-    def retrieve(self, query: str, top_meta: int = 2, top_applied: int = 2, applied_loader=None, task_type: str = None) -> dict:
+    def retrieve(
+        self,
+        query: str,
+        top_meta: int = 2,
+        top_applied: int = 2,
+        applied_loader=None,
+        task_type: str = None,
+    ) -> dict:
         """
         按查询文本的关键词匹配度返回 meta（SuperpowersSkill）与 applied（历史应用流程）。
         P1: 新增 task_type 参数，trading 类 task_type 召回交易 Skill，其他召回开发 Skill。
@@ -1594,7 +1668,7 @@ class SkillLoader:
 
         scored: List[Tuple[SuperpowersSkill, float, List[str]]] = []
 
-        for skill_id, sk in source_skills.items():
+        for skill_id, sk in source_skills.items():  # noqa: B007
             score = 0.0
             reasons: List[str] = []
 
@@ -1611,7 +1685,11 @@ class SkillLoader:
                     # 本土触发条件：形如 "- [x] 中文触发词一 / 别名1 / 别名2" 这样的 bullet 行
                     if line.startswith("-") and ("触发" in line or len(line) < 80):
                         # 提取 "/" 分隔的别名
-                        segments = [s.strip() for s in re.split(r"[-/|、,，]", line.lstrip("- []x")) if len(s.strip()) >= 2]
+                        segments = [
+                            s.strip()
+                            for s in re.split(r"[-/|、,，]", line.lstrip("- []x"))
+                            if len(s.strip()) >= 2
+                        ]
                         for alias in segments:
                             if alias and alias in query:
                                 score += 2.0  # 本土触发词 2 倍权重
@@ -1624,7 +1702,11 @@ class SkillLoader:
                     # C1 修复：HG 是长句，查询 token 若为纯 ASCII 2-letter 噪音直接跳过
                     if len(tok) == 2 and tok in self._EN_STOPWORDS_2:
                         continue
-                    if re.search(r"\b" + re.escape(tok) + r"\b", g_lower) if re.fullmatch(r"[a-z._\-/]+", tok) else tok in g_lower:
+                    if (
+                        re.search(r"\b" + re.escape(tok) + r"\b", g_lower)
+                        if re.fullmatch(r"[a-z._\-/]+", tok)
+                        else tok in g_lower
+                    ):
                         hg_hit += 1
                         break
             score += hg_hit * 0.3
@@ -1637,7 +1719,11 @@ class SkillLoader:
                 for tok in query_tokens:
                     if len(tok) == 2 and tok in self._EN_STOPWORDS_2:
                         continue
-                    if re.search(r"\b" + re.escape(tok) + r"\b", c_lower) if re.fullmatch(r"[a-z._\-/]+", tok) else tok in c_lower:
+                    if (
+                        re.search(r"\b" + re.escape(tok) + r"\b", c_lower)
+                        if re.fullmatch(r"[a-z._\-/]+", tok)
+                        else tok in c_lower
+                    ):
                         cl_hit += 1
                         break
             score += cl_hit * 0.2
@@ -1650,7 +1736,7 @@ class SkillLoader:
         scored.sort(key=lambda x: x[1], reverse=True)
 
         meta_results: List[Tuple[SuperpowersSkill, float, str]] = []
-        for (sk, sc, rsns) in scored[:top_meta]:
+        for sk, sc, rsns in scored[:top_meta]:
             reason_str = " ; ".join(rsns[:4])
             meta_results.append((sk, sc, reason_str))
 
@@ -1689,10 +1775,10 @@ class SkillLoader:
 # ============================================================
 
 LEGACY_TO_NEW: Dict[str, str] = {
-    "TDD-001":       "test-driven-development",
-    "DEBUG-001":     "systematic-debugging",
-    "REFACTOR-001":  "test-driven-development",
-    "REVIEW-001":    "requesting-code-review",
-    "DESIGN-001":    "brainstorming",
+    "TDD-001": "test-driven-development",
+    "DEBUG-001": "systematic-debugging",
+    "REFACTOR-001": "test-driven-development",
+    "REVIEW-001": "requesting-code-review",
+    "DESIGN-001": "brainstorming",
     "TDD-DEBUG-001": "subagent-driven-development",
 }

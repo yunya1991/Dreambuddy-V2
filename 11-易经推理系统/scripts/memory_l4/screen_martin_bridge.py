@@ -3,22 +3,20 @@
 三屏马丁交易数据接入 - 将 screen_engine 数据发布到 shared_memory_bus
 Screen1: 7维评分   Screen2: V9预设网格   Screen3: 持仓监控
 """
-import json
-import sys
-import os
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Dict, List, Optional
 
+import json
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _ROOT = _SCRIPT_DIR.parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-DREAMBUDDY_AB_DIR = Path(
-    "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading"
-)
+DREAMBUDDY_AB_DIR = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading")
 if str(DREAMBUDDY_AB_DIR) not in sys.path:
     sys.path.insert(0, str(DREAMBUDDY_AB_DIR))
 
@@ -26,10 +24,11 @@ if str(DREAMBUDDY_AB_DIR) not in sys.path:
 def _get_screen_data() -> Dict:
     """调用 screen_engine 获取三屏数据"""
     try:
-        result = subprocess.run(
-            ["python3", str(DREAMBUDDY_AB_DIR / "screen_engine.py"),
-             "status", "--json"],
-            capture_output=True, text=True, timeout=30,
+        result = subprocess.run(  # noqa: F821
+            ["python3", str(DREAMBUDDY_AB_DIR / "screen_engine.py"), "status", "--json"],
+            capture_output=True,
+            text=True,
+            timeout=30,
             cwd=str(DREAMBUDDY_AB_DIR),
         )
         if result.returncode == 0:
@@ -43,12 +42,28 @@ def _get_screen_kline(bar: str = "1H", limit: int = 100) -> Dict:
     """获取 K 线数据用于计算"""
     try:
         import subprocess
+
         result = subprocess.run(
-            ["okx", "--profile", "screen_trade", "market", "candles",
-             "BTC-USDT-SWAP", "--bar", bar, "--limit", str(limit)],
-            capture_output=True, text=True, timeout=15,
-            env={**os.environ, "PATH": "/opt/homebrew/bin:" + os.environ.get("PATH", ""),
-                 "NO_UPDATE_CHECK": "1"},
+            [
+                "okx",
+                "--profile",
+                "screen_trade",
+                "market",
+                "candles",
+                "BTC-USDT-SWAP",
+                "--bar",
+                bar,
+                "--limit",
+                str(limit),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            env={
+                **os.environ,
+                "PATH": "/opt/homebrew/bin:" + os.environ.get("PATH", ""),
+                "NO_UPDATE_CHECK": "1",
+            },
         )
         if result.returncode == 0:
             raw = result.stdout.strip()
@@ -67,10 +82,11 @@ def _get_screen_kline(bar: str = "1H", limit: int = 100) -> Dict:
 
     fallback = []
     base_price = 62650.0
-    for i in range(100):
+    for i in range(100):  # noqa: B007
         import random
+
         change = random.gauss(0, 0.005)
-        base_price *= (1 + change)
+        base_price *= 1 + change
         fallback.append(base_price)
     return {"ok": True, "closes": fallback, "note": "fallback_synthetic"}
 
@@ -118,21 +134,30 @@ def calc_screen1_score(closes: List[float]) -> Dict:
         tech_score += 20
     rsi_val = rsi(closes, 14)
     tech_score += int(20 * (rsi_val / 100))
-    dimensions.append({
-        "key": "technical", "name": "技术指标",
-        "score": tech_score, "weight": 40, "type": "anchor",
-    })
+    dimensions.append(
+        {
+            "key": "technical",
+            "name": "技术指标",
+            "score": tech_score,
+            "weight": 40,
+            "type": "anchor",
+        }
+    )
 
     vol_20 = 0
     if len(closes) >= 20:
-        rets = [(closes[i] - closes[i-1]) / closes[i-1]
-                for i in range(1, len(closes[-20:]))]
-        vol_20 = (sum(r**2 for r in rets) / len(rets)) ** 0.5 * 100 * (365 ** 0.5)
+        rets = [(closes[i] - closes[i - 1]) / closes[i - 1] for i in range(1, len(closes[-20:]))]
+        vol_20 = (sum(r**2 for r in rets) / len(rets)) ** 0.5 * 100 * (365**0.5)
     onchain_score = max(0, 100 - int(vol_20 * 2))
-    dimensions.append({
-        "key": "onchain", "name": "链上数据",
-        "score": onchain_score, "weight": 15, "type": "anchor",
-    })
+    dimensions.append(
+        {
+            "key": "onchain",
+            "name": "链上数据",
+            "score": onchain_score,
+            "weight": 15,
+            "type": "anchor",
+        }
+    )
 
     halving_days = (datetime.now() - datetime(2024, 4, 20)).days
     if halving_days < 365:
@@ -143,45 +168,71 @@ def calc_screen1_score(closes: List[float]) -> Dict:
         cycle_score = 100
     else:
         cycle_score = 20
-    dimensions.append({
-        "key": "cycle", "name": "减半周期",
-        "score": cycle_score, "weight": 10, "type": "booster",
-    })
+    dimensions.append(
+        {
+            "key": "cycle",
+            "name": "减半周期",
+            "score": cycle_score,
+            "weight": 10,
+            "type": "booster",
+        }
+    )
 
     atr_val = 0
     if len(closes) >= 15:
-        trs = [abs(closes[i] - closes[i-1]) for i in range(1, 15)]
+        trs = [abs(closes[i] - closes[i - 1]) for i in range(1, 15)]
         atr_val = sum(trs) / 14 / price * 100
     miner_score = max(0, min(100, int((1 - atr_val / 10) * 100)))
-    dimensions.append({
-        "key": "miner", "name": "矿工经济",
-        "score": miner_score, "weight": 10, "type": "booster",
-    })
+    dimensions.append(
+        {
+            "key": "miner",
+            "name": "矿工经济",
+            "score": miner_score,
+            "weight": 10,
+            "type": "booster",
+        }
+    )
 
     mom_30d = (price / closes[-31] - 1) * 100 if len(closes) > 30 else 0
     macro_score = max(0, min(100, int(50 + mom_30d * 2)))
-    dimensions.append({
-        "key": "macro", "name": "宏观环境",
-        "score": macro_score, "weight": 10, "type": "background",
-    })
+    dimensions.append(
+        {
+            "key": "macro",
+            "name": "宏观环境",
+            "score": macro_score,
+            "weight": 10,
+            "type": "background",
+        }
+    )
 
     cross_score = 50 + (1 if mom_30d > 0 else -1) * 10
-    dimensions.append({
-        "key": "cross_market", "name": "跨市场联动",
-        "score": cross_score, "weight": 10, "type": "background",
-    })
+    dimensions.append(
+        {
+            "key": "cross_market",
+            "name": "跨市场联动",
+            "score": cross_score,
+            "weight": 10,
+            "type": "background",
+        }
+    )
 
     sent_score = int(50 + (rsi_val - 50) * 0.5)
-    dimensions.append({
-        "key": "sentiment", "name": "情绪指标",
-        "score": sent_score, "weight": 5, "type": "reference",
-    })
+    dimensions.append(
+        {
+            "key": "sentiment",
+            "name": "情绪指标",
+            "score": sent_score,
+            "weight": 5,
+            "type": "reference",
+        }
+    )
 
     total_weight = sum(d["weight"] for d in dimensions)
     weighted_score = sum(d["score"] * d["weight"] for d in dimensions) / total_weight
 
-    direction = "BULLISH" if weighted_score > 55 else (
-        "BEARISH" if weighted_score < 45 else "NEUTRAL")
+    direction = (
+        "BULLISH" if weighted_score > 55 else ("BEARISH" if weighted_score < 45 else "NEUTRAL")
+    )
 
     return {
         "ok": True,
@@ -203,12 +254,12 @@ def calc_screen2_grid(closes: List[float]) -> Dict:
 
     price = closes[-1]
 
-    highs = [max(closes[i:i+20]) for i in range(0, len(closes)-20, 5)]
-    lows = [min(closes[i:i+20]) for i in range(0, len(closes)-20, 5)]
+    highs = [max(closes[i : i + 20]) for i in range(0, len(closes) - 20, 5)]  # noqa: F841
+    lows = [min(closes[i : i + 20]) for i in range(0, len(closes) - 20, 5)]  # noqa: F841
 
     atr20 = 0
     if len(closes) >= 21:
-        trs = [abs(closes[i] - closes[i-1]) for i in range(1, 21)]
+        trs = [abs(closes[i] - closes[i - 1]) for i in range(1, 21)]
         atr20 = sum(trs) / 20
 
     grid_pct = max(0.02, atr20 / price * 0.5) if atr20 else 0.03
@@ -284,8 +335,8 @@ def get_screen_engine_summary() -> Dict:
 
 def publish_screen_data() -> Dict:
     """发布三屏马丁数据到 shared_memory_bus"""
-    from scripts.memory_l4.shared_memory_bus import publish_shared_memory_event
     from scripts.memory_l4.ab_bridge import ACL_CONFIG
+    from scripts.memory_l4.shared_memory_bus import publish_shared_memory_event
 
     data = get_screen_engine_summary()
     if not data.get("ok"):
@@ -323,7 +374,6 @@ def publish_screen_data() -> Dict:
 
 
 def cli():
-    import subprocess
 
     if len(sys.argv) < 2:
         print("Usage: python -m scripts.memory_l4.screen_martin_bridge <command>")

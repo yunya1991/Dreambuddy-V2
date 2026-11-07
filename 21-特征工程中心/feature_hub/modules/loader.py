@@ -5,6 +5,7 @@
      classic_indicators / five_domain_fc）
   2. 从 config/feature_sets.yaml 读取集合并 register_set
 """
+
 from __future__ import annotations
 
 import logging

@@ -13,11 +13,10 @@ LLM 降级链（DeepSeek→Qwen→NoOp）扩展到所有外部依赖。
 
 import logging
 import threading
-import time
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, TypeVar, Generic
+from typing import Any, Callable, Dict, List, Optional, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -25,14 +24,15 @@ T = TypeVar("T")
 
 
 class CircuitState(str, Enum):
-    CLOSED = "closed"      # 正常，允许请求通过
-    OPEN = "open"           # 熔断，拒绝请求
+    CLOSED = "closed"  # 正常，允许请求通过
+    OPEN = "open"  # 熔断，拒绝请求
     HALF_OPEN = "half_open"  # 半开，允许有限请求试探
 
 
 @dataclass
 class CircuitStats:
     """断路器统计"""
+
     total_calls: int = 0
     success_count: int = 0
     failure_count: int = 0
@@ -62,6 +62,7 @@ class CircuitStats:
 
 class CircuitBreakerOpen(Exception):
     """断路器打开时抛出"""
+
     def __init__(self, name: str, opened_at: str, remaining_s: float):
         self.name = name
         self.opened_at = opened_at
@@ -226,7 +227,9 @@ class CircuitBreaker:
             return
         if self._stats.opened_at is None:
             return
-        opened = datetime.fromisoformat(self._stats.opened_at.replace("Z", "+00:00")).replace(tzinfo=None)
+        opened = datetime.fromisoformat(self._stats.opened_at.replace("Z", "+00:00")).replace(
+            tzinfo=None
+        )
         elapsed = (datetime.utcnow() - opened).total_seconds()
         if elapsed >= self.timeout_s:
             self._state = CircuitState.HALF_OPEN
@@ -237,7 +240,9 @@ class CircuitBreaker:
         """剩余冷却时间（秒）"""
         if self._stats.opened_at is None:
             return 0.0
-        opened = datetime.fromisoformat(self._stats.opened_at.replace("Z", "+00:00")).replace(tzinfo=None)
+        opened = datetime.fromisoformat(self._stats.opened_at.replace("Z", "+00:00")).replace(
+            tzinfo=None
+        )
         elapsed = (datetime.utcnow() - opened).total_seconds()
         return max(0.0, self.timeout_s - elapsed)
 
@@ -325,6 +330,7 @@ class CircuitBreakerRegistry:
 # LLM 降级链（DeepSeek → Qwen → NoOp）
 # ============================================================================
 
+
 class LLMDegradationChain:
     """LLM 降级链 — 依次尝试多个 LLM provider
 
@@ -350,17 +356,20 @@ class LLMDegradationChain:
         is_fallback: bool = False,
     ) -> None:
         """添加 LLM provider"""
-        self._providers.append({
-            "name": name,
-            "fn": fn,
-            "threshold": threshold,
-            "timeout_s": timeout_s,
-            "is_fallback": is_fallback,
-        })
+        self._providers.append(
+            {
+                "name": name,
+                "fn": fn,
+                "threshold": threshold,
+                "timeout_s": timeout_s,
+                "is_fallback": is_fallback,
+            }
+        )
         # 为每个 provider 注册断路器
         fallback = self._providers[-2]["fn"] if len(self._providers) > 1 else None
-        self._registry.register(name, threshold=threshold, timeout_s=timeout_s,
-                                fallback_fn=fallback)
+        self._registry.register(
+            name, threshold=threshold, timeout_s=timeout_s, fallback_fn=fallback
+        )
 
     def call(self, **kwargs) -> Dict[str, Any]:
         """按优先级依次尝试 LLM provider
@@ -377,7 +386,11 @@ class LLMDegradationChain:
             try:
                 result = self._registry.call(name, fn, **kwargs)
                 if result is not None:
-                    return {**result, "_provider": name} if isinstance(result, dict) else {"content": result, "_provider": name}
+                    return (
+                        {**result, "_provider": name}
+                        if isinstance(result, dict)
+                        else {"content": result, "_provider": name}
+                    )
             except Exception as e:
                 logger.warning(f"[LLMChain] provider={name} 失败: {e}")
                 continue

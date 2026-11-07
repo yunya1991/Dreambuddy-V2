@@ -14,6 +14,7 @@
   - R4 FAIL-OPEN：异常返回空 scan，不阻塞主链路
   - R5 跟涨需龙头动量确认：catalyst 已含 leader_momentum × sector_breadth
 """
+
 from __future__ import annotations
 
 import logging
@@ -22,9 +23,9 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 # 复用已有模块（from import 形式，便于测试 mock）
-from force_vector.coin_fundamental_crypto import SECTOR_MAP, DEFAULT_DB_PATH
-from force_vector.multi_dim_valuation import compute_multi_dim_valuation
+from force_vector.coin_fundamental_crypto import DEFAULT_DB_PATH, SECTOR_MAP
 from force_vector.follow_up_catalyst import compute_follow_up_catalyst
+from force_vector.multi_dim_valuation import compute_multi_dim_valuation
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +54,7 @@ _TOP_N_DEFAULT = 20
 # Dataclass
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class UndervaluedCoin:
     """赛道低估候选币（SPEC §4.3）。
@@ -66,6 +68,7 @@ class UndervaluedCoin:
         opportunity_score: 综合潜力分 [0, 1]，越大越优
         rank: 排名等级 S/A/B/C
     """
+
     coin: str
     sector: str
     undervalued_score: float
@@ -84,6 +87,7 @@ class SectorUndervaluedScan:
         sectors: 赛道 → 低估币列表
         top_opportunities: 全赛道 Top N 潜力币（按 opportunity_score 降序）
     """
+
     timestamp: str
     sectors: Dict[str, List[UndervaluedCoin]] = field(default_factory=dict)
     top_opportunities: List[UndervaluedCoin] = field(default_factory=list)
@@ -92,6 +96,7 @@ class SectorUndervaluedScan:
 # ---------------------------------------------------------------------------
 # 纯函数
 # ---------------------------------------------------------------------------
+
 
 def compute_opportunity_score(undervalued_score: float, catalyst: float) -> float:
     """计算综合潜力分（SPEC §4.3 公式 4）。
@@ -134,6 +139,7 @@ def compute_rank(score: float) -> str:
 # ---------------------------------------------------------------------------
 # 主函数
 # ---------------------------------------------------------------------------
+
 
 def scan_sector_undervalued(
     db_path: Optional[str] = None,

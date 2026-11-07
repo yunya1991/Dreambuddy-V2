@@ -4,9 +4,9 @@
 形成"采集 → 标注 → 索引 → 检索 → 反馈 → 优化"的持续进化闭环。
 """
 
-from .ingest import ingest_document
 from .annotate import annotate_chunk
 from .feedback import record_feedback
+from .ingest import ingest_document
 
 __all__ = [
     "ingest_document",

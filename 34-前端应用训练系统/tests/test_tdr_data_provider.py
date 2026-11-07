@@ -5,11 +5,11 @@
   2. layer_tags 扁平化（List[LayerTag] → List[str]）
   3. FAIL-OPEN：TDR 不可用时返回空列表
 """
+
 import os
 import sys
-import json
-import time
 import tempfile
+import time
 import unittest
 
 # sys.path 注入
@@ -36,21 +36,25 @@ class TDRTrainingDataProviderTest(unittest.TestCase):
     def tearDownClass(cls):
         """清理临时 DB。"""
         import shutil
+
         shutil.rmtree(cls._tmpdir, ignore_errors=True)
         os.environ.pop("SPL_DB_DIR", None)
 
     def setUp(self):
         """每个测试前清空 solution_cases 表，避免测试间数据污染。"""
         from case_bank_server import _connect
+
         conn = _connect()
         conn.execute("DELETE FROM solution_cases")
         conn.commit()
         conn.close()
 
-    def _store_test_case(self, intent="test", learned=None, quality="B",
-                         layer_tags=None, created_at=None):
+    def _store_test_case(
+        self, intent="test", learned=None, quality="B", layer_tags=None, created_at=None
+    ):
         """存储一条测试案例到 TDR。"""
         from case_bank_server import store_case
+
         case = {
             "intent": intent,
             "actions": ["action1", "action2"],
@@ -68,14 +72,26 @@ class TDRTrainingDataProviderTest(unittest.TestCase):
         from case_bank_server import fetch_since, store_case
 
         # 存 2 条案例
-        store_case({
-            "intent": "case_a", "actions": ["a1"], "outcome_text": "oa",
-            "learned": ["l1"], "quality": "B", "source": "test",
-        })
-        store_case({
-            "intent": "case_b", "actions": ["b1"], "outcome_text": "ob",
-            "learned": ["l2"], "quality": "A", "source": "test",
-        })
+        store_case(
+            {
+                "intent": "case_a",
+                "actions": ["a1"],
+                "outcome_text": "oa",
+                "learned": ["l1"],
+                "quality": "B",
+                "source": "test",
+            }
+        )
+        store_case(
+            {
+                "intent": "case_b",
+                "actions": ["b1"],
+                "outcome_text": "ob",
+                "learned": ["l2"],
+                "quality": "A",
+                "source": "test",
+            }
+        )
 
         result = fetch_since(since_ts=0, limit=10)
         self.assertTrue(result["ok"])
@@ -86,10 +102,16 @@ class TDRTrainingDataProviderTest(unittest.TestCase):
         from case_bank_server import fetch_since, store_case
 
         # 存第一条案例
-        r1 = store_case({
-            "intent": "old_case", "actions": ["a"], "outcome_text": "o",
-            "learned": ["l"], "quality": "B", "source": "test",
-        })
+        r1 = store_case(
+            {
+                "intent": "old_case",
+                "actions": ["a"],
+                "outcome_text": "o",
+                "learned": ["l"],
+                "quality": "B",
+                "source": "test",
+            }
+        )
         self.assertTrue(r1["ok"])
 
         # 获取 old_case 的 created_at（DB 已清空，只有这一条）
@@ -101,10 +123,16 @@ class TDRTrainingDataProviderTest(unittest.TestCase):
         time.sleep(0.01)
 
         # 存新案例
-        r2 = store_case({
-            "intent": "new_case", "actions": ["b"], "outcome_text": "o2",
-            "learned": ["l2"], "quality": "A", "source": "test",
-        })
+        r2 = store_case(
+            {
+                "intent": "new_case",
+                "actions": ["b"],
+                "outcome_text": "o2",
+                "learned": ["l2"],
+                "quality": "A",
+                "source": "test",
+            }
+        )
         self.assertTrue(r2["ok"])
 
         # 增量查询：只应返回 created_at > old_ts 的案例
@@ -144,18 +172,21 @@ class TDRTrainingDataProviderTest(unittest.TestCase):
     def test_adapter_quality_threshold(self):
         """get_quality_threshold 应返回默认 'B'。"""
         from tdr_data_provider import TDRTrainingDataProvider
+
         provider = TDRTrainingDataProvider()
         self.assertEqual(provider.get_quality_threshold(), "B")
 
     def test_adapter_source_name(self):
         """get_source_name 应返回 'tdr'。"""
         from tdr_data_provider import TDRTrainingDataProvider
+
         provider = TDRTrainingDataProvider()
         self.assertEqual(provider.get_source_name(), "tdr")
 
     def test_fail_open_tdr_unavailable(self):
         """TDR 不可用时，fetch_cases 应返回空列表而非抛异常。"""
         from tdr_data_provider import TDRTrainingDataProvider
+
         provider = TDRTrainingDataProvider()
         # 模拟 TDR 不可用：设置 _tdr 为空 dict
         provider._tdr = {}

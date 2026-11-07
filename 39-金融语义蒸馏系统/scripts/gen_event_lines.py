@@ -10,6 +10,7 @@
 用法: python3 gen_event_lines.py
 前端消费: exec_event_line_query 意图（『XX事件最近怎么演变』）
 """
+
 import json
 import os
 import re
@@ -22,7 +23,7 @@ _SYS_DIR = os.path.dirname(_THIS_DIR)
 _REPO = os.path.dirname(_SYS_DIR)
 
 sys.path.insert(0, _THIS_DIR)
-import dc_pg  # PostgreSQL 辅助模块（18 中心迁移后替代 SQLite）
+import dc_pg  # PostgreSQL 辅助模块（18 中心迁移后替代 SQLite）  # noqa: E402
 
 OUT_PATH = os.path.join(_SYS_DIR, "event_lines.json")
 ATOMIC_PATH = os.path.join(_SYS_DIR, "atomic_events.jsonl")
@@ -81,11 +82,16 @@ def load_events(limit=1500):
         t = _parse_ts(ts)
         if t is None:
             continue
-        events.append({
-            "ts": t, "ts_str": (ts or "")[:16], "desc": desc,
-            "event_type": m.get("od_event_type", ""),
-            "tickers": tickers, "sentiment": _sentiment(desc),
-        })
+        events.append(
+            {
+                "ts": t,
+                "ts_str": (ts or "")[:16],
+                "desc": desc,
+                "event_type": m.get("od_event_type", ""),
+                "tickers": tickers,
+                "sentiment": _sentiment(desc),
+            }
+        )
     events.sort(key=lambda e: e["ts"])
     return events
 
@@ -93,8 +99,8 @@ def load_events(limit=1500):
 def load_atomic_dims():
     """加载原子层五维事件（SPEC §9.8 第一批+第二批）。
 
-    返回 (volume_events, extreme_events, time_events, space_events, cycle_events)：
-n      量维：放量/缩量 | 情维：恐惧贪婪极值 | 时维：盘整 | 空维：斐波那契 | 周期维：四年周期
+        返回 (volume_events, extreme_events, time_events, space_events, cycle_events)：
+    n      量维：放量/缩量 | 情维：恐惧贪婪极值 | 时维：盘整 | 空维：斐波那契 | 周期维：四年周期
     """
     volume_events, extreme_events, time_events, space_events, cycle_events = [], [], [], [], []
     try:
@@ -108,8 +114,12 @@ n      量维：放量/缩量 | 情维：恐惧贪婪极值 | 时维：盘整 | 
                 if t is None:
                     continue
                 reasons = e.get("reasons", [])
-                item = {"ts": t, "reasons": reasons,
-                        "category": e.get("category", ""), "metric": e.get("metric", "")}
+                item = {
+                    "ts": t,
+                    "reasons": reasons,
+                    "category": e.get("category", ""),
+                    "metric": e.get("metric", ""),
+                }
                 if any(r.startswith("volume_") for r in reasons):
                     volume_events.append(item)
                 elif any(r.startswith("extreme_") for r in reasons):
@@ -151,7 +161,11 @@ def describe_line(topic, evs, atomic_dims=([], [], [], [], [])):
     sent_early = sum(x["sentiment"] for x in early) / len(early)
     sent_late = sum(x["sentiment"] for x in late) / len(late)
     # 变化描述
-    freq_trend = "升温" if freq_late > freq_early * 1.3 else ("降温" if freq_late < freq_early * 0.7 else "平稳")
+    freq_trend = (
+        "升温"
+        if freq_late > freq_early * 1.3
+        else ("降温" if freq_late < freq_early * 0.7 else "平稳")
+    )
     if sent_late > sent_early + 0.2:
         sent_trend = "情绪转暖"
     elif sent_late < sent_early - 0.2:
@@ -168,7 +182,7 @@ def describe_line(topic, evs, atomic_dims=([], [], [], [], [])):
         freq_dist[idx] += 1
     mean_w = n / n_windows
     var_w = sum((c - mean_w) ** 2 for c in freq_dist) / n_windows
-    std_w = var_w ** 0.5
+    std_w = var_w**0.5
     last_w = freq_dist[-1]
     # 量变强度：末窗口相对历史均值的偏离倍数（z-score 口径）
     quantity_intensity = round(last_w / mean_w, 2) if mean_w > 0 else 0.0
@@ -194,12 +208,15 @@ def describe_line(topic, evs, atomic_dims=([], [], [], [], [])):
     late_w = freq_dist[-3:] or [0]
     var_early = sum((c - sum(early_w) / len(early_w)) ** 2 for c in early_w) / len(early_w)
     var_late = sum((c - sum(late_w) / len(late_w)) ** 2 for c in late_w) / len(late_w)
-    variance_ratio = round(var_late / var_early, 2) if var_early > 0 else (1.0 if var_late == 0 else 99.0)
+    variance_ratio = (
+        round(var_late / var_early, 2) if var_early > 0 else (1.0 if var_late == 0 else 99.0)
+    )
     # 自相关趋势：相邻窗口频次的皮尔逊相关（高自相关 = 状态持续性强，临界前兆）
     if n_windows >= 4 and std_w > 0:
         mean_adj = mean_w
-        cov = sum((freq_dist[i] - mean_adj) * (freq_dist[i + 1] - mean_adj)
-                  for i in range(n_windows - 1)) / max(1, n_windows - 1)
+        cov = sum(
+            (freq_dist[i] - mean_adj) * (freq_dist[i + 1] - mean_adj) for i in range(n_windows - 1)
+        ) / max(1, n_windows - 1)
         autocorr = round(cov / (std_w * std_w), 2)
     else:
         autocorr = 0.0
@@ -217,15 +234,21 @@ def describe_line(topic, evs, atomic_dims=([], [], [], [], [])):
         quantity_signal = "量变平稳"
     if slowing_down and "加速" in quantity_signal:
         quantity_signal += "；检出临界慢化前兆（方差/自相关上升），相变临近度较高"
+
     # ── 五维画像关联（SPEC §9.8 第一批：量维+情维接入 L2，窗口对齐）──
     def _in_span(ev):
         return start["ts"] <= ev["ts"] <= end["ts"]
+
     vol_in = [ev for ev in atomic_dims[0] if _in_span(ev)]
     ext_in = [ev for ev in atomic_dims[1] if _in_span(ev)]
     vol_surge = sum(1 for ev in vol_in if any(r.startswith("volume_surge") for r in ev["reasons"]))
-    vol_shrink = sum(1 for ev in vol_in if any(r.startswith("volume_shrink") for r in ev["reasons"]))
+    vol_shrink = sum(
+        1 for ev in vol_in if any(r.startswith("volume_shrink") for r in ev["reasons"])
+    )
     ext_enter = sum(1 for ev in ext_in if any(r.startswith("extreme_enter") for r in ev["reasons"]))
-    ext_persist = sum(1 for ev in ext_in if any(r.startswith("extreme_persist") for r in ev["reasons"]))
+    ext_persist = sum(
+        1 for ev in ext_in if any(r.startswith("extreme_persist") for r in ev["reasons"])
+    )
     ext_exit = sum(1 for ev in ext_in if any(r.startswith("extreme_exit") for r in ev["reasons"]))
     # 情维当前状态：时间窗内最近一条极值事件方向（描述性）
     ext_state = "无极值区间记录"
@@ -242,9 +265,11 @@ def describe_line(topic, evs, atomic_dims=([], [], [], [], [])):
                 break
         if matched:
             break
+
     # ── 五维画像关联（SPEC §9.8 第二批：时维+空维+周期维接入 L2）──
     def _in_span2(ev):
         return start["ts"] <= ev["ts"] <= end["ts"]
+
     time_in = [ev for ev in atomic_dims[2] if _in_span2(ev)]
     space_in = [ev for ev in atomic_dims[3] if _in_span2(ev)]
     cycle_in = [ev for ev in atomic_dims[4] if _in_span2(ev)]
@@ -326,7 +351,9 @@ def main():
     events = load_events()
     print(f"[INFO] 加载快讯事件 {len(events)} 条")
     atomic_dims = load_atomic_dims()
-    print(f"[INFO] 加载原子层五维事件: 量维 {len(atomic_dims[0])} / 情维 {len(atomic_dims[1])} / 时维 {len(atomic_dims[2])} / 空维 {len(atomic_dims[3])} / 周期维 {len(atomic_dims[4])}")
+    print(
+        f"[INFO] 加载原子层五维事件: 量维 {len(atomic_dims[0])} / 情维 {len(atomic_dims[1])} / 时维 {len(atomic_dims[2])} / 空维 {len(atomic_dims[3])} / 周期维 {len(atomic_dims[4])}"
+    )
     lines = cluster_into_lines(events)
     out_lines = []
     for topic, evs in lines.items():
@@ -342,9 +369,11 @@ def main():
     with open(OUT_PATH, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
     print(f"[OK] 事件线聚合完成: {len(out_lines)} 条事件线 → {OUT_PATH}")
-    for l in out_lines[:6]:
-        print(f"     {l['topic']}: {l['event_count']} 事件, 跨度 {l['span_hours']}h, "
-              f"频次{l['freq_trend']}, {l['sentiment_trend']}, {l['quantity_signal']}")
+    for l in out_lines[:6]:  # noqa: E741
+        print(
+            f"     {l['topic']}: {l['event_count']} 事件, 跨度 {l['span_hours']}h, "
+            f"频次{l['freq_trend']}, {l['sentiment_trend']}, {l['quantity_signal']}"
+        )
 
 
 if __name__ == "__main__":

@@ -5,11 +5,11 @@
 
 对应 Plan §T_B1: shadow_param_log 表 + CRUD 方法。
 """
+
 from __future__ import annotations
 
 import json
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -18,7 +18,7 @@ import pytest
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2.storage import EvolutionStorageSQLite
+from bcrm2.storage import EvolutionStorageSQLite  # noqa: E402
 
 
 @pytest.fixture
@@ -46,9 +46,11 @@ def _make_record(**overrides) -> dict:
         "forecast_L": 0.85,
         "forecast_T": 0.25,
         "forecast_global_ranges": json.dumps(
-            {"global_position_mult": [0.8, 1.5], "ls_ratio_cap": [0.3, 0.7]}),
+            {"global_position_mult": [0.8, 1.5], "ls_ratio_cap": [0.3, 0.7]}
+        ),
         "forecast_sector_weights": json.dumps(
-            {"defi": 0.25, "ai": 0.30, "rwa": 0.15, "meme": 0.10, "l2": 0.20}),
+            {"defi": 0.25, "ai": 0.30, "rwa": 0.15, "meme": 0.10, "l2": 0.20}
+        ),
         # actual 交易参数
         "actual_direction": "LONG",
         "actual_confidence": 0.78,
@@ -64,6 +66,7 @@ def _make_record(**overrides) -> dict:
 # ================================================================
 # T_B1: shadow_param_log 表 + CRUD
 # ================================================================
+
 
 class TestShadowLogStorage:
     """验证 save_shadow_log / get_shadow_log / get_shadow_log_count / clear_shadow_log 方法。"""
@@ -89,8 +92,7 @@ class TestShadowLogStorage:
         """T_B1.3: 查询最近 N 天返回正确数量。"""
         # 保存 3 条记录
         for i in range(3):
-            tmp_storage.save_shadow_log("BTCUSDT", _make_record(
-                reactive_L=0.6 + i * 0.1))
+            tmp_storage.save_shadow_log("BTCUSDT", _make_record(reactive_L=0.6 + i * 0.1))
 
         # 查询最近 7 天
         loaded = tmp_storage.get_shadow_log("BTCUSDT", days=7)

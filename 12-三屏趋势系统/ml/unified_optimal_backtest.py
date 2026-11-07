@@ -10,13 +10,18 @@
 
 目标：将所有最优配置组合，验证是否达到或超过历史最优
 """
-import os, sys, json, time
+
+import json
+import os
+import sys
+import time
+
 import numpy as np
 import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
-sys.path.insert(0, '.')
+sys.path.insert(0, ".")
 
 
 def load_coin_data(symbol: str) -> pd.DataFrame:
@@ -34,6 +39,7 @@ def load_coin_data(symbol: str) -> pd.DataFrame:
 
 def generate_wave_signals(prices, zigzag_threshold=0.03):
     from ml.ewave_recognizer import ElliottWaveRecognizer
+
     recognizer = ElliottWaveRecognizer(zigzag_threshold=zigzag_threshold)
     n = len(prices)
     signals = []
@@ -57,12 +63,16 @@ def generate_wave_signals(prices, zigzag_threshold=0.03):
 
 def compute_physics_features(prices):
     from ml.physics_enhancer import PhysicsEnhancer, PhysicsEnhancerConfig
+
     enhancer = PhysicsEnhancer(PhysicsEnhancerConfig())
     return enhancer.compute_features(prices)
 
 
 def compute_wave_position_all_optimal(
-    prices, wave_signals, wave_confs, physics_feats,
+    prices,
+    wave_signals,
+    wave_confs,
+    physics_feats,
     base_position=0.3,
     wave_conf_threshold=0.7,
     phys_conf_threshold=0.5,
@@ -71,8 +81,10 @@ def compute_wave_position_all_optimal(
     take_profit_mode="kinetic",
     base_trailing_pct=0.08,
     base_take_profit_pct=0.25,
-    trail_min=0.06, trail_max=0.15,
-    tp_min=0.13, tp_max=0.50,
+    trail_min=0.06,
+    trail_max=0.15,
+    tp_min=0.13,
+    tp_max=0.50,
 ):
     """全部最优配置组合的波浪仓位计算
 
@@ -92,7 +104,7 @@ def compute_wave_position_all_optimal(
     highs = prices["high"].values
     lows = prices["low"].values
 
-    eta_series = physics_feats["eta"]
+    eta_series = physics_feats["eta"]  # noqa: F841
     phys_conf = physics_feats["phys_conf"]
     trend_score = physics_feats["trend_score"]
     reversal_score = physics_feats["reversal_score"]
@@ -106,9 +118,12 @@ def compute_wave_position_all_optimal(
     wave_short = ("ENTER_SHORT_W3", "ENTER_SHORT_W5", "HOLD_SHORT_W3")
 
     stats = {
-        "total_enter": 0, "total_exit_by_trailing": 0,
-        "total_exit_by_tp": 0, "total_exit_by_signal": 0,
-        "filtered_by_wave_conf": 0, "filtered_by_phys_conf": 0,
+        "total_enter": 0,
+        "total_exit_by_trailing": 0,
+        "total_exit_by_tp": 0,
+        "total_exit_by_signal": 0,
+        "filtered_by_wave_conf": 0,
+        "filtered_by_phys_conf": 0,
     }
 
     for i in range(n):
@@ -146,10 +161,10 @@ def compute_wave_position_all_optimal(
         # === 入场逻辑 ===
         def compute_size():
             """动能力度仓位 + 物理置信度调节"""
-            ks = float(kinetic_score[i]) if not np.isnan(kinetic_score[i]) else 0.5
-            pc = float(phys_conf[i]) if not np.isnan(phys_conf[i]) else 0.5
+            ks = float(kinetic_score[i]) if not np.isnan(kinetic_score[i]) else 0.5  # noqa: B023
+            pc = float(phys_conf[i]) if not np.isnan(phys_conf[i]) else 0.5  # noqa: B023
             # 动能力度仓位
-            size = base_position * (0.5 + 1.5 * ks) * max(wave_conf, 0.5)
+            size = base_position * (0.5 + 1.5 * ks) * max(wave_conf, 0.5)  # noqa: B023
             # 物理置信度仓位调节
             multiplier = 0.6 + 1.0 * pc
             size = size * multiplier
@@ -223,8 +238,9 @@ def compute_wave_position_all_optimal(
     return np.abs(position), np.sign(position), stats
 
 
-def compute_smart_fusion(v4_pos, v4_dir, wave_pos, wave_dir,
-                         add_ratio=0.5, bottom_ratio=0.25, max_position=1.0):
+def compute_smart_fusion(
+    v4_pos, v4_dir, wave_pos, wave_dir, add_ratio=0.5, bottom_ratio=0.25, max_position=1.0
+):
     """智能融合E参数（50%/25%）"""
     n = len(v4_pos)
     fusion_pos = np.zeros(n)
@@ -318,15 +334,21 @@ def run_unified_optimal(symbol="BTC"):
 
     print("[3/5] 计算V4仓位...")
     from ml.halving_top_exit_strategy import HalvingTopExitStrategy
-    is_btc = (symbol == "BTC")
-    strategy = HalvingTopExitStrategy(symbol=symbol, is_btc=is_btc, btc_prices=prices if is_btc else None)
+
+    is_btc = symbol == "BTC"
+    strategy = HalvingTopExitStrategy(
+        symbol=symbol, is_btc=is_btc, btc_prices=prices if is_btc else None
+    )
     v4_series = strategy.generate_signals(prices)
     v4_pos = np.abs(v4_series.values)
     v4_dir = np.sign(v4_series.values)
 
     print("[4/5] 计算全部最优配置的波浪仓位...")
     wave_pos, wave_dir, wave_stats = compute_wave_position_all_optimal(
-        prices, wave_signals, wave_confs, physics_feats,
+        prices,
+        wave_signals,
+        wave_confs,
+        physics_feats,
         base_position=0.3,
         wave_conf_threshold=0.7,
         phys_conf_threshold=0.5,
@@ -335,50 +357,79 @@ def run_unified_optimal(symbol="BTC"):
         take_profit_mode="kinetic",
         base_trailing_pct=0.08,
         base_take_profit_pct=0.25,
-        trail_min=0.06, trail_max=0.15,
-        tp_min=0.13, tp_max=0.50,
+        trail_min=0.06,
+        trail_max=0.15,
+        tp_min=0.13,
+        tp_max=0.50,
     )
 
-    print(f"  波浪统计: 入场={wave_stats['total_enter']}, 追踪止损={wave_stats['total_exit_by_trailing']}, "
-          f"止盈={wave_stats['total_exit_by_tp']}, 信号退出={wave_stats['total_exit_by_signal']}")
-    print(f"  过滤统计: 波浪置信度={wave_stats['filtered_by_wave_conf']}, 物理置信度={wave_stats['filtered_by_phys_conf']}")
+    print(
+        f"  波浪统计: 入场={wave_stats['total_enter']}, 追踪止损={wave_stats['total_exit_by_trailing']}, "
+        f"止盈={wave_stats['total_exit_by_tp']}, 信号退出={wave_stats['total_exit_by_signal']}"
+    )
+    print(
+        f"  过滤统计: 波浪置信度={wave_stats['filtered_by_wave_conf']}, 物理置信度={wave_stats['filtered_by_phys_conf']}"
+    )
 
     print("[5/5] 智能融合E (50%/25%) + 回测...")
-    fusion_pos, fusion_dir = compute_smart_fusion(v4_pos, v4_dir, wave_pos, wave_dir,
-                                                   add_ratio=0.5, bottom_ratio=0.25)
+    fusion_pos, fusion_dir = compute_smart_fusion(
+        v4_pos, v4_dir, wave_pos, wave_dir, add_ratio=0.5, bottom_ratio=0.25
+    )
 
     valid_start = 365
     m_v4 = backtest_position(v4_pos[valid_start:], v4_dir[valid_start:], prices.iloc[valid_start:])
-    m_wave = backtest_position(wave_pos[valid_start:], wave_dir[valid_start:], prices.iloc[valid_start:])
-    m_fusion = backtest_position(fusion_pos[valid_start:], fusion_dir[valid_start:], prices.iloc[valid_start:])
+    m_wave = backtest_position(
+        wave_pos[valid_start:], wave_dir[valid_start:], prices.iloc[valid_start:]
+    )
+    m_fusion = backtest_position(
+        fusion_pos[valid_start:], fusion_dir[valid_start:], prices.iloc[valid_start:]
+    )
 
     # 对比表格
     print(f"\n{'='*120}")
-    print(f"  统一最优配置回测结果")
+    print("  统一最优配置回测结果")
     print(f"{'='*120}")
-    print(f"{'策略':<45} {'年化':>8} {'总收益':>9} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'均仓':>6}")
+    print(
+        f"{'策略':<45} {'年化':>8} {'总收益':>9} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'均仓':>6}"
+    )
     print(f"{'-'*100}")
 
     # 历史最优数据对比
-    print(f"{'[历史] 纯V4基线':<45} {53.93:>7.2f}% {2757:>8.0f}% {1.3585:>8.4f} {-44.37:>7.2f}% {1.2155:>8.4f} {0.606:>6.3f}")
-    print(f"{'[历史] 智能融合E(默认参数ZZ=0.05)':<45} {58.42:>7.2f}% {3474:>8.0f}% {1.4066:>8.4f} {-43.18:>7.2f}% {1.3529:>8.4f} {0.611:>6.3f}")
-    print(f"{'[历史] 最优参数(ZZ=0.03,融合40/20)':<45} {57.23:>7.2f}% {3269:>8.0f}% {1.4034:>8.4f} {-42.80:>7.2f}% {1.3370:>8.4f} {0.602:>6.3f}")
-    print(f"{'[历史] 宽追踪+动能止盈(融合50/25)':<45} {56.61:>7.2f}% {3167:>8.0f}% {1.3914:>8.4f} {-44.15:>7.2f}% {1.2823:>8.4f} {0.602:>6.3f}")
-    print(f"{'[历史] 动能力度仓位(融合50/25)':<45} {56.76:>7.2f}% {3192:>8.0f}% {1.3939:>8.4f} {-44.13:>7.2f}% {1.2862:>8.4f} {0.602:>6.3f}")
+    print(
+        f"{'[历史] 纯V4基线':<45} {53.93:>7.2f}% {2757:>8.0f}% {1.3585:>8.4f} {-44.37:>7.2f}% {1.2155:>8.4f} {0.606:>6.3f}"
+    )
+    print(
+        f"{'[历史] 智能融合E(默认参数ZZ=0.05)':<45} {58.42:>7.2f}% {3474:>8.0f}% {1.4066:>8.4f} {-43.18:>7.2f}% {1.3529:>8.4f} {0.611:>6.3f}"
+    )
+    print(
+        f"{'[历史] 最优参数(ZZ=0.03,融合40/20)':<45} {57.23:>7.2f}% {3269:>8.0f}% {1.4034:>8.4f} {-42.80:>7.2f}% {1.3370:>8.4f} {0.602:>6.3f}"
+    )
+    print(
+        f"{'[历史] 宽追踪+动能止盈(融合50/25)':<45} {56.61:>7.2f}% {3167:>8.0f}% {1.3914:>8.4f} {-44.15:>7.2f}% {1.2823:>8.4f} {0.602:>6.3f}"
+    )
+    print(
+        f"{'[历史] 动能力度仓位(融合50/25)':<45} {56.76:>7.2f}% {3192:>8.0f}% {1.3939:>8.4f} {-44.13:>7.2f}% {1.2862:>8.4f} {0.602:>6.3f}"
+    )
     print(f"{'-'*100}")
 
-    print(f"{'[本次] 纯V4':<45} {m_v4['ann_return']*100:>7.2f}% {m_v4['total_return']*100:>8.0f}% {m_v4['sharpe']:>8.4f} {m_v4['max_drawdown']*100:>7.2f}% {m_v4['calmar']:>8.4f} {m_v4['avg_position']:>6.3f}")
-    print(f"{'[本次] 纯波浪(全部最优)':<45} {m_wave['ann_return']*100:>7.2f}% {m_wave['total_return']*100:>8.0f}% {m_wave['sharpe']:>8.4f} {m_wave['max_drawdown']*100:>7.2f}% {m_wave['calmar']:>8.4f} {m_wave['avg_position']:>6.3f}")
-    print(f"{'[本次] 智能融合E(全部最优组合)':<45} {m_fusion['ann_return']*100:>7.2f}% {m_fusion['total_return']*100:>8.0f}% {m_fusion['sharpe']:>8.4f} {m_fusion['max_drawdown']*100:>7.2f}% {m_fusion['calmar']:>8.4f} {m_fusion['avg_position']:>6.3f}")
+    print(
+        f"{'[本次] 纯V4':<45} {m_v4['ann_return']*100:>7.2f}% {m_v4['total_return']*100:>8.0f}% {m_v4['sharpe']:>8.4f} {m_v4['max_drawdown']*100:>7.2f}% {m_v4['calmar']:>8.4f} {m_v4['avg_position']:>6.3f}"
+    )
+    print(
+        f"{'[本次] 纯波浪(全部最优)':<45} {m_wave['ann_return']*100:>7.2f}% {m_wave['total_return']*100:>8.0f}% {m_wave['sharpe']:>8.4f} {m_wave['max_drawdown']*100:>7.2f}% {m_wave['calmar']:>8.4f} {m_wave['avg_position']:>6.3f}"
+    )
+    print(
+        f"{'[本次] 智能融合E(全部最优组合)':<45} {m_fusion['ann_return']*100:>7.2f}% {m_fusion['total_return']*100:>8.0f}% {m_fusion['sharpe']:>8.4f} {m_fusion['max_drawdown']*100:>7.2f}% {m_fusion['calmar']:>8.4f} {m_fusion['avg_position']:>6.3f}"
+    )
 
     # 增量分析
     print(f"\n{'='*120}")
-    print(f"  增量分析（相对纯V4基线）")
+    print("  增量分析（相对纯V4基线）")
     print(f"{'='*120}")
-    ann_delta = (m_fusion['ann_return'] - m_v4['ann_return']) * 100
-    sharpe_delta = m_fusion['sharpe'] - m_v4['sharpe']
-    mdd_delta = (m_fusion['max_drawdown'] - m_v4['max_drawdown']) * 100
-    calmar_delta = m_fusion['calmar'] - m_v4['calmar']
+    ann_delta = (m_fusion["ann_return"] - m_v4["ann_return"]) * 100
+    sharpe_delta = m_fusion["sharpe"] - m_v4["sharpe"]
+    mdd_delta = (m_fusion["max_drawdown"] - m_v4["max_drawdown"]) * 100
+    calmar_delta = m_fusion["calmar"] - m_v4["calmar"]
     print(f"  年化增量:   {ann_delta:>+7.2f}pp  (目标: >+2.83pp 即超越历史最优58.42%)")
     print(f"  夏普增量:   {sharpe_delta:>+7.4f}")
     print(f"  回撤改善:   {mdd_delta:>+7.2f}pp")
@@ -386,14 +437,18 @@ def run_unified_optimal(symbol="BTC"):
 
     # 是否超越历史最优
     print(f"\n{'='*120}")
-    print(f"  历史最优对比")
+    print("  历史最优对比")
     print(f"{'='*120}")
     best_ann = 58.42
     best_sharpe = 1.4066
-    curr_ann = m_fusion['ann_return'] * 100
-    curr_sharpe = m_fusion['sharpe']
-    print(f"  年化收益:  当前={curr_ann:.2f}%  历史最优={best_ann:.2f}%  {'✅ 超越' if curr_ann >= best_ann else '❌ 未超越'} (差值={curr_ann-best_ann:+.2f}pp)")
-    print(f"  夏普比:    当前={curr_sharpe:.4f}  历史最优={best_sharpe:.4f}  {'✅ 超越' if curr_sharpe >= best_sharpe else '❌ 未超越'} (差值={curr_sharpe-best_sharpe:+.4f})")
+    curr_ann = m_fusion["ann_return"] * 100
+    curr_sharpe = m_fusion["sharpe"]
+    print(
+        f"  年化收益:  当前={curr_ann:.2f}%  历史最优={best_ann:.2f}%  {'✅ 超越' if curr_ann >= best_ann else '❌ 未超越'} (差值={curr_ann-best_ann:+.2f}pp)"
+    )
+    print(
+        f"  夏普比:    当前={curr_sharpe:.4f}  历史最优={best_sharpe:.4f}  {'✅ 超越' if curr_sharpe >= best_sharpe else '❌ 未超越'} (差值={curr_sharpe-best_sharpe:+.4f})"
+    )
 
     # 保存
     os.makedirs("ml/backtest_results", exist_ok=True)
@@ -426,6 +481,7 @@ def run_unified_optimal(symbol="BTC"):
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="统一最优配置回测")
     parser.add_argument("--symbol", type=str, default="BTC")
     args = parser.parse_args()

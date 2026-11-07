@@ -3,6 +3,7 @@ P0-2 TDD RED：unified_models.py 测试文件（统一数据模型 SSoT）
 - 核心类：TradeRecord / PositionState / DailyStats / RiskState / RiskCaseRecord / CloseInfo
 - 枚举：TradeDirection / TradeStatus / ExitReason / RiskLevel / TrialStatus / PositionStyle
 """
+
 from __future__ import annotations
 
 import json
@@ -18,18 +19,21 @@ import pytest
 class TestEnums:
     def test_trade_direction_has_long_short(self):
         from dreambuddy_dal.unified_models import TradeDirection
+
         assert TradeDirection.LONG.value == "LONG"
         assert TradeDirection.SHORT.value == "SHORT"
         assert isinstance(TradeDirection.LONG, Enum)
 
     def test_trade_status_has_open_closed_partial(self):
         from dreambuddy_dal.unified_models import TradeStatus
+
         assert TradeStatus.OPEN.value == "OPEN"
         assert TradeStatus.CLOSED.value == "CLOSED"
         assert TradeStatus.PARTIAL.value == "PARTIAL"
 
     def test_exit_reason_covers_all_7(self):
         from dreambuddy_dal.unified_models import ExitReason
+
         # TECHNICAL_DESIGN §2.2 close_position 返回：SL_HIT/TP_HIT/TS_HIT/TIMEOUT/COST_DIVERGENCE/MANUAL/AUTO
         expected = {"SL_HIT", "TP_HIT", "TS_HIT", "TIMEOUT", "COST_DIVERGENCE", "MANUAL", "AUTO"}
         got = {e.value for e in ExitReason}
@@ -37,16 +41,26 @@ class TestEnums:
 
     def test_risk_level_4_tiers(self):
         from dreambuddy_dal.unified_models import RiskLevel
+
         expected = {"LOW", "MEDIUM", "HIGH", "CRITICAL"}
         assert {e.value for e in RiskLevel} == expected
 
     def test_trial_status_6(self):
         from dreambuddy_dal.unified_models import TrialStatus
-        expected = {"NOT_APPLICABLE", "TICKING", "EVAL_PENDING", "EVAL_PASS", "EVAL_FAIL", "CANCELLED"}
+
+        expected = {
+            "NOT_APPLICABLE",
+            "TICKING",
+            "EVAL_PENDING",
+            "EVAL_PASS",
+            "EVAL_FAIL",
+            "CANCELLED",
+        }
         assert {e.value for e in TrialStatus} == expected
 
     def test_position_style_2(self):
         from dreambuddy_dal.unified_models import PositionStyle
+
         expected = {"SWING_TREND", "INTRADAY_SCALP"}
         assert {e.value for e in PositionStyle} == expected
 
@@ -56,6 +70,7 @@ class TestTradeRecord:
     @pytest.fixture
     def sample_trade(self):
         from dreambuddy_dal.unified_models import TradeDirection, TradeRecord, TrialStatus
+
         return TradeRecord(
             trade_id="TRD-YIJ-20260824001",
             sub_system="YIJING",
@@ -96,7 +111,8 @@ class TestTradeRecord:
     def test_trade_record_to_dict_round_trip_via_json(self, sample_trade):
         """序列化/反序列化一致性：asdict → json → 重建"""
         from dreambuddy_dal.unified_models import TradeRecord, TrialStatus
-        d = asdict(sample_trade)
+
+        d = asdict(sample_trade)  # noqa: F841
         # 验证 JSON 可序列化（Decimal / datetime 必须能转）
         # DAL 必须提供两个 helper：to_jsonable_dict() / from_dict()
         serializable = sample_trade.to_jsonable_dict()
@@ -113,6 +129,7 @@ class TestTradeRecord:
     def test_trade_record_decimal_precision_lossless(self):
         """Decimal 精度：6/8 位小数不丢（科学计数 vs 普通计数等价，比较值而非 str）"""
         from dreambuddy_dal.unified_models import TradeDirection, TradeRecord
+
         t = TradeRecord(
             trade_id="T1",
             sub_system="V15",
@@ -138,6 +155,7 @@ class TestTradeRecord:
     def test_trade_record_missing_required_raises(self):
         """必填字段缺失抛出 TypeError（dataclass 保证）"""
         from dreambuddy_dal.unified_models import TradeRecord
+
         with pytest.raises(TypeError):
             # 缺少 sub_system / strategy_name / symbol / direction / entry_price / quantity / stop_loss / take_profit / risk_level_cn
             TradeRecord(trade_id="X", entry_ts=datetime.now(timezone.utc))
@@ -147,6 +165,7 @@ class TestTradeRecord:
 class TestCloseInfo:
     def test_close_info_all_fields(self):
         from dreambuddy_dal.unified_models import CloseInfo, ExitReason
+
         info = CloseInfo(
             exit_reason=ExitReason.SL_HIT,
             exit_price=Decimal("25.2950"),
@@ -166,6 +185,7 @@ class TestCloseInfo:
 class TestPositionState:
     def test_position_state_defaults(self):
         from dreambuddy_dal.unified_models import PositionState, TradeDirection
+
         p = PositionState(
             symbol="XAGUSDT",
             sub_system="YIJING",
@@ -189,6 +209,7 @@ class TestPositionState:
 class TestDailyStats:
     def test_daily_stats_required(self):
         from dreambuddy_dal.unified_models import DailyStats
+
         s = DailyStats(
             stat_date="2026-08-24",
             symbol="XAGUSDT",
@@ -210,6 +231,7 @@ class TestDailyStats:
 class TestRiskState:
     def test_risk_state_sanity(self):
         from dreambuddy_dal.unified_models import RiskLevel, RiskState
+
         r = RiskState(
             id=1,
             total_equity_usd=Decimal("10000.00"),
@@ -242,12 +264,19 @@ class TestRiskState:
     def test_risk_state_version_auto_increment_by_trigger(self):
         """RiskState.version 在 UPDATE 时由 DB 触发器 +1，这里只验证 Python 层是 int 类型"""
         from dreambuddy_dal.unified_models import RiskLevel, RiskState
+
         r = RiskState(
-            id=1, total_equity_usd=Decimal("1"), gross_exposure_usd=Decimal("0"),
-            net_exposure_usd=Decimal("0"), gross_leverage=Decimal("0"),
-            max_position_pct_usd=Decimal("0"), win_rate_7d=Decimal("0"),
-            max_drawdown_active=Decimal("0"), equity_curve_avg=Decimal("0"),
-            equity_curve_std=Decimal("0"), active_symbols_count=0,
+            id=1,
+            total_equity_usd=Decimal("1"),
+            gross_exposure_usd=Decimal("0"),
+            net_exposure_usd=Decimal("0"),
+            gross_leverage=Decimal("0"),
+            max_position_pct_usd=Decimal("0"),
+            win_rate_7d=Decimal("0"),
+            max_drawdown_active=Decimal("0"),
+            equity_curve_avg=Decimal("0"),
+            equity_curve_std=Decimal("0"),
+            active_symbols_count=0,
             overall_risk=RiskLevel.LOW,
         )
         assert isinstance(r.version, int)
@@ -258,6 +287,7 @@ class TestRiskState:
 class TestRiskCaseRecord:
     def test_risk_case_record(self):
         from dreambuddy_dal.unified_models import RiskCaseRecord, RiskLevel, TradeDirection
+
         c = RiskCaseRecord(
             case_id="RC-0001",
             detected_at=datetime(2026, 8, 24, 10, 5, 0, tzinfo=timezone.utc),

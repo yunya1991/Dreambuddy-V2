@@ -19,14 +19,15 @@ _RAG_INFRA_DIR = Path(__file__).resolve().parent.parent
 if str(_RAG_INFRA_DIR) not in sys.path:
     sys.path.insert(0, str(_RAG_INFRA_DIR))
 
-import pytest
+import pytest  # noqa: E402
 
 # 启用 TF-IDF 回退（与向量层测试一致，避免加载 bge 模型）
-from vector_store.embedder import _embedder
+from vector_store.embedder import _embedder  # noqa: E402
+
 _embedder._use_tfidf_fallback = True
 _embedder._model = None
 
-from integration import (
+from integration import (  # noqa: E402, I001
     detect_research,
     archive_research,
     check_and_prompt,
@@ -34,8 +35,8 @@ from integration import (
     batch_detect,
 )
 
-
 # === 隔离 fixture：临时知识库 + 临时索引/图谱路径 ===
+
 
 @pytest.fixture
 def isolated_kb(tmp_path, monkeypatch):
@@ -48,12 +49,14 @@ def isolated_kb(tmp_path, monkeypatch):
     # ingest_document 顶层导入的 CHROMA_DB_PATH / COLLECTION_NAME 为模块全局，
     # 这里 patch 模块属性，使 build_index 走临时路径
     import evolution.ingest as ingest_mod
+
     monkeypatch.setattr(ingest_mod, "CHROMA_DB_PATH", str(db_dir))
     monkeypatch.setattr(ingest_mod, "COLLECTION_NAME", "test_integration_collection")
 
     # build_graph 的 DEFAULT_GRAPH_PATH 在函数内通过 from ... import 动态读取，
     # patch 源模块属性即可生效
     from knowledge_graph import schema as kg_schema
+
     monkeypatch.setattr(kg_schema, "DEFAULT_GRAPH_PATH", str(graph_path))
 
     return kb
@@ -124,8 +127,7 @@ def test_tc5_archive_research(isolated_kb):
     content = "Kalman Filter 量化滤波实现，用于状态估计"
     detection = detect_research(content)[0]
 
-    result = archive_research(detection, content, isolated_kb,
-                             research_topic="Kalman Filter")
+    result = archive_research(detection, content, isolated_kb, research_topic="Kalman Filter")
 
     assert result["status"] in ("indexed", "duplicate")
     fp = Path(result["file_path"])
@@ -150,8 +152,9 @@ def test_tc6_workflow(isolated_kb):
     assert len(prompt["detections"]) >= 1
     assert "是否归档" in prompt["prompt_message"]
 
-    result = archive_from_conversation(content, research_topic="Kalman量化研究",
-                                      knowledge_dir=isolated_kb)
+    result = archive_from_conversation(
+        content, research_topic="Kalman量化研究", knowledge_dir=isolated_kb
+    )
     assert result["status"] == "done"
     assert len(result["archived"]) >= 1
     assert Path(result["archived"][0]["file_path"]).exists()
@@ -184,8 +187,7 @@ def test_tc8_index_update(isolated_kb):
     content = "Kalman Filter 量化滤波方法"
     detection = detect_research(content)[0]
 
-    archive_research(detection, content, isolated_kb,
-                    research_topic="Kalman调研")
+    archive_research(detection, content, isolated_kb, research_topic="Kalman调研")
 
     index_path = isolated_kb / "7-EXTERNAL-RESEARCH" / "INDEX.md"
     assert index_path.exists(), "INDEX.md 应被创建/更新"

@@ -13,21 +13,24 @@ SPEC v2.0-rc3 第五节：4-MEMORY L2 应用记忆新增 "debate" 类型。
   6. distill_candidates(min_quality, limit) — 蒸馏候选
   7. healthcheck() — 健康检查
 """
+
 from __future__ import annotations
 
-import json
 import logging
 import os
 import random
 import sqlite3
 import time
-from typing import Any
 
 logger = logging.getLogger("debate.memory")
 
 # 质量等级 → 分数映射
 _QUALITY_SCORES = {
-    "S": 0.95, "A": 0.70, "B": 0.40, "C": 0.20, "D": 0.10,
+    "S": 0.95,
+    "A": 0.70,
+    "B": 0.40,
+    "C": 0.20,
+    "D": 0.10,
 }
 
 _QUALITY_ORDER = ["S", "A", "B", "C", "D"]
@@ -66,8 +69,7 @@ class DebateMemory:
                      ":memory:" 用于内存数据库（测试用）。
         """
         if db_path is None:
-            repo_root = os.path.abspath(
-                os.path.join(os.path.dirname(__file__), "..", ".."))
+            repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
             db_path = os.path.join(repo_root, "data", "cognitive_memory.db")
         self._db_path = db_path
         self._persistent = db_path == ":memory:"
@@ -154,8 +156,7 @@ class DebateMemory:
 
     # ── 1. add ──────────────────────────────────────────────
 
-    def add(self, content: str, quality_level: str = "C",
-            tags: str = "debate") -> str | None:
+    def add(self, content: str, quality_level: str = "C", tags: str = "debate") -> str | None:
         """添加辩论记忆。
 
         Returns: memory_id，失败返回 None。
@@ -198,8 +199,7 @@ class DebateMemory:
 
     # ── 3. search ───────────────────────────────────────────
 
-    def search(self, query: str, top_k: int = 5,
-               min_quality: str = "C") -> list[dict]:
+    def search(self, query: str, top_k: int = 5, min_quality: str = "C") -> list[dict]:
         """搜索辩论记忆。
 
         按 tags 和 content 模糊匹配，按 score 降序排列。
@@ -226,8 +226,15 @@ class DebateMemory:
 
         支持更新: quality_level, score, tags, confidence, verify_count, verified.
         """
-        allowed = {"quality_level", "score", "tags", "confidence",
-                   "verify_count", "verified", "content"}
+        allowed = {
+            "quality_level",
+            "score",
+            "tags",
+            "confidence",
+            "verify_count",
+            "verified",
+            "content",
+        }
         updates = {k: v for k, v in fields.items() if k in allowed}
         if not updates:
             return False
@@ -258,9 +265,7 @@ class DebateMemory:
         """统计信息。"""
         try:
             with self._conn() as conn:
-                total = conn.execute(
-                    "SELECT COUNT(*) FROM debate_memories"
-                ).fetchone()[0]
+                total = conn.execute("SELECT COUNT(*) FROM debate_memories").fetchone()[0]
                 by_quality = {}
                 for q in _QUALITY_ORDER:
                     count = conn.execute(
@@ -283,8 +288,7 @@ class DebateMemory:
 
     # ── 6. distill_candidates ───────────────────────────────
 
-    def distill_candidates(self, min_quality: str = "B",
-                           limit: int = 10) -> list[dict]:
+    def distill_candidates(self, min_quality: str = "B", limit: int = 10) -> list[dict]:
         """获取可蒸馏的候选记忆（min_quality 以上）。
 
         蒸馏：将多条相似记忆合并为更高层级的抽象记忆。
@@ -293,8 +297,7 @@ class DebateMemory:
         try:
             with self._conn() as conn:
                 rows = conn.execute(
-                    "SELECT * FROM debate_memories "
-                    "WHERE score >= ? ORDER BY score DESC LIMIT ?",
+                    "SELECT * FROM debate_memories " "WHERE score >= ? ORDER BY score DESC LIMIT ?",
                     (min_score, limit),
                 ).fetchall()
                 return [dict(r) for r in rows]
@@ -341,9 +344,18 @@ class DebateMemory:
                     "bull_score, bear_score, effective_strategies, "
                     "adaptation_hints, created_at) "
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (case_id, topic, topic_type, strategies_used, winner,
-                     bull_score, bear_score, effective_strategies,
-                     adaptation_hints, now),
+                    (
+                        case_id,
+                        topic,
+                        topic_type,
+                        strategies_used,
+                        winner,
+                        bull_score,
+                        bear_score,
+                        effective_strategies,
+                        adaptation_hints,
+                        now,
+                    ),
                 )
                 conn.commit()
             return case_id
@@ -352,7 +364,9 @@ class DebateMemory:
             return None
 
     def search_cbr_cases(
-        self, query: str, top_k: int = 5,
+        self,
+        query: str,
+        top_k: int = 5,
         topic_type: str | None = None,
     ) -> list[dict]:
         """搜索 CBR 案例 (LIKE 模糊匹配)。"""
@@ -382,9 +396,7 @@ class DebateMemory:
         """CBR 案例总数。"""
         try:
             with self._conn() as conn:
-                return conn.execute(
-                    "SELECT COUNT(*) FROM debate_cbr_cases"
-                ).fetchone()[0]
+                return conn.execute("SELECT COUNT(*) FROM debate_cbr_cases").fetchone()[0]
         except sqlite3.Error:
             return 0
 
@@ -414,7 +426,8 @@ class DebateMemory:
             return False
 
     def get_strategy_weights(
-        self, topic_type: str,
+        self,
+        topic_type: str,
     ) -> list[dict]:
         """获取指定话题类型的所有策略权重。"""
         try:

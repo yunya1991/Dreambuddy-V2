@@ -20,11 +20,11 @@ Dreambuddy V2 — 双边全量持仓对账（本地 ↔ 云端）
   5) BDSM : 11-易经推理系统/.workbuddy/bdsm/bdsm_snapshot_YYYYMMDD.json
   6) 自进化: 23-四层闭环自进化交易架构/dreambuddy_evolution/gene_data/
 """
+
 import argparse
 import hashlib
 import json
 import subprocess
-import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -50,7 +50,9 @@ def _ssh(cmd: str) -> Tuple[int, str]:
     quoted = '"' + cmd.replace("\\", "\\\\").replace('"', '\\"') + '"'
     p = subprocess.run(
         ["ssh", "-o", "BatchMode=yes", SSH_ALIAS, f"sudo -n -u luke -H bash -c {quoted}"],
-        capture_output=True, text=True, timeout=60,
+        capture_output=True,
+        text=True,
+        timeout=60,
     )
     return p.returncode, (p.stdout if p.returncode == 0 else p.stderr)
 
@@ -70,7 +72,7 @@ def remote_md5(rel: str) -> Optional[str]:
 
 def remote_list(rel_dir: str) -> List[str]:
     rc, out = _ssh(f"ls -1 '{REMOTE_ROOT}/{rel_dir}' 2>/dev/null")
-    return [l.strip() for l in out.splitlines() if l.strip()] if rc == 0 else []
+    return [l.strip() for l in out.splitlines() if l.strip()] if rc == 0 else []  # noqa: E741
 
 
 def local_md5(rel: str) -> Optional[str]:
@@ -110,8 +112,14 @@ def positions_from_v15(state: Optional[dict]) -> Dict[str, dict]:
     if not state:
         return out
     for coin, p in (state.get("positions") or {}).items():
-        out[coin.upper()] = norm(coin, p.get("direction"), p.get("entry_price") or p.get("open_price"),
-                                 p.get("sz"), (p.get("confidence") or 0) / 100.0, "v15")
+        out[coin.upper()] = norm(
+            coin,
+            p.get("direction"),
+            p.get("entry_price") or p.get("open_price"),
+            p.get("sz"),
+            (p.get("confidence") or 0) / 100.0,
+            "v15",
+        )
     return out
 
 
@@ -125,8 +133,15 @@ def positions_from_open_dir(files_json: Dict[str, dict]) -> Dict[Tuple[str, str]
         src = obj.get("strategy_source") or obj.get("source_tag") or "unknown"
         tag = obj.get("source_tag") or ""
         key = (coin, str(src).lower())
-        out[key] = norm(coin, obj.get("direction"), obj.get("entry_price"),
-                        obj.get("position_qty"), obj.get("confidence"), str(src).lower(), tag)
+        out[key] = norm(
+            coin,
+            obj.get("direction"),
+            obj.get("entry_price"),
+            obj.get("position_qty"),
+            obj.get("confidence"),
+            str(src).lower(),
+            tag,
+        )
     return out
 
 
@@ -141,9 +156,17 @@ def diff_dicts(local: Dict, cloud: Dict, keyname: str) -> List[str]:
     for k in sorted(lk & ck):
         a, b = local[k], cloud[k]
         if a["dir"] != b["dir"]:
-            lines.append(f"  [双向冲突·方向] {keyname}={k} 本地={a['dir']}@{a['entry']} vs 云端={b['dir']}@{b['entry']}")
-        elif a["entry"] is not None and b["entry"] is not None and abs(a["entry"] - b["entry"]) > 1e-4:
-            lines.append(f"  [双向冲突·入场价] {keyname}={k} 本地={a['entry']} vs 云端={b['entry']}")
+            lines.append(
+                f"  [双向冲突·方向] {keyname}={k} 本地={a['dir']}@{a['entry']} vs 云端={b['dir']}@{b['entry']}"
+            )
+        elif (
+            a["entry"] is not None
+            and b["entry"] is not None
+            and abs(a["entry"] - b["entry"]) > 1e-4
+        ):
+            lines.append(
+                f"  [双向冲突·入场价] {keyname}={k} 本地={a['entry']} vs 云端={b['entry']}"
+            )
         else:
             lines.append(f"  [一致] {keyname}={k} {a['dir']}@{a['entry']}")
     return lines
@@ -163,7 +186,9 @@ def main():
     W("═" * 68)
 
     # 1) V15
-    l_v15 = load_json((Path(LOCAL_ROOT) / REL_V15).read_text() if (Path(LOCAL_ROOT) / REL_V15).exists() else None)
+    l_v15 = load_json(
+        (Path(LOCAL_ROOT) / REL_V15).read_text() if (Path(LOCAL_ROOT) / REL_V15).exists() else None
+    )
     c_v15 = load_json(remote_cat(REL_V15))
     lp, cp = positions_from_v15(l_v15), positions_from_v15(c_v15)
     W("\n[1] V15 经典马丁  (v15_state.json · positions)")
@@ -173,8 +198,14 @@ def main():
 
     # 2) 主动仓 open_positions
     ldir = Path(LOCAL_ROOT) / REL_OPEN_DIR
-    lfiles = {f.name: load_json(f.read_text()) for f in ldir.glob("*.json")} if ldir.exists() else {}
-    rnames = [n for n in remote_list(REL_OPEN_DIR) if n.endswith(".json") and not n.startswith(SKIP_PREFIXES)]
+    lfiles = (
+        {f.name: load_json(f.read_text()) for f in ldir.glob("*.json")} if ldir.exists() else {}
+    )
+    rnames = [
+        n
+        for n in remote_list(REL_OPEN_DIR)
+        if n.endswith(".json") and not n.startswith(SKIP_PREFIXES)
+    ]
     rfiles = {n: load_json(remote_cat(f"{REL_OPEN_DIR}/{n}")) for n in rnames}
     lo, co = positions_from_open_dir(lfiles), positions_from_open_dir(rfiles)
     W("\n[2] 主动仓 open_positions  (strategy_source: bcrm/bdsm/strategic/evolution)")
@@ -186,7 +217,11 @@ def main():
     }
 
     # 3) 事件驱动
-    l_ev = load_json((Path(LOCAL_ROOT) / REL_EVENT).read_text() if (Path(LOCAL_ROOT) / REL_EVENT).exists() else None)
+    l_ev = load_json(
+        (Path(LOCAL_ROOT) / REL_EVENT).read_text()
+        if (Path(LOCAL_ROOT) / REL_EVENT).exists()
+        else None
+    )
     c_ev = load_json(remote_cat(REL_EVENT))
     W("\n[3] 事件驱动  (event_driven_state.json)")
     for nm, ev in (("本地", l_ev), ("云端", c_ev)):
@@ -194,17 +229,25 @@ def main():
             W(f"    {nm}: <缺失>")
             continue
         mc = ev.get("main_chain") or {}
-        W(f"    {nm}: symbol={ev.get('symbol')} updated={ev.get('updated_at')} "
-          f"d_star={mc.get('d_star')} regime={mc.get('regime')} mode={ev.get('mode')}")
+        W(
+            f"    {nm}: symbol={ev.get('symbol')} updated={ev.get('updated_at')} "
+            f"d_star={mc.get('d_star')} regime={mc.get('regime')} mode={ev.get('mode')}"
+        )
     if l_ev and c_ev:
         b = [k for k in ("symbol",) if l_ev.get(k) != c_ev.get(k)]
-        if (l_ev.get("main_chain") or {}).get("d_star") != (c_ev.get("main_chain") or {}).get("d_star"):
+        if (l_ev.get("main_chain") or {}).get("d_star") != (c_ev.get("main_chain") or {}).get(
+            "d_star"
+        ):
             b.append("main_chain.d_star")
         W(f"    → {'不一致: ' + ', '.join(b) if b else '一致'}")
         report["sources"]["event_driven"] = {"local": l_ev, "cloud": c_ev}
 
     # 4) 战略层
-    l_fd = load_json((Path(LOCAL_ROOT) / REL_FIVE).read_text() if (Path(LOCAL_ROOT) / REL_FIVE).exists() else None)
+    l_fd = load_json(
+        (Path(LOCAL_ROOT) / REL_FIVE).read_text()
+        if (Path(LOCAL_ROOT) / REL_FIVE).exists()
+        else None
+    )
     c_fd = load_json(remote_cat(REL_FIVE))
     W("\n[4] 战略层  (five_domain_state.json)")
     for nm, fd in (("本地", l_fd), ("云端", c_fd)):
@@ -213,7 +256,11 @@ def main():
             continue
         W(f"    {nm}: war_state={fd.get('war_state')} cap={fd.get('aggregate_position_cap_pct')}")
     if l_fd and c_fd:
-        b = [k for k in ("war_state", "aggregate_position_cap_pct", "direction_state") if l_fd.get(k) != c_fd.get(k)]
+        b = [
+            k
+            for k in ("war_state", "aggregate_position_cap_pct", "direction_state")
+            if l_fd.get(k) != c_fd.get(k)
+        ]
         W(f"    → {'不一致: ' + ', '.join(b) if b else '一致'}")
         report["sources"]["strategic"] = {"local": l_fd, "cloud": c_fd}
 
@@ -221,7 +268,11 @@ def main():
     W("\n[5] BDSM 快照  (bdsm_snapshot_YYYYMMDD.json · md5)")
     ldir2 = Path(LOCAL_ROOT) / REL_BDSM_DIR
     lb = sorted(ldir2.glob("bdsm_snapshot_*.json")) if ldir2.exists() else []
-    rb = sorted(n for n in remote_list(REL_BDSM_DIR) if n.startswith("bdsm_snapshot_") and n.endswith(".json"))
+    rb = sorted(
+        n
+        for n in remote_list(REL_BDSM_DIR)
+        if n.startswith("bdsm_snapshot_") and n.endswith(".json")
+    )
     latest_l = lb[-1].name if lb else None
     latest_r = rb[-1] if rb else None
     W(f"    本地最新: {latest_l}  / 云端最新: {latest_r}")

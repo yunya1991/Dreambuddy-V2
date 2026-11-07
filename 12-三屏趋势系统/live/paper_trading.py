@@ -4,12 +4,11 @@
 支持多策略并行对比，记录交易日志，计算盈亏。
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field  # noqa: I001
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
 from enum import Enum
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -18,8 +17,9 @@ try:
     _L4_ROOT = Path(__file__).resolve().parents[2] / "11-易经推理系统"
     if str(_L4_ROOT) not in sys.path:
         sys.path.insert(0, str(_L4_ROOT))
-    from scripts.memory_l4.trade_event import TradeEvent
+    from scripts.memory_l4.trade_event import TradeEvent  # noqa: I001
     from scripts.memory_l4.case_registry import UnifiedCaseRegistry
+
     _L4_ENABLED = True
 except Exception as _e:
     _L4_ENABLED = False
@@ -44,6 +44,7 @@ class OrderStatus(Enum):
 @dataclass
 class Order:
     """订单"""
+
     order_id: str
     strategy_name: str
     inst_id: str
@@ -75,6 +76,7 @@ class Order:
 @dataclass
 class Position:
     """持仓"""
+
     inst_id: str
     side: str  # long/short
     sz: float = 0.0
@@ -96,6 +98,7 @@ class Position:
 @dataclass
 class Portfolio:
     """策略组合"""
+
     strategy_name: str
     initial_capital: float
     cash: float
@@ -234,9 +237,7 @@ class PaperTradingEngine:
                 if pos_key in portfolio.positions:
                     pos = portfolio.positions[pos_key]
                     if pos.sz > 0:
-                        order = self._close_position(
-                            portfolio, pos, exec_px, ts, notes
-                        )
+                        order = self._close_position(portfolio, pos, exec_px, ts, notes)
         elif signal > 0:
             # 做多
             if current_pos:
@@ -244,14 +245,17 @@ class PaperTradingEngine:
                 if current_pos.sz < target_sz:
                     # 加仓
                     order = self._open_position(
-                        portfolio, inst_id, "long", target_sz - current_pos.sz,
-                        exec_px, ts, notes
+                        portfolio, inst_id, "long", target_sz - current_pos.sz, exec_px, ts, notes
                     )
                 elif current_pos.sz > target_sz:
                     # 减仓
                     order = self._close_position(
-                        portfolio, current_pos, exec_px, ts, notes,
-                        close_sz=current_pos.sz - target_sz
+                        portfolio,
+                        current_pos,
+                        exec_px,
+                        ts,
+                        notes,
+                        close_sz=current_pos.sz - target_sz,
                     )
             else:
                 # 开多头
@@ -273,14 +277,17 @@ class PaperTradingEngine:
                 if current_pos.sz < target_sz:
                     # 加仓
                     order = self._open_position(
-                        portfolio, inst_id, "short", target_sz - current_pos.sz,
-                        exec_px, ts, notes
+                        portfolio, inst_id, "short", target_sz - current_pos.sz, exec_px, ts, notes
                     )
                 elif current_pos.sz > target_sz:
                     # 减仓
                     order = self._close_position(
-                        portfolio, current_pos, exec_px, ts, notes,
-                        close_sz=current_pos.sz - target_sz
+                        portfolio,
+                        current_pos,
+                        exec_px,
+                        ts,
+                        notes,
+                        close_sz=current_pos.sz - target_sz,
                     )
             else:
                 # 开空头
@@ -331,9 +338,7 @@ class PaperTradingEngine:
         # 更新持仓
         pos_key = f"{inst_id}_{side}"
         if pos_key not in portfolio.positions:
-            portfolio.positions[pos_key] = Position(
-                inst_id=inst_id, side=side, sz=sz, avg_px=px
-            )
+            portfolio.positions[pos_key] = Position(inst_id=inst_id, side=side, sz=sz, avg_px=px)
         else:
             pos = portfolio.positions[pos_key]
             total_sz = pos.sz + sz
@@ -426,7 +431,11 @@ class PaperTradingEngine:
                     exit_price=px,
                     position_size=sz,
                     pnl=pnl,
-                    pnl_pct=(pnl / (position.avg_px * sz) * 100) if position.avg_px > 0 and sz > 0 else 0,
+                    pnl_pct=(
+                        (pnl / (position.avg_px * sz) * 100)
+                        if position.avg_px > 0 and sz > 0
+                        else 0
+                    ),
                     exit_reason=f"paper_close_{notes}",
                     decision_context={
                         "strategy_name": portfolio.strategy_name,
@@ -446,12 +455,12 @@ class PaperTradingEngine:
     def update_prices(self, prices: Dict[str, float]) -> None:
         """更新持仓价格，计算未实现盈亏"""
         for portfolio in self.portfolios.values():
-            for pos_key, pos in portfolio.positions.items():
+            for pos_key, pos in portfolio.positions.items():  # noqa: B007
                 inst_id = pos.inst_id
                 if inst_id in prices:
                     current_px = prices[inst_id]
-                    pos.unrealized_pnl = (current_px - pos.avg_px) * pos.sz * (
-                        1 if pos.side == "long" else -1
+                    pos.unrealized_pnl = (
+                        (current_px - pos.avg_px) * pos.sz * (1 if pos.side == "long" else -1)
                     )
 
     def get_summary(self) -> Dict[str, Any]:
@@ -460,8 +469,7 @@ class PaperTradingEngine:
             "timestamp": datetime.now().isoformat(),
             "initial_capital": self.initial_capital,
             "strategies": {
-                name: portfolio.to_dict()
-                for name, portfolio in self.portfolios.items()
+                name: portfolio.to_dict() for name, portfolio in self.portfolios.items()
             },
         }
 

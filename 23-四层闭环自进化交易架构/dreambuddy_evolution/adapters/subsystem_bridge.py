@@ -5,6 +5,7 @@ SPEC §2.5
 不新建采集器——polling_trader 已在 run_once 中计算了大量信号，
 本桥接器只读已有状态，不触发新推理。
 """
+
 from __future__ import annotations
 
 import logging
@@ -23,8 +24,18 @@ _WAR_STATE_TEMP: dict[str, float] = {
 # 市值尺度分类 (蓝图 §0.6)
 _CLASSICAL = {"BTC", "ETH", "BNB"}
 _MESO = {
-    "SOL", "XRP", "ADA", "AVAX", "DOT", "LINK",
-    "MATIC", "UNI", "LTC", "NEAR", "ARB", "OP",
+    "SOL",
+    "XRP",
+    "ADA",
+    "AVAX",
+    "DOT",
+    "LINK",
+    "MATIC",
+    "UNI",
+    "LTC",
+    "NEAR",
+    "ARB",
+    "OP",
 }
 
 # BCRM direction → 进化架构 direction 映射
@@ -48,9 +59,8 @@ class SubSystemBridge:
             if self._trader is None:
                 return "ALLOW"
             # 影子模式优先（真实计算值）
-            _fds = (
-                getattr(self._trader, "_five_domain_state_shadow", None)
-                or getattr(self._trader, "_five_domain_state_cache", None)
+            _fds = getattr(self._trader, "_five_domain_state_shadow", None) or getattr(
+                self._trader, "_five_domain_state_cache", None
             )
             if _fds is None:
                 return "ALLOW"
@@ -127,9 +137,8 @@ class SubSystemBridge:
         try:
             if self._trader is None:
                 return {"dao": 50, "di": 50, "tian": 50, "jiang": 50, "fa": 50}
-            _fds = (
-                getattr(self._trader, "_five_domain_state_shadow", None)
-                or getattr(self._trader, "_five_domain_state_cache", None)
+            _fds = getattr(self._trader, "_five_domain_state_shadow", None) or getattr(
+                self._trader, "_five_domain_state_cache", None
             )
             if _fds is None:
                 return {"dao": 50, "di": 50, "tian": 50, "jiang": 50, "fa": 50}
@@ -146,9 +155,8 @@ class SubSystemBridge:
         try:
             if self._trader is None:
                 return 1.0
-            _fds = (
-                getattr(self._trader, "_five_domain_state_shadow", None)
-                or getattr(self._trader, "_five_domain_state_cache", None)
+            _fds = getattr(self._trader, "_five_domain_state_shadow", None) or getattr(
+                self._trader, "_five_domain_state_cache", None
             )
             if _fds is None:
                 return 1.0
@@ -187,17 +195,12 @@ class SubSystemBridge:
         try:
             if self._trader is None:
                 return "NEUTRAL"
-            _fds = (
-                getattr(self._trader, "_five_domain_state_shadow", None)
-                or getattr(self._trader, "_five_domain_state_cache", None)
+            _fds = getattr(self._trader, "_five_domain_state_shadow", None) or getattr(
+                self._trader, "_five_domain_state_cache", None
             )
             if _fds is None:
                 return "NEUTRAL"
-            br = (
-                getattr(_fds, "btc_regime", None)
-                if hasattr(_fds, "btc_regime")
-                else None
-            )
+            br = getattr(_fds, "btc_regime", None) if hasattr(_fds, "btc_regime") else None
             if isinstance(br, dict):
                 return br.get("crypto_usdt", "NEUTRAL")
             return "NEUTRAL"
@@ -235,13 +238,14 @@ class SubSystemBridge:
         try:
             if self._trader is None:
                 return "NEUTRAL"
-            _fds = (
-                getattr(self._trader, "_five_domain_state_shadow", None)
-                or getattr(self._trader, "_five_domain_state_cache", None)
+            _fds = getattr(self._trader, "_five_domain_state_shadow", None) or getattr(
+                self._trader, "_five_domain_state_cache", None
             )
             if _fds is None:
                 return "NEUTRAL"
-            ds = getattr(_fds, "direction_state", None) if hasattr(_fds, "direction_state") else None
+            ds = (
+                getattr(_fds, "direction_state", None) if hasattr(_fds, "direction_state") else None
+            )
             if isinstance(ds, dict):
                 return ds.get(cls, "NEUTRAL")
             return "NEUTRAL"
@@ -253,9 +257,8 @@ class SubSystemBridge:
         try:
             if self._trader is None:
                 return 0.0
-            _fds = (
-                getattr(self._trader, "_five_domain_state_shadow", None)
-                or getattr(self._trader, "_five_domain_state_cache", None)
+            _fds = getattr(self._trader, "_five_domain_state_shadow", None) or getattr(
+                self._trader, "_five_domain_state_cache", None
             )
             if _fds is None:
                 return 0.0

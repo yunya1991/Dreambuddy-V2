@@ -9,13 +9,12 @@
   1. 直接测试 get_shadow_report() 函数（不启动 HTTP server）
   2. 通过检查 data_server_fixed.py 源码确认路由已注册
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 # Add bcrm2 to sys.path
 THIS_DIR = Path(__file__).resolve().parent
@@ -31,19 +30,23 @@ if str(DATA_SERVER_DIR) not in sys.path:
 # T_B6: /api/shadow/report API
 # ================================================================
 
+
 class TestShadowLoggerAPI:
     """验证 /api/shadow/report API。"""
 
     def test_get_shadow_report_function_exists(self):
         """T_B6.1: get_shadow_report 函数存在。"""
         import data_server_fixed
+
         assert hasattr(data_server_fixed, "get_shadow_report")
         assert callable(data_server_fixed.get_shadow_report)
 
     def test_route_registered(self):
         """T_B6.2: 路由 /api/shadow/report 已注册在 do_GET 中。"""
-        import data_server_fixed
         import inspect
+
+        import data_server_fixed
+
         # 读取 do_GET 源码，确认包含 /api/shadow/report 路由
         src = inspect.getsource(data_server_fixed.Handler.do_GET)
         assert "/api/shadow/report" in src
@@ -51,6 +54,7 @@ class TestShadowLoggerAPI:
     def test_disabled_returns_ok_false(self):
         """T_B6.3: SHADOW_LOGGER_ENABLED=False 时返回 ok=False。"""
         from data_server_fixed import get_shadow_report
+
         with patch("data_server_fixed.SHADOW_LOGGER_ENABLED", False):
             result = get_shadow_report("BTC", days=7)
         assert result["ok"] is False
@@ -80,8 +84,10 @@ class TestShadowLoggerAPI:
         }
         mock_logger.get_comparison_report.return_value = expected_report
 
-        with patch("data_server_fixed.SHADOW_LOGGER_ENABLED", True), \
-             patch("data_server_fixed._get_shadow_logger", return_value=mock_logger):
+        with (
+            patch("data_server_fixed.SHADOW_LOGGER_ENABLED", True),
+            patch("data_server_fixed._get_shadow_logger", return_value=mock_logger),
+        ):
             result = get_shadow_report("BTC", days=7)
 
         assert result["ok"] is True
@@ -93,9 +99,13 @@ class TestShadowLoggerAPI:
         """T_B6.5: 内部异常时返回 ok=False 和 error 信息。"""
         from data_server_fixed import get_shadow_report
 
-        with patch("data_server_fixed.SHADOW_LOGGER_ENABLED", True), \
-             patch("data_server_fixed._get_shadow_logger",
-                   side_effect=RuntimeError("DB connection failed")):
+        with (
+            patch("data_server_fixed.SHADOW_LOGGER_ENABLED", True),
+            patch(
+                "data_server_fixed._get_shadow_logger",
+                side_effect=RuntimeError("DB connection failed"),
+            ),
+        ):
             result = get_shadow_report("BTC", days=7)
 
         assert result["ok"] is False

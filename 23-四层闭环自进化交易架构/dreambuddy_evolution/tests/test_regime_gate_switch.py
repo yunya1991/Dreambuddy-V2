@@ -14,6 +14,7 @@ Phase D TDD 测试：RegimeGateSwitch 策略路由层
 参考：SPEC-趋势跟踪正金字塔与网格策略落地.md Phase D
 硬约束：HC-TF-03（regime 路由）、HC-TF-07（FAIL-OPEN）
 """
+
 from __future__ import annotations
 
 import sys
@@ -32,6 +33,7 @@ if str(REPO) not in sys.path:
 def test_regime_gate_switch_importable():
     """T1: RegimeGateSwitch 模块可导入"""
     from dreambuddy_evolution.engines.regime_gate import RegimeGateSwitch
+
     assert RegimeGateSwitch is not None
 
 
@@ -59,8 +61,28 @@ def test_detect_regime_range():
     from dreambuddy_evolution.engines.regime_gate import RegimeGateSwitch
 
     # 构造震荡数据：价格在 100~105 之间反复
-    closes = [100, 105, 100, 105, 100, 105, 100, 105, 100, 105,
-              100, 105, 100, 105, 100, 105, 100, 105, 100, 105] * 2
+    closes = [
+        100,
+        105,
+        100,
+        105,
+        100,
+        105,
+        100,
+        105,
+        100,
+        105,
+        100,
+        105,
+        100,
+        105,
+        100,
+        105,
+        100,
+        105,
+        100,
+        105,
+    ] * 2
     highs = [c + 1 for c in closes]
     lows = [c - 1 for c in closes]
     kline_data = {"close": closes, "high": highs, "low": lows}

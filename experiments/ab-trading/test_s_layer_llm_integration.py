@@ -14,15 +14,14 @@ S层三层递进大模型集成测试
 7. 压力测试（100轮）
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import time
 import unittest
-import json
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from core.intent_engine.s_layer_llm_integration import (
+from core.intent_engine.s_layer_llm_integration import (  # noqa: I001
     TokenBudgetManager,
     TokenBudgetStatus,
     HandoverLevel,
@@ -47,7 +46,7 @@ class TestTokenBudgetManager(unittest.TestCase):
 
     def test_consume_tokens(self):
         """测试Token消耗"""
-        status = self.budget.consume_tokens(
+        status = self.budget.consume_tokens(  # noqa: F841
             prompt_tokens=500,
             completion_tokens=300,
             module="test",
@@ -164,7 +163,7 @@ class TestSLayerLLMRecognizer(unittest.TestCase):
     """S层三层递进LLM识别器测试"""
 
     def setUp(self):
-        self.recognizer = SLayerLLMRecognizer(config={'token_budget': 20000})
+        self.recognizer = SLayerLLMRecognizer(config={"token_budget": 20000})
 
     def test_recognize_simple_query(self):
         """测试简单查询识别"""
@@ -232,7 +231,7 @@ class TestSLayerLLMRecognizer(unittest.TestCase):
     def test_low_token_fallback_to_local(self):
         """测试Token不足时降级到本地"""
         # 设置很低的预算
-        recognizer = SLayerLLMRecognizer(config={'token_budget': 500})
+        recognizer = SLayerLLMRecognizer(config={"token_budget": 500})
 
         # 第一次可能用LLM（如果Token还够）
         result1 = recognizer.recognize("分析BTC")
@@ -265,8 +264,7 @@ class TestSLayerLLMRecognizer(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertIn("suggested_params", result)
         self.assertLess(
-            result["suggested_params"]["position_size"],
-            current_params["position_size"]
+            result["suggested_params"]["position_size"], current_params["position_size"]
         )
         self.assertGreater(result["remaining_tokens"], 0)
 
@@ -304,7 +302,7 @@ class TestClassicHandoverManager(unittest.TestCase):
     """经典指标系统接管管理器测试"""
 
     def setUp(self):
-        self.recognizer = SLayerLLMRecognizer(config={'token_budget': 10000})
+        self.recognizer = SLayerLLMRecognizer(config={"token_budget": 10000})
         self.manager = ClassicHandoverManager(
             s_layer_recognizer=self.recognizer,
             classic_api_url="http://127.0.0.1:8092",
@@ -414,7 +412,7 @@ class TestEndToEndIntegration(unittest.TestCase):
     def test_full_user_journey(self):
         """测试完整用户旅程：正常使用→Token不足→接管→策略调整"""
         # Step 1: 初始正常使用
-        recognizer = SLayerLLMRecognizer(config={'token_budget': 20000})
+        recognizer = SLayerLLMRecognizer(config={"token_budget": 20000})
         manager = ClassicHandoverManager(s_layer_recognizer=recognizer)
 
         result1 = recognizer.recognize("分析BTC趋势")
@@ -456,7 +454,7 @@ class TestEndToEndIntegration(unittest.TestCase):
 
     def test_multiple_intent_types(self):
         """测试多种意图类型的三层识别"""
-        recognizer = SLayerLLMRecognizer(config={'token_budget': 20000})
+        recognizer = SLayerLLMRecognizer(config={"token_budget": 20000})
 
         test_cases = [
             "BTC趋势分析",
@@ -482,7 +480,7 @@ class TestStress100Rounds(unittest.TestCase):
 
     def test_100_rounds_recognition(self):
         """100轮识别压力测试"""
-        recognizer = SLayerLLMRecognizer(config={'token_budget': 50000})
+        recognizer = SLayerLLMRecognizer(config={"token_budget": 50000})
 
         test_queries = [
             "BTC趋势分析",
@@ -516,7 +514,7 @@ class TestStress100Rounds(unittest.TestCase):
 
         # 打印统计
         stats = recognizer.token_budget.get_stats()
-        print(f"\n  100轮压力测试统计:")
+        print("\n  100轮压力测试统计:")
         print(f"    成功率: {success_rate:.2%}")
         print(f"    平均延迟: {avg_latency:.2f}ms")
         print(f"    总Token消耗: {stats['used_tokens']}")
@@ -527,5 +525,5 @@ class TestStress100Rounds(unittest.TestCase):
         self.assertGreater(stats["used_tokens"], 0, "应有Token消耗")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

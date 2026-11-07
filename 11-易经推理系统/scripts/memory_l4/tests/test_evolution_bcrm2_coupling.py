@@ -15,6 +15,7 @@ Spec: .trae/documents/pons_river_evolution_fix_spec.md 缺陷D (P1)
 TDD 红: _evolution_build_position 入口无 BCRM2.0 耦合检查 → 测试期望拦截但实际继续执行
 TDD 绿: 入口增加耦合检查，bcrm2_failed_coins 命中时 return 拦截
 """
+
 import sys
 import time
 from pathlib import Path
@@ -33,6 +34,7 @@ class TestEvolutionBCRM2Coupling:
     def trader(self):
         """轻量 PollingTrader 实例（参考 test_p2_s4b_sl_floor.py 模式）."""
         from polling_trader import PollingTrader
+
         t = PollingTrader.__new__(PollingTrader)
         t.okx_client = MagicMock()
         t._log = MagicMock()
@@ -53,15 +55,20 @@ class TestEvolutionBCRM2Coupling:
 
         # 调用 _evolution_build_position
         result = trader._evolution_build_position(
-            symbol=symbol, action="long", u_open=0.8,
-            d_star=0.5, confidence=0.55, tier="probe",
+            symbol=symbol,
+            action="long",
+            u_open=0.8,
+            d_star=0.5,
+            confidence=0.55,
+            tier="probe",
         )
         # 应被拦截 return None
         assert result is None, "BCRM2.0 样本不足时应拦截 evolution 开仓"
         # 验证日志被调用，包含拦截关键词
         log_calls = [str(call) for call in trader._log.call_args_list]
-        assert any("BCRM2.0" in c and "拦截" in c for c in log_calls), \
-            f"应记录 BCRM2.0 拦截日志, 实际: {log_calls}"
+        assert any(
+            "BCRM2.0" in c and "拦截" in c for c in log_calls
+        ), f"应记录 BCRM2.0 拦截日志, 实际: {log_calls}"
 
     def test_bcrm2_expired_not_block(self, trader):
         """bcrm2_failed_coins 有记录但超过 24h → 不拦截（继续执行后续逻辑）.
@@ -73,26 +80,36 @@ class TestEvolutionBCRM2Coupling:
 
         # 调用 _evolution_build_position
         # 不会被 BCRM2.0 耦合检查拦截（会继续执行后续逻辑，可能在其他地方 return）
-        result = trader._evolution_build_position(
-            symbol=symbol, action="long", u_open=0.8,
-            d_star=0.5, confidence=0.55, tier="probe",
+        result = trader._evolution_build_position(  # noqa: F841
+            symbol=symbol,
+            action="long",
+            u_open=0.8,
+            d_star=0.5,
+            confidence=0.55,
+            tier="probe",
         )
         # 不应被 BCRM2.0 耦合检查拦截（日志中无 BCRM2.0 拦截）
         log_calls = [str(call) for call in trader._log.call_args_list]
-        assert not any("BCRM2.0" in c and "拦截" in c for c in log_calls), \
-            "24h 后不应再拦截 evolution 开仓"
+        assert not any(
+            "BCRM2.0" in c and "拦截" in c for c in log_calls
+        ), "24h 后不应再拦截 evolution 开仓"
 
     def test_bcrm2_no_record_not_block(self, trader):
         """bcrm2_failed_coins 无记录 → 不拦截（正常开仓流程）."""
         symbol = "PONS"
         # bcrm2_failed_coins 为空（无失败记录）
-        result = trader._evolution_build_position(
-            symbol=symbol, action="long", u_open=0.8,
-            d_star=0.5, confidence=0.55, tier="probe",
+        result = trader._evolution_build_position(  # noqa: F841
+            symbol=symbol,
+            action="long",
+            u_open=0.8,
+            d_star=0.5,
+            confidence=0.55,
+            tier="probe",
         )
         log_calls = [str(call) for call in trader._log.call_args_list]
-        assert not any("BCRM2.0" in c and "拦截" in c for c in log_calls), \
-            "无 BCRM2.0 失败记录时不应拦截"
+        assert not any(
+            "BCRM2.0" in c and "拦截" in c for c in log_calls
+        ), "无 BCRM2.0 失败记录时不应拦截"
 
     def test_bcrm2_blocks_different_symbol_independent(self, trader):
         """BCRM2.0 拦截按 symbol 独立：PONS 被拦截，RIVER 不受影响.
@@ -103,19 +120,28 @@ class TestEvolutionBCRM2Coupling:
         trader.bcrm2_failed_coins["PONS"] = time.time()
         # PONS 应被拦截
         result_pons = trader._evolution_build_position(
-            symbol="PONS", action="long", u_open=0.8,
-            d_star=0.5, confidence=0.55, tier="probe",
+            symbol="PONS",
+            action="long",
+            u_open=0.8,
+            d_star=0.5,
+            confidence=0.55,
+            tier="probe",
         )
         assert result_pons is None
         # RIVER 不应被拦截（bcrm2_failed_coins 中无 RIVER）
         trader._log.reset_mock()
-        result_river = trader._evolution_build_position(
-            symbol="RIVER", action="long", u_open=0.8,
-            d_star=0.5, confidence=0.55, tier="probe",
+        result_river = trader._evolution_build_position(  # noqa: F841
+            symbol="RIVER",
+            action="long",
+            u_open=0.8,
+            d_star=0.5,
+            confidence=0.55,
+            tier="probe",
         )
         log_calls = [str(call) for call in trader._log.call_args_list]
-        assert not any("BCRM2.0" in c and "拦截" in c for c in log_calls), \
-            "RIVER 不应被 PONS 的 BCRM2.0 失败记录影响"
+        assert not any(
+            "BCRM2.0" in c and "拦截" in c for c in log_calls
+        ), "RIVER 不应被 PONS 的 BCRM2.0 失败记录影响"
 
     def test_bcrm2_coupling_fail_open_on_exception(self, trader):
         """耦合检查异常时不阻断（FAIL-OPEN）.
@@ -128,12 +154,17 @@ class TestEvolutionBCRM2Coupling:
 
         # 调用 _evolution_build_position
         # FAIL-OPEN：异常不阻断，继续执行后续逻辑
-        result = trader._evolution_build_position(
-            symbol=symbol, action="long", u_open=0.8,
-            d_star=0.5, confidence=0.55, tier="probe",
+        result = trader._evolution_build_position(  # noqa: F841
+            symbol=symbol,
+            action="long",
+            u_open=0.8,
+            d_star=0.5,
+            confidence=0.55,
+            tier="probe",
         )
         # 不应因异常崩溃（FAIL-OPEN），日志应记录异常告警
         log_calls = [str(call) for call in trader._log.call_args_list]
         # 应有 fail-open 相关日志
-        assert any("fail-open" in c.lower() or "异常" in c for c in log_calls), \
-            f"异常时应记录 FAIL-OPEN 告警, 实际: {log_calls}"
+        assert any(
+            "fail-open" in c.lower() or "异常" in c for c in log_calls
+        ), f"异常时应记录 FAIL-OPEN 告警, 实际: {log_calls}"

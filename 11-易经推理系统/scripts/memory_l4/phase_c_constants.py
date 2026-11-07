@@ -38,26 +38,26 @@ BTC_REFLEX_LAMBDA_HIGH: float = 1.0
 # P11：G-01 冷却熔断阈值+时长（硬编码）
 # ============================================================
 G01_BTC_REFLEX_COOLDOWN_PCT: float = 0.005  # 0.5% 权益损失/踏空
-G01_COOLDOWN_SHORT_DAYS: int = 3            # 触发一次 → 关 3 日
-G01_COOLDOWN_LONG_DAYS: int = 7             # 连续 3 日 λ≤0.70 → 关 7 日
+G01_COOLDOWN_SHORT_DAYS: int = 3  # 触发一次 → 关 3 日
+G01_COOLDOWN_LONG_DAYS: int = 7  # 连续 3 日 λ≤0.70 → 关 7 日
 G01_LONG_TRIGGER_CONSECUTIVE_DAYS: int = 3
 G01_LONG_TRIGGER_LAMBDA_THRESH: float = 0.70
 
 # ============================================================
 # P12：G-02 组合黑天鹅熔断 3 条门槛（硬编码）
 # ============================================================
-G02_SAME_DIR_POSITION_COUNT: int = 5         # ① 同方向持仓 ≥ 5 笔
-G02_AVG_FLOAT_LOSS_PCT: float = 0.005        # ② 15min 平均浮亏 ≥ 0.50%
-G02_BTC_LAMBDA_UPPER: float = 0.75           # ③ BTC λ ≤ 0.75
-G02_BLOCK_NEW_OPEN_SECONDS: int = 3600       # 暂停开新仓 1 小时
-G02_SL_MULT_ADJ: float = 0.90                # SL × 0.90（微近止损）
-G02_TP_MULT_ADJ: float = 1.05                # TP × 1.05（延后止盈）
+G02_SAME_DIR_POSITION_COUNT: int = 5  # ① 同方向持仓 ≥ 5 笔
+G02_AVG_FLOAT_LOSS_PCT: float = 0.005  # ② 15min 平均浮亏 ≥ 0.50%
+G02_BTC_LAMBDA_UPPER: float = 0.75  # ③ BTC λ ≤ 0.75
+G02_BLOCK_NEW_OPEN_SECONDS: int = 3600  # 暂停开新仓 1 小时
+G02_SL_MULT_ADJ: float = 0.90  # SL × 0.90（微近止损）
+G02_TP_MULT_ADJ: float = 1.05  # TP × 1.05（延后止盈）
 
 # ============================================================
 # P13：G-04 单日 3% 终极熔断（桥水全天候红线）
 # ============================================================
-G04_DAILY_DRAWDOWN_THRESHOLD: float = 0.03   # 3.0% 小数表示
-G04_SHUTDOWN_HOURS: int = 24                 # 旁路 24h
+G04_DAILY_DRAWDOWN_THRESHOLD: float = 0.03  # 3.0% 小数表示
+G04_SHUTDOWN_HOURS: int = 24  # 旁路 24h
 
 # ============================================================
 # P14：G-05 不可逆级联事前预防熔断（非线性多阶段最优路径 §十六）
@@ -69,7 +69,7 @@ G04_SHUTDOWN_HOURS: int = 24                 # 旁路 24h
 #   ④ no_intervener      : 无外部干预者（Fed/央行/交易所）
 #   触发规则: ① AND ② AND (③ OR ④)
 # 优先级: G-04 > G-05 > G-02
-G05_CASCADE_SHUTDOWN_HOURS: int = 1          # 级联熔断冷却 1h
+G05_CASCADE_SHUTDOWN_HOURS: int = 1  # 级联熔断冷却 1h
 
 # ============================================================
 # P16：CBR 经典战例库高盈亏/高亏损样本对数（各 100 条 = 200）
@@ -89,22 +89,22 @@ WINPROB_MULT_HIGH: float = 1.20
 # ============================================================
 # P9：BTC 自反触发 5 条硬门槛阈值
 # ============================================================
-P9_BTC_D_PE_POSITIVE: bool = True           # ① D_PE > 0
+P9_BTC_D_PE_POSITIVE: bool = True  # ① D_PE > 0
 P9_BTC_CONT_MIN_GRADE: str = "ALIGN_BASIC"  # ② ≥ ALIGN_BASIC（3/5 同向）
-P9_BTC_S_BTC_ONLY_MIN: float = 0.60         # ③ S_BTC_only ≥ 0.60
-P9_BTC_WINDOW_FILL_RATIO: float = 0.60      # ④ n_rev ≥ 60% × N_windows
-P9_BTC_24H_NO_FUSE: bool = True             # ⑤ 24h 未触发大熔断
-P9_BTC_N_REV_COOLDOWN_MIN: int = 30         # n_rev 冷却 30 分钟
-P9_BTC_PENALTY_DAILY_CAP: float = 0.70      # 单交易日最大惩罚上限 0.70
+P9_BTC_S_BTC_ONLY_MIN: float = 0.60  # ③ S_BTC_only ≥ 0.60
+P9_BTC_WINDOW_FILL_RATIO: float = 0.60  # ④ n_rev ≥ 60% × N_windows
+P9_BTC_24H_NO_FUSE: bool = True  # ⑤ 24h 未触发大熔断
+P9_BTC_N_REV_COOLDOWN_MIN: int = 30  # n_rev 冷却 30 分钟
+P9_BTC_PENALTY_DAILY_CAP: float = 0.70  # 单交易日最大惩罚上限 0.70
 
 # ============================================================
 # F1 ~ F4 冲突铁则（§五 5.3）
 # ============================================================
-F1_NEVER_BLOCK_FLOOR: float = 0.05           # F1 永不 BLOCK：底仓 = 5%
-F2_P1_BLOCK_CAP_DEFAULT: float = 0.10        # F2：P1 BLOCK → final ≤ 10%（P14* 默认）
-F3_DIVERGE_SEVERE_MULT: float = 0.70         # F3：Elder = DIVERGE_SEVERE → × 0.70
-F4_BASELINE_BONUS_MULT: float = 1.20         # F4：CBR top1 家族 ≥ θ → × 1.20
-F4_BASELINE_SIM_THRESHOLD: float = 0.80      # F4 触发相似度门槛（≥ 0.80）
+F1_NEVER_BLOCK_FLOOR: float = 0.05  # F1 永不 BLOCK：底仓 = 5%
+F2_P1_BLOCK_CAP_DEFAULT: float = 0.10  # F2：P1 BLOCK → final ≤ 10%（P14* 默认）
+F3_DIVERGE_SEVERE_MULT: float = 0.70  # F3：Elder = DIVERGE_SEVERE → × 0.70
+F4_BASELINE_BONUS_MULT: float = 1.20  # F4：CBR top1 家族 ≥ θ → × 1.20
+F4_BASELINE_SIM_THRESHOLD: float = 0.80  # F4 触发相似度门槛（≥ 0.80）
 
 # ============================================================
 # 全局 final_pos_mult clip 上下界（P15* 默认值）
@@ -159,20 +159,25 @@ FAILOPEN_S_BTC_ONLY_LOW_SAMPLE: float = 0.50
 # ============================================================
 CBR_CORE_KEY_WEIGHT: float = 0.70
 CBR_MORPH_KEY_WEIGHT: float = 0.30
-CBR_CANONICAL_5D_KEYS = ("symbol", "direction", "hexagram_name",
-                         "bcrm_confidence_bucket", "p1_output_label")
+CBR_CANONICAL_5D_KEYS = (
+    "symbol",
+    "direction",
+    "hexagram_name",
+    "bcrm_confidence_bucket",
+    "p1_output_label",
+)
 
 # ============================================================
 # 动态参数默认初值（与 P3/P4/P14/P15/P18 CBR θ/γ 对齐）
 # 回测脚本输出到 runtime/phase_c_default_params.json 覆盖
 # ============================================================
 DYNAMIC_PARAM_DEFAULTS = {
-    "wp_cold": 0.45,           # P3* w_P^0
-    "we_cold": 0.30,           # P3* w_E^0
-    "wb_cold": 0.25,           # P3* w_B^0
-    "delta_max": 0.10,         # P4* Δ_max
-    "p1_block_cap": 0.10,      # P14* F2 顶
+    "wp_cold": 0.45,  # P3* w_P^0
+    "we_cold": 0.30,  # P3* w_E^0
+    "wb_cold": 0.25,  # P3* w_B^0
+    "delta_max": 0.10,  # P4* Δ_max
+    "p1_block_cap": 0.10,  # P14* F2 顶
     "global_clip_high": 1.50,  # P15* 全局 clip 上界
     "theta_match_star": 0.80,  # CBR θ_match*
-    "gamma_max_star": 0.20,    # CBR γ_max*
+    "gamma_max_star": 0.20,  # CBR γ_max*
 }

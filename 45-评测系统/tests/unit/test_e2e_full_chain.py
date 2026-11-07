@@ -14,6 +14,7 @@ test_e2e_full_chain.py — 完整链路端到端测试
 - 反向4：27 双凭证缺失 → 策略上线被拒
 - 幂等：同 Idempotency-Key 重放返回同一 eval_id
 """
+
 from __future__ import annotations
 
 import sys
@@ -22,7 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-import pytest  # noqa: E402
+import pytest  # noqa: E402, I001
 
 from core.enforcement import Enforcer  # noqa: E402
 from core.gateway import CategoriesConfig, Gateway  # noqa: E402
@@ -145,8 +146,15 @@ def pass_items(eval_id, spec_hash):
     items = [
         _item(eval_id, run.run_id, "E-H1", "hard", 1.0, "PASS", n=1),
         _item(
-            eval_id, run.run_id, "E-W1", "weighted", 0.97, "PASS",
-            n=500, ci=(0.95, 0.98), weight=1.0,
+            eval_id,
+            run.run_id,
+            "E-W1",
+            "weighted",
+            0.97,
+            "PASS",
+            n=500,
+            ci=(0.95, 0.98),
+            weight=1.0,
         ),
     ]
     return run, items
@@ -155,10 +163,19 @@ def pass_items(eval_id, spec_hash):
 def block_items(eval_id, spec_hash):
     run = _run_record(eval_id, spec_hash)
     items = [
-        _item(eval_id, run.run_id, "E-H1", "hard", 0.0, "BLOCK", n=1, detail="secret scanning 命中"),
         _item(
-            eval_id, run.run_id, "E-W1", "weighted", 0.97, "PASS",
-            n=500, ci=(0.95, 0.98), weight=1.0,
+            eval_id, run.run_id, "E-H1", "hard", 0.0, "BLOCK", n=1, detail="secret scanning 命中"
+        ),
+        _item(
+            eval_id,
+            run.run_id,
+            "E-W1",
+            "weighted",
+            0.97,
+            "PASS",
+            n=500,
+            ci=(0.95, 0.98),
+            weight=1.0,
         ),
     ]
     return run, items
@@ -171,9 +188,7 @@ class TestFullChainPass:
         assert result.status == "accepted"
         eval_id = result.eval_id
 
-        outcome = chain.execute_with_items(
-            eval_id, lambda eid: pass_items(eid, result.spec_hash)
-        )
+        outcome = chain.execute_with_items(eval_id, lambda eid: pass_items(eid, result.spec_hash))
         assert outcome is not None and outcome.status == "succeeded"
 
         report = chain.repo.get_report(eval_id)
@@ -194,9 +209,7 @@ class TestFullChainPass:
         payload_settle = make_payload()
         payload_settle["purpose"] = "l0_settle"
         r2 = chain.submit(payload_settle, key="e2e-key-1-settle")
-        chain.execute_with_items(
-            r2.eval_id, lambda eid: pass_items(eid, r2.spec_hash)
-        )
+        chain.execute_with_items(r2.eval_id, lambda eid: pass_items(eid, r2.spec_hash))
         assert chain.repo.get_report(r2.eval_id)["verdict"] == "PASS"
         cred_settle = chain.gate.issue(r2.eval_id, purpose="l0_settle")
         settle = chain.enforcer.enforce("l0_settle", r2.eval_id, credential=cred_settle)
@@ -249,9 +262,7 @@ class TestFailClosed:
         )
         payload["spec_id"] = "EVS-20261102-0002"
         result = chain.submit(payload, key="e2e-key-5")
-        chain.execute_with_items(
-            result.eval_id, lambda eid: pass_items(eid, result.spec_hash)
-        )
+        chain.execute_with_items(result.eval_id, lambda eid: pass_items(eid, result.spec_hash))
         credential = chain.gate.issue(result.eval_id, purpose="deploy")
         decision = chain.enforcer.enforce(
             "deploy", result.eval_id, credential=credential, require_approval=True

@@ -2,8 +2,10 @@
 TDD RED Phase 2: K线级触发器测试 (§1.8 频率分层硬约束)
 替代每日 cron → K线收盘事件触发 L1/RippleEngine/Level0
 """
+
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, patch
 
 
 class TestKlineEventHandler:
@@ -12,6 +14,7 @@ class TestKlineEventHandler:
     def test_kline_close_triggers_l1_calculation(self):
         """K线收盘 → 触发 L1 R 向量计算"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         kline_data = {
             "symbol": "BTC-USDT-SWAP",
@@ -30,6 +33,7 @@ class TestKlineEventHandler:
     def test_kline_close_triggers_level0_dstar(self):
         """K线收盘 → 触发 Level0 d* 计算"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         kline_data = {
             "symbol": "BTC-USDT-SWAP",
@@ -45,6 +49,7 @@ class TestKlineEventHandler:
     def test_kline_close_triggers_ripple_engine(self):
         """K线收盘 → 触发 RippleEngine 检测"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         kline_data = {
             "symbol": "BTC-USDT-SWAP",
@@ -63,6 +68,7 @@ class TestKlineEventHandler:
     def test_crash_returns_wait_action(self):
         """FO: crash → 返回 WAIT + 不崩溃"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         # 空数据 → 不应崩溃
         result = handler.on_kline_close({})
@@ -72,6 +78,7 @@ class TestKlineEventHandler:
     def test_modifiers_applied_when_provided(self):
         """当提供 sentiment/capital/narrative 数据 → 修饰子被应用"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         kline_data = {
             "symbol": "BTC-USDT-SWAP",
@@ -91,6 +98,7 @@ class TestKlineEventHandler:
     def test_modifiers_zero_degrades_to_baseline(self):
         """α=β=γ=0 → 不应用修饰子（等价 baseline）"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         kline_data = {
             "symbol": "BTC-USDT-SWAP",
@@ -108,13 +116,16 @@ class TestKlineEventHandler:
     def test_phase2_mode_auto_executes_inference(self):
         """Phase2 模式 → RI≥0.55 时 auto_execute=True"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         # 构造 RI≥0.55 的场景（通过 mock ripple engine）
         handler._ripple = MagicMock()
         handler._ripple.detect_ripple_source.return_value = True
         handler._ripple.compute_ri.return_value = 0.65
         handler._ripple.get_ri_action.return_value = {
-            "cbr_boost": 0.20, "ess_temp_mult": 1.05, "trigger_a2": False
+            "cbr_boost": 0.20,
+            "ess_temp_mult": 1.05,
+            "trigger_a2": False,
         }
         kline_data = {
             "symbol": "BTC-USDT-SWAP",
@@ -133,12 +144,15 @@ class TestKlineEventHandler:
     def test_mvp_mode_no_auto_execute(self):
         """MVP 模式 → auto_execute=False（松耦合 Lark 人工中转）"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="MVP")
         handler._ripple = MagicMock()
         handler._ripple.detect_ripple_source.return_value = True
         handler._ripple.compute_ri.return_value = 0.80
         handler._ripple.get_ri_action.return_value = {
-            "cbr_boost": 0.25, "ess_temp_mult": 1.10, "trigger_a2": True
+            "cbr_boost": 0.25,
+            "ess_temp_mult": 1.10,
+            "trigger_a2": True,
         }
         kline_data = {
             "symbol": "BTC-USDT-SWAP",
@@ -157,6 +171,7 @@ class TestKlineEventHandler:
     def test_output_schema(self):
         """输出包含必要字段"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         kline_data = {
             "symbol": "BTC-USDT-SWAP",
@@ -179,7 +194,9 @@ class TestAutoExecuteBuildPosition:
         from dreambuddy_evolution.engines.trade_settlement_bridge import TradeSettlementBridge
 
         bridge = TradeSettlementBridge(snapshot_dir=str(tmp_path))
-        handler = KlineEventHandler(mode="Phase2", build_position_callback=lambda **kw: None, settlement_bridge=bridge)
+        handler = KlineEventHandler(
+            mode="Phase2", build_position_callback=lambda **kw: None, settlement_bridge=bridge
+        )
         # mock ripple → RI≥0.55 触发推断
         handler._ripple = MagicMock()
         handler._ripple.detect_ripple_source.return_value = True
@@ -215,7 +232,9 @@ class TestAutoExecuteBuildPosition:
             callback_calls.append(kwargs)
 
         bridge = TradeSettlementBridge(snapshot_dir=str(tmp_path))
-        handler = KlineEventHandler(mode="Phase2", build_position_callback=fake_callback, settlement_bridge=bridge)
+        handler = KlineEventHandler(
+            mode="Phase2", build_position_callback=fake_callback, settlement_bridge=bridge
+        )
         handler._ripple = MagicMock()
         handler._ripple.detect_ripple_source.return_value = True
         handler._ripple.compute_ri.return_value = 0.75
@@ -247,7 +266,9 @@ class TestAutoExecuteBuildPosition:
             raise RuntimeError("模拟下单崩溃")
 
         bridge = TradeSettlementBridge(snapshot_dir=str(tmp_path))
-        handler = KlineEventHandler(mode="Phase2", build_position_callback=crashing_callback, settlement_bridge=bridge)
+        handler = KlineEventHandler(
+            mode="Phase2", build_position_callback=crashing_callback, settlement_bridge=bridge
+        )
         handler._ripple = MagicMock()
         handler._ripple.detect_ripple_source.return_value = True
         handler._ripple.compute_ri.return_value = 0.80
@@ -273,6 +294,7 @@ class TestAGIEnhancement:
     def test_agi_fields_present_in_output(self):
         """输出包含所有 AGI 增强字段"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         kline_data = {
             "symbol": "BTC-USDT-SWAP",
@@ -282,13 +304,20 @@ class TestAGIEnhancement:
             "volume": [1000.0] * 40,
         }
         result = handler.on_kline_close(kline_data)
-        for field in ("agi_signature", "agi_pattern", "agi_btc_regime",
-                      "agi_path_integral", "agi_uncertainty", "agi_gate_decision"):
+        for field in (
+            "agi_signature",
+            "agi_pattern",
+            "agi_btc_regime",
+            "agi_path_integral",
+            "agi_uncertainty",
+            "agi_gate_decision",
+        ):
             assert field in result, f"missing field: {field}"
 
     def test_fail_open_agi_crash_does_not_block(self):
         """FAIL-OPEN: AGI 模块崩溃 → 不阻塞主流程，返回 fallback 值"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         # 注入崩溃的 SignatureEngine
         crashing_sig = MagicMock()
@@ -310,8 +339,9 @@ class TestAGIEnhancement:
 
     def test_switch_off_skips_agi_module(self):
         """开关关闭时 → AGI 模块不被调用，返回 fallback"""
-        from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
         from dreambuddy_evolution.agi_config import set_switch
+        from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         # 关闭签名引擎开关
         set_switch("enable_signature_engine", False)
         set_switch("enable_pattern_detection", False)
@@ -341,12 +371,28 @@ class TestAGIEnhancement:
     def test_signature_engine_produces_output(self):
         """SignatureEngine 开启 + 数据充足 → agi_signature 非空"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         # 构造有波动的价格路径（≥10 个点）
         kline_data = {
             "symbol": "BTC-USDT-SWAP",
-            "close": [100.0, 102.0, 101.0, 103.0, 105.0, 104.0, 106.0, 108.0, 107.0, 109.0,
-                      111.0, 110.0, 112.0, 114.0, 113.0],
+            "close": [
+                100.0,
+                102.0,
+                101.0,
+                103.0,
+                105.0,
+                104.0,
+                106.0,
+                108.0,
+                107.0,
+                109.0,
+                111.0,
+                110.0,
+                112.0,
+                114.0,
+                113.0,
+            ],
             "high": [115.0] * 15,
             "low": [95.0] * 15,
             "volume": [1000.0] * 15,
@@ -361,6 +407,7 @@ class TestAGIEnhancement:
     def test_pattern_detector_with_flat_market(self):
         """PatternDetector 在平坦市场中不检测到反转形态"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         # 构造平坦价格（无头肩形态）
         kline_data = {
@@ -378,6 +425,7 @@ class TestAGIEnhancement:
     def test_regime_classifier_with_returns(self):
         """RegimeClassifier 有 btc/spy 收益率时 → 返回有效 regime"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         kline_data = {
             "symbol": "BTC-USDT-SWAP",
@@ -394,8 +442,9 @@ class TestAGIEnhancement:
 
     def test_agi_enhance_method_directly(self):
         """直接测试 _agi_enhance 方法的开关控制和 FAIL-OPEN"""
-        from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
         from dreambuddy_evolution.agi_config import set_switch
+        from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
 
         # 开关开启时 → 调用函数
@@ -438,6 +487,7 @@ class TestPathDiscoveryLayer:
     def test_path_info_field_present(self):
         """输出包含 path_info 字段"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         kline_data = {
             "symbol": "BTC-USDT-SWAP",
@@ -453,6 +503,7 @@ class TestPathDiscoveryLayer:
     def test_path_info_has_required_fields(self):
         """path_info 包含所有必需字段"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         kline_data = {
             "symbol": "BTC-USDT-SWAP",
@@ -463,14 +514,21 @@ class TestPathDiscoveryLayer:
         }
         result = handler.on_kline_close(kline_data)
         pi = result["path_info"]
-        for field in ("path_count", "optimal_source", "optimal_score",
-                      "validated", "low_conviction", "d_star_original",
-                      "d_star_adjusted"):
+        for field in (
+            "path_count",
+            "optimal_source",
+            "optimal_score",
+            "validated",
+            "low_conviction",
+            "d_star_original",
+            "d_star_adjusted",
+        ):
             assert field in pi, f"missing path_info field: {field}"
 
     def test_path_discovery_fail_open(self):
         """FAIL-OPEN: 路径发现层崩溃 → 不阻塞主流程"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         # 注入崩溃的 EvolutionPipeline
         crashing_pipeline = MagicMock()
@@ -492,13 +550,20 @@ class TestPathDiscoveryLayer:
     def test_path_discovery_overrides_d_star(self):
         """路径发现层验证通过 → 覆盖 d* 决策"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         # 注入 mock pipeline，返回验证通过的最优路径
         mock_pipeline = MagicMock()
         mock_pipeline._discover_paths.return_value = [
-            {"source": "l2_gene", "direction": "long", "score": 0.15,
-             "validated": True, "expected_return": 0.05,
-             "confidence": 0.8, "resistance": 0.3},
+            {
+                "source": "l2_gene",
+                "direction": "long",
+                "score": 0.15,
+                "validated": True,
+                "expected_return": 0.05,
+                "confidence": 0.8,
+                "resistance": 0.3,
+            },
         ]
         mock_pipeline._select_optimal_path.return_value = {
             "optimal_path": {
@@ -531,11 +596,17 @@ class TestPathDiscoveryLayer:
     def test_path_discovery_low_conviction_reduces_ri(self):
         """低确信度 → RI 降仓（×0.7）"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         mock_pipeline = MagicMock()
         mock_pipeline._discover_paths.return_value = [
-            {"source": "bcrm", "direction": "short", "score": 0.08,
-             "validated": True, "low_conviction": True},
+            {
+                "source": "bcrm",
+                "direction": "short",
+                "score": 0.08,
+                "validated": True,
+                "low_conviction": True,
+            },
         ]
         mock_pipeline._select_optimal_path.return_value = {
             "optimal_path": {
@@ -566,11 +637,11 @@ class TestPathDiscoveryLayer:
     def test_path_discovery_not_validated_keeps_d_star(self):
         """路径未通过统计验证 → 保持原 d* 不变"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         mock_pipeline = MagicMock()
         mock_pipeline._discover_paths.return_value = [
-            {"source": "deep_reasoning", "direction": "long", "score": 0.02,
-             "validated": False},
+            {"source": "deep_reasoning", "direction": "long", "score": 0.02, "validated": False},
         ]
         mock_pipeline._select_optimal_path.return_value = {
             "optimal_path": None,
@@ -597,11 +668,27 @@ class TestPathDiscoveryLayer:
     def test_path_integral_produces_output(self):
         """PathIntegralEngine 开启 + 数据充足 → agi_path_integral 非空"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         kline_data = {
             "symbol": "BTC-USDT-SWAP",
-            "close": [100.0, 102.0, 101.0, 103.0, 105.0, 104.0, 106.0, 108.0,
-                      107.0, 109.0, 111.0, 110.0, 112.0, 114.0, 113.0],
+            "close": [
+                100.0,
+                102.0,
+                101.0,
+                103.0,
+                105.0,
+                104.0,
+                106.0,
+                108.0,
+                107.0,
+                109.0,
+                111.0,
+                110.0,
+                112.0,
+                114.0,
+                113.0,
+            ],
             "high": [115.0] * 15,
             "low": [95.0] * 15,
             "volume": [1000.0] * 15,
@@ -618,6 +705,7 @@ class TestPathDiscoveryLayer:
     def test_path_integral_fail_open_on_crash(self):
         """FAIL-OPEN: PathIntegralEngine 崩溃 → 不阻塞，返回 None"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         # 注入崩溃的 PathIntegralEngine
         crashing_pi = MagicMock()
@@ -637,6 +725,7 @@ class TestPathDiscoveryLayer:
     def test_uncertainty_quant_produces_output(self):
         """UncertaintyQuantifier 开启 → agi_uncertainty 非空且包含 score 和 level"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         handler._ripple = MagicMock()
         handler._ripple.detect_ripple_source.return_value = True
@@ -659,6 +748,7 @@ class TestPathDiscoveryLayer:
     def test_uncertainty_fail_open_on_crash(self):
         """FAIL-OPEN: UncertaintyQuantifier 崩溃 → 不阻塞"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         crashing_uq = MagicMock()
         crashing_uq.quantify_uncertainty.side_effect = RuntimeError("崩溃")
@@ -677,6 +767,7 @@ class TestPathDiscoveryLayer:
     def test_meta_cognition_gate_fail_open_on_crash(self):
         """FAIL-OPEN: MetaCognitionGate 崩溃 → 不阻塞"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         crashing_mcg = MagicMock()
         crashing_mcg.gate_decision.side_effect = RuntimeError("崩溃")
@@ -699,6 +790,7 @@ class TestL3L4Record:
     def test_l3_l4_fields_present(self):
         """输出包含 l3_sample_count / l4_v / agi_transfer / agi_counterfactual"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         kline_data = {
             "symbol": "BTC",
@@ -718,6 +810,7 @@ class TestL3L4Record:
     def test_l3_record_uses_quality_score_reward(self):
         """L3 ShadowRL record 的 reward = 0.0（Fix 1: 真实 PnL 由平仓事件注入），state 含 5 维 R"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         mock_pipeline = MagicMock()
         mock_pipeline.shadow_rl = MagicMock()
@@ -735,7 +828,7 @@ class TestL3L4Record:
             "low": [95.0] * 40,
             "volume": [1000.0] * 40,
         }
-        result = handler.on_kline_close(kline_data)
+        result = handler.on_kline_close(kline_data)  # noqa: F841
         # pipeline.shadow_rl.record 被调用
         assert mock_pipeline.shadow_rl.record.called
         call_kwargs = mock_pipeline.shadow_rl.record.call_args.kwargs
@@ -748,6 +841,7 @@ class TestL3L4Record:
     def test_l4_bellman_td_update_called(self):
         """L4 Bellman td_update 被调用且 next_symbol == symbol"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         mock_pipeline = MagicMock()
         mock_pipeline.shadow_rl = MagicMock()
@@ -765,7 +859,7 @@ class TestL3L4Record:
             "low": [95.0] * 40,
             "volume": [1000.0] * 40,
         }
-        result = handler.on_kline_close(kline_data)
+        result = handler.on_kline_close(kline_data)  # noqa: F841
         assert mock_pipeline.bellman.td_update.called
         call_kwargs = mock_pipeline.bellman.td_update.call_args.kwargs
         assert call_kwargs["next_symbol"] == "ETH"
@@ -773,6 +867,7 @@ class TestL3L4Record:
     def test_agi_h_i_noop_when_returns_absent(self):
         """kline_data 不含 source_returns → agi_transfer=None, agi_counterfactual=None"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         kline_data = {
             "symbol": "BTC",
@@ -788,6 +883,7 @@ class TestL3L4Record:
     def test_l3_l4_crash_fail_open(self):
         """pipeline 抛异常 → 返回含兜底字段且 action 不被阻塞"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         crashing_pipeline = MagicMock()
         crashing_pipeline._discover_paths.side_effect = RuntimeError("模拟崩溃")
@@ -817,6 +913,7 @@ class TestL3L4Record:
     def test_get_evolution_feedback_delegates(self):
         """get_evolution_feedback() 返回含 l3_stats / l4_v_all / l4_ess_adjustments 三键"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         feedback = handler.get_evolution_feedback()
         assert "l3_stats" in feedback
@@ -830,6 +927,7 @@ class TestContradictionPassthrough:
     def test_primary_contradiction_in_path_info(self):
         """on_kline_close 返回的 path_info 含 primary_contradiction 字段"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         kline_data = {
             "symbol": "BTC",
@@ -845,27 +943,36 @@ class TestContradictionPassthrough:
     def test_primary_contradiction_passthrough_from_pipeline(self):
         """pipeline._select_optimal_path 返回 primary_contradiction → 透传到 path_info"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler(mode="Phase2")
         mock_pipeline = MagicMock()
         mock_pipeline._discover_paths.return_value = [
-            {"path_id": "p1", "source": "test", "direction": "long",
-             "expected_return": 0.05, "confidence": 0.8, "resistance": 0.3,
-             "continuation_score": 0.6}
+            {
+                "path_id": "p1",
+                "source": "test",
+                "direction": "long",
+                "expected_return": 0.05,
+                "confidence": 0.8,
+                "resistance": 0.3,
+                "continuation_score": 0.6,
+            }
         ]
         mock_pipeline._select_optimal_path.return_value = {
             "optimal_path": {
-                "source": "test", "direction": "long", "score": 0.08,
+                "source": "test",
+                "direction": "long",
+                "score": 0.08,
             },
             "statistical_validation": {"validated": True, "low_conviction": False},
             "primary_contradiction": {
-                "direction": "long", "strength": 0.7, "type": "resonance",
+                "direction": "long",
+                "strength": 0.7,
+                "type": "resonance",
             },
         }
         handler._evolution_pipeline = mock_pipeline
         r_vector = {"R_up": 0.6, "R_down": 0.3, "_close_series": [100.0] * 40}
-        d_star, ri, path_info = handler._run_path_discovery(
-            "BTC", r_vector, "long", 0.5, {}
-        )
+        d_star, ri, path_info = handler._run_path_discovery("BTC", r_vector, "long", 0.5, {})
         assert path_info["primary_contradiction"] is not None
         assert path_info["primary_contradiction"]["direction"] == "long"
         assert path_info["primary_contradiction"]["strength"] == 0.7

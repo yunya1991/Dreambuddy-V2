@@ -7,8 +7,9 @@
 这是一个综合版本，验证两个优化能否叠加。
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import numpy as np
@@ -76,10 +77,12 @@ class V36ComboStrategy(EnhancedMA200Strategy):
         self.bottom_confirm_pct = bottom_confirm_pct
         self.confirm_days = confirm_days
 
-        self.stats.update({
-            "bb_accel_days": 0,
-            "bottom_confirmed_days": 0,
-        })
+        self.stats.update(
+            {
+                "bb_accel_days": 0,
+                "bottom_confirmed_days": 0,
+            }
+        )
 
     def _compute_bollinger_bands(self, close: np.ndarray) -> tuple:
         n = len(close)
@@ -87,7 +90,7 @@ class V36ComboStrategy(EnhancedMA200Strategy):
         mid = np.full(n, np.nan)
         lower = np.full(n, np.nan)
         for i in range(self.bb_period - 1, n):
-            window = close[i - self.bb_period + 1:i + 1]
+            window = close[i - self.bb_period + 1 : i + 1]
             m = np.mean(window)
             s = np.std(window)
             mid[i] = m
@@ -100,7 +103,9 @@ class V36ComboStrategy(EnhancedMA200Strategy):
         positions = np.zeros(n)
         close = prices["close"].values
 
-        ma_series = pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        ma_series = (
+            pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        )
         ma = ma_series.values
 
         ma_slope = np.zeros(n)
@@ -108,8 +113,14 @@ class V36ComboStrategy(EnhancedMA200Strategy):
             if not np.isnan(ma[i]) and not np.isnan(ma[i - self.slope_period]):
                 ma_slope[i] = (ma[i] / ma[i - self.slope_period] - 1) * 100
 
-        weekly_ma200 = self._compute_weekly_ma200(prices) if (self.is_btc and self.weekly_ma200_dip_buy) else None
-        btc_regime = self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        weekly_ma200 = (
+            self._compute_weekly_ma200(prices)
+            if (self.is_btc and self.weekly_ma200_dip_buy)
+            else None
+        )
+        btc_regime = (
+            self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        )
 
         bb_upper, bb_mid, bb_lower = self._compute_bollinger_bands(close)
 
@@ -134,15 +145,20 @@ class V36ComboStrategy(EnhancedMA200Strategy):
             if self.is_btc:
                 # 计算基础抄底仓位
                 base_dip_pos = 0.0
-                if self.weekly_ma200_dip_buy and not np.isnan(weekly_ma200[i]) and weekly_ma200[i] > 0:
+                if (
+                    self.weekly_ma200_dip_buy
+                    and not np.isnan(weekly_ma200[i])
+                    and weekly_ma200[i] > 0
+                ):
                     weekly_below_pct = (weekly_ma200[i] - close[i]) / weekly_ma200[i] * 100
                     if weekly_below_pct > 0:
                         levels_filled = min(
-                            int(weekly_below_pct / self.dip_buy_step_pct),
-                            self.dip_buy_levels
+                            int(weekly_below_pct / self.dip_buy_step_pct), self.dip_buy_levels
                         )
                         if levels_filled > 0:
-                            base_dip_pos = (levels_filled / self.dip_buy_levels) * self.dip_buy_max_position
+                            base_dip_pos = (
+                                levels_filled / self.dip_buy_levels
+                            ) * self.dip_buy_max_position
 
                 if price_above and slope_pos:
                     # 牛市满仓
@@ -179,7 +195,9 @@ class V36ComboStrategy(EnhancedMA200Strategy):
                                 extra_pos += self.bottom_confirm_pct
                                 self.stats["bottom_confirmed_days"] += 1
 
-                        max_dip = self.dip_buy_max_position + self.bb_accel_pct + self.bottom_confirm_pct
+                        max_dip = (
+                            self.dip_buy_max_position + self.bb_accel_pct + self.bottom_confirm_pct
+                        )
                         target_pos = min(base_dip_pos + extra_pos, max_dip)
 
                         self.stats["dip_buy_days"] += 1
@@ -202,7 +220,11 @@ class V36ComboStrategy(EnhancedMA200Strategy):
                         if base_short > 0 and short_entry_price is None:
                             short_entry_price = close[i]
 
-                        if base_short > 0 and short_entry_price is not None and self.fib_take_profit:
+                        if (
+                            base_short > 0
+                            and short_entry_price is not None
+                            and self.fib_take_profit
+                        ):
                             fib_pos = self._calc_fib_tp_position(
                                 close[i], short_entry_price, True, base_short
                             )
@@ -217,7 +239,10 @@ class V36ComboStrategy(EnhancedMA200Strategy):
                     if base_dip_pos > 0:
                         current_state = "dip_buy"
                         extra_pos = self.bottom_confirm_pct if bottom_confirmed else 0.0
-                        target_pos = min(base_dip_pos + extra_pos, self.dip_buy_max_position + self.bottom_confirm_pct)
+                        target_pos = min(
+                            base_dip_pos + extra_pos,
+                            self.dip_buy_max_position + self.bottom_confirm_pct,
+                        )
                         self.stats["dip_buy_days"] += 1
                     else:
                         current_state = "sideways"
@@ -264,7 +289,7 @@ class V36ComboStrategy(EnhancedMA200Strategy):
 
 
 if __name__ == "__main__":
-    import json
+    import json  # noqa: I001
     from ml.scenario_backtest_engine import ScenarioBacktestEngine
 
     with open("data/historical/BTC_1D_730d.json") as f:
@@ -281,19 +306,31 @@ if __name__ == "__main__":
     print("v2 基线...")
     v2 = EnhancedMA200Strategy(is_btc=True)
     v2_r = engine.run_scenario_backtest(prices, v2, "v2", symbol="BTC", experiment_name="v36_v2")
-    print(f"  夏普 {v2_r.overall_sharpe:.3f} | 收益 {v2_r.overall_total_return:.1%} | 评分 {v2_r.composite_score:.3f}")
+    print(
+        f"  夏普 {v2_r.overall_sharpe:.3f} | 收益 {v2_r.overall_total_return:.1%} | 评分 {v2_r.composite_score:.3f}"
+    )
 
     print()
     print("只优化做空（L1=0, L2=0.6）...")
-    short_opt = EnhancedMA200Strategy(is_btc=True, bear_short_level1_pct=0.0, bear_short_level2_pct=0.6)
-    so_r = engine.run_scenario_backtest(prices, short_opt, "short_opt", symbol="BTC", experiment_name="v36_short_opt")
-    print(f"  夏普 {so_r.overall_sharpe:.3f} | 收益 {so_r.overall_total_return:.1%} | 评分 {so_r.composite_score:.3f}")
+    short_opt = EnhancedMA200Strategy(
+        is_btc=True, bear_short_level1_pct=0.0, bear_short_level2_pct=0.6
+    )
+    so_r = engine.run_scenario_backtest(
+        prices, short_opt, "short_opt", symbol="BTC", experiment_name="v36_short_opt"
+    )
+    print(
+        f"  夏普 {so_r.overall_sharpe:.3f} | 收益 {so_r.overall_total_return:.1%} | 评分 {so_r.composite_score:.3f}"
+    )
 
     print()
     print("v3.6 综合优化（做空优化+抄底增强）...")
     v36 = V36ComboStrategy(is_btc=True)
-    v36_r = engine.run_scenario_backtest(prices, v36, "v36_combo", symbol="BTC", experiment_name="v36_combo")
-    print(f"  夏普 {v36_r.overall_sharpe:.3f} | 收益 {v36_r.overall_total_return:.1%} | 评分 {v36_r.composite_score:.3f}")
+    v36_r = engine.run_scenario_backtest(
+        prices, v36, "v36_combo", symbol="BTC", experiment_name="v36_combo"
+    )
+    print(
+        f"  夏普 {v36_r.overall_sharpe:.3f} | 收益 {v36_r.overall_total_return:.1%} | 评分 {v36_r.composite_score:.3f}"
+    )
 
     print()
     print("状态统计:")
@@ -308,10 +345,22 @@ if __name__ == "__main__":
     print(f"{'指标':<18} {'v2':>12} {'做空优化':>12} {'v3.6综合':>12}")
     print("-" * 70)
     metrics = [
-        ("总收益", v2_r.overall_total_return, so_r.overall_total_return, v36_r.overall_total_return, ".1%"),
+        (
+            "总收益",
+            v2_r.overall_total_return,
+            so_r.overall_total_return,
+            v36_r.overall_total_return,
+            ".1%",
+        ),
         ("夏普比率", v2_r.overall_sharpe, so_r.overall_sharpe, v36_r.overall_sharpe, ".3f"),
         ("卡玛比率", v2_r.overall_calmar, so_r.overall_calmar, v36_r.overall_calmar, ".3f"),
-        ("最大回撤", v2_r.overall_max_drawdown, so_r.overall_max_drawdown, v36_r.overall_max_drawdown, ".1%"),
+        (
+            "最大回撤",
+            v2_r.overall_max_drawdown,
+            so_r.overall_max_drawdown,
+            v36_r.overall_max_drawdown,
+            ".1%",
+        ),
         ("胜率", v2_r.overall_win_rate, so_r.overall_win_rate, v36_r.overall_win_rate, ".2%"),
         ("综合评分", v2_r.composite_score, so_r.composite_score, v36_r.composite_score, ".3f"),
     ]
@@ -328,5 +377,7 @@ if __name__ == "__main__":
         if v2_m and so_m and v36_m:
             print(f"  {obj}:")
             print(f"    胜率: {v2_m.win_rate:.2%} → {so_m.win_rate:.2%} → {v36_m.win_rate:.2%}")
-            print(f"    收益: {v2_m.avg_return:.2%} → {so_m.avg_return:.2%} → {v36_m.avg_return:.2%}")
+            print(
+                f"    收益: {v2_m.avg_return:.2%} → {so_m.avg_return:.2%} → {v36_m.avg_return:.2%}"
+            )
             print(f"    标签F1: {v2_m.label_f1:.3f} → {so_m.label_f1:.3f} → {v36_m.label_f1:.3f}")

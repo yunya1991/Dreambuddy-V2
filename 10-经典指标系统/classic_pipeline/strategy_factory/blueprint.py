@@ -2,6 +2,7 @@
 
 注册策略工厂路由。路由 URL 与旧路由完全一致（零破坏）。
 """
+
 from __future__ import annotations
 
 import json
@@ -17,6 +18,7 @@ bp = Blueprint("strategy_factory", __name__)
 def _dep(name: str):
     """延迟导入大文件依赖，避免循环导入。"""
     import ml_trade_service as _mts
+
     return getattr(_mts, name)
 
 
@@ -37,13 +39,18 @@ def agent_api_health():
         rb_count = len(list(rb_dir.glob("*.json"))) if rb_dir.exists() else 0
     except Exception:
         rb_count = 0
-    return jsonify({
-        "ok": True,
-        "ts": now_ms,
-        "service": "classic-indicators-ml-system",
-        "approvals_log": approvals_exists,
-        "rollback_points": rb_count,
-    }), 200
+    return (
+        jsonify(
+            {
+                "ok": True,
+                "ts": now_ms,
+                "service": "classic-indicators-ml-system",
+                "approvals_log": approvals_exists,
+                "rollback_points": rb_count,
+            }
+        ),
+        200,
+    )
 
 
 @bp.route("/agent/pipeline/state", methods=["GET"])
@@ -58,8 +65,16 @@ def agent_pipeline_state():
         return jsonify({"ok": False, "error": "missing_trace_id", "ts": int(_now_ms())}), 400
     st = _agent_pipeline_state_find_latest(trace_id=str(trace_id))
     if not isinstance(st, dict):
-        return jsonify({"ok": False, "error": "not_found", "trace_id": trace_id, "ts": int(_now_ms())}), 404
-    return jsonify({"ok": True, "trace_id": trace_id, "ts": int(_now_ms()), "pipeline_state": st}), 200
+        return (
+            jsonify(
+                {"ok": False, "error": "not_found", "trace_id": trace_id, "ts": int(_now_ms())}
+            ),
+            404,
+        )
+    return (
+        jsonify({"ok": True, "trace_id": trace_id, "ts": int(_now_ms()), "pipeline_state": st}),
+        200,
+    )
 
 
 @bp.route("/agent/pipeline/artifacts", methods=["GET"])
@@ -126,17 +141,20 @@ def agent_pipeline_artifacts():
         next_offset = offset
     if last_i >= 0 and len(items) < limit:
         next_offset = int(last_i) + 1
-    return jsonify(
-        {
-            "ok": True,
-            "trace_id": trace_id,
-            "kind": kind,
-            "items": items,
-            "next_offset": int(next_offset),
-            "count": int(len(items)),
-            "ts": int(_now_ms()),
-        }
-    ), 200
+    return (
+        jsonify(
+            {
+                "ok": True,
+                "trace_id": trace_id,
+                "kind": kind,
+                "items": items,
+                "next_offset": int(next_offset),
+                "count": int(len(items)),
+                "ts": int(_now_ms()),
+            }
+        ),
+        200,
+    )
 
 
 @bp.route("/webhook/freqtrade", methods=["POST"])
@@ -159,13 +177,13 @@ def freqtrade_webhook():
         strategy = str(data.get("strategy", "")).strip()
         pair = str(data.get("pair", "")).strip()
         type_ = str(data.get("type", "")).lower()
-        
+
         if not strategy or not pair:
             return jsonify({"ok": False, "error": "missing_strategy_or_pair"}), 400
 
         # 从 pair 中提取 coin (e.g. BTC/USDT -> BTC)
         coin = _hl_coin_from_pair(pair)
-        
+
         base_notional = None
         try:
             for k in ("notional_usdc", "notional_usdt", "notional", "size_usdc", "size"):
@@ -198,19 +216,27 @@ def freqtrade_webhook():
             guard = _check_execute_guard(data)
             if guard is not None:
                 return guard
-        
+
         try:
             if alloc_pct is not None and math.isfinite(float(alloc_pct)):
-                LOG.info(f"Webhook Received: Strategy={strategy}, Coin={coin}, Type={type_}, Notional={notional}, AllocPct={float(alloc_pct)}")
+                LOG.info(
+                    f"Webhook Received: Strategy={strategy}, Coin={coin}, Type={type_}, Notional={notional}, AllocPct={float(alloc_pct)}"
+                )
             else:
-                LOG.info(f"Webhook Received: Strategy={strategy}, Coin={coin}, Type={type_}, Notional={notional}")
+                LOG.info(
+                    f"Webhook Received: Strategy={strategy}, Coin={coin}, Type={type_}, Notional={notional}"
+                )
         except Exception:
             pass
 
         if type_ == "entry":
             side = str(data.get("side", "long")).lower()
             system_id = _system_from_strategy_id(strategy)
-            ab_owner = ("carry" if str(system_id) == "carry" else ("quant" if str(system_id) == "quant" else "strategy"))
+            ab_owner = (
+                "carry"
+                if str(system_id) == "carry"
+                else ("quant" if str(system_id) == "quant" else "strategy")
+            )
             skip_gate = False
             ignore_cooldown = False
             ignore_post_close_freeze = False
@@ -224,23 +250,42 @@ def freqtrade_webhook():
                 try:
                     ic_raw = data.get("ignore_cooldown")
                     if ic_raw is not None:
-                        ignore_cooldown = str(ic_raw).strip().lower() in ("1", "true", "yes", "y", "on")
+                        ignore_cooldown = str(ic_raw).strip().lower() in (
+                            "1",
+                            "true",
+                            "yes",
+                            "y",
+                            "on",
+                        )
                 except Exception:
                     ignore_cooldown = False
                 try:
                     ipcf_raw = data.get("ignore_post_close_freeze")
                     if ipcf_raw is not None:
-                        ignore_post_close_freeze = str(ipcf_raw).strip().lower() in ("1", "true", "yes", "y", "on")
+                        ignore_post_close_freeze = str(ipcf_raw).strip().lower() in (
+                            "1",
+                            "true",
+                            "yes",
+                            "y",
+                            "on",
+                        )
                 except Exception:
                     ignore_post_close_freeze = False
 
             venue = None
             if str(system_id) == "carry":
-                venue = str(CONFIG.get("carry_trade_venue") or "hyperliquid").strip().lower() or "hyperliquid"
+                venue = (
+                    str(CONFIG.get("carry_trade_venue") or "hyperliquid").strip().lower()
+                    or "hyperliquid"
+                )
             elif str(system_id) == "quant":
                 venue = "aster"
             else:
-                venue = str(data.get("venue") or CONFIG.get("execution_venue", "hyperliquid") or "hyperliquid").lower()
+                venue = str(
+                    data.get("venue")
+                    or CONFIG.get("execution_venue", "hyperliquid")
+                    or "hyperliquid"
+                ).lower()
             if venue not in ("hyperliquid", "hl", "aster"):
                 venue = str(CONFIG.get("execution_venue", "hyperliquid") or "hyperliquid").lower()
             if venue == "hl":
@@ -275,16 +320,23 @@ def freqtrade_webhook():
                 ignore_cooldown=bool(ignore_cooldown),
                 ignore_post_close_freeze=bool(ignore_post_close_freeze),
             )
-            
+
         elif type_ == "exit":
             system_id = _system_from_strategy_id(strategy)
             venue = None
             if str(system_id) == "carry":
-                venue = str(CONFIG.get("carry_trade_venue") or "hyperliquid").strip().lower() or "hyperliquid"
+                venue = (
+                    str(CONFIG.get("carry_trade_venue") or "hyperliquid").strip().lower()
+                    or "hyperliquid"
+                )
             elif str(system_id) == "quant":
                 venue = "aster"
             else:
-                venue = str(data.get("venue") or CONFIG.get("execution_venue", "hyperliquid") or "hyperliquid").lower()
+                venue = str(
+                    data.get("venue")
+                    or CONFIG.get("execution_venue", "hyperliquid")
+                    or "hyperliquid"
+                ).lower()
             if venue not in ("hyperliquid", "hl", "aster"):
                 venue = str(CONFIG.get("execution_venue", "hyperliquid") or "hyperliquid").lower()
             if venue == "hl":
@@ -321,15 +373,12 @@ def freqtrade_webhook():
                 force=False,
                 system_id=system_id_close,
             )
-            
+
         return jsonify({"ok": True, "status": "ignored_type", "type": type_})
 
     except Exception as e:
         LOG.error(f"Webhook Error: {e}")
         return jsonify({"ok": False, "error": str(e)}), 500
-
-
-
 
 
 @bp.route("/governance/changeset/apply", methods=["POST"])
@@ -355,7 +404,9 @@ def governance_changeset_apply():
     data = request.get_json(force=True) or {}
     trace_id = str(data.get("trace_id") or "").strip() or uuid.uuid4().hex
     confirm_live = bool(data.get("confirm_live", False))
-    ok_appr, approval_id, err_obj, err_code = _governance_require_approval_or_error(data, trace_id=trace_id, action="governance.changeset.apply")
+    ok_appr, approval_id, err_obj, err_code = _governance_require_approval_or_error(
+        data, trace_id=trace_id, action="governance.changeset.apply"
+    )
     if not ok_appr:
         return jsonify(err_obj), int(err_code)
     data.pop("confirm_live", None)
@@ -372,25 +423,44 @@ def governance_changeset_apply():
         gate_result = None
         if isinstance(data.get("gate_result"), dict):
             gate_result = data.get("gate_result")
-        elif isinstance(data.get("draft"), dict) and isinstance((data.get("draft") or {}).get("gate_result"), dict):
+        elif isinstance(data.get("draft"), dict) and isinstance(
+            (data.get("draft") or {}).get("gate_result"), dict
+        ):
             gate_result = (data.get("draft") or {}).get("gate_result")
         if isinstance(gate_result, dict) and (gate_result.get("ok") is False):
-            return jsonify({"ok": False, "error": "p3_gate_fail", "gate_result": gate_result, "ts": int(_now_ms())}), 400
+            return (
+                jsonify(
+                    {
+                        "ok": False,
+                        "error": "p3_gate_fail",
+                        "gate_result": gate_result,
+                        "ts": int(_now_ms()),
+                    }
+                ),
+                400,
+            )
     except Exception:
         pass
 
-    decision = _governance_policy_eval(policy=pol, changeset=changeset if isinstance(changeset, dict) else {})
+    decision = _governance_policy_eval(
+        policy=pol, changeset=changeset if isinstance(changeset, dict) else {}
+    )
     if not bool(decision.get("ok")):
         return jsonify(decision), 500
     if str(decision.get("decision") or "").strip().lower() != "pass":
         return jsonify(decision), 400
-    allowed = decision.get("allowed_actions") if isinstance(decision.get("allowed_actions"), list) else []
+    allowed = (
+        decision.get("allowed_actions") if isinstance(decision.get("allowed_actions"), list) else []
+    )
     if "config.apply" not in [str(x) for x in allowed]:
         return jsonify({"ok": False, "error": "action_not_allowed", "decision": decision}), 400
 
     if not _is_local_request():
         if not bool(confirm_live):
-            return jsonify({"ok": False, "error": "confirm_live_required", "ts": int(_now_ms())}), 400
+            return (
+                jsonify({"ok": False, "error": "confirm_live_required", "ts": int(_now_ms())}),
+                400,
+            )
 
     cs = changeset if isinstance(changeset, dict) else {}
     patch = cs.get("config_patch") if isinstance(cs.get("config_patch"), dict) else {}
@@ -399,10 +469,26 @@ def governance_changeset_apply():
 
     vpatch = _agent_config_patch_validate(patch, allow_unsafe=bool(_is_local_request()))
     if not bool(vpatch.get("ok")):
-        return jsonify({"ok": False, "error": "config_patch_rejected", "violations": vpatch.get("violations"), "decision": decision, "ts": int(_now_ms())}), 400
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "error": "config_patch_rejected",
+                    "violations": vpatch.get("violations"),
+                    "decision": decision,
+                    "ts": int(_now_ms()),
+                }
+            ),
+            400,
+        )
     safe_patch = vpatch.get("patch") if isinstance(vpatch.get("patch"), dict) else {}
     if not safe_patch:
-        return jsonify({"ok": False, "error": "empty_patch", "decision": decision, "ts": int(_now_ms())}), 400
+        return (
+            jsonify(
+                {"ok": False, "error": "empty_patch", "decision": decision, "ts": int(_now_ms())}
+            ),
+            400,
+        )
 
     patch_keys = sorted([str(k) for k in safe_patch.keys() if str(k)])
 
@@ -433,13 +519,30 @@ def governance_changeset_apply():
     if expires_at_effective_ms is None:
         if review_after_days is None:
             try:
-                review_after_days = int(CONFIG.get("governance_changeset_review_after_days", CONFIG.get("changeset_review_after_days", 7)) or 7)
+                review_after_days = int(
+                    CONFIG.get(
+                        "governance_changeset_review_after_days",
+                        CONFIG.get("changeset_review_after_days", 7),
+                    )
+                    or 7
+                )
             except Exception:
                 review_after_days = 7
         review_after_days = max(1, min(3650, int(review_after_days)))
         expires_at_effective_ms = int(now_ms + int(review_after_days) * 86400 * 1000)
     if expires_at_effective_ms is not None and int(expires_at_effective_ms) <= int(now_ms):
-        return jsonify({"ok": False, "error": "changeset_expired", "ts": int(now_ms), "expires_at": int(expires_at_effective_ms), "decision": decision}), 400
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "error": "changeset_expired",
+                    "ts": int(now_ms),
+                    "expires_at": int(expires_at_effective_ms),
+                    "decision": decision,
+                }
+            ),
+            400,
+        )
 
     sid = str(cs.get("strategy_id") or "").strip()
     zip_name = str(cs.get("source_zip") or "").strip()
@@ -473,7 +576,9 @@ def governance_changeset_apply():
     pts = sorted(pts, key=lambda x: int(x.get("ts") or 0), reverse=True)[:max_points]
     _rollback_points_put(pts)
 
-    out, code = _config_set_impl(dict(safe_patch), confirm_live=bool(confirm_live), action="governance.changeset.apply")
+    out, code = _config_set_impl(
+        dict(safe_patch), confirm_live=bool(confirm_live), action="governance.changeset.apply"
+    )
     ok = bool(out.get("ok")) and int(code) == 200
     audit_payload = {
         "trace_id": trace_id,
@@ -488,22 +593,62 @@ def governance_changeset_apply():
         "apply": {"ok": ok, "code": int(code), "out": out},
     }
     try:
-        _agent_outbox_append_jsonl("audit_actions.jsonl", {"name": "governance.changeset.apply", "ts": now_ms, "payload": audit_payload})
+        _agent_outbox_append_jsonl(
+            "audit_actions.jsonl",
+            {"name": "governance.changeset.apply", "ts": now_ms, "payload": audit_payload},
+        )
     except Exception:
         pass
 
     if not ok:
         try:
-            rb_res = _rollback_point_apply(pt, restore_thresholds=True, restore_arena=True, restore_active_model=False, restore_tracker_state=True, restore_config=True)
+            rb_res = _rollback_point_apply(
+                pt,
+                restore_thresholds=True,
+                restore_arena=True,
+                restore_active_model=False,
+                restore_tracker_state=True,
+                restore_config=True,
+            )
         except Exception:
             rb_res = {"ok": False, "error": "rollback_failed"}
         try:
-            _agent_outbox_append_jsonl("audit_actions.jsonl", {"name": "governance.changeset.rollback", "ts": int(_now_ms()), "payload": {"trace_id": trace_id, "rollback": rb_res, "rollback_point_id": pt.get("id")}})
+            _agent_outbox_append_jsonl(
+                "audit_actions.jsonl",
+                {
+                    "name": "governance.changeset.rollback",
+                    "ts": int(_now_ms()),
+                    "payload": {
+                        "trace_id": trace_id,
+                        "rollback": rb_res,
+                        "rollback_point_id": pt.get("id"),
+                    },
+                },
+            )
         except Exception:
             pass
-        return jsonify({"ok": False, "error": "apply_failed", "apply": out, "rollback": rb_res, "rollback_point": pt, "decision": decision, "approval_id": approval_id}), 500
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "error": "apply_failed",
+                    "apply": out,
+                    "rollback": rb_res,
+                    "rollback_point": pt,
+                    "decision": decision,
+                    "approval_id": approval_id,
+                }
+            ),
+            500,
+        )
 
-    res = {"ok": True, "ts": int(_now_ms()), "rollback_point": pt, "apply": out, "decision": decision}
+    res = {
+        "ok": True,
+        "ts": int(_now_ms()),
+        "rollback_point": pt,
+        "apply": out,
+        "decision": decision,
+    }
     if approval_id:
         res["approval_id"] = approval_id
     if expires_at_effective_ms is not None:
@@ -543,9 +688,6 @@ def governance_changeset_apply():
     return jsonify(res)
 
 
-
-
-
 @bp.route("/agent/changeset/draft", methods=["POST"])
 def agent_changeset_draft():
     _agent_changeset_draft_build = _dep("_agent_changeset_draft_build")
@@ -568,11 +710,17 @@ def agent_changeset_draft():
         draft["draft_id"] = str(draft_id)
     except Exception:
         pass
-    _agent_outbox_append_jsonl("changeset_drafts.jsonl", {"id": str(draft_id), "trace_id": trace_id, "ts": int(_now_ms()), "type": "changeset.draft", "draft": draft})
+    _agent_outbox_append_jsonl(
+        "changeset_drafts.jsonl",
+        {
+            "id": str(draft_id),
+            "trace_id": trace_id,
+            "ts": int(_now_ms()),
+            "type": "changeset.draft",
+            "draft": draft,
+        },
+    )
     return jsonify(draft), 200
-
-
-
 
 
 @bp.route("/agent/changeset/draft/get", methods=["GET"])
@@ -588,14 +736,19 @@ def agent_changeset_draft_get():
         return jsonify({"ok": False, "error": "missing_id", "ts": int(_now_ms())}), 400
     ent = _agent_changeset_draft_lookup(draft_id)
     if not isinstance(ent, dict) or not ent:
-        return jsonify({"ok": False, "error": "not_found", "id": draft_id, "ts": int(_now_ms())}), 404
-    return jsonify({"ok": True, "id": draft_id, "entry": _json_sanitize(ent), "ts": int(_now_ms())}), 200
+        return (
+            jsonify({"ok": False, "error": "not_found", "id": draft_id, "ts": int(_now_ms())}),
+            404,
+        )
+    return (
+        jsonify({"ok": True, "id": draft_id, "entry": _json_sanitize(ent), "ts": int(_now_ms())}),
+        200,
+    )
+
 
 # @deprecated
 #   此路由属于 AI Agent 辅助层 (Chat/Skills/Pipeline/RCA/Twitter)，
 #   核心量化金融治理功能已迁移至 Dreambuddy-V2 提供支持。
-
-
 
 
 @bp.route("/agent/pipeline/run", methods=["POST"])
@@ -638,7 +791,11 @@ def agent_pipeline_run():
     shadow_only = bool(data.get("shadow_only", False))
     if bool(shadow_only):
         try:
-            st = TRACKER_STATE.get("shadow_automation") if isinstance(TRACKER_STATE.get("shadow_automation"), dict) else {}
+            st = (
+                TRACKER_STATE.get("shadow_automation")
+                if isinstance(TRACKER_STATE.get("shadow_automation"), dict)
+                else {}
+            )
             if not isinstance(st, dict):
                 st = {}
             st["active_trace_id"] = str(trace_id)
@@ -651,49 +808,117 @@ def agent_pipeline_run():
     if idempotent and (not force):
         prev = _agent_pipeline_state_find_latest(trace_id=str(trace_id))
         if isinstance(prev, dict) and str(prev.get("trace_id") or "").strip() == str(trace_id):
-            return jsonify({"ok": True, "trace_id": trace_id, "ts": int(now_ms), "replayed": True, "pipeline_state": prev}), 200
+            return (
+                jsonify(
+                    {
+                        "ok": True,
+                        "trace_id": trace_id,
+                        "ts": int(now_ms),
+                        "replayed": True,
+                        "pipeline_state": prev,
+                    }
+                ),
+                200,
+            )
 
     artifacts: Dict[str, Any] = {}
     stages: List[Dict[str, Any]] = []
 
     t0 = int(now_ms)
-    trigger_record = _agent_pipeline_artifact_common_fields(trace_id=str(trace_id), created_at_ms=int(now_ms), producer_kind="agent")
+    trigger_record = _agent_pipeline_artifact_common_fields(
+        trace_id=str(trace_id), created_at_ms=int(now_ms), producer_kind="agent"
+    )
     trigger_record.update(
         {
             "ts": int(now_ms),
-            "trigger_event": (None if data.get("trigger_event") is None else str(data.get("trigger_event") or "").strip() or None),
-            "base_trace_id": (None if data.get("base_trace_id") is None else str(data.get("base_trace_id") or "").strip() or None),
+            "trigger_event": (
+                None
+                if data.get("trigger_event") is None
+                else str(data.get("trigger_event") or "").strip() or None
+            ),
+            "base_trace_id": (
+                None
+                if data.get("base_trace_id") is None
+                else str(data.get("base_trace_id") or "").strip() or None
+            ),
             "objective": _json_sanitize(data.get("objective")),
             "risk_budget": _json_sanitize(data.get("risk_budget")),
-            "scope": (_json_sanitize(data.get("scope")) if isinstance(data.get("scope"), dict) else {}),
+            "scope": (
+                _json_sanitize(data.get("scope")) if isinstance(data.get("scope"), dict) else {}
+            ),
             "inputs": _json_sanitize(data),
         }
     )
-    trigger_path = _agent_pipeline_package_write(trace_id=str(trace_id), filename="trigger_record.json", obj=trigger_record)
+    trigger_path = _agent_pipeline_package_write(
+        trace_id=str(trace_id), filename="trigger_record.json", obj=trigger_record
+    )
     if trigger_path and isinstance(trigger_record, dict):
         trigger_record["artifact_files"] = {"trigger_record_json": trigger_path}
-    artifacts["trigger_record"] = _agent_pipeline_artifact_emit(trace_id=str(trace_id), kind="trigger_record", artifact=trigger_record)
-    stages.append(_pipeline_stage("trigger", "success", t0, int(_now_ms()), {"trigger_record": artifacts.get("trigger_record")}))
+    artifacts["trigger_record"] = _agent_pipeline_artifact_emit(
+        trace_id=str(trace_id), kind="trigger_record", artifact=trigger_record
+    )
+    stages.append(
+        _pipeline_stage(
+            "trigger",
+            "success",
+            t0,
+            int(_now_ms()),
+            {"trigger_record": artifacts.get("trigger_record")},
+        )
+    )
 
     t1s = int(_now_ms())
     regime_report = _pipeline_regime_report_build(trace_id=str(trace_id), now_ms=int(now_ms))
-    regime_path = _agent_pipeline_package_write(trace_id=str(trace_id), filename="regime_report.json", obj=regime_report)
+    regime_path = _agent_pipeline_package_write(
+        trace_id=str(trace_id), filename="regime_report.json", obj=regime_report
+    )
     if regime_path and isinstance(regime_report, dict):
         regime_report["artifact_files"] = {"regime_report_json": regime_path}
-    artifacts["regime_report"] = _agent_pipeline_artifact_validate_and_emit(trace_id=str(trace_id), kind="regime_report", artifact=regime_report)
-    stages.append(_pipeline_stage("market_regime", "success" if bool((artifacts.get("regime_report") or {}).get("ok", True)) else "fail", t1s, int(_now_ms()), {"regime_report": artifacts.get("regime_report")}))
+    artifacts["regime_report"] = _agent_pipeline_artifact_validate_and_emit(
+        trace_id=str(trace_id), kind="regime_report", artifact=regime_report
+    )
+    stages.append(
+        _pipeline_stage(
+            "market_regime",
+            "success" if bool((artifacts.get("regime_report") or {}).get("ok", True)) else "fail",
+            t1s,
+            int(_now_ms()),
+            {"regime_report": artifacts.get("regime_report")},
+        )
+    )
 
     try:
         cand_limit = int(data.get("candidate_limit") or 3)
     except Exception:
         cand_limit = 3
     t2s = int(_now_ms())
-    candidate_strategies = _pipeline_candidate_strategies_build(trace_id=str(trace_id), now_ms=int(now_ms), limit=int(cand_limit), regime_report=regime_report)
-    cand_path = _agent_pipeline_package_write(trace_id=str(trace_id), filename="candidate_strategies.json", obj=candidate_strategies)
+    candidate_strategies = _pipeline_candidate_strategies_build(
+        trace_id=str(trace_id),
+        now_ms=int(now_ms),
+        limit=int(cand_limit),
+        regime_report=regime_report,
+    )
+    cand_path = _agent_pipeline_package_write(
+        trace_id=str(trace_id), filename="candidate_strategies.json", obj=candidate_strategies
+    )
     if cand_path and isinstance(candidate_strategies, dict):
         candidate_strategies["artifact_files"] = {"candidate_strategies_json": cand_path}
-    artifacts["candidate_strategies"] = _agent_pipeline_artifact_validate_and_emit(trace_id=str(trace_id), kind="candidate_strategies", artifact=candidate_strategies)
-    stages.append(_pipeline_stage("strategy_screening", "success" if bool((artifacts.get("candidate_strategies") or {}).get("ok", True)) else "fail", t2s, int(_now_ms()), {"candidate_strategies": artifacts.get("candidate_strategies")}))
+    artifacts["candidate_strategies"] = _agent_pipeline_artifact_validate_and_emit(
+        trace_id=str(trace_id), kind="candidate_strategies", artifact=candidate_strategies
+    )
+    stages.append(
+        _pipeline_stage(
+            "strategy_screening",
+            (
+                "success"
+                if bool((artifacts.get("candidate_strategies") or {}).get("ok", True))
+                else "fail"
+            ),
+            t2s,
+            int(_now_ms()),
+            {"candidate_strategies": artifacts.get("candidate_strategies")},
+        )
+    )
 
     chosen = None
     strategy_id = str(data.get("strategy_id") or "").strip()
@@ -701,11 +926,16 @@ def agent_pipeline_run():
     if strategy_id and source_zip:
         chosen = {"strategy_id": strategy_id, "source_zip": source_zip}
     else:
-        items = candidate_strategies.get("items") if isinstance(candidate_strategies, dict) else None
+        items = (
+            candidate_strategies.get("items") if isinstance(candidate_strategies, dict) else None
+        )
         if isinstance(items, list) and items:
             it0 = items[0] if isinstance(items[0], dict) else None
             if isinstance(it0, dict):
-                chosen = {"strategy_id": str(it0.get("strategy_id") or "").strip(), "source_zip": str(it0.get("source_zip") or "").strip()}
+                chosen = {
+                    "strategy_id": str(it0.get("strategy_id") or "").strip(),
+                    "source_zip": str(it0.get("source_zip") or "").strip(),
+                }
 
     t3s = int(_now_ms())
     baseline_enabled = bool(data.get("baseline_enabled", True))
@@ -713,13 +943,25 @@ def agent_pipeline_run():
     baseline_ok = None
     baseline_obj_for_changeset = None
     baseline_ref_for_changeset = None
-    if baseline_enabled and isinstance(chosen, dict) and chosen.get("strategy_id") and chosen.get("source_zip"):
+    if (
+        baseline_enabled
+        and isinstance(chosen, dict)
+        and chosen.get("strategy_id")
+        and chosen.get("source_zip")
+    ):
         try:
-            bt_cfg = str(data.get("baseline_config") or "user_data/config_local_backtest.json").strip() or "user_data/config_local_backtest.json"
+            bt_cfg = (
+                str(data.get("baseline_config") or "user_data/config_local_backtest.json").strip()
+                or "user_data/config_local_backtest.json"
+            )
         except Exception:
             bt_cfg = "user_data/config_local_backtest.json"
         try:
-            bt_tr = (None if data.get("baseline_timerange") is None else str(data.get("baseline_timerange") or "").strip() or None)
+            bt_tr = (
+                None
+                if data.get("baseline_timerange") is None
+                else str(data.get("baseline_timerange") or "").strip() or None
+            )
         except Exception:
             bt_tr = None
         try:
@@ -735,15 +977,17 @@ def agent_pipeline_run():
             timerange=bt_tr,
             timeout_sec=float(bt_to),
         )
-        baseline_report_path = _agent_pipeline_package_write(trace_id=str(trace_id), filename="baseline_report.json", obj=baseline_report)
+        baseline_report_path = _agent_pipeline_package_write(
+            trace_id=str(trace_id), filename="baseline_report.json", obj=baseline_report
+        )
         assumptions_obj = None
         baseline_metrics_obj = None
         try:
             cfg_obj = {}
             try:
-                p_cfg = Path(str(bt_cfg))
+                p_cfg = Path(str(bt_cfg))  # noqa: F821
                 if not p_cfg.exists():
-                    p_cfg = Path(__file__).resolve().parent / str(bt_cfg)
+                    p_cfg = Path(__file__).resolve().parent / str(bt_cfg)  # noqa: F821
                 if p_cfg.exists() and p_cfg.is_file():
                     with open(p_cfg, "r", encoding="utf-8") as f:
                         cfg_obj = json.load(f) or {}
@@ -752,10 +996,24 @@ def agent_pipeline_run():
             cfg_assumptions = _bt_assumptions_default(cfg_obj if isinstance(cfg_obj, dict) else {})
 
             res0 = baseline_report.get("result") if isinstance(baseline_report, dict) else {}
-            rep0 = res0.get("report") if isinstance(res0, dict) and isinstance(res0.get("report"), dict) else {}
-            aligned0 = rep0.get("aligned_metrics") if isinstance(rep0, dict) and isinstance(rep0.get("aligned_metrics"), dict) else None
-            assumptions0 = (aligned0.get("assumptions") if isinstance(aligned0, dict) and isinstance(aligned0.get("assumptions"), dict) else None)
-            assumptions_m = _bt_assumptions_merge(cfg_assumptions, assumptions0 if isinstance(assumptions0, dict) else {})
+            rep0 = (
+                res0.get("report")
+                if isinstance(res0, dict) and isinstance(res0.get("report"), dict)
+                else {}
+            )
+            aligned0 = (
+                rep0.get("aligned_metrics")
+                if isinstance(rep0, dict) and isinstance(rep0.get("aligned_metrics"), dict)
+                else None
+            )
+            assumptions0 = (
+                aligned0.get("assumptions")
+                if isinstance(aligned0, dict) and isinstance(aligned0.get("assumptions"), dict)
+                else None
+            )
+            assumptions_m = _bt_assumptions_merge(
+                cfg_assumptions, assumptions0 if isinstance(assumptions0, dict) else {}
+            )
             assumptions_obj = {
                 "trace_id": str(trace_id),
                 "ts": int(now_ms),
@@ -770,21 +1028,49 @@ def agent_pipeline_run():
                 "strategy_id": str(chosen.get("strategy_id")),
                 "source_zip": str(chosen.get("source_zip")),
                 "result_zip": (res0.get("result_zip") if isinstance(res0, dict) else None),
-                "metrics_summary": (res0.get("metrics_summary") if isinstance(res0, dict) and isinstance(res0.get("metrics_summary"), dict) else {}),
+                "metrics_summary": (
+                    res0.get("metrics_summary")
+                    if isinstance(res0, dict) and isinstance(res0.get("metrics_summary"), dict)
+                    else {}
+                ),
                 "aligned_metrics": (aligned0 if isinstance(aligned0, dict) else None),
             }
         except Exception:
             assumptions_obj = None
             baseline_metrics_obj = None
-        assumptions_path = _agent_pipeline_package_write(trace_id=str(trace_id), filename="assumptions.json", obj=(assumptions_obj if assumptions_obj is not None else {"trace_id": str(trace_id), "ts": int(now_ms), "assumptions": {}}))
-        baseline_metrics_path = _agent_pipeline_package_write(trace_id=str(trace_id), filename="baseline_metrics.json", obj=(baseline_metrics_obj if baseline_metrics_obj is not None else {"trace_id": str(trace_id), "ts": int(now_ms), "metrics_summary": {}}))
+        assumptions_path = _agent_pipeline_package_write(
+            trace_id=str(trace_id),
+            filename="assumptions.json",
+            obj=(
+                assumptions_obj
+                if assumptions_obj is not None
+                else {"trace_id": str(trace_id), "ts": int(now_ms), "assumptions": {}}
+            ),
+        )
+        baseline_metrics_path = _agent_pipeline_package_write(
+            trace_id=str(trace_id),
+            filename="baseline_metrics.json",
+            obj=(
+                baseline_metrics_obj
+                if baseline_metrics_obj is not None
+                else {"trace_id": str(trace_id), "ts": int(now_ms), "metrics_summary": {}}
+            ),
+        )
         try:
-            ms0 = (baseline_metrics_obj.get("metrics_summary") if isinstance(baseline_metrics_obj, dict) else None)
+            ms0 = (
+                baseline_metrics_obj.get("metrics_summary")
+                if isinstance(baseline_metrics_obj, dict)
+                else None
+            )
             if isinstance(ms0, dict) and ms0:
                 sid0 = str(chosen.get("strategy_id") or "").strip()
                 z0 = str(chosen.get("source_zip") or "").strip()
                 sk0 = f"{sid0}@{z0}" if sid0 and z0 else None
-                baseline_obj_for_changeset = {"metrics_summary": ms0, "strategy_key": sk0, "three_piece": {"strategy_key": sk0}}
+                baseline_obj_for_changeset = {
+                    "metrics_summary": ms0,
+                    "strategy_key": sk0,
+                    "three_piece": {"strategy_key": sk0},
+                }
                 baseline_ref_for_changeset = f"baseline_report:{str(trace_id)}"
         except Exception:
             baseline_obj_for_changeset = None
@@ -799,18 +1085,42 @@ def agent_pipeline_run():
                 files["baseline_metrics_json"] = baseline_metrics_path
             if files:
                 baseline_report["artifact_files"] = files
-        baseline_ref = _agent_pipeline_artifact_validate_and_emit(trace_id=str(trace_id), kind="baseline_report", artifact=baseline_report)
+        baseline_ref = _agent_pipeline_artifact_validate_and_emit(
+            trace_id=str(trace_id), kind="baseline_report", artifact=baseline_report
+        )
         artifacts["baseline_report"] = baseline_ref
         baseline_ok = bool(baseline_ref.get("ok")) if isinstance(baseline_ref, dict) else None
-        stages.append(_pipeline_stage("baseline_reproduction", "success" if baseline_ok else "fail", t3s, int(_now_ms()), {"baseline_report": baseline_ref}))
+        stages.append(
+            _pipeline_stage(
+                "baseline_reproduction",
+                "success" if baseline_ok else "fail",
+                t3s,
+                int(_now_ms()),
+                {"baseline_report": baseline_ref},
+            )
+        )
     else:
-        stages.append(_pipeline_stage("baseline_reproduction", "skipped", t3s, int(_now_ms()), {}, {"reason": "disabled_or_missing_choice"}))
+        stages.append(
+            _pipeline_stage(
+                "baseline_reproduction",
+                "skipped",
+                t3s,
+                int(_now_ms()),
+                {},
+                {"reason": "disabled_or_missing_choice"},
+            )
+        )
 
     paramopt_rep = None
     selected_patch: Dict[str, Any] = {}
     selected_suggest: Dict[str, Any] = {}
     t4s = int(_now_ms())
-    if isinstance(chosen, dict) and chosen.get("strategy_id") and chosen.get("source_zip") and (not bool(data.get("skip_paramopt", False))):
+    if (
+        isinstance(chosen, dict)
+        and chosen.get("strategy_id")
+        and chosen.get("source_zip")
+        and (not bool(data.get("skip_paramopt", False)))
+    ):
         try:
             req = {
                 "trace_id": trace_id,
@@ -823,7 +1133,7 @@ def agent_pipeline_run():
                 "skip_robustness": True,
                 "context": {"stage": "pipeline", "regime": regime_report, "strategy": chosen},
             }
-            with app.test_request_context(
+            with app.test_request_context(  # noqa: F821
                 "/agent/paramopt/run",
                 method="POST",
                 data=json.dumps(req),
@@ -835,31 +1145,70 @@ def agent_pipeline_run():
             if hasattr(resp0, "get_json"):
                 paramopt_rep = resp0.get_json(force=True) or {}
             if isinstance(paramopt_rep, dict):
-                sel = paramopt_rep.get("selected") if isinstance(paramopt_rep.get("selected"), dict) else {}
-                selected_patch = sel.get("config_patch") if isinstance(sel.get("config_patch"), dict) else {}
-                selected_suggest = sel.get("config_suggest") if isinstance(sel.get("config_suggest"), dict) else {}
+                sel = (
+                    paramopt_rep.get("selected")
+                    if isinstance(paramopt_rep.get("selected"), dict)
+                    else {}
+                )
+                selected_patch = (
+                    sel.get("config_patch") if isinstance(sel.get("config_patch"), dict) else {}
+                )
+                selected_suggest = (
+                    sel.get("config_suggest") if isinstance(sel.get("config_suggest"), dict) else {}
+                )
         except Exception:
             paramopt_rep = None
             selected_patch = {}
             selected_suggest = {}
-    if bool(data.get("skip_paramopt", False)) or (not (isinstance(chosen, dict) and chosen.get("strategy_id") and chosen.get("source_zip"))):
-        stages.append(_pipeline_stage("strategy_modification", "skipped", t4s, int(_now_ms()), {}, {"reason": "skip_paramopt_or_missing_choice"}))
+    if bool(data.get("skip_paramopt", False)) or (
+        not (isinstance(chosen, dict) and chosen.get("strategy_id") and chosen.get("source_zip"))
+    ):
+        stages.append(
+            _pipeline_stage(
+                "strategy_modification",
+                "skipped",
+                t4s,
+                int(_now_ms()),
+                {},
+                {"reason": "skip_paramopt_or_missing_choice"},
+            )
+        )
     else:
         ok_mod = bool((paramopt_rep or {}).get("ok")) if isinstance(paramopt_rep, dict) else False
         ok_patch = bool(selected_patch) if isinstance(selected_patch, dict) else False
         st = "success" if (ok_mod and ok_patch) else ("fail" if ok_mod else "fail")
         if isinstance(paramopt_rep, dict):
-            paramopt_path = _agent_pipeline_package_write(trace_id=str(trace_id), filename="paramopt_result.json", obj=paramopt_rep)
+            paramopt_path = _agent_pipeline_package_write(
+                trace_id=str(trace_id), filename="paramopt_result.json", obj=paramopt_rep
+            )
             if paramopt_path:
                 paramopt_rep["artifact_files"] = {"paramopt_result_json": paramopt_path}
-        stages.append(_pipeline_stage("strategy_modification", st, t4s, int(_now_ms()), {"paramopt": _json_sanitize(paramopt_rep), "config_patch": selected_patch}))
+        stages.append(
+            _pipeline_stage(
+                "strategy_modification",
+                st,
+                t4s,
+                int(_now_ms()),
+                {"paramopt": _json_sanitize(paramopt_rep), "config_patch": selected_patch},
+            )
+        )
 
     draft = None
     draft_id = None
     approval_id = None
-    if isinstance(chosen, dict) and chosen.get("strategy_id") and chosen.get("source_zip") and isinstance(selected_patch, dict) and selected_patch:
+    if (
+        isinstance(chosen, dict)
+        and chosen.get("strategy_id")
+        and chosen.get("source_zip")
+        and isinstance(selected_patch, dict)
+        and selected_patch
+    ):
         try:
-            doc_refs = data.get("doc_refs") if isinstance(data.get("doc_refs"), list) else _agent_doc_refs_48_default()
+            doc_refs = (
+                data.get("doc_refs")
+                if isinstance(data.get("doc_refs"), list)
+                else _agent_doc_refs_48_default()
+            )
         except Exception:
             doc_refs = _agent_doc_refs_48_default()
         try:
@@ -870,20 +1219,46 @@ def agent_pipeline_run():
                     "source_zip": str(chosen.get("source_zip")),
                     "policy_ref": str(data.get("policy_ref") or "gov_default"),
                     "action": str(data.get("action") or "config.apply"),
-                    "label": str(data.get("label") or f"pipeline:{chosen.get('strategy_id')}").strip() or f"pipeline:{chosen.get('strategy_id')}",
+                    "label": str(
+                        data.get("label") or f"pipeline:{chosen.get('strategy_id')}"
+                    ).strip()
+                    or f"pipeline:{chosen.get('strategy_id')}",
                     "reason": str(data.get("reason") or "pipeline.auto").strip() or "pipeline.auto",
                     "config_patch": selected_patch,
                     "config_suggest": selected_suggest,
-                    "baseline": (baseline_obj_for_changeset if isinstance(baseline_obj_for_changeset, dict) else None),
-                    "baseline_ref": (baseline_ref_for_changeset if isinstance(baseline_ref_for_changeset, str) and baseline_ref_for_changeset.strip() else None),
+                    "baseline": (
+                        baseline_obj_for_changeset
+                        if isinstance(baseline_obj_for_changeset, dict)
+                        else None
+                    ),
+                    "baseline_ref": (
+                        baseline_ref_for_changeset
+                        if isinstance(baseline_ref_for_changeset, str)
+                        and baseline_ref_for_changeset.strip()
+                        else None
+                    ),
                     "doc_refs": doc_refs,
                 }
             )
             if isinstance(draft, dict) and bool(draft.get("ok")):
                 draft_id = uuid.uuid4().hex
-                _agent_outbox_append_jsonl("changeset_drafts.jsonl", {"id": str(draft_id), "trace_id": trace_id, "ts": int(_now_ms()), "type": "changeset.draft", "draft": draft})
+                _agent_outbox_append_jsonl(
+                    "changeset_drafts.jsonl",
+                    {
+                        "id": str(draft_id),
+                        "trace_id": trace_id,
+                        "ts": int(_now_ms()),
+                        "type": "changeset.draft",
+                        "draft": draft,
+                    },
+                )
                 try:
-                    approval_id = _approval_request_for_changeset_draft(trace_id=trace_id, draft_id=str(draft_id), draft=draft, action=str(data.get("action") or "config.apply"))
+                    approval_id = _approval_request_for_changeset_draft(
+                        trace_id=trace_id,
+                        draft_id=str(draft_id),
+                        draft=draft,
+                        action=str(data.get("action") or "config.apply"),
+                    )
                 except Exception:
                     approval_id = None
         except Exception:
@@ -891,12 +1266,16 @@ def agent_pipeline_run():
             draft_id = None
             approval_id = None
 
-    change_bundle = (draft.get("change_bundle_draft") if isinstance(draft, dict) else None)
+    change_bundle = draft.get("change_bundle_draft") if isinstance(draft, dict) else None
     if isinstance(change_bundle, dict):
-        cbd_path = _agent_pipeline_package_write(trace_id=str(trace_id), filename="change_bundle_draft.json", obj=change_bundle)
+        cbd_path = _agent_pipeline_package_write(
+            trace_id=str(trace_id), filename="change_bundle_draft.json", obj=change_bundle
+        )
         if cbd_path:
             change_bundle["artifact_files"] = {"change_bundle_draft_json": cbd_path}
-        artifacts["change_bundle_draft"] = _agent_pipeline_artifact_validate_and_emit(trace_id=str(trace_id), kind="change_bundle_draft", artifact=change_bundle)
+        artifacts["change_bundle_draft"] = _agent_pipeline_artifact_validate_and_emit(
+            trace_id=str(trace_id), kind="change_bundle_draft", artifact=change_bundle
+        )
 
     if approval_id:
         approval_pkg = _pipeline_approval_request_build(
@@ -908,28 +1287,54 @@ def agent_pipeline_run():
             draft=(draft if isinstance(draft, dict) else {}),
             chosen=(chosen if isinstance(chosen, dict) else None),
         )
-        approval_path = _agent_pipeline_package_write(trace_id=str(trace_id), filename="approval_request.json", obj=approval_pkg)
+        approval_path = _agent_pipeline_package_write(
+            trace_id=str(trace_id), filename="approval_request.json", obj=approval_pkg
+        )
         if approval_path:
             approval_pkg["artifact_files"] = {"approval_request_json": approval_path}
-        artifacts["approval_request"] = _agent_pipeline_artifact_validate_and_emit(trace_id=str(trace_id), kind="approval_request", artifact=approval_pkg)
+        artifacts["approval_request"] = _agent_pipeline_artifact_validate_and_emit(
+            trace_id=str(trace_id), kind="approval_request", artifact=approval_pkg
+        )
 
     t6s = int(_now_ms())
     sandbox_job = None
-    if isinstance(chosen, dict) and chosen.get("strategy_id") and chosen.get("source_zip") and bool(data.get("queue_sandbox", True)):
+    if (
+        isinstance(chosen, dict)
+        and chosen.get("strategy_id")
+        and chosen.get("source_zip")
+        and bool(data.get("queue_sandbox", True))
+    ):
         try:
             sj_req = {
                 "trace_id": trace_id,
                 "type": "sandbox.job.request",
                 "inputs": {
-                    "base_trace_id": (None if data.get("base_trace_id") is None else str(data.get("base_trace_id") or "").strip() or None),
-                    "trigger_event": (None if data.get("trigger_event") is None else str(data.get("trigger_event") or "").strip() or None),
-                    "candidates": [{"strategy_id": str(chosen.get("strategy_id")), "source_zip": str(chosen.get("source_zip"))}],
+                    "base_trace_id": (
+                        None
+                        if data.get("base_trace_id") is None
+                        else str(data.get("base_trace_id") or "").strip() or None
+                    ),
+                    "trigger_event": (
+                        None
+                        if data.get("trigger_event") is None
+                        else str(data.get("trigger_event") or "").strip() or None
+                    ),
+                    "candidates": [
+                        {
+                            "strategy_id": str(chosen.get("strategy_id")),
+                            "source_zip": str(chosen.get("source_zip")),
+                        }
+                    ],
                     "data_snapshot": "latest",
                     "config_snapshot": "user_data/config_local_backtest.json",
-                    "gates": (data.get("gates") if isinstance(data.get("gates"), list) else ["backtest", "robustness", "stress"]),
+                    "gates": (
+                        data.get("gates")
+                        if isinstance(data.get("gates"), list)
+                        else ["backtest", "robustness", "stress"]
+                    ),
                 },
             }
-            with app.test_request_context(
+            with app.test_request_context(  # noqa: F821
                 "/agent/sandbox/queue/submit",
                 method="POST",
                 data=json.dumps(sj_req),
@@ -943,76 +1348,164 @@ def agent_pipeline_run():
         except Exception:
             sandbox_job = None
     if sandbox_job is not None:
-        sandbox_job_path = _agent_pipeline_package_write(trace_id=str(trace_id), filename="sandbox_job.json", obj=sandbox_job)
+        sandbox_job_path = _agent_pipeline_package_write(
+            trace_id=str(trace_id), filename="sandbox_job.json", obj=sandbox_job
+        )
         if sandbox_job_path and isinstance(sandbox_job, dict):
             sandbox_job["artifact_files"] = {"sandbox_job_json": sandbox_job_path}
-        stages.append(_pipeline_stage("sandbox_validation", "running", t6s, int(_now_ms()), {"sandbox_job": _json_sanitize(sandbox_job)}))
+        stages.append(
+            _pipeline_stage(
+                "sandbox_validation",
+                "running",
+                t6s,
+                int(_now_ms()),
+                {"sandbox_job": _json_sanitize(sandbox_job)},
+            )
+        )
     else:
-        stages.append(_pipeline_stage("sandbox_validation", "skipped", t6s, int(_now_ms()), {}, {"reason": "queue_sandbox_disabled_or_missing_choice"}))
+        stages.append(
+            _pipeline_stage(
+                "sandbox_validation",
+                "skipped",
+                t6s,
+                int(_now_ms()),
+                {},
+                {"reason": "queue_sandbox_disabled_or_missing_choice"},
+            )
+        )
 
     t7s = int(_now_ms())
     gov_obj = None
     try:
-        gov_obj = (change_bundle.get("governance") if isinstance(change_bundle, dict) else None)
+        gov_obj = change_bundle.get("governance") if isinstance(change_bundle, dict) else None
     except Exception:
         gov_obj = None
     gov_decision = None
     try:
-        gov_decision = str((gov_obj or {}).get("decision") or "").strip() if isinstance(gov_obj, dict) else None
+        gov_decision = (
+            str((gov_obj or {}).get("decision") or "").strip()
+            if isinstance(gov_obj, dict)
+            else None
+        )
         if not gov_decision:
             gov_decision = None
     except Exception:
         gov_decision = None
 
     if gov_decision == "auto_reject":
-        stages.append(_pipeline_stage("audit_approval", "fail", t7s, int(_now_ms()), {}, {"reason": "auto_reject", "detail": _json_sanitize(gov_obj)}))
+        stages.append(
+            _pipeline_stage(
+                "audit_approval",
+                "fail",
+                t7s,
+                int(_now_ms()),
+                {},
+                {"reason": "auto_reject", "detail": _json_sanitize(gov_obj)},
+            )
+        )
     elif approval_id:
         try:
             ap_ok = _approval_ok(str(approval_id), max_age_ms=int(86400_000))
         except Exception:
             ap_ok = False
-        stages.append(_pipeline_stage("audit_approval", ("success" if ap_ok else "running"), t7s, int(_now_ms()), {"approval_request": artifacts.get("approval_request")}, {"approval_id": str(approval_id), "approved": bool(ap_ok)}))
+        stages.append(
+            _pipeline_stage(
+                "audit_approval",
+                ("success" if ap_ok else "running"),
+                t7s,
+                int(_now_ms()),
+                {"approval_request": artifacts.get("approval_request")},
+                {"approval_id": str(approval_id), "approved": bool(ap_ok)},
+            )
+        )
     else:
-        stages.append(_pipeline_stage("audit_approval", "skipped", t7s, int(_now_ms()), {}, {"reason": (gov_decision or "no_approval_created"), "detail": _json_sanitize(gov_obj)}))
+        stages.append(
+            _pipeline_stage(
+                "audit_approval",
+                "skipped",
+                t7s,
+                int(_now_ms()),
+                {},
+                {
+                    "reason": (gov_decision or "no_approval_created"),
+                    "detail": _json_sanitize(gov_obj),
+                },
+            )
+        )
 
     change_id = None
     try:
-        change_id = str((change_bundle or {}).get("change_id") or "").strip() if isinstance(change_bundle, dict) else None
+        change_id = (
+            str((change_bundle or {}).get("change_id") or "").strip()
+            if isinstance(change_bundle, dict)
+            else None
+        )
         if not change_id:
             change_id = None
     except Exception:
         change_id = None
-    rollout_plan = _pipeline_rollout_plan_build(trace_id=str(trace_id), now_ms=int(now_ms), change_id=change_id)
-    rollout_path = _agent_pipeline_package_write(trace_id=str(trace_id), filename="rollout_plan.json", obj=rollout_plan)
+    rollout_plan = _pipeline_rollout_plan_build(
+        trace_id=str(trace_id), now_ms=int(now_ms), change_id=change_id
+    )
+    rollout_path = _agent_pipeline_package_write(
+        trace_id=str(trace_id), filename="rollout_plan.json", obj=rollout_plan
+    )
     if rollout_path and isinstance(rollout_plan, dict):
         rollout_plan["artifact_files"] = {"rollout_plan_json": rollout_path}
-    artifacts["rollout_plan"] = _agent_pipeline_artifact_validate_and_emit(trace_id=str(trace_id), kind="rollout_plan", artifact=rollout_plan)
+    artifacts["rollout_plan"] = _agent_pipeline_artifact_validate_and_emit(
+        trace_id=str(trace_id), kind="rollout_plan", artifact=rollout_plan
+    )
 
-    monitoring_checklist = _pipeline_monitoring_checklist_build(trace_id=str(trace_id), now_ms=int(now_ms), change_id=change_id)
-    checklist_path = _agent_pipeline_package_write(trace_id=str(trace_id), filename="monitoring_checklist.json", obj=monitoring_checklist)
+    monitoring_checklist = _pipeline_monitoring_checklist_build(
+        trace_id=str(trace_id), now_ms=int(now_ms), change_id=change_id
+    )
+    checklist_path = _agent_pipeline_package_write(
+        trace_id=str(trace_id), filename="monitoring_checklist.json", obj=monitoring_checklist
+    )
     if checklist_path and isinstance(monitoring_checklist, dict):
         monitoring_checklist["artifact_files"] = {"monitoring_checklist_json": checklist_path}
-    artifacts["monitoring_checklist"] = _agent_pipeline_artifact_validate_and_emit(trace_id=str(trace_id), kind="monitoring_checklist", artifact=monitoring_checklist)
+    artifacts["monitoring_checklist"] = _agent_pipeline_artifact_validate_and_emit(
+        trace_id=str(trace_id), kind="monitoring_checklist", artifact=monitoring_checklist
+    )
 
     t8s = int(_now_ms())
     stages.append(
         _pipeline_stage(
             "rollout_preparation",
-            "success" if bool((artifacts.get("rollout_plan") or {}).get("ok", True)) and bool((artifacts.get("monitoring_checklist") or {}).get("ok", True)) else "fail",
+            (
+                "success"
+                if bool((artifacts.get("rollout_plan") or {}).get("ok", True))
+                and bool((artifacts.get("monitoring_checklist") or {}).get("ok", True))
+                else "fail"
+            ),
             t8s,
             int(_now_ms()),
-            {"rollout_plan": artifacts.get("rollout_plan"), "monitoring_checklist": artifacts.get("monitoring_checklist")},
+            {
+                "rollout_plan": artifacts.get("rollout_plan"),
+                "monitoring_checklist": artifacts.get("monitoring_checklist"),
+            },
         )
     )
     t9s = int(_now_ms())
     try:
-        gray_mode = str(data.get("gray_rollout_mode") or data.get("gray_rollout") or data.get("mode") or "plan_only").strip().lower()
+        gray_mode = (
+            str(
+                data.get("gray_rollout_mode")
+                or data.get("gray_rollout")
+                or data.get("mode")
+                or "plan_only"
+            )
+            .strip()
+            .lower()
+        )
     except Exception:
         gray_mode = "plan_only"
     if gray_mode not in ("plan_only", "execute"):
         gray_mode = "plan_only"
     try:
-        execute_allowed = bool(_is_local_request()) or bool(data.get("confirm_live", False)) or bool(shadow_only)
+        execute_allowed = (
+            bool(_is_local_request()) or bool(data.get("confirm_live", False)) or bool(shadow_only)
+        )
     except Exception:
         execute_allowed = False
     if gray_mode == "execute" and execute_allowed:
@@ -1031,34 +1524,109 @@ def agent_pipeline_run():
                 "pending",
                 t9s,
                 int(_now_ms()),
-                {"rollout_plan": artifacts.get("rollout_plan"), "monitoring_checklist": artifacts.get("monitoring_checklist")},
-                {"mode": ("shadow_only" if bool(shadow_only) else "execute"), "phase": "shadow", "execute_allowed": True, "executed": False, "shadow_only": bool(shadow_only)},
+                {
+                    "rollout_plan": artifacts.get("rollout_plan"),
+                    "monitoring_checklist": artifacts.get("monitoring_checklist"),
+                },
+                {
+                    "mode": ("shadow_only" if bool(shadow_only) else "execute"),
+                    "phase": "shadow",
+                    "execute_allowed": True,
+                    "executed": False,
+                    "shadow_only": bool(shadow_only),
+                },
             )
         )
     elif gray_mode == "execute" and (not execute_allowed):
-        stages.append(_pipeline_stage("gray_rollout", "skipped", t9s, int(_now_ms()), {"rollout_plan": artifacts.get("rollout_plan"), "monitoring_checklist": artifacts.get("monitoring_checklist")}, {"mode": "execute", "reason": "confirm_live_required", "execute_allowed": False}))
+        stages.append(
+            _pipeline_stage(
+                "gray_rollout",
+                "skipped",
+                t9s,
+                int(_now_ms()),
+                {
+                    "rollout_plan": artifacts.get("rollout_plan"),
+                    "monitoring_checklist": artifacts.get("monitoring_checklist"),
+                },
+                {"mode": "execute", "reason": "confirm_live_required", "execute_allowed": False},
+            )
+        )
     else:
-        stages.append(_pipeline_stage("gray_rollout", "skipped", t9s, int(_now_ms()), {"rollout_plan": artifacts.get("rollout_plan"), "monitoring_checklist": artifacts.get("monitoring_checklist")}, {"mode": "plan_only", "reason": "plan_only"}))
+        stages.append(
+            _pipeline_stage(
+                "gray_rollout",
+                "skipped",
+                t9s,
+                int(_now_ms()),
+                {
+                    "rollout_plan": artifacts.get("rollout_plan"),
+                    "monitoring_checklist": artifacts.get("monitoring_checklist"),
+                },
+                {"mode": "plan_only", "reason": "plan_only"},
+            )
+        )
 
-    archive = _pipeline_archive_record_build(trace_id=str(trace_id), now_ms=int(now_ms), artifacts=artifacts)
-    artifacts["archive_record"] = _agent_pipeline_artifact_validate_and_emit(trace_id=str(trace_id), kind="archive_record", artifact=archive)
-    archive_path = _agent_pipeline_package_write(trace_id=str(trace_id), filename="archive_record.json", obj=archive)
-    writeback = _pipeline_archive_writeback(trace_id=str(trace_id), now_ms=int(now_ms), chosen=chosen, change_bundle=change_bundle, approval_id=approval_id, artifacts=artifacts)
-    stages.append(_pipeline_stage("archive", "success" if bool((artifacts.get("archive_record") or {}).get("ok", True)) else "fail", int(_now_ms()), int(_now_ms()), {"archive_record": artifacts.get("archive_record")}, {"archive_record_path": archive_path, "writeback": writeback}))
+    archive = _pipeline_archive_record_build(
+        trace_id=str(trace_id), now_ms=int(now_ms), artifacts=artifacts
+    )
+    artifacts["archive_record"] = _agent_pipeline_artifact_validate_and_emit(
+        trace_id=str(trace_id), kind="archive_record", artifact=archive
+    )
+    archive_path = _agent_pipeline_package_write(
+        trace_id=str(trace_id), filename="archive_record.json", obj=archive
+    )
+    writeback = _pipeline_archive_writeback(
+        trace_id=str(trace_id),
+        now_ms=int(now_ms),
+        chosen=chosen,
+        change_bundle=change_bundle,
+        approval_id=approval_id,
+        artifacts=artifacts,
+    )
+    stages.append(
+        _pipeline_stage(
+            "archive",
+            "success" if bool((artifacts.get("archive_record") or {}).get("ok", True)) else "fail",
+            int(_now_ms()),
+            int(_now_ms()),
+            {"archive_record": artifacts.get("archive_record")},
+            {"archive_record_path": archive_path, "writeback": writeback},
+        )
+    )
 
     status = "success"
     if any(str(s.get("status") or "").lower() == "fail" for s in stages if isinstance(s, dict)):
         status = "fail"
-    elif any(str(s.get("status") or "").lower() == "running" for s in stages if isinstance(s, dict)):
+    elif any(
+        str(s.get("status") or "").lower() == "running" for s in stages if isinstance(s, dict)
+    ):
         status = "running"
-    elif any(str(s.get("status") or "").lower() in ("skipped", "pending") for s in stages if isinstance(s, dict)):
+    elif any(
+        str(s.get("status") or "").lower() in ("skipped", "pending")
+        for s in stages
+        if isinstance(s, dict)
+    ):
         status = "partial"
-    pipeline_state = _agent_pipeline_artifact_common_fields(trace_id=str(trace_id), created_at_ms=int(now_ms), producer_kind="agent")
-    pipeline_state.update({"ts": int(now_ms), "status": status, "stages": stages, "chosen": chosen, "shadow_only": bool(shadow_only)})
-    pipeline_state_path = _agent_pipeline_package_write(trace_id=str(trace_id), filename="pipeline_state.json", obj=pipeline_state)
+    pipeline_state = _agent_pipeline_artifact_common_fields(
+        trace_id=str(trace_id), created_at_ms=int(now_ms), producer_kind="agent"
+    )
+    pipeline_state.update(
+        {
+            "ts": int(now_ms),
+            "status": status,
+            "stages": stages,
+            "chosen": chosen,
+            "shadow_only": bool(shadow_only),
+        }
+    )
+    pipeline_state_path = _agent_pipeline_package_write(
+        trace_id=str(trace_id), filename="pipeline_state.json", obj=pipeline_state
+    )
     if pipeline_state_path and isinstance(pipeline_state, dict):
         pipeline_state["artifact_files"] = {"pipeline_state_json": pipeline_state_path}
-    artifacts["pipeline_state"] = _agent_pipeline_artifact_validate_and_emit(trace_id=str(trace_id), kind="pipeline_state", artifact=pipeline_state)
+    artifacts["pipeline_state"] = _agent_pipeline_artifact_validate_and_emit(
+        trace_id=str(trace_id), kind="pipeline_state", artifact=pipeline_state
+    )
 
     out = {
         "ok": True,
@@ -1078,8 +1646,6 @@ def agent_pipeline_run():
     return jsonify(out), 200
 
 
-
-
 @bp.route("/evaluation/gate/check", methods=["GET", "POST"])
 def evaluation_gate_check():
     CONFIG = _dep("CONFIG")
@@ -1097,9 +1663,16 @@ def evaluation_gate_check():
     baseline = {}  # could be extended to load baseline
     checks = {
         "pf": (ms.get("pf") is not None) and (float(ms.get("pf")) >= float(thr.get("pf", 1.05))),
-        "dd": (ms.get("maxdd") is not None) and (float(ms.get("maxdd")) <= float(thr.get("dd", 0.95))),
-        "trades": (ms.get("trades") is not None) and (float(ms.get("trades")) >= float(thr.get("trades", 0.7)) * float((baseline.get("trades") or ms.get("trades") or 1))),
-        "winrate": (ms.get("winrate") is not None) and (float(ms.get("winrate")) >= float(thr.get("winrate", 0.95))),
+        "dd": (ms.get("maxdd") is not None)
+        and (float(ms.get("maxdd")) <= float(thr.get("dd", 0.95))),
+        "trades": (ms.get("trades") is not None)
+        and (
+            float(ms.get("trades"))
+            >= float(thr.get("trades", 0.7))
+            * float((baseline.get("trades") or ms.get("trades") or 1))
+        ),
+        "winrate": (ms.get("winrate") is not None)
+        and (float(ms.get("winrate")) >= float(thr.get("winrate", 0.95))),
     }
     passed = all(bool(v) for v in checks.values())
     # POST 时记录审计
@@ -1107,13 +1680,27 @@ def evaluation_gate_check():
         try:
             data = request.get_json(force=True, silent=True) or {}
             tid = str(data.get("trace_id") or "").strip() or uuid.uuid4().hex
-            _audit_emit_action("gate.check", _audit_base_payload(scope="evaluation", action="gate.check", trace_id=tid, extra={"passed": bool(passed), "checks": checks}))
+            _audit_emit_action(
+                "gate.check",
+                _audit_base_payload(
+                    scope="evaluation",
+                    action="gate.check",
+                    trace_id=tid,
+                    extra={"passed": bool(passed), "checks": checks},
+                ),
+            )
         except Exception:
             pass
-    return jsonify({"ok": True, "passed": bool(passed), "checks": checks, "thresholds": thr, "metrics": ms, "ts": int(_now_ms())})
-
-
-
+    return jsonify(
+        {
+            "ok": True,
+            "passed": bool(passed),
+            "checks": checks,
+            "thresholds": thr,
+            "metrics": ms,
+            "ts": int(_now_ms()),
+        }
+    )
 
 
 @bp.route("/agent/approvals/request", methods=["POST"])
@@ -1153,14 +1740,29 @@ def agent_approvals_request():
     if not rid:
         return jsonify({"ok": False, "error": "write_failed", "ts": int(_now_ms())}), 500
     try:
-        _audit_emit_action("approval.requested", _audit_base_payload(scope="governance", action="approval.requested", trace_id=trace_id, extra={"approval_id": rid, "draft_id": draft_id, "action": action}))
+        _audit_emit_action(
+            "approval.requested",
+            _audit_base_payload(
+                scope="governance",
+                action="approval.requested",
+                trace_id=trace_id,
+                extra={"approval_id": rid, "draft_id": draft_id, "action": action},
+            ),
+        )
     except Exception:
         pass
-    return jsonify({"ok": True, "approval_id": rid, "trace_id": trace_id, "decision": "pending", "ts": int(_now_ms())}), 200
-
-
-
-
+    return (
+        jsonify(
+            {
+                "ok": True,
+                "approval_id": rid,
+                "trace_id": trace_id,
+                "decision": "pending",
+                "ts": int(_now_ms()),
+            }
+        ),
+        200,
+    )
 
 
 @bp.route("/agent/approvals/list", methods=["GET"])
@@ -1199,11 +1801,18 @@ def agent_approvals_list():
                     items.append(_json_sanitize(obj))
     except Exception:
         pass
-    return jsonify({"ok": True, "status": status, "count": len(items), "items": items, "ts": int(_now_ms())}), 200
-
-
-
-
+    return (
+        jsonify(
+            {
+                "ok": True,
+                "status": status,
+                "count": len(items),
+                "items": items,
+                "ts": int(_now_ms()),
+            }
+        ),
+        200,
+    )
 
 
 @bp.route("/agent/approvals/action", methods=["POST"])
@@ -1240,7 +1849,8 @@ def agent_approvals_action():
         "approver": approver,
         "decision": norm_decision,
         "reason": reason,
-        "action": str(prev.get("action") if isinstance(prev, dict) else "config.apply") or "config.apply",
+        "action": str(prev.get("action") if isinstance(prev, dict) else "config.apply")
+        or "config.apply",
         "draft_id": str(prev.get("draft_id") if isinstance(prev, dict) else "") or "",
         "changeset": chg,
         "gate_results": gate,
@@ -1251,14 +1861,28 @@ def agent_approvals_action():
     }
     rid = _approval_append(ent)
     try:
-        _audit_emit_action(f"approval.{norm_decision}", _audit_base_payload(scope="governance", action=f"approval.{norm_decision}", trace_id=trace_id, extra={"approval_id": approval_id, "approver": approver, "reason": reason}))
+        _audit_emit_action(
+            f"approval.{norm_decision}",
+            _audit_base_payload(
+                scope="governance",
+                action=f"approval.{norm_decision}",
+                trace_id=trace_id,
+                extra={"approval_id": approval_id, "approver": approver, "reason": reason},
+            ),
+        )
     except Exception:
         pass
-    return jsonify({"ok": True, "approval_id": rid or approval_id, "decision": norm_decision, "ts": int(_now_ms())}), 200
-
-
-
-
+    return (
+        jsonify(
+            {
+                "ok": True,
+                "approval_id": rid or approval_id,
+                "decision": norm_decision,
+                "ts": int(_now_ms()),
+            }
+        ),
+        200,
+    )
 
 
 @bp.route("/agent/audit/record", methods=["POST"])
@@ -1277,11 +1901,14 @@ def agent_audit_record():
     extra = data.get("extra") if isinstance(data.get("extra"), dict) else {}
     if stage:
         extra["stage"] = stage
-    payload = _audit_base_payload(scope=str(data.get("scope") or "governance"), action=name, trace_id=trace_id, extra=extra if extra else None)
+    payload = _audit_base_payload(
+        scope=str(data.get("scope") or "governance"),
+        action=name,
+        trace_id=trace_id,
+        extra=extra if extra else None,
+    )
     _audit_emit_action(name, payload)
     return jsonify({"ok": True, "name": name, "ts": int(_now_ms())}), 200
-
-
 
 
 @bp.route("/strategy/registry", methods=["GET"])
@@ -1305,13 +1932,15 @@ def strategy_registry_get():
             if str(src.get("kind") or "").strip().lower() != "github":
                 continue
             checked += 1
-            need = (not str(src.get("asset_mirror_path") or "").strip()) or (not isinstance(src.get("asset_links"), list))
+            need = (not str(src.get("asset_mirror_path") or "").strip()) or (
+                not isinstance(src.get("asset_links"), list)
+            )
             if not need:
                 try:
                     sid = str(it.get("strategy_id") or "").strip()
                     mp = str(src.get("asset_mirror_path") or "").strip()
                     if sid and mp:
-                        p = Path(mp)
+                        p = Path(mp)  # noqa: F821
                         if p.exists() and p.is_file():
                             try:
                                 txt = p.read_text(encoding="utf-8", errors="ignore")
@@ -1319,7 +1948,9 @@ def strategy_registry_get():
                                 txt = p.read_text(errors="ignore")
                             low = txt.lower()
                             sid_low = sid.lower()
-                            if sid_low and (f"class {sid_low}" not in low and f"class\t{sid_low}" not in low):
+                            if sid_low and (
+                                f"class {sid_low}" not in low and f"class\t{sid_low}" not in low
+                            ):
                                 need = True
                         else:
                             need = True
@@ -1342,9 +1973,6 @@ def strategy_registry_get():
     return jsonify({"ok": True, "ts": int(_now_ms()), "entries": items})
 
 
-
-
-
 @bp.route("/strategy/registry/upsert", methods=["POST"])
 def strategy_registry_upsert():
     _audit_base_payload = _dep("_audit_base_payload")
@@ -1357,24 +1985,38 @@ def strategy_registry_upsert():
         return jsonify({"ok": False, "error": "unauthorized"}), 403
     data = request.get_json(force=True) or {}
     trace_id = str(data.get("trace_id") or "").strip() or uuid.uuid4().hex
-    ok_appr, approval_id, err_obj, err_code = _governance_require_approval_or_error(data, trace_id=trace_id, action="strategy.registry.upsert")
+    ok_appr, approval_id, err_obj, err_code = _governance_require_approval_or_error(
+        data, trace_id=trace_id, action="strategy.registry.upsert"
+    )
     if not ok_appr:
         return jsonify(err_obj), int(err_code)
     items = data.get("items") if isinstance(data.get("items"), list) else []
-    ok, saved, err = _strategy_registry_upsert_impl(items=items, trace_id=trace_id, approval_id=approval_id)
+    ok, saved, err = _strategy_registry_upsert_impl(
+        items=items, trace_id=trace_id, approval_id=approval_id
+    )
     if err:
         return jsonify(err), 400
     try:
         _audit_emit_action(
             "strategy.registry.upsert",
-            _audit_base_payload(scope="governance", action="strategy.registry.upsert", trace_id=trace_id, extra={"ok": bool(ok), "saved": int(saved), "approval_id": approval_id}),
+            _audit_base_payload(
+                scope="governance",
+                action="strategy.registry.upsert",
+                trace_id=trace_id,
+                extra={"ok": bool(ok), "saved": int(saved), "approval_id": approval_id},
+            ),
         )
     except Exception:
         pass
-    return jsonify({"ok": bool(ok), "saved": int(saved), "trace_id": trace_id, "approval_id": approval_id, "ts": int(_now_ms())})
-
-
-
+    return jsonify(
+        {
+            "ok": bool(ok),
+            "saved": int(saved),
+            "trace_id": trace_id,
+            "approval_id": approval_id,
+            "ts": int(_now_ms()),
+        }
+    )
 
 
 @bp.route("/strategy/registry/import_active", methods=["POST"])
@@ -1393,13 +2035,20 @@ def strategy_registry_import_active():
         return jsonify({"ok": False, "error": "unauthorized"}), 403
     data = request.get_json(force=True) or {}
     trace_id = str(data.get("trace_id") or "").strip() or uuid.uuid4().hex
-    ok_appr, approval_id, err_obj, err_code = _governance_require_approval_or_error(data, trace_id=trace_id, action="strategy.registry.import_active")
+    ok_appr, approval_id, err_obj, err_code = _governance_require_approval_or_error(
+        data, trace_id=trace_id, action="strategy.registry.import_active"
+    )
     if not ok_appr:
         return jsonify(err_obj), int(err_code)
 
     source_zip = str(data.get("source_zip") or "*").strip() or "*"
     if source_zip != "*":
-        if (not source_zip.lower().endswith(".zip")) or (".." in source_zip) or ("/" in source_zip) or ("\\" in source_zip):
+        if (
+            (not source_zip.lower().endswith(".zip"))
+            or (".." in source_zip)
+            or ("/" in source_zip)
+            or ("\\" in source_zip)
+        ):
             return jsonify({"ok": False, "error": "bad_source_zip"}), 400
 
     stage_default = str(data.get("stage") or "deployment").strip() or "deployment"
@@ -1425,8 +2074,14 @@ def strategy_registry_import_active():
         fam = _infer_strategy_family_from_id(sid)
         fam_n = _strategy_family_normalize(fam) or "trend"
         feats = sm.get(sid) if isinstance(sm, dict) else None
-        group_id = str((feats or {}).get("group_id") or "").strip() if isinstance(feats, dict) else ""
-        feature_set_id = str((feats or {}).get("feature_set_id") or "").strip() if isinstance(feats, dict) else ""
+        group_id = (
+            str((feats or {}).get("group_id") or "").strip() if isinstance(feats, dict) else ""
+        )
+        feature_set_id = (
+            str((feats or {}).get("feature_set_id") or "").strip()
+            if isinstance(feats, dict)
+            else ""
+        )
         tags = ["active", "in_use"]
         if group_id:
             tags.append(f"gid:{group_id}")
@@ -1440,25 +2095,49 @@ def strategy_registry_import_active():
                 "stage": stage_n,
                 "tags": tags,
                 "robustness": "unknown",
-                "features": {"group_id": group_id or None, "feature_set_id": feature_set_id or None},
+                "features": {
+                    "group_id": group_id or None,
+                    "feature_set_id": feature_set_id or None,
+                },
                 "source": {"kind": "import_active", "ts": int(_now_ms())},
             }
         )
 
-    ok, saved, err = _strategy_registry_upsert_impl(items=items, trace_id=trace_id, approval_id=approval_id)
+    ok, saved, err = _strategy_registry_upsert_impl(
+        items=items, trace_id=trace_id, approval_id=approval_id
+    )
     if err:
         return jsonify(err), 400
     try:
         _audit_emit_action(
             "strategy.registry.import_active",
-            _audit_base_payload(scope="governance", action="strategy.registry.import_active", trace_id=trace_id, extra={"ok": bool(ok), "saved": int(saved), "approval_id": approval_id, "source_zip": source_zip}),
+            _audit_base_payload(
+                scope="governance",
+                action="strategy.registry.import_active",
+                trace_id=trace_id,
+                extra={
+                    "ok": bool(ok),
+                    "saved": int(saved),
+                    "approval_id": approval_id,
+                    "source_zip": source_zip,
+                },
+            ),
         )
     except Exception:
         pass
-    return jsonify({"ok": bool(ok), "saved": int(saved), "trace_id": trace_id, "approval_id": approval_id, "source_zip": source_zip, "ts": int(_now_ms())}), 200
-
-
-
+    return (
+        jsonify(
+            {
+                "ok": bool(ok),
+                "saved": int(saved),
+                "trace_id": trace_id,
+                "approval_id": approval_id,
+                "source_zip": source_zip,
+                "ts": int(_now_ms()),
+            }
+        ),
+        200,
+    )
 
 
 @bp.route("/strategy/registry/sync_from_zip", methods=["POST"])
@@ -1475,7 +2154,9 @@ def strategy_registry_sync_from_zip():
         return jsonify({"ok": False, "error": "unauthorized"}), 403
     data = request.get_json(force=True) or {}
     trace_id = str(data.get("trace_id") or "").strip() or uuid.uuid4().hex
-    ok_appr, approval_id, err_obj, err_code = _governance_require_approval_or_error(data, trace_id=trace_id, action="strategy.registry.sync_from_zip")
+    ok_appr, approval_id, err_obj, err_code = _governance_require_approval_or_error(
+        data, trace_id=trace_id, action="strategy.registry.sync_from_zip"
+    )
     if not ok_appr:
         return jsonify(err_obj), int(err_code)
     name = data.get("zip")
@@ -1486,17 +2167,31 @@ def strategy_registry_sync_from_zip():
     if (not zip_path.exists()) or (not zip_path.is_file()):
         return jsonify({"ok": False, "error": "backtest_zip_not_found"}), 404
 
-    gate_err, gate_code = _characterization_gate_check_or_error(action="strategy.registry.sync_from_zip", config_keys=None)
+    gate_err, gate_code = _characterization_gate_check_or_error(
+        action="strategy.registry.sync_from_zip", config_keys=None
+    )
     if gate_err is not None and gate_code is not None:
         gate_err["trace_id"] = trace_id
         gate_err["approval_id"] = approval_id
         return jsonify(_json_sanitize(gate_err)), int(gate_code)
 
-    out, code = _strategy_registry_sync_from_zip_impl(data=data, zip_path=Path(zip_path))
+    out, code = _strategy_registry_sync_from_zip_impl(
+        data=data, zip_path=Path(zip_path)  # noqa: F821
+    )  # noqa: F821
     try:
         _audit_emit_action(
             "strategy.registry.sync_from_zip",
-            _audit_base_payload(scope="governance", action="strategy.registry.sync_from_zip", trace_id=trace_id, extra={"ok": (bool(out.get("ok")) if isinstance(out, dict) else None), "http": int(code), "zip": str(s), "approval_id": approval_id}),
+            _audit_base_payload(
+                scope="governance",
+                action="strategy.registry.sync_from_zip",
+                trace_id=trace_id,
+                extra={
+                    "ok": (bool(out.get("ok")) if isinstance(out, dict) else None),
+                    "http": int(code),
+                    "zip": str(s),
+                    "approval_id": approval_id,
+                },
+            ),
         )
     except Exception:
         pass
@@ -1504,9 +2199,6 @@ def strategy_registry_sync_from_zip():
         out["trace_id"] = trace_id
         out["approval_id"] = approval_id
     return jsonify(out), int(code)
-
-
-
 
 
 @bp.route("/strategy/registry/run_and_sync", methods=["POST"])
@@ -1525,14 +2217,25 @@ def strategy_registry_run_and_sync():
         return jsonify({"ok": False, "error": "unauthorized"}), 403
     data = request.get_json(force=True) or {}
     trace_id = str(data.get("trace_id") or "").strip() or uuid.uuid4().hex
-    ok_appr, approval_id, err_obj, err_code = _governance_require_approval_or_error(data, trace_id=trace_id, action="strategy.registry.run_and_sync")
+    ok_appr, approval_id, err_obj, err_code = _governance_require_approval_or_error(
+        data, trace_id=trace_id, action="strategy.registry.run_and_sync"
+    )
     if not ok_appr:
         return jsonify(err_obj), int(err_code)
     sid = str(data.get("strategy_id") or "").strip()
     if not sid:
         return jsonify({"ok": False, "error": "missing_strategy_id"}), 400
-    config_path = str(data.get("config") or "user_data/config_local_backtest.json").strip() or "user_data/config_local_backtest.json"
-    if (".." in config_path) or config_path.startswith("/") or config_path.startswith("\\") or (not config_path.startswith("user_data/")) or (not config_path.lower().endswith(".json")):
+    config_path = (
+        str(data.get("config") or "user_data/config_local_backtest.json").strip()
+        or "user_data/config_local_backtest.json"
+    )
+    if (
+        (".." in config_path)
+        or config_path.startswith("/")
+        or config_path.startswith("\\")
+        or (not config_path.startswith("user_data/"))
+        or (not config_path.lower().endswith(".json"))
+    ):
         return jsonify({"ok": False, "error": "bad_config"}), 400
     timerange = data.get("timerange")
     timerange_s = None if timerange is None else str(timerange).strip()
@@ -1547,19 +2250,49 @@ def strategy_registry_run_and_sync():
     bt = _run_backtest(config_path, timerange_s, strategy=sid, timeout_sec=timeout_sec)
     if not bool(bt.get("ok")):
         return (
-            jsonify({"ok": False, "error": "backtest_failed", "trace_id": trace_id, "approval_id": approval_id, "backtest": bt}),
+            jsonify(
+                {
+                    "ok": False,
+                    "error": "backtest_failed",
+                    "trace_id": trace_id,
+                    "approval_id": approval_id,
+                    "backtest": bt,
+                }
+            ),
             200,
         )
     zip_name = str(bt.get("result_zip") or "").strip()
-    if (not zip_name) or (not zip_name.lower().endswith(".zip")) or (".." in zip_name) or ("/" in zip_name) or ("\\" in zip_name):
+    if (
+        (not zip_name)
+        or (not zip_name.lower().endswith(".zip"))
+        or (".." in zip_name)
+        or ("/" in zip_name)
+        or ("\\" in zip_name)
+    ):
         return (
-            jsonify({"ok": False, "error": "bad_result_zip", "trace_id": trace_id, "approval_id": approval_id, "backtest": bt}),
+            jsonify(
+                {
+                    "ok": False,
+                    "error": "bad_result_zip",
+                    "trace_id": trace_id,
+                    "approval_id": approval_id,
+                    "backtest": bt,
+                }
+            ),
             200,
         )
     zip_path = _backtests_dir() / zip_name
     if (not zip_path.exists()) or (not zip_path.is_file()):
         return (
-            jsonify({"ok": False, "error": "backtest_zip_not_found", "trace_id": trace_id, "approval_id": approval_id, "backtest": bt}),
+            jsonify(
+                {
+                    "ok": False,
+                    "error": "backtest_zip_not_found",
+                    "trace_id": trace_id,
+                    "approval_id": approval_id,
+                    "backtest": bt,
+                }
+            ),
             200,
         )
 
@@ -1576,33 +2309,76 @@ def strategy_registry_run_and_sync():
     if payload.get("n_slices") is None:
         payload["n_slices"] = 6
 
-    gate_err, gate_code = _characterization_gate_check_or_error(action="strategy.registry.run_and_sync", config_keys=None)
+    gate_err, gate_code = _characterization_gate_check_or_error(
+        action="strategy.registry.run_and_sync", config_keys=None
+    )
     if gate_err is not None and gate_code is not None:
         gate_err["trace_id"] = trace_id
         gate_err["approval_id"] = approval_id
         return jsonify(_json_sanitize(gate_err)), int(gate_code)
 
-    out, code = _strategy_registry_sync_from_zip_impl(data=payload, zip_path=Path(zip_path))
+    out, code = _strategy_registry_sync_from_zip_impl(
+        data=payload, zip_path=Path(zip_path)  # noqa: F821
+    )  # noqa: F821
     if int(code) != 200 or not bool(out.get("ok")):
         try:
             _audit_emit_action(
                 "strategy.registry.run_and_sync",
-                _audit_base_payload(scope="governance", action="strategy.registry.run_and_sync", trace_id=trace_id, extra={"ok": False, "http": int(code), "strategy_id": sid, "approval_id": approval_id, "error": out.get("error") if isinstance(out, dict) else None}),
+                _audit_base_payload(
+                    scope="governance",
+                    action="strategy.registry.run_and_sync",
+                    trace_id=trace_id,
+                    extra={
+                        "ok": False,
+                        "http": int(code),
+                        "strategy_id": sid,
+                        "approval_id": approval_id,
+                        "error": out.get("error") if isinstance(out, dict) else None,
+                    },
+                ),
             )
         except Exception:
             pass
-        return jsonify({"ok": False, "error": out.get("error") or "sync_failed", "trace_id": trace_id, "approval_id": approval_id, "backtest": bt, "sync": out}), int(code)
+        return jsonify(
+            {
+                "ok": False,
+                "error": out.get("error") or "sync_failed",
+                "trace_id": trace_id,
+                "approval_id": approval_id,
+                "backtest": bt,
+                "sync": out,
+            }
+        ), int(code)
     try:
         _audit_emit_action(
             "strategy.registry.run_and_sync",
-            _audit_base_payload(scope="governance", action="strategy.registry.run_and_sync", trace_id=trace_id, extra={"ok": True, "strategy_id": sid, "approval_id": approval_id, "zip": str(zip_name)}),
+            _audit_base_payload(
+                scope="governance",
+                action="strategy.registry.run_and_sync",
+                trace_id=trace_id,
+                extra={
+                    "ok": True,
+                    "strategy_id": sid,
+                    "approval_id": approval_id,
+                    "zip": str(zip_name),
+                },
+            ),
         )
     except Exception:
         pass
-    return jsonify({"ok": True, "ts": int(_now_ms()), "trace_id": trace_id, "approval_id": approval_id, "backtest": bt, "sync": out}), 200
-
-
-
+    return (
+        jsonify(
+            {
+                "ok": True,
+                "ts": int(_now_ms()),
+                "trace_id": trace_id,
+                "approval_id": approval_id,
+                "backtest": bt,
+                "sync": out,
+            }
+        ),
+        200,
+    )
 
 
 @bp.route("/strategy/registry/event", methods=["POST"])
@@ -1627,14 +2403,21 @@ def strategy_registry_event_append():
     data = request.get_json(force=True) or {}
     trace_id_in = str(data.get("trace_id") or "").strip() or None
     trace_id_appr = trace_id_in or uuid.uuid4().hex
-    ok_appr, approval_id, err_obj, err_code = _governance_require_approval_or_error(data, trace_id=trace_id_appr, action="strategy.registry.event")
+    ok_appr, approval_id, err_obj, err_code = _governance_require_approval_or_error(
+        data, trace_id=trace_id_appr, action="strategy.registry.event"
+    )
     if not ok_appr:
         return jsonify(err_obj), int(err_code)
     sid = str(data.get("strategy_id") or "").strip()
     source_zip = str(data.get("source_zip") or "").strip()
     if (not sid) or (not source_zip):
         return jsonify({"ok": False, "error": "missing_key"}), 400
-    if (not source_zip.lower().endswith(".zip")) or (".." in source_zip) or ("/" in source_zip) or ("\\" in source_zip):
+    if (
+        (not source_zip.lower().endswith(".zip"))
+        or (".." in source_zip)
+        or ("/" in source_zip)
+        or ("\\" in source_zip)
+    ):
         return jsonify({"ok": False, "error": "bad_source_zip"}), 400
 
     kind = str(data.get("kind") or "").strip().lower()
@@ -1673,7 +2456,7 @@ def strategy_registry_event_append():
     }
 
     out = dict(existing)
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now_iso = datetime.now(timezone.utc).isoformat()  # noqa: F821
     if kind == "rollout":
         status = str(payload.get("status") or "").strip().lower()
         if status not in {"planned", "canary", "full", "paused", "completed", "failed"}:
@@ -1732,7 +2515,7 @@ def strategy_registry_event_append():
             reason = str(payload.get("tier_reason") or "").strip()
             if not reason and not note:
                 return jsonify({"ok": False, "error": "missing_tier_reason"}), 400
-        out["tier"] = ("unrated" if t == "UNRATED" else t)
+        out["tier"] = "unrated" if t == "UNRATED" else t
         if payload.get("tier_reason") is not None:
             out["tier_reason"] = str(payload.get("tier_reason") or "").strip()
         if payload.get("baseline_ref") is not None:
@@ -1795,7 +2578,7 @@ def strategy_registry_event_append():
             if not str(out.get("approved_by") or "").strip():
                 return jsonify({"ok": False, "error": "approval_required"}), 400
             if not _iso_from_any(out.get("approved_at")):
-                out["approved_at"] = datetime.now(timezone.utc).isoformat()
+                out["approved_at"] = datetime.now(timezone.utc).isoformat()  # noqa: F821
 
         ok2, reason2 = _strategy_lifecycle_prereq_ok(to_state=nxt, entry=out)
         if not ok2:
@@ -1841,14 +2624,32 @@ def strategy_registry_event_append():
     try:
         _audit_emit_action(
             "strategy.registry.event",
-            _audit_base_payload(scope="governance", action="strategy.registry.event", trace_id=trace_id_appr, extra={"ok": True, "kind": kind, "strategy_id": sid, "source_zip": source_zip, "approval_id": approval_id, "trace_id": trace_id}),
+            _audit_base_payload(
+                scope="governance",
+                action="strategy.registry.event",
+                trace_id=trace_id_appr,
+                extra={
+                    "ok": True,
+                    "kind": kind,
+                    "strategy_id": sid,
+                    "source_zip": source_zip,
+                    "approval_id": approval_id,
+                    "trace_id": trace_id,
+                },
+            ),
         )
     except Exception:
         pass
-    return jsonify({"ok": True, "ts": int(_now_ms()), "event": evt, "entry": out, "approval_id": approval_id, "trace_id": trace_id_appr})
-
-
-
+    return jsonify(
+        {
+            "ok": True,
+            "ts": int(_now_ms()),
+            "event": evt,
+            "entry": out,
+            "approval_id": approval_id,
+            "trace_id": trace_id_appr,
+        }
+    )
 
 
 @bp.route("/strategy/registry/events", methods=["GET"])
@@ -1860,7 +2661,12 @@ def strategy_registry_events_get():
     source_zip = str(request.args.get("source_zip") or "").strip()
     if (not sid) or (not source_zip):
         return jsonify({"ok": False, "error": "missing_key"}), 400
-    if (not source_zip.lower().endswith(".zip")) or (".." in source_zip) or ("/" in source_zip) or ("\\" in source_zip):
+    if (
+        (not source_zip.lower().endswith(".zip"))
+        or (".." in source_zip)
+        or ("/" in source_zip)
+        or ("\\" in source_zip)
+    ):
         return jsonify({"ok": False, "error": "bad_source_zip"}), 400
     try:
         limit = int(request.args.get("limit") or 200)
@@ -1888,9 +2694,6 @@ def strategy_registry_events_get():
             break
     out.reverse()
     return jsonify({"ok": True, "ts": int(_now_ms()), "events": out})
-
-
-
 
 
 @bp.route("/strategy/registry/import_from_github", methods=["POST"])
@@ -1923,7 +2726,9 @@ def strategy_registry_import_from_github():
     trace_id = str(data.get("trace_id") or "").strip() or uuid.uuid4().hex
     confirm_live = bool(data.get("confirm_live", False))
     data.pop("confirm_live", None)
-    ok_appr, approval_id, err_obj, err_code = _governance_require_approval_or_error(data, trace_id=trace_id, action="strategy.registry.import_from_github")
+    ok_appr, approval_id, err_obj, err_code = _governance_require_approval_or_error(
+        data, trace_id=trace_id, action="strategy.registry.import_from_github"
+    )
     if not ok_appr:
         return jsonify(err_obj), int(err_code)
     if (not _is_local_request()) and (not bool(confirm_live)):
@@ -1933,9 +2738,20 @@ def strategy_registry_import_from_github():
 
     family = str(data.get("family") or "trend").strip() or "trend"
     stage = str(data.get("stage") or "research").strip() or "research"
-    timerange = (None if data.get("timerange") is None else str(data.get("timerange")).strip()) or None
-    config_path = str(data.get("config") or "user_data/config_local_backtest.json").strip() or "user_data/config_local_backtest.json"
-    if (".." in config_path) or config_path.startswith("/") or config_path.startswith("\\") or (not config_path.startswith("user_data/")) or (not config_path.lower().endswith(".json")):
+    timerange = (
+        None if data.get("timerange") is None else str(data.get("timerange")).strip()
+    ) or None
+    config_path = (
+        str(data.get("config") or "user_data/config_local_backtest.json").strip()
+        or "user_data/config_local_backtest.json"
+    )
+    if (
+        (".." in config_path)
+        or config_path.startswith("/")
+        or config_path.startswith("\\")
+        or (not config_path.startswith("user_data/"))
+        or (not config_path.lower().endswith(".json"))
+    ):
         return jsonify({"ok": False, "error": "bad_config"}), 400
     try:
         timeout_sec = float(data.get("timeout_sec", 1800) or 1800)
@@ -1963,7 +2779,9 @@ def strategy_registry_import_from_github():
     subpath = data.get("path")
     strategy_name = data.get("strategy_name")
 
-    repo_from_tree, tree_branch, tree_subpath = _parse_github_tree_url(str(url or repo_url_raw or ""))
+    repo_from_tree, tree_branch, tree_subpath = _parse_github_tree_url(
+        str(url or repo_url_raw or "")
+    )
     if repo_from_tree:
         repo_url_raw = repo_from_tree
         if (not branch) and tree_branch:
@@ -1973,47 +2791,127 @@ def strategy_registry_import_from_github():
 
     repo_url = _normalize_repo_url(repo_url_raw)
     if not repo_url:
-        _agent_outbox_append_jsonl("chat.jsonl", {"id": uuid.uuid4().hex, "trace_id": trace_id, "ts": int(_now_ms()), "type": "strategy.import.error", "error": "missing_repo_url"})
+        _agent_outbox_append_jsonl(
+            "chat.jsonl",
+            {
+                "id": uuid.uuid4().hex,
+                "trace_id": trace_id,
+                "ts": int(_now_ms()),
+                "type": "strategy.import.error",
+                "error": "missing_repo_url",
+            },
+        )
         return jsonify({"ok": False, "error": "missing_repo_url", "trace_id": trace_id}), 400
     if not _repo_url_allowed(repo_url):
-        _agent_outbox_append_jsonl("chat.jsonl", {"id": uuid.uuid4().hex, "trace_id": trace_id, "ts": int(_now_ms()), "type": "strategy.import.error", "error": "repo_not_whitelisted", "repo_url": repo_url})
-        return jsonify({"ok": False, "error": "repo_not_whitelisted", "trace_id": trace_id, "repo_url": repo_url}), 403
+        _agent_outbox_append_jsonl(
+            "chat.jsonl",
+            {
+                "id": uuid.uuid4().hex,
+                "trace_id": trace_id,
+                "ts": int(_now_ms()),
+                "type": "strategy.import.error",
+                "error": "repo_not_whitelisted",
+                "repo_url": repo_url,
+            },
+        )
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "error": "repo_not_whitelisted",
+                    "trace_id": trace_id,
+                    "repo_url": repo_url,
+                }
+            ),
+            403,
+        )
 
     if subpath and str(subpath).strip().lower().endswith(".py"):
         try:
-            pp = Path(str(subpath).strip())
+            pp = Path(str(subpath).strip())  # noqa: F821
             if not strategy_name:
                 strategy_name = pp.stem
             parent = str(pp.parent).strip()
-            subpath = (None if (not parent) or parent == "." else parent)
+            subpath = None if (not parent) or parent == "." else parent
         except Exception:
             pass
 
     ok, head, repo_path, err = _repo_ensure_cached(repo_url, branch=branch, commit=commit)
     if (not ok) or repo_path is None:
-        _agent_outbox_append_jsonl("chat.jsonl", {"id": uuid.uuid4().hex, "trace_id": trace_id, "ts": int(_now_ms()), "type": "strategy.import.error", "error": "repo_fetch_failed", "detail": err})
-        return jsonify({"ok": False, "error": "repo_fetch_failed", "detail": err, "trace_id": trace_id}), 500
+        _agent_outbox_append_jsonl(
+            "chat.jsonl",
+            {
+                "id": uuid.uuid4().hex,
+                "trace_id": trace_id,
+                "ts": int(_now_ms()),
+                "type": "strategy.import.error",
+                "error": "repo_fetch_failed",
+                "detail": err,
+            },
+        )
+        return (
+            jsonify(
+                {"ok": False, "error": "repo_fetch_failed", "detail": err, "trace_id": trace_id}
+            ),
+            500,
+        )
 
     repo_id = _repo_id_from_url(repo_url)
     commit_id = str(head or "")
     if not commit_id:
-        _agent_outbox_append_jsonl("chat.jsonl", {"id": uuid.uuid4().hex, "trace_id": trace_id, "ts": int(_now_ms()), "type": "strategy.import.error", "error": "commit_not_found"})
+        _agent_outbox_append_jsonl(
+            "chat.jsonl",
+            {
+                "id": uuid.uuid4().hex,
+                "trace_id": trace_id,
+                "ts": int(_now_ms()),
+                "type": "strategy.import.error",
+                "error": "commit_not_found",
+            },
+        )
         return jsonify({"ok": False, "error": "commit_not_found", "trace_id": trace_id}), 500
 
-    stage_ok, sandbox_path, files, stage_err, diff_summary = _strategy_sandbox_stage(repo_path, subpath, repo_id, commit_id, strategy_name=strategy_name)
+    stage_ok, sandbox_path, files, stage_err, diff_summary = _strategy_sandbox_stage(
+        repo_path, subpath, repo_id, commit_id, strategy_name=strategy_name
+    )
     if not stage_ok:
-        _agent_outbox_append_jsonl("chat.jsonl", {"id": uuid.uuid4().hex, "trace_id": trace_id, "ts": int(_now_ms()), "type": "strategy.import.error", "error": stage_err})
+        _agent_outbox_append_jsonl(
+            "chat.jsonl",
+            {
+                "id": uuid.uuid4().hex,
+                "trace_id": trace_id,
+                "ts": int(_now_ms()),
+                "type": "strategy.import.error",
+                "error": stage_err,
+            },
+        )
         return jsonify({"ok": False, "error": stage_err, "trace_id": trace_id}), 400
 
     if not strategy_name:
         try:
-            stems = sorted({Path(x).stem for x in (files or []) if str(x).lower().endswith(".py")})
+            stems = sorted(
+                {
+                    Path(x).stem  # noqa: F821
+                    for x in (files or [])
+                    if str(x).lower().endswith(".py")  # noqa: F821
+                }  # noqa: F821
+            )  # noqa: F821
         except Exception:
             stems = []
         if len(stems) == 1:
             strategy_name = stems[0]
         else:
-            return jsonify({"ok": False, "error": "missing_strategy_name", "trace_id": trace_id, "candidates": stems}), 400
+            return (
+                jsonify(
+                    {
+                        "ok": False,
+                        "error": "missing_strategy_name",
+                        "trace_id": trace_id,
+                        "candidates": stems,
+                    }
+                ),
+                400,
+            )
 
     _repo_update_registry(repo_id, repo_url, repo_path, commit_id)
     _agent_outbox_append_jsonl(
@@ -2032,26 +2930,109 @@ def strategy_registry_import_from_github():
         },
     )
 
-    files2 = _strategy_pick_files(Path(str(sandbox_path)), strategy_name=str(strategy_name))
+    files2 = _strategy_pick_files(
+        Path(str(sandbox_path)), strategy_name=str(strategy_name)  # noqa: F821
+    )  # noqa: F821
     hits2 = _strategy_scan_forbidden(files2) if files2 else [{"file": "(none)", "rule": "missing"}]
     if hits2:
-        _agent_outbox_append_jsonl("chat.jsonl", {"id": uuid.uuid4().hex, "trace_id": trace_id, "ts": int(_now_ms()), "type": "strategy.import.scan", "ok": False, "hits": hits2})
-        return jsonify({"ok": False, "error": "strategy_forbidden_tokens", "hits": hits2, "trace_id": trace_id}), 400
-    _agent_outbox_append_jsonl("chat.jsonl", {"id": uuid.uuid4().hex, "trace_id": trace_id, "ts": int(_now_ms()), "type": "strategy.import.scan", "ok": True, "files": [str(x.name) for x in (files2 or [])]})
+        _agent_outbox_append_jsonl(
+            "chat.jsonl",
+            {
+                "id": uuid.uuid4().hex,
+                "trace_id": trace_id,
+                "ts": int(_now_ms()),
+                "type": "strategy.import.scan",
+                "ok": False,
+                "hits": hits2,
+            },
+        )
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "error": "strategy_forbidden_tokens",
+                    "hits": hits2,
+                    "trace_id": trace_id,
+                }
+            ),
+            400,
+        )
+    _agent_outbox_append_jsonl(
+        "chat.jsonl",
+        {
+            "id": uuid.uuid4().hex,
+            "trace_id": trace_id,
+            "ts": int(_now_ms()),
+            "type": "strategy.import.scan",
+            "ok": True,
+            "files": [str(x.name) for x in (files2 or [])],
+        },
+    )
 
-    bt = _run_backtest(config_path, timerange, strategy=strategy_name, strategy_path=str(sandbox_path), timeout_sec=timeout_sec)
+    bt = _run_backtest(
+        config_path,
+        timerange,
+        strategy=strategy_name,
+        strategy_path=str(sandbox_path),
+        timeout_sec=timeout_sec,
+    )
     if not bool(bt.get("ok")):
-        _agent_outbox_append_jsonl("chat.jsonl", {"id": uuid.uuid4().hex, "trace_id": trace_id, "ts": int(_now_ms()), "type": "strategy.import.backtest", "ok": False, "backtest": bt})
-        return jsonify({"ok": False, "error": "backtest_failed", "backtest": bt, "trace_id": trace_id}), 500
+        _agent_outbox_append_jsonl(
+            "chat.jsonl",
+            {
+                "id": uuid.uuid4().hex,
+                "trace_id": trace_id,
+                "ts": int(_now_ms()),
+                "type": "strategy.import.backtest",
+                "ok": False,
+                "backtest": bt,
+            },
+        )
+        return (
+            jsonify(
+                {"ok": False, "error": "backtest_failed", "backtest": bt, "trace_id": trace_id}
+            ),
+            500,
+        )
 
     zip_name = str(bt.get("result_zip") or "").strip()
-    if (not zip_name) or (not zip_name.lower().endswith(".zip")) or (".." in zip_name) or ("/" in zip_name) or ("\\" in zip_name):
-        return jsonify({"ok": False, "error": "bad_result_zip", "backtest": bt, "trace_id": trace_id}), 500
+    if (
+        (not zip_name)
+        or (not zip_name.lower().endswith(".zip"))
+        or (".." in zip_name)
+        or ("/" in zip_name)
+        or ("\\" in zip_name)
+    ):
+        return (
+            jsonify({"ok": False, "error": "bad_result_zip", "backtest": bt, "trace_id": trace_id}),
+            500,
+        )
     zip_path = _backtests_dir() / zip_name
     if (not zip_path.exists()) or (not zip_path.is_file()):
-        return jsonify({"ok": False, "error": "backtest_zip_not_found", "backtest": bt, "trace_id": trace_id}), 500
+        return (
+            jsonify(
+                {
+                    "ok": False,
+                    "error": "backtest_zip_not_found",
+                    "backtest": bt,
+                    "trace_id": trace_id,
+                }
+            ),
+            500,
+        )
 
-    _agent_outbox_append_jsonl("chat.jsonl", {"id": uuid.uuid4().hex, "trace_id": trace_id, "ts": int(_now_ms()), "type": "strategy.import.backtest", "ok": True, "zip": zip_name, "metrics_summary": bt.get("metrics_summary")})
+    _agent_outbox_append_jsonl(
+        "chat.jsonl",
+        {
+            "id": uuid.uuid4().hex,
+            "trace_id": trace_id,
+            "ts": int(_now_ms()),
+            "type": "strategy.import.backtest",
+            "ok": True,
+            "zip": zip_name,
+            "metrics_summary": bt.get("metrics_summary"),
+        },
+    )
 
     tags = data.get("tags") if isinstance(data.get("tags"), list) else None
     sync_payload: Dict[str, Any] = {
@@ -2083,17 +3064,48 @@ def strategy_registry_import_from_github():
         "ts": int(_now_ms()),
     }
 
-    out, code = _strategy_registry_sync_from_zip_impl(data=sync_payload, zip_path=Path(zip_path))
-    _agent_outbox_append_jsonl("chat.jsonl", {"id": uuid.uuid4().hex, "trace_id": trace_id, "ts": int(_now_ms()), "type": "strategy.import.sync", "ok": bool(out.get("ok")), "sync": out})
+    out, code = _strategy_registry_sync_from_zip_impl(
+        data=sync_payload, zip_path=Path(zip_path)  # noqa: F821
+    )  # noqa: F821
+    _agent_outbox_append_jsonl(
+        "chat.jsonl",
+        {
+            "id": uuid.uuid4().hex,
+            "trace_id": trace_id,
+            "ts": int(_now_ms()),
+            "type": "strategy.import.sync",
+            "ok": bool(out.get("ok")),
+            "sync": out,
+        },
+    )
 
     if int(code) != 200 or (not bool(out.get("ok"))):
-        return jsonify({"ok": False, "error": out.get("error") or "sync_failed", "trace_id": trace_id, "backtest": bt, "sync": out}), int(code)
+        return jsonify(
+            {
+                "ok": False,
+                "error": out.get("error") or "sync_failed",
+                "trace_id": trace_id,
+                "backtest": bt,
+                "sync": out,
+            }
+        ), int(code)
 
-    resp = {"ok": True, "ts": int(_now_ms()), "trace_id": trace_id, "approval_id": approval_id, "repo": {"repo_url": repo_url, "repo_id": repo_id, "commit": commit_id, "sandbox_path": sandbox_path, "files": files}, "backtest": bt, "sync": out}
+    resp = {
+        "ok": True,
+        "ts": int(_now_ms()),
+        "trace_id": trace_id,
+        "approval_id": approval_id,
+        "repo": {
+            "repo_url": repo_url,
+            "repo_id": repo_id,
+            "commit": commit_id,
+            "sandbox_path": sandbox_path,
+            "files": files,
+        },
+        "backtest": bt,
+        "sync": out,
+    }
     return jsonify(resp), 200
-
-
-
 
 
 __all__ = ["bp"]

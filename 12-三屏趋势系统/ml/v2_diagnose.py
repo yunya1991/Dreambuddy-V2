@@ -3,12 +3,13 @@
 分析v2在各个场景下的表现，找出最需要优化的环节。
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import json
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import pandas as pd
+import pandas as pd  # noqa: I001
 import numpy as np
 
 from backtest.strategy import EnhancedMA200Strategy
@@ -35,7 +36,9 @@ def diagnose_v2():
     print("=" * 70)
 
     v2 = EnhancedMA200Strategy(is_btc=True)
-    result = engine.run_scenario_backtest(prices, v2, "v2_diagnose", symbol="BTC", experiment_name="v2_diag")
+    result = engine.run_scenario_backtest(
+        prices, v2, "v2_diagnose", symbol="BTC", experiment_name="v2_diag"
+    )
 
     # 整体表现
     print()
@@ -65,8 +68,8 @@ def diagnose_v2():
     ma = pd.Series(closes).rolling(200, min_periods=200).mean().values
     slope = np.zeros(len(closes))
     for i in range(250, len(closes)):
-        if not np.isnan(ma[i]) and not np.isnan(ma[i-5]):
-            slope[i] = (ma[i] / ma[i-5] - 1) * 100
+        if not np.isnan(ma[i]) and not np.isnan(ma[i - 5]):
+            slope[i] = (ma[i] / ma[i - 5] - 1) * 100
 
     weekly_ma200 = v2._compute_weekly_ma200(prices)
 
@@ -109,7 +112,7 @@ def diagnose_v2():
         state_returns[s] = state_returns.get(s, 0) + strategy_returns.iloc[i]
 
     total_days = sum(state_days.values())
-    total_ret = sum(state_returns.values())
+    total_ret = sum(state_returns.values())  # noqa: F841
 
     for state in ["bull", "dip_buy", "bear_short_l2", "bear_short_l1", "sideways"]:
         days = state_days.get(state, 0)
@@ -129,9 +132,9 @@ def diagnose_v2():
             dip_start = i
         elif s != "dip_buy" and in_dip:
             in_dip = False
-            dip_periods.append((dip_start, i-1))
+            dip_periods.append((dip_start, i - 1))
     if in_dip:
-        dip_periods.append((dip_start, len(states)-1))
+        dip_periods.append((dip_start, len(states) - 1))
 
     print(f"  抄底周期数: {len(dip_periods)} 次")
     for idx, (s, e) in enumerate(dip_periods):
@@ -144,17 +147,19 @@ def diagnose_v2():
 
         # 计算这个周期的策略收益
         period_ret = 1.0
-        for i in range(s, e+1):
+        for i in range(s, e + 1):
             if i > 0:
-                period_ret *= (1 + strategy_returns.iloc[i])
+                period_ret *= 1 + strategy_returns.iloc[i]
 
         # 找最低点
-        period_min = np.min(closes[s:e+1])
-        min_idx = s + np.argmin(closes[s:e+1])
+        period_min = np.min(closes[s : e + 1])
+        min_idx = s + np.argmin(closes[s : e + 1])
         drawdown_from_start = (period_min - start_price) / start_price
 
-        print(f"  周期{idx+1}: {prices.index[s].strftime('%Y-%m-%d')} ~ {prices.index[e].strftime('%Y-%m-%d')} "
-              f"({dur}天)")
+        print(
+            f"  周期{idx+1}: {prices.index[s].strftime('%Y-%m-%d')} ~ {prices.index[e].strftime('%Y-%m-%d')} "
+            f"({dur}天)"
+        )
         print(f"    价格变化: {price_change:.1%}, 策略收益: {period_ret-1:.1%}")
         print(f"    起始仓位: {pos_at_start:.0%}, 结束仓位: {pos_at_end:.0%}")
         print(f"    期间最大跌幅: {drawdown_from_start:.1%} (最低点在第{min_idx-s}天)")
@@ -171,9 +176,9 @@ def diagnose_v2():
             bear_start = i
         elif s not in ("bear_short_l1", "bear_short_l2") and in_bear:
             in_bear = False
-            bear_periods.append((bear_start, i-1))
+            bear_periods.append((bear_start, i - 1))
     if in_bear:
-        bear_periods.append((bear_start, len(states)-1))
+        bear_periods.append((bear_start, len(states) - 1))
 
     print(f"  做空周期数: {len(bear_periods)} 次")
     for idx, (s, e) in enumerate(bear_periods):
@@ -183,12 +188,14 @@ def diagnose_v2():
         price_change = (end_price - start_price) / start_price
 
         period_ret = 1.0
-        for i in range(s, e+1):
+        for i in range(s, e + 1):
             if i > 0:
-                period_ret *= (1 + strategy_returns.iloc[i])
+                period_ret *= 1 + strategy_returns.iloc[i]
 
-        print(f"  周期{idx+1}: {prices.index[s].strftime('%Y-%m-%d')} ~ {prices.index[e].strftime('%Y-%m-%d')} "
-              f"({dur}天)")
+        print(
+            f"  周期{idx+1}: {prices.index[s].strftime('%Y-%m-%d')} ~ {prices.index[e].strftime('%Y-%m-%d')} "
+            f"({dur}天)"
+        )
         print(f"    价格变化: {price_change:.1%}, 策略收益: {period_ret-1:.1%}")
 
     # 目标维度

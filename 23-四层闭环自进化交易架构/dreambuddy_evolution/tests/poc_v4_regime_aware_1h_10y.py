@@ -20,6 +20,7 @@ V4 (regime-aware, last-2y): 目标 MAE < 350 (PoC gate)
   4. evaluate_mae: forecast(history, regime=current_regime) vs GARCH baseline
   5. 闸门: MAE_v4 < 350
 """
+
 from __future__ import annotations
 
 import json
@@ -34,9 +35,12 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
-from dreambuddy_evolution.core.garch_fallback import GARCHFallback
-from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
+from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector  # noqa: E402, I001
+from dreambuddy_evolution.core.garch_fallback import GARCHFallback  # noqa: E402
+from dreambuddy_evolution.core.neural_sde_model import (  # noqa: E402
+    NeuralSDEModel,
+    NeuralSDETrainer,
+)  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -53,8 +57,12 @@ def main():
 
     with open(data_path) as f:
         closes_full = np.array(json.load(f), dtype=np.float64)
-    logger.info("加载 BTC 10y 1h close: %d 点, $%.2f → $%.2f",
-                len(closes_full), closes_full[0], closes_full[-1])
+    logger.info(
+        "加载 BTC 10y 1h close: %d 点, $%.2f → $%.2f",
+        len(closes_full),
+        closes_full[0],
+        closes_full[-1],
+    )
 
     # 切最近 N 年 (1h × 24 × 365 × N 点)
     # YEARS_BACK=10: 用全部 10y 数据 (更多 variety, v4a 10y+balanced MAE=461 是最优)
@@ -65,18 +73,22 @@ def main():
         closes = closes_full[-N_2Y:].copy()
     else:
         closes = closes_full.copy()
-    logger.info("切最近 %dy: %d 点, $%.2f → $%.2f",
-                YEARS_BACK, len(closes), closes[0], closes[-1])
+    logger.info("切最近 %dy: %d 点, $%.2f → $%.2f", YEARS_BACK, len(closes), closes[0], closes[-1])
 
     # T1: 检测 regime labels (在 2y 子集上)
     t0 = time.time()
     detector = BTCRegimeDetector()
     regime_labels = detector.detect(closes)
     counts = np.bincount(regime_labels, minlength=3)
-    logger.info("regime 分布: bull=%d (%.1f%%) chop=%d (%.1f%%) bear=%d (%.1f%%)",
-                counts[0], 100*counts[0]/len(closes),
-                counts[1], 100*counts[1]/len(closes),
-                counts[2], 100*counts[2]/len(closes))
+    logger.info(
+        "regime 分布: bull=%d (%.1f%%) chop=%d (%.1f%%) bear=%d (%.1f%%)",
+        counts[0],
+        100 * counts[0] / len(closes),
+        counts[1],
+        100 * counts[1] / len(closes),
+        counts[2],
+        100 * counts[2] / len(closes),
+    )
     logger.info("regime 检测耗时: %.1fs", time.time() - t0)
 
     # 训练 NeuralSDE (regime-aware, 200ep — 400ep 已证过拟合)
@@ -85,19 +97,29 @@ def main():
         logger.error("torch 不可用")
         return 1
     trainer = NeuralSDETrainer(
-        model=model, lr=1e-4, seq_len=64, horizon=20,
-        batch_size=64, loss_type="mse",
+        model=model,
+        lr=1e-4,
+        seq_len=64,
+        horizon=20,
+        batch_size=64,
+        loss_type="mse",
     )
 
     t0 = time.time()
     report = trainer.train(
-        closes, epochs=200, regime_labels=regime_labels,
+        closes,
+        epochs=200,
+        regime_labels=regime_labels,
         regime_balance="natural",  # T3.7: 保留自然分布, 避免 bull 被拉到 33%
     )
     train_time = time.time() - t0
-    logger.info("训练完成: status=%s, n_windows=%d, final_loss=%.6f, 耗时=%.1fs",
-                report.get("status"), report.get("n_windows", 0),
-                report.get("final_loss", 0.0), train_time)
+    logger.info(
+        "训练完成: status=%s, n_windows=%d, final_loss=%.6f, 耗时=%.1fs",
+        report.get("status"),
+        report.get("n_windows", 0),
+        report.get("final_loss", 0.0),
+        train_time,
+    )
 
     if report.get("status") != "ok":
         logger.error("训练未完成: %s", report)
@@ -108,8 +130,8 @@ def main():
     n_paths = 200
     n = len(closes)
     test_start = n - horizon - 1
-    history = closes[:test_start + 1]
-    actual = closes[test_start + 1:test_start + 1 + horizon]
+    history = closes[: test_start + 1]
+    actual = closes[test_start + 1 : test_start + 1 + horizon]
     init_price = float(history[-1])
     returns = np.diff(np.log(history))
     init_vol = float(np.std(returns)) if len(returns) > 2 else 0.02
@@ -127,7 +149,9 @@ def main():
     # 关键: 传完整 history (非 [init_price, init_vol]), 让 log_sig 路径签名生效
     # 否则 history 长度 < N_step=32 → log_sig pad zeros → 模型退化马尔可夫
     sde_paths = model.forecast(
-        history, horizon, n_paths,
+        history,
+        horizon,
+        n_paths,
         regime=test_regime,
     )
     if sde_paths is None:
@@ -168,9 +192,9 @@ def main():
             "ratio": round(ratio, 4),
         },
         "v3c_baseline_mae": 569,  # 历史基线 (10y, no regime, 200ep)
-        "v2_baseline_mae": 269,   # 历史最优 (2y, no regime)
-        "v4a_10y_200ep_mae": 461, # 10y regime 200ep
-        "v4b_10y_400ep_mae": 1884, # 10y regime 400ep (过拟合)
+        "v2_baseline_mae": 269,  # 历史最优 (2y, no regime)
+        "v4a_10y_200ep_mae": 461,  # 10y regime 200ep
+        "v4b_10y_400ep_mae": 1884,  # 10y regime 400ep (过拟合)
         "threshold": 350,
         "passed": bool(passed),
         "elapsed_sec": round(train_time, 2),

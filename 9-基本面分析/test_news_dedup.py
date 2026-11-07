@@ -1,1 +1,1 @@
-from tests.test_news_dedup import *
+from tests.test_news_dedup import *  # noqa: F403

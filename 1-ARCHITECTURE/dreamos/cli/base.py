@@ -7,12 +7,12 @@ CLI 基础类 — 命令插件接口
     - 命令通过 register_command 装饰器注册
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import argparse
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from dreamos.apps.trading_agent import TradingAgent
@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 @dataclass
 class CommandContext:
     """命令执行上下文"""
+
     app: Any = None  # CLIApp
     agent: Optional["TradingAgent"] = None
     verbose: bool = False
@@ -62,13 +63,14 @@ class Command(ABC):
     aliases: List[str] = []
     hidden: bool = False
 
-    def add_arguments(self, parser: argparse.ArgumentParser) -> None:
+    def add_arguments(self, parser: argparse.ArgumentParser) -> None:  # noqa: B027
         """添加命令行参数（子命令模式使用）"""
         pass
 
     @abstractmethod
-    def execute(self, ctx: CommandContext, args: Optional[argparse.Namespace] = None,
-                **kwargs) -> int:
+    def execute(
+        self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs
+    ) -> int:
         """执行命令
 
         Args:

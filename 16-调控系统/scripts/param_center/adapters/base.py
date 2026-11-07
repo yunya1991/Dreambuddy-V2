@@ -3,6 +3,7 @@
 每个适配器包装一个算法，统一输出 AlgoObservation。
 具体适配器（hmm/bagua/hurst/pmapper/shadow/cusum）继承 BaseAdapter。
 """
+
 from __future__ import annotations
 
 import logging
@@ -43,6 +44,8 @@ class BaseAdapter(ABC):
         except Exception as exc:
             logger.warning(
                 "Adapter[%s] FAIL-OPEN: observe 异常 symbol=%s err=%s",
-                self.name, symbol, exc,
+                self.name,
+                symbol,
+                exc,
             )
             return None

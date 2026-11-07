@@ -16,13 +16,14 @@
 - MTL (Multi-Task Learning) 在量化中的应用
 """
 
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any, Tuple  # noqa: I001
 import numpy as np
 import pandas as pd
-import sys, os
+import sys
+import os
 
 sys.path.insert(0, os.path.dirname(__file__))
-from models import MLModel, LightGBMModel
+from models import LightGBMModel
 
 
 class MultiTaskLightGBM:
@@ -58,20 +59,26 @@ class MultiTaskLightGBM:
             conf_scale_factor: 置信度缩放因子（回归值×因子 → 0~1）
         """
         self.direction_model = LightGBMModel(direction_params or {})
-        self.confidence_model = LightGBMModel(confidence_params or {
-            'objective': 'regression',
-            'metric': 'mse',
-        })
-        self.drive_mode_model = LightGBMModel(drive_mode_params or {
-            'objective': 'multiclass',
-            'metric': 'multi_logloss',
-            'num_class': 4,
-        })
+        self.confidence_model = LightGBMModel(
+            confidence_params
+            or {
+                "objective": "regression",
+                "metric": "mse",
+            }
+        )
+        self.drive_mode_model = LightGBMModel(
+            drive_mode_params
+            or {
+                "objective": "multiclass",
+                "metric": "multi_logloss",
+                "num_class": 4,
+            }
+        )
 
         self.task_weights = task_weights or {
-            'direction': 0.5,
-            'confidence': 0.3,
-            'drive_mode': 0.2,
+            "direction": 0.5,
+            "confidence": 0.3,
+            "drive_mode": 0.2,
         }
 
         self.conf_scale_factor = conf_scale_factor
@@ -105,19 +112,13 @@ class MultiTaskLightGBM:
 
         # 任务 1: 方向分类
         print("  [1/3] 训练方向分类模型...")
-        self.direction_model.fit(
-            X, y_direction,
-            X_val=X_val, y_val=y_val_direction
-        )
+        self.direction_model.fit(X, y_direction, X_val=X_val, y_val=y_val_direction)
 
         # 任务 2: 置信度回归（如果有标签）
         if y_confidence is not None:
             print("  [2/3] 训练置信度回归模型...")
             try:
-                self.confidence_model.fit(
-                    X, y_confidence,
-                    X_val=X_val, y_val=y_val_confidence
-                )
+                self.confidence_model.fit(X, y_confidence, X_val=X_val, y_val=y_val_confidence)
             except Exception as e:
                 print(f"    置信度回归训练跳过: {e}")
                 self.confidence_model = None
@@ -128,10 +129,7 @@ class MultiTaskLightGBM:
         if y_drive_mode is not None and y_drive_mode.nunique() > 1:
             print("  [3/3] 训练驱动模式分类模型...")
             try:
-                self.drive_mode_model.fit(
-                    X, y_drive_mode,
-                    X_val=X_val, y_val=y_val_drive_mode
-                )
+                self.drive_mode_model.fit(X, y_drive_mode, X_val=X_val, y_val=y_val_drive_mode)
             except Exception as e:
                 print(f"    驱动模式训练跳过: {e}")
                 self.drive_mode_model = None
@@ -161,36 +159,36 @@ class MultiTaskLightGBM:
 
         # 方向预测
         dir_proba = self.direction_model.predict_proba(X)
-        result['direction_prob'] = dir_proba
-        result['direction'] = (dir_proba > 0.5).astype(int)
+        result["direction_prob"] = dir_proba
+        result["direction"] = (dir_proba > 0.5).astype(int)
 
         # 置信度预测
         if self.confidence_model is not None:
             raw_conf = self.confidence_model.predict_proba(X)
             # 回归模型预测的是收益率，用 tanh 归一化到 0~1
-            result['confidence_raw'] = raw_conf
-            result['confidence'] = np.tanh(np.abs(raw_conf) * self.conf_scale_factor)
+            result["confidence_raw"] = raw_conf
+            result["confidence"] = np.tanh(np.abs(raw_conf) * self.conf_scale_factor)
         else:
             # 用方向概率的绝对值作为置信度代理
-            result['confidence'] = np.abs(dir_proba - 0.5) * 2
+            result["confidence"] = np.abs(dir_proba - 0.5) * 2
 
         # 驱动模式预测
         if self.drive_mode_model is not None:
             dm_proba = self.drive_mode_model.predict_proba(X)
             # LightGBM multiclass 返回 shape=(n, num_class)
             if len(dm_proba.shape) == 2 and dm_proba.shape[1] > 1:
-                result['drive_mode_probs'] = dm_proba
-                result['drive_mode'] = np.argmax(dm_proba, axis=1)
+                result["drive_mode_probs"] = dm_proba
+                result["drive_mode"] = np.argmax(dm_proba, axis=1)
             else:
-                result['drive_mode_probs'] = np.zeros((len(X), 4))
-                result['drive_mode'] = np.zeros(len(X), dtype=int)
+                result["drive_mode_probs"] = np.zeros((len(X), 4))
+                result["drive_mode"] = np.zeros(len(X), dtype=int)
         else:
-            result['drive_mode_probs'] = np.zeros((len(X), 4))
-            result['drive_mode'] = np.zeros(len(X), dtype=int)
+            result["drive_mode_probs"] = np.zeros((len(X), 4))
+            result["drive_mode"] = np.zeros(len(X), dtype=int)
 
         # 综合得分：方向概率强度 × 置信度 × 驱动模式加成
-        dir_strength = (result['direction_prob'] - 0.5) * 2  # -1~1
-        conf_level = np.clip(result['confidence'], 0, 1)     # 0~1
+        dir_strength = (result["direction_prob"] - 0.5) * 2  # -1~1
+        conf_level = np.clip(result["confidence"], 0, 1)  # 0~1
 
         # 驱动模式加成
         if self.drive_mode_model is not None:
@@ -199,7 +197,7 @@ class MultiTaskLightGBM:
             # ACCUMULATION(2): 积累期，反向关注
             # WEAKENING(3): 减弱期，降低置信度
             dm_bonus = np.zeros(len(X))
-            for i, dm in enumerate(result['drive_mode']):
+            for i, dm in enumerate(result["drive_mode"]):
                 if dm == 0:  # CONTINUATION
                     dm_bonus[i] = 0.2
                 elif dm == 1:  # LATE_CONTINUATION
@@ -212,17 +210,17 @@ class MultiTaskLightGBM:
             dm_bonus = 0
 
         final_score = dir_strength * conf_level * (1 + dm_bonus)
-        result['final_score'] = np.clip(final_score, -1, 1)
+        result["final_score"] = np.clip(final_score, -1, 1)
 
         return result
 
-    def feature_importance(self, task: str = 'direction') -> pd.Series:
+    def feature_importance(self, task: str = "direction") -> pd.Series:
         """特征重要性
 
         参数:
             task: 'direction' | 'confidence' | 'drive_mode' | 'all'
         """
-        if task == 'all':
+        if task == "all":
             # 平均三个任务的重要性
             importances = []
             for model in [self.direction_model, self.confidence_model, self.drive_mode_model]:
@@ -234,11 +232,11 @@ class MultiTaskLightGBM:
                 combined = pd.concat(importances, axis=1).mean(axis=1)
                 return combined.sort_values(ascending=False)
             return pd.Series()
-        elif task == 'direction':
+        elif task == "direction":
             return self.direction_model.feature_importance()
-        elif task == 'confidence' and self.confidence_model:
+        elif task == "confidence" and self.confidence_model:
             return self.confidence_model.feature_importance()
-        elif task == 'drive_mode' and self.drive_mode_model:
+        elif task == "drive_mode" and self.drive_mode_model:
             return self.drive_mode_model.feature_importance()
         return pd.Series()
 
@@ -246,7 +244,7 @@ class MultiTaskLightGBM:
         self,
         X: pd.DataFrame,
         top_k: int = 30,
-        task: str = 'all',
+        task: str = "all",
     ) -> List[str]:
         """特征选择：返回 Top K 最重要的特征名
 
@@ -266,29 +264,34 @@ class MultiTaskLightGBM:
     def save(self, path: str):
         """保存模型"""
         import pickle
-        with open(path, 'wb') as f:
-            pickle.dump({
-                'direction_model': self.direction_model,
-                'confidence_model': self.confidence_model,
-                'drive_mode_model': self.drive_mode_model,
-                'task_weights': self.task_weights,
-                'feature_names': self.feature_names,
-                'is_trained': self.is_trained,
-            }, f)
+
+        with open(path, "wb") as f:
+            pickle.dump(
+                {
+                    "direction_model": self.direction_model,
+                    "confidence_model": self.confidence_model,
+                    "drive_mode_model": self.drive_mode_model,
+                    "task_weights": self.task_weights,
+                    "feature_names": self.feature_names,
+                    "is_trained": self.is_trained,
+                },
+                f,
+            )
 
     @classmethod
     def load(cls, path: str) -> "MultiTaskLightGBM":
         """加载模型"""
         import pickle
-        with open(path, 'rb') as f:
+
+        with open(path, "rb") as f:
             data = pickle.load(f)
         instance = cls()
-        instance.direction_model = data['direction_model']
-        instance.confidence_model = data['confidence_model']
-        instance.drive_mode_model = data['drive_mode_model']
-        instance.task_weights = data['task_weights']
-        instance.feature_names = data['feature_names']
-        instance.is_trained = data['is_trained']
+        instance.direction_model = data["direction_model"]
+        instance.confidence_model = data["confidence_model"]
+        instance.drive_mode_model = data["drive_mode_model"]
+        instance.task_weights = data["task_weights"]
+        instance.feature_names = data["feature_names"]
+        instance.is_trained = data["is_trained"]
         return instance
 
 
@@ -378,10 +381,10 @@ class DynamicWeightFusion:
 
         # 市场环境修正
         regime_adj = {
-            'trending': 0.1,    # 趋势市：规则加权重
-            'range': -0.1,      # 震荡市：AI 加权重
-            'volatile': -0.2,   # 高波动：AI 加权重
-            'normal': 0.0,
+            "trending": 0.1,  # 趋势市：规则加权重
+            "range": -0.1,  # 震荡市：AI 加权重
+            "volatile": -0.2,  # 高波动：AI 加权重
+            "normal": 0.0,
         }
         rule_weight += regime_adj.get(market_regime, 0.0)
 
@@ -402,16 +405,16 @@ class DynamicWeightFusion:
         reasons.append(f"环境={market_regime}")
 
         return {
-            'rule_weight': round(rule_weight, 4),
-            'ai_weight': round(ai_weight, 4),
-            'reason': ', '.join(reasons),
-            'factors': {
-                'trend_strength': trend_strength,
-                'volatility': volatility,
-                'volume_spike': volume_spike,
-                'trend_duration': trend_duration,
-                'market_regime': market_regime,
-            }
+            "rule_weight": round(rule_weight, 4),
+            "ai_weight": round(ai_weight, 4),
+            "reason": ", ".join(reasons),
+            "factors": {
+                "trend_strength": trend_strength,
+                "volatility": volatility,
+                "volume_spike": volume_spike,
+                "trend_duration": trend_duration,
+                "market_regime": market_regime,
+            },
         }
 
     def fuse_decision(
@@ -436,14 +439,14 @@ class DynamicWeightFusion:
         """
         # 计算动态权重
         weights = self.calculate_weights(**kwargs)
-        rule_w = weights['rule_weight']
-        ai_w = weights['ai_weight']
+        rule_w = weights["rule_weight"]
+        ai_w = weights["ai_weight"]
 
         # 方向转数值
         def dir_to_val(d: str) -> float:
-            if d == 'LONG':
+            if d == "LONG":
                 return 1.0
-            elif d == 'SHORT':
+            elif d == "SHORT":
                 return -1.0
             return 0.0
 
@@ -455,20 +458,20 @@ class DynamicWeightFusion:
 
         # 转回方向 + 置信度
         if abs(fused_val) < 0.1:
-            final_direction = 'NEUTRAL'
+            final_direction = "NEUTRAL"
             final_confidence = 0.0
         elif fused_val > 0:
-            final_direction = 'LONG'
+            final_direction = "LONG"
             final_confidence = min(fused_val, 1.0)
         else:
-            final_direction = 'SHORT'
+            final_direction = "SHORT"
             final_confidence = min(abs(fused_val), 1.0)
 
         info = {
             **weights,
-            'rule_val': round(rule_val, 4),
-            'ai_val': round(ai_val, 4),
-            'fused_val': round(fused_val, 4),
+            "rule_val": round(rule_val, 4),
+            "ai_val": round(ai_val, 4),
+            "fused_val": round(fused_val, 4),
         }
 
         return final_direction, final_confidence, info

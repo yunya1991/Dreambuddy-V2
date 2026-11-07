@@ -2,9 +2,10 @@
 
 测试策略：mock subprocess + shutil.which，避免依赖真实 rea 安装。
 """
+
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 

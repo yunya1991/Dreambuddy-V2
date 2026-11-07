@@ -7,8 +7,8 @@
 - profitability_quality：利润率×ROE → 高质量→正
 - compute_all：组合四个信号 + FAIL-OPEN
 """
-import pytest
-import sys
+
+import sys  # noqa: I001
 from pathlib import Path
 from unittest.mock import patch
 
@@ -16,18 +16,21 @@ _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.coin_fundamental_stock import (
+from force_vector.coin_fundamental_stock import (  # noqa: E402
+    compute_all,
     compute_earnings_stability,
     compute_pe_mean_reversion,
-    compute_revenue_growth,
     compute_profitability_quality,
-    compute_all,
+    compute_revenue_growth,
 )
 
 
 class TestEarningsStability:
     def test_earnings_stability_normal(self):
-        ts = [{"date": f"Q{i}", "net_income": v} for i, v in enumerate([10e9, 11e9, 10.5e9, 11.5e9], 1)]
+        ts = [
+            {"date": f"Q{i}", "net_income": v}
+            for i, v in enumerate([10e9, 11e9, 10.5e9, 11.5e9], 1)
+        ]
         score = compute_earnings_stability(ts)
         assert -1.0 <= score <= 1.0
         assert score > 0.0
@@ -37,8 +40,10 @@ class TestEarningsStability:
         assert compute_earnings_stability([{"net_income": 100}]) == 0.0
 
     def test_earnings_stability_volatile_negative(self):
-        ts = [{"date": f"Q{i}", "net_income": v}
-              for i, v in enumerate([1e6, 50e9, 500e6, 80e9, 2e6], 1)]
+        ts = [
+            {"date": f"Q{i}", "net_income": v}
+            for i, v in enumerate([1e6, 50e9, 500e6, 80e9, 2e6], 1)
+        ]
         score = compute_earnings_stability(ts)
         assert score < 0.0
 
@@ -87,8 +92,10 @@ class TestProfitabilityQuality:
 
 class TestComputeAll:
     def test_compute_all_returns_four_signals(self):
-        with patch("force_vector.coin_fundamental_stock._fetch_stock_info") as mock_info, \
-             patch("force_vector.coin_fundamental_stock._fetch_stock_financials") as mock_fin:
+        with (
+            patch("force_vector.coin_fundamental_stock._fetch_stock_info") as mock_info,
+            patch("force_vector.coin_fundamental_stock._fetch_stock_financials") as mock_fin,
+        ):
             mock_info.return_value = {
                 "trailingPE": 25.0,
                 "operatingMargins": 0.35,
@@ -106,8 +113,10 @@ class TestComputeAll:
             assert "profitability_quality" in signals
 
     def test_compute_all_missing_data_returns_zeros(self):
-        with patch("force_vector.coin_fundamental_stock._fetch_stock_info", return_value={}), \
-             patch("force_vector.coin_fundamental_stock._fetch_stock_financials", return_value={}):
+        with (
+            patch("force_vector.coin_fundamental_stock._fetch_stock_info", return_value={}),
+            patch("force_vector.coin_fundamental_stock._fetch_stock_financials", return_value={}),
+        ):
             signals = compute_all("NVDA", db_path="/fake/db.db")
             assert all(v == 0.0 for v in signals.values())
 
@@ -116,7 +125,9 @@ class TestComputeAll:
         assert all(v == 0.0 for v in signals.values())
 
     def test_compute_all_exception_returns_zeros(self):
-        with patch("force_vector.coin_fundamental_stock._fetch_stock_info",
-                   side_effect=RuntimeError("boom")):
+        with patch(
+            "force_vector.coin_fundamental_stock._fetch_stock_info",
+            side_effect=RuntimeError("boom"),
+        ):
             signals = compute_all("NVDA", db_path="/fake/db.db")
             assert all(v == 0.0 for v in signals.values())

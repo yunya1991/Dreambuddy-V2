@@ -7,6 +7,7 @@
 
 CLI 用 argparse，避免外部依赖。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -71,8 +72,11 @@ def cmd_clean(args: argparse.Namespace) -> int:
 
     # 输出结果 DF
     _write_df(df, args.output)
-    print(f"[dc-clean] OUT rows={len(df)} clipped={trace.total_clipped} "
-          f"imputed={trace.total_imputed} → {args.output}", file=sys.stderr)
+    print(
+        f"[dc-clean] OUT rows={len(df)} clipped={trace.total_clipped} "
+        f"imputed={trace.total_imputed} → {args.output}",
+        file=sys.stderr,
+    )
     # 可选 dump trace
     if args.dump_trace:
         p = Path(args.dump_trace)
@@ -88,18 +92,27 @@ def cmd_trace(args: argparse.Namespace) -> int:
     actions = data.get("actions", [])
     if args.stage:
         actions = [a for a in actions if args.stage.lower() in str(a.get("step", "")).lower()]
-    cols = ["step", "input_rows", "output_rows", "clipped_count", "imputed_count",
-            "blocked_count", "note"]
+    cols = [
+        "step",
+        "input_rows",
+        "output_rows",
+        "clipped_count",
+        "imputed_count",
+        "blocked_count",
+        "note",
+    ]
     rows_df = pd.DataFrame(actions)[cols] if actions else pd.DataFrame(columns=cols)
     if args.format == "table":
         print(rows_df.to_string(index=False))
     else:
         print(rows_df.to_json(orient="records", force_ascii=False, indent=2))
     # summary
-    print(f"\n-- summary: actions={len(actions)} "
-          f"total_clipped={rows_df['clipped_count'].sum() if len(rows_df) else 0} "
-          f"total_imputed={rows_df['imputed_count'].sum() if len(rows_df) else 0}",
-          file=sys.stderr)
+    print(
+        f"\n-- summary: actions={len(actions)} "
+        f"total_clipped={rows_df['clipped_count'].sum() if len(rows_df) else 0} "
+        f"total_imputed={rows_df['imputed_count'].sum() if len(rows_df) else 0}",
+        file=sys.stderr,
+    )
     return 0
 
 
@@ -121,17 +134,25 @@ def cmd_audit(args: argparse.Namespace) -> int:
             summary.append({"file": str(f), "error": str(exc)})
             continue
         actions = data.get("actions", [])
-        summary.append({
-            "file": str(f),
-            "actions": len(actions),
-            "clipped": sum(a.get("clipped_count", 0) for a in actions),
-            "imputed": sum(a.get("imputed_count", 0) for a in actions),
-            "blocked": sum(a.get("blocked_count", 0) for a in actions),
-            "gate_pass": "".join(sorted({
-                "F" if "pass=False" in a.get("note", "") else ""
-                for a in actions if a.get("step") == "QualityGate"
-            })) or "T",
-        })
+        summary.append(
+            {
+                "file": str(f),
+                "actions": len(actions),
+                "clipped": sum(a.get("clipped_count", 0) for a in actions),
+                "imputed": sum(a.get("imputed_count", 0) for a in actions),
+                "blocked": sum(a.get("blocked_count", 0) for a in actions),
+                "gate_pass": "".join(
+                    sorted(
+                        {
+                            "F" if "pass=False" in a.get("note", "") else ""
+                            for a in actions
+                            if a.get("step") == "QualityGate"
+                        }
+                    )
+                )
+                or "T",
+            }
+        )
     df = pd.DataFrame(summary)
     if args.csv:
         print(df.to_csv(index=False))
@@ -146,20 +167,26 @@ def cmd_audit(args: argparse.Namespace) -> int:
 def _trace_to_json(trace) -> str:
     actions = []
     for a in trace.actions:
-        actions.append({
-            "step": a.step,
-            "input_rows": int(a.input_rows),
-            "output_rows": int(a.output_rows),
-            "clipped_count": int(a.clipped_count),
-            "imputed_count": int(a.imputed_count),
-            "blocked_count": int(getattr(a, "blocked_count", 0)),
-            "note": a.note,
-        })
-    return json.dumps({
-        "started_at": str(getattr(trace, "started_at", "")),
-        "finished_at": str(getattr(trace, "finished_at", "")),
-        "actions": actions,
-    }, ensure_ascii=False, indent=2)
+        actions.append(
+            {
+                "step": a.step,
+                "input_rows": int(a.input_rows),
+                "output_rows": int(a.output_rows),
+                "clipped_count": int(a.clipped_count),
+                "imputed_count": int(a.imputed_count),
+                "blocked_count": int(getattr(a, "blocked_count", 0)),
+                "note": a.note,
+            }
+        )
+    return json.dumps(
+        {
+            "started_at": str(getattr(trace, "started_at", "")),
+            "finished_at": str(getattr(trace, "finished_at", "")),
+            "actions": actions,
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:

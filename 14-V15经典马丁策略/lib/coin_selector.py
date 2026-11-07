@@ -21,6 +21,7 @@
   })
   # → ["BTC"]  (ETH 被过滤)
 """
+
 from typing import Dict, List, Optional
 
 
@@ -114,13 +115,15 @@ class YijingCoinSelector:
             if category == "DANGER":
                 continue
 
-            scored.append({
-                "coin": coin,
-                "risk": round(risk, 3),
-                "value": round(value, 3),
-                "net": round(value - risk, 3),
-                "category": category,
-            })
+            scored.append(
+                {
+                    "coin": coin,
+                    "risk": round(risk, 3),
+                    "value": round(value, 3),
+                    "net": round(value - risk, 3),
+                    "category": category,
+                }
+            )
 
         scored.sort(key=lambda x: x["net"], reverse=True)
 

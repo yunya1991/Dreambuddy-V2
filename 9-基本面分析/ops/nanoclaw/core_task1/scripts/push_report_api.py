@@ -11,7 +11,6 @@ from pathlib import Path
 
 import requests
 
-
 BASE_DIR = Path(__file__).resolve().parents[1]
 OUTPUTS_DIR = BASE_DIR / "outputs"
 RAW_DIR = BASE_DIR / "raw"
@@ -155,7 +154,9 @@ def _to_bullets(text: str, max_items: int = 6) -> list[str]:
     return out
 
 
-def _traditional_public_transform(raw_content: str, title: str, trace_id: str) -> tuple[str, str, str, dict]:
+def _traditional_public_transform(
+    raw_content: str, title: str, trace_id: str
+) -> tuple[str, str, str, dict]:
     cleaned = _strip_non_public_noise(raw_content)
     parsed = _parse_sections(cleaned)
 
@@ -196,34 +197,37 @@ def _traditional_public_transform(raw_content: str, title: str, trace_id: str) -
     public_title = f"{title}｜对外发布版"
     public_summary = _build_summary("\n".join(exec_bullets), limit=220)
     published_at = datetime.now().strftime("%Y-%m-%d %H:%M UTC")
-    content = "\n".join(
-        [
-            f"# {public_title}",
-            "",
-            f"> 发布时间: {published_at}",
-            f"> 跟踪编号: {trace_id}",
-            "",
-            "## 一、执行摘要",
-            *[f"- {x}" for x in exec_bullets],
-            "",
-            "## 二、市场背景与驱动",
-            *[f"- {x}" for x in market_bullets],
-            "",
-            "## 三、关键信号与证据",
-            *[f"- {x}" for x in signal_bullets],
-            "",
-            "## 四、情景与风险提示",
-            *[f"- {x}" for x in risk_bullets],
-            "",
-            "## 五、观察清单（非投资建议）",
-            *[f"- {x}" for x in watch_bullets],
-            "",
-            "## 六、合规声明",
-            "- 本内容仅用于市场信息交流，不构成任何投资建议或收益承诺。",
-            "- 市场有风险，决策需结合自身风险承受能力与独立判断。",
-            "",
-        ]
-    ).strip() + "\n"
+    content = (
+        "\n".join(
+            [
+                f"# {public_title}",
+                "",
+                f"> 发布时间: {published_at}",
+                f"> 跟踪编号: {trace_id}",
+                "",
+                "## 一、执行摘要",
+                *[f"- {x}" for x in exec_bullets],
+                "",
+                "## 二、市场背景与驱动",
+                *[f"- {x}" for x in market_bullets],
+                "",
+                "## 三、关键信号与证据",
+                *[f"- {x}" for x in signal_bullets],
+                "",
+                "## 四、情景与风险提示",
+                *[f"- {x}" for x in risk_bullets],
+                "",
+                "## 五、观察清单（非投资建议）",
+                *[f"- {x}" for x in watch_bullets],
+                "",
+                "## 六、合规声明",
+                "- 本内容仅用于市场信息交流，不构成任何投资建议或收益承诺。",
+                "- 市场有风险，决策需结合自身风险承受能力与独立判断。",
+                "",
+            ]
+        ).strip()
+        + "\n"
+    )
     meta = {
         "transform_profile": "traditional_sellside_v1",
         "source_chars": len(raw_content or ""),
@@ -259,7 +263,6 @@ def _append_jsonl(path: Path, payload: dict) -> None:
         f.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
-
 def _load_local_env(path: Path) -> None:
     if not path.exists() or (not path.is_file()):
         return
@@ -282,14 +285,18 @@ def _load_local_env(path: Path) -> None:
             os.environ[k] = v
 
 
-def _request_with_retry(method: str, url: str, headers: dict, payload: dict, timeout_sec: int, max_retries: int) -> tuple[dict, int, int]:
+def _request_with_retry(
+    method: str, url: str, headers: dict, payload: dict, timeout_sec: int, max_retries: int
+) -> tuple[dict, int, int]:
     retry_wait = [10, 30, 90]
     attempts = 0
     last_error = ""
     while attempts < max(1, max_retries):
         attempts += 1
         try:
-            resp = requests.request(method=method, url=url, headers=headers, json=payload, timeout=float(timeout_sec))
+            resp = requests.request(
+                method=method, url=url, headers=headers, json=payload, timeout=float(timeout_sec)
+            )
             status = int(resp.status_code)
             body = resp.json() if resp.text else {}
             if status == 401:
@@ -302,7 +309,7 @@ def _request_with_retry(method: str, url: str, headers: dict, payload: dict, tim
             if "401" in last_error:
                 raise
             if attempts >= max(1, max_retries):
-                raise RuntimeError(last_error)
+                raise RuntimeError(last_error)  # noqa: B904
             time.sleep(retry_wait[min(attempts - 1, len(retry_wait) - 1)])
     raise RuntimeError(last_error or "request_failed")
 
@@ -310,7 +317,9 @@ def _request_with_retry(method: str, url: str, headers: dict, payload: dict, tim
 def _check_api_reachable(api_base: str, timeout_sec: int) -> tuple[bool, int, str]:
     url = f"{api_base.rstrip('/')}/reports"
     try:
-        resp = requests.get(url, params={"page": 1, "page_size": 1}, timeout=float(max(2, timeout_sec)))
+        resp = requests.get(
+            url, params={"page": 1, "page_size": 1}, timeout=float(max(2, timeout_sec))
+        )
         status = int(resp.status_code)
         if status >= 500:
             return False, status, "server_error"
@@ -321,7 +330,9 @@ def _check_api_reachable(api_base: str, timeout_sec: int) -> tuple[bool, int, st
 
 def main() -> int:
     _load_local_env(LOCAL_ENV_PATH)
-    parser = argparse.ArgumentParser(description="Push latest news briefing to production report API")
+    parser = argparse.ArgumentParser(
+        description="Push latest news briefing to production report API"
+    )
     parser.add_argument("--artifact", type=str, default="", help="markdown artifact path")
     default_mode = str(os.environ.get("REPORT_PUSH_MODE") or "prod").strip().lower() or "prod"
     default_api_base = os.environ.get("REPORT_API_BASE_PROD") or "http://8.209.238.108/api/v1"
@@ -329,8 +340,20 @@ def main() -> int:
         default_api_base = os.environ.get("REPORT_API_BASE_TEST") or default_api_base
     parser.add_argument("--api-base", type=str, default=default_api_base)
     parser.add_argument("--api-key", type=str, default=os.environ.get("INTERNAL_API_KEY") or "")
-    parser.add_argument("--state-file", type=str, default=(os.environ.get("REPORT_PUSH_STATE_FILE") or str(RAW_DIR / "report_push_state.json")))
-    parser.add_argument("--receipt-file", type=str, default=(os.environ.get("REPORT_PUSH_RECEIPT_FILE") or str(RAW_DIR / "report_push_outbox.jsonl")))
+    parser.add_argument(
+        "--state-file",
+        type=str,
+        default=(
+            os.environ.get("REPORT_PUSH_STATE_FILE") or str(RAW_DIR / "report_push_state.json")
+        ),
+    )
+    parser.add_argument(
+        "--receipt-file",
+        type=str,
+        default=(
+            os.environ.get("REPORT_PUSH_RECEIPT_FILE") or str(RAW_DIR / "report_push_outbox.jsonl")
+        ),
+    )
     parser.add_argument("--trace-id", type=str, default="")
     parser.add_argument("--title", type=str, default="")
     parser.add_argument("--summary", type=str, default="")
@@ -373,7 +396,9 @@ def main() -> int:
     if not args.api_key:
         raise RuntimeError("INTERNAL_API_KEY is required")
 
-    artifact_path = Path(args.artifact).resolve() if args.artifact else _pick_latest_artifact().resolve()
+    artifact_path = (
+        Path(args.artifact).resolve() if args.artifact else _pick_latest_artifact().resolve()
+    )
     if not artifact_path.exists():
         raise FileNotFoundError(f"artifact not found: {artifact_path}")
     content = artifact_path.read_text(encoding="utf-8", errors="replace")
@@ -383,11 +408,17 @@ def main() -> int:
     summary = args.summary.strip() or _build_summary(content)
     source_content = content
     transform_profile = str(args.transform_profile or "").strip() or "daily_report_v2_tavily"
-    transform_meta: dict = {"transform_profile": "raw_passthrough", "source_chars": len(source_content), "public_chars": len(source_content)}
+    transform_meta: dict = {
+        "transform_profile": "raw_passthrough",
+        "source_chars": len(source_content),
+        "public_chars": len(source_content),
+    }
     public_artifact_path = artifact_path
     if not args.disable_transform:
         if transform_profile == "traditional_sellside_v1":
-            pub_title, pub_summary, pub_content, tmeta = _traditional_public_transform(source_content, title, trace_id)
+            pub_title, pub_summary, pub_content, tmeta = _traditional_public_transform(
+                source_content, title, trace_id
+            )
             title = pub_title
             summary = args.summary.strip() or pub_summary
             content = pub_content
@@ -399,7 +430,9 @@ def main() -> int:
         elif transform_profile == "daily_report_v2_tavily":
             transformer = _load_daily_transformer()
             if transformer is None:
-                raise RuntimeError("daily_report_v2_tavily requires scripts/daily_publish_transform.py")
+                raise RuntimeError(
+                    "daily_report_v2_tavily requires scripts/daily_publish_transform.py"
+                )
             transformed = transformer(
                 raw_content=source_content,
                 title=title,
@@ -423,7 +456,9 @@ def main() -> int:
         elif transform_profile == "daily_report_v3_llm":
             mod_path = SCRIPT_DIR / "daily_publish_transform.py"
             if not mod_path.exists():
-                raise RuntimeError("daily_report_v3_llm requires scripts/daily_publish_transform.py")
+                raise RuntimeError(
+                    "daily_report_v3_llm requires scripts/daily_publish_transform.py"
+                )
             spec = importlib.util.spec_from_file_location("daily_publish_transform", mod_path)
             if spec is None or spec.loader is None:
                 raise RuntimeError("failed to load daily_publish_transform.py")
@@ -454,7 +489,9 @@ def main() -> int:
             public_artifact_path.write_text(content, encoding="utf-8")
         else:
             raise RuntimeError(f"unsupported transform profile: {transform_profile}")
-    related_coins = [x.strip().upper() for x in str(args.related_coins or "").split(",") if x.strip()]
+    related_coins = [
+        x.strip().upper() for x in str(args.related_coins or "").split(",") if x.strip()
+    ]
     payload = {
         "title": title[:256],
         "summary": summary,
@@ -566,4 +603,4 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except Exception as exc:
         print(str(exc), file=sys.stderr)
-        raise SystemExit(1)
+        raise SystemExit(1)  # noqa: B904

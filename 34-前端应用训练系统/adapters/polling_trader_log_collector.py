@@ -10,10 +10,11 @@
 
 预期: 30-60 条
 """
+
 import os
 import re
 import sys
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
@@ -23,13 +24,10 @@ for _p in [_THIS_DIR, _34_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
-
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 # 默认日志路径
-_DEFAULT_LOG_PATH = os.path.join(
-    _PROJECT_ROOT, "11-易经推理系统", "logs", "trading_stdout.log"
-)
+_DEFAULT_LOG_PATH = os.path.join(_PROJECT_ROOT, "11-易经推理系统", "logs", "trading_stdout.log")
 
 # 决策节点关键词映射
 KEYWORD_NODE_MAP = [
@@ -70,9 +68,7 @@ class PollingTraderLogCollector(TrainingDataProvider):
     def get_quality_threshold(self) -> str:
         return "B"
 
-    def fetch_cases(
-        self, limit: int = 100, since: Optional[str] = None
-    ) -> List[TrainingCase]:
+    def fetch_cases(self, limit: int = 100, since: Optional[str] = None) -> List[TrainingCase]:
         """从日志文件采集训练案例。
 
         按时间窗口分组决策节点,每组 8-12 节点构成一条 TrainingCase。
@@ -109,7 +105,7 @@ class PollingTraderLogCollector(TrainingDataProvider):
         for i in range(0, len(nodes), window_size):
             if len(cases) >= limit:
                 break
-            window = nodes[i:i + window_size]
+            window = nodes[i : i + window_size]
             if len(window) < 3:
                 continue  # 太短的窗口跳过
 
@@ -146,10 +142,12 @@ class PollingTraderLogCollector(TrainingDataProvider):
             if re.search(pattern, line):
                 # 尝试提取时间戳
                 ts_match = _TIMESTAMP_RE.search(line)
-                ts = ts_match.group(1) if ts_match else "unknown"
+                ts = ts_match.group(1) if ts_match else "unknown"  # noqa: F841
                 # 截取关键信息
                 # 去掉时间戳和级别,保留内容
-                content = re.sub(r"\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]\s*\[\w+\]\s*", "", line).strip()
+                content = re.sub(
+                    r"\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]\s*\[\w+\]\s*", "", line
+                ).strip()
                 content_short = content[:40].replace("\n", "")
                 return f"{node_name}({content_short})"
         return None

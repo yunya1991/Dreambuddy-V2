@@ -8,28 +8,28 @@ v0.2 新增模块 — Phase P0
 """
 
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
-import sys
 from typing import Any, Dict, List, Optional
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import (
+from scripts.memory_l4 import (  # noqa: E402
+    a0a9_bridge,
+    case_registry,
+    distill_engine,
+    index_builder,
+    review_engine,
+    stats_engine,
+)
+from scripts.memory_l4.paths import (  # noqa: E402
     memory_l4_cases_dir,
     memory_l4_reviews_dir,
-    memory_l4_distills_dir,
-    memory_l4_stats_dir,
     workspace_root,
 )
-from scripts.memory_l4 import case_registry
-from scripts.memory_l4 import a0a9_bridge
-from scripts.memory_l4 import review_engine
-from scripts.memory_l4 import distill_engine
-from scripts.memory_l4 import stats_engine
-from scripts.memory_l4 import index_builder
 
 
 def now_iso_local() -> str:
@@ -39,6 +39,7 @@ def now_iso_local() -> str:
 # ---------------------------------------------------------------------------
 # Pipeline steps
 # ---------------------------------------------------------------------------
+
 
 def step_register(episode_path: Path) -> Dict[str, Any]:
     """Step 1: 从 episode 注册 TradeCase (M0_CASE_REGISTERED)。"""
@@ -58,9 +59,7 @@ def step_a0a9(case_data: Dict[str, Any]) -> Dict[str, Any]:
     if stage_outputs:
         chain = a0a9_bridge.build_thinking_chain_from_stages(stage_outputs)
         case_data["thinking_chain"] = chain
-        case_registry.save_json(
-            memory_l4_cases_dir() / f"{cid}.json", case_data
-        )
+        case_registry.save_json(memory_l4_cases_dir() / f"{cid}.json", case_data)
         print(f"[A0-A9] Populated {len(chain)} stages: {[s['stage'] for s in chain]}")
     else:
         print(f"[A0-A9] No stage artifacts found for {cid}")
@@ -126,7 +125,7 @@ def step_distill(review_record: Dict[str, Any]) -> Dict[str, Any]:
     distill = distill_engine.complete_distill(distill)
 
     # 保存
-    saved = distill_engine.save_distill(distill)
+    saved = distill_engine.save_distill(distill)  # noqa: F841
     distill_id = distill["distill_id"]
 
     # 更新关联 case
@@ -145,7 +144,7 @@ def step_distill(review_record: Dict[str, Any]) -> Dict[str, Any]:
 def step_stats(case_data: Dict[str, Any]) -> Dict[str, Any]:
     """Step 5: 更新全局统计 (M3_STATS_UPDATED)。"""
     stats = stats_engine.compute_full_stats(snapshot_ts=now_iso_local())
-    saved = stats_engine.save_stats(stats)
+    saved = stats_engine.save_stats(stats)  # noqa: F841
 
     # 仅将当前 pipeline 的 case 推进到 M3
     cid = case_data.get("case_id")
@@ -153,7 +152,11 @@ def step_stats(case_data: Dict[str, Any]) -> Dict[str, Any]:
         case_path = memory_l4_cases_dir() / f"{cid}.json"
         if case_path.exists():
             case = json.loads(case_path.read_text(encoding="utf-8"))
-            if case.get("l4_status") in ("M0_CASE_REGISTERED", "M1_REVIEW_COMPLETED", "M2_DISTILL_COMPLETED"):
+            if case.get("l4_status") in (
+                "M0_CASE_REGISTERED",
+                "M1_REVIEW_COMPLETED",
+                "M2_DISTILL_COMPLETED",
+            ):
                 case["l4_status"] = "M3_STATS_UPDATED"
                 case_registry.save_json(case_path, case)
 
@@ -180,23 +183,28 @@ def step_rebuild_index() -> Dict[str, Any]:
     out_path = index_builder.write_index(data, index_builder.default_index_path())
 
     print(f"[M3.5] Index rebuilt: {len(data['case_features'])} cases at {out_path}")
-    
+
     # KG 知识图谱同步（2026-07-21 修复：索引重建后自动同步到知识图谱）
     try:
         from scripts.memory_l4.kg_builder import KGBuilder
+
         kg_builder = KGBuilder()
         kg_result = kg_builder.build_all()
         total_cases = sum(r.case_count for r in kg_result.values())
         total_entities = sum(len(r.entities) for r in kg_result.values())
         total_triples = sum(len(r.triples) for r in kg_result.values())
-        print(f"[M3.5] KG synced: {total_cases} cases, {total_entities} entities, {total_triples} triples")
+        print(
+            f"[M3.5] KG synced: {total_cases} cases, {total_entities} entities, {total_triples} triples"
+        )
     except Exception as e:
         print(f"[M3.5] KG sync warning: {e}")
-    
+
     return {"index_path": str(out_path), "case_count": len(data["case_features"])}
 
 
-def step_emit_candidate(case_data: Dict[str, Any], review: Dict[str, Any], distill: Dict[str, Any]) -> Dict[str, Any]:
+def step_emit_candidate(
+    case_data: Dict[str, Any], review: Dict[str, Any], distill: Dict[str, Any]
+) -> Dict[str, Any]:
     """Step 6: 生成进化候选记录 (M4_CANDIDATE_EMITTED)。"""
     cid = case_data["case_id"]
     candidate = {
@@ -231,6 +239,7 @@ def step_emit_candidate(case_data: Dict[str, Any], review: Dict[str, Any], disti
 # ---------------------------------------------------------------------------
 # Pipeline orchestrator
 # ---------------------------------------------------------------------------
+
 
 def run_pipeline(
     episode_path: Path,
@@ -291,7 +300,7 @@ def run_pipeline(
 
 def _read_episode(case_data: Dict[str, Any]) -> Dict[str, Any]:
     """从 case 中读取 episode 数据。"""
-    refs = ((case_data.get("execution") or {}).get("episode_refs") or [])
+    refs = (case_data.get("execution") or {}).get("episode_refs") or []
     if not refs:
         return {}
     raw = refs[0].get("path", "")
@@ -317,6 +326,7 @@ def _list_json(dir_path: Path) -> List[Path]:
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     import argparse

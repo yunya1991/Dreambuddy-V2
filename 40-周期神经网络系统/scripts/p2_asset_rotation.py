@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""P2 资产轮动模块 — 美林时钟定位 + 资产动量印证（40-SPEC.md v0.4 §3.2）
-"""
+"""P2 资产轮动模块 — 美林时钟定位 + 资产动量印证（40-SPEC.md v0.4 §3.2）"""
+
 from __future__ import annotations
+
 import json
+import os
 import sqlite3
 from datetime import datetime, timezone
-import os
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
 _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
@@ -18,6 +19,7 @@ OUT = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "asset_rotat
 GROWTH_THRESHOLD = 1.5
 INFLATION_THRESHOLD = 2.5
 
+
 def load_series(sid):
     conn = sqlite3.connect(DB)
     rows = conn.execute(
@@ -26,6 +28,7 @@ def load_series(sid):
     ).fetchall()
     conn.close()
     return {r[0][:7]: float(r[1]) for r in rows if r[1] is not None}
+
 
 def yoy(series, month):
     y = int(month[:4]) - 1
@@ -36,11 +39,13 @@ def yoy(series, month):
         return None
     return (cur - prev) / prev * 100
 
+
 def latest_common_month(s1, s2):
     common = [m for m in set(s1) & set(s2) if yoy(s1, m) is not None and yoy(s2, m) is not None]
     if not common:
         return None
     return sorted(common)[-1]
+
 
 def clock_quadrant(growth, inflation):
     if growth is None or inflation is None:
@@ -53,10 +58,12 @@ def clock_quadrant(growth, inflation):
         return "stagflation"
     return "reflation"
 
+
 def asset_momentum():
     mom = {}
     try:
         import ccxt
+
         ex = ccxt.binance({"enableRateLimit": True})
         for sym, name in (("BTC/USDT", "crypto_btc"), ("ETH/USDT", "crypto_eth")):
             o = ex.fetch_ohlcv(sym, "1d", limit=91)
@@ -66,7 +73,13 @@ def asset_momentum():
         mom["crypto_error"] = str(e)[:100]
     try:
         import yfinance as yf
-        for sym, name in (("GC=F", "gold"), ("DX-Y.NYB", "dollar"), ("^TNX", "treasury_yield"), ("^GSPC", "equity")):
+
+        for sym, name in (
+            ("GC=F", "gold"),
+            ("DX-Y.NYB", "dollar"),
+            ("^TNX", "treasury_yield"),
+            ("^GSPC", "equity"),
+        ):
             df = yf.download(sym, period="3mo", interval="1d", progress=False)
             if df is None or df.empty:
                 continue
@@ -79,6 +92,7 @@ def asset_momentum():
     except Exception as e:
         mom["yf_error"] = str(e)[:100]
     return mom
+
 
 def main():
     indpro = load_series("INDPRO")
@@ -106,6 +120,7 @@ def main():
         json.dump(out, f, ensure_ascii=False, indent=2)
     print(json.dumps(out, ensure_ascii=False, indent=2))
     print("saved:", OUT)
+
 
 if __name__ == "__main__":
     main()

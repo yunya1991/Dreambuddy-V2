@@ -17,10 +17,8 @@
 
 import argparse
 import json
-import os
 import shutil
 import stat
-import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent  # dreambuddy-v2/
@@ -83,6 +81,7 @@ def install_git_hook(verbose=True):
 # 2. 协议层：MCP server配置模板
 # ============================================================
 
+
 def get_mcp_config() -> dict:
     """返回MCP server配置（供各IDE使用）"""
     return {
@@ -99,6 +98,7 @@ def get_mcp_config() -> dict:
 # ============================================================
 # 3. 宿主层：Claude Code hooks配置
 # ============================================================
+
 
 def get_claude_hooks_config() -> dict:
     """返回Claude Code hooks配置"""
@@ -164,15 +164,16 @@ def install_claude_hooks(verbose=True):
 
     if verbose:
         print(f"✅ Claude Code hooks 已配置: {settings_file}")
-        print(f"   - PostToolUse: 编辑后自动触发认知闭环")
-        print(f"   - SessionStart: 会话开始时检索记忆")
-        print(f"   - MCP Server: cognitive 已注册")
+        print("   - PostToolUse: 编辑后自动触发认知闭环")
+        print("   - SessionStart: 会话开始时检索记忆")
+        print("   - MCP Server: cognitive 已注册")
     return True
 
 
 # ============================================================
 # 4. 宿主层：TRAE MCP配置
 # ============================================================
+
 
 def install_trae_mcp(verbose=True):
     """安装TRAE MCP配置"""
@@ -259,8 +260,8 @@ def install_daemon(verbose=True):
     if verbose:
         print(f"✅ 文件监听daemon配置已创建: {plist_file}")
         print(f"   - 监听目录: {PROJECT_ROOT}")
-        print(f"   - 轮询间隔: 5秒, 防抖窗口: 10秒")
-        print(f"   - 启动方式:")
+        print("   - 轮询间隔: 5秒, 防抖窗口: 10秒")
+        print("   - 启动方式:")
         print(f"     前台: python3 {DAEMON_SCRIPT} --watch . -v")
         print(f"     后台: python3 {DAEMON_SCRIPT} --watch . --daemon")
         print(f"     launchd: launchctl load {plist_file}")
@@ -271,6 +272,7 @@ def install_daemon(verbose=True):
 # ============================================================
 # 5. 通用配置文件
 # ============================================================
+
 
 def install_universal_config(verbose=True):
     """安装通用认知配置文件"""
@@ -326,6 +328,7 @@ def install_universal_config(verbose=True):
 # 6. 卸载
 # ============================================================
 
+
 def uninstall(verbose=True):
     """卸载认知自动接入层"""
     # git hook
@@ -356,6 +359,7 @@ def uninstall(verbose=True):
 # ============================================================
 # 主入口
 # ============================================================
+
 
 def main():
     parser = argparse.ArgumentParser(description="认知自动接入层安装")
@@ -393,7 +397,7 @@ def main():
             install_trae_mcp(args.verbose)
         elif args.mcp:
             config = get_mcp_config()
-            print(f"   MCP配置模板:")
+            print("   MCP配置模板:")
             print(f"   {json.dumps(config, indent=2)}")
 
     if install_all or args.claude:
@@ -408,10 +412,12 @@ def main():
     print("✨ 安装完成！认知闭环已自动接入")
     print("=" * 60)
     print("\n📋 快速验证:")
-    print(f"   1. git hook: git commit -m 'test: 认知闭环测试' → 自动记录经验")
-    print(f"   2. MCP server: echo '{{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{{}}}}' | python3 {MCP_SCRIPT}")
-    print(f"   3. Claude Code: 重启会话 → 自动加载cognitive MCP server")
-    print(f"   4. TRAE: 在MCP面板查看cognitive server → 调用recall/record")
+    print("   1. git hook: git commit -m 'test: 认知闭环测试' → 自动记录经验")
+    print(
+        f'   2. MCP server: echo \'{{"jsonrpc":"2.0","id":1,"method":"initialize","params":{{}}}}\' | python3 {MCP_SCRIPT}'
+    )
+    print("   3. Claude Code: 重启会话 → 自动加载cognitive MCP server")
+    print("   4. TRAE: 在MCP面板查看cognitive server → 调用recall/record")
 
 
 if __name__ == "__main__":

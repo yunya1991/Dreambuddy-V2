@@ -4,19 +4,19 @@ Dreambuddy OS — 共享工具函数
 
 from __future__ import annotations
 
-import time
-import json
 import hashlib
-from typing import Any, Callable, Dict, List, Optional, TypeVar, T
+import json
+import time
 from datetime import datetime, timezone
+from typing import Any, Callable, Dict, List, Optional, T, TypeVar
 
-
-T = TypeVar("T")
+T = TypeVar("T")  # noqa: F811
 
 
 # ============================================================
 # 计时器
 # ============================================================
+
 
 class Timer:
     """简单的计时器，支持 with 语法"""
@@ -48,6 +48,7 @@ class Timer:
 
 def timed(fn: Callable) -> Callable:
     """函数计时装饰器（结果会附加 _elapsed_ms）"""
+
     def wrapper(*args, **kwargs):
         t = Timer(fn.__name__)
         with t:
@@ -55,12 +56,14 @@ def timed(fn: Callable) -> Callable:
         if isinstance(result, dict):
             result["_elapsed_ms"] = t.elapsed_ms
         return result
+
     return wrapper
 
 
 # ============================================================
 # ID 生成
 # ============================================================
+
 
 def gen_cycle_id(prefix: str = "cycle") -> str:
     """生成 cycle ID"""
@@ -77,6 +80,7 @@ def gen_session_id() -> str:
 # ============================================================
 # 序列化辅助
 # ============================================================
+
 
 def safe_json(obj: Any, default: str = "") -> str:
     """安全 JSON 序列化（处理不可序列化对象）"""
@@ -105,8 +109,10 @@ def safe_get(data: Optional[Dict], path: str, default: Any = None) -> Any:
 # 重试
 # ============================================================
 
-def retry(fn: Callable[..., T], attempts: int = 3,
-          backoff: float = 1.0, exceptions: tuple = (Exception,)) -> T:
+
+def retry(
+    fn: Callable[..., T], attempts: int = 3, backoff: float = 1.0, exceptions: tuple = (Exception,)
+) -> T:
     """简单同步重试
 
     Args:
@@ -137,11 +143,12 @@ def retry(fn: Callable[..., T], attempts: int = 3,
 # 列表辅助
 # ============================================================
 
+
 def chunk(lst: List[T], size: int) -> List[List[T]]:
     """分块"""
     if size <= 0:
         return [lst]
-    return [lst[i:i + size] for i in range(0, len(lst), size)]
+    return [lst[i : i + size] for i in range(0, len(lst), size)]
 
 
 def dedupe(lst: List[T], key: Optional[Callable[[T], Any]] = None) -> List[T]:

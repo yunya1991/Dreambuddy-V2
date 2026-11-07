@@ -14,6 +14,7 @@
   python3 gen_semantic_events.py --backfill
   python3 gen_semantic_events.py --live
 """
+
 import argparse
 import json
 import os
@@ -30,22 +31,26 @@ STATE_PATH = os.path.join(_SYS_DIR, ".semantic_events_state.json")
 # 术语事件模式（术语 → 正则，含分组提取取值）
 # 结构约定: 时间戳后固定 [INFO]，再取 [标的]，避免非贪婪误匹配 [INFO]
 EVENT_PATTERNS = {
-    "BCRM连续性": re.compile(
-        r"\[([\d:\- ]+)\] \[INFO\] \[(\w+)\].*?BCRM连续=(\w+)\(([\d.]+)\)"),
+    "BCRM连续性": re.compile(r"\[([\d:\- ]+)\] \[INFO\] \[(\w+)\].*?BCRM连续=(\w+)\(([\d.]+)\)"),
     "三层弹性放行": re.compile(
-        r"\[([\d:\- ]+)\] \[INFO\] \[(\w+)\].*?方案C 三层弹性放行 \| P1=(\w+) Elder=(\w+) BCRM连续=(\w+) Score_B=([\d.]+)"),
+        r"\[([\d:\- ]+)\] \[INFO\] \[(\w+)\].*?方案C 三层弹性放行 \| P1=(\w+) Elder=(\w+) BCRM连续=(\w+) Score_B=([\d.]+)"
+    ),
     "弹性门控试错仓": re.compile(
-        r"\[([\d:\- ]+)\] \[INFO\] \[(\w+)\].*?ElasticGate3L 将给 ?([\d.]+) ?试错仓"),
+        r"\[([\d:\- ]+)\] \[INFO\] \[(\w+)\].*?ElasticGate3L 将给 ?([\d.]+) ?试错仓"
+    ),
     "BDSM仓位兜底": re.compile(
-        r"\[([\d:\- ]+)\] \[INFO\] \[(\w+)\].*?BDSM 最低仓位兜底 \| ([\d.]+)U→([\d.]+)U"),
+        r"\[([\d:\- ]+)\] \[INFO\] \[(\w+)\].*?BDSM 最低仓位兜底 \| ([\d.]+)U→([\d.]+)U"
+    ),
     "P1趋势过滤": re.compile(
-        r"\[([\d:\- ]+)\] \[INFO\] \[(\w+)\].*?P1长多趋势过滤 \| 共振(成功|失败)"),
+        r"\[([\d:\- ]+)\] \[INFO\] \[(\w+)\].*?P1长多趋势过滤 \| 共振(成功|失败)"
+    ),
     "反向信号软权重": re.compile(
-        r"\[([\d:\- ]+)\] \[INFO\] \[[\w\-]+\] (\w+).*?反向信号软权重.*?仓位 ×([\d.]+)"),
+        r"\[([\d:\- ]+)\] \[INFO\] \[[\w\-]+\] (\w+).*?反向信号软权重.*?仓位 ×([\d.]+)"
+    ),
     "开仓事件": re.compile(
-        r"\[([\d:\- ]+)\] \[INFO\] \[(\w+)\] 开仓成功 \| ordId=([\w]+) \| 入场价≈([\d.]+)"),
-    "置信度信号": re.compile(
-        r"\[([\d:\- ]+)\] \[INFO\] \[(\w+)\].*?置信度=([\d.]+) 方向=(\w+)"),
+        r"\[([\d:\- ]+)\] \[INFO\] \[(\w+)\] 开仓成功 \| ordId=([\w]+) \| 入场价≈([\d.]+)"
+    ),
+    "置信度信号": re.compile(r"\[([\d:\- ]+)\] \[INFO\] \[(\w+)\].*?置信度=([\d.]+) 方向=(\w+)"),
 }
 
 
@@ -63,14 +68,16 @@ def _save_state(state):
 
 
 def _emit(events, term, ts, symbol, values, raw):
-    events.append({
-        "term": term,
-        "timestamp": ts.strip(),
-        "symbol": symbol,
-        "values": values,
-        "raw": raw[:200],
-        "source": "trader.log",
-    })
+    events.append(
+        {
+            "term": term,
+            "timestamp": ts.strip(),
+            "symbol": symbol,
+            "values": values,
+            "raw": raw[:200],
+            "source": "trader.log",
+        }
+    )
 
 
 def scan(start_line=0, max_lines=500000):
@@ -115,7 +122,9 @@ def main():
             with open(TRADER_LOG, "r", encoding="utf-8", errors="ignore") as f:
                 total_lines = sum(1 for _ in f)
             if start > total_lines:
-                print(f"[WARN] 检测到日志轮转：已处理 {start} 行 > 当前 {total_lines} 行，重置状态从头扫描")
+                print(
+                    f"[WARN] 检测到日志轮转：已处理 {start} 行 > 当前 {total_lines} 行，重置状态从头扫描"
+                )
                 start = 0
         except FileNotFoundError:
             pass
@@ -129,8 +138,10 @@ def main():
                 f.write(json.dumps(e, ensure_ascii=False) + "\n")
     _save_state({"processed_lines": start + processed})
 
-    print(f"[OK] 模式={'backfill' if args.backfill else 'live'} "
-          f"扫描 {processed} 行, 产出 {len(events)} 条语义事件 → {OUT_PATH}")
+    print(
+        f"[OK] 模式={'backfill' if args.backfill else 'live'} "
+        f"扫描 {processed} 行, 产出 {len(events)} 条语义事件 → {OUT_PATH}"
+    )
     if events:
         by_term = {}
         for e in events:

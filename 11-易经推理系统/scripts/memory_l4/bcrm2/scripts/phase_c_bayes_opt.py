@@ -11,6 +11,7 @@ Plan: 2026-08-20-phase-c-alpha-blend-plan.md §T_C4
 
 目标函数：最大化 WalkForward 平均 sharpe
 """
+
 from __future__ import annotations
 
 import sys
@@ -25,18 +26,17 @@ _MEMORY_L4 = _THIS.parent.parent.parent
 if str(_MEMORY_L4) not in sys.path:
     sys.path.insert(0, str(_MEMORY_L4))
 
-from bcrm2.parameter_mapper import ALPHA_BLEND_MAX
-from bcrm2.scripts.eval_walkforward import run_alpha_blend_comparison
-
+from bcrm2.parameter_mapper import ALPHA_BLEND_MAX  # noqa: E402
+from bcrm2.scripts.eval_walkforward import run_alpha_blend_comparison  # noqa: E402
 
 # ================================================================
 # 参数空间定义
 # ================================================================
 PARAM_SPACE: Dict[str, tuple] = {
-    "alpha_blend": (0.0, ALPHA_BLEND_MAX),      # 受硬约束 [0, 0.5]
-    "fft_learning_rate": (0.01, 0.3),             # FFT 权重学习率
-    "hermite_m0": (0.0, 2.0),                     # Hermite 切线 m0
-    "hermite_m1": (0.0, 2.0),                     # Hermite 切线 m1
+    "alpha_blend": (0.0, ALPHA_BLEND_MAX),  # 受硬约束 [0, 0.5]
+    "fft_learning_rate": (0.01, 0.3),  # FFT 权重学习率
+    "hermite_m0": (0.0, 2.0),  # Hermite 切线 m0
+    "hermite_m1": (0.0, 2.0),  # Hermite 切线 m1
 }
 
 
@@ -55,8 +55,7 @@ class PhaseCBayesianOptimizer:
         self.param_space = PARAM_SPACE
         self.study: Optional[optuna.Study] = None
 
-    def optimize(self, symbol: str = "BTCUSDT",
-                 csv_path: Optional[Path] = None) -> Dict[str, Any]:
+    def optimize(self, symbol: str = "BTCUSDT", csv_path: Optional[Path] = None) -> Dict[str, Any]:
         """运行贝叶斯优化，返回最优参数。
 
         参数:
@@ -82,16 +81,17 @@ class PhaseCBayesianOptimizer:
             "n_trials": self.n_trials,
         }
 
-    def _objective(self, trial: optuna.Trial,
-                   symbol: str, csv_path: Optional[Path]) -> float:
+    def _objective(self, trial: optuna.Trial, symbol: str, csv_path: Optional[Path]) -> float:
         """Optuna 目标函数：最大化 WalkForward 平均 sharpe。
 
         对每个 trial 采样的参数，跑 WalkForward 回测取 sharpe。
         """
         alpha = trial.suggest_float("alpha_blend", *self.param_space["alpha_blend"])
-        fft_lr = trial.suggest_float("fft_learning_rate", *self.param_space["fft_learning_rate"])
-        m0 = trial.suggest_float("hermite_m0", *self.param_space["hermite_m0"])
-        m1 = trial.suggest_float("hermite_m1", *self.param_space["hermite_m1"])
+        fft_lr = trial.suggest_float(  # noqa: F841
+            "fft_learning_rate", *self.param_space["fft_learning_rate"]
+        )  # noqa: F841
+        m0 = trial.suggest_float("hermite_m0", *self.param_space["hermite_m0"])  # noqa: F841
+        m1 = trial.suggest_float("hermite_m1", *self.param_space["hermite_m1"])  # noqa: F841
 
         # 如果没有 CSV，用简化评估（alpha 对应的预期 sharpe）
         if csv_path is None or not Path(csv_path).exists():
@@ -118,6 +118,7 @@ class PhaseCBayesianOptimizer:
 # ================================================================
 def main():
     import argparse
+
     p = argparse.ArgumentParser(description="Phase C 贝叶斯优化（α/FFT/Hermite 参数搜索）")
     p.add_argument("--csv", required=True, help="BTC 1D CSV 路径")
     p.add_argument("--n-trials", type=int, default=50, help="Optuna 试验次数")
@@ -135,6 +136,7 @@ def main():
 
     if args.out:
         import json
+
         out_path = Path(args.out)
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")

@@ -6,8 +6,9 @@
   - baseline: 不启用五角校验（enable_pentagon=False）
   - pentagon: 启用五角校验（enable_pentagon=True）
 """
-import sys
+
 import os
+import sys
 
 # 设置路径
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -15,22 +16,24 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 sys.path.insert(0, PROJECT_ROOT)
 
 # 修复inspect模块：必须在任何其他import之前执行（特别是pandas/dataclasses之前）
-import importlib
+import importlib  # noqa: E402
+
 # 先移除项目内可能干扰的inspect.py路径
-_remove_paths = [p for p in sys.path if 'memory_l4' in p or p == SCRIPT_DIR]
+_remove_paths = [p for p in sys.path if "memory_l4" in p or p == SCRIPT_DIR]
 for _p in _remove_paths:
     if _p in sys.path:
         sys.path.remove(_p)
-_std_inspect = importlib.import_module('inspect')
-sys.modules['inspect'] = _std_inspect
+_std_inspect = importlib.import_module("inspect")
+sys.modules["inspect"] = _std_inspect
 # 恢复路径
 for _p in reversed(_remove_paths):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import time
-import logging
-import pandas as pd
+import logging  # noqa: E402
+import time  # noqa: E402
+
+import pandas as pd  # noqa: E402
 
 logging.basicConfig(level=logging.WARNING, format="%(message)s")
 logger = logging.getLogger(__name__)
@@ -50,7 +53,10 @@ def load_klines(symbol, timeframe="1H"):
 
 def run_backtest(symbol, df, enable_pentagon=True, n_folds=3):
     """运行单币种回测"""
-    from scripts.memory_l4.bcrm2.walk_forward_backtester import WalkForwardBacktester, generate_report
+    from scripts.memory_l4.bcrm2.walk_forward_backtester import (
+        WalkForwardBacktester,
+        generate_report,
+    )
 
     bt = WalkForwardBacktester(
         symbol=symbol,

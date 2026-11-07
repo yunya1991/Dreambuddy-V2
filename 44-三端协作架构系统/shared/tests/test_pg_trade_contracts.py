@@ -8,6 +8,7 @@ _trade_to_bind/_trade_from_row（Decimal→TEXT、ISO 时间戳、枚举小写�
 DSN 未配置（DAL_PG_URL/DATABASE_URL//etc/dreambuddy-dal.env 均缺失）时整模块 skip。
 测试数据：trade_id 前缀 pg-c4a-contract-、sub_system=c4a_contract，teardown 统一清理。
 """
+
 import os
 import sys
 import uuid
@@ -22,18 +23,21 @@ for _p in (REPO_ROOT, DAL_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from dreambuddy_dal.di import get_trade_repo
-from dreambuddy_dal.unified_models import (CloseInfo, DailyStats, ExitReason,
-                                           TradeDirection, TradeRecord)
+from dreambuddy_dal.di import get_trade_repo  # noqa: E402
+from dreambuddy_dal.unified_models import (  # noqa: E402
+    CloseInfo,
+    DailyStats,
+    ExitReason,
+    TradeDirection,
+    TradeRecord,
+)
 
 try:
     _REPO = get_trade_repo(backend="postgres")
 except Exception:
     _REPO = None
 
-pytestmark = pytest.mark.skipif(
-    _REPO is None, reason="PG DSN 未配置，跳过 C4a 契约测试"
-)
+pytestmark = pytest.mark.skipif(_REPO is None, reason="PG DSN 未配置，跳过 C4a 契约测试")
 
 _PREFIX = "pg-c4a-contract-" + uuid.uuid4().hex[:8] + "-"
 _SUB = "c4a_contract"
@@ -42,10 +46,16 @@ _STRATEGY = "pg_contract_test"
 
 def _mk_trade(tid, entry_ts, strategy=_STRATEGY):
     return TradeRecord(
-        trade_id=tid, sub_system=_SUB, strategy_name=strategy,
-        symbol="BTC-USDT-SWAP", direction=TradeDirection.LONG,
-        entry_price=Decimal("50000.00"), quantity=Decimal("0.01"),
-        entry_ts=entry_ts, stop_loss=Decimal("49000"), take_profit=Decimal("52000"),
+        trade_id=tid,
+        sub_system=_SUB,
+        strategy_name=strategy,
+        symbol="BTC-USDT-SWAP",
+        direction=TradeDirection.LONG,
+        entry_price=Decimal("50000.00"),
+        quantity=Decimal("0.01"),
+        entry_ts=entry_ts,
+        stop_loss=Decimal("49000"),
+        take_profit=Decimal("52000"),
         risk_level_cn="中",
     )
 
@@ -54,6 +64,7 @@ def test_serialization_shared_with_sqlite_unified():
     """字段级一致契约：postgres 与 sqlite_unified 共享同一序列化实现。"""
     from dreambuddy_dal.implementations.postgres import trade_impl as pg
     from dreambuddy_dal.implementations.sqlite_unified import trade_impl as sq
+
     assert pg._trade_to_bind is sq._trade_to_bind
     assert pg._trade_from_row is sq._trade_from_row
 
@@ -93,17 +104,28 @@ def test_close_position_semantics():
     repo = get_trade_repo(backend="postgres")
     tid = _PREFIX + "close"
     repo.add_trade(_mk_trade(tid, datetime.now(timezone.utc)))
-    ci = repo.close_position(tid, ExitReason.TP_HIT, Decimal("52000.00"),
-                             datetime.now(timezone.utc), Decimal("20.00"))
+    ci = repo.close_position(
+        tid, ExitReason.TP_HIT, Decimal("52000.00"), datetime.now(timezone.utc), Decimal("20.00")
+    )
     assert isinstance(ci, CloseInfo)
     assert ci.realized_pnl == Decimal("20.00")
     assert ci.exit_reason is ExitReason.TP_HIT
     with pytest.raises(ValueError):
-        repo.close_position(tid, ExitReason.TP_HIT, Decimal("52000.00"),
-                            datetime.now(timezone.utc), Decimal("20.00"))
+        repo.close_position(
+            tid,
+            ExitReason.TP_HIT,
+            Decimal("52000.00"),
+            datetime.now(timezone.utc),
+            Decimal("20.00"),
+        )
     with pytest.raises(ValueError):
-        repo.close_position(_PREFIX + "missing", ExitReason.MANUAL,
-                            Decimal("1"), datetime.now(timezone.utc), Decimal("0"))
+        repo.close_position(
+            _PREFIX + "missing",
+            ExitReason.MANUAL,
+            Decimal("1"),
+            datetime.now(timezone.utc),
+            Decimal("0"),
+        )
 
 
 def test_query_trades_pagination():
@@ -112,8 +134,9 @@ def test_query_trades_pagination():
     strategy = _STRATEGY + "_page"
     base = datetime(2026, 10, 30, 10, 0, 0, tzinfo=timezone.utc)
     for i in range(5):
-        repo.add_trade(_mk_trade(_PREFIX + "page%d" % i, base + timedelta(seconds=i),
-                                strategy=strategy))
+        repo.add_trade(
+            _mk_trade(_PREFIX + "page%d" % i, base + timedelta(seconds=i), strategy=strategy)
+        )
     rows = repo.query_trades(strategy=strategy, limit=3)
     assert len(rows) == 3
     assert all(r.strategy_name == strategy for r in rows)
@@ -126,10 +149,17 @@ def test_daily_stats_upsert():
     """daily_stats：同键 upsert 覆盖，get 取最新值。"""
     repo = get_trade_repo(backend="postgres")
     stat_date = "2026-10-30"
-    common = dict(stat_date=stat_date, symbol="BTC-USDT-SWAP", sub_system=_SUB,
-                  strategy_name=_STRATEGY, start_equity=Decimal("1000"),
-                  max_drawdown=Decimal("5"), win_count=1, loss_count=0,
-                  trading_volume=Decimal("0.01"))
+    common = dict(  # noqa: C408
+        stat_date=stat_date,
+        symbol="BTC-USDT-SWAP",
+        sub_system=_SUB,
+        strategy_name=_STRATEGY,
+        start_equity=Decimal("1000"),
+        max_drawdown=Decimal("5"),
+        win_count=1,
+        loss_count=0,
+        trading_volume=Decimal("0.01"),
+    )
     ds1 = DailyStats(end_equity=Decimal("1020"), net_pnl=Decimal("20"), **common)
     assert repo.add_or_update_daily_stats(ds1) is True
     ds2 = DailyStats(end_equity=Decimal("1035"), net_pnl=Decimal("35"), **common)
@@ -145,6 +175,7 @@ def teardown_module(module):
     if _REPO is None:
         return
     from dreambuddy_dal.implementations.postgres.connection import get_pg_connection
+
     with get_pg_connection() as conn:
         cur = conn.cursor()
         cur.execute("DELETE FROM tr_trades WHERE trade_id LIKE %s", (_PREFIX + "%",))

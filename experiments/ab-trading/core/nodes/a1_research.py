@@ -12,11 +12,14 @@ A系列研报路径: experiments/ab-trading/A系列研报/A1研报/  (A1报告 J
                  experiments/ab-trading/A系列研报/A6研报/  (A6报告 MD)
 """
 
-from typing import Dict, Any, Optional, List
-import json, time, requests, os, glob
+import json
+import os
+import time
+from datetime import datetime
 from pathlib import Path
-from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
+import requests
 
 # ── A系列研报目录（绝对路径）──────────────────────────────────────────────
 _A1_REPORT_DIR = Path(__file__).resolve().parent.parent.parent / "A系列研报" / "A1研报"
@@ -53,8 +56,8 @@ def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
         }
     """
     coin = mkt.get("coin", "BTC")
-    price = mkt.get("price", 0)
-    ch24 = mkt.get("change_24h", 0)
+    price = mkt.get("price", 0)  # noqa: F841
+    ch24 = mkt.get("change_24h", 0)  # noqa: F841
 
     reasoning = []
     a0_data = {}
@@ -88,8 +91,11 @@ def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
     w_trend = weekly_report.get("weekly_trend", "")
     w_source = weekly_report.get("_source", "unknown")
 
-    a0_dir = "LONG" if a0_data.get("dominant_force") == "BULL" else \
-             "SHORT" if a0_data.get("dominant_force") == "BEAR" else "HOLD"
+    a0_dir = (
+        "LONG"
+        if a0_data.get("dominant_force") == "BULL"
+        else "SHORT" if a0_data.get("dominant_force") == "BEAR" else "HOLD"
+    )
     a0_conf = a0_data.get("confidence", 0.45)
 
     # A6 风险警告注入 rationale
@@ -98,7 +104,9 @@ def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
 
     # 周报方向注入 rationale
     if w_source not in ("none", "expired", "error"):
-        reasoning.append(f"[周报] 方向={w_dir} 趋势={w_trend} 策略={w_strategy} 仓位上限={w_position_cap}")
+        reasoning.append(
+            f"[周报] 方向={w_dir} 趋势={w_trend} 策略={w_strategy} 仓位上限={w_position_cap}"
+        )
 
     # 四源融合（优先级: 周报(战略层) > A1 > A6 > A0，同向加成，冲突降权）
     # 周报作为战略层约束，如果周报方向明确（非HOLD），作为基础方向
@@ -155,11 +163,12 @@ def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
             "weekly_report": weekly_report,
             "a1_report": a1_report,
             "a6_report": a6_report,
-        }
+        },
     }
 
 
 # ── A1 研报读取 ────────────────────────────────────────────────────────────
+
 
 def _load_latest_a1_report(coin: str, reasoning: List[str]) -> Dict:
     """
@@ -176,9 +185,7 @@ def _load_latest_a1_report(coin: str, reasoning: List[str]) -> Dict:
     reasoning.append("[A1研报] 本地研报目录无有效文件，调用 Feed API")
     try:
         resp = requests.get(
-            "http://49.233.123.96:3456/feed",
-            params={"coin": coin, "limit": 3},
-            timeout=5
+            "http://49.233.123.96:3456/feed", params={"coin": coin, "limit": 3}, timeout=5
         )
         if resp.status_code == 200:
             feed = resp.json()
@@ -213,7 +220,9 @@ def _read_latest_json_report(report_dir: Path, coin: str, reasoning: List[str]) 
     age_hours = (datetime.now() - file_mtime).total_seconds() / 3600
 
     if age_hours > _MAX_REPORT_AGE_HOURS:
-        reasoning.append(f"[A1研报] 最新文件年龄 {age_hours:.1f}h > {_MAX_REPORT_AGE_HOURS}h，视为过期")
+        reasoning.append(
+            f"[A1研报] 最新文件年龄 {age_hours:.1f}h > {_MAX_REPORT_AGE_HOURS}h，视为过期"
+        )
         return None
 
     try:
@@ -263,6 +272,7 @@ def _normalize_a1_json_report(raw: Dict, filename: str) -> Dict:
 
 # ── A6 研报读取 ────────────────────────────────────────────────────────────
 
+
 def _load_latest_a6_report(coin: str, reasoning: List[str]) -> Dict:
     """
     读取 A系列研报/A6研报/ 中最新的 Markdown 报告。
@@ -283,7 +293,9 @@ def _load_latest_a6_report(coin: str, reasoning: List[str]) -> Dict:
     age_hours = (datetime.now() - file_mtime).total_seconds() / 3600
 
     if age_hours > _MAX_REPORT_AGE_HOURS:
-        reasoning.append(f"[A6研报] 最新文件年龄 {age_hours:.1f}h > {_MAX_REPORT_AGE_HOURS}h，视为过期")
+        reasoning.append(
+            f"[A6研报] 最新文件年龄 {age_hours:.1f}h > {_MAX_REPORT_AGE_HOURS}h，视为过期"
+        )
         return {"_source": "expired", "age_hours": age_hours}
 
     try:
@@ -315,6 +327,7 @@ def _parse_a6_markdown_report(content: str, filename: str) -> Dict:
 
     # 提取风险警告（⚠️ 行）
     import re
+
     warning_matches = re.findall(r"⚠️\s*([^\n]+)", content)
     if warning_matches:
         result["risk_warning"] = " | ".join(warning_matches[:3])
@@ -329,7 +342,7 @@ def _parse_a6_markdown_report(content: str, filename: str) -> Dict:
     for section_header in ["综合研判", "核心结论", "情报结论", "三屏综合"]:
         idx = content.find(section_header)
         if idx >= 0:
-            conclusion_section = content[idx:idx+800]
+            conclusion_section = content[idx : idx + 800]
             break
     if conclusion_section:
         if re.search(r"偏多|偏LONG|看多|LONG|bull|BULL", conclusion_section, re.I):
@@ -338,7 +351,11 @@ def _parse_a6_markdown_report(content: str, filename: str) -> Dict:
             result["direction"] = "SHORT"
 
     # 提取 summary（取第一段非标题内容）
-    lines = [l.strip() for l in content.split("\n") if l.strip() and not l.strip().startswith("#")]
+    lines = [
+        l.strip()
+        for l in content.split("\n")  # noqa: E741
+        if l.strip() and not l.strip().startswith("#")  # noqa: E741
+    ]  # noqa: E741
     if lines:
         result["summary"] = lines[0][:200]
 
@@ -355,7 +372,6 @@ def _load_latest_weekly_report(reasoning: List[str]) -> Dict:
         reasoning.append("[周报] 周报目录不存在")
         return {"_source": "none"}
 
-    import re
     files = sorted(_WEEKLY_REPORT_DIR.glob("screen1_*.md"), key=os.path.getmtime, reverse=True)
     if not files:
         reasoning.append("[周报] 无周报文件")
@@ -370,7 +386,9 @@ def _load_latest_weekly_report(reasoning: List[str]) -> Dict:
     try:
         content = latest.read_text(encoding="utf-8")
         result = _parse_weekly_report(content, latest.name)
-        reasoning.append(f"[周报] 读取 {latest.name} ({age_hours:.1f}h前) → 方向={result['direction']} 策略={result['strategy']} 仓位上限={result['position_cap']}")
+        reasoning.append(
+            f"[周报] 读取 {latest.name} ({age_hours:.1f}h前) → 方向={result['direction']} 策略={result['strategy']} 仓位上限={result['position_cap']}"
+        )
         return result
     except Exception as e:
         reasoning.append(f"[周报] 读取失败: {e}")
@@ -388,6 +406,7 @@ def _parse_weekly_report(content: str, filename: str) -> Dict:
     - summary: 核心摘要
     """
     import re
+
     result = {
         "filename": filename,
         "_source": "local_weekly_report",
@@ -401,7 +420,10 @@ def _parse_weekly_report(content: str, filename: str) -> Dict:
     }
 
     # 提取方向
-    for pattern in [r"\*{0,2}方向\*{0,2}[：:]\s*(做多|做空|观望)", r"方向[：:]\s*(LONG|SHORT|HOLD|WAIT)"]:
+    for pattern in [
+        r"\*{0,2}方向\*{0,2}[：:]\s*(做多|做空|观望)",
+        r"方向[：:]\s*(LONG|SHORT|HOLD|WAIT)",
+    ]:
         m = re.search(pattern, content, re.I)
         if m:
             d = m.group(1).upper()
@@ -439,9 +461,13 @@ def _parse_weekly_report(content: str, filename: str) -> Dict:
     # 提取摘要（执行摘要部分）
     idx = content.find("核心判断")
     if idx >= 0:
-        result["summary"] = content[idx:idx+300].replace("\n", " ").strip()[:200]
+        result["summary"] = content[idx : idx + 300].replace("\n", " ").strip()[:200]
     else:
-        lines = [l.strip() for l in content.split("\n") if l.strip() and not l.strip().startswith("#") and not l.strip().startswith("---")]
+        lines = [
+            l.strip()
+            for l in content.split("\n")  # noqa: E741
+            if l.strip() and not l.strip().startswith("#") and not l.strip().startswith("---")
+        ]
         if lines:
             result["summary"] = lines[0][:200]
 
@@ -449,6 +475,7 @@ def _parse_weekly_report(content: str, filename: str) -> Dict:
 
 
 # ── 原有函数保留（兼容）───────────────────────────────────────────────────
+
 
 def _detect_contradictions(mkt: Dict, memory: Dict, data: Dict) -> Dict:
     """A0 矛盾检测：识别多空信号矛盾"""
@@ -459,18 +486,22 @@ def _detect_contradictions(mkt: Dict, memory: Dict, data: Dict) -> Dict:
     contradictions = []
 
     if rsi > 60 and ch24 < -1:
-        contradictions.append({"type": "RSI_vs_PRICE", "bull": False,
-                               "desc": f"RSI={rsi:.1f} 偏高但价格下跌"})
+        contradictions.append(
+            {"type": "RSI_vs_PRICE", "bull": False, "desc": f"RSI={rsi:.1f} 偏高但价格下跌"}
+        )
     elif rsi < 40 and ch24 > 1:
-        contradictions.append({"type": "RSI_vs_PRICE", "bull": True,
-                               "desc": f"RSI={rsi:.1f} 偏低但价格上涨"})
+        contradictions.append(
+            {"type": "RSI_vs_PRICE", "bull": True, "desc": f"RSI={rsi:.1f} 偏低但价格上涨"}
+        )
 
     if fund_rate > 0.01 and ch24 < -2:
-        contradictions.append({"type": "FUND_vs_PRICE", "bull": True,
-                               "desc": f"正资金费率但价格下跌=空头拥挤"})
+        contradictions.append(
+            {"type": "FUND_vs_PRICE", "bull": True, "desc": "正资金费率但价格下跌=空头拥挤"}
+        )
     elif fund_rate < -0.01 and ch24 > 2:
-        contradictions.append({"type": "FUND_vs_PRICE", "bull": False,
-                               "desc": f"负资金费率但价格上涨=多头拥挤"})
+        contradictions.append(
+            {"type": "FUND_vs_PRICE", "bull": False, "desc": "负资金费率但价格上涨=多头拥挤"}
+        )
 
     bull_count = sum(1 for c in contradictions if c.get("bull"))
     bear_count = len(contradictions) - bull_count

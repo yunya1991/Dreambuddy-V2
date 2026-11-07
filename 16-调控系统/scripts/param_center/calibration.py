@@ -18,6 +18,7 @@
   B. 平均偏差 ≥ 15%
   C. 偏差标准差 ≥ 10%
 """
+
 from __future__ import annotations
 
 import logging
@@ -30,7 +31,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # 校准触发阈值
 # ============================================================================
-MIN_SAMPLE_COUNT = 30       # 最少样本数
+MIN_SAMPLE_COUNT = 30  # 最少样本数
 DEVIATION_AVG_THRESHOLD = 0.15  # 平均偏差阈值
 DEVIATION_STD_THRESHOLD = 0.10  # 偏差标准差阈值
 
@@ -41,6 +42,7 @@ DEVIATION_STD_THRESHOLD = 0.10  # 偏差标准差阈值
 @dataclass
 class DeviationStats:
     """偏差统计结果"""
+
     symbol: str
     sample_count: int
     avg_deviation: float = 0.0
@@ -56,6 +58,7 @@ class DeviationStats:
 @dataclass
 class CalibrationProposal:
     """校准建议"""
+
     symbol: str
     should_calibrate: bool = False
     reason: str = ""
@@ -78,6 +81,7 @@ class CalibrationAnalyzer:
         if shadow_logger is None:
             try:
                 from .shadow_integration import get_shadow_logger
+
                 shadow_logger = get_shadow_logger()
             except Exception:
                 shadow_logger = None
@@ -96,6 +100,7 @@ class CalibrationAnalyzer:
             return DeviationStats(symbol=symbol, sample_count=0)
 
         import json
+
         deviations = [r.get("deviation_pct", 0) for r in records]
         # 解析 JSON 字段
         rec_params_list = []
@@ -169,8 +174,7 @@ class CalibrationAnalyzer:
                 symbol=symbol,
                 should_calibrate=False,
                 reason=(
-                    f"偏差稳定: avg={stats.avg_deviation:.3f} "
-                    f"std={stats.std_deviation:.3f}"
+                    f"偏差稳定: avg={stats.avg_deviation:.3f} " f"std={stats.std_deviation:.3f}"
                 ),
                 stats=stats,
             )
@@ -218,6 +222,7 @@ class CalibrationAnalyzer:
         # 延迟导入避免循环依赖
         if verifier is None:
             from .verifier import BayesianVerifier
+
             verifier = BayesianVerifier()
 
         # Step 1: 偏差分析 + 校准建议
@@ -226,6 +231,7 @@ class CalibrationAnalyzer:
         if not proposal.should_calibrate:
             # 不需要校准，返回中性 VerificationResult
             from .verifier import VerificationResult
+
             return proposal, VerificationResult(
                 passed=False,
                 rollback_reason=f"无需校准: {proposal.reason}",
@@ -233,12 +239,15 @@ class CalibrationAnalyzer:
 
         # Step 2: 用 BayesianVerifier 跑回测验证
         from .aggregator import ParamProposal
+
         param_proposal = ParamProposal(
             params=proposal.calibrated_params,
             confidence=proposal.confidence,
         )
         ver_result = verifier.verify_and_upgrade(
-            param_proposal, symbol, history_days=days,
+            param_proposal,
+            symbol,
+            history_days=days,
         )
         return proposal, ver_result
 

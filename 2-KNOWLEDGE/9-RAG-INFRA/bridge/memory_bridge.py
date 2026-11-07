@@ -29,7 +29,7 @@ _RAG_INFRA_DIR = _THIS_DIR.parent
 if str(_RAG_INFRA_DIR) not in sys.path:
     sys.path.insert(0, str(_RAG_INFRA_DIR))
 
-from .weight_feedback import update_boost, resolve_default_weight_path
+from .weight_feedback import resolve_default_weight_path, update_boost  # noqa: E402
 
 # 原生生产映射表路径（9-RAG-INFRA/bridge/retrieval_memory_map.jsonl）
 _PROD_MAP_PATH = _THIS_DIR / "retrieval_memory_map.jsonl"
@@ -72,6 +72,7 @@ def _get_cle():
         if str(_COGNITIVE_DIR) not in sys.path:
             sys.path.insert(0, str(_COGNITIVE_DIR))
         from cognitive_loop_entry import get_cle
+
         return get_cle()
     except Exception:
         return None
@@ -104,8 +105,7 @@ def _load_map(map_path: Optional[Path] = None) -> List[Dict]:
     return records
 
 
-def _find_mapping(memory_id: str,
-                  map_path: Optional[Path] = None) -> Optional[Dict]:
+def _find_mapping(memory_id: str, map_path: Optional[Path] = None) -> Optional[Dict]:
     """在映射表中查找 memory_id 对应的记录。"""
     for r in _load_map(map_path):
         if r.get("memory_id") == memory_id:
@@ -273,8 +273,11 @@ def verify_and_feedback(
     if cle is not None:
         try:
             verify_result = cle.verify(memory_id, success=success)
-            if isinstance(verify_result, dict) and verify_result.get("success") is False \
-                    and "error" in verify_result:
+            if (
+                isinstance(verify_result, dict)
+                and verify_result.get("success") is False
+                and "error" in verify_result
+            ):
                 # verify 本身失败（如记忆不存在）
                 result["error"] = verify_result.get("error", "verify_failed")
                 result["status"] = "failed"
@@ -287,8 +290,7 @@ def verify_and_feedback(
 
     # 3. 反哺权重
     try:
-        new_boost = update_boost(
-            result["source_file"], result["heading"], success, weight_path)
+        new_boost = update_boost(result["source_file"], result["heading"], success, weight_path)
         result["boost_updated"] = True
         result["new_boost"] = new_boost
         result["status"] = "done"

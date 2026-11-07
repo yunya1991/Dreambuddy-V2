@@ -8,6 +8,7 @@
   T10-3 EN_SILVER=True + fail_open → 即使 DataCleaningPipeline 抛异常，也不会向上冒泡（fail-open）
           （用 monkey-patch DataCleaningPipeline.clean 抛 RuntimeError 验证）
 """
+
 from __future__ import annotations
 
 import os
@@ -25,18 +26,24 @@ def _iso(ts: datetime) -> str:
 def _mk_fresh_btc_ohlcv(n: int = 6) -> list[DataRecord]:
     ts = datetime.now(timezone.utc) - timedelta(minutes=3)
     rows = pd.date_range(ts - timedelta(hours=n - 1), periods=n, freq="1h")
-    return [DataRecord(
-        source="yfinance", category="finance", sub_category="ohlcv",
-        timestamp=_iso(ts),
-        metrics={"asset": "BTC"},
-        events=[],
-        timeseries=pd.DataFrame({
-            "timestamp": [_iso(t) for t in rows],
-            "close": [100.0, None, 102.0, None, 104.0, 105.0][:n],
-            "volume": [10, 20, 30, 40, 50, 60][:n],
-        }).to_dict(orient="records"),
-        raw={},
-    )]
+    return [
+        DataRecord(
+            source="yfinance",
+            category="finance",
+            sub_category="ohlcv",
+            timestamp=_iso(ts),
+            metrics={"asset": "BTC"},
+            events=[],
+            timeseries=pd.DataFrame(
+                {
+                    "timestamp": [_iso(t) for t in rows],
+                    "close": [100.0, None, 102.0, None, 104.0, 105.0][:n],
+                    "volume": [10, 20, 30, 40, 50, 60][:n],
+                }
+            ).to_dict(orient="records"),
+            raw={},
+        )
+    ]
 
 
 class TestH1Integration:
@@ -48,6 +55,7 @@ class TestH1Integration:
     @pytest.fixture
     def _reg(self):
         from data_center.core.registry import Registry
+
         reg = Registry()
 
         class FakeCollector:
@@ -74,10 +82,12 @@ class TestH1Integration:
             from data_center.monitoring import MonitoringBundle
 
             class _NoopMetrics:
-                def record(self, *a, **kw): return None
+                def record(self, *a, **kw):
+                    return None
 
             class _NoopAlerts:
-                def emit(self, *a, **kw): return None
+                def emit(self, *a, **kw):
+                    return None
 
             from data_center.monitoring.quality import QualityChecker
 
@@ -109,10 +119,12 @@ class TestH1Integration:
         from data_center.monitoring.quality import QualityChecker
 
         class _NoopMetrics:
-            def record(self, *a, **kw): return None
+            def record(self, *a, **kw):
+                return None
 
         class _NoopAlerts:
-            def emit(self, *a, **kw): return None
+            def emit(self, *a, **kw):
+                return None
 
         class NoopBundle(MonitoringBundle):  # type: ignore[misc]
             def __init__(self) -> None:
@@ -142,10 +154,12 @@ class TestH1Integration:
         from data_center.monitoring.quality import QualityChecker
 
         class _NoopMetrics:
-            def record(self, *a, **kw): return None
+            def record(self, *a, **kw):
+                return None
 
         class _NoopAlerts:
-            def emit(self, *a, **kw): return None
+            def emit(self, *a, **kw):
+                return None
 
         import data_cleaning.pipeline as sil_pipe
 

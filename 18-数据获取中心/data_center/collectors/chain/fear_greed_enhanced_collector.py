@@ -6,6 +6,7 @@
 
 用于 AGI 蓝图 L1 感知层增强情绪指标，与 alternative.me F&G 交叉验证。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -79,7 +80,9 @@ class FearGreedEnhancedCollector(BaseCollector):
             if key in result:
                 val = result[key]
                 try:
-                    metrics[key] = float(val) if isinstance(val, (int, float, str)) else str(val)[:100]
+                    metrics[key] = (
+                        float(val) if isinstance(val, (int, float, str)) else str(val)[:100]
+                    )
                 except (ValueError, TypeError):
                     metrics[key] = str(val)[:100]
 

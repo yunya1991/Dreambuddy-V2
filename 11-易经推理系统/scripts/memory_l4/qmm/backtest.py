@@ -79,17 +79,21 @@ class Backtester:
             predictions = []
             for ev in test:
                 pred_dir, unc = self._predict_direction(ev, baseline)
-                actual_dir = "UP" if ev.pnl_pct and ev.pnl_pct > 0.01 else (
-                    "DOWN" if ev.pnl_pct is not None and ev.pnl_pct < -0.01 else "FLAT"
+                actual_dir = (
+                    "UP"
+                    if ev.pnl_pct and ev.pnl_pct > 0.01
+                    else ("DOWN" if ev.pnl_pct is not None and ev.pnl_pct < -0.01 else "FLAT")
                 )
-                predictions.append(Prediction(
-                    event_id=ev.event_id,
-                    predicted_direction=pred_dir,
-                    actual_direction=actual_dir,
-                    correct=pred_dir == actual_dir,
-                    regime=ev.regime,
-                    uncertainty=unc,
-                ))
+                predictions.append(
+                    Prediction(
+                        event_id=ev.event_id,
+                        predicted_direction=pred_dir,
+                        actual_direction=actual_dir,
+                        correct=pred_dir == actual_dir,
+                        regime=ev.regime,
+                        uncertainty=unc,
+                    )
+                )
 
             fr = FoldResult(
                 fold_id=fold_id,
@@ -107,8 +111,8 @@ class Backtester:
         folds: List[Tuple[List[CleanedEvent], List[CleanedEvent]]],
     ) -> BacktestResult:
         """XGBoost walk-forward 回测。"""
-        from .xgb_predictor import QMMPredictor, extract_features_from_case, extract_label_from_case
-        import numpy as np
+
+        from .xgb_predictor import QMMPredictor
 
         # 构建 event_id → case 映射
         case_by_id = {}
@@ -119,7 +123,7 @@ class Backtester:
 
         # event_id 有序列表
         event_ids = [e.event_id for e in events]
-        id_to_idx = {eid: i for i, eid in enumerate(event_ids)}
+        id_to_idx = {eid: i for i, eid in enumerate(event_ids)}  # noqa: F841
 
         fold_results: List[FoldResult] = []
 
@@ -143,23 +147,29 @@ class Backtester:
                 predictions = []
                 for ev in test_events:
                     pred_dir, unc = self._predict_direction(ev, baseline)
-                    actual_dir = "UP" if ev.pnl_pct and ev.pnl_pct > 0 else (
-                        "DOWN" if ev.pnl_pct is not None and ev.pnl_pct < 0 else "FLAT"
+                    actual_dir = (
+                        "UP"
+                        if ev.pnl_pct and ev.pnl_pct > 0
+                        else ("DOWN" if ev.pnl_pct is not None and ev.pnl_pct < 0 else "FLAT")
                     )
-                    predictions.append(Prediction(
-                        event_id=ev.event_id,
-                        predicted_direction=pred_dir,
-                        actual_direction=actual_dir,
-                        correct=pred_dir == actual_dir,
-                        regime=ev.regime,
-                        uncertainty=unc,
-                    ))
-                fold_results.append(FoldResult(
-                    fold_id=fold_id,
-                    train_size=len(train_events),
-                    test_size=len(test_events),
-                    predictions=predictions,
-                ))
+                    predictions.append(
+                        Prediction(
+                            event_id=ev.event_id,
+                            predicted_direction=pred_dir,
+                            actual_direction=actual_dir,
+                            correct=pred_dir == actual_dir,
+                            regime=ev.regime,
+                            uncertainty=unc,
+                        )
+                    )
+                fold_results.append(
+                    FoldResult(
+                        fold_id=fold_id,
+                        train_size=len(train_events),
+                        test_size=len(test_events),
+                        predictions=predictions,
+                    )
+                )
                 continue
 
             # 在 test 上预测
@@ -178,24 +188,30 @@ class Backtester:
                         pred_dir = "FLAT"
                     unc = 0.7
 
-                actual_dir = "UP" if ev.pnl_pct and ev.pnl_pct > 0.01 else (
-                    "DOWN" if ev.pnl_pct is not None and ev.pnl_pct < -0.01 else "FLAT"
+                actual_dir = (
+                    "UP"
+                    if ev.pnl_pct and ev.pnl_pct > 0.01
+                    else ("DOWN" if ev.pnl_pct is not None and ev.pnl_pct < -0.01 else "FLAT")
                 )
-                predictions.append(Prediction(
-                    event_id=ev.event_id,
-                    predicted_direction=pred_dir,
-                    actual_direction=actual_dir,
-                    correct=pred_dir == actual_dir,
-                    regime=ev.regime,
-                    uncertainty=unc,
-                ))
+                predictions.append(
+                    Prediction(
+                        event_id=ev.event_id,
+                        predicted_direction=pred_dir,
+                        actual_direction=actual_dir,
+                        correct=pred_dir == actual_dir,
+                        regime=ev.regime,
+                        uncertainty=unc,
+                    )
+                )
 
-            fold_results.append(FoldResult(
-                fold_id=fold_id,
-                train_size=len(train_events),
-                test_size=len(test_events),
-                predictions=predictions,
-            ))
+            fold_results.append(
+                FoldResult(
+                    fold_id=fold_id,
+                    train_size=len(train_events),
+                    test_size=len(test_events),
+                    predictions=predictions,
+                )
+            )
 
             last_predictor = predictor
             last_train_events = train_events
@@ -207,17 +223,21 @@ class Backtester:
                 c = case_by_id.get(ev.event_id)
                 if c:
                     pred_dir, _ = last_predictor.predict(c)
-                    actual_dir = "UP" if ev.pnl_pct and ev.pnl_pct > 0.01 else (
-                        "DOWN" if ev.pnl_pct is not None and ev.pnl_pct < -0.01 else "FLAT"
+                    actual_dir = (
+                        "UP"
+                        if ev.pnl_pct and ev.pnl_pct > 0.01
+                        else ("DOWN" if ev.pnl_pct is not None and ev.pnl_pct < -0.01 else "FLAT")
                     )
-                    train_preds.append(Prediction(
-                        event_id=ev.event_id,
-                        predicted_direction=pred_dir,
-                        actual_direction=actual_dir,
-                        correct=pred_dir == actual_dir,
-                        regime=ev.regime,
-                        uncertainty=0.0,
-                    ))
+                    train_preds.append(
+                        Prediction(
+                            event_id=ev.event_id,
+                            predicted_direction=pred_dir,
+                            actual_direction=actual_dir,
+                            correct=pred_dir == actual_dir,
+                            regime=ev.regime,
+                            uncertainty=0.0,
+                        )
+                    )
             self._last_train_predictions = train_preds
 
         return self._aggregate(fold_results)
@@ -239,17 +259,12 @@ class Backtester:
         for p in all_preds:
             by_regime.setdefault(p.regime, []).append(1 if p.correct else 0)
         by_regime_acc = {
-            r: [round(sum(v) / len(v), 4)] if v else [0.0]
-            for r, v in by_regime.items()
+            r: [round(sum(v) / len(v), 4)] if v else [0.0] for r, v in by_regime.items()
         }
 
         # 高置信度子集准确率 (uncertainty < 0.3)
         hc_preds = [p for p in all_preds if p.uncertainty < 0.3]
-        hc_accuracy = (
-            sum(1 for p in hc_preds if p.correct) / len(hc_preds)
-            if hc_preds
-            else 0.0
-        )
+        hc_accuracy = sum(1 for p in hc_preds if p.correct) / len(hc_preds) if hc_preds else 0.0
 
         return BacktestResult(
             total_predictions=all_total,
@@ -280,9 +295,7 @@ class Backtester:
             folds.append((events[:train_end], events[train_end:test_end]))
         return folds
 
-    def _compute_baseline(
-        self, train: List[CleanedEvent]
-    ) -> Dict[str, Any]:
+    def _compute_baseline(self, train: List[CleanedEvent]) -> Dict[str, Any]:
         """从 train 计算基线统计。"""
         if not train:
             return {}
@@ -307,18 +320,13 @@ class Backtester:
             "regime_direction": self._regime_direction(train),
         }
 
-    def _regime_direction(
-        self, train: List[CleanedEvent]
-    ) -> Dict[str, str]:
+    def _regime_direction(self, train: List[CleanedEvent]) -> Dict[str, str]:
         """按 regime 计算方向。"""
         regime_pnl: Dict[str, List[float]] = {}
         for ev in train:
             if ev.pnl_pct is not None:
                 regime_pnl.setdefault(ev.regime, []).append(ev.pnl_pct)
-        return {
-            r: "UP" if statistics.mean(pnls) > 0 else "DOWN"
-            for r, pnls in regime_pnl.items()
-        }
+        return {r: "UP" if statistics.mean(pnls) > 0 else "DOWN" for r, pnls in regime_pnl.items()}
 
     def _predict_direction(
         self, event: CleanedEvent, baseline: Dict[str, Any]
@@ -354,7 +362,7 @@ class Backtester:
             return 0.0
 
         # XGBoost 模式下，从 fold 的 train 预测中获取
-        if self.xgb_mode and self.raw_cases and hasattr(self, '_last_train_predictions'):
+        if self.xgb_mode and self.raw_cases and hasattr(self, "_last_train_predictions"):
             if self._last_train_predictions:
                 correct = sum(1 for p in self._last_train_predictions if p.correct)
                 return correct / len(self._last_train_predictions)

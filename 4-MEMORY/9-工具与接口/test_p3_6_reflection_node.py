@@ -18,13 +18,12 @@ RED 契约:
 
 参考: SPEC-CognitiveSystem-Evolution.md §1.1 + §4.3 P3-6
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import inspect
 import sys
 from pathlib import Path
-
-import pytest
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR) not in sys.path:
@@ -43,12 +42,14 @@ class TestReflectVerdict:
         from reflection_node import ReflectionNode
 
         node = ReflectionNode()
-        result = node.reflect({
-            "success": True,
-            "error": None,
-            "steps": 3,
-            "output": "done",
-        })
+        result = node.reflect(
+            {
+                "success": True,
+                "error": None,
+                "steps": 3,
+                "output": "done",
+            }
+        )
         assert result["verdict"] == "pass"
         assert result["should_record"] is False
 
@@ -57,12 +58,14 @@ class TestReflectVerdict:
         from reflection_node import ReflectionNode
 
         node = ReflectionNode()
-        result = node.reflect({
-            "success": False,
-            "error": "timeout",
-            "steps": 2,
-            "output": None,
-        })
+        result = node.reflect(
+            {
+                "success": False,
+                "error": "timeout",
+                "steps": 2,
+                "output": None,
+            }
+        )
         assert result["verdict"] == "fail"
         assert result["should_record"] is True
         assert len(result["lessons"]) > 0
@@ -72,10 +75,12 @@ class TestReflectVerdict:
         from reflection_node import ReflectionNode
 
         node = ReflectionNode()
-        result = node.reflect({
-            "success": False,
-            "error": "connection refused",
-        })
+        result = node.reflect(
+            {
+                "success": False,
+                "error": "connection refused",
+            }
+        )
         assert any("connection refused" in str(lesson) for lesson in result["lessons"])
 
     def test_reflect_slow_execution_needs_improvement(self):
@@ -83,11 +88,13 @@ class TestReflectVerdict:
         from reflection_node import ReflectionNode
 
         node = ReflectionNode()
-        result = node.reflect({
-            "success": True,
-            "error": None,
-            "duration_seconds": 300,  # 超过默认慢阈值
-        })
+        result = node.reflect(
+            {
+                "success": True,
+                "error": None,
+                "duration_seconds": 300,  # 超过默认慢阈值
+            }
+        )
         assert result["verdict"] == "needs-improvement"
         assert result["should_record"] is True
 
@@ -143,14 +150,16 @@ class TestWorkspaceBusIntegration:
         node.attach_to_workspace_bus(bus)
 
         # 广播带 execution_result 的内容（模拟调度链末尾）
-        bus.broadcast(WorkspaceContent(
-            intent={"type": "query"},
-            memory_recall=[],
-            skill_match=[],
-            knowledge_retrieval=[],
-            confidence=0.5,
-            execution_result={"success": False, "error": "boom"},
-        ))
+        bus.broadcast(
+            WorkspaceContent(
+                intent={"type": "query"},
+                memory_recall=[],
+                skill_match=[],
+                knowledge_retrieval=[],
+                confidence=0.5,
+                execution_result={"success": False, "error": "boom"},
+            )
+        )
 
         pending = node.get_pending_reflections()
         assert len(pending) == 1

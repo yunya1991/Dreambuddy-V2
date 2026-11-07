@@ -11,10 +11,11 @@
   去芜存菁的过程 = 否定之否定 — 先建立全面特征(肯定)，再剔除冗余(否定)，最后得到精炼集(否定之否定)
 """
 
+import warnings
+from typing import Dict, List
+
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Tuple, Optional
-import warnings
 
 
 class FeatureSelector:
@@ -77,7 +78,7 @@ class FeatureSelector:
         else:
             importances = self._train_and_get_importance(X.values, y, len(feature_names))
 
-        self.feature_importances_ = dict(zip(feature_names, importances))
+        self.feature_importances_ = dict(zip(feature_names, importances))  # noqa: B905
 
         # 2. 第一层: 重要性筛选
         selected = self._filter_by_importance(feature_names, importances)
@@ -86,17 +87,15 @@ class FeatureSelector:
         # 3. 第二层: 相关性去冗余
         selected = self._filter_by_correlation(X, selected, importances)
         self.dropped_by_corr = [
-            f for f in self.feature_importances_.keys()
+            f
+            for f in self.feature_importances_.keys()
             if f not in selected and f not in self.dropped_by_importance
         ]
 
         # 4. 确保最少特征数
         if len(selected) < self.min_features:
-            all_sorted = sorted(
-                self.feature_importances_.items(),
-                key=lambda x: x[1], reverse=True
-            )
-            selected = [f for f, _ in all_sorted[:self.min_features]]
+            all_sorted = sorted(self.feature_importances_.items(), key=lambda x: x[1], reverse=True)
+            selected = [f for f, _ in all_sorted[: self.min_features]]
 
         self.selected_features = selected
         return selected
@@ -115,6 +114,7 @@ class FeatureSelector:
         """训练一个简单的LightGBM模型获取重要性"""
         try:
             import lightgbm as lgb
+
             params = {
                 "objective": "multiclass",
                 "num_class": 3,
@@ -132,20 +132,17 @@ class FeatureSelector:
             model.fit(X, y_mapped)
             return model.feature_importances_
         except Exception as e:
-            warnings.warn(f"训练模型失败，使用全特征: {e}")
+            warnings.warn(f"训练模型失败，使用全特征: {e}")  # noqa: B028
             return np.ones(n_features)
 
-    def _filter_by_importance(
-        self, feature_names: List[str], importances: np.ndarray
-    ) -> List[str]:
+    def _filter_by_importance(self, feature_names: List[str], importances: np.ndarray) -> List[str]:
         """按重要性筛选"""
         max_imp = max(importances.max(), 1e-8)
         threshold = max_imp * self.importance_threshold
 
         selected = [
-            name for name, imp in zip(feature_names, importances)
-            if imp >= threshold
-        ]
+            name for name, imp in zip(feature_names, importances) if imp >= threshold  # noqa: B905
+        ]  # noqa: B905
         return selected
 
     def _filter_by_correlation(
@@ -171,9 +168,11 @@ class FeatureSelector:
             corr_matrix = X[feature_names].corr().abs().values
 
         # 按重要性排序的索引
-        imp_dict = dict(zip(feature_names, [
-            self.feature_importances_.get(f, 0) for f in feature_names
-        ]))
+        imp_dict = dict(
+            zip(  # noqa: B905
+                feature_names, [self.feature_importances_.get(f, 0) for f in feature_names]
+            )  # noqa: B905
+        )
         sorted_indices = np.argsort([-imp_dict[f] for f in feature_names])
 
         selected_idx = []

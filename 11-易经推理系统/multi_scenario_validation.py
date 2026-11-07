@@ -16,7 +16,7 @@
     - data/validation_result_20260725.json: 完整结果
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import json
 import time
@@ -35,21 +35,18 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 # ── 核心模块导入 ──────────────────────────────────────────────────────
-from scripts.memory_l4.bcrm.engine import BCRMEngine
-from scripts.memory_l4.bcrm.market_preprocessor import MarketPreprocessor
-from scripts.memory_l4.classic_exit_system import (
+from scripts.memory_l4.bcrm.engine import BCRMEngine  # noqa: E402, I001
+from scripts.memory_l4.bcrm.market_preprocessor import MarketPreprocessor  # noqa: E402
+from scripts.memory_l4.classic_exit_system import (  # noqa: E402
     ClassicExitSystem,
     ExitConfig,
     PositionState,
-    ExitAction,
 )
-from scripts.memory_l4.yijing_exit_system import (
+from scripts.memory_l4.yijing_exit_system import (  # noqa: E402
     YijingExitSystem,
-    YijingExitConfig,
     YijingExitAction,
 )
-from scripts.memory_l4.trading_utils import RiskManager
-
+from scripts.memory_l4.trading_utils import RiskManager  # noqa: E402
 
 # ════════════════════════════════════════════════════════════════════════
 # 结果收集与运行框架
@@ -59,13 +56,15 @@ RESULTS = []
 
 
 def add_result(scenario, test_case, status, details, duration_ms):
-    RESULTS.append({
-        "scenario": scenario,
-        "test_case": test_case,
-        "status": status,
-        "details": details,
-        "duration_ms": duration_ms,
-    })
+    RESULTS.append(
+        {
+            "scenario": scenario,
+            "test_case": test_case,
+            "status": status,
+            "details": details,
+            "duration_ms": duration_ms,
+        }
+    )
 
 
 def run(scenario, test_case, fn):
@@ -80,16 +79,23 @@ def run(scenario, test_case, fn):
     except Exception as e:
         duration = round((time.time() - start) * 1000, 2)
         tb_lines = traceback.format_exc().split("\n")
-        add_result(scenario, test_case, "error", {
-            "error": str(e),
-            "traceback_tail": tb_lines[-3:] if len(tb_lines) >= 3 else tb_lines,
-        }, duration)
+        add_result(
+            scenario,
+            test_case,
+            "error",
+            {
+                "error": str(e),
+                "traceback_tail": tb_lines[-3:] if len(tb_lines) >= 3 else tb_lines,
+            },
+            duration,
+        )
         print(f"  [!] {test_case:30s} ERROR ({duration:.0f}ms): {e}")
 
 
 # ════════════════════════════════════════════════════════════════════════
 # K线数据构造工具
 # ════════════════════════════════════════════════════════════════════════
+
 
 def make_klines_uptrend(n=20, start_price=100.0, pct=0.01):
     """强趋势上涨：每根K线涨 pct"""
@@ -98,14 +104,16 @@ def make_klines_uptrend(n=20, start_price=100.0, pct=0.01):
     for i in range(n):
         o = price
         price = price * (1 + pct)
-        klines.append({
-            "ts": i,
-            "o": round(o, 4),
-            "h": round(price * 1.005, 4),
-            "l": round(o * 0.998, 4),
-            "c": round(price, 4),
-            "v": 10000 + i * 100,
-        })
+        klines.append(
+            {
+                "ts": i,
+                "o": round(o, 4),
+                "h": round(price * 1.005, 4),
+                "l": round(o * 0.998, 4),
+                "c": round(price, 4),
+                "v": 10000 + i * 100,
+            }
+        )
     return klines
 
 
@@ -116,14 +124,16 @@ def make_klines_downtrend(n=20, start_price=100.0, pct=-0.01):
     for i in range(n):
         o = price
         price = price * (1 + pct)
-        klines.append({
-            "ts": i,
-            "o": round(o, 4),
-            "h": round(o * 1.002, 4),
-            "l": round(price * 0.995, 4),
-            "c": round(price, 4),
-            "v": 10000 + i * 100,
-        })
+        klines.append(
+            {
+                "ts": i,
+                "o": round(o, 4),
+                "h": round(o * 1.002, 4),
+                "l": round(price * 0.995, 4),
+                "c": round(price, 4),
+                "v": 10000 + i * 100,
+            }
+        )
     return klines
 
 
@@ -133,14 +143,16 @@ def make_klines_range_bound(n=20, base=100.0, amplitude=0.02):
     for i in range(n):
         wave = math.sin(i * 0.8) * amplitude
         price = base * (1 + wave)
-        klines.append({
-            "ts": i,
-            "o": round(base * (1 + math.sin((i - 1) * 0.8) * amplitude), 4),
-            "h": round(price * 1.003, 4),
-            "l": round(price * 0.997, 4),
-            "c": round(price, 4),
-            "v": 8000 + i * 50,
-        })
+        klines.append(
+            {
+                "ts": i,
+                "o": round(base * (1 + math.sin((i - 1) * 0.8) * amplitude), 4),
+                "h": round(price * 1.003, 4),
+                "l": round(price * 0.997, 4),
+                "c": round(price, 4),
+                "v": 8000 + i * 50,
+            }
+        )
     return klines
 
 
@@ -152,14 +164,16 @@ def make_klines_extreme_volatility(n=20, base=100.0):
         o = price
         swing = 0.06 if i % 2 == 0 else -0.055
         price = price * (1 + swing)
-        klines.append({
-            "ts": i,
-            "o": round(o, 4),
-            "h": round(max(o, price) * 1.01, 4),
-            "l": round(min(o, price) * 0.99, 4),
-            "c": round(price, 4),
-            "v": 20000 + i * 200,
-        })
+        klines.append(
+            {
+                "ts": i,
+                "o": round(o, 4),
+                "h": round(max(o, price) * 1.01, 4),
+                "l": round(min(o, price) * 0.99, 4),
+                "c": round(price, 4),
+                "v": 20000 + i * 200,
+            }
+        )
     return klines
 
 
@@ -169,25 +183,26 @@ def make_klines_low_volatility(n=20, base=100.0):
     for i in range(n):
         tiny = (i % 3 - 1) * 0.0003
         price = base * (1 + tiny)
-        klines.append({
-            "ts": i,
-            "o": round(base * (1 + ((i - 1) % 3 - 1) * 0.0003), 4),
-            "h": round(price * 1.0001, 4),
-            "l": round(price * 0.9999, 4),
-            "c": round(price, 4),
-            "v": 5000,
-        })
+        klines.append(
+            {
+                "ts": i,
+                "o": round(base * (1 + ((i - 1) % 3 - 1) * 0.0003), 4),
+                "h": round(price * 1.0001, 4),
+                "l": round(price * 0.9999, 4),
+                "c": round(price, 4),
+                "v": 5000,
+            }
+        )
     return klines
 
 
 def make_flat_candles(n=30, base=100.0):
     """平稳K线（用于离场系统测试，特征值不重要）"""
-    return [{
-        "c": base, "h": base * 1.005, "l": base * 0.995, "v": 1000
-    } for _ in range(n)]
+    return [{"c": base, "h": base * 1.005, "l": base * 0.995, "v": 1000} for _ in range(n)]
 
 
 # ── 技术指标计算 ──────────────────────────────────────────────────────
+
 
 def _ema(values, n):
     if not values:
@@ -221,7 +236,7 @@ def _atr_pct(klines, n=14):
     trs = []
     for i in range(1, min(n + 1, len(klines))):
         h = klines[i]["h"]
-        l = klines[i]["l"]
+        l = klines[i]["l"]  # noqa: E741
         pc = klines[i - 1]["c"]
         tr = max(h - l, abs(h - pc), abs(l - pc))
         trs.append(tr)
@@ -267,14 +282,16 @@ def build_market_snapshot(klines, symbol="BTC-USDT-SWAP"):
     # sanitize 每根 K 线的字段，剔除 NaN/Inf
     safe_klines = []
     for k in klines:
-        safe_klines.append({
-            "ts": k.get("ts", 0),
-            "o": _sanitize_float(k.get("o"), 0.0),
-            "h": _sanitize_float(k.get("h"), 0.0),
-            "l": _sanitize_float(k.get("l"), 0.0),
-            "c": _sanitize_float(k.get("c"), 0.0),
-            "v": _sanitize_float(k.get("v"), 0.0),
-        })
+        safe_klines.append(
+            {
+                "ts": k.get("ts", 0),
+                "o": _sanitize_float(k.get("o"), 0.0),
+                "h": _sanitize_float(k.get("h"), 0.0),
+                "l": _sanitize_float(k.get("l"), 0.0),
+                "c": _sanitize_float(k.get("c"), 0.0),
+                "v": _sanitize_float(k.get("v"), 0.0),
+            }
+        )
 
     closes = [k["c"] for k in safe_klines]
     highs = [k["h"] for k in safe_klines]
@@ -337,24 +354,45 @@ def _auto_generate_contradictions(snapshot):
     vol = float(snapshot.get("volume_ratio", 1.0) or 1.0)
 
     if abs(pct) > 2:
-        contras.append({"id": "AUTO_C1", "type": "trend_countertrend",
-                        "dominant_side": "BULL" if pct > 0 else "BEAR",
-                        "tension": min(abs(pct) / 20.0, 1.0)})
+        contras.append(
+            {
+                "id": "AUTO_C1",
+                "type": "trend_countertrend",
+                "dominant_side": "BULL" if pct > 0 else "BEAR",
+                "tension": min(abs(pct) / 20.0, 1.0),
+            }
+        )
     if rsi > 70 or rsi < 30:
-        contras.append({"id": "AUTO_C2", "type": "sentiment_fear_greed",
-                        "dominant_side": "BEAR" if rsi > 70 else "BULL",
-                        "tension": abs(rsi - 50) / 50.0})
+        contras.append(
+            {
+                "id": "AUTO_C2",
+                "type": "sentiment_fear_greed",
+                "dominant_side": "BEAR" if rsi > 70 else "BULL",
+                "tension": abs(rsi - 50) / 50.0,
+            }
+        )
     if abs(funding) > 0.0001:
-        contras.append({"id": "AUTO_C3", "type": "supply_demand",
-                        "dominant_side": "BEAR" if funding > 0 else "BULL",
-                        "tension": min(abs(funding) * 5000, 1.0)})
+        contras.append(
+            {
+                "id": "AUTO_C3",
+                "type": "supply_demand",
+                "dominant_side": "BEAR" if funding > 0 else "BULL",
+                "tension": min(abs(funding) * 5000, 1.0),
+            }
+        )
     if vol > 1.5 and abs(pct) > 1:
-        contras.append({"id": "AUTO_C4", "type": "volume_price",
-                        "dominant_side": "BULL" if pct > 0 else "BEAR",
-                        "tension": min(vol / 3.0, 1.0)})
+        contras.append(
+            {
+                "id": "AUTO_C4",
+                "type": "volume_price",
+                "dominant_side": "BULL" if pct > 0 else "BEAR",
+                "tension": min(vol / 3.0, 1.0),
+            }
+        )
     if not contras:
-        contras.append({"id": "AUTO_C0", "type": "supply_demand",
-                        "dominant_side": "EQUAL", "tension": 0.3})
+        contras.append(
+            {"id": "AUTO_C0", "type": "supply_demand", "dominant_side": "EQUAL", "tension": 0.3}
+        )
     return contras
 
 
@@ -366,6 +404,7 @@ def run_bcrm(klines, seed=42):
     随机噪声可能淹没信号，固定 seed 排除抖动）。
     """
     import random as _random
+
     _random.seed(seed)
     engine = BCRMEngine()
     preprocessor = MarketPreprocessor()
@@ -379,6 +418,7 @@ def run_bcrm(klines, seed=42):
 # ════════════════════════════════════════════════════════════════════════
 # 场景1：推理层验证 (reasoning_layer)
 # ════════════════════════════════════════════════════════════════════════
+
 
 def test_strong_uptrend():
     """强趋势上涨：验证方向UP、置信度>0.5、卦象非坤为地、止损止盈合理"""
@@ -423,7 +463,9 @@ def test_strong_uptrend():
             price = klines[-1]["c"]
             if b1.stop_loss_px > 0 and b1.take_profit_px > 0:
                 if b1.stop_loss_px >= price or b1.take_profit_px <= price:
-                    details["issue"] = f"止损止盈不合理: SL={b1.stop_loss_px}, TP={b1.take_profit_px}, price={price}"
+                    details["issue"] = (
+                        f"止损止盈不合理: SL={b1.stop_loss_px}, TP={b1.take_profit_px}, price={price}"
+                    )
                     return "fail", details
             else:
                 details["issue"] = "止损止盈为零"
@@ -536,7 +578,7 @@ def test_extreme_volatility():
     price = klines[-1]["c"]
     main_branch_ids = {"B1", "B2", "B3"}
     checked = 0
-    for i, b in enumerate(output.strategy_branches):
+    for i, b in enumerate(output.strategy_branches):  # noqa: B007
         if b.branch_id not in main_branch_ids:
             # 跳过多样性扩展分支（B4-B7）
             continue
@@ -590,6 +632,7 @@ def test_low_volatility():
 # 场景2：离场系统验证 (exit_system)
 # ════════════════════════════════════════════════════════════════════════
 
+
 def test_l0_time_stop():
     """L0 时间硬止损：持仓时间超过 l0_max_hold_sec → L0 触发"""
     cfg = ExitConfig()
@@ -599,11 +642,14 @@ def test_l0_time_stop():
     system = ClassicExitSystem(config=cfg)
 
     pos = PositionState(
-        coin="TEST", side="long",
-        entry_price=100.0, current_price=101.0,
+        coin="TEST",
+        side="long",
+        entry_price=100.0,
+        current_price=101.0,
         position_age_sec=7200,  # 2小时 > 1小时
         unrealized_pnl_pct=0.01,
-        leverage=1.0, atr_pct=0.02,
+        leverage=1.0,
+        atr_pct=0.02,
     )
     candles = make_flat_candles(30, 100.0)
     decision = system.evaluate_full(pos, candles, regime="trend")
@@ -635,11 +681,14 @@ def test_l0_loss_stop():
     system = ClassicExitSystem(config=cfg)
 
     pos = PositionState(
-        coin="TEST", side="long",
-        entry_price=100.0, current_price=84.0,
+        coin="TEST",
+        side="long",
+        entry_price=100.0,
+        current_price=84.0,
         position_age_sec=1800,
         unrealized_pnl_pct=-0.16,  # -16% < -10%
-        leverage=1.0, atr_pct=0.02,
+        leverage=1.0,
+        atr_pct=0.02,
     )
     candles = make_flat_candles(30, 100.0)
     decision = system.evaluate_full(pos, candles, regime="trend")
@@ -676,11 +725,14 @@ def test_tb_stop_loss():
 
     # atr_pct=0.02 → sl_pct = max(0.02, 0.02*1.5) = 0.03, leverage=1 → sl_check=0.03
     pos = PositionState(
-        coin="TEST", side="long",
-        entry_price=100.0, current_price=96.5,
+        coin="TEST",
+        side="long",
+        entry_price=100.0,
+        current_price=96.5,
         position_age_sec=1800,
         unrealized_pnl_pct=-0.035,  # -3.5% < -3% → TB止损触发
-        leverage=1.0, atr_pct=0.02,
+        leverage=1.0,
+        atr_pct=0.02,
     )
     candles = make_flat_candles(30, 100.0)
     decision = system.evaluate_full(pos, candles, regime="trend")
@@ -713,11 +765,14 @@ def test_tb_take_profit():
 
     # atr_pct=0.03 → tp_pct = max(0.04, 0.03*3.0)=0.09, leverage=1 → tp_check=0.09
     pos = PositionState(
-        coin="TEST", side="long",
-        entry_price=100.0, current_price=110.0,
+        coin="TEST",
+        side="long",
+        entry_price=100.0,
+        current_price=110.0,
         position_age_sec=1800,
         unrealized_pnl_pct=0.10,  # 10% > 9% → TB止盈触发
-        leverage=1.0, atr_pct=0.03,
+        leverage=1.0,
+        atr_pct=0.03,
     )
     candles = make_flat_candles(30, 100.0)
     decision = system.evaluate_full(pos, candles, regime="trend")
@@ -752,11 +807,14 @@ def test_trailing_stop():
     # entry=100, current=107 → pnl=7% >= 6%(arm), pnl_eff=7%
     # trailing_armed=True, trailing_stop_price=108, current=107 <= 108 → 触发
     pos = PositionState(
-        coin="TEST", side="long",
-        entry_price=100.0, current_price=107.0,
+        coin="TEST",
+        side="long",
+        entry_price=100.0,
+        current_price=107.0,
         position_age_sec=3600,
         unrealized_pnl_pct=0.07,
-        leverage=1.0, atr_pct=0.03,
+        leverage=1.0,
+        atr_pct=0.03,
         trailing_armed=True,
         trailing_stop_price=108.0,
     )
@@ -902,6 +960,7 @@ def test_yijing_veto_close():
 # 场景3：风控验证 (risk_control)
 # ════════════════════════════════════════════════════════════════════════
 
+
 def _make_isolated_risk_manager(daily_loss_limit=-50.0, max_consec=5, pos_pct=0.10):
     """创建隔离状态的 RiskManager（不污染真实状态文件）"""
     rm = RiskManager(
@@ -951,7 +1010,7 @@ def test_consecutive_losses():
     """连续亏损限制：连续亏损超过 max_consecutive_losses 时停止开仓"""
     rm = _make_isolated_risk_manager(max_consec=3)
 
-    for i in range(3):
+    for i in range(3):  # noqa: B007
         rm.update_after_trade(pnl=-5.0, is_win=False)
 
     can_after = rm.can_trade()
@@ -1055,6 +1114,7 @@ def test_position_sizing():
 # 场景4：反馈闭环验证 (feedback_loop)
 # ════════════════════════════════════════════════════════════════════════
 
+
 def test_pipeline_import():
     """L4 Pipeline 导入：验证 pipeline 模块可正常导入和初始化"""
     from scripts.memory_l4 import pipeline
@@ -1137,7 +1197,7 @@ def test_cbr_init():
 
 def test_self_evolution_state():
     """自进化引擎状态检查：验证可初始化，检查触发条件逻辑"""
-    from scripts.memory_l4.self_evolution_engine import (
+    from scripts.memory_l4.self_evolution_engine import (  # noqa: I001
         SelfEvolutionEngine,
         STAGNATION_WIN_RATE_THRESHOLD,
         STAGNATION_HOLD_STREAK,
@@ -1257,6 +1317,7 @@ def test_trade_case_creation():
 # 场景5：异常场景验证 (exception_handling)
 # ════════════════════════════════════════════════════════════════════════
 
+
 def test_empty_data():
     """空数据输入：传入空K线列表，验证不崩溃"""
     output = run_bcrm([], seed=42)
@@ -1349,6 +1410,7 @@ def test_long_data():
 # 主函数
 # ════════════════════════════════════════════════════════════════════════
 
+
 def main():
     print("=" * 72)
     print("  多场景验证脚本 — 易经推理系统")
@@ -1435,8 +1497,10 @@ def main():
     print("\n  按场景统计:")
     for s, counts in scenarios.items():
         total_s = counts["pass"] + counts["fail"] + counts["error"]
-        print(f"    {s:25s} {counts['pass']}/{total_s} 通过"
-              f" (失败 {counts['fail']}, 错误 {counts['error']})")
+        print(
+            f"    {s:25s} {counts['pass']}/{total_s} 通过"
+            f" (失败 {counts['fail']}, 错误 {counts['error']})"
+        )
     print()
 
 

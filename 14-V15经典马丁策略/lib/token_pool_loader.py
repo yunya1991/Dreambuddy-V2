@@ -7,6 +7,7 @@
 
 加载优先级: 环境变量(override) > token_registry.json > 硬编码默认
 """
+
 from __future__ import annotations
 
 import json
@@ -19,9 +20,11 @@ from typing import List, Optional
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 _REGISTRY_PATHS = [
-    Path(os.environ.get("TOKEN_REGISTRY_PATH", ""))
-    if os.environ.get("TOKEN_REGISTRY_PATH")
-    else None,
+    (
+        Path(os.environ.get("TOKEN_REGISTRY_PATH", ""))
+        if os.environ.get("TOKEN_REGISTRY_PATH")
+        else None
+    ),
     _PROJECT_ROOT / "config" / "token_registry.json",
 ]
 

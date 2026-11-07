@@ -2,6 +2,7 @@
 
 feedparser 薄封装，parse(url) -> entries -> DataRecord(category=news)。
 """
+
 from data_center.collectors.news.feedparser_collector import FeedparserCollector
 from data_center.core.contract import DataRecord
 
@@ -23,23 +24,25 @@ def test_no_url_returns_empty():
 
 def test_fetch_entries(mocker):
     mock_fp = mocker.patch(FP_MOD)
-    mock_fp.parse.return_value = _fake_feed(entries=[
-        {
-            "title": "BTC hits 100k",
-            "link": "https://example.com/1",
-            "summary": "summary1",
-            "published": "Mon, 01 Jan 2024 00:00:00 GMT",
-            "id": "id1",
-            "author": "satoshi",
-        },
-        {
-            "title": "ETH merges",
-            "link": "https://example.com/2",
-            "summary": "summary2",
-            "published": "Mon, 02 Jan 2024 00:00:00 GMT",
-            "id": "id2",
-        },
-    ])
+    mock_fp.parse.return_value = _fake_feed(
+        entries=[
+            {
+                "title": "BTC hits 100k",
+                "link": "https://example.com/1",
+                "summary": "summary1",
+                "published": "Mon, 01 Jan 2024 00:00:00 GMT",
+                "id": "id1",
+                "author": "satoshi",
+            },
+            {
+                "title": "ETH merges",
+                "link": "https://example.com/2",
+                "summary": "summary2",
+                "published": "Mon, 02 Jan 2024 00:00:00 GMT",
+                "id": "id2",
+            },
+        ]
+    )
     c = FeedparserCollector()
     recs = c.fetch({"feed_url": "https://example.com/feed", "max_items": 10})
 
@@ -59,10 +62,12 @@ def test_fetch_entries(mocker):
 
 def test_max_items_limit(mocker):
     mock_fp = mocker.patch(FP_MOD)
-    mock_fp.parse.return_value = _fake_feed(entries=[
-        {"title": f"news-{i}", "link": f"https://example.com/{i}", "id": f"id-{i}"}
-        for i in range(5)
-    ])
+    mock_fp.parse.return_value = _fake_feed(
+        entries=[
+            {"title": f"news-{i}", "link": f"https://example.com/{i}", "id": f"id-{i}"}
+            for i in range(5)
+        ]
+    )
     c = FeedparserCollector()
     recs = c.fetch({"feed_url": "https://example.com/feed", "max_items": 2})
     assert len(recs) == 2

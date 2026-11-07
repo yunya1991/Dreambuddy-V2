@@ -1,14 +1,13 @@
 """M5-T3 Red/Green — 告警通道测试。"""
+
 from __future__ import annotations
 
 import json
 import logging
-import os
 import tempfile
 from pathlib import Path
 
 import pytest
-
 from data_center.monitoring.alerting import (
     Alert,
     AlertChannel,
@@ -44,12 +43,14 @@ def test_alert_to_dict_has_required_fields():
 def test_log_channel_emits_records_via_caplog(caplog):
     caplog.set_level(logging.INFO, logger="data_center.monitoring")
     ch = LogAlertChannel()
-    ch.emit(Alert(
-        level=AlertLevel.WARNING,
-        title="空列表",
-        message="fred 返回 0 条",
-        tags=["fred", "macro", "EMPTY_RESULT"],
-    ))
+    ch.emit(
+        Alert(
+            level=AlertLevel.WARNING,
+            title="空列表",
+            message="fred 返回 0 条",
+            tags=["fred", "macro", "EMPTY_RESULT"],
+        )
+    )
     titles = [r.message for r in caplog.records]
     assert any("[WARNING] 空列表" in m for m in titles)
 
@@ -77,11 +78,13 @@ def test_file_channel_tail_returns_last_n():
         fp = Path(td) / "alerts.ndjson"
         ch = FileAlertChannel(fp)
         for i in range(5):
-            ch.emit(Alert(
-                level=AlertLevel.INFO,
-                title=f"t{i}",
-                message=f"m{i}",
-            ))
+            ch.emit(
+                Alert(
+                    level=AlertLevel.INFO,
+                    title=f"t{i}",
+                    message=f"m{i}",
+                )
+            )
         last2 = ch.tail(2)
         assert [a["title"] for a in last2] == ["t3", "t4"]
 

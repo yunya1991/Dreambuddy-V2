@@ -183,7 +183,9 @@ def _collect_episode_ref_paths(case: Dict[str, Any]) -> List[str]:
     return out
 
 
-def _collect_case_coverage(cases: List[Dict[str, Any]], episodes_by_path: Dict[str, Dict[str, Any]]) -> Tuple[int, int, float]:
+def _collect_case_coverage(
+    cases: List[Dict[str, Any]], episodes_by_path: Dict[str, Dict[str, Any]]
+) -> Tuple[int, int, float]:
     """Compute episode coverage with partial credit.
 
     - Cases with no episode_refs are counted as covered (no expectation set).
@@ -265,7 +267,7 @@ def check_consistency_report(
             if errs:
                 schema_issues += 1
                 issues.append(_to_issue("DISTILL_SCHEMA_INVALID", did, "; ".join(errs[:3])))
-        for cid in (d.get("supporting_case_ids") or []):
+        for cid in d.get("supporting_case_ids") or []:
             case_id = str(cid or "").strip()
             if case_id and case_id not in case_ids:
                 issues.append(_to_issue("DISTILL_SUPPORTING_CASE_NOT_FOUND", did, case_id))

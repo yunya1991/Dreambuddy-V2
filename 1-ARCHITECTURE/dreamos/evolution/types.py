@@ -11,26 +11,27 @@ DreamOS Evolution — 类型定义
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
 from datetime import datetime
-
+from typing import Any, Dict, List, Optional
 
 # ============================================================
 # 经验教训
 # ============================================================
 
+
 @dataclass
 class Lesson:
     """经验教训 — 从执行结果中提炼的可复用知识"""
+
     lesson_id: str
     title: str = ""
     description: str = ""
-    category: str = ""              # strategy / risk / execution / data
-    severity: str = "medium"        # low / medium / high / critical
+    category: str = ""  # strategy / risk / execution / data
+    severity: str = "medium"  # low / medium / high / critical
     context: Dict[str, Any] = field(default_factory=dict)
     action_suggestion: str = ""
     learned_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    confidence: float = 0.0         # 教训的可信度
+    confidence: float = 0.0  # 教训的可信度
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -50,6 +51,7 @@ class Lesson:
 # 知行差距分析
 # ============================================================
 
+
 @dataclass
 class GapAnalysis:
     """知行差距分析 — 分析"计划的"和"实际发生的"之间的差距
@@ -60,11 +62,12 @@ class GapAnalysis:
         - direction_gap:  方向判断 vs 实际走势
         - confidence_gap: 预测置信度 vs 实际正确率
     """
-    overall_gap_score: float = 0.0          # 0-1, 越小越好
-    intent_accuracy: float = 0.0            # 意图识别准确率
-    plan_completion_rate: float = 0.0       # 计划完成率
-    direction_accuracy: float = 0.0         # 方向判断准确率
-    confidence_calibration: float = 0.0     # 置信度校准度
+
+    overall_gap_score: float = 0.0  # 0-1, 越小越好
+    intent_accuracy: float = 0.0  # 意图识别准确率
+    plan_completion_rate: float = 0.0  # 计划完成率
+    direction_accuracy: float = 0.0  # 方向判断准确率
+    confidence_calibration: float = 0.0  # 置信度校准度
     gaps: List[Dict[str, Any]] = field(default_factory=list)
     top_insights: List[str] = field(default_factory=list)
 
@@ -84,17 +87,19 @@ class GapAnalysis:
 # 优化建议
 # ============================================================
 
+
 @dataclass
 class OptimizationSuggestion:
     """节点/策略优化建议"""
+
     suggestion_id: str
-    target: str = ""                 # 优化目标: node / chain / strategy / config
-    target_id: str = ""              # 具体目标 ID
-    type: str = ""                   # add / remove / modify / reorder
+    target: str = ""  # 优化目标: node / chain / strategy / config
+    target_id: str = ""  # 具体目标 ID
+    type: str = ""  # add / remove / modify / reorder
     description: str = ""
     expected_improvement: float = 0.0  # 预期提升幅度
-    evidence: str = ""                # 证据/数据支撑
-    priority: int = 2                  # 0=紧急, 1=高, 2=中, 3=低
+    evidence: str = ""  # 证据/数据支撑
+    priority: int = 2  # 0=紧急, 1=高, 2=中, 3=低
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -113,9 +118,11 @@ class OptimizationSuggestion:
 # 进化报告
 # ============================================================
 
+
 @dataclass
 class EvolutionReport:
     """进化报告 — 一次进化分析的完整输出"""
+
     cycles_analyzed: int = 0
     lessons: List[Lesson] = field(default_factory=list)
     gap_analysis: Optional[GapAnalysis] = None
@@ -126,7 +133,7 @@ class EvolutionReport:
     def to_dict(self) -> Dict[str, Any]:
         return {
             "cycles_analyzed": self.cycles_analyzed,
-            "lessons": [l.to_dict() for l in self.lessons],
+            "lessons": [l.to_dict() for l in self.lessons],  # noqa: E741
             "gap_analysis": self.gap_analysis.to_dict() if self.gap_analysis else None,
             "suggestions": [s.to_dict() for s in self.suggestions],
             "performance_metrics": {k: round(v, 3) for k, v in self.performance_metrics.items()},

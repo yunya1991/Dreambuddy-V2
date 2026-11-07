@@ -96,14 +96,13 @@ v3.0 基础修正 (完全对齐规范):
   - 小时线信号简化为日线内的低点/高点触发
 """
 
-from typing import List, Dict, Optional, Tuple
+import statistics
 from dataclasses import dataclass, field
 from enum import Enum
-from datetime import datetime
-import statistics
-
+from typing import Dict, List, Optional, Tuple
 
 # ==================== 数据类型 ====================
+
 
 class Direction(Enum):
     LONG = "long"
@@ -112,10 +111,10 @@ class Direction(Enum):
 
 
 class SignalStrength(Enum):
-    STRONG = "strong"       # >=70
-    MEDIUM = "medium"       # 50-69
-    WEAK = "weak"           # 30-49
-    NONE = "none"           # <30
+    STRONG = "strong"  # >=70
+    MEDIUM = "medium"  # 50-69
+    WEAK = "weak"  # 30-49
+    NONE = "none"  # <30
 
 
 class StrategyType(Enum):
@@ -124,13 +123,13 @@ class StrategyType(Enum):
 
 
 class ExitReason(Enum):
-    TAKE_PROFIT_1 = "take_profit_1"      # v8.0: 单次全仓止盈 (均价+tp_pct%×vol_mult)
-    TAKE_PROFIT_2 = "take_profit_2"      # 保留兼容 (v8.0不使用)
-    TAKE_PROFIT_3 = "take_profit_3"      # 保留兼容 (v8.0不使用)
-    STOP_LOSS = "stop_loss"              # 保留兼容 (v8.0不触发固定SL)
+    TAKE_PROFIT_1 = "take_profit_1"  # v8.0: 单次全仓止盈 (均价+tp_pct%×vol_mult)
+    TAKE_PROFIT_2 = "take_profit_2"  # 保留兼容 (v8.0不使用)
+    TAKE_PROFIT_3 = "take_profit_3"  # 保留兼容 (v8.0不使用)
+    STOP_LOSS = "stop_loss"  # 保留兼容 (v8.0不触发固定SL)
     SIGNAL_REVERSAL = "signal_reversal"
     DRAWDOWN_LIMIT = "drawdown_limit"
-    RISK_EVENT = "risk_event"            # 保留兼容 (v8.0不触发)
+    RISK_EVENT = "risk_event"  # 保留兼容 (v8.0不触发)
     END_OF_BACKTEST = "end_of_backtest"
     NONE = "none"
 
@@ -138,6 +137,7 @@ class ExitReason(Enum):
 @dataclass
 class Screen1Output:
     """第一屏输出: 周线决策"""
+
     timestamp: int
     direction: Direction
     strategy_type: StrategyType
@@ -145,59 +145,64 @@ class Screen1Output:
     ema_trend: str
     macd_signal: str
     market_state: str = "观望"
-    position_limit_pct: float = 0.20    # 总仓位上限: 20%/40%/60%
-    regime: str = "CONSOLIDATION"       # 市场形态: STRONG_BULL/WEAK_BULL/CONSOLIDATION/WEAK_BEAR/STRONG_BEAR
-    regime_multiplier: float = 0.5      # 仓位乘数: 0.5(震荡) / 0.75(弱趋势) / 1.0(强趋势)
-    vol_mult: float = 1.0               # v8.0: 动态HV乘数, 用于加仓间隔和止盈计算
+    position_limit_pct: float = 0.20  # 总仓位上限: 20%/40%/60%
+    regime: str = (
+        "CONSOLIDATION"  # 市场形态: STRONG_BULL/WEAK_BULL/CONSOLIDATION/WEAK_BEAR/STRONG_BEAR
+    )
+    regime_multiplier: float = 0.5  # 仓位乘数: 0.5(震荡) / 0.75(弱趋势) / 1.0(强趋势)
+    vol_mult: float = 1.0  # v8.0: 动态HV乘数, 用于加仓间隔和止盈计算
 
 
 @dataclass
 class Screen2Output:
     """第二屏输出: 日线预设"""
+
     timestamp: int
     signal_strength: SignalStrength
     signal_score: float
     entry_price: float
-    position_pct: float              # 单层仓位比例 (总仓位的1/4)
-    add_on_levels: List[float]       # 3个加仓价位 (复利间隔 addon_gap%×vol_mult)
-    tp_target: float                 # v8.0: 单次全仓止盈目标 (均价+tp_pct%×vol_mult)
+    position_pct: float  # 单层仓位比例 (总仓位的1/4)
+    add_on_levels: List[float]  # 3个加仓价位 (复利间隔 addon_gap%×vol_mult)
+    tp_target: float  # v8.0: 单次全仓止盈目标 (均价+tp_pct%×vol_mult)
     atr: float
     volatility: float
-    addon_suppressed: bool = False   # v7.0 Opt-2: RSI超买/ATR扩张时抑制本轮加仓
-    ma_zone_gate: str = "BREAKOUT_SKIP"      # v10.0: MA区间门禁状态
+    addon_suppressed: bool = False  # v7.0 Opt-2: RSI超买/ATR扩张时抑制本轮加仓
+    ma_zone_gate: str = "BREAKOUT_SKIP"  # v10.0: MA区间门禁状态
     ma_direction: Optional["Direction"] = None  # v10.0: MA区间确定的方向 (可覆盖Screen1)
-    ma_zone_ref_price: float = 0.0           # v10.0: 参考MA价格 (SHORT=阻力MA, LONG=支撑MA)
-    ma_zone_size_mult: float = 1.0           # v11.0: MEC评分决定仓位 (score=3→1.0, score=2→0.5)
+    ma_zone_ref_price: float = 0.0  # v10.0: 参考MA价格 (SHORT=阻力MA, LONG=支撑MA)
+    ma_zone_size_mult: float = 1.0  # v11.0: MEC评分决定仓位 (score=3→1.0, score=2→0.5)
 
 
 @dataclass
 class Position:
     """当前持仓状态"""
+
     direction: Direction = Direction.WAIT
-    entry_price: float = 0.0         # 加权平均入场价
-    initial_size_usd: float = 0.0    # 初始入场大小 (用于等额加仓)
-    size_usd: float = 0.0            # 当前持仓大小
-    level: int = 0                   # 马丁层级 0=初始, 1-3=加仓
+    entry_price: float = 0.0  # 加权平均入场价
+    initial_size_usd: float = 0.0  # 初始入场大小 (用于等额加仓)
+    size_usd: float = 0.0  # 当前持仓大小
+    level: int = 0  # 马丁层级 0=初始, 1-3=加仓
     add_on_levels: List[float] = field(default_factory=list)
-    tp_target: float = 0.0           # v8.0: 单次全仓止盈目标 (随均价滚动更新)
-    stop_loss_price: float = 0.0     # v9.0: 均价止损 (仅 Level3加满后启用, 默认0=未激活)
+    tp_target: float = 0.0  # v8.0: 单次全仓止盈目标 (随均价滚动更新)
+    stop_loss_price: float = 0.0  # v9.0: 均价止损 (仅 Level3加满后启用, 默认0=未激活)
     highest_equity: float = 0.0
     entry_date: str = ""
     signal_strength: SignalStrength = SignalStrength.NONE
     screen1: Optional[Screen1Output] = None
     total_cost: float = 0.0
     is_martin_complete: bool = False  # Level 3加满标志 (用于统计)
-    ma_zone_opened: bool = False      # v10.0: 是否为MA区间反向单
-    ma_zone_ref_price: float = 0.0   # v10.0: 参考MA价格 (SHORT=阻力MA突破出场, LONG=支撑MA跌破出场)
+    ma_zone_opened: bool = False  # v10.0: 是否为MA区间反向单
+    ma_zone_ref_price: float = 0.0  # v10.0: 参考MA价格 (SHORT=阻力MA突破出场, LONG=支撑MA跌破出场)
 
 
 @dataclass
 class Trade:
     """交易记录"""
+
     trade_id: int
     timestamp: int
     date: str
-    action: str           # open / add_on / partial_close / close
+    action: str  # open / add_on / partial_close / close
     direction: Direction
     price: float
     size_usd: float
@@ -214,16 +219,14 @@ class Trade:
 
 DEFAULT_STRATEGY_PARAMS = {
     # 第一屏参数
-    "strong_score_threshold": 65.0,   # 强多头阈值 (规范: >=65)
-    "weak_score_threshold": 50.0,     # 弱多头阈值 (规范: >=50)
-    "short_score_threshold": 35.0,    # 空头阈值 (规范: <=35)
-
+    "strong_score_threshold": 65.0,  # 强多头阈值 (规范: >=65)
+    "weak_score_threshold": 50.0,  # 弱多头阈值 (规范: >=50)
+    "short_score_threshold": 35.0,  # 空头阈值 (规范: <=35)
     # v8.0 加仓参数: 按固定百分比复利计算间隔, 按 vol_mult 放大
-    "addon_gap_pct": 8.0,             # BTC加仓间隔基准 (每跌8%加仓; SOL/ETH×vol_mult)
-    "addon_min_score": 50.0,          # 加仓最低信号评分门禁 (Screen2 score)
-
+    "addon_gap_pct": 8.0,  # BTC加仓间隔基准 (每跌8%加仓; SOL/ETH×vol_mult)
+    "addon_min_score": 50.0,  # 加仓最低信号评分门禁 (Screen2 score)
     # v8.0 止盈参数: 单次全仓止盈, 按 vol_mult 放大
-    "tp_pct": 4.0,                    # BTC止盈基准 (均价+4%; SOL/ETH×vol_mult)
+    "tp_pct": 4.0,  # BTC止盈基准 (均价+4%; SOL/ETH×vol_mult)
 }
 
 
@@ -232,6 +235,7 @@ def _apply_opt_params(defaults: dict, overrides: dict = None) -> dict:
     if not overrides:
         return defaults
     return {**defaults, **overrides}
+
 
 # v7.0 Opt-1B: 动态 HV 驱动的 Regime 阈值乘数
 # 静态表作为 fallback (数据 <4 周时使用)
@@ -352,7 +356,9 @@ def calc_btc_mec(
 
     # 动能: 末日vs首日收益率绝对值
     gain_first = abs(first_c["close"] - prev_first["close"]) / (prev_first["close"] + 1e-9)
-    gain_last = abs(last_c["close"] - btc_candles[last_idx - 1]["close"]) / (btc_candles[last_idx - 1]["close"] + 1e-9)
+    gain_last = abs(last_c["close"] - btc_candles[last_idx - 1]["close"]) / (
+        btc_candles[last_idx - 1]["close"] + 1e-9
+    )
     momentum_decay = gain_last < gain_first
     detail["gain_first"] = round(gain_first * 100, 3)
     detail["gain_last"] = round(gain_last * 100, 3)
@@ -445,7 +451,9 @@ def check_ma_zone_entry_signal(
                 else:
                     break
             if consecutive_down >= 3:
-                mec_score, _ = calc_btc_mec(btc_candles, btc_idx, "LONG", vol_mult, consecutive_down)
+                mec_score, _ = calc_btc_mec(
+                    btc_candles, btc_idx, "LONG", vol_mult, consecutive_down
+                )
                 if mec_score >= 2:
                     return "ABOVE_ALL_LONG", Direction.LONG, 0.0, 1.0
         return "BREAKOUT_SKIP", None, 0.0, 0.0
@@ -524,6 +532,7 @@ def check_ma_zone_entry_signal(
 
 # ==================== 市场形态识别 ====================
 
+
 def detect_market_regime(
     weekly_candles: List[Dict],
     weekly_idx: int,
@@ -548,12 +557,12 @@ def detect_market_regime(
     curr = weekly_candles[weekly_idx]
     prev = weekly_candles[weekly_idx - 1]
 
-    ema20     = curr.get("ema20")
-    ema50     = curr.get("ema50")
+    ema20 = curr.get("ema20")
+    ema50 = curr.get("ema50")
     curr_hist = curr.get("macd_hist")
     prev_hist = prev.get("macd_hist")
-    rsi       = curr.get("rsi")
-    atr_val   = curr.get("atr") or 0
+    rsi = curr.get("rsi")
+    atr_val = curr.get("atr") or 0
     close_val = curr.get("close") or 1
 
     # --- 主路径: EMA20+EMA50 均可用 ---
@@ -563,8 +572,12 @@ def detect_market_regime(
         if ema_diff_pct < -3.0:
             return "STRONG_BEAR", 1.0
 
-        macd_growing = (curr_hist is not None and prev_hist is not None
-                        and curr_hist > 0 and curr_hist > prev_hist)
+        macd_growing = (
+            curr_hist is not None
+            and prev_hist is not None
+            and curr_hist > 0
+            and curr_hist > prev_hist
+        )
         rsi_ok = rsi is not None and 50 <= rsi <= 75
         if ema_diff_pct > 3.0 and macd_growing and rsi_ok:
             return "STRONG_BULL", 1.0
@@ -590,8 +603,8 @@ def detect_market_regime(
     chg4w = (close_val - c4w) / c4w * 100 if c4w > 0 else 0.0
     consec_down = close_val < c1w and c1w < c2w
 
-    sb = 20 * vol_mult   # STRONG_BEAR/BULL 门槛 (BTC:-20/+20, SOL:-35/+35)
-    wb = 8  * vol_mult   # WEAK_BEAR/BULL   门槛 (BTC:-8/+8,   SOL:-14/+14)
+    sb = 20 * vol_mult  # STRONG_BEAR/BULL 门槛 (BTC:-20/+20, SOL:-35/+35)
+    wb = 8 * vol_mult  # WEAK_BEAR/BULL   门槛 (BTC:-8/+8,   SOL:-14/+14)
     sb2 = 10 * vol_mult  # STRONG_BEAR 连续下跌辅助门槛
 
     if chg4w < -sb or (chg4w < -sb2 and consec_down):
@@ -606,6 +619,7 @@ def detect_market_regime(
 
 
 # ==================== 第一屏: 周线决策 ====================
+
 
 def run_screen1(
     weekly_candles: List[Dict],
@@ -645,9 +659,9 @@ def run_screen1(
         )
 
     params = _apply_opt_params(DEFAULT_STRATEGY_PARAMS, opt_params)
-    strong_threshold = params["strong_score_threshold"]   # 65
-    weak_threshold = params["weak_score_threshold"]       # 50
-    short_threshold = params["short_score_threshold"]     # 35
+    strong_threshold = params["strong_score_threshold"]  # 65
+    weak_threshold = params["weak_score_threshold"]  # 50
+    short_threshold = params["short_score_threshold"]  # 35
 
     curr = weekly_candles[current_idx]
     prev = weekly_candles[current_idx - 1]
@@ -670,8 +684,11 @@ def run_screen1(
             ema_trend = "bearish"
 
     # 维度2: MACD金叉/死叉 (0-25分)
-    if (curr.get("macd_hist") is not None and prev.get("macd_hist") is not None
-            and curr.get("macd") is not None):
+    if (
+        curr.get("macd_hist") is not None
+        and prev.get("macd_hist") is not None
+        and curr.get("macd") is not None
+    ):
         curr_hist = curr["macd_hist"]
         prev_hist = prev["macd_hist"]
         if prev_hist <= 0 and curr_hist > 0:
@@ -759,6 +776,7 @@ def run_screen1(
 
 # ==================== 第二屏: 日线预设 ====================
 
+
 def _calc_20d_volatility(daily_candles: List[Dict], idx: int) -> float:
     """计算20日波动率 (百分比)"""
     if idx < 20:
@@ -766,7 +784,9 @@ def _calc_20d_volatility(daily_candles: List[Dict], idx: int) -> float:
     returns = []
     for i in range(idx - 19, idx + 1):
         if i > 0 and daily_candles[i - 1]["close"] > 0:
-            ret = (daily_candles[i]["close"] - daily_candles[i - 1]["close"]) / daily_candles[i - 1]["close"]
+            ret = (daily_candles[i]["close"] - daily_candles[i - 1]["close"]) / daily_candles[
+                i - 1
+            ]["close"]
             returns.append(ret)
     if len(returns) < 5:
         return 2.0
@@ -777,7 +797,11 @@ def _calc_20d_atr(daily_candles: List[Dict], idx: int) -> float:
     """计算20日ATR均值，用于判断ATR是否异常扩张"""
     if idx < 5:
         return daily_candles[idx].get("atr") or 0.0
-    vals = [daily_candles[j].get("atr") or 0.0 for j in range(max(0, idx - 19), idx + 1) if daily_candles[j].get("atr")]
+    vals = [
+        daily_candles[j].get("atr") or 0.0
+        for j in range(max(0, idx - 19), idx + 1)
+        if daily_candles[j].get("atr")
+    ]
     return sum(vals) / len(vals) if vals else 0.0
 
 
@@ -885,11 +909,16 @@ def run_screen2(
     ma_zone_ref_price_val: float = 0.0
     ma_zone_size_mult_val: float = 1.0
 
-    if btc_daily_candles is not None and btc_idx is not None and position is not None and position.direction == Direction.WAIT:
+    if (
+        btc_daily_candles is not None
+        and btc_idx is not None
+        and position is not None
+        and position.direction == Direction.WAIT
+    ):
         btc_ref = btc_daily_candles if inst_id != "BTC-USDT-SWAP" else daily_candles
         btc_ref_idx = btc_idx if inst_id != "BTC-USDT-SWAP" else current_idx
-        ma_gate, ma_direction_override, ma_zone_ref_price_val, ma_zone_size_mult_val = check_ma_zone_entry_signal(
-            btc_ref, daily_candles, btc_ref_idx, current_idx, vol_mult
+        ma_gate, ma_direction_override, ma_zone_ref_price_val, ma_zone_size_mult_val = (
+            check_ma_zone_entry_signal(btc_ref, daily_candles, btc_ref_idx, current_idx, vol_mult)
         )
 
     # v11.0: BTC跌破所有均线且无涨三信号 -> 仅阻止LONG (STRONG_BEAR SHORT仍允许)
@@ -916,7 +945,9 @@ def run_screen2(
     # v11.0: BLOCKED_LOW_MEC / 未满足连涨跌条件 → 回退V9正常入场 (不再阻止)
 
     # === 确定有效方向 (MA信号可覆盖Screen1) ===
-    effective_direction = ma_direction_override if ma_direction_override is not None else screen1.direction
+    effective_direction = (
+        ma_direction_override if ma_direction_override is not None else screen1.direction
+    )
 
     # === 仓位计算 (对齐规范) ===
     total_limit = screen1.position_limit_pct
@@ -955,9 +986,7 @@ def run_screen2(
         tp_target = 0.0
 
     # v7.0 Opt-2: RSI+ATR 加仓抑制 (阈值按代币波动率分档)
-    sup_cfg = ADDON_SUPPRESS_THRESHOLDS.get(
-        inst_id, ADDON_SUPPRESS_THRESHOLDS["ETH-USDT-SWAP"]
-    )
+    sup_cfg = ADDON_SUPPRESS_THRESHOLDS.get(inst_id, ADDON_SUPPRESS_THRESHOLDS["ETH-USDT-SWAP"])
     rsi_val = curr.get("rsi")
     avg_atr_20d = _calc_20d_atr(daily_candles, current_idx)
     atr_expanding = avg_atr_20d > 0 and atr_val > avg_atr_20d * sup_cfg["atr_mult"]
@@ -988,13 +1017,14 @@ def run_screen2(
 
 # ==================== 第三屏: A9离场决策 ====================
 
+
 def check_exit_signals(
     position: Position,
     daily_candle: Dict,
     screen1: Screen1Output,
     current_equity: float,
     peak_equity: float,
-    trade_count: int
+    trade_count: int,
 ) -> Tuple[bool, ExitReason, int]:
     """
     v12.0 离场决策 (四条件)
@@ -1052,9 +1082,15 @@ def check_exit_signals(
         current_regime = screen1.regime
         if position.level >= 1:
             # 已加仓: WEAK或STRONG对立都触发
-            if position.direction == Direction.SHORT and current_regime in ("WEAK_BULL", "STRONG_BULL"):
+            if position.direction == Direction.SHORT and current_regime in (
+                "WEAK_BULL",
+                "STRONG_BULL",
+            ):
                 return True, ExitReason.SIGNAL_REVERSAL, -1
-            if position.direction == Direction.LONG and current_regime in ("WEAK_BEAR", "STRONG_BEAR"):
+            if position.direction == Direction.LONG and current_regime in (
+                "WEAK_BEAR",
+                "STRONG_BEAR",
+            ):
                 return True, ExitReason.SIGNAL_REVERSAL, -1
         else:
             # 初始单: 仅STRONG对立触发 (避免震荡市频繁止损)
@@ -1084,6 +1120,7 @@ def check_exit_signals(
 
 # ==================== 仓位管理 ====================
 
+
 def calc_martin_add_on(
     position: Position,
     candle: Dict,
@@ -1108,7 +1145,7 @@ def calc_martin_add_on(
         return None
 
     # 检查当前价格是否触发加仓位
-    price = candle["close"]
+    price = candle["close"]  # noqa: F841
     low = candle["low"]
     high = candle["high"]
 
@@ -1145,7 +1182,6 @@ def calc_martin_add_on(
             return None
 
     return (target_price, round(add_size, 2))
-
 
 
 def recalc_avg_entry(

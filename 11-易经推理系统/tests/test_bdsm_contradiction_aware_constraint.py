@@ -15,6 +15,7 @@ valuation_percentile 三个联动信号，造成 (-0.3, 0) 区间"矛盾带"—�
 LONG_BLOCKED 语义：拦截 want=long(UP)，放行 want=short(DOWN)，cap_multiplier 保持原值。
 开关 enable_contradiction_aware_constraint 默认 True，False → 走旧 _compute_direction 字节等价。
 """
+
 from __future__ import annotations
 
 import os
@@ -41,10 +42,14 @@ class TestComputeDirectionV2(unittest.TestCase):
         新算法 L1: conf 高收窄阈值，−0.20<−0.169 → SHORT_ONLY（强烈看空）。
         """
         from bdsm_snapshot_writer import _compute_direction_v2  # noqa: WPS433
+
         self.assertEqual(
             _compute_direction_v2(
-                bds_score=-0.20, confidence=0.875, data_quality="sufficient",
-                value_exit_action="none", valuation_percentile=50.0,
+                bds_score=-0.20,
+                confidence=0.875,
+                data_quality="sufficient",
+                value_exit_action="none",
+                valuation_percentile=50.0,
             ),
             "SHORT_ONLY",
         )
@@ -55,10 +60,14 @@ class TestComputeDirectionV2(unittest.TestCase):
         低置信度不收窄阈值，避免信号不可靠时误触发。
         """
         from bdsm_snapshot_writer import _compute_direction_v2  # noqa: WPS433
+
         self.assertEqual(
             _compute_direction_v2(
-                bds_score=-0.20, confidence=0.40, data_quality="partial",
-                value_exit_action="none", valuation_percentile=50.0,
+                bds_score=-0.20,
+                confidence=0.40,
+                data_quality="partial",
+                value_exit_action="none",
+                valuation_percentile=50.0,
             ),
             "NEUTRAL",
         )
@@ -66,10 +75,14 @@ class TestComputeDirectionV2(unittest.TestCase):
     def test_l1_long_side_symmetric_high_conf_narrows_to_long_only(self) -> None:
         """conf=1.0 → threshold=0.15；bds=+0.16(>0.15) → LONG_ONLY。"""
         from bdsm_snapshot_writer import _compute_direction_v2  # noqa: WPS433
+
         self.assertEqual(
             _compute_direction_v2(
-                bds_score=0.16, confidence=1.0, data_quality="sufficient",
-                value_exit_action="none", valuation_percentile=50.0,
+                bds_score=0.16,
+                confidence=1.0,
+                data_quality="sufficient",
+                value_exit_action="none",
+                valuation_percentile=50.0,
             ),
             "LONG_ONLY",
         )
@@ -82,10 +95,14 @@ class TestComputeDirectionV2(unittest.TestCase):
         新算法 L2: LONG_BLOCKED（禁做多，允许做空，不强制做空）。
         """
         from bdsm_snapshot_writer import _compute_direction_v2  # noqa: WPS433
+
         self.assertEqual(
             _compute_direction_v2(
-                bds_score=-0.1264, confidence=0.875, data_quality="sufficient",
-                value_exit_action="full_exit", valuation_percentile=89.66,
+                bds_score=-0.1264,
+                confidence=0.875,
+                data_quality="sufficient",
+                value_exit_action="full_exit",
+                valuation_percentile=89.66,
             ),
             "LONG_BLOCKED",
         )
@@ -93,10 +110,14 @@ class TestComputeDirectionV2(unittest.TestCase):
     def test_l2_full_exit_but_low_confidence_stays_neutral(self) -> None:
         """conf=0.50<0.70 → L2 不触发，保持 NEUTRAL（FAIL-OPEN，置信度不足不强拦）。"""
         from bdsm_snapshot_writer import _compute_direction_v2  # noqa: WPS433
+
         self.assertEqual(
             _compute_direction_v2(
-                bds_score=-0.1264, confidence=0.50, data_quality="partial",
-                value_exit_action="full_exit", valuation_percentile=89.66,
+                bds_score=-0.1264,
+                confidence=0.50,
+                data_quality="partial",
+                value_exit_action="full_exit",
+                valuation_percentile=89.66,
             ),
             "NEUTRAL",
         )
@@ -107,10 +128,14 @@ class TestComputeDirectionV2(unittest.TestCase):
         价值退出可能由估值泡沫触发(非基本面恶化)，不强制 LONG_BLOCKED。
         """
         from bdsm_snapshot_writer import _compute_direction_v2  # noqa: WPS433
+
         self.assertEqual(
             _compute_direction_v2(
-                bds_score=0.05, confidence=0.875, data_quality="sufficient",
-                value_exit_action="full_exit", valuation_percentile=95.0,
+                bds_score=0.05,
+                confidence=0.875,
+                data_quality="sufficient",
+                value_exit_action="full_exit",
+                valuation_percentile=95.0,
             ),
             "NEUTRAL",
         )
@@ -121,10 +146,14 @@ class TestComputeDirectionV2(unittest.TestCase):
         reduce30 是温和减仓建议，不构成对抗性矛盾。
         """
         from bdsm_snapshot_writer import _compute_direction_v2  # noqa: WPS433
+
         self.assertEqual(
             _compute_direction_v2(
-                bds_score=-0.1264, confidence=0.875, data_quality="sufficient",
-                value_exit_action="reduce30", valuation_percentile=70.0,
+                bds_score=-0.1264,
+                confidence=0.875,
+                data_quality="sufficient",
+                value_exit_action="reduce30",
+                valuation_percentile=70.0,
             ),
             "NEUTRAL",
         )
@@ -133,10 +162,14 @@ class TestComputeDirectionV2(unittest.TestCase):
     def test_l3_high_valuation_plus_negative_bds_sufficient_yields_long_blocked(self) -> None:
         """val_pct=88>85 AND bds=-0.10<0 AND sufficient → LONG_BLOCKED（L2 未触发因 full_exit 缺失）。"""
         from bdsm_snapshot_writer import _compute_direction_v2  # noqa: WPS433
+
         self.assertEqual(
             _compute_direction_v2(
-                bds_score=-0.10, confidence=0.875, data_quality="sufficient",
-                value_exit_action="none", valuation_percentile=88.0,
+                bds_score=-0.10,
+                confidence=0.875,
+                data_quality="sufficient",
+                value_exit_action="none",
+                valuation_percentile=88.0,
             ),
             "LONG_BLOCKED",
         )
@@ -144,10 +177,14 @@ class TestComputeDirectionV2(unittest.TestCase):
     def test_l3_high_valuation_but_low_confidence_stays_neutral(self) -> None:
         """conf=0.50, dq=partial → L3 不触发（置信度+数据质量双重门禁）。"""
         from bdsm_snapshot_writer import _compute_direction_v2  # noqa: WPS433
+
         self.assertEqual(
             _compute_direction_v2(
-                bds_score=-0.10, confidence=0.50, data_quality="partial",
-                value_exit_action="none", valuation_percentile=88.0,
+                bds_score=-0.10,
+                confidence=0.50,
+                data_quality="partial",
+                value_exit_action="none",
+                valuation_percentile=88.0,
             ),
             "NEUTRAL",
         )
@@ -155,10 +192,14 @@ class TestComputeDirectionV2(unittest.TestCase):
     def test_l3_normal_valuation_stays_neutral(self) -> None:
         """val_pct=60<85 → L3 不触发。"""
         from bdsm_snapshot_writer import _compute_direction_v2  # noqa: WPS433
+
         self.assertEqual(
             _compute_direction_v2(
-                bds_score=-0.10, confidence=0.875, data_quality="sufficient",
-                value_exit_action="none", valuation_percentile=60.0,
+                bds_score=-0.10,
+                confidence=0.875,
+                data_quality="sufficient",
+                value_exit_action="none",
+                valuation_percentile=60.0,
             ),
             "NEUTRAL",
         )
@@ -171,10 +212,14 @@ class TestComputeDirectionV2(unittest.TestCase):
         L2 的 LONG_BLOCKED 不再适用（SHORT_ONLY 更强）。
         """
         from bdsm_snapshot_writer import _compute_direction_v2  # noqa: WPS433
+
         self.assertEqual(
             _compute_direction_v2(
-                bds_score=-0.20, confidence=0.875, data_quality="sufficient",
-                value_exit_action="full_exit", valuation_percentile=89.66,
+                bds_score=-0.20,
+                confidence=0.875,
+                data_quality="sufficient",
+                value_exit_action="full_exit",
+                valuation_percentile=89.66,
             ),
             "SHORT_ONLY",
         )
@@ -186,10 +231,14 @@ class TestComputeDirectionV2(unittest.TestCase):
         结果 LONG_BLOCKED（L2 和 L3 输出相同，L2 优先语义）。
         """
         from bdsm_snapshot_writer import _compute_direction_v2  # noqa: WPS433
+
         self.assertEqual(
             _compute_direction_v2(
-                bds_score=-0.10, confidence=0.875, data_quality="sufficient",
-                value_exit_action="full_exit", valuation_percentile=88.0,
+                bds_score=-0.10,
+                confidence=0.875,
+                data_quality="sufficient",
+                value_exit_action="full_exit",
+                valuation_percentile=88.0,
             ),
             "LONG_BLOCKED",
         )
@@ -198,10 +247,14 @@ class TestComputeDirectionV2(unittest.TestCase):
     def test_insufficient_data_quality_forces_neutral_regardless_of_signals(self) -> None:
         """data_quality=insufficient → 强制 NEUTRAL（FAIL-OPEN，信号不可靠不强拦）。"""
         from bdsm_snapshot_writer import _compute_direction_v2  # noqa: WPS433
+
         self.assertEqual(
             _compute_direction_v2(
-                bds_score=-0.20, confidence=0.875, data_quality="insufficient",
-                value_exit_action="full_exit", valuation_percentile=95.0,
+                bds_score=-0.20,
+                confidence=0.875,
+                data_quality="insufficient",
+                value_exit_action="full_exit",
+                valuation_percentile=95.0,
             ),
             "NEUTRAL",
         )
@@ -213,10 +266,14 @@ class TestComputeDirectionV2(unittest.TestCase):
         bds=-0.1264 旧算法 NEUTRAL（字节等价"开关不存在"）。
         """
         from bdsm_snapshot_writer import _compute_direction_v2  # noqa: WPS433
+
         self.assertEqual(
             _compute_direction_v2(
-                bds_score=-0.1264, confidence=0.875, data_quality="sufficient",
-                value_exit_action="full_exit", valuation_percentile=89.66,
+                bds_score=-0.1264,
+                confidence=0.875,
+                data_quality="sufficient",
+                value_exit_action="full_exit",
+                valuation_percentile=89.66,
                 enable_contradiction_aware_constraint=False,
             ),
             "NEUTRAL",
@@ -245,7 +302,9 @@ class TestApplyBDSMDirectionConstraintLongBlocked(unittest.TestCase):
 
     def _make_trader(self, snap_coin_entry: dict, coin: str = "SOL") -> object:
         from unittest.mock import MagicMock, patch
+
         from scripts.memory_l4.polling_trader import PollingTrader
+
         with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
             t = PollingTrader.__new__(PollingTrader)
         t._log = MagicMock()
@@ -256,33 +315,48 @@ class TestApplyBDSMDirectionConstraintLongBlocked(unittest.TestCase):
 
     def test_long_blocked_intercepts_up_direction(self) -> None:
         """LONG_BLOCKED + want UP(做多) → 拦截，返回 bdsm_long_blocked_dropped。"""
-        t = self._make_trader({
-            "available": True, "direction_constraint": "LONG_BLOCKED",
-            "cap_multiplier": 0.25, "exit_action": "NONE",
-            "data_quality": "sufficient", "confidence": 0.875,
-        })
+        t = self._make_trader(
+            {
+                "available": True,
+                "direction_constraint": "LONG_BLOCKED",
+                "cap_multiplier": 0.25,
+                "exit_action": "NONE",
+                "data_quality": "sufficient",
+                "confidence": 0.875,
+            }
+        )
         is_pass, reason = t._apply_bdsm_direction_constraint("SOL", "UP")
         self.assertFalse(is_pass, f"LONG_BLOCKED 应拦截 UP: {reason}")
         self.assertIn("bdsm_long_blocked_dropped", reason)
 
     def test_long_blocked_allows_down_direction(self) -> None:
         """LONG_BLOCKED + want DOWN(做空) → 放行（不强制做空，但允许）。"""
-        t = self._make_trader({
-            "available": True, "direction_constraint": "LONG_BLOCKED",
-            "cap_multiplier": 0.25, "exit_action": "NONE",
-            "data_quality": "sufficient", "confidence": 0.875,
-        })
+        t = self._make_trader(
+            {
+                "available": True,
+                "direction_constraint": "LONG_BLOCKED",
+                "cap_multiplier": 0.25,
+                "exit_action": "NONE",
+                "data_quality": "sufficient",
+                "confidence": 0.875,
+            }
+        )
         is_pass, reason = t._apply_bdsm_direction_constraint("SOL", "DOWN")
         self.assertTrue(is_pass, f"LONG_BLOCKED 应放行 DOWN: {reason}")
         self.assertIn("bdsm_long_blocked_short_allowed", reason)
 
     def test_long_blocked_neutral_when_confidence_insufficient(self) -> None:
         """data_quality=partial → LONG_BLOCKED 降级放行（置信度不足不强拦）。"""
-        t = self._make_trader({
-            "available": True, "direction_constraint": "LONG_BLOCKED",
-            "cap_multiplier": 0.25, "exit_action": "NONE",
-            "data_quality": "partial", "confidence": 0.375,
-        })
+        t = self._make_trader(
+            {
+                "available": True,
+                "direction_constraint": "LONG_BLOCKED",
+                "cap_multiplier": 0.25,
+                "exit_action": "NONE",
+                "data_quality": "partial",
+                "confidence": 0.375,
+            }
+        )
         is_pass, reason = t._apply_bdsm_direction_constraint("SOL", "UP")
         self.assertTrue(is_pass, f"置信度不足应放行: {reason}")
         self.assertIn("bdsm_confidence_insufficient", reason)

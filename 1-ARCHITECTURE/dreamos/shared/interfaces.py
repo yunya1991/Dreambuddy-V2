@@ -14,11 +14,11 @@ Dreambuddy OS — 核心接口定义
     - 可替换: 实现可替换，不影响上层
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Iterable, TYPE_CHECKING
-from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
+from dataclasses import dataclass
 
 from .state import State, NodeResult, NodeStatus
 
@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 # ============================================================
 # 1. Node 节点接口
 # ============================================================
+
 
 class Node(ABC):
     """节点接口 — 最小执行单元的统一抽象
@@ -62,17 +63,17 @@ class Node(ABC):
     node_id: str = ""
     name: str = ""
     description: str = ""
-    chain: str = ""                # A / C / F / G / T
+    chain: str = ""  # A / C / F / G / T
     tags: List[str] = []
 
     # ── 资源与优先级元信息 ──────────────────────────────
-    required_tokens: int = 0       # 文档标准字段：预计消耗 token
-    priority: int = 0              # 文档标准字段：节点优先级（越大越高）
+    required_tokens: int = 0  # 文档标准字段：预计消耗 token
+    priority: int = 0  # 文档标准字段：节点优先级（越大越高）
     estimated_latency_ms: int = 0
 
     # ── 能力声明（统一能力注册表）────────────────────────
-    capabilities: List["CapabilitySpec"] = []          # 显式声明的能力规格
-    required_capabilities: List[str] = []               # 执行前必须可用的能力 ID
+    capabilities: List["CapabilitySpec"] = []  # 显式声明的能力规格
+    required_capabilities: List[str] = []  # 执行前必须可用的能力 ID
 
     # ── 兼容别名（旧代码可继续用） ─────────────────────
     @property
@@ -124,6 +125,7 @@ class Node(ABC):
 # 2. Graph 图接口
 # ============================================================
 
+
 @dataclass
 class Edge:
     """图的边 — 定义节点间的跳转关系
@@ -131,10 +133,11 @@ class Edge:
     支持条件边:
         edge = Edge(source="A0", target="A1", condition=lambda s: s.get_confidence("A0") > 0.6)
     """
-    source: str                                            # 源节点 ID
-    target: str                                            # 目标节点 ID
-    condition: Optional[Callable[[State], bool]] = None    # 条件 (None=无条件)
-    label: str = ""                                        # 标签（调试用）
+
+    source: str  # 源节点 ID
+    target: str  # 目标节点 ID
+    condition: Optional[Callable[[State], bool]] = None  # 条件 (None=无条件)
+    label: str = ""  # 标签（调试用）
 
 
 class Graph(ABC):
@@ -152,9 +155,13 @@ class Graph(ABC):
         ...
 
     @abstractmethod
-    def add_edge(self, source: str, target: str,
-                 condition: Optional[Callable[[State], bool]] = None,
-                 label: str = "") -> "Graph":
+    def add_edge(
+        self,
+        source: str,
+        target: str,
+        condition: Optional[Callable[[State], bool]] = None,
+        label: str = "",
+    ) -> "Graph":
         """添加边（链式）"""
         ...
 
@@ -202,6 +209,7 @@ class Graph(ABC):
 # 3. Registry 注册表接口
 # ============================================================
 
+
 class Registry(ABC):
     """注册表接口 — 节点/能力的唯一真相源
 
@@ -222,8 +230,7 @@ class Registry(ABC):
         ...
 
     @abstractmethod
-    def list_nodes(self, chain: Optional[str] = None,
-                   tag: Optional[str] = None) -> List[Node]:
+    def list_nodes(self, chain: Optional[str] = None, tag: Optional[str] = None) -> List[Node]:
         """列出节点（可过滤）"""
         ...
 
@@ -241,6 +248,7 @@ class Registry(ABC):
 # ============================================================
 # 4. Adapter 适配器接口
 # ============================================================
+
 
 class Adapter(ABC):
     """适配器接口 — 外部能力接入 OS 的标准接口

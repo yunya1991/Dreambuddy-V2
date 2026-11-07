@@ -5,8 +5,7 @@
 基于已抓取的历史新闻和真实价格数据
 """
 
-import json
-from datetime import datetime, timedelta
+import json  # noqa: I001
 from pathlib import Path
 import sys
 
@@ -26,7 +25,7 @@ def load_historical_news(news_dir: Path) -> list:
         if "cache" in str(news_file):
             continue
         try:
-            with open(news_file, 'r', encoding='utf-8') as f:
+            with open(news_file, "r", encoding="utf-8") as f:
                 day_news = json.load(f)
                 if isinstance(day_news, list):
                     all_news.extend(day_news)
@@ -55,8 +54,28 @@ def normalize_news_for_backtest(news_list: list) -> list:
             # 基于标题情感计算
             title = item.get("title", "")
 
-            positive_keywords = ["流入", "突破", "新高", "上涨", "利好", "超越", "批准", "宽松", "强劲"]
-            negative_keywords = ["流出", "下跌", "攻击", "损失", "暂停", "担忧", "收紧", "疲软", "承压"]
+            positive_keywords = [
+                "流入",
+                "突破",
+                "新高",
+                "上涨",
+                "利好",
+                "超越",
+                "批准",
+                "宽松",
+                "强劲",
+            ]
+            negative_keywords = [
+                "流出",
+                "下跌",
+                "攻击",
+                "损失",
+                "暂停",
+                "担忧",
+                "收紧",
+                "疲软",
+                "承压",
+            ]
 
             score = 0
             for kw in positive_keywords:
@@ -95,7 +114,7 @@ def run_backtest_with_real_news():
         print("[ERROR] 价格数据文件不存在，请先运行 fetch_historical_prices.py")
         return None
 
-    with open(price_file, 'r', encoding='utf-8') as f:
+    with open(price_file, "r", encoding="utf-8") as f:
         prices = json.load(f)
 
     # 加载历史新闻
@@ -127,6 +146,7 @@ def run_backtest_with_real_news():
 
     # 按日期分组保存
     from collections import defaultdict
+
     news_by_date = defaultdict(list)
     for n in news_list:
         date = n.get("published_at", "")[:10]
@@ -134,7 +154,7 @@ def run_backtest_with_real_news():
 
     for date, date_news in news_by_date.items():
         news_file = news_dir / f"news_{date}.json"
-        with open(news_file, 'w', encoding='utf-8') as f:
+        with open(news_file, "w", encoding="utf-8") as f:
             json.dump(date_news, f, indent=2, ensure_ascii=False)
 
     print(f"  新闻数据已整理：{len(news_by_date)} 天")
@@ -148,7 +168,7 @@ def run_backtest_with_real_news():
         initial_capital=100000,
         transaction_cost=0.001,
         lookback_days=7,
-        hold_period=1
+        hold_period=1,
     )
 
     backtester = NewsSignalBacktester(config)
@@ -165,7 +185,7 @@ def run_backtest_with_real_news():
             "initial_capital": config.initial_capital,
             "transaction_cost": config.transaction_cost,
             "lookback_days": config.lookback_days,
-            "data_source": "真实新闻 + 真实价格"
+            "data_source": "真实新闻 + 真实价格",
         },
         "results": {
             "total_return": result.total_return,
@@ -174,13 +194,13 @@ def run_backtest_with_real_news():
             "max_drawdown": result.max_drawdown,
             "win_rate": result.win_rate,
             "profit_factor": result.profit_factor,
-            "total_trades": result.total_trades
+            "total_trades": result.total_trades,
         },
-        "daily_equity": result.daily_equity
+        "daily_equity": result.daily_equity,
     }
 
     result_file = data_dir / "backtest_result_real_news.json"
-    with open(result_file, 'w', encoding='utf-8') as f:
+    with open(result_file, "w", encoding="utf-8") as f:
         json.dump(result_summary, f, indent=2, ensure_ascii=False)
 
     print(f"\n[✓] 回测结果已保存：{result_file}")

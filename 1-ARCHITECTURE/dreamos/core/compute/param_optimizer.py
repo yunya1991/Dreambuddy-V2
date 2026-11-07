@@ -29,32 +29,33 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 # ── 过拟合防护阈值 ──────────────────────────────────────
-MAX_PARAMS = 5                  # 最多 5 个参数
-MIN_TRIALS = 10                 # 最少试验次数
-WALK_FORWARD_SPLITS = 3         # walk-forward 分割数
-IMPROVEMENT_THRESHOLD = 0.02    # 改进 ≥2% 才落地
-STABILITY_RATIO = 0.7           # 稳定区间: 最优 70% 以内的参数都接受
+MAX_PARAMS = 5  # 最多 5 个参数
+MIN_TRIALS = 10  # 最少试验次数
+WALK_FORWARD_SPLITS = 3  # walk-forward 分割数
+IMPROVEMENT_THRESHOLD = 0.02  # 改进 ≥2% 才落地
+STABILITY_RATIO = 0.7  # 稳定区间: 最优 70% 以内的参数都接受
 
 
 class OptimizationStatus(str, Enum):
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
-    SKIPPED = "skipped"          # 参数过多/试验不足
+    SKIPPED = "skipped"  # 参数过多/试验不足
     FAILED = "failed"
 
 
 class ApplyDecision(str, Enum):
-    APPLY = "apply"              # 改进显著, 建议落地
-    HOLD = "hold"                # 改进不显著, 保持现状
-    REJECT = "reject"            # 过拟合风险, 拒绝
+    APPLY = "apply"  # 改进显著, 建议落地
+    HOLD = "hold"  # 改进不显著, 保持现状
+    REJECT = "reject"  # 过拟合风险, 拒绝
 
 
 @dataclass
 class TrialResult:
     """单次试验结果"""
+
     params: Dict[str, float]
-    score: float                 # 目标函数值 (越高越好)
+    score: float  # 目标函数值 (越高越好)
     train_score: Optional[float] = None
     val_scores: List[float] = field(default_factory=list)  # walk-forward 验证分数
 
@@ -92,18 +93,17 @@ class TrialResult:
 @dataclass
 class OptimizationResult:
     """优化结果"""
+
     status: OptimizationStatus
     best_trial: Optional[TrialResult] = None
     baseline_score: float = 0.0
-    improvement: float = 0.0     # 相对改进比例
+    improvement: float = 0.0  # 相对改进比例
     should_apply: bool = False
     apply_decision: ApplyDecision = ApplyDecision.HOLD
     reason: str = ""
     n_trials: int = 0
     all_trials: List[TrialResult] = field(default_factory=list)
-    optimized_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z"
-    )
+    optimized_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat() + "Z")
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -140,10 +140,7 @@ class ParamOptimizer:
 
     def __init__(self, param_space: Dict[str, Tuple[float, float]]):
         if len(param_space) > MAX_PARAMS:
-            raise ValueError(
-                f"参数数量 {len(param_space)} 超过上限 {MAX_PARAMS} "
-                f"(过拟合防护)"
-            )
+            raise ValueError(f"参数数量 {len(param_space)} 超过上限 {MAX_PARAMS} " f"(过拟合防护)")
         self._param_space = param_space
         self._trials: List[TrialResult] = []
         self._status = OptimizationStatus.PENDING
@@ -158,10 +155,7 @@ class ParamOptimizer:
 
     def _sample_random(self) -> Dict[str, float]:
         """从参数空间随机采样"""
-        return {
-            name: random.uniform(lo, hi)
-            for name, (lo, hi) in self._param_space.items()
-        }
+        return {name: random.uniform(lo, hi) for name, (lo, hi) in self._param_space.items()}
 
     def _sample_gaussian(self, center: Dict[str, float], sigma: float = 0.1) -> Dict[str, float]:
         """在 center 附近高斯采样"""
@@ -199,7 +193,7 @@ class ParamOptimizer:
             dist = math.sqrt(dist / len(self._param_space))
 
             # 权重: 距离越近权重越高 (高斯核)
-            w = math.exp(-2 * dist ** 2)
+            w = math.exp(-2 * dist**2)
             weights.append(w)
             scores.append(trial.score)
 
@@ -208,8 +202,8 @@ class ParamOptimizer:
             return random.random()
 
         # 加权均值和方差
-        mean = sum(w * s for w, s in zip(weights, scores)) / total_w
-        variance = sum(w * (s - mean) ** 2 for w, s in zip(weights, scores)) / total_w
+        mean = sum(w * s for w, s in zip(weights, scores)) / total_w  # noqa: B905
+        variance = sum(w * (s - mean) ** 2 for w, s in zip(weights, scores)) / total_w  # noqa: B905
         std = math.sqrt(variance) if variance > 0 else 0.01
 
         # EI = (mean - best) * CDF(z) + std * PDF(z)
@@ -395,7 +389,7 @@ class CostAdaptiveScheduler:
         hist = self._history.setdefault(node_id, [])
         hist.append(duration_ms)
         if len(hist) > self._window * 2:
-            hist = hist[-self._window * 2:]
+            hist = hist[-self._window * 2 :]
             self._history[node_id] = hist
 
     def get_interval(self, node_id: str) -> int:
@@ -404,7 +398,7 @@ class CostAdaptiveScheduler:
         if len(hist) < self._window:
             return self._default
 
-        recent = hist[-self._window:]
+        recent = hist[-self._window :]
         avg_cost = sum(recent) / len(recent)
 
         if avg_cost > self._threshold:
@@ -423,7 +417,7 @@ class CostAdaptiveScheduler:
         """调度状态摘要"""
         return {
             node_id: {
-                "avg_cost_ms": sum(h[-self._window:]) / max(len(h[-self._window:]), 1),
+                "avg_cost_ms": sum(h[-self._window :]) / max(len(h[-self._window :]), 1),
                 "interval_ms": self.get_interval(node_id),
                 "samples": len(h),
             }

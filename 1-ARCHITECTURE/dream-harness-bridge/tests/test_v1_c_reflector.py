@@ -11,11 +11,11 @@ V1-C: C 层 Reflector IPC 契约测试
 """
 
 import json
+import subprocess
 import sys
+import threading
 import time
 import uuid
-import subprocess
-import threading
 from pathlib import Path
 
 BRIDGE_DIR = Path(__file__).resolve().parent.parent
@@ -118,10 +118,13 @@ def test_reflection_continue():
     """CONTINUE 决策 → echo 返回 decision=CONTINUE"""
     harness = IPCHarness().start()
     try:
-        resp = harness.call_method("reflection", {
-            "decision": "CONTINUE",
-            "reason": "next step ready",
-        })
+        resp = harness.call_method(
+            "reflection",
+            {
+                "decision": "CONTINUE",
+                "reason": "next step ready",
+            },
+        )
         echo = resp.get("result", {}).get("echo", {})
         params = echo.get("params", {})
         assert params.get("decision") == "CONTINUE", f"应返回 CONTINUE, got {params}"
@@ -134,9 +137,12 @@ def test_reflection_invalid_decision():
     """非法决策 → 错误响应"""
     harness = IPCHarness().start()
     try:
-        resp = harness.call_method("reflection", {
-            "decision": "INVALID",
-        })
+        resp = harness.call_method(
+            "reflection",
+            {
+                "decision": "INVALID",
+            },
+        )
         # reflection_handler 校验失败 → ok=False 或 echo 中不含合法 decision
         result = resp.get("result", {})
         echo = result.get("echo", {})
@@ -152,14 +158,17 @@ def test_reflection_insert_before_requires_target():
     """INSERT_BEFORE 缺少 target_step → 错误响应"""
     harness = IPCHarness().start()
     try:
-        resp = harness.call_method("reflection", {
-            "decision": "INSERT_BEFORE",
-        })
+        resp = harness.call_method(
+            "reflection",
+            {
+                "decision": "INSERT_BEFORE",
+            },
+        )
         echo = resp.get("result", {}).get("echo", {})
         params = echo.get("params", {})
         # 失败时不应回显无 target_step 的 INSERT_BEFORE
         assert params.get("target_step") is not None or params.get("decision") != "INSERT_BEFORE"
-        print(f"  PASS: INSERT_BEFORE 缺少 target_step 被拒绝")
+        print("  PASS: INSERT_BEFORE 缺少 target_step 被拒绝")
     finally:
         harness.stop()
 
@@ -168,15 +177,20 @@ def test_reflection_jump_to_with_target():
     """JUMP_TO 带 target_step → echo 返回 decision + target_step"""
     harness = IPCHarness().start()
     try:
-        resp = harness.call_method("reflection", {
-            "decision": "JUMP_TO",
-            "target_step": "step-5",
-        })
+        resp = harness.call_method(
+            "reflection",
+            {
+                "decision": "JUMP_TO",
+                "target_step": "step-5",
+            },
+        )
         echo = resp.get("result", {}).get("echo", {})
         params = echo.get("params", {})
         assert params.get("decision") == "JUMP_TO"
         assert params.get("target_step") == "step-5"
-        print(f"  PASS: JUMP_TO → decision={params.get('decision')}, target={params.get('target_step')}")
+        print(
+            f"  PASS: JUMP_TO → decision={params.get('decision')}, target={params.get('target_step')}"
+        )
     finally:
         harness.stop()
 

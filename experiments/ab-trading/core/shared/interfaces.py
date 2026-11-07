@@ -7,13 +7,13 @@
 定义 A层 和 C层 之间共享的接口
 """
 
-from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass
-
+from typing import Any, Callable, Dict, Optional
 
 # ============================================================
 # A层：图编排引擎 - 节点执行器接口
 # ============================================================
+
 
 class NodeExecutorInterface:
     """节点执行器接口
@@ -56,12 +56,14 @@ class NodeExecutorInterface:
 # 节点执行状态（共享类型）
 # ============================================================
 
+
 @dataclass
 class NodeExecutionStatus:
     """节点执行状态
 
     跟踪每个节点的执行状态
     """
+
     node_id: str
     status: str = "pending"  # pending / running / completed / failed / skipped
     start_time: Optional[float] = None
@@ -100,12 +102,14 @@ class NodeExecutionStatus:
 # 执行策略
 # ============================================================
 
+
 @dataclass
 class ExecutionStrategy:
     """执行策略配置
 
     控制图编排引擎的执行行为
     """
+
     # 失败策略
     stop_on_first_failure: bool = False
     continue_on_optional_failure: bool = True

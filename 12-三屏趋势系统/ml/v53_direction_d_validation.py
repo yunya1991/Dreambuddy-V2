@@ -23,38 +23,38 @@
 验证：TOP_EXIT + DIP_BUY场景 Walk-Forward，与V4基线(74维)对比
 """
 
+import json
 import os
 import sys
-import json
 import time
+
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
 from sklearn.metrics import roc_auc_score
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.feature_engineer import TrendFeatureEngineer
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
-
+from ml.feature_engineer import TrendFeatureEngineer  # noqa: E402
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
 
 # ── 方向D特征设计 ──────────────────────────────────────────────
 
 # 精选独立特征（5个）
 SELECTED_INDEPENDENT = [
-    "vol_regime_ratio",       # 83.7% 独立信息
-    "fed_rate_level",         # 81.4% 独立信息
-    "drawdown_vs_hist_avg",   # 76.4% 独立信息
-    "fed_months_in_cycle",    # 56.9% 独立信息
-    "fed_rate_action",        # 56.1% 独立信息
+    "vol_regime_ratio",  # 83.7% 独立信息
+    "fed_rate_level",  # 81.4% 独立信息
+    "drawdown_vs_hist_avg",  # 76.4% 独立信息
+    "fed_months_in_cycle",  # 56.9% 独立信息
+    "fed_rate_action",  # 56.1% 独立信息
 ]
 
 # 交互特征（3个）
 INTERACTION_FEATURES = [
-    "halving_x_fed_action",      # halving_months_after × fed_rate_action
-    "ath_dd_x_vol_regime",       # ath_drawdown_pct × vol_regime_ratio
-    "ma200_dist_x_fed_action",   # weekly_ma200_distance × fed_rate_action
+    "halving_x_fed_action",  # halving_months_after × fed_rate_action
+    "ath_dd_x_vol_regime",  # ath_drawdown_pct × vol_regime_ratio
+    "ma200_dist_x_fed_action",  # weekly_ma200_distance × fed_rate_action
 ]
 
 # 方向D全部新增特征
@@ -152,7 +152,9 @@ def compute_v5_raw_features(fe: PhilosophyFeatureEngineer, prices: pd.DataFrame)
         if recent_halving is None:
             continue
 
-        halving_idx_change = (recent_halving != last_halving_idx) if last_halving_idx != -1 else False
+        halving_idx_change = (
+            (recent_halving != last_halving_idx) if last_halving_idx != -1 else False
+        )
         if halving_idx_change or running_peak_price == 0.0:
             running_peak_price = current_price
             running_peak_date = current_date
@@ -217,21 +219,24 @@ def compute_v5_raw_features(fe: PhilosophyFeatureEngineer, prices: pd.DataFrame)
             dd_progress = min(1.0, abs(drawdown_peak_arr[i]) / fe.HISTORICAL_AVG_TOTAL_DRAWDOWN_PCT)
             bear_severity_arr[i] = time_progress * dd_progress
 
-    return pd.DataFrame({
-        "cycle_phase": cycle_phase_arr,
-        "drawdown_from_cycle_peak": drawdown_peak_arr,
-        "months_since_cycle_peak": months_since_peak_arr,
-        "bear_phase_progress": bear_progress_arr,
-        "drawdown_vs_hist_avg": drawdown_vs_hist_arr,
-        "cycle_path_similarity": path_similarity_arr,
-        "vol_regime_ratio": vol_regime_arr,
-        "bear_severity_score": bear_severity_arr,
-        "fed_rate_action": fed_action_arr,
-        "fed_months_in_cycle": fed_months_arr,
-        "fed_rate_level": fed_level_arr,
-        "fed_easing_btc_dip": fed_easing_dip_arr,
-        "fed_hawkish_top": fed_hawkish_top_arr,
-    }, index=prices.index)
+    return pd.DataFrame(
+        {
+            "cycle_phase": cycle_phase_arr,
+            "drawdown_from_cycle_peak": drawdown_peak_arr,
+            "months_since_cycle_peak": months_since_peak_arr,
+            "bear_phase_progress": bear_progress_arr,
+            "drawdown_vs_hist_avg": drawdown_vs_hist_arr,
+            "cycle_path_similarity": path_similarity_arr,
+            "vol_regime_ratio": vol_regime_arr,
+            "bear_severity_score": bear_severity_arr,
+            "fed_rate_action": fed_action_arr,
+            "fed_months_in_cycle": fed_months_arr,
+            "fed_rate_level": fed_level_arr,
+            "fed_easing_btc_dip": fed_easing_dip_arr,
+            "fed_hawkish_top": fed_hawkish_top_arr,
+        },
+        index=prices.index,
+    )
 
 
 def build_direction_d_features(
@@ -327,10 +332,15 @@ def walk_forward_validation(
             continue
 
         model = lgb.LGBMClassifier(
-            n_estimators=200, max_depth=6, learning_rate=0.05,
-            num_leaves=31, min_child_samples=20,
-            subsample=0.8, colsample_bytree=0.8,
-            random_state=42, verbose=-1,
+            n_estimators=200,
+            max_depth=6,
+            learning_rate=0.05,
+            num_leaves=31,
+            min_child_samples=20,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42,
+            verbose=-1,
         )
         model.fit(X_train, y_train)
 
@@ -346,7 +356,11 @@ def walk_forward_validation(
     avg_test_auc = float(np.mean(test_aucs)) if test_aucs else 0.0
     avg_train_auc = float(np.mean(train_aucs)) if train_aucs else 0.0
     decay_rate = 1.0 - (avg_test_auc / avg_train_auc) if avg_train_auc > 0 else 0.0
-    avg_importances = np.mean(feature_importances, axis=0) if feature_importances else np.zeros(len(feature_names))
+    avg_importances = (
+        np.mean(feature_importances, axis=0)
+        if feature_importances
+        else np.zeros(len(feature_names))
+    )
 
     return {
         "avg_test_auc": avg_test_auc,
@@ -367,8 +381,11 @@ def main():
     print("\n【1. 数据加载】")
     prices = load_btc_data()
     closes = prices["close"].values
-    print("  BTC日线: {}天, {} ~ {}".format(
-        len(prices), prices.index[0].date(), prices.index[-1].date()))
+    print(
+        "  BTC日线: {}天, {} ~ {}".format(
+            len(prices), prices.index[0].date(), prices.index[-1].date()
+        )
+    )
 
     # 2. 计算特征
     print("\n【2. 特征计算】")
@@ -399,12 +416,18 @@ def main():
     print("\n【3. 构建实验特征集】")
 
     # V4基线：趋势 + 哲学(24维)
-    v4_features = pd.concat([trend_features, phil_features], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    v4_features = (
+        pd.concat([trend_features, phil_features], axis=1)
+        .fillna(0.0)
+        .replace([np.inf, -np.inf], 0.0)
+    )
     v4_feature_names = list(v4_features.columns)
     print("  V4基线: {}维".format(len(v4_feature_names)))
 
     # 方向D：V4基线 + 8个新增特征
-    d_features = pd.concat([v4_features, direction_d], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    d_features = (
+        pd.concat([v4_features, direction_d], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    )
     d_feature_names = list(d_features.columns)
     print("  方向D: {}维 (+{})".format(len(d_feature_names), len(DIRECTION_D_FEATURES)))
 
@@ -414,8 +437,11 @@ def main():
         if feat in d_features.columns:
             vals = d_features[feat]
             non_zero = (vals != 0).sum()
-            print("  {:<28s}  min={:>10.3f}  max={:>10.3f}  mean={:>8.3f}  非零占比={:.1%}".format(
-                feat, vals.min(), vals.max(), vals.mean(), non_zero / len(vals)))
+            print(
+                "  {:<28s}  min={:>10.3f}  max={:>10.3f}  mean={:>8.3f}  非零占比={:.1%}".format(
+                    feat, vals.min(), vals.max(), vals.mean(), non_zero / len(vals)
+                )
+            )
 
     # 5. Walk-Forward 验证
     print("\n【5. Walk-Forward 验证】")
@@ -431,18 +457,27 @@ def main():
     print("\n  [V4基线]")
     t0 = time.time()
     v4_top = walk_forward_validation(v4_features, top_exit_labels, v4_feature_names)
-    print("    AUC: {:.4f} (train={:.4f}, decay={:.1%})  耗时{:.1f}s".format(
-        v4_top["avg_test_auc"], v4_top["avg_train_auc"], v4_top["decay_rate"], time.time() - t0))
+    print(
+        "    AUC: {:.4f} (train={:.4f}, decay={:.1%})  耗时{:.1f}s".format(
+            v4_top["avg_test_auc"], v4_top["avg_train_auc"], v4_top["decay_rate"], time.time() - t0
+        )
+    )
 
     print("\n  [方向D]")
     t0 = time.time()
     d_top = walk_forward_validation(d_features, top_exit_labels, d_feature_names)
-    print("    AUC: {:.4f} (train={:.4f}, decay={:.1%})  耗时{:.1f}s".format(
-        d_top["avg_test_auc"], d_top["avg_train_auc"], d_top["decay_rate"], time.time() - t0))
+    print(
+        "    AUC: {:.4f} (train={:.4f}, decay={:.1%})  耗时{:.1f}s".format(
+            d_top["avg_test_auc"], d_top["avg_train_auc"], d_top["decay_rate"], time.time() - t0
+        )
+    )
 
     delta_top = d_top["avg_test_auc"] - v4_top["avg_test_auc"]
-    print("\n  >>> TOP_EXIT AUC变化: {:+.4f} ({})".format(
-        delta_top, "✅ 提升" if delta_top > 0 else "❌ 下降" if delta_top < 0 else "➡️ 持平"))
+    print(
+        "\n  >>> TOP_EXIT AUC变化: {:+.4f} ({})".format(
+            delta_top, "✅ 提升" if delta_top > 0 else "❌ 下降" if delta_top < 0 else "➡️ 持平"
+        )
+    )
 
     # DIP_BUY场景
     print("\n" + "-" * 60)
@@ -455,18 +490,27 @@ def main():
     print("\n  [V4基线]")
     t0 = time.time()
     v4_dip = walk_forward_validation(v4_features, dip_buy_labels, v4_feature_names)
-    print("    AUC: {:.4f} (train={:.4f}, decay={:.1%})  耗时{:.1f}s".format(
-        v4_dip["avg_test_auc"], v4_dip["avg_train_auc"], v4_dip["decay_rate"], time.time() - t0))
+    print(
+        "    AUC: {:.4f} (train={:.4f}, decay={:.1%})  耗时{:.1f}s".format(
+            v4_dip["avg_test_auc"], v4_dip["avg_train_auc"], v4_dip["decay_rate"], time.time() - t0
+        )
+    )
 
     print("\n  [方向D]")
     t0 = time.time()
     d_dip = walk_forward_validation(d_features, dip_buy_labels, d_feature_names)
-    print("    AUC: {:.4f} (train={:.4f}, decay={:.1%})  耗时{:.1f}s".format(
-        d_dip["avg_test_auc"], d_dip["avg_train_auc"], d_dip["decay_rate"], time.time() - t0))
+    print(
+        "    AUC: {:.4f} (train={:.4f}, decay={:.1%})  耗时{:.1f}s".format(
+            d_dip["avg_test_auc"], d_dip["avg_train_auc"], d_dip["decay_rate"], time.time() - t0
+        )
+    )
 
     delta_dip = d_dip["avg_test_auc"] - v4_dip["avg_test_auc"]
-    print("\n  >>> DIP_BUY AUC变化: {:+.4f} ({})".format(
-        delta_dip, "✅ 提升" if delta_dip > 0 else "❌ 下降" if delta_dip < 0 else "➡️ 持平"))
+    print(
+        "\n  >>> DIP_BUY AUC变化: {:+.4f} ({})".format(
+            delta_dip, "✅ 提升" if delta_dip > 0 else "❌ 下降" if delta_dip < 0 else "➡️ 持平"
+        )
+    )
 
     # 6. 方向D新增特征重要性排名
     print("\n【6. 方向D新增特征重要性排名】")
@@ -477,7 +521,7 @@ def main():
     ]:
         print("\n  {} 场景 - 方向D特征排名:".format(scenario_name))
         importances = result["feature_importances"]
-        feat_imp = list(zip(feature_names, importances))
+        feat_imp = list(zip(feature_names, importances))  # noqa: B905
         feat_imp.sort(key=lambda x: x[1], reverse=True)
 
         # 找出方向D特征的排名
@@ -498,7 +542,8 @@ def main():
     print("  【验证总结】")
     print("=" * 80)
 
-    print("""
+    print(
+        """
 ┌──────────────────────────────────────────────────────────────────┐
 │                    方向D验证结果对比                              │
 ├──────────────────┬──────────────┬──────────────┬────────────────┤
@@ -508,11 +553,16 @@ def main():
 │ DIP_BUY          │ {:.4f}       │ {:.4f}       │ {:+.4f}  {} │
 └──────────────────┴──────────────┴──────────────┴────────────────┘
 """.format(
-    v4_top["avg_test_auc"], d_top["avg_test_auc"], delta_top,
-    "✅" if delta_top > 0 else "❌",
-    v4_dip["avg_test_auc"], d_dip["avg_test_auc"], delta_dip,
-    "✅" if delta_dip > 0 else "❌",
-))
+            v4_top["avg_test_auc"],
+            d_top["avg_test_auc"],
+            delta_top,
+            "✅" if delta_top > 0 else "❌",
+            v4_dip["avg_test_auc"],
+            d_dip["avg_test_auc"],
+            delta_dip,
+            "✅" if delta_dip > 0 else "❌",
+        )
+    )
 
     # 决策
     both_improve = delta_top > 0 and delta_dip > 0
@@ -557,7 +607,7 @@ def main():
     }
 
     output_path = os.path.join(BASE_DIR, "ml/backtest_results/v53_direction_d_result.json")
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(result, f, indent=2, ensure_ascii=False)
     print("\n  结果已保存: {}".format(output_path))
 

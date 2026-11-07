@@ -20,6 +20,7 @@ Phase D 铁律 2（§3.2）双验证运行器 — AI_ENHANCEMENT_ROADMAP 门禁�
       --bilstm data/ai_models/phase_d_bilstm_v1.pt \
       --patchtst data/ai_models/phase_d_patchtst_v1.pt
 """
+
 import argparse
 import json
 import subprocess
@@ -37,18 +38,18 @@ KLIMIT = 1500
 INITIAL_CAPITAL = 10000.0
 
 # v15-final 部署形态（data/v15_final_deployment.json active_config 映射）
-BASE_KW = dict(
+BASE_KW = dict(  # noqa: C408
     initial_capital=INITIAL_CAPITAL,
     base_position_pct=0.22,
-    max_addons=4,                    # MAX_ADDONS_PER_POSITION=4（5 单链路）
-    long_only=False,                 # V15_ALLOW_SHORT=true
-    use_direction_gate=True,         # 含 BTC 风向标智能模式内部路由
-    use_atr=True,                    # ATR 动态止盈
-    use_trailing_tp=True,            # 移动止盈
+    max_addons=4,  # MAX_ADDONS_PER_POSITION=4（5 单链路）
+    long_only=False,  # V15_ALLOW_SHORT=true
+    use_direction_gate=True,  # 含 BTC 风向标智能模式内部路由
+    use_atr=True,  # ATR 动态止盈
+    use_trailing_tp=True,  # 移动止盈
     trailing_atr_mult=1.0,
     trailing_start_pct_of_tp=0.8,
-    use_elder_ray=True,              # ELDER-RAY 资金调度
-    subregime_enabled=True,          # Phase B+ 子形态微调
+    use_elder_ray=True,  # ELDER-RAY 资金调度
+    subregime_enabled=True,  # Phase B+ 子形态微调
     max_base_holding_hours=29.9,
     max_post_addon_hours=37.7,
     golden_window_hours=11.1,
@@ -81,6 +82,7 @@ def max_consecutive_losses(trades) -> int:
 
 def wf_segment(base_trades, test_trades, total_bars, n_seg=5):
     """跨币池化: 按 exit_idx 分 5 段，返回每段 (base_pnl, test_pnl)。"""
+
     def seg_pnl(trades):
         if not trades:
             return [0.0] * n_seg
@@ -95,7 +97,7 @@ def wf_segment(base_trades, test_trades, total_bars, n_seg=5):
         return out
 
     b, x = [0.0] * n_seg, [0.0] * n_seg
-    for bt, tt in zip(base_trades, test_trades):
+    for bt, tt in zip(base_trades, test_trades):  # noqa: B905
         bp, tp = seg_pnl(bt), seg_pnl(tt)
         b = [b[i] + bp[i] for i in range(n_seg)]
         x = [x[i] + tp[i] for i in range(n_seg)]
@@ -103,9 +105,7 @@ def wf_segment(base_trades, test_trades, total_bars, n_seg=5):
 
 
 def run_one(coin, klines, phase_d: bool):
-    return run_backtest(
-        coin=coin, klines=klines, phase_d_ai_enabled=phase_d, **BASE_KW
-    )
+    return run_backtest(coin=coin, klines=klines, phase_d_ai_enabled=phase_d, **BASE_KW)
 
 
 def git_sha():
@@ -143,12 +143,22 @@ def main():
 
         vb._phase_d_make_gateway = _make_gateway
         print(f"[model] bilstm={args.bilstm} patchtst={args.patchtst}")
-        print(f"[model-debug] 工厂已注入: {vb._phase_d_make_gateway is _make_gateway} | run_backtest globals 一致: {run_backtest.__globals__.get('_phase_d_make_gateway') is _make_gateway}")
+        print(
+            f"[model-debug] 工厂已注入: {vb._phase_d_make_gateway is _make_gateway} | run_backtest globals 一致: {run_backtest.__globals__.get('_phase_d_make_gateway') is _make_gateway}"
+        )
         # 推理计数诊断
         import phase_d_gateway as _pdg2
-        _REAL_CALLS = {"bilstm": 0, "patchtst": 0, "bilstm_exc": 0, "patchtst_exc": 0, "first_exc": None}
+
+        _REAL_CALLS = {
+            "bilstm": 0,
+            "patchtst": 0,
+            "bilstm_exc": 0,
+            "patchtst_exc": 0,
+            "first_exc": None,
+        }
         _ob2 = _pdg2.PhaseDGateway._run_real_bilstm
         _op2 = _pdg2.PhaseDGateway._run_real_patchtst
+
         def _spb(self, ctx):
             _REAL_CALLS["bilstm"] += 1
             try:
@@ -158,6 +168,7 @@ def main():
                 if _REAL_CALLS["first_exc"] is None:
                     _REAL_CALLS["first_exc"] = f"{type(_e).__name__}: {str(_e)[:120]}"
                 raise
+
         def _spp(self, ctx):
             _REAL_CALLS["patchtst"] += 1
             try:
@@ -167,6 +178,7 @@ def main():
                 if _REAL_CALLS["first_exc"] is None:
                     _REAL_CALLS["first_exc"] = f"{type(_e).__name__}: {str(_e)[:120]}"
                 raise
+
         _pdg2.PhaseDGateway._run_real_bilstm = _spb
         _pdg2.PhaseDGateway._run_real_patchtst = _spp
 
@@ -185,8 +197,28 @@ def main():
         rt = run_one(coin, klines, phase_d=True)
         mb, mt = rb.get("metrics", {}), rt.get("metrics", {})
         results[coin] = {
-            "base": {k: mb.get(k) for k in ("total_return_pct", "sharpe_ratio", "max_drawdown_pct", "total_trades", "win_rate", "profit_factor")},
-            "test": {k: mt.get(k) for k in ("total_return_pct", "sharpe_ratio", "max_drawdown_pct", "total_trades", "win_rate", "profit_factor")},
+            "base": {
+                k: mb.get(k)
+                for k in (
+                    "total_return_pct",
+                    "sharpe_ratio",
+                    "max_drawdown_pct",
+                    "total_trades",
+                    "win_rate",
+                    "profit_factor",
+                )
+            },
+            "test": {
+                k: mt.get(k)
+                for k in (
+                    "total_return_pct",
+                    "sharpe_ratio",
+                    "max_drawdown_pct",
+                    "total_trades",
+                    "win_rate",
+                    "profit_factor",
+                )
+            },
             "base_max_consec_loss": max_consecutive_losses(rb.get("trades", [])),
             "test_max_consec_loss": max_consecutive_losses(rt.get("trades", [])),
         }
@@ -238,14 +270,23 @@ def main():
             n_degraded += 1
         if positive:
             n_positive += 1
-        seg_report.append({"seg": i + 1, "base_pnl": round(b, 2), "test_pnl": round(x, 2), "degradation_pct": round(deg_pct, 2), "degraded": degraded, "positive": positive})
+        seg_report.append(
+            {
+                "seg": i + 1,
+                "base_pnl": round(b, 2),
+                "test_pnl": round(x, 2),
+                "degradation_pct": round(deg_pct, 2),
+                "degraded": degraded,
+                "positive": positive,
+            }
+        )
     crit2 = (n_degraded == 0) and (n_positive >= 3)
 
     # ---- ③ 回撤控制 ----
     mb_avg = sum(mdd_base) / len(mdd_base)
     mt_avg = sum(mdd_test) / len(mdd_test)
     c3_mdd = mt_avg <= mb_avg * 1.10
-    c3_consec = all(t <= b + 2 for b, t in zip(cl_base, cl_test))
+    c3_consec = all(t <= b + 2 for b, t in zip(cl_base, cl_test))  # noqa: B905
     crit3 = c3_mdd and c3_consec
 
     # ---- ④ OOD ----
@@ -314,18 +355,29 @@ def main():
     if args.mode == "model":
         try:
             import phase_d_gateway as _pdg
+
             print(f"[model-debug] _MODEL_CACHE keys: {list(_pdg._MODEL_CACHE.keys())}")
             for _k, _v in _pdg._MODEL_CACHE.items():
-                print(f"[model-debug]   {_k[0]}: {'加载成功' if _v is not None else '加载失败=None→降级heuristic'}")
+                print(
+                    f"[model-debug]   {_k[0]}: {'加载成功' if _v is not None else '加载失败=None→降级heuristic'}"
+                )
             print(f"[model-debug] 真实推理调用: {_REAL_CALLS}")
         except Exception as _e:
             print(f"[model-debug] cache检查失败: {_e}")
-    print(f"① 全量回测: {'PASS' if crit1 else 'FAIL'}  (ret {tot_ret_base:.2f}%→{tot_ret_test:.2f}%, 需≥{tot_ret_base + 5:.2f}%; calmar {cb:.3f}→{ct:.3f}, 需≥{cb * 1.05:.3f})")
-    print(f"② Walk-Forward: {'PASS' if crit2 else 'FAIL'}  (退化段 {n_degraded}/5, 正向段 {n_positive}/5)")
-    print(f"③ 回撤控制: {'PASS' if crit3 else 'FAIL'}  (MDD {mb_avg:.2f}%→{mt_avg:.2f}%, 上限 {mb_avg * 1.1:.2f}%)")
+    print(
+        f"① 全量回测: {'PASS' if crit1 else 'FAIL'}  (ret {tot_ret_base:.2f}%→{tot_ret_test:.2f}%, 需≥{tot_ret_base + 5:.2f}%; calmar {cb:.3f}→{ct:.3f}, 需≥{cb * 1.05:.3f})"
+    )
+    print(
+        f"② Walk-Forward: {'PASS' if crit2 else 'FAIL'}  (退化段 {n_degraded}/5, 正向段 {n_positive}/5)"
+    )
+    print(
+        f"③ 回撤控制: {'PASS' if crit3 else 'FAIL'}  (MDD {mb_avg:.2f}%→{mt_avg:.2f}%, 上限 {mb_avg * 1.1:.2f}%)"
+    )
     print(f"④ OOD: {crit4}")
     print(f"S_bt={s_bt:.4f}  K_bound建议={k_bound}")
-    print(f"总体门禁: {'✅ PASS — 可进入启用流程(快照+CHANGELOG+审批)' if overall else '❌ FAIL — 不得实盘启用 (铁律2)'}")
+    print(
+        f"总体门禁: {'✅ PASS — 可进入启用流程(快照+CHANGELOG+审批)' if overall else '❌ FAIL — 不得实盘启用 (铁律2)'}"
+    )
     print(f"报告: {out_path}")
 
 

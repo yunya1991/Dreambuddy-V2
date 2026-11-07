@@ -3,27 +3,26 @@
 Flask + flask-cors 实现，端口9094
 """
 
-import os
+import os  # noqa: I001
 import json
 import argparse
-import math
 from datetime import datetime, timezone, timedelta
 from functools import wraps
 from threading import Thread
-from typing import Dict, Any, List, Optional
+from typing import Dict, List, Optional
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 # 导入内部模块（切换到 data_center.compat 兼容层）
 import sys as _sys
-import sqlite3 as _sqlite3
 from pathlib import Path as _Path
+
 _sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "18-数据获取中心"))
 _sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "19-数据访问层"))
 _sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "21-特征工程中心"))
-from data_center.compat import DataCollector, generate_timeseries
-from engines.least_resistance import compute_resistance_3d, generate_signal, summarize_trend
+from data_center.compat import DataCollector, generate_timeseries  # noqa: I001
+from engines.least_resistance import compute_resistance_3d
 from engines.sentiment_engine import create_sentiment_engine
 from engines.signal_engine import create_signal_engine
 from dal_snapshot_provider import DalSnapshotProvider, DAL_COLLECTORS
@@ -69,10 +68,18 @@ FEATURE_METRIC_SPECS = {
 
 # 10个模块定义
 MODULES = [
-    "news", "flow", "sentiment", "macro",
-    "breadth", "intermarket", "valuation", "onchain",
-    "calendar", "narrative"
+    "news",
+    "flow",
+    "sentiment",
+    "macro",
+    "breadth",
+    "intermarket",
+    "valuation",
+    "onchain",
+    "calendar",
+    "narrative",
 ]
+
 
 # 模块到数据采集方法的映射（DAL 优先，失败回退 legacy）
 def _make_collector(module: str, legacy_func):
@@ -121,6 +128,7 @@ MODULE_COLLECTORS = {
 
 
 # ============== 工具函数 ==============
+
 
 def load_snapshot(module: str) -> Optional[Dict]:
     """加载模块快照"""
@@ -197,8 +205,8 @@ def compute_module_resistance(module: str, raw_data: Dict) -> Dict:
 
     key, default = score_key_map.get(module, ("sentiment_sum", 0.5))
 
-    metrics = raw_data.get('metrics', {}) if isinstance(raw_data, Dict) else {}
-    metrics_core = metrics.get('core', {}) if isinstance(metrics, Dict) else {}
+    metrics = raw_data.get("metrics", {}) if isinstance(raw_data, Dict) else {}
+    metrics_core = metrics.get("core", {}) if isinstance(metrics, Dict) else {}
 
     # 优先从 core 读取；如果不存在 core 字段则回退到旧的平铺格式
     if metrics_core and key in metrics_core:
@@ -217,8 +225,13 @@ def compute_module_resistance(module: str, raw_data: Dict) -> Dict:
         normalized = (raw_score - 1.5) / 1.0  # 1.5 为合理中心，±1.0 覆盖范围
     elif key == "exchange_net_flow":
         normalized = max(-1, min(1, raw_score / 500))  # 百万美元级别除以500
-    elif key in ["fund_flow_score", "policy_score", "advance_decline_line",
-                 "dxy_correlation", "impact_score"]:
+    elif key in [
+        "fund_flow_score",
+        "policy_score",
+        "advance_decline_line",
+        "dxy_correlation",
+        "impact_score",
+    ]:
         normalized = max(-1, min(1, raw_score))
     elif isinstance(raw_score, (int, float)):
         normalized = max(-1, min(1, raw_score))
@@ -226,11 +239,11 @@ def compute_module_resistance(module: str, raw_data: Dict) -> Dict:
         normalized = raw_score
 
     # 历史数据：优先从 raw_data.timeseries 提取，否则使用 load_timeseries
-    raw_timeseries = raw_data.get('timeseries', None) if isinstance(raw_data, Dict) else None
+    raw_timeseries = raw_data.get("timeseries", None) if isinstance(raw_data, Dict) else None
     if raw_timeseries and isinstance(raw_timeseries, list) and len(raw_timeseries) > 0:
         first = raw_timeseries[0]
-        if isinstance(first, dict) and 'value' in first:
-            historical = [p.get('value', 0) for p in raw_timeseries]
+        if isinstance(first, dict) and "value" in first:
+            historical = [p.get("value", 0) for p in raw_timeseries]
         else:
             historical = raw_timeseries
     else:
@@ -261,7 +274,7 @@ def build_module_snapshot(module: str) -> Dict:
     resistance_3d = compute_module_resistance(module, raw_data)
 
     # metrics 直接存 {core, breakdown} 结构
-    metrics = raw_data.get('metrics', {}) if isinstance(raw_data, Dict) else {}
+    metrics = raw_data.get("metrics", {}) if isinstance(raw_data, Dict) else {}
 
     # FeatureHub 特征工程：基于 DAL 时序数据计算衍生特征
     features: Dict[str, float] = {}
@@ -274,15 +287,15 @@ def build_module_snapshot(module: str) -> Dict:
     signals = signal_engine.generate_signals(
         resistance_3d,
         metrics,
-        events=raw_data.get('events', []),
+        events=raw_data.get("events", []),
         stress="normal",
         features=features,
     )
     signals = signal_engine.rank_signals(signals)
 
     # metrics_flat：把 metrics.core 和 metrics.breakdown 合并成平铺 dict
-    metrics_core = metrics.get('core', {}) if isinstance(metrics, Dict) else {}
-    metrics_breakdown = metrics.get('breakdown', {}) if isinstance(metrics, Dict) else {}
+    metrics_core = metrics.get("core", {}) if isinstance(metrics, Dict) else {}
+    metrics_breakdown = metrics.get("breakdown", {}) if isinstance(metrics, Dict) else {}
     metrics_flat = {}
     for k, v in metrics_core.items():
         if isinstance(v, (int, float, str)):
@@ -292,10 +305,10 @@ def build_module_snapshot(module: str) -> Dict:
             metrics_flat[k] = v
 
     # events：直接用 raw_data.events
-    events = raw_data.get('events', [])[:10]
+    events = raw_data.get("events", [])[:10]
 
     # timeseries：优先用 raw_data.timeseries，避免两次随机
-    ts_data = raw_data.get('timeseries', None) if isinstance(raw_data, Dict) else None
+    ts_data = raw_data.get("timeseries", None) if isinstance(raw_data, Dict) else None
     if not ts_data or not isinstance(ts_data, list):
         ts_data = load_timeseries(module, days=7)
 
@@ -318,13 +331,22 @@ def build_module_snapshot(module: str) -> Dict:
             "last_update": ts,
             "data_quality": "high",
             "feature_count": len(features),
-        }
+        },
     }
 
     # 传递差异化字段
-    diff_fields = ["whale_transactions", "heatmap_data", "nupl", "realized_price", 
-                   "market_price", "price_distance_from_realized", 
-                   "utxo_age_distribution", "miner_outflow", "hash_rate", "exchange_reserve"]
+    diff_fields = [
+        "whale_transactions",
+        "heatmap_data",
+        "nupl",
+        "realized_price",
+        "market_price",
+        "price_distance_from_realized",
+        "utxo_age_distribution",
+        "miner_outflow",
+        "hash_rate",
+        "exchange_reserve",
+    ]
     for field in diff_fields:
         if field in raw_data:
             response[field] = raw_data[field]
@@ -356,8 +378,10 @@ def refresh_module(module: str) -> Dict:
 
 # ============== 错误处理装饰器 ==============
 
+
 def handle_errors(f):
     """错误处理装饰器"""
+
     @wraps(f)
     def decorated(*args, **kwargs):
         try:
@@ -365,21 +389,25 @@ def handle_errors(f):
         except Exception as e:
             print(f"[Error] {f.__name__}: {e}")
             return jsonify({"error": str(e)}), 500
+
     return decorated
 
 
 # ============== API 路由 ==============
 
+
 @app.route("/fundamental/health", methods=["GET"])
 @handle_errors
 def health():
     """健康检查"""
-    return jsonify({
-        "status": "ok",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "modules": MODULES,
-        "version": "2.0"
-    })
+    return jsonify(
+        {
+            "status": "ok",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "modules": MODULES,
+            "version": "2.0",
+        }
+    )
 
 
 @app.route("/fundamental/overview", methods=["GET"])
@@ -395,22 +423,24 @@ def overview():
             all_snapshots[module] = {
                 "direction": snapshot.get("resistance_3d", {}).get("direction", "unknown"),
                 "confidence": snapshot.get("resistance_3d", {}).get("confidence", 0),
-                "trend_summary": snapshot.get("resistance_3d", {}).get("trend_summary", "")
+                "trend_summary": snapshot.get("resistance_3d", {}).get("trend_summary", ""),
             }
             all_snapshots_dict[module] = snapshot
 
     # 使用综合信号引擎
     composite = signal_engine.generate_composite_signals(all_snapshots_dict)
 
-    return jsonify({
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "modules": all_snapshots,
-        "composite": composite,
-        "summary": signal_engine.generate_summary(composite.get("top_signals", [])),
-        "top_signals": composite["top_signals"][:5],
-        "recommendation": composite["recommendation"],
-        "module_count": len(MODULES)
-    })
+    return jsonify(
+        {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "modules": all_snapshots,
+            "composite": composite,
+            "summary": signal_engine.generate_summary(composite.get("top_signals", [])),
+            "top_signals": composite["top_signals"][:5],
+            "recommendation": composite["recommendation"],
+            "module_count": len(MODULES),
+        }
+    )
 
 
 @app.route("/fundamental/composite-signal", methods=["GET"])
@@ -434,13 +464,15 @@ def composite_signal():
     # 同时生成简短的中文摘要（供 AI 调用）
     summary = signal_engine.generate_summary(composite.get("top_signals", []))
 
-    return jsonify({
-        "ts": datetime.now(timezone.utc).isoformat(),
-        "composite": composite,
-        "summary": summary,
-        "module_count": len(all_snapshots),
-        "modules_used": list(all_snapshots.keys())
-    })
+    return jsonify(
+        {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "composite": composite,
+            "summary": summary,
+            "module_count": len(all_snapshots),
+            "modules_used": list(all_snapshots.keys()),
+        }
+    )
 
 
 @app.route("/fundamental/snapshot", methods=["GET"])
@@ -460,7 +492,11 @@ def snapshot():
 
     # 2) 构造 overall 字段
     overall_resistance_3d = {
-        "direction": "up" if composite["score"] > 0.15 else "down" if composite["score"] < -0.15 else "neutral",
+        "direction": (
+            "up"
+            if composite["score"] > 0.15
+            else "down" if composite["score"] < -0.15 else "neutral"
+        ),
         "direction_score": composite["score"],
         "velocity": composite.get("avg_velocity", 0),
         "acceleration": composite.get("avg_acceleration", 0),
@@ -470,12 +506,11 @@ def snapshot():
     }
 
     # 3) overall_signal 用 composite["top_signals"][0]
-    overall_signal = composite["top_signals"][0] if composite.get("top_signals") else {
-        "type": "hold",
-        "strength": 0.5,
-        "reason": "等待更多信号",
-        "horizon": "medium"
-    }
+    overall_signal = (
+        composite["top_signals"][0]
+        if composite.get("top_signals")
+        else {"type": "hold", "strength": 0.5, "reason": "等待更多信号", "horizon": "medium"}
+    )
 
     # 模块得分
     module_scores = {
@@ -483,26 +518,33 @@ def snapshot():
         for m in MODULES
     }
 
-    return jsonify({
-        "ts": datetime.now(timezone.utc).isoformat(),
-        "overall": {
-            "resistance_3d": overall_resistance_3d,
-            "signal": overall_signal,
-            "module_scores": module_scores
-        },
-        "overall_composite": composite,
-        "modules": all_modules
-    })
+    return jsonify(
+        {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "overall": {
+                "resistance_3d": overall_resistance_3d,
+                "signal": overall_signal,
+                "module_scores": module_scores,
+            },
+            "overall_composite": composite,
+            "modules": all_modules,
+        }
+    )
 
 
 # ============== 模块端点 ==============
+
 
 def make_module_handlers():
     """为每个模块创建处理器"""
 
     def create_handlers(module_name):
         # Snapshot
-        @app.route(f"/fundamental/{module_name}/snapshot", methods=["GET"], endpoint=f"snapshot_{module_name}")
+        @app.route(
+            f"/fundamental/{module_name}/snapshot",
+            methods=["GET"],
+            endpoint=f"snapshot_{module_name}",
+        )
         @handle_errors
         def get_snapshot():
             snapshot = load_snapshot(module_name)
@@ -511,32 +553,35 @@ def make_module_handlers():
             return jsonify(snapshot)
 
         # Timeseries
-        @app.route(f"/fundamental/{module_name}/timeseries", methods=["GET"], endpoint=f"timeseries_{module_name}")
+        @app.route(
+            f"/fundamental/{module_name}/timeseries",
+            methods=["GET"],
+            endpoint=f"timeseries_{module_name}",
+        )
         @handle_errors
         def get_timeseries():
             range_param = request.args.get("range", "7d")
             days = {"7d": 7, "30d": 30, "90d": 90}.get(range_param, 7)
             ts_data = load_timeseries(module_name, days)
-            return jsonify({
-                "module": module_name,
-                "range": range_param,
-                "data": ts_data
-            })
+            return jsonify({"module": module_name, "range": range_param, "data": ts_data})
 
         # Signals
-        @app.route(f"/fundamental/{module_name}/signals", methods=["GET"], endpoint=f"signals_{module_name}")
+        @app.route(
+            f"/fundamental/{module_name}/signals",
+            methods=["GET"],
+            endpoint=f"signals_{module_name}",
+        )
         @handle_errors
         def get_signals():
             snapshot = load_snapshot(module_name)
             if not snapshot:
                 snapshot = refresh_module(module_name)
-            return jsonify({
-                "module": module_name,
-                "signals": snapshot.get("signals", [])
-            })
+            return jsonify({"module": module_name, "signals": snapshot.get("signals", [])})
 
         # Events
-        @app.route(f"/fundamental/{module_name}/events", methods=["GET"], endpoint=f"events_{module_name}")
+        @app.route(
+            f"/fundamental/{module_name}/events", methods=["GET"], endpoint=f"events_{module_name}"
+        )
         @handle_errors
         def get_events():
             limit = int(request.args.get("limit", 20))
@@ -548,24 +593,22 @@ def make_module_handlers():
 
             events = snapshot.get("events", [])
             if category:
-                events = [e for e in events if category.lower() in str(e.get("category", "")).lower()]
+                events = [
+                    e for e in events if category.lower() in str(e.get("category", "")).lower()
+                ]
 
-            return jsonify({
-                "module": module_name,
-                "count": len(events),
-                "events": events[:limit]
-            })
+            return jsonify({"module": module_name, "count": len(events), "events": events[:limit]})
 
         # Refresh
-        @app.route(f"/fundamental/{module_name}/refresh", methods=["POST"], endpoint=f"refresh_{module_name}")
+        @app.route(
+            f"/fundamental/{module_name}/refresh",
+            methods=["POST"],
+            endpoint=f"refresh_{module_name}",
+        )
         @handle_errors
         def refresh():
             snapshot = refresh_module(module_name)
-            return jsonify({
-                "module": module_name,
-                "status": "refreshed",
-                "snapshot": snapshot
-            })
+            return jsonify({"module": module_name, "status": "refreshed", "snapshot": snapshot})
 
     for module in MODULES:
         create_handlers(module)
@@ -578,6 +621,7 @@ make_module_handlers()
 # 精确匹配 10-经典指标系统/frontend/src/lib/api.ts 的 FundamentalNews*Response TS 类型
 # 目的：前端 FundamentalPage 不白屏、不抛 zod validation / network 404 错误；卡片显示空列表即可。
 
+
 def _stub_ts() -> int:
     return int(datetime.now(timezone.utc).timestamp() * 1000)
 
@@ -587,152 +631,191 @@ def _stub_ts() -> int:
 def news_brief_latest():
     # FundamentalNewsBriefResponse
     max_chars_raw = request.args.get("max_chars")
-    return jsonify({
-        "ok": True,
-        "ts": _stub_ts(),
-        "path": "",
-        "name": request.args.get("name") or "",
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "content": "",
-        "content_chars": 0,
-        "content_truncated": False,
-        "max_chars": (int(max_chars_raw) if str(max_chars_raw or "").isdigit() else None),
-        "quality": "stub",
-        "coverage": None,
-        "missing_data": ["data_center.news_automation: stub only, 内存友好模式，真实新闻管道未启动"],
-        "turning_point_state": "UNKNOWN",
-        "trigger_reasons": [],
-        "confirm_bars": 0,
-        "turning_point_detail": {"level": None, "slope": None, "stress": "none"},
-        "execution_gate": "STUB_SKIP",
-        "monitoring_clocks": {
-            "update_frequency_sec": 0,
-            "max_tolerated_delay_sec": 0,
-            "backfill_freeze_window_sec": 0,
-        },
-        "template_guard": None,
-        "error": None,
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "ts": _stub_ts(),
+            "path": "",
+            "name": request.args.get("name") or "",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "content": "",
+            "content_chars": 0,
+            "content_truncated": False,
+            "max_chars": (int(max_chars_raw) if str(max_chars_raw or "").isdigit() else None),
+            "quality": "stub",
+            "coverage": None,
+            "missing_data": [
+                "data_center.news_automation: stub only, 内存友好模式，真实新闻管道未启动"
+            ],
+            "turning_point_state": "UNKNOWN",
+            "trigger_reasons": [],
+            "confirm_bars": 0,
+            "turning_point_detail": {"level": None, "slope": None, "stress": "none"},
+            "execution_gate": "STUB_SKIP",
+            "monitoring_clocks": {
+                "update_frequency_sec": 0,
+                "max_tolerated_delay_sec": 0,
+                "backfill_freeze_window_sec": 0,
+            },
+            "template_guard": None,
+            "error": None,
+        }
+    )
 
 
-@app.route("/fundamental/news/event_ledger/latest", methods=["GET"], endpoint="news_stub__event_ledger_latest")
+@app.route(
+    "/fundamental/news/event_ledger/latest",
+    methods=["GET"],
+    endpoint="news_stub__event_ledger_latest",
+)
 @handle_errors
 def news_event_ledger_latest():
     # FundamentalNewsEventLedgerResponse
     limit_raw = request.args.get("limit")
     limit = int(limit_raw) if str(limit_raw or "").isdigit() else 20
-    return jsonify({
-        "ok": True,
-        "ts": _stub_ts(),
-        "path": "",
-        "name": request.args.get("name") or "",
-        "items": [],
-        "count": 0,
-        "limit": limit,
-        "error": None,
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "ts": _stub_ts(),
+            "path": "",
+            "name": request.args.get("name") or "",
+            "items": [],
+            "count": 0,
+            "limit": limit,
+            "error": None,
+        }
+    )
 
 
-@app.route("/fundamental/news/risk_action_events/latest", methods=["GET"], endpoint="news_stub__risk_action_latest")
+@app.route(
+    "/fundamental/news/risk_action_events/latest",
+    methods=["GET"],
+    endpoint="news_stub__risk_action_latest",
+)
 @handle_errors
 def news_risk_action_latest():
     # FundamentalNewsRiskActionResponse
     limit_raw = request.args.get("limit")
     limit = int(limit_raw) if str(limit_raw or "").isdigit() else 20
-    return jsonify({
-        "ok": True,
-        "ts": _stub_ts(),
-        "path": "",
-        "name": request.args.get("name") or "",
-        "items": [],
-        "count": 0,
-        "limit": limit,
-        "error": None,
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "ts": _stub_ts(),
+            "path": "",
+            "name": request.args.get("name") or "",
+            "items": [],
+            "count": 0,
+            "limit": limit,
+            "error": None,
+        }
+    )
 
 
-@app.route("/fundamental/news/anchor_delta_view/latest", methods=["GET"], endpoint="news_stub__anchor_delta_view_latest")
+@app.route(
+    "/fundamental/news/anchor_delta_view/latest",
+    methods=["GET"],
+    endpoint="news_stub__anchor_delta_view_latest",
+)
 @handle_errors
 def news_anchor_delta_view_latest():
     # FundamentalNewsAnchorDeltaViewResponse
-    return jsonify({
-        "ok": True,
-        "ts": _stub_ts(),
-        "path": "",
-        "name": request.args.get("name") or "",
-        "record": {},
-        "error": None,
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "ts": _stub_ts(),
+            "path": "",
+            "name": request.args.get("name") or "",
+            "record": {},
+            "error": None,
+        }
+    )
 
 
-@app.route("/fundamental/news/evaluation/history", methods=["GET"], endpoint="news_stub__evaluation_history")
+@app.route(
+    "/fundamental/news/evaluation/history",
+    methods=["GET"],
+    endpoint="news_stub__evaluation_history",
+)
 @handle_errors
 def news_evaluation_history():
     # FundamentalNewsEvaluationHistoryResponse
-    return jsonify({
-        "ok": True,
-        "ts": _stub_ts(),
-        "anchor_hour": None,
-        "rows": [],
-        "anchor_run": None,
-        "latest_run": None,
-        "delta": {},
-        "error": None,
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "ts": _stub_ts(),
+            "anchor_hour": None,
+            "rows": [],
+            "anchor_run": None,
+            "latest_run": None,
+            "delta": {},
+            "error": None,
+        }
+    )
 
 
 @app.route("/fundamental/news/automation", methods=["GET"], endpoint="news_stub__automation_state")
 @handle_errors
 def news_automation_state():
     # FundamentalNewsAutomationStateResponse
-    return jsonify({
-        "ok": True,
-        "ts": _stub_ts(),
-        "enabled": False,
-        "period_hours": 0,
-        "period_sec": 0,
-        "window_hours": 0,
-        "state": {"mode": "stub_memory_saver"},
-        "latest": None,
-        "error": None,
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "ts": _stub_ts(),
+            "enabled": False,
+            "period_hours": 0,
+            "period_sec": 0,
+            "window_hours": 0,
+            "state": {"mode": "stub_memory_saver"},
+            "latest": None,
+            "error": None,
+        }
+    )
 
 
-@app.route("/fundamental/news/automation/config", methods=["POST"], endpoint="news_stub__automation_config")
+@app.route(
+    "/fundamental/news/automation/config", methods=["POST"], endpoint="news_stub__automation_config"
+)
 @handle_errors
 def news_automation_config():
     # FundamentalNewsAutomationConfigResponse
     payload = request.get_json(silent=True) or {}
-    return jsonify({
-        "ok": True,
-        "ts": _stub_ts(),
-        "enabled": bool(payload.get("enabled", False)),
-        "period_hours": int(payload.get("period_hours", 0) or 0),
-        "period_sec": int((payload.get("period_hours", 0) or 0)) * 3600,
-        "window_hours": int(payload.get("window_hours", 0) or 0),
-        "state": {"mode": "stub_memory_saver", "config_accepted": True, "applied": False},
-        "error": None,
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "ts": _stub_ts(),
+            "enabled": bool(payload.get("enabled", False)),
+            "period_hours": int(payload.get("period_hours", 0) or 0),
+            "period_sec": int((payload.get("period_hours", 0) or 0)) * 3600,
+            "window_hours": int(payload.get("window_hours", 0) or 0),
+            "state": {"mode": "stub_memory_saver", "config_accepted": True, "applied": False},
+            "error": None,
+        }
+    )
 
 
-@app.route("/fundamental/news/automation/run", methods=["POST"], endpoint="news_stub__automation_run")
+@app.route(
+    "/fundamental/news/automation/run", methods=["POST"], endpoint="news_stub__automation_run"
+)
 @handle_errors
 def news_automation_run():
     # FundamentalNewsAutomationRunResponse
     payload = request.get_json(silent=True) or {}
-    return jsonify({
-        "ok": True,
-        "queued": False,
-        "ts": _stub_ts(),
-        "hours": int(payload.get("hours", 0) or 0),
-        "source": "stub",
-        "trigger_event": str(payload.get("trigger_event") or "manual"),
-        "state": {"skipped": True, "reason": "memory_saver_mode: stub only"},
-        "error": None,
-    })
+    return jsonify(
+        {
+            "ok": True,
+            "queued": False,
+            "ts": _stub_ts(),
+            "hours": int(payload.get("hours", 0) or 0),
+            "source": "stub",
+            "trigger_event": str(payload.get("trigger_event") or "manual"),
+            "state": {"skipped": True, "reason": "memory_saver_mode: stub only"},
+            "error": None,
+        }
+    )
 
 
 # ============== 启动函数 ==============
+
 
 def background_collector():
     """后台数据采集"""
@@ -759,25 +842,40 @@ def main():
     parser = argparse.ArgumentParser(description="基本面分析API服务 v2")
     parser.add_argument("--port", type=int, default=9094, help="端口号")
     parser.add_argument("--host", type=str, default="127.0.0.1", help="主机地址")
-    parser.add_argument("--no-collect", action="store_true", default=True,
-                        help="禁用自动采集（内存友好，默认开启；传 --collect 才启动后台线程）")
-    parser.add_argument("--collect", dest="collect", action="store_true", default=False,
-                        help="显式启动后台采集线程（内存更大）")
+    parser.add_argument(
+        "--no-collect",
+        action="store_true",
+        default=True,
+        help="禁用自动采集（内存友好，默认开启；传 --collect 才启动后台线程）",
+    )
+    parser.add_argument(
+        "--collect",
+        dest="collect",
+        action="store_true",
+        default=False,
+        help="显式启动后台采集线程（内存更大）",
+    )
     args = parser.parse_args()
     enable_collect = bool(args.collect) and not args.no_collect
 
-    print(f"[Milestone 1/4] 冷启动 Python 常量 & 导入完成  {(datetime.now(timezone.utc)-t0).total_seconds()*1000:.0f}ms")
+    print(
+        f"[Milestone 1/4] 冷启动 Python 常量 & 导入完成  {(datetime.now(timezone.utc)-t0).total_seconds()*1000:.0f}ms"
+    )
 
     # 初始化所有模块数据（逐个模块做：不并行，内存峰值最小）
     t1 = datetime.now(timezone.utc)
-    print(f"[Milestone 2/4] 初始化 {len(MODULES)} 模块数据（内存友好：逐模块、不预热 timeseries）...")
+    print(
+        f"[Milestone 2/4] 初始化 {len(MODULES)} 模块数据（内存友好：逐模块、不预热 timeseries）..."
+    )
     for module in MODULES:
         try:
             refresh_module(module)
             print(f"[Init] {module} initialized")
         except Exception as e:
             print(f"[Init] {module} init failed (skipped, 不影响其它模块): {type(e).__name__}: {e}")
-    print(f"[Milestone 2/4 ✓] 数据初始化完成  耗时 {(datetime.now(timezone.utc)-t1).total_seconds():.1f}s")
+    print(
+        f"[Milestone 2/4 ✓] 数据初始化完成  耗时 {(datetime.now(timezone.utc)-t1).total_seconds():.1f}s"
+    )
 
     # 启动后台采集（默认不启用，内存友好）
     if enable_collect:
@@ -785,8 +883,12 @@ def main():
     else:
         print("[Background] Collector thread SKIPPED (--no-collect / memory_saver mode)")
 
-    print(f"[Milestone 3/4] 路由注册: /fundamental/{{health,overview,composite-signal,snapshot}} + 10 modules × 5 sub-routes + 7 news stubs")
-    print(f"[Milestone 4/4] 启动Flask(no_reloader) on {args.host}:{args.port}  —  {datetime.now(timezone.utc).isoformat()}")
+    print(
+        "[Milestone 3/4] 路由注册: /fundamental/{health,overview,composite-signal,snapshot} + 10 modules × 5 sub-routes + 7 news stubs"
+    )
+    print(
+        f"[Milestone 4/4] 启动Flask(no_reloader) on {args.host}:{args.port}  —  {datetime.now(timezone.utc).isoformat()}"
+    )
     # 关闭 use_reloader: 防止 werkzeug 启动父子 2 个 Python 进程（内存直接翻倍）
     app.run(host=args.host, port=args.port, debug=False, threaded=True, use_reloader=False)
 

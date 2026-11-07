@@ -9,6 +9,7 @@
 未达标时 P5 训练入口拒绝启动，输出缺口报告 p5_gate_status.json。
 红线：门槛为预注册值，本模块不提供任何绕过参数。
 """
+
 import json
 import os
 import sys

@@ -8,14 +8,13 @@ SPEC: docs/superpowers/specs/2026-09-18-bdsm-tiered-confidence-open-spec.md v2.0
   R2 置信度递进 = AND 叠加
   R4 FAIL-OPEN — 信号缺失/异常 → None（不开仓）
 """
+
 import pytest
 
 
 class TestBdsmSignalLevelClassifierImport:
     def test_module_exists(self):
-        from dreambuddy_evolution.engines.bdsm_signal_level import (
-            BdsmSignalLevelClassifier,
-        )
+        pass
 
 
 class TestStrategicDirectionFilter:
@@ -25,6 +24,7 @@ class TestStrategicDirectionFilter:
         from dreambuddy_evolution.engines.bdsm_signal_level import (
             BdsmSignalLevelClassifier,
         )
+
         return BdsmSignalLevelClassifier()
 
     @pytest.mark.parametrize("state", ["LONG_ONLY", "LONG_PREFER", "NEUTRAL"])
@@ -50,8 +50,10 @@ class TestStrategicDirectionFilter:
     def test_none_direction_state_fail_open(self):
         assert (
             self._cls().classify_long(
-                direction_state=None, bds_score=0.5,
-                three_factor_signal=False, trend_action="none",
+                direction_state=None,
+                bds_score=0.5,
+                three_factor_signal=False,
+                trend_action="none",
             )
             is None
         )
@@ -73,6 +75,7 @@ class TestLongTierProgression:
         from dreambuddy_evolution.engines.bdsm_signal_level import (
             BdsmSignalLevelClassifier,
         )
+
         return BdsmSignalLevelClassifier()
 
     def test_l1_basic(self):
@@ -105,15 +108,19 @@ class TestLongTierProgression:
     def test_bds_non_positive_returns_none(self):
         assert (
             self._cls().classify_long(
-                direction_state="LONG_ONLY", bds_score=0.0,
-                three_factor_signal=False, trend_action="none",
+                direction_state="LONG_ONLY",
+                bds_score=0.0,
+                three_factor_signal=False,
+                trend_action="none",
             )
             is None
         )
         assert (
             self._cls().classify_long(
-                direction_state="LONG_ONLY", bds_score=-0.2,
-                three_factor_signal=False, trend_action="none",
+                direction_state="LONG_ONLY",
+                bds_score=-0.2,
+                three_factor_signal=False,
+                trend_action="none",
             )
             is None
         )
@@ -126,6 +133,7 @@ class TestPositionParams:
         from dreambuddy_evolution.engines.bdsm_signal_level import (
             BdsmSignalLevelClassifier,
         )
+
         return BdsmSignalLevelClassifier()
 
     def test_param_table(self):
@@ -145,28 +153,35 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.bdsm_signal_level import (
             BdsmSignalLevelClassifier,
         )
+
         return BdsmSignalLevelClassifier()
 
     def test_none_bds_fail_open(self):
         assert (
             self._cls().classify_long(
-                direction_state="LONG_ONLY", bds_score=None,
-                three_factor_signal=False, trend_action="none",
+                direction_state="LONG_ONLY",
+                bds_score=None,
+                three_factor_signal=False,
+                trend_action="none",
             )
             is None
         )
 
     def test_none_three_factor_stays_l1(self):
         result = self._cls().classify_long(
-            direction_state="LONG_ONLY", bds_score=0.5,
-            three_factor_signal=None, trend_action="none",
+            direction_state="LONG_ONLY",
+            bds_score=0.5,
+            three_factor_signal=None,
+            trend_action="none",
         )
         assert result.level == "L1"
 
     def test_bad_trend_action_stays_l2(self):
         result = self._cls().classify_long(
-            direction_state="LONG_ONLY", bds_score=0.5,
-            three_factor_signal=True, trend_action=None,
+            direction_state="LONG_ONLY",
+            bds_score=0.5,
+            three_factor_signal=True,
+            trend_action=None,
         )
         assert result.level == "L2"
 

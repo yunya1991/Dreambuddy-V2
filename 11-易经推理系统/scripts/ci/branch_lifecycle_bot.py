@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-
 LABEL_STALE = "branch-bot/stale"
 LABEL_NO_MERGE_BASE = "branch-bot/no-merge-base"
 LABEL_EMPTY_DIFF = "branch-bot/empty-diff"
@@ -231,7 +230,12 @@ def _run(repo: str, dry_run: bool, stale_days: int, retention_days: int, artifac
 
     open_prs = _fetch_open_prs(repo, api_call)
     branches = _fetch_branches(repo, api_call)
-    scan: Dict[str, Any] = {"open_pr_count": len(open_prs), "branch_count": len(branches), "prs": [], "branches": []}
+    scan: Dict[str, Any] = {
+        "open_pr_count": len(open_prs),
+        "branch_count": len(branches),
+        "prs": [],
+        "branches": [],
+    }
     action_logs: List[Dict[str, Any]] = []
     error_count = 0
 
@@ -269,7 +273,11 @@ def _run(repo: str, dry_run: bool, stale_days: int, retention_days: int, artifac
         commit = branch.get("commit") or {}
         commit_ts = str((((commit.get("commit") or {}).get("author") or {}).get("date") or now_ts))
         age_days = (_parse_ts(now_ts) - _parse_ts(commit_ts)).days
-        is_merged = not bool(api_call("GET", f"/repos/{repo}/pulls?state=open&head={repo.split('/')[0]}:{name}", None))
+        is_merged = not bool(
+            api_call(
+                "GET", f"/repos/{repo}/pulls?state=open&head={repo.split('/')[0]}:{name}", None
+            )
+        )
         branch_view = {
             "name": name,
             "protected": bool(branch.get("protected")),

@@ -20,6 +20,7 @@
 
 阈值禁止第二套：0.7 / 3 / 0.3 全部由 core.route_confidence 引用 C3/C4 常量。
 """
+
 import json
 import os
 import re
@@ -27,7 +28,9 @@ import sys
 
 # 接入 34 系统 core（与 data_query_executor 同构：脚本目录 → 34 系统根）
 _TRAINING_SYS_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "..",
+    os.path.dirname(os.path.abspath(__file__)),
+    "..",
+    "..",
     "34-前端应用训练系统",
 )
 if _TRAINING_SYS_DIR not in sys.path:
@@ -38,15 +41,15 @@ _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
-from core.l0_foundation import get_l0
-from core.route_confidence import (
+from core.cognitive_router import evaluate_match  # noqa: E402
+from core.l0_foundation import get_l0  # noqa: E402
+from core.route_confidence import (  # noqa: E402
     L1_DIRECT,
     L2_HANDOFF,
     RouteConfidenceResult,
     evaluate_route,
 )
-from core.cognitive_router import evaluate_match
-from data_query_executor import (
+from data_query_executor import (  # noqa: E402
     exec_asset_class_trend,
     exec_contradiction_insight,
     exec_data_insight,
@@ -81,21 +84,22 @@ EXECUTORS = {
 # =========================================================
 
 _FALLBACK_PATTERNS = [
-    ("contradiction_insight",
-     re.compile(r"(?=.*(矛盾|一致))(?=.*(维度|资金面|技术面|情绪面|宏观|主要矛盾))")),
-    ("path_insight",
-     re.compile(r"最小阻力|往哪走|该多还是空|交汇|综合看|综合判断|最优路径")),
+    (
+        "contradiction_insight",
+        re.compile(r"(?=.*(矛盾|一致))(?=.*(维度|资金面|技术面|情绪面|宏观|主要矛盾))"),
+    ),
+    ("path_insight", re.compile(r"最小阻力|往哪走|该多还是空|交汇|综合看|综合判断|最优路径")),
     ("technical_analysis", re.compile(r"技术面|技术指标|卦象|置信度")),
-    ("fundamental_valuation",
-     re.compile(r"估值|基本面分析|估值百分位|估值高不高")),
-    ("asset_class_trend",
-     re.compile(r"跨资产|资产对比|各类资产|趋势对比|美股和加密|贵金属和加密")),
-    ("event_analysis",
-     re.compile(r"FOMC|事件驱动|这次事件|金融事件|事件分析|超预期|price in|priced_in|加息事件|降息事件")),
-    ("risk_control",
-     re.compile(r"风控|风险度|止盈|止损|调控状态|仓位状态|持仓风控|移动止盈")),
-    ("price_query",
-     re.compile(r"什么价|价格|现价|实时价|最新价|多少钱|现在.*价")),
+    ("fundamental_valuation", re.compile(r"估值|基本面分析|估值百分位|估值高不高")),
+    ("asset_class_trend", re.compile(r"跨资产|资产对比|各类资产|趋势对比|美股和加密|贵金属和加密")),
+    (
+        "event_analysis",
+        re.compile(
+            r"FOMC|事件驱动|这次事件|金融事件|事件分析|超预期|price in|priced_in|加息事件|降息事件"
+        ),
+    ),
+    ("risk_control", re.compile(r"风控|风险度|止盈|止损|调控状态|仓位状态|持仓风控|移动止盈")),
+    ("price_query", re.compile(r"什么价|价格|现价|实时价|最新价|多少钱|现在.*价")),
 ]
 
 # 通用意图（TS 侧仅 requiredPattern 无 fallback，模型预测后做前置校验）
@@ -193,8 +197,8 @@ def route_query(message: str, intent: str = "") -> dict:
     except Exception:
         rea_conf = None
     signal = evaluate_route(
-        memories, cognitive_available=cognitive_available,
-        rea_confidence=rea_conf)
+        memories, cognitive_available=cognitive_available, rea_confidence=rea_conf
+    )
 
     out = {
         "success": True,
@@ -213,8 +217,7 @@ def route_query(message: str, intent: str = "") -> dict:
     try:
         result = EXECUTORS[intent](message)
     except Exception as e:
-        result = {"success": True, "degraded": True,
-                  "answer": f"执行异常: {e}", "data": None}
+        result = {"success": True, "degraded": True, "answer": f"执行异常: {e}", "data": None}
     out["handled"] = True
     out["answer"] = result.get("answer", "")
     out["data"] = result.get("data")

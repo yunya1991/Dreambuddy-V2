@@ -20,7 +20,7 @@ import sys
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import List
 
 from flask import Flask, jsonify, request
 
@@ -45,7 +45,8 @@ try:
     from dreamos.capabilities.trading.nodes.c3_backtest_verify import (
         C3BacktestVerifyNode,
     )
-    from dreamos.shared.state import State, NodeResult, NodeStatus
+    from dreamos.shared.state import NodeResult, NodeStatus, State
+
     _C3_AVAILABLE = True
 except ImportError:
     C3BacktestVerifyNode = None  # type: ignore
@@ -68,28 +69,38 @@ def health():
     返回 {ok: true, service: "classic-system-mvp", backtrader: bool}
     """
     backtrader_available = bool(_bt_available()) if _bt_available else False
-    return jsonify({
-        "ok": True,
-        "service": "classic-system-mvp",
-        "backtrader": backtrader_available,
-        "dreamos_c3": _C3_AVAILABLE,
-        "ts": int(time.time()),
-    }), 200
+    return (
+        jsonify(
+            {
+                "ok": True,
+                "service": "classic-system-mvp",
+                "backtrader": backtrader_available,
+                "dreamos_c3": _C3_AVAILABLE,
+                "ts": int(time.time()),
+            }
+        ),
+        200,
+    )
 
 
 @app.route("/selfcheck", methods=["GET"])
 def selfcheck():
     """系统自检（简化版）"""
-    return jsonify({
-        "ok": True,
-        "service": "classic-system-mvp",
-        "checks": {
-            "backtrader": bool(_bt_available()) if _bt_available else False,
-            "dreamos_c3": _C3_AVAILABLE,
-            "flask": True,
-        },
-        "ts": int(time.time()),
-    }), 200
+    return (
+        jsonify(
+            {
+                "ok": True,
+                "service": "classic-system-mvp",
+                "checks": {
+                    "backtrader": bool(_bt_available()) if _bt_available else False,
+                    "dreamos_c3": _C3_AVAILABLE,
+                    "flask": True,
+                },
+                "ts": int(time.time()),
+            }
+        ),
+        200,
+    )
 
 
 # ============================================================
@@ -135,21 +146,26 @@ def backtest_run():
     # 构造 DreamOS State
     if not _C3_AVAILABLE:
         # DreamOS 不可用 → 返回降级骨架结果
-        return jsonify({
-            "ok": True,
-            "result": {
-                "metrics_summary": {
-                    "total_trades": 0,
-                    "win_rate": 0.0,
-                    "sharpe_ratio": 0.0,
-                    "max_drawdown": 0.0,
-                },
-                "degraded": True,
-                "reason": "DreamOS C3 节点不可用，返回降级骨架",
-            },
-            "trace_id": str(uuid.uuid4()),
-            "ts": int(time.time()),
-        }), 200
+        return (
+            jsonify(
+                {
+                    "ok": True,
+                    "result": {
+                        "metrics_summary": {
+                            "total_trades": 0,
+                            "win_rate": 0.0,
+                            "sharpe_ratio": 0.0,
+                            "max_drawdown": 0.0,
+                        },
+                        "degraded": True,
+                        "reason": "DreamOS C3 节点不可用，返回降级骨架",
+                    },
+                    "trace_id": str(uuid.uuid4()),
+                    "ts": int(time.time()),
+                }
+            ),
+            200,
+        )
 
     state = State()
     state.market = {"price": 50000, "change_24h": 0.05}
@@ -177,29 +193,34 @@ def backtest_run():
     max_dd = float(result.outputs.get("max_dd", 0.0))
     backtest_source = result.outputs.get("backtest_source", "simplified")
 
-    return jsonify({
-        "ok": True,
-        "result": {
-            "metrics_summary": {
-                "total_trades": len(verified),
-                "win_rate": win_rate,
-                "sharpe_ratio": sharpe,
-                "max_drawdown": max_dd,
-                "total_pnl": sum(2 * s.get("win_rate", 0.5) - 1 for s in verified),
-            },
-            "report": {
-                "trades": verified,
-                "signals": signals,
-                "summary": {
-                    "strategy": strategy_name,
-                    "timerange": timerange,
-                    "backtest_source": backtest_source,
+    return (
+        jsonify(
+            {
+                "ok": True,
+                "result": {
+                    "metrics_summary": {
+                        "total_trades": len(verified),
+                        "win_rate": win_rate,
+                        "sharpe_ratio": sharpe,
+                        "max_drawdown": max_dd,
+                        "total_pnl": sum(2 * s.get("win_rate", 0.5) - 1 for s in verified),
+                    },
+                    "report": {
+                        "trades": verified,
+                        "signals": signals,
+                        "summary": {
+                            "strategy": strategy_name,
+                            "timerange": timerange,
+                            "backtest_source": backtest_source,
+                        },
+                    },
                 },
-            },
-        },
-        "trace_id": str(uuid.uuid4()),
-        "ts": int(time.time()),
-    }), 200
+                "trace_id": str(uuid.uuid4()),
+                "ts": int(time.time()),
+            }
+        ),
+        200,
+    )
 
 
 # ============================================================
@@ -246,20 +267,25 @@ def gate_check():
 
     gate_pass = len(violations) == 0
 
-    return jsonify({
-        "ok": True,
-        "pass": gate_pass,
-        "gate_id": gate_id,
-        "gate_result": {
-            "strategy_id": strategy_id,
-            "violations_count": len(violations),
-            "warnings_count": len(warnings),
-        },
-        "thresholds": thresholds,
-        "violations": violations,
-        "warnings": warnings,
-        "ts": int(time.time()),
-    }), 200
+    return (
+        jsonify(
+            {
+                "ok": True,
+                "pass": gate_pass,
+                "gate_id": gate_id,
+                "gate_result": {
+                    "strategy_id": strategy_id,
+                    "violations_count": len(violations),
+                    "warnings_count": len(warnings),
+                },
+                "thresholds": thresholds,
+                "violations": violations,
+                "warnings": warnings,
+                "ts": int(time.time()),
+            }
+        ),
+        200,
+    )
 
 
 # ============================================================
@@ -271,25 +297,30 @@ def not_implemented(_path: str):
 
     前端通过 501 区分 MVP 服务 vs 完整 ml_trade_service.py 生产服务。
     """
-    return jsonify({
-        "ok": False,
-        "error": f"endpoint /{_path} not implemented in MVP server",
-        "service": "classic-system-mvp",
-        "hint": "MVP 仅实现 /health, /automation/backtest/run, /evaluation/gate/check",
-        "ts": int(time.time()),
-    }), 501
+    return (
+        jsonify(
+            {
+                "ok": False,
+                "error": f"endpoint /{_path} not implemented in MVP server",
+                "service": "classic-system-mvp",
+                "hint": "MVP 仅实现 /health, /automation/backtest/run, /evaluation/gate/check",
+                "ts": int(time.time()),
+            }
+        ),
+        501,
+    )
 
 
 def main():
     """启动 MVP 服务"""
     print("=" * 60)
     print("Classic-System MVP Server")
-    print(f"  Port: 8092")
+    print("  Port: 8092")
     print(f"  DreamOS C3: {'available' if _C3_AVAILABLE else 'unavailable (degraded)'}")
     if _bt_available:
         print(f"  backtrader: {'available' if _bt_available() else 'not installed'}")
     else:
-        print(f"  backtrader: adapter not loaded")
+        print("  backtrader: adapter not loaded")
     print("  Endpoints:")
     print("    GET  /health")
     print("    POST /automation/backtest/run")

@@ -3,6 +3,7 @@
 基于 pandas 计算 15+ 常用技术指标，覆盖趋势/动量/波动/成交量四类。
 后续 M3.5 可替换为 talib 30+ 指标的 SklearnStyleAdapter。
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -49,24 +50,23 @@ def compute(
     result["bb_lower"] = result["sma_20"] - 2 * std
 
     # === ATR（1列）===
-    tr = pd.concat([
-        high - low,
-        (high - close.shift(1)).abs(),
-        (low - close.shift(1)).abs(),
-    ], axis=1).max(axis=1)
+    tr = pd.concat(
+        [
+            high - low,
+            (high - close.shift(1)).abs(),
+            (low - close.shift(1)).abs(),
+        ],
+        axis=1,
+    ).max(axis=1)
     result["atr_14"] = tr.rolling(14).mean()
 
     # === ADX 简化版（1列）===
-    plus_dm = (high - high.shift(1)).where(
-        (high - high.shift(1)) > (low.shift(1) - low), 0
-    )
-    minus_dm = (low.shift(1) - low).where(
-        (low.shift(1) - low) > (high - high.shift(1)), 0
-    )
+    plus_dm = (high - high.shift(1)).where((high - high.shift(1)) > (low.shift(1) - low), 0)
+    minus_dm = (low.shift(1) - low).where((low.shift(1) - low) > (high - high.shift(1)), 0)
     atr_sm = result["atr_14"].replace(0, np.nan)
     plus_di = 100 * (plus_dm.rolling(14).mean() / atr_sm)
     minus_di = 100 * (minus_dm.rolling(14).mean() / atr_sm)
-    dx = (100 * (plus_di - minus_di).abs() / (plus_di + minus_di + 1e-10))
+    dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di + 1e-10)
     result["adx_14"] = dx.rolling(14).mean()
 
     # === OBV（1列）===

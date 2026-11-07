@@ -11,15 +11,16 @@
 - 隔离区可开关（默认 ON）
 - 宽限期可开关（默认 ON，仅 C 档）
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-
+from typing import Any, Dict, List
 
 # ---------------------------------------------------------------------------
 # 角色分离
 # ---------------------------------------------------------------------------
+
 
 def filter_self_verification(
     signals: List[Any],
@@ -43,6 +44,7 @@ def filter_self_verification(
                 # frozen dataclass → 用 replace 重建
                 try:
                     from dataclasses import replace
+
                     filtered.append(replace(s, verdict="abstain"))
                 except Exception:
                     filtered.append(s)
@@ -54,6 +56,7 @@ def filter_self_verification(
 @dataclass
 class RolePolicy:
     """角色分离策略配置。"""
+
     enabled: bool = True
 
     def filter(self, signals: List[Any], creator_id: str) -> List[Any]:
@@ -66,6 +69,7 @@ class RolePolicy:
 # 隔离区
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class QuarantineManager:
     """记忆隔离区管理。
@@ -73,6 +77,7 @@ class QuarantineManager:
     新记忆默认在隔离区，需验证通过才能释放。
     状态机：unknown → quarantine → released
     """
+
     enabled: bool = True
     _state: Dict[str, str] = field(default_factory=dict)  # memory_id -> "quarantine" | "released"
 
@@ -103,6 +108,7 @@ class QuarantineManager:
 # 验证宽限期
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class GracePolicy:
     """C 档验证宽限期策略。
@@ -110,6 +116,7 @@ class GracePolicy:
     C 档记忆在 grace_verify_count 次 verify 内不因 fail 降权，
     对抗指数遗忘（C 档稳态 conf≈0.400 < A 档阈值 0.70）。
     """
+
     enabled: bool = True
     grace_verify_count: int = 3
     grace_quality: str = "C"
@@ -137,4 +144,3 @@ _default_grace = GracePolicy()
 def is_in_grace_period(quality: str, verify_count: int) -> bool:
     """便捷函数：使用默认宽限期策略判断。"""
     return _default_grace.is_in_grace(quality, verify_count)
-

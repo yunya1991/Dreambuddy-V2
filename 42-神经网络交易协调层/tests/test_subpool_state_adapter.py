@@ -10,12 +10,10 @@
 - fail-open：状态文件缺失/损坏不阻断总线
 """
 
-import json
+import json  # noqa: I001
 import os
 import sys
 from datetime import datetime, timedelta, timezone
-
-import pytest
 
 _42_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _42_ROOT not in sys.path:

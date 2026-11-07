@@ -4,15 +4,16 @@
 TDD: 验证 load_skills_from_governance() 能通过 dream-skill-index-governance
 索引加载可执行 SKILL 节点到 NodeRegistry，且 autonomy_boundary 生效。
 """
-import sys
+
+import sys  # noqa: I001
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
 def test_load_skills_registers_executable_nodes():
     """加载后 NodeRegistry 中包含可执行的 SKILL 节点（有 execute 方法）"""
-    from dreamos.registry.node_registry import NodeRegistry
+    from dreamos.registry.node_registry import NodeRegistry  # noqa: I001
     from dreamos.adapters.skill_adapter import load_skills_from_governance
 
     registry = NodeRegistry()
@@ -25,12 +26,12 @@ def test_load_skills_registers_executable_nodes():
     assert len(skill_nodes) > 0, "NodeRegistry 中应有 SKILL_* 节点"
     for node in skill_nodes[:3]:  # 抽样检查前 3 个
         assert hasattr(node, "execute"), f"节点 {node.node_id} 应有 execute 方法"
-        assert callable(getattr(node, "execute")), f"节点 {node.node_id} 的 execute 应可调用"
+        assert callable(node.execute), f"节点 {node.node_id} 的 execute 应可调用"
 
 
 def test_loaded_nodes_have_autonomy_boundary():
     """加载的 SKILL 节点中至少有一个 autonomy_boundary 非空（11-易经推理系统/skills 下的）"""
-    from dreamos.registry.node_registry import NodeRegistry
+    from dreamos.registry.node_registry import NodeRegistry  # noqa: I001
     from dreamos.adapters.skill_adapter import load_skills_from_governance
 
     registry = NodeRegistry()
@@ -51,7 +52,7 @@ def test_loaded_nodes_have_autonomy_boundary():
 
 def test_load_skills_only_active_status():
     """只加载 status=active 的 SKILL（治理系统生命周期过滤）"""
-    from dreamos.registry.node_registry import NodeRegistry
+    from dreamos.registry.node_registry import NodeRegistry  # noqa: I001
     from dreamos.adapters.skill_adapter import load_skills_from_governance
 
     registry = NodeRegistry()

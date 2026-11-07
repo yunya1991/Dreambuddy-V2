@@ -26,37 +26,38 @@
         └── baseline/             # 基线版本记录
 """
 
-import os
+import os  # noqa: I001
 import sys
 import json
-import uuid
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from enum import Enum
-
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 
 # ── 数据结构 ──────────────────────────────────────────────────────────
 
+
 class HypothesisStatus(str, Enum):
     """假设状态"""
-    PENDING = "pending"           # 待验证
-    IN_PROGRESS = "in_progress"   # 验证中
-    ACCEPTED = "accepted"         # 已采纳（验证通过）
-    REJECTED = "rejected"         # 已拒绝（验证失败）
-    ARCHIVED = "archived"         # 已归档
+
+    PENDING = "pending"  # 待验证
+    IN_PROGRESS = "in_progress"  # 验证中
+    ACCEPTED = "accepted"  # 已采纳（验证通过）
+    REJECTED = "rejected"  # 已拒绝（验证失败）
+    ARCHIVED = "archived"  # 已归档
 
 
 class ExperimentStatus(str, Enum):
     """实验状态"""
-    PLANNED = "planned"           # 计划中
-    RUNNING = "running"           # 运行中
-    COMPLETED = "completed"       # 已完成
-    FAILED = "failed"             # 失败
+
+    PLANNED = "planned"  # 计划中
+    RUNNING = "running"  # 运行中
+    COMPLETED = "completed"  # 已完成
+    FAILED = "failed"  # 失败
 
 
 @dataclass
@@ -65,13 +66,14 @@ class Hypothesis:
 
     格式："在[X场景]下，[Y特征/算法]应该能[提升Z目的的指标]"
     """
-    hypo_id: str                           # 唯一ID (HYP-YYYYMMDD-XXX)
-    title: str                             # 简短标题
-    description: str                       # 详细描述
-    theory_source: str                     # 理论来源（哪个理论/经验/观察）
-    objective: str                         # 目标目的 (dip_buy/top_exit/bear_short/bear_exit)
-    expected_effect: str                   # 预期效果描述
-    expected_metric_improvement: float     # 预期指标提升幅度（如0.1=提升10%）
+
+    hypo_id: str  # 唯一ID (HYP-YYYYMMDD-XXX)
+    title: str  # 简短标题
+    description: str  # 详细描述
+    theory_source: str  # 理论来源（哪个理论/经验/观察）
+    objective: str  # 目标目的 (dip_buy/top_exit/bear_short/bear_exit)
+    expected_effect: str  # 预期效果描述
+    expected_metric_improvement: float  # 预期指标提升幅度（如0.1=提升10%）
     status: str = HypothesisStatus.PENDING.value
     created_at: str = ""
     updated_at: str = ""
@@ -89,17 +91,18 @@ class Hypothesis:
 @dataclass
 class Experiment:
     """实验记录"""
-    exp_id: str                            # 唯一ID (EXP-YYYYMMDD-XXX)
-    name: str                              # 实验名称
-    hypo_id: str                           # 关联的假设ID
-    objective: str                         # 目标目的
-    strategy_name: str                     # 策略名称
+
+    exp_id: str  # 唯一ID (EXP-YYYYMMDD-XXX)
+    name: str  # 实验名称
+    hypo_id: str  # 关联的假设ID
+    objective: str  # 目标目的
+    strategy_name: str  # 策略名称
     status: str = ExperimentStatus.PLANNED.value
     config: Dict[str, Any] = field(default_factory=dict)  # 实验配置
     result: Optional[Dict[str, Any]] = None  # 实验结果（分场景回测结果）
-    composite_score: float = 0.0           # 综合评分
-    conclusion: str = ""                   # 结论描述
-    lessons_learned: str = ""              # 经验教训
+    composite_score: float = 0.0  # 综合评分
+    conclusion: str = ""  # 结论描述
+    lessons_learned: str = ""  # 经验教训
     created_at: str = ""
     completed_at: str = ""
 
@@ -111,13 +114,14 @@ class Experiment:
 @dataclass
 class BaselineVersion:
     """基线版本记录"""
-    version: str                           # 版本号 (v2, v2.1, v3...)
-    name: str                              # 版本名称
-    description: str                       # 描述
-    strategy_class: str                    # 策略类名
-    config_path: str                       # 配置文件路径
+
+    version: str  # 版本号 (v2, v2.1, v3...)
+    name: str  # 版本名称
+    description: str  # 描述
+    strategy_class: str  # 策略类名
+    config_path: str  # 配置文件路径
     metrics: Dict[str, float] = field(default_factory=dict)  # 关键指标
-    is_active: bool = False                # 是否为当前生效基线
+    is_active: bool = False  # 是否为当前生效基线
     created_at: str = ""
     released_at: str = ""
     release_notes: str = ""
@@ -128,6 +132,7 @@ class BaselineVersion:
 
 
 # ── 闭环管理器 ────────────────────────────────────────────────────────
+
 
 class ClosedLoopManager:
     """闭环迭代管理器
@@ -362,7 +367,8 @@ class ClosedLoopManager:
                 conclusion_note = f"实验{exp_id}验证未通过，综合评分{composite_score:.3f} ≤ 1.0"
 
             self.update_hypothesis_status(
-                exp.hypo_id, status,
+                exp.hypo_id,
+                status,
                 notes=f"{conclusion_note}\n结论: {conclusion}\n经验: {lessons_learned}",
             )
 
@@ -525,12 +531,14 @@ class ClosedLoopManager:
         lessons = []
         for exp in all_exps:
             if exp.lessons_learned:
-                lessons.append({
-                    "exp_id": exp.exp_id,
-                    "objective": exp.objective,
-                    "score": exp.composite_score,
-                    "lesson": exp.lessons_learned,
-                })
+                lessons.append(
+                    {
+                        "exp_id": exp.exp_id,
+                        "objective": exp.objective,
+                        "score": exp.composite_score,
+                        "lesson": exp.lessons_learned,
+                    }
+                )
 
         return {
             "baseline": {
@@ -577,12 +585,12 @@ class ClosedLoopManager:
         print(f"\n🧪 实验记录: {e['total']} 个")
 
         if summary["accepted_hypotheses"]:
-            print(f"\n✅ 已采纳假设:")
+            print("\n✅ 已采纳假设:")
             for item in summary["accepted_hypotheses"]:
                 print(f"   [{item['id']}] {item['title']} ({item['objective']})")
 
         if summary["lessons_learned"]:
-            print(f"\n📚 经验教训 (最近3条):")
+            print("\n📚 经验教训 (最近3条):")
             for item in summary["lessons_learned"][:3]:
                 print(f"   [{item['exp_id']}] {item['objective']}: {item['lesson'][:80]}...")
 
@@ -602,7 +610,7 @@ class ClosedLoopManager:
                 config_path="ml/enhanced_ma200_v2_config.json",
                 is_active=True,
                 release_notes="初始基线版本。MA200牛熊经验法则增强版："
-                              "BTC分层抄底+分层做空+斐波那契止盈+小币熊市禁空。",
+                "BTC分层抄底+分层做空+斐波那契止盈+小币熊市禁空。",
                 released_at=datetime.now().isoformat(),
             )
             self._save_baseline(v2)
@@ -657,6 +665,7 @@ class ClosedLoopManager:
 
 # ── 便捷函数 ──────────────────────────────────────────────────────────
 
+
 def get_loop_manager() -> ClosedLoopManager:
     """获取闭环管理器单例"""
     return ClosedLoopManager()
@@ -697,9 +706,7 @@ def demo_workflow():
     mock_result = {
         "overall_sharpe": 1.5,
         "overall_calmar": 3.0,
-        "objectives": {
-            "dip_buy": {"win_rate": 0.65, "profit_factor": 2.5}
-        }
+        "objectives": {"dip_buy": {"win_rate": 0.65, "profit_factor": 2.5}},
     }
     mgr.record_experiment_result(
         exp_id=exp.exp_id,

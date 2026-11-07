@@ -6,10 +6,12 @@
 - AI 指令配置写入/读取
 - 模式切换状态持久化
 """
-import json, os, sys
-from datetime import datetime, timezone, timedelta
+
+import json
+import sys
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 BASE_DIR = Path(__file__).resolve().parent
 STATE_DIR = BASE_DIR / "data" / "mode_state"
@@ -24,13 +26,13 @@ CLASSIC_SYSTEM_DIR = Path(__file__).resolve().parents[2] / "10-经典指标系�
 
 # 新鲜度阈值（小时）
 FRESHNESS_THRESHOLDS = {
-    "a1_daily": 24,      # A1 日报 24 小时
-    "a6_intel": 6,       # A6 情报 6 小时
-    "weekly": 168,       # 周报 7 天
+    "a1_daily": 24,  # A1 日报 24 小时
+    "a6_intel": 6,  # A6 情报 6 小时
+    "weekly": 168,  # 周报 7 天
 }
 
 # 模式定义
-MODE_AI_DIRECTED = "ai_directed"       # AI 主导模式
+MODE_AI_DIRECTED = "ai_directed"  # AI 主导模式
 MODE_CLASSIC_TAKEOVER = "classic_takeover"  # 经典接管模式
 
 _state_cache: Optional[Dict] = None
@@ -92,6 +94,7 @@ def _append_history(entry: Dict):
 
 # ── 研报新鲜度检测 ──────────────────────────────────────────────────────
 
+
 def check_reports_freshness() -> Dict[str, Any]:
     """
     检查所有研报的新鲜度
@@ -106,6 +109,7 @@ def check_reports_freshness() -> Dict[str, Any]:
     """
     try:
         from report_loader import get_all_reports
+
         reports = get_all_reports()
     except Exception as e:
         return {
@@ -166,6 +170,7 @@ def get_deterministic_mode() -> str:
 
 # ── 模式状态管理 ────────────────────────────────────────────────────────
 
+
 def get_current_state() -> Dict[str, Any]:
     """
     获取当前模式状态（带缓存）
@@ -201,12 +206,14 @@ def get_current_state() -> Dict[str, Any]:
             "switch_count": 0,
         }
         _save_json(MODE_STATE_FILE, state)
-        _append_history({
-            "action": "init",
-            "mode": mode,
-            "timestamp": _now_iso(),
-            "reason": "初始检测",
-        })
+        _append_history(
+            {
+                "action": "init",
+                "mode": mode,
+                "timestamp": _now_iso(),
+                "reason": "初始检测",
+            }
+        )
 
     # 补充新鲜度信息
     state["freshness"] = check_reports_freshness()
@@ -290,14 +297,16 @@ def check_and_switch_mode() -> Dict[str, Any]:
     _save_json(MODE_STATE_FILE, new_state)
 
     # 记录历史
-    _append_history({
-        "action": "switch",
-        "old_mode": old_mode,
-        "new_mode": new_mode,
-        "timestamp": _now_iso(),
-        "reason": reason,
-        "switch_count": switch_count,
-    })
+    _append_history(
+        {
+            "action": "switch",
+            "old_mode": old_mode,
+            "new_mode": new_mode,
+            "timestamp": _now_iso(),
+            "reason": reason,
+            "switch_count": switch_count,
+        }
+    )
 
     # 通知经典指标系统（预留接口）
     _notify_classic_system_mode_change(new_mode)
@@ -314,7 +323,11 @@ def check_and_switch_mode() -> Dict[str, Any]:
         "switch_count": switch_count,
         "freshness": freshness,
         "position_conflict": position_conflict,
-        "switch_type": "takeover" if old_mode == MODE_AI_DIRECTED and new_mode == MODE_CLASSIC_TAKEOVER else "revert",
+        "switch_type": (
+            "takeover"
+            if old_mode == MODE_AI_DIRECTED and new_mode == MODE_CLASSIC_TAKEOVER
+            else "revert"
+        ),
     }
 
 
@@ -326,6 +339,7 @@ def _check_position_conflict_on_switch() -> Optional[str]:
     """
     try:
         from classic_executor import get_open_positions
+
         positions = get_open_positions()
         if not positions:
             return None
@@ -403,21 +417,25 @@ def set_mode_override(mode: str, reason: str = "手动切换") -> Dict[str, Any]
 
     _save_json(MODE_STATE_FILE, new_state)
 
-    _append_history({
-        "action": "manual_switch",
-        "old_mode": old_mode,
-        "new_mode": mode,
-        "timestamp": _now_iso(),
-        "reason": reason,
-        "switch_count": switch_count,
-    })
+    _append_history(
+        {
+            "action": "manual_switch",
+            "old_mode": old_mode,
+            "new_mode": mode,
+            "timestamp": _now_iso(),
+            "reason": reason,
+            "switch_count": switch_count,
+        }
+    )
 
     _notify_classic_system_mode_change(mode)
 
     _state_cache = None
     _cache_ts = 0
 
-    switch_type = "takeover" if old_mode == MODE_AI_DIRECTED and mode == MODE_CLASSIC_TAKEOVER else "revert"
+    switch_type = (
+        "takeover" if old_mode == MODE_AI_DIRECTED and mode == MODE_CLASSIC_TAKEOVER else "revert"
+    )
 
     return {
         "switched": True,
@@ -431,6 +449,7 @@ def set_mode_override(mode: str, reason: str = "手动切换") -> Dict[str, Any]
 
 
 # ── AI 指令管理 ─────────────────────────────────────────────────────────
+
 
 def get_ai_directive() -> Dict[str, Any]:
     """
@@ -489,6 +508,7 @@ def _sync_ai_directive_to_classic(directive: Dict[str, Any]):
 
 # ── 历史记录 ────────────────────────────────────────────────────────────
 
+
 def get_mode_history(limit: int = 20) -> list:
     """获取模式切换历史"""
     entries = []
@@ -511,9 +531,11 @@ def get_mode_history(limit: int = 20) -> list:
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(description="模式管理器")
-    parser.add_argument("action", choices=["status", "check", "history", "set_ai", "force"],
-                        help="操作类型")
+    parser.add_argument(
+        "action", choices=["status", "check", "history", "set_ai", "force"], help="操作类型"
+    )
     parser.add_argument("--mode", help="强制模式 (ai_directed / classic_takeover)")
     parser.add_argument("--direction", help="AI 指令方向 (long/short/neutral)")
     parser.add_argument("--symbols", help="AI 币种池，逗号分隔")

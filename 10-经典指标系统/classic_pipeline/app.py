@@ -7,6 +7,7 @@
 
 最终态：ml_trade_service.py 缩减为 `from classic_pipeline.app import app`。
 """
+
 from __future__ import annotations
 
 from flask import Flask
@@ -22,11 +23,11 @@ def create_app() -> Flask:
     register_hooks(app)
 
     # 注册各阶段 Blueprint（骨架阶段：Blueprint 已创建，路由随迁移逐步填充）
-    from classic_pipeline.c1_universe.blueprint import bp as c1_universe_bp
-    from classic_pipeline.signals.blueprint import bp as c2_signals_bp
     from classic_pipeline.backtest.blueprint import bp as c3_backtest_bp
-    from classic_pipeline.risk.blueprint import bp as c4_risk_bp
+    from classic_pipeline.c1_universe.blueprint import bp as c1_universe_bp
     from classic_pipeline.plan.blueprint import bp as c6_plan_bp
+    from classic_pipeline.risk.blueprint import bp as c4_risk_bp
+    from classic_pipeline.signals.blueprint import bp as c2_signals_bp
 
     app.register_blueprint(c1_universe_bp)
     app.register_blueprint(c2_signals_bp)

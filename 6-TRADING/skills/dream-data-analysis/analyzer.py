@@ -7,10 +7,10 @@ dream-data-analysis/analyzer.py
 import json
 import math
 import statistics
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field, asdict
+from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 
@@ -30,9 +30,11 @@ TIMEFRAME_DEFAULTS = {
 
 # ============== 数据类 ==============
 
+
 @dataclass
 class TrendAnalysis:
     """趋势分析结果"""
+
     direction: str  # "up" | "down" | "flat" | "unknown"
     velocity: Optional[float] = None  # 速度 (price/step)
     acceleration: Optional[float] = None  # 加速度
@@ -45,6 +47,7 @@ class TrendAnalysis:
 @dataclass
 class ResistanceAnalysis:
     """阻力分析结果"""
+
     resistance_score: float = 0.0  # 0-100
     components: Dict[str, float] = field(default_factory=dict)
     weighted_contribution: Dict[str, float] = field(default_factory=dict)
@@ -57,6 +60,7 @@ class ResistanceAnalysis:
 @dataclass
 class CalibrationSuggestion:
     """校准建议"""
+
     expected_return_mapping: Dict[str, Any] = field(default_factory=dict)
     lambda_risk: Dict[str, Any] = field(default_factory=dict)
     thresholds: Dict[str, Any] = field(default_factory=dict)
@@ -67,6 +71,7 @@ class CalibrationSuggestion:
 @dataclass
 class AnalysisResult:
     """完整分析结果"""
+
     trace_id: str
     ts: str
     inst_id: str
@@ -81,16 +86,18 @@ class AnalysisResult:
 
 # ============== 配置加载 ==============
 
+
 def load_config(path: Path) -> Dict:
     """加载 YAML 配置文件"""
     if not path.exists():
         return {}
-    with open(path, 'r', encoding='utf-8') as f:
+    with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
 class Config:
     """配置管理器"""
+
     _instance = None
 
     def __new__(cls):
@@ -120,6 +127,7 @@ class Config:
 
 # ============== 工具函数 ==============
 
+
 def calculate_ma(data: List[float], window: int) -> List[Optional[float]]:
     """计算移动平均"""
     if not data or window <= 0:
@@ -129,7 +137,7 @@ def calculate_ma(data: List[float], window: int) -> List[Optional[float]]:
         if i < window - 1 or data[i] is None:
             result.append(None)
         else:
-            window_data = data[i-window+1:i+1]
+            window_data = data[i - window + 1 : i + 1]
             valid = [x for x in window_data if x is not None and not math.isnan(x)]
             if valid:
                 result.append(sum(valid) / len(valid))
@@ -159,8 +167,8 @@ def calculate_ema(data: List[float], window: int) -> List[Optional[float]]:
     # 计算后续 EMA
     for i in range(first_valid_idx + 1, len(data)):
         if data[i] is not None and not math.isnan(data[i]):
-            if result[i-1] is not None:
-                result[i] = data[i] * k + result[i-1] * (1 - k)
+            if result[i - 1] is not None:
+                result[i] = data[i] * k + result[i - 1] * (1 - k)
             else:
                 result[i] = data[i]
 
@@ -174,8 +182,8 @@ def calculate_velocity(series: List[float], dt: float = 1.0) -> List[Optional[fl
 
     velocity = [None]
     for i in range(1, len(series)):
-        if series[i] is not None and series[i-1] is not None:
-            velocity.append((series[i] - series[i-1]) / dt)
+        if series[i] is not None and series[i - 1] is not None:
+            velocity.append((series[i] - series[i - 1]) / dt)
         else:
             velocity.append(None)
     return velocity
@@ -188,8 +196,8 @@ def calculate_acceleration(velocity: List[float], dt: float = 1.0) -> List[Optio
 
     acceleration = [None]
     for i in range(1, len(velocity)):
-        if velocity[i] is not None and velocity[i-1] is not None:
-            acceleration.append((velocity[i] - velocity[i-1]) / dt)
+        if velocity[i] is not None and velocity[i - 1] is not None:
+            acceleration.append((velocity[i] - velocity[i - 1]) / dt)
         else:
             acceleration.append(None)
     return acceleration
@@ -205,9 +213,11 @@ def calculate_correlation(x: List[float], y: List[float]) -> float:
     if len(x) != len(y) or len(x) < 3:
         return 0.0
 
-    valid_pairs = [(xi, yi) for xi, yi in zip(x, y)
-                   if xi is not None and yi is not None
-                   and not math.isnan(xi) and not math.isnan(yi)]
+    valid_pairs = [
+        (xi, yi)
+        for xi, yi in zip(x, y)  # noqa: B905
+        if xi is not None and yi is not None and not math.isnan(xi) and not math.isnan(yi)
+    ]
 
     if len(valid_pairs) < 3:
         return 0.0
@@ -219,7 +229,7 @@ def calculate_correlation(x: List[float], y: List[float]) -> float:
     mean_x = sum(x_vals) / n
     mean_y = sum(y_vals) / n
 
-    numerator = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x_vals, y_vals))
+    numerator = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x_vals, y_vals))  # noqa: B905
     denom_x = math.sqrt(sum((xi - mean_x) ** 2 for xi in x_vals))
     denom_y = math.sqrt(sum((yi - mean_y) ** 2 for yi in y_vals))
 
@@ -230,6 +240,7 @@ def calculate_correlation(x: List[float], y: List[float]) -> float:
 
 
 # ============== 趋势分析 ==============
+
 
 class TrendAnalyzer:
     """趋势惯性分析器"""
@@ -243,18 +254,14 @@ class TrendAnalyzer:
         """执行趋势分析"""
         if len(episode_series) < 3:
             return TrendAnalysis(
-                direction="unknown",
-                trend_confidence=0.0,
-                reason_codes=["INSUFFICIENT_DATA"]
+                direction="unknown", trend_confidence=0.0, reason_codes=["INSUFFICIENT_DATA"]
             )
 
         # 提取价格序列
         prices = self._extract_prices(episode_series)
         if not prices:
             return TrendAnalysis(
-                direction="unknown",
-                trend_confidence=0.0,
-                reason_codes=["NO_PRICE_DATA"]
+                direction="unknown", trend_confidence=0.0, reason_codes=["NO_PRICE_DATA"]
             )
 
         # 计算 MA/EMA
@@ -297,7 +304,7 @@ class TrendAnalyzer:
             trend_confidence=confidence,
             ma_values=ma_values,
             ema_values=ema_values,
-            reason_codes=reason_codes
+            reason_codes=reason_codes,
         )
 
     def _extract_prices(self, episode_series: List[Dict]) -> List[Optional[float]]:
@@ -315,14 +322,16 @@ class TrendAnalyzer:
                 prices.append(None)
         return prices
 
-    def _determine_direction(self,
-                            ma_short: List[Optional[float]],
-                            ma_medium: List[Optional[float]],
-                            ma_long: List[Optional[float]],
-                            ema_fast: List[Optional[float]],
-                            ema_slow: List[Optional[float]]) -> Tuple[str, float, List[str]]:
+    def _determine_direction(
+        self,
+        ma_short: List[Optional[float]],
+        ma_medium: List[Optional[float]],
+        ma_long: List[Optional[float]],
+        ema_fast: List[Optional[float]],
+        ema_slow: List[Optional[float]],
+    ) -> Tuple[str, float, List[str]]:
         """判断趋势方向"""
-        n = len(ma_long)
+        n = len(ma_long)  # noqa: F841
         reason_codes = []
 
         # 获取最新有效值
@@ -347,7 +356,7 @@ class TrendAnalyzer:
         if len(valid_medium) >= 2:
             medium_diff = valid_medium[-1] - valid_medium[-2]
             if abs(medium_diff) > 0.001:
-                medium_trend = 1 if medium_diff > 0 else -1
+                medium_trend = 1 if medium_diff > 0 else -1  # noqa: F841
 
         # 计算均线排列 (多头/空头)
         if len(valid_short) >= 1 and len(valid_medium) >= 1 and len(valid_long) >= 1:
@@ -376,10 +385,12 @@ class TrendAnalyzer:
                     reason_codes.append("EMA_DEATH_CROSS")
 
         # 综合判断
-        bullish_signals = sum(1 for c in reason_codes
-                             if "BULLISH" in c or "UP" in c or "GOLDEN" in c)
-        bearish_signals = sum(1 for c in reason_codes
-                             if "BEARISH" in c or "DOWN" in c or "DEATH" in c)
+        bullish_signals = sum(
+            1 for c in reason_codes if "BULLISH" in c or "UP" in c or "GOLDEN" in c
+        )
+        bearish_signals = sum(
+            1 for c in reason_codes if "BEARISH" in c or "DOWN" in c or "DEATH" in c
+        )
 
         if long_trend > 0 and (bullish_signals > bearish_signals):
             direction = "up"
@@ -399,6 +410,7 @@ class TrendAnalyzer:
 
 # ============== 阻力分析 ==============
 
+
 class ResistanceAnalyzer:
     """阻力分解分析器"""
 
@@ -416,7 +428,7 @@ class ResistanceAnalyzer:
             return ResistanceAnalysis(
                 resistance_score=50.0,
                 components={"error": "NO_COMPONENT_DATA"},
-                reason_codes=["INSUFFICIENT_COMPONENT_DATA"]
+                reason_codes=["INSUFFICIENT_COMPONENT_DATA"],
             )
 
         # 计算加权阻力
@@ -434,7 +446,7 @@ class ResistanceAnalyzer:
             "cost_friction": [],
             "liquidity_friction": [],
             "crowding_friction": [],
-            "vol_friction": []
+            "vol_friction": [],
         }
 
         for ep in episode_series:
@@ -474,11 +486,12 @@ class ResistanceAnalyzer:
 
         return components
 
-    def _calculate_weighted_resistance(self, components: Dict[str, List[float]]) -> ResistanceAnalysis:
+    def _calculate_weighted_resistance(
+        self, components: Dict[str, List[float]]
+    ) -> ResistanceAnalysis:
         """计算加权阻力"""
         # 过滤掉非数值字段 (如 description)
-        numeric_weights = {k: v for k, v in self.weights.items()
-                         if isinstance(v, (int, float))}
+        numeric_weights = {k: v for k, v in self.weights.items() if isinstance(v, (int, float))}
 
         # 归一化权重
         total_weight = sum(numeric_weights.values())
@@ -491,15 +504,11 @@ class ResistanceAnalyzer:
             avg_components[k] = statistics.mean(valid) if valid else 50.0
 
         # 加权求和
-        resistance_score = sum(
-            avg_components.get(k, 50) * normalized.get(k, 0)
-            for k in normalized
-        )
+        resistance_score = sum(avg_components.get(k, 50) * normalized.get(k, 0) for k in normalized)
 
         # 各分量贡献
         weighted_contribution = {
-            k: avg_components.get(k, 50) * normalized.get(k, 0)
-            for k in normalized
+            k: avg_components.get(k, 50) * normalized.get(k, 0) for k in normalized
         }
 
         # 生成 notes
@@ -516,7 +525,7 @@ class ResistanceAnalyzer:
             weighted_contribution=weighted_contribution,
             normalized_weights=normalized,
             notes=notes,
-            reason_codes=[f"RESISTANCE_SCORE:{resistance_score:.1f}"]
+            reason_codes=[f"RESISTANCE_SCORE:{resistance_score:.1f}"],
         )
 
     def _get_threshold_level(self, score: float, thresholds: Dict) -> str:
@@ -533,6 +542,7 @@ class ResistanceAnalyzer:
 
 # ============== 校准建议 ==============
 
+
 class CalibrationAdvisor:
     """校准建议生成器"""
 
@@ -541,9 +551,9 @@ class CalibrationAdvisor:
         self.config = Config().calibration
         self.policy_config = Config().get_calibration_policy(policy)
 
-    def generate(self, episode_series: List[Dict],
-                trend: TrendAnalysis,
-                resistance: ResistanceAnalysis) -> CalibrationSuggestion:
+    def generate(
+        self, episode_series: List[Dict], trend: TrendAnalysis, resistance: ResistanceAnalysis
+    ) -> CalibrationSuggestion:
         """生成校准建议"""
         if len(episode_series) < self.policy_config.get("min_rounds", 5):
             return CalibrationSuggestion(
@@ -551,7 +561,7 @@ class CalibrationAdvisor:
                 lambda_risk={"status": "keep"},
                 thresholds={"status": "keep"},
                 overall_status="keep",
-                confidence=0.0
+                confidence=0.0,
             )
 
         # 计算 E[R] 映射
@@ -564,14 +574,19 @@ class CalibrationAdvisor:
         thresholds = self._analyze_thresholds(episode_series, resistance)
 
         # 综合状态
-        overall_status = "calibrate" if (
-            er_mapping.get("status") in ["tighten", "loosen", "rebuild"] or
-            lambda_risk.get("status") != "keep"
-        ) else "keep"
+        overall_status = (
+            "calibrate"
+            if (
+                er_mapping.get("status") in ["tighten", "loosen", "rebuild"]
+                or lambda_risk.get("status") != "keep"
+            )
+            else "keep"
+        )
 
         # 计算置信度
-        evidence_count = len(er_mapping.get("evidence_refs", [])) + \
-                        len(lambda_risk.get("evidence_refs", []))
+        evidence_count = len(er_mapping.get("evidence_refs", [])) + len(
+            lambda_risk.get("evidence_refs", [])
+        )
         confidence = min(evidence_count / 5.0, 0.95) if evidence_count > 0 else 0.3
 
         return CalibrationSuggestion(
@@ -579,7 +594,7 @@ class CalibrationAdvisor:
             lambda_risk=lambda_risk,
             thresholds=thresholds,
             overall_status=overall_status,
-            confidence=confidence
+            confidence=confidence,
         )
 
     def _analyze_expected_return(self, episode_series: List[Dict]) -> Dict:
@@ -626,7 +641,7 @@ class CalibrationAdvisor:
             "status": status,
             "correlation": correlation,
             "buckets": buckets,
-            "evidence_refs": [f"ER_CORR:{correlation:.3f}", f"ER_STATUS:{status}"]
+            "evidence_refs": [f"ER_CORR:{correlation:.3f}", f"ER_STATUS:{status}"],
         }
 
     def _bucket_analysis(self, scores: List[float], pnl_pcts: List[float]) -> Dict:
@@ -637,11 +652,19 @@ class CalibrationAdvisor:
         high_score_threshold = 70
         low_score_threshold = 50
 
-        high_scores = [s for s in scores if s >= high_score_threshold]
-        low_scores = [s for s in scores if s < low_score_threshold]
+        high_scores = [s for s in scores if s >= high_score_threshold]  # noqa: F841
+        low_scores = [s for s in scores if s < low_score_threshold]  # noqa: F841
 
-        high_pnl = [p for s, p in zip(scores, pnl_pcts) if s >= high_score_threshold] if pnl_pcts else []
-        low_pnl = [p for s, p in zip(scores, pnl_pcts) if s < low_score_threshold] if pnl_pcts else []
+        high_pnl = (
+            [p for s, p in zip(scores, pnl_pcts) if s >= high_score_threshold]  # noqa: B905
+            if pnl_pcts
+            else []  # noqa: B905
+        )
+        low_pnl = (
+            [p for s, p in zip(scores, pnl_pcts) if s < low_score_threshold]  # noqa: B905
+            if pnl_pcts
+            else []  # noqa: B905
+        )
 
         high_er = statistics.mean(high_pnl) if high_pnl else 0
         low_er = statistics.mean(low_pnl) if low_pnl else 0
@@ -650,12 +673,12 @@ class CalibrationAdvisor:
             "high_er": high_er,
             "low_er": low_er,
             "gap": high_er - low_er,
-            "sample_count": len(scores)
+            "sample_count": len(scores),
         }
 
-    def _analyze_lambda_risk(self, episode_series: List[Dict],
-                            trend: TrendAnalysis,
-                            resistance: ResistanceAnalysis) -> Dict:
+    def _analyze_lambda_risk(
+        self, episode_series: List[Dict], trend: TrendAnalysis, resistance: ResistanceAnalysis
+    ) -> Dict:
         """分析 λ 风险建议"""
         # 检测市场状态
         conditions = []
@@ -665,8 +688,7 @@ class CalibrationAdvisor:
             conditions.append("high_volatility_regime")
 
         # 连续亏损
-        recent_pnls = [ep.get("edge_eval", {}).get("edge_bps", 0)
-                      for ep in episode_series[-5:]]
+        recent_pnls = [ep.get("edge_eval", {}).get("edge_bps", 0) for ep in episode_series[-5:]]
         if len([p for p in recent_pnls if p < 0]) >= 3:
             conditions.append("consecutive_losses")
 
@@ -675,7 +697,7 @@ class CalibrationAdvisor:
             conditions.append("stable_trend")
 
         # λ 建议
-        lambda_config = self.config.get("lambda_risk", {})
+        lambda_config = self.config.get("lambda_risk", {})  # noqa: F841
 
         if "high_volatility_regime" in conditions or "consecutive_losses" in conditions:
             status = "up"
@@ -687,11 +709,12 @@ class CalibrationAdvisor:
         return {
             "status": status,
             "conditions": conditions,
-            "evidence_refs": [f"LAMBDA_STATUS:{status}"] + conditions
+            "evidence_refs": [f"LAMBDA_STATUS:{status}"] + conditions,
         }
 
-    def _analyze_thresholds(self, episode_series: List[Dict],
-                           resistance: ResistanceAnalysis) -> Dict:
+    def _analyze_thresholds(
+        self, episode_series: List[Dict], resistance: ResistanceAnalysis
+    ) -> Dict:
         """分析阈值建议"""
         threshold_config = self.config.get("threshold_suggestions", {})
 
@@ -710,29 +733,32 @@ class CalibrationAdvisor:
         return {
             "edge_min_bps": {
                 "suggestion": edge_suggestion,
-                "current": threshold_config.get("edge_min_bps", {}).get("default", 20)
+                "current": threshold_config.get("edge_min_bps", {}).get("default", 20),
             },
             "max_worst_slippage_bps": {
                 "suggestion": slippage_suggestion,
-                "current": threshold_config.get("max_worst_slippage_bps", {}).get("default", 30)
+                "current": threshold_config.get("max_worst_slippage_bps", {}).get("default", 30),
             },
             "blackout_windows": {
                 "suggestion": "add" if resistance.threshold_level == "EXTREME" else "none",
-                "candidates": threshold_config.get("blackout_windows", {}).get("candidates", [])
-            }
+                "candidates": threshold_config.get("blackout_windows", {}).get("candidates", []),
+            },
         }
 
 
 # ============== 主分析器 ==============
 
+
 class DataAnalyzer:
     """数据分析主入口"""
 
-    def __init__(self,
-                 timeframe: str = "1h",
-                 resistance_profile: str = "balanced",
-                 calibration_policy: str = "standard",
-                 generate_charts: bool = True):
+    def __init__(
+        self,
+        timeframe: str = "1h",
+        resistance_profile: str = "balanced",
+        calibration_policy: str = "standard",
+        generate_charts: bool = True,
+    ):
         self.timeframe = timeframe
         self.resistance_profile = resistance_profile
         self.calibration_policy = calibration_policy
@@ -743,10 +769,9 @@ class DataAnalyzer:
         self.resistance_analyzer = ResistanceAnalyzer(resistance_profile)
         self.calibration_advisor = CalibrationAdvisor(calibration_policy)
 
-    def analyze(self, episode_series: List[Dict],
-                trace_id: str = "",
-                ts: str = "",
-                inst_id: str = "") -> AnalysisResult:
+    def analyze(
+        self, episode_series: List[Dict], trace_id: str = "", ts: str = "", inst_id: str = ""
+    ) -> AnalysisResult:
         """执行完整分析"""
 
         # 提取元信息
@@ -785,12 +810,12 @@ class DataAnalyzer:
             calibration_suggestions=asdict(calibration),
             charts=charts,
             evidence_refs=evidence_refs,
-            reason_codes=trend.reason_codes + resistance.reason_codes
+            reason_codes=trend.reason_codes + resistance.reason_codes,
         )
 
-    def _extract_features(self, episode_series: List[Dict],
-                          trend: TrendAnalysis,
-                          resistance: ResistanceAnalysis) -> Dict:
+    def _extract_features(
+        self, episode_series: List[Dict], trend: TrendAnalysis, resistance: ResistanceAnalysis
+    ) -> Dict:
         """提取时间序列特征"""
         # 提取所有可用特征名
         feature_names = []
@@ -815,45 +840,49 @@ class DataAnalyzer:
                         feature_names.append(f"microstructure.{k}")
 
         # 趋势特征
-        feature_names.extend([
-            "trend.velocity",
-            "trend.acceleration",
-            "trend.confidence",
-            "resistance.score",
-            "resistance.cost_friction",
-            "resistance.liquidity_friction",
-            "resistance.crowding_friction",
-            "resistance.vol_friction"
-        ])
+        feature_names.extend(
+            [
+                "trend.velocity",
+                "trend.acceleration",
+                "trend.confidence",
+                "resistance.score",
+                "resistance.cost_friction",
+                "resistance.liquidity_friction",
+                "resistance.crowding_friction",
+                "resistance.vol_friction",
+            ]
+        )
 
         return {
             "feature_names": feature_names,
-            "feature_series_refs": [f"episodes.{f}" for f in feature_names[:10]]
+            "feature_series_refs": [f"episodes.{f}" for f in feature_names[:10]],
         }
 
     def _generate_chart_list(self) -> Dict:
         """生成图表清单"""
         return {
             "subplots": [
-                "price_ma_ema",           # 价格 + MA/EMA
-                "trend_strength",          # 趋势强度
-                "edge_bps_gate",           # edge_bps 与门禁决策
-                "execution_costs",         # 执行成本
-                "regime_labels",           # 市场状态标签
-                "resistance_breakdown"     # 阻力分解
+                "price_ma_ema",  # 价格 + MA/EMA
+                "trend_strength",  # 趋势强度
+                "edge_bps_gate",  # edge_bps 与门禁决策
+                "execution_costs",  # 执行成本
+                "regime_labels",  # 市场状态标签
+                "resistance_breakdown",  # 阻力分解
             ],
             "overview_plots": [
-                "radar_snapshot",          # 评分雷达图
-                "trend_vs_resistance",     # 趋势 vs 阻力
-                "calibration_dashboard"    # 校准仪表盘
-            ]
+                "radar_snapshot",  # 评分雷达图
+                "trend_vs_resistance",  # 趋势 vs 阻力
+                "calibration_dashboard",  # 校准仪表盘
+            ],
         }
 
-    def _collect_evidence_refs(self,
-                               episode_series: List[Dict],
-                               trend: TrendAnalysis,
-                               resistance: ResistanceAnalysis,
-                               calibration: CalibrationSuggestion) -> List[str]:
+    def _collect_evidence_refs(
+        self,
+        episode_series: List[Dict],
+        trend: TrendAnalysis,
+        resistance: ResistanceAnalysis,
+        calibration: CalibrationSuggestion,
+    ) -> List[str]:
         """收集证据引用"""
         refs = []
 
@@ -862,11 +891,13 @@ class DataAnalyzer:
             refs.append(f"episodes[{len(episode_series)}]")
 
         # 趋势引用
-        refs.extend([
-            f"trend:{trend.direction}",
-            f"velocity:{trend.velocity:.4f}" if trend.velocity else "velocity:null",
-            f"confidence:{trend.trend_confidence:.2f}"
-        ])
+        refs.extend(
+            [
+                f"trend:{trend.direction}",
+                f"velocity:{trend.velocity:.4f}" if trend.velocity else "velocity:null",
+                f"confidence:{trend.trend_confidence:.2f}",
+            ]
+        )
 
         # 阻力引用
         refs.append(f"resistance:{resistance.resistance_score:.1f}")
@@ -888,11 +919,14 @@ class DataAnalyzer:
 
 # ============== 便捷函数 ==============
 
-def analyze_episodes(episode_series: List[Dict],
-                    timeframe: str = "1h",
-                    resistance_profile: str = "balanced",
-                    calibration_policy: str = "standard",
-                    generate_charts: bool = True) -> Dict:
+
+def analyze_episodes(
+    episode_series: List[Dict],
+    timeframe: str = "1h",
+    resistance_profile: str = "balanced",
+    calibration_policy: str = "standard",
+    generate_charts: bool = True,
+) -> Dict:
     """
     便捷分析函数
 
@@ -906,7 +940,7 @@ def analyze_episodes(episode_series: List[Dict],
         timeframe=timeframe,
         resistance_profile=resistance_profile,
         calibration_policy=calibration_policy,
-        generate_charts=generate_charts
+        generate_charts=generate_charts,
     )
 
     result = analyzer.analyze(episode_series)
@@ -930,23 +964,23 @@ if __name__ == "__main__":
             "scores": {
                 "total": 60 + random.uniform(-20, 30),
                 "technical": {"total": 65},
-                "macro": {"total": 55}
+                "macro": {"total": 55},
             },
             "edge_eval": {"edge_bps": random.uniform(-50, 100)},
             "costs": {
                 "total_cost_bps_est": random.uniform(5, 20),
-                "worst_case_slippage_bps": random.uniform(10, 40)
+                "worst_case_slippage_bps": random.uniform(10, 40),
             },
             "microstructure": {
                 "spread_bps": random.uniform(1, 5),
                 "depth_1pct_usdt": random.uniform(5000, 15000),
-                "orderbook_imbalance": random.uniform(0.3, 0.7)
+                "orderbook_imbalance": random.uniform(0.3, 0.7),
             },
             "regime": {
                 "funding_rate": random.uniform(-0.01, 0.01),
                 "oi_change_pct": random.uniform(-5, 10),
-                "vol_regime": random.choice(["low", "medium", "high"])
-            }
+                "vol_regime": random.choice(["low", "medium", "high"]),
+            },
         }
 
     # 生成 20 个 mock episodes
@@ -958,35 +992,34 @@ if __name__ == "__main__":
 
     # 执行分析
     result = analyze_episodes(
-        mock_episodes,
-        timeframe="1h",
-        resistance_profile="balanced",
-        calibration_policy="standard"
+        mock_episodes, timeframe="1h", resistance_profile="balanced", calibration_policy="standard"
     )
 
     # 打印结果
-    print(f"\n📊 Trend Analysis:")
+    print("\n📊 Trend Analysis:")
     print(f"   Direction: {result['trend']['direction']}")
     print(f"   Velocity: {result['trend'].get('velocity', 'N/A')}")
     print(f"   Confidence: {result['trend']['trend_confidence']:.2f}")
     print(f"   Reason Codes: {result['trend']['reason_codes']}")
 
-    print(f"\n⚡ Resistance Analysis:")
+    print("\n⚡ Resistance Analysis:")
     print(f"   Score: {result['resistance']['resistance_score']:.1f}")
     print(f"   Level: {result['resistance']['threshold_level']}")
     print(f"   Components: {result['resistance']['components']}")
 
-    print(f"\n🎯 Calibration Suggestions:")
-    print(f"   E[R] Mapping: {result['calibration_suggestions']['expected_return_mapping']['status']}")
+    print("\n🎯 Calibration Suggestions:")
+    print(
+        f"   E[R] Mapping: {result['calibration_suggestions']['expected_return_mapping']['status']}"
+    )
     print(f"   Lambda Risk: {result['calibration_suggestions']['lambda_risk']['status']}")
     print(f"   Overall: {result['calibration_suggestions']['overall_status']}")
 
-    print(f"\n📈 Chart List:")
-    for chart_type, charts in result['charts'].items():
+    print("\n📈 Chart List:")
+    for chart_type, charts in result["charts"].items():
         print(f"   {chart_type}: {charts}")
 
-    print(f"\n🔗 Evidence Refs:")
-    for ref in result['evidence_refs']:
+    print("\n🔗 Evidence Refs:")
+    for ref in result["evidence_refs"]:
         print(f"   - {ref}")
 
     print("\n" + "=" * 60)

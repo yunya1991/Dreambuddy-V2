@@ -16,6 +16,7 @@ v2 关键修复：
 - step：position is None 时，按 v15 信号（MA 回撤 + 动量）概率开多单，触发 TP/bust/addon 奖励
 - _reset_state：每 episode 重采样 seed 与 价格起点
 """
+
 from __future__ import annotations
 
 import math
@@ -23,45 +24,70 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-
 # ── §5.1.1 状态空间 34 维定义 ──
 STATE_KEYS = [
     # TimingGate (4)
-    "timing_score", "structure_match_score", "retrace_quality_score", "extension_chase_score",
+    "timing_score",
+    "structure_match_score",
+    "retrace_quality_score",
+    "extension_chase_score",
     # DirectionGate (5)
-    "regime_accum", "regime_up", "regime_down", "long_enabled", "short_enabled",
+    "regime_accum",
+    "regime_up",
+    "regime_down",
+    "long_enabled",
+    "short_enabled",
     # RegimeManager (5)
-    "regime_zone_0", "regime_zone_1", "regime_zone_2", "regime_zone_3", "regime_zone_4",
+    "regime_zone_0",
+    "regime_zone_1",
+    "regime_zone_2",
+    "regime_zone_3",
+    "regime_zone_4",
     # 持仓 (9)
-    "pos_level_0", "pos_level_1", "pos_level_2", "pos_level_3", "pos_level_4",
-    "avg_entry_pct_diff", "unrealized_pnl_ratio", "distance_to_liq_ratio", "unused_9",
+    "pos_level_0",
+    "pos_level_1",
+    "pos_level_2",
+    "pos_level_3",
+    "pos_level_4",
+    "avg_entry_pct_diff",
+    "unrealized_pnl_ratio",
+    "distance_to_liq_ratio",
+    "unused_9",
     # 波动 (8)
-    "atr_14_pct", "atr_14_zscore", "realized_vol_30d", "vol_zscore_60",
-    "btc_corr_30d", "btc_rsi_14_norm", "swing_window_daily", "swing_window_4h",
+    "atr_14_pct",
+    "atr_14_zscore",
+    "realized_vol_30d",
+    "vol_zscore_60",
+    "btc_corr_30d",
+    "btc_rsi_14_norm",
+    "swing_window_daily",
+    "swing_window_4h",
     # 历史表现 (3)
-    "recent_10_win_rate", "recent_10_avg_pnl", "max_drawdown_30d",
+    "recent_10_win_rate",
+    "recent_10_avg_pnl",
+    "max_drawdown_30d",
 ]
 assert len(STATE_KEYS) == 34
 
 # ── §5.1.3 奖励常量（v3-D: 重平衡 — 加仓不惩罚，TP奖励提升，资金占用微罚） ──
-REWARD_TP_FULL = 10.0          # v3: 5→10，TP 是核心正反馈
+REWARD_TP_FULL = 10.0  # v3: 5→10，TP 是核心正反馈
 REWARD_TP_PARTIAL_RATIO = 1.0
 REWARD_CAPITAL_OCCUPANCY = -0.02  # v3: -0.10→-0.02，微罚资金占用（防久持不TP）
-REWARD_ADDON_LEVEL = -0.5       # v3: -3.0→-0.5，加仓是策略核心而非惩罚
+REWARD_ADDON_LEVEL = -0.5  # v3: -3.0→-0.5，加仓是策略核心而非惩罚
 REWARD_BUST = -20.0
 REWARD_SHIELD_VIOLATION = -3.0
 REWARD_OPEN_TRADE = 0.0
-REWARD_PNL_SCALE = 0.03         # v5: 0.01→0.03，让 PPO 更关注真实盈利（关闭剩余收益差距）
+REWARD_PNL_SCALE = 0.03  # v5: 0.01→0.03，让 PPO 更关注真实盈利（关闭剩余收益差距）
 GAMMA = 0.995
 
 # ── §3.3 动作边界（v4: 必须与 lib/phase_e_gateway.py ACTION_BOUNDS 保持一致） ──
 # 训练时若不 clamp，PPO 会输出 tp_pct_mult=7 / addon_size_mult=8 等越界值导致策略崩溃。
 ACTION_BOUNDS = {
-    "addon_pct_mult":      {"lo": 0.80, "hi": 1.30, "abs_lo": 0.375, "abs_hi": 3.125},
-    "addon_size_mult":     {"lo": 0.60, "hi": 1.50, "abs_lo": 0.60, "abs_hi": 1.50},
-    "tp_pct_mult":         {"lo": 0.80, "hi": 1.30, "abs_lo": 0.375, "abs_hi": 3.00},
-    "base_position_mult":  {"lo": 0.70, "hi": 1.20, "abs_lo": 0.50, "abs_hi": 2.00},
-    "max_addons_delta":    {"lo": -1,   "hi": 0,    "abs_lo": -1,   "abs_hi": 0},
+    "addon_pct_mult": {"lo": 0.80, "hi": 1.30, "abs_lo": 0.375, "abs_hi": 3.125},
+    "addon_size_mult": {"lo": 0.60, "hi": 1.50, "abs_lo": 0.60, "abs_hi": 1.50},
+    "tp_pct_mult": {"lo": 0.80, "hi": 1.30, "abs_lo": 0.375, "abs_hi": 3.00},
+    "base_position_mult": {"lo": 0.70, "hi": 1.20, "abs_lo": 0.50, "abs_hi": 2.00},
+    "max_addons_delta": {"lo": -1, "hi": 0, "abs_lo": -1, "abs_hi": 0},
 }
 PHASE_E_DEFAULT_K_BOUND = 0.80
 
@@ -192,9 +218,11 @@ class V15MartingaleGymEnv:
             o = price
             c = max(0.01, price * (1 + ret))
             h = max(o, c) * (1 + abs(float(rng.normal(0, 0.006))))
-            l = min(o, c) * (1 - abs(float(rng.normal(0, 0.006))))
+            l = min(o, c) * (1 - abs(float(rng.normal(0, 0.006))))  # noqa: E741
             v = float(rng.uniform(100, 1500))
-            klines.append({"o": float(o), "h": float(h), "l": float(l), "c": float(c), "v": v, "t": i})
+            klines.append(
+                {"o": float(o), "h": float(h), "l": float(l), "c": float(c), "v": v, "t": i}
+            )
             price = c
         return klines
 
@@ -226,7 +254,9 @@ class V15MartingaleGymEnv:
         ma20 = _sma(closes, 20)
         ma60 = _sma(closes, 60)
         last = closes[-1]
-        timing_score = float(np.clip((last / max(1e-9, ma20) - 1.0) * 10 + 0.5, 0.0, 1.0))  # 超 MA 涨 → 高分
+        timing_score = float(
+            np.clip((last / max(1e-9, ma20) - 1.0) * 10 + 0.5, 0.0, 1.0)
+        )  # 超 MA 涨 → 高分
         max_20 = max(highs[-20:]) if len(highs) >= 20 else highs[-1]
         retrace_depth = 1.0 - last / max(1e-9, max_20)  # 回撤
         structure_score = float(np.clip(1.0 - retrace_depth * 2.5, 0.0, 1.0))
@@ -289,12 +319,19 @@ class V15MartingaleGymEnv:
             rets60 = np.diff(closes[-60:]) / np.maximum(1e-9, closes[-60:-1])
             v60 = float(np.std(rets60))
         else:
-            v60 = realized_vol
+            v60 = realized_vol  # noqa: F841
         # ATR%: (H-L)/C 14 均值
-        hl_pcts = [(h - l) / max(1e-9, c) for h, l, c in zip(highs[-14:], lows[-14:], closes[-14:])]
+        hl_pcts = [
+            (h - l) / max(1e-9, c)
+            for h, l, c in zip(highs[-14:], lows[-14:], closes[-14:])  # noqa: B905, E741
+        ]  # noqa: B905, E741
         atr_pct = float(np.mean(hl_pcts)) if hl_pcts else 0.02
         atr_z = 0.0  # 训练中暂用 0，真实接入由 v15_trader 提供
-        vol_z = float(np.clip((realized_vol - 0.02) / max(1e-9, 0.015), -3.0, 3.0)) if realized_vol > 0 else 0.0
+        vol_z = (
+            float(np.clip((realized_vol - 0.02) / max(1e-9, 0.015), -3.0, 3.0))
+            if realized_vol > 0
+            else 0.0
+        )
         btc_corr = 0.80  # 训练简化：视为高度相关
         btc_rsi = _rsi_ema(closes, 14) / 100.0
         swing_daily = 2.0
@@ -309,7 +346,9 @@ class V15MartingaleGymEnv:
         elif self.trade_history:
             wins = sum(1 for t in self.trade_history if t.get("pnl_pct", 0) > 0)
             win_rate = wins / max(1, len(self.trade_history))
-            avg_pnl = sum(t.get("pnl_pct", 0) for t in self.trade_history) / max(1, len(self.trade_history))
+            avg_pnl = sum(t.get("pnl_pct", 0) for t in self.trade_history) / max(
+                1, len(self.trade_history)
+            )
         else:
             win_rate = 0.5
             avg_pnl = 0.0
@@ -324,17 +363,37 @@ class V15MartingaleGymEnv:
         else:
             mdd_30 = 0.0
 
-        obs = np.array([
-            timing_score, structure_score, retrace_score, extension_score,
-            regime_3hot[0], regime_3hot[1], regime_3hot[2],
-            long_enabled, short_enabled,
-            *regime_zone_5hot,
-            *level_5hot,
-            avg_entry_diff, unrealized, dist_to_liq, 0.0,
-            atr_pct, atr_z, realized_vol, vol_z,
-            btc_corr, btc_rsi, swing_daily, swing_4h,
-            win_rate, avg_pnl, mdd_30,
-        ], dtype=np.float32)
+        obs = np.array(
+            [
+                timing_score,
+                structure_score,
+                retrace_score,
+                extension_score,
+                regime_3hot[0],
+                regime_3hot[1],
+                regime_3hot[2],
+                long_enabled,
+                short_enabled,
+                *regime_zone_5hot,
+                *level_5hot,
+                avg_entry_diff,
+                unrealized,
+                dist_to_liq,
+                0.0,
+                atr_pct,
+                atr_z,
+                realized_vol,
+                vol_z,
+                btc_corr,
+                btc_rsi,
+                swing_daily,
+                swing_4h,
+                win_rate,
+                avg_pnl,
+                mdd_30,
+            ],
+            dtype=np.float32,
+        )
         assert obs.shape == (34,), f"obs shape {obs.shape} != (34,)"
         return obs
 
@@ -346,10 +405,10 @@ class V15MartingaleGymEnv:
         i = self.current_step
         reward = 0.0
         info: Dict[str, Any] = {"step": i, "shield_flags": []}
-        k_curr = self.klines[i]
+        k_curr = self.klines[i]  # noqa: F841
         closes = [x["c"] for x in self.klines[: i + 1]]
         last = closes[-1]
-        ma20 = _sma(closes, 20)
+        ma20 = _sma(closes, 20)  # noqa: F841
         ma60 = _sma(closes, 60)
 
         # ── 开仓：position is None 时基于 MA20 + RSI 概率开 LONG ──
@@ -407,10 +466,14 @@ class V15MartingaleGymEnv:
                 deployed = float(pos.get("total_deployed", 0.0))
                 pnl_usd = deployed * pnl_pct
                 self.capital += pnl_usd
-                self.trade_history.append({
-                    "pnl_usd": pnl_usd, "pnl_pct": pnl_pct * 100,
-                    "exit_reason": "take_profit", "level": level,
-                })
+                self.trade_history.append(
+                    {
+                        "pnl_usd": pnl_usd,
+                        "pnl_pct": pnl_pct * 100,
+                        "exit_reason": "take_profit",
+                        "level": level,
+                    }
+                )
                 reward += REWARD_TP_FULL * (1 + 0.1 * level)  # 深度加仓后 TP 奖励更高
                 reward += REWARD_PNL_SCALE * pnl_usd  # v3-D: PnL 直接乘入
                 self.position = None
@@ -420,10 +483,14 @@ class V15MartingaleGymEnv:
                 pnl_pct = tp_pct
                 pnl_usd = deployed * pnl_pct
                 self.capital += pnl_usd
-                self.trade_history.append({
-                    "pnl_usd": pnl_usd, "pnl_pct": pnl_pct * 100,
-                    "exit_reason": "take_profit", "level": level,
-                })
+                self.trade_history.append(
+                    {
+                        "pnl_usd": pnl_usd,
+                        "pnl_pct": pnl_pct * 100,
+                        "exit_reason": "take_profit",
+                        "level": level,
+                    }
+                )
                 reward += REWARD_TP_FULL
                 reward += REWARD_PNL_SCALE * pnl_usd  # v3-D: PnL 直接乘入
                 self.position = None
@@ -459,7 +526,9 @@ class V15MartingaleGymEnv:
                     prev_qty = float(pos.get("total_qty", 0.0))
                     new_cost = prev_cost + bud
                     new_qty = prev_qty + qty_add
-                    pos["avg_entry"] = (pos["avg_entry"] * prev_qty + fill * qty_add) / max(1e-9, new_qty)
+                    pos["avg_entry"] = (pos["avg_entry"] * prev_qty + fill * qty_add) / max(
+                        1e-9, new_qty
+                    )
                     pos["total_deployed"] = new_cost
                     pos["total_qty"] = new_qty
                     pos["current_level"] = next_level
@@ -475,10 +544,14 @@ class V15MartingaleGymEnv:
                         deployed = float(pos.get("total_deployed", 0.0))
                         loss = deployed * liq_frac
                         self.capital = max(0.0, self.capital - loss)
-                        self.trade_history.append({
-                            "pnl_usd": -loss, "pnl_pct": -liq_frac * 100,
-                            "exit_reason": "bust", "level": level,
-                        })
+                        self.trade_history.append(
+                            {
+                                "pnl_usd": -loss,
+                                "pnl_pct": -liq_frac * 100,
+                                "exit_reason": "bust",
+                                "level": level,
+                            }
+                        )
                         reward += REWARD_BUST
                         reward += REWARD_PNL_SCALE * (-loss)  # v3-D: 负 PnL 乘入
                         self.position = None
@@ -487,10 +560,14 @@ class V15MartingaleGymEnv:
                         deployed = float(pos.get("total_deployed", 0.0))
                         loss = deployed * liq_frac
                         self.capital = max(0.0, self.capital - loss)
-                        self.trade_history.append({
-                            "pnl_usd": -loss, "pnl_pct": -liq_frac * 100,
-                            "exit_reason": "bust", "level": level,
-                        })
+                        self.trade_history.append(
+                            {
+                                "pnl_usd": -loss,
+                                "pnl_pct": -liq_frac * 100,
+                                "exit_reason": "bust",
+                                "level": level,
+                            }
+                        )
                         reward += REWARD_BUST
                         reward += REWARD_PNL_SCALE * (-loss)  # v3-D: 负 PnL 乘入
                         self.position = None
@@ -504,10 +581,14 @@ class V15MartingaleGymEnv:
                 frac = (k["c"] - entry2) / max(1e-9, entry2)
                 pnl_usd = deployed2 * frac
                 self.capital = max(0.0, self.capital + pnl_usd)
-                self.trade_history.append({
-                    "pnl_usd": pnl_usd, "pnl_pct": frac * 100,
-                    "exit_reason": "eod_close", "level": int(pos2.get("current_level", 0)),
-                })
+                self.trade_history.append(
+                    {
+                        "pnl_usd": pnl_usd,
+                        "pnl_pct": frac * 100,
+                        "exit_reason": "eod_close",
+                        "level": int(pos2.get("current_level", 0)),
+                    }
+                )
                 reward += REWARD_PNL_SCALE * pnl_usd  # v3-D: EOD 强平也计入 PnL
                 self.position = None
 

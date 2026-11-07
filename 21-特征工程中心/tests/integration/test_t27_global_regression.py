@@ -11,6 +11,7 @@
 本测试作为 M3 阶段回归入口，断言核心 import + 端到端串行链路无回归：
   DataCenter → Silver(CleaningPipeline) → FeatureHub(FeaturePipeline)
 """
+
 from __future__ import annotations
 
 import sys
@@ -28,8 +29,10 @@ _20_ROOT = _PROJECT_ROOT / "20-数据清洗中心"
 _18_ROOT = _PROJECT_ROOT / "18-数据获取中心"
 
 for p in [
-    str(_21_ROOT), str(_21_ROOT / "feature_hub"),
-    str(_20_ROOT), str(_18_ROOT),
+    str(_21_ROOT),
+    str(_21_ROOT / "feature_hub"),
+    str(_20_ROOT),
+    str(_18_ROOT),
 ]:
     if p not in sys.path:
         sys.path.insert(0, p)
@@ -41,15 +44,15 @@ for p in [
 def test_t27_1_core_imports_no_regression():
     """验证 M3 阶段核心模块全部可导入（无循环依赖 / 无语法错误）"""
     # Silver 清洗中心（包名 data_cleaning）
-    from data_cleaning.pipeline import DataCleaningPipeline, PipelineConfig  # noqa: F401
-    from data_cleaning.gate.quality_gate import QualityGate  # noqa: F401
     from data_cleaning.contract import CleanedDF  # noqa: F401
-
-    # FeatureHub
-    from feature_hub.pipeline.feature_pipeline import FeaturePipeline  # noqa: F401
+    from data_cleaning.gate.quality_gate import QualityGate  # noqa: F401
+    from data_cleaning.pipeline import DataCleaningPipeline, PipelineConfig  # noqa: F401
     from feature_hub.cleaning_chain.standard_chain import StandardCleaningChain  # noqa: F401
     from feature_hub.contract import FeatureVector  # noqa: F401
     from feature_hub.errors import FeatureSetNotFound  # noqa: F401
+
+    # FeatureHub
+    from feature_hub.pipeline.feature_pipeline import FeaturePipeline  # noqa: F401
 
     # DataCenter（若 SDK 轨可用）
     try:
@@ -63,20 +66,23 @@ def test_t27_1_core_imports_no_regression():
 # ============================================================
 def test_t27_2_e2e_chain_no_regression():
     """端到端：构造 OHLCV → Silver 清洗 → FeatureHub 特征计算 全链路无回归"""
-    from feature_hub.pipeline.feature_pipeline import FeaturePipeline
     from feature_hub.modules.loader import load_default_sets
+    from feature_hub.pipeline.feature_pipeline import FeaturePipeline
 
     # ① 构造 OHLCV 样本
     rng = np.random.default_rng(42)
     n = 300
     close = 100 * np.exp(np.cumsum(rng.normal(0, 0.02, n)))
-    ohlcv = pd.DataFrame({
-        "open":   close * (1 + rng.normal(0, 0.004, n)),
-        "high":   close * (1 + np.abs(rng.normal(0, 0.01, n))),
-        "low":    close * (1 - np.abs(rng.normal(0, 0.01, n))),
-        "close":  close,
-        "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
-    }, index=pd.date_range("2024-01-01", periods=n, freq="D"))
+    ohlcv = pd.DataFrame(
+        {
+            "open": close * (1 + rng.normal(0, 0.004, n)),
+            "high": close * (1 + np.abs(rng.normal(0, 0.01, n))),
+            "low": close * (1 - np.abs(rng.normal(0, 0.01, n))),
+            "close": close,
+            "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
+        },
+        index=pd.date_range("2024-01-01", periods=n, freq="D"),
+    )
 
     # ② Silver 清洗（fail-open，永不阻塞）—此处仅验证 OHLCV 输入不破坏链路
     silver_df = ohlcv.copy()
@@ -91,8 +97,7 @@ def test_t27_2_e2e_chain_no_regression():
     assert isinstance(fv.df, pd.DataFrame)
     assert len(fv.df) == n
     # btc_morph_v6 集合输出 ≥ 30 列（VIF 清洗后可能略减）
-    assert len(fv.df.columns) >= 30, \
-        f"FeatureHub 输出列数 {len(fv.df.columns)} < 30: 可能发生回归"
+    assert len(fv.df.columns) >= 30, f"FeatureHub 输出列数 {len(fv.df.columns)} < 30: 可能发生回归"
 
 
 # ============================================================

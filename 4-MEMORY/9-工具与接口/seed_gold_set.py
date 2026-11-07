@@ -13,11 +13,10 @@
   python3 seed_gold_set.py --stats      # 仅查看 gold set 统计
   python3 seed_gold_set.py --kappa      # 计算 Cohen's kappa（需双人标注）
 """
+
 from __future__ import annotations
 
 import argparse
-import os
-import random
 import sqlite3
 import sys
 from pathlib import Path
@@ -26,14 +25,14 @@ _SCRIPT_DIR = Path(__file__).parent
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
-from verification_observer import GoldSetManager
+from verification_observer import GoldSetManager  # noqa: E402
 
 DB_PATH = _SCRIPT_DIR.parent / "data" / "cognitive_memory.db"
 GOLD_STORAGE = str(_SCRIPT_DIR.parent / "data" / "verification_observer")
 
 # 各档位采样数
 SAMPLE_SIZES = {
-    "S": None,   # None = 全量
+    "S": None,  # None = 全量
     "A": None,
     "B": 100,
     "C": 100,
@@ -73,7 +72,12 @@ def seed_gold_set(db_path: str, storage: str) -> dict:
             if mem.get("tags"):
                 try:
                     import json
-                    tags = json.loads(mem["tags"]) if isinstance(mem["tags"], str) else list(mem["tags"])
+
+                    tags = (
+                        json.loads(mem["tags"])
+                        if isinstance(mem["tags"], str)
+                        else list(mem["tags"])
+                    )
                 except Exception:
                     tags = []
             gsm.add(
@@ -93,6 +97,7 @@ def show_stats(storage: str) -> None:
     print(f"Gold Set 总数: {gsm.count()}")
     # 按 gold_quality 统计
     from collections import Counter
+
     quality_dist = Counter()
     for mid in gsm.list_ids():
         entry = gsm.get(mid)

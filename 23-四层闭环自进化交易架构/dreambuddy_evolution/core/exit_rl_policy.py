@@ -13,10 +13,10 @@ MDP 建模：
 
 FAIL-OPEN: 任何异常 → 返回 hold，不阻塞主链路。
 """
+
 from __future__ import annotations
 
 import logging
-import os
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -36,14 +36,14 @@ ACTION_TO_IDX = {name: i for i, name in enumerate(ACTION_NAMES)}
 # State (8维): [upl_ratio, position_age_min, atr_pct, RSI, ESS, CS, vol_ratio, tier_index]
 # 归一化策略：每维 clip 到合理范围后线性映射到 [0, 1] 或 [-1, 1]
 STATE_CLIP_RANGES = [
-    (-0.10, 0.40),    # 0: upl_ratio  [-10%, +40%]
-    (0.0, 3000.0),    # 1: position_age_min  [0, 3000min=50h]
-    (0.0, 0.05),      # 2: atr_pct  [0, 5%]
-    (0.0, 100.0),     # 3: RSI  [0, 100]
-    (0.0, 1.0),       # 4: ESS  [0, 1]
-    (-1.0, 1.0),      # 5: CS  [-1, 1]
-    (0.0, 3.0),       # 6: vol_ratio  [0, 3]
-    (0.0, 2.0),       # 7: tier_index  [0, 2]
+    (-0.10, 0.40),  # 0: upl_ratio  [-10%, +40%]
+    (0.0, 3000.0),  # 1: position_age_min  [0, 3000min=50h]
+    (0.0, 0.05),  # 2: atr_pct  [0, 5%]
+    (0.0, 100.0),  # 3: RSI  [0, 100]
+    (0.0, 1.0),  # 4: ESS  [0, 1]
+    (-1.0, 1.0),  # 5: CS  [-1, 1]
+    (0.0, 3.0),  # 6: vol_ratio  [0, 3]
+    (0.0, 2.0),  # 7: tier_index  [0, 2]
 ]
 
 
@@ -98,6 +98,7 @@ class CQLTrainer:
             import torch
             import torch.nn as nn
             import torch.optim as optim
+
             self._torch = torch
             self._nn = nn
             self._optim = optim
@@ -168,26 +169,21 @@ class CQLTrainer:
         nn = self._nn
 
         # 归一化状态 + clip 奖励到 [-1, 1]
-        states = t.FloatTensor(
-            np.array([normalize_state(b["state"]) for b in batch])
-        ).to(self.device)
+        states = t.FloatTensor(np.array([normalize_state(b["state"]) for b in batch])).to(
+            self.device
+        )
         actions = t.LongTensor([b["action"] for b in batch]).to(self.device)
-        rewards = t.FloatTensor(
-            [max(-1.0, min(1.0, float(b["reward"]))) for b in batch]
-        ).to(self.device)
-        next_states = t.FloatTensor(
-            np.array([normalize_state(b["next_state"]) for b in batch])
-        ).to(self.device)
+        rewards = t.FloatTensor([max(-1.0, min(1.0, float(b["reward"]))) for b in batch]).to(
+            self.device
+        )
+        next_states = t.FloatTensor(np.array([normalize_state(b["next_state"]) for b in batch])).to(
+            self.device
+        )
         dones = t.FloatTensor([float(b.get("done", False)) for b in batch]).to(self.device)
         # per-sample weight（默认 1.0，向后兼容）
         # P1b: 优先读取 meta.sample_weight（回测样本 0.3，真实样本 1.0）
         weights = t.FloatTensor(
-            [
-                float(
-                    b.get("weight", b.get("meta", {}).get("sample_weight", 1.0))
-                )
-                for b in batch
-            ]
+            [float(b.get("weight", b.get("meta", {}).get("sample_weight", 1.0))) for b in batch]
         ).to(self.device)
 
         # 当前 Q(s,a)
@@ -228,14 +224,17 @@ class CQLTrainer:
         """保存 Q 网络参数"""
         if not self._available:
             return
-        self._torch.save({
-            "q_net_state_dict": self.q_net.state_dict(),
-            "target_q_net_state_dict": self.target_q_net.state_dict(),
-            "state_dim": self.state_dim,
-            "n_actions": self.n_actions,
-            "cql_alpha": self.cql_alpha,
-            "grad_clip": self.grad_clip,
-        }, path)
+        self._torch.save(
+            {
+                "q_net_state_dict": self.q_net.state_dict(),
+                "target_q_net_state_dict": self.target_q_net.state_dict(),
+                "state_dim": self.state_dim,
+                "n_actions": self.n_actions,
+                "cql_alpha": self.cql_alpha,
+                "grad_clip": self.grad_clip,
+            },
+            path,
+        )
 
     def load(self, path: str) -> None:
         """加载 Q 网络参数"""
@@ -430,6 +429,7 @@ class PPOFineTuner:
             import torch
             import torch.nn as nn
             import torch.optim as optim
+
             self._torch = torch
             self._nn = nn
             self._optim = optim
@@ -532,7 +532,7 @@ class PPOFineTuner:
             return
 
         t = self._torch
-        nn = self._nn
+        nn = self._nn  # noqa: F841
 
         with t.no_grad():
             # 用 CQL Q 网络的最后一层初始化 actor 的最后一层
@@ -548,13 +548,16 @@ class PPOFineTuner:
         """保存 PPO 模型"""
         if not self._available:
             return
-        self._torch.save({
-            "actor_state_dict": self.actor.state_dict(),
-            "critic_state_dict": self.critic.state_dict(),
-            "state_dim": self.state_dim,
-            "n_actions": self.n_actions,
-            "clip_epsilon": self.clip_epsilon,
-        }, path)
+        self._torch.save(
+            {
+                "actor_state_dict": self.actor.state_dict(),
+                "critic_state_dict": self.critic.state_dict(),
+                "state_dim": self.state_dim,
+                "n_actions": self.n_actions,
+                "clip_epsilon": self.clip_epsilon,
+            },
+            path,
+        )
 
     def load(self, path: str) -> None:
         """加载 PPO 模型"""

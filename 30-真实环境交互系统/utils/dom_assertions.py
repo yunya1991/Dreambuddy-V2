@@ -1,9 +1,9 @@
 """DOM 断言工具 — 便捷的 DOM 状态断言方法"""
-from __future__ import annotations
 
-from typing import Any, Optional
+from __future__ import annotations  # noqa: I001
 
-from playwright.sync_api import Page, Locator
+
+from playwright.sync_api import Page
 
 
 class DOMAssertions:
@@ -37,8 +37,7 @@ class DOMAssertions:
         return locator.first.inner_text().strip() == text.strip()
 
     @staticmethod
-    def attribute_equals(page: Page, selector: str,
-                         attr: str, value: str) -> bool:
+    def attribute_equals(page: Page, selector: str, attr: str, value: str) -> bool:
         """检查元素属性是否等于指定值。"""
         locator = page.locator(selector)
         if locator.count() == 0:

@@ -8,12 +8,10 @@ DreamOS Budget — 成本追踪器
     4. 成本优化建议
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
-from typing import Dict, List, Optional, Any
 from collections import defaultdict
-
-from .global_budget import BudgetUsageRecord, BudgetLevel
+from typing import Any, Dict, List
 
 
 class CostTracker:
@@ -33,8 +31,9 @@ class CostTracker:
         self._by_node: Dict[str, int] = defaultdict(int)
         self._total = 0
 
-    def record(self, cycle_id: str, node_id: str, tokens: int,
-               layer: str = "unknown", success: bool = True) -> None:
+    def record(
+        self, cycle_id: str, node_id: str, tokens: int, layer: str = "unknown", success: bool = True
+    ) -> None:
         """记录一次 token 消耗
 
         Args:
@@ -44,13 +43,15 @@ class CostTracker:
             layer: 所属层
             success: 是否成功
         """
-        self._records.append({
-            "cycle_id": cycle_id,
-            "node_id": node_id,
-            "tokens": tokens,
-            "layer": layer,
-            "success": success,
-        })
+        self._records.append(
+            {
+                "cycle_id": cycle_id,
+                "node_id": node_id,
+                "tokens": tokens,
+                "layer": layer,
+                "success": success,
+            }
+        )
         self._by_cycle[cycle_id] += tokens
         self._by_layer[layer] += tokens
         self._by_node[node_id] += tokens
@@ -65,9 +66,9 @@ class CostTracker:
         top_nodes = sorted(self._by_node.items(), key=lambda x: -x[1])[:5]
 
         # 按层分布
-        layer_distribution = {k: v for k, v in sorted(
-            self._by_layer.items(), key=lambda x: -x[1]
-        )}
+        layer_distribution = {  # noqa: C416
+            k: v for k, v in sorted(self._by_layer.items(), key=lambda x: -x[1])
+        }  # noqa: C416
 
         return {
             "total_tokens": self._total,

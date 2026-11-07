@@ -17,6 +17,7 @@ CONFIG_PATH = Path(__file__).parent.parent / "gatekeeper_config.json"
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
+
 def load_config() -> dict:
     with open(CONFIG_PATH, encoding="utf-8") as f:
         return json.load(f)
@@ -25,8 +26,7 @@ def load_config() -> dict:
 def git_current_branch() -> str:
     try:
         result = subprocess.run(
-            ["git", "branch", "--show-current"],
-            capture_output=True, text=True, check=True
+            ["git", "branch", "--show-current"], capture_output=True, text=True, check=True
         )
         return result.stdout.strip()
     except subprocess.CalledProcessError:
@@ -37,8 +37,7 @@ def git_status() -> dict[str, list[str]]:
     """Return modified / staged / untracked file lists from git status --porcelain."""
     try:
         result = subprocess.run(
-            ["git", "status", "--porcelain"],
-            capture_output=True, text=True, check=True
+            ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
         )
     except subprocess.CalledProcessError:
         return {"modified_files": [], "staged_files": [], "untracked_files": []}
@@ -68,18 +67,11 @@ def milestone_has_unmerged(cfg: dict) -> bool:
     """Check if any milestone/* branch has commits not merged into current branch."""
     pattern = cfg["branch_rules"]["milestone_pattern"]
     try:
-        result = subprocess.run(
-            ["git", "branch", "-r"],
-            capture_output=True, text=True, check=True
-        )
-        milestone_branches = [
-            b.strip() for b in result.stdout.splitlines()
-            if pattern in b
-        ]
+        result = subprocess.run(["git", "branch", "-r"], capture_output=True, text=True, check=True)
+        milestone_branches = [b.strip() for b in result.stdout.splitlines() if pattern in b]
         for branch in milestone_branches:
             check = subprocess.run(
-                ["git", "log", f"{branch}..HEAD", "--oneline"],
-                capture_output=True, text=True
+                ["git", "log", f"{branch}..HEAD", "--oneline"], capture_output=True, text=True
             )
             if check.stdout.strip():
                 return True
@@ -101,6 +93,7 @@ def opponent(agent_id: str) -> str:
 
 # ── core checks ──────────────────────────────────────────────────────────────
 
+
 def check_branch(agent_id: str, branch: str, cfg: dict) -> list[dict]:
     issues = []
     rules = cfg["branch_rules"]
@@ -109,23 +102,29 @@ def check_branch(agent_id: str, branch: str, cfg: dict) -> list[dict]:
     milestone_prefix = rules["milestone_pattern"]
 
     if branch in protected:
-        issues.append({
-            "code": "WRONG_BRANCH",
-            "level": "BLOCK",
-            "detail": f"当前在受保护分支 '{branch}'，不允许直接提交。请切换到 agent/{agent_id}/* 分支。"
-        })
+        issues.append(
+            {
+                "code": "WRONG_BRANCH",
+                "level": "BLOCK",
+                "detail": f"当前在受保护分支 '{branch}'，不允许直接提交。请切换到 agent/{agent_id}/* 分支。",
+            }
+        )
     elif branch.startswith(milestone_prefix):
-        issues.append({
-            "code": "WRONG_BRANCH",
-            "level": "BLOCK",
-            "detail": f"当前在里程碑分支 '{branch}'，agent 不应直接在此工作。请切换到 {expected_prefix}* 分支。"
-        })
+        issues.append(
+            {
+                "code": "WRONG_BRANCH",
+                "level": "BLOCK",
+                "detail": f"当前在里程碑分支 '{branch}'，agent 不应直接在此工作。请切换到 {expected_prefix}* 分支。",
+            }
+        )
     elif not branch.startswith(expected_prefix):
-        issues.append({
-            "code": "WRONG_BRANCH",
-            "level": "BLOCK",
-            "detail": f"当前分支 '{branch}' 不符合 {agent_id} 的命名规范（应以 '{expected_prefix}' 开头）。"
-        })
+        issues.append(
+            {
+                "code": "WRONG_BRANCH",
+                "level": "BLOCK",
+                "detail": f"当前分支 '{branch}' 不符合 {agent_id} 的命名规范（应以 '{expected_prefix}' 开头）。",
+            }
+        )
     return issues
 
 
@@ -145,34 +144,42 @@ def check_file_boundaries(
     for f in files_to_modify:
         # 对方主责域
         if path_in_domain(f, other_domain):
-            issues.append({
-                "code": "BOUNDARY_VIOLATION",
-                "level": "BLOCK",
-                "detail": f"文件 '{f}' 属于 {other} 主责域，{agent_id} 不得直接修改。"
-            })
+            issues.append(
+                {
+                    "code": "BOUNDARY_VIOLATION",
+                    "level": "BLOCK",
+                    "detail": f"文件 '{f}' 属于 {other} 主责域，{agent_id} 不得直接修改。",
+                }
+            )
         # 共享文件 — 检查是否已有脏状态
         elif any(f.startswith(s) or f == s for s in shared_approval):
             if f in all_dirty:
-                issues.append({
-                    "code": "SHARED_FILE_CONFLICT",
-                    "level": "BLOCK",
-                    "detail": f"共享文件 '{f}' 当前有未提交修改，存在占用冲突。"
-                })
+                issues.append(
+                    {
+                        "code": "SHARED_FILE_CONFLICT",
+                        "level": "BLOCK",
+                        "detail": f"共享文件 '{f}' 当前有未提交修改，存在占用冲突。",
+                    }
+                )
             else:
-                issues.append({
-                    "code": "SHARED_FILE_CONFLICT",
-                    "level": "WARNING",
-                    "detail": f"文件 '{f}' 属于需申请的共享文件，请确认已在任务板中登记占用。"
-                })
+                issues.append(
+                    {
+                        "code": "SHARED_FILE_CONFLICT",
+                        "level": "WARNING",
+                        "detail": f"文件 '{f}' 属于需申请的共享文件，请确认已在任务板中登记占用。",
+                    }
+                )
 
     # git dirty 文件中是否有对方主责域文件（对方正在修改）
     for dirty_file in all_dirty:
         if path_in_domain(dirty_file, other_domain) and dirty_file in files_to_modify:
-            issues.append({
-                "code": "BOUNDARY_VIOLATION",
-                "level": "BLOCK",
-                "detail": f"git 检测到 '{dirty_file}' 已被修改且属于 {other} 主责域——存在覆盖风险。"
-            })
+            issues.append(
+                {
+                    "code": "BOUNDARY_VIOLATION",
+                    "level": "BLOCK",
+                    "detail": f"git 检测到 '{dirty_file}' 已被修改且属于 {other} 主责域——存在覆盖风险。",
+                }
+            )
 
     return issues
 
@@ -183,19 +190,23 @@ def check_contracts(contracts_depended: list[str], cfg: dict) -> list[dict]:
 
     for contract in contracts_depended:
         if contract not in registry:
-            issues.append({
-                "code": "CONTRACT_NOT_FROZEN",
-                "level": "BLOCK",
-                "detail": f"契约 '{contract}' 未在注册表中，尚未达到 L1 冻结级别，不具备并行依赖条件。"
-            })
+            issues.append(
+                {
+                    "code": "CONTRACT_NOT_FROZEN",
+                    "level": "BLOCK",
+                    "detail": f"契约 '{contract}' 未在注册表中，尚未达到 L1 冻结级别，不具备并行依赖条件。",
+                }
+            )
         else:
             level = registry[contract].get("level", "L0")
             if level == "L0":
-                issues.append({
-                    "code": "CONTRACT_LEVEL_L0",
-                    "level": "WARNING",
-                    "detail": f"契约 '{contract}' 当前为 L0（临时），不建议作为并行开发依据。"
-                })
+                issues.append(
+                    {
+                        "code": "CONTRACT_LEVEL_L0",
+                        "level": "WARNING",
+                        "detail": f"契约 '{contract}' 当前为 L0（临时），不建议作为并行开发依据。",
+                    }
+                )
 
     return issues
 
@@ -218,15 +229,15 @@ def check_parallel_conditions(
     boundary_ok = not any(path_in_domain(f, other_domain) for f in files_to_modify)
 
     # 条件2: 契约达到 L1
-    contracts_ok = all(
-        registry.get(c, {}).get("level", "L0") in ("L1", "L2")
-        for c in contracts_depended
-    ) if contracts_depended else True
+    contracts_ok = (
+        all(registry.get(c, {}).get("level", "L0") in ("L1", "L2") for c in contracts_depended)
+        if contracts_depended
+        else True
+    )
 
     # 条件3: 无同文件依赖（本次要改的文件未被对方 dirty）
     no_same_file = not any(
-        f in all_dirty and path_in_domain(f, other_domain)
-        for f in files_to_modify
+        f in all_dirty and path_in_domain(f, other_domain) for f in files_to_modify
     )
 
     if not (boundary_ok and contracts_ok and no_same_file):
@@ -237,16 +248,19 @@ def check_parallel_conditions(
             failed.append("输入输出契约未冻结")
         if not no_same_file:
             failed.append("存在同文件依赖")
-        issues.append({
-            "code": "PARALLEL_CONDITION_FAILED",
-            "level": "BLOCK",
-            "detail": f"并行三条件不满足：{', '.join(failed)}。"
-        })
+        issues.append(
+            {
+                "code": "PARALLEL_CONDITION_FAILED",
+                "level": "BLOCK",
+                "detail": f"并行三条件不满足：{', '.join(failed)}。",
+            }
+        )
 
     return issues
 
 
 # ── decision aggregation ─────────────────────────────────────────────────────
+
 
 def aggregate(issues: list[dict]) -> dict[str, Any]:
     if not issues:
@@ -265,7 +279,9 @@ def aggregate(issues: list[dict]) -> dict[str, Any]:
             action_parts.append("切换到正确的 agent/* 分支后重新检查。")
         if any(i["code"] == "BOUNDARY_VIOLATION" for i in block_items):
             action_parts.append("联系 SOLO 重新划定文件边界或等待对方完成修改。")
-        if any(i["code"] in ("CONTRACT_NOT_FROZEN", "PARALLEL_CONDITION_FAILED") for i in block_items):
+        if any(
+            i["code"] in ("CONTRACT_NOT_FROZEN", "PARALLEL_CONDITION_FAILED") for i in block_items
+        ):
             action_parts.append("等待契约冻结至 L1 后再并行，或改为接力推进。")
         if any(i["code"] == "SHARED_FILE_CONFLICT" for i in block_items):
             action_parts.append("在任务板中登记共享文件占用，由 SOLO 统一收口后再修改。")
@@ -282,6 +298,7 @@ def aggregate(issues: list[dict]) -> dict[str, Any]:
 
 
 # ── main ──────────────────────────────────────────────────────────────────────
+
 
 def run_gate(
     agent_id: str,
@@ -308,11 +325,13 @@ def run_gate(
 
     # milestone 分支状态检查（独立 WARNING）
     if milestone_has_unmerged(cfg):
-        all_issues.append({
-            "code": "MILESTONE_BRANCH_DIRTY",
-            "level": "WARNING",
-            "detail": "检测到 milestone/* 分支存在未合并到当前分支的变更，请关注集成进度。"
-        })
+        all_issues.append(
+            {
+                "code": "MILESTONE_BRANCH_DIRTY",
+                "level": "WARNING",
+                "detail": "检测到 milestone/* 分支存在未合并到当前分支的变更，请关注集成进度。",
+            }
+        )
 
     result = aggregate(all_issues)
     result["task_name"] = task_name
@@ -326,20 +345,15 @@ def run_gate(
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="dual-agent-conflict-gate: 双代理协作冲突前置门禁"
+    parser = argparse.ArgumentParser(description="dual-agent-conflict-gate: 双代理协作冲突前置门禁")
+    parser.add_argument(
+        "--agent", required=True, choices=["claude", "solo"], help="当前 agent 身份"
     )
-    parser.add_argument("--agent", required=True, choices=["claude", "solo"],
-                        help="当前 agent 身份")
     parser.add_argument("--task", required=True, help="任务名称")
-    parser.add_argument("--files", default="",
-                        help="计划修改的文件列表，逗号分隔")
-    parser.add_argument("--contracts", default="",
-                        help="依赖的契约名称列表，逗号分隔")
-    parser.add_argument("--branch", default=None,
-                        help="当前分支（留空则自动读取）")
-    parser.add_argument("--json-only", action="store_true",
-                        help="只输出 JSON，不打印摘要")
+    parser.add_argument("--files", default="", help="计划修改的文件列表，逗号分隔")
+    parser.add_argument("--contracts", default="", help="依赖的契约名称列表，逗号分隔")
+    parser.add_argument("--branch", default=None, help="当前分支（留空则自动读取）")
+    parser.add_argument("--json-only", action="store_true", help="只输出 JSON，不打印摘要")
     args = parser.parse_args()
 
     files = [f.strip() for f in args.files.split(",") if f.strip()]

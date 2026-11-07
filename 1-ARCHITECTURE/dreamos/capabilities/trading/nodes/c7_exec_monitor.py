@@ -36,8 +36,7 @@ import math
 from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
-
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 _DEFAULT_SLIPPAGE_THRESHOLD = 0.02
 
@@ -159,41 +158,53 @@ class C7ExecMonitorNode(BaseNode):
                 sym = str(symbol).strip().upper()
 
             direction = str(plan_entry.get("direction") or "LONG").strip().upper()
-            size = float(plan_entry.get("size") or 0.0) if _is_finite(plan_entry.get("size")) else 0.0
-            entry_price = float(plan_entry.get("entry_price") or 0.0) if _is_finite(plan_entry.get("entry_price")) else 0.0
+            size = (
+                float(plan_entry.get("size") or 0.0) if _is_finite(plan_entry.get("size")) else 0.0
+            )
+            entry_price = (
+                float(plan_entry.get("entry_price") or 0.0)
+                if _is_finite(plan_entry.get("entry_price"))
+                else 0.0
+            )
 
             market_price = self._get_market_price(state, sym)
 
             if market_price is None:
                 failed_count += 1
-                alerts.append({
-                    "type": "missing_market_data",
-                    "symbol": sym,
-                    "message": f"{sym} 市场数据缺失，订单未成交",
-                    "value": 0.0,
-                })
+                alerts.append(
+                    {
+                        "type": "missing_market_data",
+                        "symbol": sym,
+                        "message": f"{sym} 市场数据缺失，订单未成交",
+                        "value": 0.0,
+                    }
+                )
                 continue
 
             # 模拟成交
-            filled_orders.append({
-                "symbol": sym,
-                "direction": direction,
-                "size": size,
-                "filled_price": market_price,
-                "status": "filled",
-            })
+            filled_orders.append(
+                {
+                    "symbol": sym,
+                    "direction": direction,
+                    "size": size,
+                    "filled_price": market_price,
+                    "status": "filled",
+                }
+            )
             filled_count += 1
 
             # 滑点检查
             if entry_price > 0:
                 slippage = abs(market_price - entry_price) / entry_price
                 if slippage > threshold:
-                    alerts.append({
-                        "type": "slippage",
-                        "symbol": sym,
-                        "message": f"{sym} 滑点 {slippage:.4f} 超过阈值 {threshold:.4f}",
-                        "value": float(slippage),
-                    })
+                    alerts.append(
+                        {
+                            "type": "slippage",
+                            "symbol": sym,
+                            "message": f"{sym} 滑点 {slippage:.4f} 超过阈值 {threshold:.4f}",
+                            "value": float(slippage),
+                        }
+                    )
 
         # exec_status
         if filled_count == 0:

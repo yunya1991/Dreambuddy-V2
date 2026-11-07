@@ -25,9 +25,9 @@ import sys
 import time
 import uuid
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException, Header, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -36,19 +36,17 @@ PROJECT_ROOT = Path(__file__).parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from core.modules import (
-    get_module_registry,
-    get_module_executor,
-    ModuleResult,
+from core.modules import (  # noqa: E402
     ExecutionContext,
     create_default_context,
-    ModuleQueryParams,
+    get_module_executor,
+    get_module_registry,
 )
-
 
 # ============================================================
 # Pydantic Models
 # ============================================================
+
 
 class HealthResponse(BaseModel):
     status: str
@@ -141,19 +139,20 @@ _start_time = time.time()
 # 工具函数
 # ============================================================
 
+
 def _build_context(request_data: Dict, session_id: Optional[str] = None) -> ExecutionContext:
     """从请求数据构建执行上下文"""
-    if request_data.get('context'):
-        ctx = ExecutionContext.from_dict(request_data['context'])
+    if request_data.get("context"):
+        ctx = ExecutionContext.from_dict(request_data["context"])
         if session_id and not ctx.session_id:
             ctx.session_id = session_id
         return ctx
 
-    sid = session_id or request_data.get('session_id') or f"session_{uuid.uuid4().hex[:12]}"
+    sid = session_id or request_data.get("session_id") or f"session_{uuid.uuid4().hex[:12]}"
     ctx = create_default_context(sid)
 
-    if request_data.get('symbol'):
-        ctx.symbol = request_data['symbol']
+    if request_data.get("symbol"):
+        ctx.symbol = request_data["symbol"]
 
     return ctx
 
@@ -161,33 +160,34 @@ def _build_context(request_data: Dict, session_id: Optional[str] = None) -> Exec
 def _module_info_to_dict(module_info) -> Dict:
     """将模块信息转换为响应字典"""
     return {
-        'id': module_info.id,
-        'name': module_info.name,
-        'description': module_info.description,
-        'version': module_info.version,
-        'chain': module_info.chain,
-        'category': module_info.category,
-        'tags': module_info.tags,
-        'lifecycle': module_info.lifecycle,
-        'security_level': module_info.security_level,
-        'estimated_tokens': module_info.estimated_tokens,
-        'estimated_latency_ms': module_info.estimated_latency_ms,
-        'confidence_range': module_info.confidence_range,
-        'applicable_stages': module_info.applicable_stages,
-        'applicable_intents': module_info.applicable_intents,
-        'market_conditions': module_info.market_conditions,
-        'historical_accuracy': module_info.historical_accuracy,
-        'dependencies': module_info.dependencies,
-        'adapter': module_info.adapter,
-        'fallback': module_info.fallback,
-        'domain': module_info.domain,
-        'category_name': module_info.category_name,
+        "id": module_info.id,
+        "name": module_info.name,
+        "description": module_info.description,
+        "version": module_info.version,
+        "chain": module_info.chain,
+        "category": module_info.category,
+        "tags": module_info.tags,
+        "lifecycle": module_info.lifecycle,
+        "security_level": module_info.security_level,
+        "estimated_tokens": module_info.estimated_tokens,
+        "estimated_latency_ms": module_info.estimated_latency_ms,
+        "confidence_range": module_info.confidence_range,
+        "applicable_stages": module_info.applicable_stages,
+        "applicable_intents": module_info.applicable_intents,
+        "market_conditions": module_info.market_conditions,
+        "historical_accuracy": module_info.historical_accuracy,
+        "dependencies": module_info.dependencies,
+        "adapter": module_info.adapter,
+        "fallback": module_info.fallback,
+        "domain": module_info.domain,
+        "category_name": module_info.category_name,
     }
 
 
 # ============================================================
 # 健康检查
 # ============================================================
+
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
@@ -204,15 +204,15 @@ async def health_check():
 async def get_status():
     """获取服务状态"""
     registry = get_module_registry()
-    executor = get_module_executor()
+    executor = get_module_executor()  # noqa: F841
     stats = registry.get_stats()
     raw = registry.get_raw()
 
     return {
         "status": "running",
-        "modules_loaded": stats['total'],
+        "modules_loaded": stats["total"],
         "execution_engine": "python",
-        "registry_version": raw.get('version', 'unknown') if raw else 'unknown',
+        "registry_version": raw.get("version", "unknown") if raw else "unknown",
         "stats": stats,
     }
 
@@ -220,6 +220,7 @@ async def get_status():
 # ============================================================
 # 注册表查询
 # ============================================================
+
 
 @app.get("/api/v1/registry/modules")
 async def list_modules(
@@ -336,13 +337,14 @@ async def reload_registry():
 
     return {
         "success": success,
-        "modules_loaded": stats['total'],
+        "modules_loaded": stats["total"],
     }
 
 
 # ============================================================
 # 模块执行
 # ============================================================
+
 
 @app.post("/api/v1/modules/execute")
 async def execute_module(request: ModuleExecuteRequest):
@@ -364,7 +366,7 @@ async def execute_module(request: ModuleExecuteRequest):
             "result": result.to_dict(),
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Execution failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Execution failed: {str(e)}")  # noqa: B904
 
 
 @app.post("/api/v1/modules/batch")
@@ -387,7 +389,9 @@ async def execute_batch(request: ModuleBatchExecuteRequest):
             "results": [r.to_dict() for r in results],
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Batch execution failed: {str(e)}")
+        raise HTTPException(  # noqa: B904
+            status_code=500, detail=f"Batch execution failed: {str(e)}"
+        )  # noqa: B904
 
 
 @app.get("/api/v1/modules/{module_id}/available")
@@ -415,6 +419,7 @@ async def check_module_available(module_id: str):
 # 执行统计
 # ============================================================
 
+
 @app.get("/api/v1/execution/stats")
 async def get_execution_stats():
     """获取执行统计"""
@@ -440,14 +445,15 @@ async def reset_execution_stats():
 # 启动入口
 # ============================================================
 
+
 def main():
     """启动 Bridge Server"""
     import uvicorn
 
-    host = os.environ.get('BRIDGE_HOST', '127.0.0.1')
-    port = int(os.environ.get('BRIDGE_PORT', '8095'))
+    host = os.environ.get("BRIDGE_HOST", "127.0.0.1")
+    port = int(os.environ.get("BRIDGE_PORT", "8095"))
 
-    print(f"🚀 WorkBuddy OS Bridge Server starting...")
+    print("🚀 WorkBuddy OS Bridge Server starting...")
     print(f"   Host: {host}")
     print(f"   Port: {port}")
     print(f"   Docs: http://{host}:{port}/docs")
@@ -456,5 +462,5 @@ def main():
     uvicorn.run(app, host=host, port=port, log_level="info")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

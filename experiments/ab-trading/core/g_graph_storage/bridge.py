@@ -18,34 +18,28 @@ G层桥接器 - 连接运行时三层与存储三层
   存储：   G.B        G.A        G.C
 """
 
-import time
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
 
+from .compressor import CompressionStrategy
+from .manager import GraphStorageManager
 from .types import (
-    BlueprintGraph,
-    ArchitectureGraph,
-    ChronicleGraph,
-    BNode,
-    ANode,
-    CNode,
-    BEdge,
     AEdge,
-    CEdge,
+    ANode,
+    ArchitectureGraph,
+    BEdge,
+    BlueprintGraph,
+    BNode,
+    ChronicleGraph,
+    ComponentType,
     NodeStatus,
     NodeType,
-    ComponentType,
-    NodeMetadata,
     _gen_id,
 )
-
-from .manager import GraphStorageManager
-from .compressor import CompressionStrategy
-
 
 # ============================================================
 # G层桥接器
 # ============================================================
+
 
 class GraphStorageBridge:
     """G层桥接器
@@ -98,8 +92,8 @@ class GraphStorageBridge:
             BlueprintGraph
         """
         # 提取信息
-        objective = getattr(intent_result, 'objective', None)
-        blueprint = getattr(intent_result, 'blueprint', None)
+        objective = getattr(intent_result, "objective", None)
+        blueprint = getattr(intent_result, "blueprint", None)
 
         bp_name = name or (objective.title if objective else "未命名意图")
         bp_description = objective.description if objective else ""
@@ -130,8 +124,8 @@ class GraphStorageBridge:
         execution_bp: Any,
     ):
         """从 ExecutionBlueprint 展开 G.B 节点"""
-        node_sequence = getattr(execution_bp, 'node_sequence', [])
-        kr_to_nodes = getattr(execution_bp, 'kr_to_nodes', {})
+        node_sequence = getattr(execution_bp, "node_sequence", [])  # noqa: F841
+        kr_to_nodes = getattr(execution_bp, "kr_to_nodes", {})
 
         root = bp.get_root()
         if not root:
@@ -140,7 +134,7 @@ class GraphStorageBridge:
         prev_id = "root"
 
         # 按KR分组创建模块节点
-        for kr_id, node_ids in kr_to_nodes.items():
+        for kr_id, node_ids in kr_to_nodes.items():  # noqa: B007
             # 每个KR对应一个B层模块
             module_id = f"mod_{kr_id}"
             module_name = f"模块_{kr_id}"
@@ -238,9 +232,7 @@ class GraphStorageBridge:
         Returns:
             ChronicleGraph
         """
-        chron = self.storage.create_chronicle_from_architecture(
-            architecture_id, execution_id
-        )
+        chron = self.storage.create_chronicle_from_architecture(architecture_id, execution_id)
 
         if chron:
             self._active_executions[chron.execution_id] = {
@@ -308,7 +300,11 @@ class GraphStorageBridge:
 
         cnode_id = None
         for cid, cnode in chron.nodes.items():
-            if cnode.architecture_node_id == f"a_{node_id}" or cid == node_id or cid == f"c_{node_id}":
+            if (
+                cnode.architecture_node_id == f"a_{node_id}"
+                or cid == node_id
+                or cid == f"c_{node_id}"
+            ):
                 cnode_id = cid
                 break
 
@@ -390,15 +386,14 @@ class GraphStorageBridge:
         bp = self.create_blueprint_from_intent(intent_result, name)
 
         # G.B → G.A
-        node_sequence = getattr(
-            getattr(intent_result, 'blueprint', None),
-            'node_sequence', []
-        ) if getattr(intent_result, 'blueprint', None) else []
+        node_sequence = (
+            getattr(getattr(intent_result, "blueprint", None), "node_sequence", [])
+            if getattr(intent_result, "blueprint", None)
+            else []
+        )
 
         if node_sequence:
-            arch = self.create_architecture_from_orchestration(
-                bp.id, node_sequence
-            )
+            arch = self.create_architecture_from_orchestration(bp.id, node_sequence)
         else:
             arch = self.storage.create_architecture_from_blueprint(bp.id)
 

@@ -11,7 +11,9 @@ SPEC-41-文件索引系统 v0.6 §5（P0: L1 文件名检索 / P1: L2 倒排检�
   2. 权限过滤在 search_api 层执行，索引层不过滤（SPEC §5.5）
 位置: 41-文件索引系统/core/searcher.py
 """
+
 from __future__ import annotations
+
 import json
 import math
 import subprocess
@@ -26,16 +28,18 @@ from .db import Database
 @dataclass
 class Hit:
     """单条命中结果（Evidence-First，SPEC §2.1/§4.2）。"""
-    source: Dict          # {"path": ..., "line": ...}
-    score: float          # 0.0-1.0
-    snippet: str          # 命中上下文片段
-    type: str             # doc/report/strategy/memory/case/code
+
+    source: Dict  # {"path": ..., "line": ...}
+    score: float  # 0.0-1.0
+    snippet: str  # 命中上下文片段
+    type: str  # doc/report/strategy/memory/case/code
     indexed_at: str
 
 
 @dataclass
 class SearchResult:
     """检索结果（SPEC §4.2 结构）。"""
+
     query: str
     hits: List[Hit] = field(default_factory=list)
     total: int = 0
@@ -138,18 +142,21 @@ class Searcher:
             name_start = lower_path.rfind("/") + 1
             score = 0.6 if pos >= name_start else 0.4
             score *= 1.0 / (1 + 0.05 * lower_path.count("/"))  # 浅路径微加成
-            hits.append(Hit(
-                source={"path": path, "line": None},
-                score=round(min(score, 1.0), 4),
-                snippet=path,
-                type=ftype,
-                indexed_at=indexed_at.isoformat() if indexed_at else "",
-            ))
+            hits.append(
+                Hit(
+                    source={"path": path, "line": None},
+                    score=round(min(score, 1.0), 4),
+                    snippet=path,
+                    type=ftype,
+                    indexed_at=indexed_at.isoformat() if indexed_at else "",
+                )
+            )
         return hits
 
     def _search_l2(self, query: str, filters: Optional[Dict], limit: int) -> List[Hit]:
         """L2 倒排检索：tokens 表匹配 + BM25 式打分（chunks 有数据时生效）。"""
         from .tokenizer import tokenize  # 延迟导入（P1 模块）
+
         terms = tokenize(query)
         if not terms:
             return []
@@ -190,19 +197,24 @@ class Searcher:
         for (path, position), score in sorted(chunk_scores.items(), key=lambda x: -x[1])[:limit]:
             ftype, indexed_at, heading, content = chunk_meta[(path, position)]
             snippet = (heading + " — " if heading else "") + content[:120].replace("\n", " ")
-            hits.append(Hit(
-                source={"path": path, "line": position},
-                score=round(min(score, 1.0), 4),
-                snippet=snippet,
-                type=ftype,
-                indexed_at=indexed_at.isoformat() if indexed_at else "",
-            ))
+            hits.append(
+                Hit(
+                    source={"path": path, "line": position},
+                    score=round(min(score, 1.0), 4),
+                    snippet=snippet,
+                    type=ftype,
+                    indexed_at=indexed_at.isoformat() if indexed_at else "",
+                )
+            )
         return hits
 
     # ---------- L3 向量召回（P5/D1：ChromaDB 桥接，SPEC §5） ----------
 
     _BRIDGE = [
-        "sudo", "-n", "-u", "luke",
+        "sudo",
+        "-n",
+        "-u",
+        "luke",
         "/home/luke/venv-trading/bin/python",
         "/home/ubuntu/fis-p0/scripts/vector_bridge.py",
     ]
@@ -215,6 +227,7 @@ class Searcher:
         混合检索入口如 CLI cmd=search 显式开启）。
         """
         import os
+
         if os.environ.get("FIS_L3_VECTOR", "").lower() not in ("1", "true", "yes"):
             return []
         items = self._vector_query_daemon(query, limit)
@@ -242,14 +255,18 @@ class Searcher:
             if not row:
                 continue  # 41 未索引的文件不进入结果（保持 Evidence 可溯源）
             path, ftype, indexed_at = row
-            snippet = (it.get("heading") + " — " if it.get("heading") else "") + str(it.get("snippet") or "")[:120].replace("\n", " ")
-            hits.append(Hit(
-                source={"path": path, "line": None},
-                score=round(min(float(it.get("score") or 0.0), 1.0), 4),
-                snippet=snippet,
-                type=ftype,
-                indexed_at=indexed_at.isoformat() if indexed_at else "",
-            ))
+            snippet = (it.get("heading") + " — " if it.get("heading") else "") + str(
+                it.get("snippet") or ""
+            )[:120].replace("\n", " ")
+            hits.append(
+                Hit(
+                    source={"path": path, "line": None},
+                    score=round(min(float(it.get("score") or 0.0), 1.0), 4),
+                    snippet=snippet,
+                    type=ftype,
+                    indexed_at=indexed_at.isoformat() if indexed_at else "",
+                )
+            )
         return hits
 
     _DAEMON_SOCK = "/tmp/fis_vector_bridge.sock"
@@ -258,6 +275,7 @@ class Searcher:
     def _vector_query_daemon(self, query: str, limit: int):
         """常驻桥接查询：成功返回 list，不可用/异常返回 None（降级 spawn）。"""
         import socket as _socket
+
         try:
             s = _socket.socket(_socket.AF_UNIX, _socket.SOCK_STREAM)
             s.settimeout(self._DAEMON_TIMEOUT)

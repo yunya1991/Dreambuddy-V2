@@ -14,28 +14,29 @@ n  - consolidation_enter / consolidation_exit / consolidation_breakout（盘整�
 边界：全部为描述性观察，不做方向判断，不产生交易信号。
 用法: /home/luke/venv-trading/bin/python3 gen_five_dim_batch2.py [--backfill]
 """
+
 import argparse
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _SYS_DIR = os.path.dirname(_THIS_DIR)
 sys.path.insert(0, _THIS_DIR)
-import dc_pg
+import dc_pg  # noqa: E402
 
 OUT_PATH = os.path.join(_SYS_DIR, "atomic_events.jsonl")
 STATE_PATH = os.path.join(_SYS_DIR, ".five_dim_batch2_state.json")
 
 # ── 盘整检测参数（预注册阈值，禁止事后调整）──
-CONSOL_WINDOW = 72        # 盘整观察窗口：72 根小时线
-CONSOL_RANGE_MAX = 0.06   # 窗口内振幅（high-low)/mid <= 6% 判定盘整
-CONSOL_MIN_HOURS = 24     # 持续 >= 24h 才记录盘整事件
+CONSOL_WINDOW = 72  # 盘整观察窗口：72 根小时线
+CONSOL_RANGE_MAX = 0.06  # 窗口内振幅（high-low)/mid <= 6% 判定盘整
+CONSOL_MIN_HOURS = 24  # 持续 >= 24h 才记录盘整事件
 # ── 斐波那契参数 ──
 FIB_SWING_LOOKBACK = 240  # 摆动高低点回看窗口：240 根小时线（10 天）
 FIB_LEVELS = [0.382, 0.5, 0.618]
-FIB_TOLERANCE = 0.003    # 触及容差：价格距关键位 0.3% 以内判定触及
+FIB_TOLERANCE = 0.003  # 触及容差：价格距关键位 0.3% 以内判定触及
 # ── 四年周期（减半节律，静态配置）──
 HALVING_DATES = ["2012-11-28", "2016-07-09", "2020-05-11", "2024-04-20"]
 CYCLE_YEARS = 4
@@ -63,7 +64,9 @@ def load_candles(limit=600):
         high, low, last = m.get("high"), m.get("low"), m.get("last")
         if not all(isinstance(v, (int, float)) for v in (high, low, last)):
             continue
-        candles.append({"ts": r["timestamp"], "high": float(high), "low": float(low), "last": float(last)})
+        candles.append(
+            {"ts": r["timestamp"], "high": float(high), "low": float(low), "last": float(last)}
+        )
     return candles
 
 
@@ -73,7 +76,7 @@ def detect_consolidation(candles):
     in_consolidation = False
     consol_start = None
     for i in range(CONSOL_WINDOW, len(candles)):
-        window = candles[i - CONSOL_WINDOW:i]
+        window = candles[i - CONSOL_WINDOW : i]
         hi = max(c["high"] for c in window)
         lo = min(c["low"] for c in window)
         mid = (hi + lo) / 2
@@ -86,46 +89,66 @@ def detect_consolidation(candles):
         else:
             # 盘整中：价格突破窗口边界 → 突破事件（记录方向幅度，不做方向判断）
             if c["last"] > hi:
-                events.append({
-                    "layer": "atomic", "category": "five_dim_time",
-                    "metric": "consolidation_breakout",
-                    "timestamp": c["ts"], "value": c["last"],
-                    "prev_value": hi,
-                    "reasons": [f"consolidation_breakout:up:amp={amp:.1%}:span_h={CONSOL_WINDOW}"],
-                    "source": "five_dim_batch2",
-                })
+                events.append(
+                    {
+                        "layer": "atomic",
+                        "category": "five_dim_time",
+                        "metric": "consolidation_breakout",
+                        "timestamp": c["ts"],
+                        "value": c["last"],
+                        "prev_value": hi,
+                        "reasons": [
+                            f"consolidation_breakout:up:amp={amp:.1%}:span_h={CONSOL_WINDOW}"
+                        ],
+                        "source": "five_dim_batch2",
+                    }
+                )
                 in_consolidation = False
             elif c["last"] < lo:
-                events.append({
-                    "layer": "atomic", "category": "five_dim_time",
-                    "metric": "consolidation_breakout",
-                    "timestamp": c["ts"], "value": c["last"],
-                    "prev_value": lo,
-                    "reasons": [f"consolidation_breakout:down:amp={amp:.1%}:span_h={CONSOL_WINDOW}"],
-                    "source": "five_dim_batch2",
-                })
+                events.append(
+                    {
+                        "layer": "atomic",
+                        "category": "five_dim_time",
+                        "metric": "consolidation_breakout",
+                        "timestamp": c["ts"],
+                        "value": c["last"],
+                        "prev_value": lo,
+                        "reasons": [
+                            f"consolidation_breakout:down:amp={amp:.1%}:span_h={CONSOL_WINDOW}"
+                        ],
+                        "source": "five_dim_batch2",
+                    }
+                )
                 in_consolidation = False
             elif amp > CONSOL_RANGE_MAX * 1.5:
                 # 振幅重新放大 → 盘整退出（未突破）
-                events.append({
-                    "layer": "atomic", "category": "five_dim_time",
-                    "metric": "consolidation_exit",
-                    "timestamp": c["ts"], "value": round(amp, 4),
-                    "prev_value": CONSOL_RANGE_MAX,
-                    "reasons": [f"consolidation_exit:amp={amp:.1%}:span_h={CONSOL_WINDOW}"],
-                    "source": "five_dim_batch2",
-                })
+                events.append(
+                    {
+                        "layer": "atomic",
+                        "category": "five_dim_time",
+                        "metric": "consolidation_exit",
+                        "timestamp": c["ts"],
+                        "value": round(amp, 4),
+                        "prev_value": CONSOL_RANGE_MAX,
+                        "reasons": [f"consolidation_exit:amp={amp:.1%}:span_h={CONSOL_WINDOW}"],
+                        "source": "five_dim_batch2",
+                    }
+                )
                 in_consolidation = False
     # 尾部仍在盘整 → 记录进行中事件
     if in_consolidation and consol_start:
-        events.append({
-            "layer": "atomic", "category": "five_dim_time",
-            "metric": "consolidation_ongoing",
-            "timestamp": candles[-1]["ts"], "value": CONSOL_WINDOW,
-            "prev_value": None,
-            "reasons": [f"consolidation_ongoing:since={consol_start}:span_h>={CONSOL_WINDOW}"],
-            "source": "five_dim_batch2",
-        })
+        events.append(
+            {
+                "layer": "atomic",
+                "category": "five_dim_time",
+                "metric": "consolidation_ongoing",
+                "timestamp": candles[-1]["ts"],
+                "value": CONSOL_WINDOW,
+                "prev_value": None,
+                "reasons": [f"consolidation_ongoing:since={consol_start}:span_h>={CONSOL_WINDOW}"],
+                "source": "five_dim_batch2",
+            }
+        )
     return events
 
 
@@ -134,7 +157,7 @@ def detect_fibonacci(candles):
     events = []
     last_touch = None
     for i in range(FIB_SWING_LOOKBACK, len(candles)):
-        window = candles[i - FIB_SWING_LOOKBACK:i]
+        window = candles[i - FIB_SWING_LOOKBACK : i]
         swing_hi = max(c["high"] for c in window)
         swing_lo = min(c["low"] for c in window)
         span = swing_hi - swing_lo
@@ -147,14 +170,18 @@ def detect_fibonacci(candles):
                 key = (c["ts"][:13], lvl)  # 同一小时同级别只记一次
                 if key == last_touch:
                     continue
-                events.append({
-                    "layer": "atomic", "category": "five_dim_space",
-                    "metric": f"fib_touch_{lvl}",
-                    "timestamp": c["ts"], "value": c["last"],
-                    "prev_value": round(fib_price, 2),
-                    "reasons": [f"fib_touch:{lvl}:swing=[{swing_lo:.0f},{swing_hi:.0f}]"],
-                    "source": "five_dim_batch2",
-                })
+                events.append(
+                    {
+                        "layer": "atomic",
+                        "category": "five_dim_space",
+                        "metric": f"fib_touch_{lvl}",
+                        "timestamp": c["ts"],
+                        "value": c["last"],
+                        "prev_value": round(fib_price, 2),
+                        "reasons": [f"fib_touch:{lvl}:swing=[{swing_lo:.0f},{swing_hi:.0f}]"],
+                        "source": "five_dim_batch2",
+                    }
+                )
                 last_touch = key
     return events
 
@@ -180,27 +207,37 @@ def detect_cycle(candles):
         days_since = (now - last_halving).days
         # 距下次预期减半（上次减半 + 4 年，近似 1458 天）
         days_to_next = round(CYCLE_YEARS * 365.25) - days_since
-        events.append({
-            "layer": "atomic", "category": "five_dim_cycle",
-            "metric": "halving_cycle_distance",
-            "timestamp": c["ts"], "value": days_since,
-            "prev_value": days_to_next,
-            "reasons": [f"cycle_halving_distance:since={last_halving.date()}:days={days_since}:to_next~{days_to_next}"],
-            "source": "five_dim_batch2",
-        })
+        events.append(
+            {
+                "layer": "atomic",
+                "category": "five_dim_cycle",
+                "metric": "halving_cycle_distance",
+                "timestamp": c["ts"],
+                "value": days_since,
+                "prev_value": days_to_next,
+                "reasons": [
+                    f"cycle_halving_distance:since={last_halving.date()}:days={days_since}:to_next~{days_to_next}"
+                ],
+                "source": "five_dim_batch2",
+            }
+        )
     return events
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--backfill", action="store_true", help="全量重算（默认增量：只处理新数据）")
+    parser.add_argument(
+        "--backfill", action="store_true", help="全量重算（默认增量：只处理新数据）"
+    )
     args = parser.parse_args()
 
     candles = load_candles()
     if len(candles) < CONSOL_WINDOW + 10:
         print(f"[WARN] K 线数据不足（{len(candles)} 条），跳过")
         return
-    print(f"[OK] 加载 BTC/USDT 小时线 {len(candles)} 条（{candles[0]['ts'][:16]} ~ {candles[-1]['ts'][:16]}）")
+    print(
+        f"[OK] 加载 BTC/USDT 小时线 {len(candles)} 条（{candles[0]['ts'][:16]} ~ {candles[-1]['ts'][:16]}）"
+    )
 
     state = _load_state()
     last_ts = "" if args.backfill else state.get("last_ts", "")

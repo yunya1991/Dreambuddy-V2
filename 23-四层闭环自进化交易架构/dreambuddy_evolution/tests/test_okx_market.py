@@ -1,9 +1,9 @@
 """test_okx_market.py — OKXMarketAdapter 单元测试
 覆盖: K线获取+格式转换, ticker spread, ma_200, FO降级, vol_5/20
 """
-from __future__ import annotations
 
-import math
+from __future__ import annotations  # noqa: I001
+
 
 import numpy as np
 import pytest
@@ -14,8 +14,9 @@ from dreambuddy_evolution.adapters.okx_market import OKXMarketAdapter
 class MockOKXClient:
     """模拟 OKX 客户端"""
 
-    def __init__(self, candles=None, ticker=None, positions=None,
-                 long_short_ratio=None, open_interest=None):
+    def __init__(
+        self, candles=None, ticker=None, positions=None, long_short_ratio=None, open_interest=None
+    ):
         self._candles = candles or []
         self._ticker = ticker or {}
         self._positions = positions
@@ -46,12 +47,16 @@ def _make_candles(n=200, base_price=50000.0):
     candles = []
     for i in range(n):
         p = base_price + i * 10
-        candles.append({
-            "ts": str(1700000000000 + i * 3600000),
-            "o": str(p), "h": str(p + 50),
-            "l": str(p - 50), "c": str(p),
-            "vol": str(1000 + i),
-        })
+        candles.append(
+            {
+                "ts": str(1700000000000 + i * 3600000),
+                "o": str(p),
+                "h": str(p + 50),
+                "l": str(p - 50),
+                "c": str(p),
+                "vol": str(1000 + i),
+            }
+        )
     return list(reversed(candles))  # 降序 (新→旧)
 
 
@@ -154,13 +159,17 @@ class TestOKXMarketAdapter:
 
     def test_crash_doesnt_propagate(self):
         """okx_client 方法抛异常不传播"""
+
         class CrashClient:
             def get_kline(self, *a, **kw):
                 raise RuntimeError("network error")
+
             def get_ticker(self, *a, **kw):
                 raise RuntimeError("timeout")
+
             def get_positions(self, *a, **kw):
                 raise RuntimeError("auth fail")
+
             def _get(self, *a, **kw):
                 raise RuntimeError("nope")
 

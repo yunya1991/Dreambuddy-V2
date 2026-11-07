@@ -25,14 +25,14 @@ MDD 计算说明（v2 修正 2026-09-03）：
   PYTHONPATH="$PWD:$PWD/scripts/memory_l4:$PWD/scripts/memory_l4/force_vector" \
     python3 scripts/memory_l4/force_vector/bdsm_phase3_backtest.py
 """
+
 from __future__ import annotations
 
 import json
 import os
 import sys
-import math
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 
 # ── 路径设置 ──────────────────────────────────────────────────────
 _THIS_DIR = Path(__file__).resolve().parent
@@ -44,12 +44,12 @@ for p in (str(_THIS_DIR), str(_MEM_L4_DIR), str(_BASE_11)):
 
 # ── 导入 Phase 0 函数 ─────────────────────────────────────────────
 from bdsm_snapshot_writer import (  # noqa: E402
+    _DEFAULT_SNAPSHOT_DIR,
     BDSM_COINS,
-    _compute_technical_assessment,
     _compute_cvs,
+    _compute_technical_assessment,
     _compute_trend_stop,
     _compute_value_exit,
-    _DEFAULT_SNAPSHOT_DIR,
     load_today_snapshot,
 )
 
@@ -71,6 +71,7 @@ B_BUDGET = 167.0  # 子池预算
 def fetch_klines(coin: str, bar: str = "1D", limit: int = KLINE_LIMIT) -> list:
     """从 OKX 公开 API 获取 K 线。FAIL-OPEN：异常 → 空列表。"""
     import requests
+
     inst_id = f"{coin}-USDT-SWAP"
     url = "https://www.okx.com/api/v5/market/history-candles"
     params = {"instId": inst_id, "bar": bar, "limit": str(limit)}
@@ -86,14 +87,16 @@ def fetch_klines(coin: str, bar: str = "1D", limit: int = KLINE_LIMIT) -> list:
         # 反转为时间正序
         klines = []
         for k in reversed(raw):
-            klines.append({
-                "ts": int(k[0]),
-                "o": float(k[1]),
-                "h": float(k[2]),
-                "l": float(k[3]),
-                "c": float(k[4]),
-                "v": float(k[5]),
-            })
+            klines.append(
+                {
+                    "ts": int(k[0]),
+                    "o": float(k[1]),
+                    "h": float(k[2]),
+                    "l": float(k[3]),
+                    "c": float(k[4]),
+                    "v": float(k[5]),
+                }
+            )
         return klines
     except Exception as exc:
         print(f"[{coin}] 获取K线失败: {exc}")
@@ -105,8 +108,7 @@ def load_bds_scores() -> dict:
     try:
         snap = load_today_snapshot()
         coins = snap.get("coins") or {}
-        return {k.upper(): float(v.get("bds_score", 0.0) or 0.0)
-                for k, v in coins.items()}
+        return {k.upper(): float(v.get("bds_score", 0.0) or 0.0) for k, v in coins.items()}
     except Exception:
         return {}
 
@@ -161,18 +163,18 @@ def get_bds_for_backtest(historical: dict, today_scores: dict, coin: str) -> flo
 # A组模拟：一次性建仓 + 固定TP/SL
 # ═════════════════════════════════════════════════════════════════
 
+
 def simulate_group_a(klines: list, bds_score: float) -> dict:
     """A组：在回测窗口第一天一次性建仓，固定 TP 6% / SL 15%。
 
     返回新增 daily_equity: list[(day_idx, equity)] — 日级 mark-to-market 权益曲线。
     """
-    _empty = {"trades": [], "pnl_total": 0.0, "win_count": 0,
-              "trade_count": 0, "daily_equity": []}
+    _empty = {"trades": [], "pnl_total": 0.0, "win_count": 0, "trade_count": 0, "daily_equity": []}
     if len(klines) < MA_LONG + 5:
         return _empty
 
     window = klines[-BACKTEST_DAYS:]
-    pre = klines[-(BACKTEST_DAYS + MA_LONG):-BACKTEST_DAYS]
+    pre = klines[-(BACKTEST_DAYS + MA_LONG) : -BACKTEST_DAYS]  # noqa: F841
 
     entry_day = window[0]
     entry_px = entry_day["c"]
@@ -219,9 +221,15 @@ def simulate_group_a(klines: list, bds_score: float) -> dict:
         daily_equity.append((i, round(eq, 4)))
 
     return {
-        "trades": [{"entry_px": entry_px, "exit_px": exit_px,
-                     "pnl_pct": pnl_pct, "pnl_usdt": pnl_usdt,
-                     "reason": exit_reason}],
+        "trades": [
+            {
+                "entry_px": entry_px,
+                "exit_px": exit_px,
+                "pnl_pct": pnl_pct,
+                "pnl_usdt": pnl_usdt,
+                "reason": exit_reason,
+            }
+        ],
         "pnl_total": pnl_usdt,
         "win_count": 1 if win else 0,
         "trade_count": 1,
@@ -233,32 +241,32 @@ def simulate_group_a(klines: list, bds_score: float) -> dict:
 # B组模拟：CVS驱动分批建仓 + 趋势止损 + 价值发现止盈
 # ═════════════════════════════════════════════════════════════════
 
+
 def simulate_group_b(klines: list, bds_score: float) -> dict:
     """B组：CVS 驱动分批建仓 + 趋势止损 + 价值发现止盈。
 
     返回新增 daily_equity: list[(day_idx, equity)] — 日级 mark-to-market 权益曲线。
     """
-    _empty = {"trades": [], "pnl_total": 0.0, "win_count": 0,
-              "trade_count": 0, "daily_equity": []}
+    _empty = {"trades": [], "pnl_total": 0.0, "win_count": 0, "trade_count": 0, "daily_equity": []}
     if len(klines) < MA_LONG + 5:
         return _empty
 
     window = klines[-BACKTEST_DAYS:]
-    pre = klines[-(BACKTEST_DAYS + MA_LONG):-BACKTEST_DAYS]
+    pre = klines[-(BACKTEST_DAYS + MA_LONG) : -BACKTEST_DAYS]
 
     accumulated = 0.0
     trades = []
     position_open = False
     entry_px_avg = 0.0
     total_notional = 0.0
-    realized_pnl = 0.0      # 累计已实现 PnL（部分平仓产生）
+    realized_pnl = 0.0  # 累计已实现 PnL（部分平仓产生）
     daily_equity = []
-    last_entry_day = -1     # P1-2 §3.5 ⑨: 加仓间隔追踪
-    WAR_STATE = "ALLOW"     # P1-2 §3.5 ⑤: 回测中默认 ALLOW（实盘由五计庙算决定）
+    last_entry_day = -1  # P1-2 §3.5 ⑨: 加仓间隔追踪
+    WAR_STATE = "ALLOW"  # P1-2 §3.5 ⑤: 回测中默认 ALLOW（实盘由五计庙算决定）
 
     for i, day in enumerate(window):
         # 用 pre + window[:i+1] 作为历史数据计算技术面
-        hist = pre + window[:i + 1]
+        hist = pre + window[: i + 1]
         if len(hist) < MA_LONG:
             # K线不足计算MA，记录日级权益后跳过
             daily_equity.append((i, round(B_BUDGET + realized_pnl, 4)))
@@ -290,8 +298,14 @@ def simulate_group_b(klines: list, bds_score: float) -> dict:
                 pnl_pct = (day["c"] - entry_px_avg) / entry_px_avg if entry_px_avg > 0 else 0
                 pnl_usdt = total_notional * pnl_pct
                 realized_pnl += pnl_usdt
-                trades.append({"exit_px": day["c"], "pnl_pct": pnl_pct,
-                               "pnl_usdt": pnl_usdt, "reason": f"trend_value_{best}"})
+                trades.append(
+                    {
+                        "exit_px": day["c"],
+                        "pnl_pct": pnl_pct,
+                        "pnl_usdt": pnl_usdt,
+                        "reason": f"trend_value_{best}",
+                    }
+                )
                 position_open = False
                 accumulated = 0.0
                 entry_px_avg = 0.0
@@ -304,9 +318,15 @@ def simulate_group_b(klines: list, bds_score: float) -> dict:
                 pnl_pct = (day["c"] - entry_px_avg) / entry_px_avg if entry_px_avg > 0 else 0
                 pnl_usdt = total_notional * reduce_ratio * pnl_pct
                 realized_pnl += pnl_usdt
-                trades.append({"exit_px": day["c"], "pnl_pct": pnl_pct,
-                               "pnl_usdt": pnl_usdt, "reason": f"trend_value_{best}"})
-                total_notional *= (1 - reduce_ratio)
+                trades.append(
+                    {
+                        "exit_px": day["c"],
+                        "pnl_pct": pnl_pct,
+                        "pnl_usdt": pnl_usdt,
+                        "reason": f"trend_value_{best}",
+                    }
+                )
+                total_notional *= 1 - reduce_ratio
                 if total_notional < 5.0:  # 剩余太少 → 全平
                     position_open = False
                     accumulated = 0.0
@@ -328,13 +348,13 @@ def simulate_group_b(klines: list, bds_score: float) -> dict:
         #   ⑨ 距上次加仓 >= 1 日 (日级=24h > 4h)
         #   已有: ③CVS>=0.3  ⑥可用资金>0
         entry_ok = (
-            cvs >= 0.3                          # ③ CVS 达标
-            and val_pct < 50.0                  # P0 BUG-1: 低估区
-            and bds_score >= 0.0                # ① 基本面未恶化
-            and WAR_STATE == "ALLOW"            # ⑤ 宏观允许
-            and value_action != "full_exit"     # ⑦ 未触发出场信号
-            and trend_action == "none"          # ⑧ 未触发趋势止损
-            and (i - last_entry_day) >= 1       # ⑨ 加仓间隔 ≥ 1 日
+            cvs >= 0.3  # ③ CVS 达标
+            and val_pct < 50.0  # P0 BUG-1: 低估区
+            and bds_score >= 0.0  # ① 基本面未恶化
+            and WAR_STATE == "ALLOW"  # ⑤ 宏观允许
+            and value_action != "full_exit"  # ⑦ 未触发出场信号
+            and trend_action == "none"  # ⑧ 未触发趋势止损
+            and (i - last_entry_day) >= 1  # ⑨ 加仓间隔 ≥ 1 日
         )
         if entry_ok:
             remaining = B_BUDGET - accumulated
@@ -345,7 +365,9 @@ def simulate_group_b(klines: list, bds_score: float) -> dict:
 
                 # 更新加权平均入场价
                 if total_notional > 0:
-                    entry_px_avg = (entry_px_avg * total_notional + day["c"] * batch) / (total_notional + batch)
+                    entry_px_avg = (entry_px_avg * total_notional + day["c"] * batch) / (
+                        total_notional + batch
+                    )
                 else:
                     entry_px_avg = day["c"]
 
@@ -367,8 +389,9 @@ def simulate_group_b(klines: list, bds_score: float) -> dict:
         pnl_pct = (last_px - entry_px_avg) / entry_px_avg if entry_px_avg > 0 else 0
         pnl_usdt = total_notional * pnl_pct
         realized_pnl += pnl_usdt
-        trades.append({"exit_px": last_px, "pnl_pct": pnl_pct,
-                        "pnl_usdt": pnl_usdt, "reason": "window_end"})
+        trades.append(
+            {"exit_px": last_px, "pnl_pct": pnl_pct, "pnl_usdt": pnl_usdt, "reason": "window_end"}
+        )
         # 最后一天权益 = 预算 + 总已实现 PnL
         if daily_equity:
             daily_equity[-1] = (daily_equity[-1][0], round(B_BUDGET + realized_pnl, 4))
@@ -391,6 +414,7 @@ def simulate_group_b(klines: list, bds_score: float) -> dict:
 # ═════════════════════════════════════════════════════════════════
 # MDD 计算
 # ═════════════════════════════════════════════════════════════════
+
 
 def compute_mdd_daily(daily_equity_per_coin: list) -> float:
     """日级最大回撤（百分比）。
@@ -430,6 +454,7 @@ def compute_mdd_daily(daily_equity_per_coin: list) -> float:
 # 主函数
 # ═════════════════════════════════════════════════════════════════
 
+
 def main():
     print("=" * 70)
     print("BDSM Phase 3 A/B 回测 — spec §5.3")
@@ -450,7 +475,7 @@ def main():
             bds_source = f"历史{total_hist_days}日均值"
         else:
             bds_source = f"历史{total_hist_days}日(不足7日,仍用代理)"
-    
+
     print(f"\nBDS Score ({bds_source} — 基本面日变化极小):")
     for coin in sorted(BDSM_COINS):
         bds = get_bds_for_backtest(historical_bds, bds_scores, coin)
@@ -462,7 +487,7 @@ def main():
     results_b = {}
     all_klines = {}
 
-    print(f"\n获取 K 线 + 模拟交易:")
+    print("\n获取 K 线 + 模拟交易:")
     for coin in sorted(BDSM_COINS):
         klines = fetch_klines(coin)
         all_klines[coin] = klines
@@ -476,8 +501,10 @@ def main():
         results_a[coin] = ra
         results_b[coin] = rb
 
-        print(f"  {coin}: A组 PnL={ra['pnl_total']:+.2f}U 胜={ra['win_count']}/{ra['trade_count']} | "
-              f"B组 PnL={rb['pnl_total']:+.2f}U 胜={rb['win_count']}/{rb['trade_count']}")
+        print(
+            f"  {coin}: A组 PnL={ra['pnl_total']:+.2f}U 胜={ra['win_count']}/{ra['trade_count']} | "
+            f"B组 PnL={rb['pnl_total']:+.2f}U 胜={rb['win_count']}/{rb['trade_count']}"
+        )
 
     if not results_a:
         print("\n❌ 无可用回测数据（K线获取失败或不足）")
@@ -503,7 +530,7 @@ def main():
             # 区分：reason == "window_end" → 完整交易（计入）
             #      reason 以 "trend_value_full_exit" → 完整交易（计入）
             #      reason 以 "trend_value_reduce" → 战术性减仓（不计入分母）
-            is_reduce = ("reduce" in reason and "full_exit" not in reason)
+            is_reduce = "reduce" in reason and "full_exit" not in reason
             if is_reduce:
                 continue  # 战术性减仓 → 不计入分母
             total_trades_b += 1
@@ -522,8 +549,9 @@ def main():
     mdd_b = compute_mdd_daily(daily_eq_b)
 
     # 反向丢弃率：BDS < 0.3 跳过的比例
-    skip_count = sum(1 for coin in results_a
-                     if results_a[coin].get("skip_reason") == "bds_below_0.3")
+    skip_count = sum(
+        1 for coin in results_a if results_a[coin].get("skip_reason") == "bds_below_0.3"
+    )
     reverse_drop_rate = skip_count / len(BDSM_COINS) * 100 if BDSM_COINS else 0
 
     # 胜率
@@ -534,27 +562,32 @@ def main():
     mdd_ratio = mdd_b / mdd_a * 100 if mdd_a > 0 else 0
 
     # 可建仓币数（BDS ≥ 0.3）
-    tradeable_count = sum(1 for coin in results_a
-                          if not results_a[coin].get("skip_reason"))
+    tradeable_count = sum(1 for coin in results_a if not results_a[coin].get("skip_reason"))
 
     print("\n" + "=" * 70)
     print("回测汇总")
     print("=" * 70)
     print(f"{'指标':<25} {'A组(原BCRM)':>15} {'B组(CVS+价值)':>15} {'验收标准':>15} {'结论':>8}")
     print("-" * 70)
-    print(f"{'总PnL (U)':<25} {total_pnl_a:>+15.2f} {total_pnl_b:>+15.2f} {'B>A':>15} "
-          f"{'✅' if total_pnl_b > total_pnl_a else '⚠️':>8}")
+    print(
+        f"{'总PnL (U)':<25} {total_pnl_a:>+15.2f} {total_pnl_b:>+15.2f} {'B>A':>15} "
+        f"{'✅' if total_pnl_b > total_pnl_a else '⚠️':>8}"
+    )
     print(f"{'胜率(参考)':<25} {win_rate_a:>14.1f}% {win_rate_b:>14.1f}% {'—':>15} {'—':>8}")
     print(f"{'MDD':<25} {mdd_a:>14.1f}% {mdd_b:>14.1f}% {'—':>15} {'—':>8}")
-    print(f"{'MDD比率(B/A)':<25} {'—':>15} {mdd_ratio:>14.1f}% {'≤120%':>15} "
-          f"{'✅' if mdd_ratio <= 120 else '⚠️':>8}")
-    print(f"{'可建仓币数':<25} {'—':>15} {tradeable_count:>15} {'≥3':>15} "
-          f"{'✅' if tradeable_count >= 3 else '⚠️':>8}")
+    print(
+        f"{'MDD比率(B/A)':<25} {'—':>15} {mdd_ratio:>14.1f}% {'≤120%':>15} "
+        f"{'✅' if mdd_ratio <= 120 else '⚠️':>8}"
+    )
+    print(
+        f"{'可建仓币数':<25} {'—':>15} {tradeable_count:>15} {'≥3':>15} "
+        f"{'✅' if tradeable_count >= 3 else '⚠️':>8}"
+    )
     print(f"{'反向丢弃率(参考)':<25} {'—':>15} {reverse_drop_rate:>14.1f}% {'—':>15} {'—':>8}")
     print(f"{'总交易数':<25} {total_trades_a:>15} {total_trades_b:>15} {'—':>15} {'—':>8}")
 
     # 验收结论（v2 门槛 2026-09-03：PnL+MDD双门槛，用户确认方案A）
-    all_pass = (total_pnl_b > total_pnl_a and mdd_ratio <= 120 and tradeable_count >= 3)
+    all_pass = total_pnl_b > total_pnl_a and mdd_ratio <= 120 and tradeable_count >= 3
     print("\n" + "=" * 70)
     if all_pass:
         print("✅ Phase 3 验收通过 — 三项标准全部达标")
@@ -583,8 +616,10 @@ def main():
             "win_rate": win_rate_a,
             "mdd": mdd_a,
             "trades": total_trades_a,
-            "per_coin": {k: {"pnl": v["pnl_total"], "wins": v["win_count"],
-                             "trades": v["trade_count"]} for k, v in results_a.items()},
+            "per_coin": {
+                k: {"pnl": v["pnl_total"], "wins": v["win_count"], "trades": v["trade_count"]}
+                for k, v in results_a.items()
+            },
         },
         "group_b": {
             "total_pnl": total_pnl_b,
@@ -594,8 +629,10 @@ def main():
             "reverse_drop_rate": reverse_drop_rate,
             "tradeable_count": tradeable_count,
             "trades": total_trades_b,
-            "per_coin": {k: {"pnl": v["pnl_total"], "wins": v["win_count"],
-                             "trades": v["trade_count"]} for k, v in results_b.items()},
+            "per_coin": {
+                k: {"pnl": v["pnl_total"], "wins": v["win_count"], "trades": v["trade_count"]}
+                for k, v in results_b.items()
+            },
         },
         "verdict": "PASS" if all_pass else "FAIL",
         "threshold_version": "v2 (2026-09-03): PnL B>A + MDD ratio ≤120% + tradeable ≥3",

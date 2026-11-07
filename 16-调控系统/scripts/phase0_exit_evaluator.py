@@ -23,12 +23,12 @@ from datetime import datetime
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent.parent  # dreambuddy-v2/
-MODULE_DIR = Path(__file__).parent.parent       # 16-调控系统/
+MODULE_DIR = Path(__file__).parent.parent  # 16-调控系统/
 ARTIFACTS_DIR = MODULE_DIR / "artifacts" / "exit-evaluations"
 CORE_DIR = MODULE_DIR / "core"
 
 sys.path.insert(0, str(CORE_DIR))
-from unified_position_query import fetch_all_positions
+from unified_position_query import fetch_all_positions  # noqa: E402
 
 
 def fetch_market_snapshot() -> dict:
@@ -49,7 +49,11 @@ def fetch_market_snapshot() -> dict:
     for source_fn in sources:
         try:
             result = source_fn()
-            if result and result.get("instruments") and result["instruments"].get("BTC", {}).get("price", 0) > 0:
+            if (
+                result
+                and result.get("instruments")
+                and result["instruments"].get("BTC", {}).get("price", 0) > 0
+            ):
                 snapshot.update(result)
                 return snapshot
         except Exception:
@@ -62,6 +66,7 @@ def fetch_market_snapshot() -> dict:
 def _fetch_from_hyperliquid() -> dict:
     """从 Hyperliquid 获取行情"""
     import requests
+
     r = requests.post(
         "https://api.hyperliquid.xyz/info",
         json={"type": "allMids"},
@@ -83,6 +88,7 @@ def _fetch_from_hyperliquid() -> dict:
 def _fetch_from_coingecko() -> dict:
     """从 CoinGecko 获取行情"""
     import requests
+
     coins = {"bitcoin": "BTC", "ethereum": "ETH", "solana": "SOL"}
     ids = ",".join(coins.keys())
     r = requests.get(
@@ -103,6 +109,7 @@ def _fetch_from_coingecko() -> dict:
 def _fetch_from_binance() -> dict:
     """从 Binance 获取行情"""
     import requests
+
     coins = ["BTC", "ETH", "SOL"]
     instruments = {}
     for coin in coins:
@@ -125,6 +132,7 @@ def _fetch_from_binance() -> dict:
 def _fetch_from_okx() -> dict:
     """从 OKX 获取行情"""
     import requests
+
     coins = ["BTC", "ETH", "SOL"]
     instruments = {}
     for coin in coins:
@@ -169,30 +177,36 @@ def simplified_a1_analysis(market: dict, positions: list) -> dict:
         short_count = sum(1 for d in directions if d == "SHORT")
 
         if long_count > short_count and change_24h < 0:
-            contradiction_list.append({
-                "id": "C_POS_001",
-                "name": "持仓方向与市场走势背离",
-                "dimension": "C3_技术面",
-                "description": f"多头持仓 {long_count} 个，但 BTC 24h 跌幅 {abs(change_24h):.2f}%",
-                "severity": "HIGH" if abs(change_24h) > 3 else "MEDIUM",
-            })
+            contradiction_list.append(
+                {
+                    "id": "C_POS_001",
+                    "name": "持仓方向与市场走势背离",
+                    "dimension": "C3_技术面",
+                    "description": f"多头持仓 {long_count} 个，但 BTC 24h 跌幅 {abs(change_24h):.2f}%",
+                    "severity": "HIGH" if abs(change_24h) > 3 else "MEDIUM",
+                }
+            )
         if short_count > long_count and change_24h > 0:
-            contradiction_list.append({
-                "id": "C_POS_002",
-                "name": "空头持仓与市场上涨背离",
-                "dimension": "C3_技术面",
-                "description": f"空头持仓 {short_count} 个，但 BTC 24h 涨幅 {change_24h:.2f}%",
-                "severity": "HIGH" if abs(change_24h) > 3 else "MEDIUM",
-            })
+            contradiction_list.append(
+                {
+                    "id": "C_POS_002",
+                    "name": "空头持仓与市场上涨背离",
+                    "dimension": "C3_技术面",
+                    "description": f"空头持仓 {short_count} 个，但 BTC 24h 涨幅 {change_24h:.2f}%",
+                    "severity": "HIGH" if abs(change_24h) > 3 else "MEDIUM",
+                }
+            )
 
     if not contradiction_list:
-        contradiction_list.append({
-            "id": "C_DEF_001",
-            "name": "暂无显著矛盾",
-            "dimension": "C6_时序",
-            "description": "当前市场状态与持仓方向基本一致",
-            "severity": "LOW",
-        })
+        contradiction_list.append(
+            {
+                "id": "C_DEF_001",
+                "name": "暂无显著矛盾",
+                "dimension": "C6_时序",
+                "description": "当前市场状态与持仓方向基本一致",
+                "severity": "LOW",
+            }
+        )
 
     return {
         "phase": "A1_simplified",
@@ -249,7 +263,7 @@ def simplified_a3_strategy(a1_result: dict, a2_result: dict, positions: list) ->
     简化版 A3 战略合成
     阶段0：基于 A1+A2 输出战略建议
     """
-    regime = a1_result.get("market_regime", "RANGE")
+    regime = a1_result.get("market_regime", "RANGE")  # noqa: F841
     path = a2_result.get("least_resistance_path", "NEUTRAL")
     confidence = a2_result.get("confidence", "LOW")
 
@@ -307,7 +321,7 @@ def evaluate_position_exit(position: dict, a1: dict, a2: dict, a3: dict) -> dict
     """
     direction = position.get("direction", "UNKNOWN")
     strategy_dir = a3.get("strategy_direction", "NEUTRAL")
-    regime = a1.get("market_regime", "RANGE")
+    regime = a1.get("market_regime", "RANGE")  # noqa: F841
     confidence = a2.get("confidence", "LOW")
 
     action = "HOLD"
@@ -374,7 +388,9 @@ def generate_exit_evaluation() -> dict:
     print("\n[1/5] 查询统一持仓...")
     positions_data = fetch_all_positions()
     all_positions = positions_data.get("all_positions", [])
-    print(f"  → 共 {positions_data['total_positions']} 个持仓，来自 {positions_data['total_systems']} 个系统")
+    print(
+        f"  → 共 {positions_data['total_positions']} 个持仓，来自 {positions_data['total_systems']} 个系统"
+    )
     for sys_name, status in positions_data.get("system_status", {}).items():
         print(f"    · {sys_name}: {status}")
 
@@ -382,7 +398,9 @@ def generate_exit_evaluation() -> dict:
     market = fetch_market_snapshot()
     btc_info = market.get("instruments", {}).get("BTC", {})
     if btc_info:
-        print(f"  → BTC ${btc_info.get('price', 0):,.0f}，24h {btc_info.get('change_24h_pct', 0):+.2f}%")
+        print(
+            f"  → BTC ${btc_info.get('price', 0):,.0f}，24h {btc_info.get('change_24h_pct', 0):+.2f}%"
+        )
     else:
         print(f"  → 市场数据获取失败: {market.get('error', 'unknown')}")
 
@@ -399,7 +417,9 @@ def generate_exit_evaluation() -> dict:
     for pos in all_positions:
         ev = evaluate_position_exit(pos, a1, a2, a3)
         evaluations.append(ev)
-        print(f"  [{ev['recommended_action']}] {pos.get('system')}/{pos.get('symbol')} {pos.get('direction')} — {ev['reason']}")
+        print(
+            f"  [{ev['recommended_action']}] {pos.get('system')}/{pos.get('symbol')} {pos.get('direction')} — {ev['reason']}"
+        )
 
     if not evaluations:
         print("  → 当前无持仓，跳过逐持仓评估")
@@ -462,11 +482,11 @@ def generate_markdown_report(report: dict) -> str:
     lines = []
     lines.append("---")
     lines.append(f'title: "离场评估报告 - {ts}"')
-    lines.append('department: trading')
+    lines.append("department: trading")
     lines.append('chain_phase: "A9-Phase0"')
     lines.append(f'date: "{ts}"')
-    lines.append('type: exit_evaluation')
-    lines.append('status: completed')
+    lines.append("type: exit_evaluation")
+    lines.append("status: completed")
     lines.append('tags: "phase0 mvp exit-evaluation"')
     lines.append('by_a_phase: "A1+A2+A3+A9"')
     lines.append("---")

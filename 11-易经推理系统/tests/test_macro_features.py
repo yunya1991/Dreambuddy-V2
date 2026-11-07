@@ -7,15 +7,15 @@
 4. MacroFeatures 部分缺失数据处理
 5. FeatureRegistry 集成（macro 模块注册）
 """
+
 import numpy as np
 import pandas as pd
 import pytest
-from datetime import datetime, timezone, timedelta
-
 
 # ============================================================
 # 测试数据 fixtures
 # ============================================================
+
 
 @pytest.fixture
 def sample_ohlcv():
@@ -38,24 +38,28 @@ def sample_macro_df():
     """模拟宏观数据（每日频率，覆盖K线时间范围）"""
     np.random.seed(123)
     dates = pd.date_range("2024-01-01", periods=25, freq="1D", tz="UTC")
-    return pd.DataFrame({
-        "fear_greed_index": np.random.randint(20, 80, 25),
-        "fear_greed_trend_7d": np.random.randn(25) * 5,
-        "funding_rate": np.random.randn(25) * 0.0005,
-        "stablecoin_supply": np.random.uniform(100e9, 150e9, 25),
-        "tvl": np.random.uniform(50e9, 100e9, 25),
-        "hash_rate": np.random.uniform(400e9, 600e9, 25),
-        "miners_revenue": np.random.uniform(20e6, 40e6, 25),
-        "smart_money_direction": np.random.uniform(-0.5, 0.5, 25),
-        "social_hype_score": np.random.uniform(0, 100, 25),
-        "market_cap": np.random.uniform(500e9, 900e9, 25),
-        "ath_drop_pct": np.random.uniform(-60, 0, 25),
-    }, index=dates)
+    return pd.DataFrame(
+        {
+            "fear_greed_index": np.random.randint(20, 80, 25),
+            "fear_greed_trend_7d": np.random.randn(25) * 5,
+            "funding_rate": np.random.randn(25) * 0.0005,
+            "stablecoin_supply": np.random.uniform(100e9, 150e9, 25),
+            "tvl": np.random.uniform(50e9, 100e9, 25),
+            "hash_rate": np.random.uniform(400e9, 600e9, 25),
+            "miners_revenue": np.random.uniform(20e6, 40e6, 25),
+            "smart_money_direction": np.random.uniform(-0.5, 0.5, 25),
+            "social_hype_score": np.random.uniform(0, 100, 25),
+            "market_cap": np.random.uniform(500e9, 900e9, 25),
+            "ath_drop_pct": np.random.uniform(-60, 0, 25),
+        },
+        index=dates,
+    )
 
 
 # ============================================================
 # 测试 align_to_klines 时间对齐
 # ============================================================
+
 
 class TestAlignToKlines:
     """测试宏观数据对齐到K线时间戳"""
@@ -80,12 +84,10 @@ class TestAlignToKlines:
         # 创建宏观数据：时间戳与K线完全对齐
         macro_data = pd.DataFrame(
             {"value": [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0]},
-            index=kline_idx.copy()
+            index=kline_idx.copy(),
         )
 
-        aligned = MacroDataFetcher.align_to_klines(
-            macro_data, kline_idx, lookahead_guard=1
-        )
+        aligned = MacroDataFetcher.align_to_klines(macro_data, kline_idx, lookahead_guard=1)
 
         # 第0根K线：宏观数据时间戳等于K线时间戳，减去guard后为前1h，无数据 → NaN
         assert pd.isna(aligned["value"].iloc[0])
@@ -102,14 +104,9 @@ class TestAlignToKlines:
         kline_idx = pd.date_range("2024-01-01 00:00", periods=72, freq="1h", tz="UTC")
         # 日级宏观数据（3天）
         macro_idx = pd.date_range("2024-01-01 00:00", periods=3, freq="1D", tz="UTC")
-        macro_data = pd.DataFrame(
-            {"fgi": [50.0, 60.0, 70.0]},
-            index=macro_idx
-        )
+        macro_data = pd.DataFrame({"fgi": [50.0, 60.0, 70.0]}, index=macro_idx)
 
-        aligned = MacroDataFetcher.align_to_klines(
-            macro_data, kline_idx, lookahead_guard=1
-        )
+        aligned = MacroDataFetcher.align_to_klines(macro_data, kline_idx, lookahead_guard=1)
 
         # 第0根K线（1/1 00:00）：guard后为12/31 23:00，无宏观数据 → NaN
         assert pd.isna(aligned["fgi"].iloc[0])
@@ -136,13 +133,14 @@ class TestAlignToKlines:
 # 测试 MacroFeatures 特征计算
 # ============================================================
 
+
 class TestMacroFeatures:
     """测试宏观特征模块"""
 
     def test_full_macro_data(self, sample_ohlcv, sample_macro_df):
         """完整宏观数据应生成25个特征"""
-        from scripts.memory_l4.bcrm2.macro_features import MacroFeatures
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
+        from scripts.memory_l4.bcrm2.macro_features import MacroFeatures
 
         # 对齐宏观数据到K线
         macro_aligned = MacroDataFetcher.align_to_klines(
@@ -159,12 +157,26 @@ class TestMacroFeatures:
 
         # 检查关键特征存在
         expected_cols = [
-            "fgi_zscore", "fgi_extreme_fear", "fgi_extreme_greed", "fgi_divergence",
-            "funding_rate_zscore", "funding_extreme_positive", "funding_extreme_negative",
-            "stablecoin_growth", "liquidity_expanding", "tvl_change_7d",
-            "hash_rate_trend", "miners_revenue_zscore", "miner_accumulation",
-            "smart_money_direction", "social_hype_zscore", "hype_extreme",
-            "market_cap_rank", "ath_drop_pct", "undervalued", "supply_ratio",
+            "fgi_zscore",
+            "fgi_extreme_fear",
+            "fgi_extreme_greed",
+            "fgi_divergence",
+            "funding_rate_zscore",
+            "funding_extreme_positive",
+            "funding_extreme_negative",
+            "stablecoin_growth",
+            "liquidity_expanding",
+            "tvl_change_7d",
+            "hash_rate_trend",
+            "miners_revenue_zscore",
+            "miner_accumulation",
+            "smart_money_direction",
+            "social_hype_zscore",
+            "hype_extreme",
+            "market_cap_rank",
+            "ath_drop_pct",
+            "undervalued",
+            "supply_ratio",
         ]
         for col in expected_cols:
             assert col in features.columns, f"缺少特征: {col}"
@@ -191,7 +203,7 @@ class TestMacroFeatures:
                 "fear_greed_index": np.random.randint(20, 80, len(sample_ohlcv)),
                 "funding_rate": np.random.randn(len(sample_ohlcv)) * 0.0005,
             },
-            index=sample_ohlcv.index
+            index=sample_ohlcv.index,
         )
 
         mf = MacroFeatures()
@@ -207,8 +219,8 @@ class TestMacroFeatures:
 
     def test_no_inf_values(self, sample_ohlcv, sample_macro_df):
         """特征中不应有 inf 值"""
-        from scripts.memory_l4.bcrm2.macro_features import MacroFeatures
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
+        from scripts.memory_l4.bcrm2.macro_features import MacroFeatures
 
         macro_aligned = MacroDataFetcher.align_to_klines(
             sample_macro_df, sample_ohlcv.index, lookahead_guard=1
@@ -226,7 +238,7 @@ class TestMacroFeatures:
 
         macro = pd.DataFrame(
             {"fear_greed_index": [10, 80, 50, 20, 90, 30, 70, 25, 75, 15] * 50},
-            index=sample_ohlcv.index
+            index=sample_ohlcv.index,
         )
         mf = MacroFeatures()
         features = mf.compute(sample_ohlcv, macro_df=macro)
@@ -247,6 +259,7 @@ class TestMacroFeatures:
 # ============================================================
 # 测试 FeatureRegistry 集成
 # ============================================================
+
 
 class TestMacroRegistryIntegration:
     """测试 macro 模块在 FeatureRegistry 中的注册和调用"""

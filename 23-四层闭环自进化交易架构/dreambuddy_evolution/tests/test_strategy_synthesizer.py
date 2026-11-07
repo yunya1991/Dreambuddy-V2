@@ -8,6 +8,7 @@ test_strategy_synthesizer — StrategySynthesizer 单元测试
   - 完整 synthesize 流程
   - FAIL-OPEN（空输入/异常不 crash）
 """
+
 import sys
 from pathlib import Path
 
@@ -18,7 +19,7 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.core.strategy_synthesizer import StrategySynthesizer
+from dreambuddy_evolution.core.strategy_synthesizer import StrategySynthesizer  # noqa: E402
 
 
 # ------------------------------------------------------------------
@@ -71,8 +72,18 @@ def sample_gene_library():
             },
         ],
         "combinations": [
-            {"combo_id": "CB-001", "condition_ids": ["CD-ADX-GT25-TREND"], "action_ids": ["AC-001"], "ess": 0.8},
-            {"combo_id": "CB-002", "condition_ids": ["CD-RSI30-BOLL-TOUCH"], "action_ids": ["AC-002"], "ess": 0.6},
+            {
+                "combo_id": "CB-001",
+                "condition_ids": ["CD-ADX-GT25-TREND"],
+                "action_ids": ["AC-001"],
+                "ess": 0.8,
+            },
+            {
+                "combo_id": "CB-002",
+                "condition_ids": ["CD-RSI30-BOLL-TOUCH"],
+                "action_ids": ["AC-002"],
+                "ess": 0.6,
+            },
         ],
     }
 
@@ -218,7 +229,9 @@ class TestBacktestValidate:
 # 4. 完整 synthesize 流程
 # ------------------------------------------------------------------
 class TestSynthesize:
-    def test_synthesize_full_pipeline(self, synth, sample_trades, sample_gene_library, sample_prices):
+    def test_synthesize_full_pipeline(
+        self, synth, sample_trades, sample_gene_library, sample_prices
+    ):
         """完整流程：学习→变异→验证→筛选"""
         result = synth.synthesize(
             historical_trades=sample_trades,
@@ -235,7 +248,9 @@ class TestSynthesize:
         assert len(result["candidates"]) > 0
         assert len(result["validated"]) == len(result["candidates"])
 
-    def test_synthesize_accepted_pass_threshold(self, synth, sample_trades, sample_gene_library, sample_prices):
+    def test_synthesize_accepted_pass_threshold(
+        self, synth, sample_trades, sample_gene_library, sample_prices
+    ):
         """accepted_genes 中的基因必须 passes_threshold=True"""
         result = synth.synthesize(
             historical_trades=sample_trades,
@@ -257,7 +272,9 @@ class TestSynthesize:
         )
         assert len(result["candidates"]) > 0
 
-    def test_synthesize_stats_updated(self, synth, sample_trades, sample_gene_library, sample_prices):
+    def test_synthesize_stats_updated(
+        self, synth, sample_trades, sample_gene_library, sample_prices
+    ):
         """统计计数器更新"""
         result = synth.synthesize(
             historical_trades=sample_trades,

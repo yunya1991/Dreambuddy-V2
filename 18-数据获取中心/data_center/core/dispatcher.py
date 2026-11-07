@@ -6,6 +6,7 @@ category="web" 走爬虫轨（M3 实现）。
 M5 新增：通过 monitoring 参数注入 MonitoringBundle，实现调用统计、数据质量、告警三
 件套的非侵入式埋点；monitoring 为 None 时启用默认 bundle。
 """
+
 from __future__ import annotations
 
 import os
@@ -22,7 +23,13 @@ from data_center.core.registry import Registry, default_registry
 # 自动注入 20-数据清洗中心路径，使 data_cleaning 可被 import（Silver 清洗链依赖）
 # dispatcher.py 位于 18-数据获取中心/data_center/core/，向上 3 层到 dreambuddy-v2/，再加 20-数据清洗中心/
 _CLEANING_ROOT = os.path.abspath(
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir, os.pardir, "20-数据清洗中心")
+    os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        os.pardir,
+        os.pardir,
+        os.pardir,
+        "20-数据清洗中心",
+    )
 )
 if os.path.isdir(_CLEANING_ROOT) and _CLEANING_ROOT not in sys.path:
     sys.path.insert(0, _CLEANING_ROOT)
@@ -36,61 +43,76 @@ _DEFAULT_ENV = os.path.join(os.path.dirname(__file__), "..", "..", "config", ".e
 
 def _register_defaults(reg: Registry) -> None:
     """注册内置 collector（延迟 import 避免循环依赖）。"""
-    from data_center.collectors.chain.ccxt_collector import CcxtCollector
-    from data_center.collectors.chain.defillama_collector import DeFiLlamaCollector
-    from data_center.collectors.chain.etherscan_collector import EtherscanCollector
-    from data_center.collectors.chain.panewslab_collector import PanewslabCollector
-    from data_center.collectors.chain.stablecoin_transparency_collector import StablecoinTransparencyCollector
-    # 🆕 P0 数据源补全
-    from data_center.collectors.chain.fear_greed_collector import FearGreedCollector
-    from data_center.collectors.chain.mempool_collector import MempoolCollector
+    from data_center.collectors.bdsm.aave_native_collector import AaveNativeCollector
+    from data_center.collectors.bdsm.circle_native_collector import CircleNativeCollector
+    from data_center.collectors.bdsm.hype_native_collector import HypeNativeCollector
+
+    # 🆕 Phase G：BDSM 原生数据采集器（项目官网爬虫）
+    from data_center.collectors.bdsm.pump_native_collector import PumpNativeCollector
+    from data_center.collectors.bdsm.solana_native_collector import SolanaNativeCollector
+    from data_center.collectors.bdsm.uniswap_native_collector import UniswapNativeCollector
     from data_center.collectors.chain.bgeometrics_collector import BGeometricsCollector
+    from data_center.collectors.chain.binance_funding_rate_collector import (
+        BinanceFundingRateCollector,
+    )
+    from data_center.collectors.chain.blockchain_info_collector import BlockchainInfoCollector
+    from data_center.collectors.chain.blockscout_collector import BlockscoutCollector
+    from data_center.collectors.chain.ccxt_collector import CcxtCollector
     from data_center.collectors.chain.coinglass_collector import CoinglassCollector
+    from data_center.collectors.chain.defillama_collector import DeFiLlamaCollector
+
     # 🆕 P1 数据源补全
     from data_center.collectors.chain.deribit_options_collector import DeribitOptionsCollector
-    from data_center.collectors.chain.blockscout_collector import BlockscoutCollector
-    from data_center.collectors.chain.fear_greed_enhanced_collector import FearGreedEnhancedCollector
-    from data_center.collectors.finance.cftc_cot_collector import CftcCotCollector
+    from data_center.collectors.chain.etherscan_collector import EtherscanCollector
+
+    # 🆕 P0 数据源补全
+    from data_center.collectors.chain.fear_greed_collector import FearGreedCollector
+    from data_center.collectors.chain.fear_greed_enhanced_collector import (
+        FearGreedEnhancedCollector,
+    )
+
     # 🆕 P2 数据源补全
     from data_center.collectors.chain.google_trends_collector import GoogleTrendsCollector
-    from data_center.collectors.chain.blockchain_info_collector import BlockchainInfoCollector
-    from data_center.collectors.coin.coinmarketcap_collector import CoinMarketCapCollector
-    from data_center.collectors.news.cryptopanic_collector import CryptoPanicCollector
-    from data_center.collectors.finance.sosovalue_collector import SoSoValueCollector
+
+    # 🆕 P0 基本面缺失数据补全（Binance 免费 API + 派生）
+    from data_center.collectors.chain.long_short_ratio_collector import LongShortRatioCollector
+    from data_center.collectors.chain.mempool_collector import MempoolCollector
+    from data_center.collectors.chain.panewslab_collector import PanewslabCollector
+    from data_center.collectors.chain.social_volume_collector import SocialVolumeCollector
+    from data_center.collectors.chain.stablecoin_transparency_collector import (
+        StablecoinTransparencyCollector,
+    )
+    from data_center.collectors.chain.utxo_age_collector import UTXOAgeDistributionCollector
     from data_center.collectors.coin.coingecko_collector import CoinGeckoCollector
-    from data_center.collectors.finance.yfinance_collector import YFinanceCollector
+    from data_center.collectors.coin.coinmarketcap_collector import CoinMarketCapCollector
+    from data_center.collectors.finance.cftc_cot_collector import CftcCotCollector
     from data_center.collectors.finance.etf_flow_collector import EtfFlowCollector
-    from data_center.collectors.macro.fred_collector import FredCollector
-    from data_center.collectors.macro.fed_event_collector import FedEventCollector
+    from data_center.collectors.finance.sosovalue_collector import SoSoValueCollector
+    from data_center.collectors.finance.yfinance_collector import YFinanceCollector
+
     # SPEC-Phase2 §6.1: 加密技术升级事件（CoinMarketCal）
     from data_center.collectors.macro.coinmarketcal_collector import CoinMarketCalCollector
-    # SPEC-Phase2 §6.3: SEC 执法行动 / 加密政策事件
-    from data_center.collectors.macro.sec_rss_collector import SecRssCollector
+
     # SPEC-Phase2 §6.4: 国会听证会（加密监管相关）
     from data_center.collectors.macro.congressional_hearing_collector import (
         CongressionalHearingCollector,
     )
+    from data_center.collectors.macro.fed_event_collector import FedEventCollector
+    from data_center.collectors.macro.fred_collector import FredCollector
+
+    # SPEC-Phase2 §6.3: SEC 执法行动 / 加密政策事件
+    from data_center.collectors.macro.sec_rss_collector import SecRssCollector
+    from data_center.collectors.news.cointelegraph_cn import CointelegraphCnCollector
+    from data_center.collectors.news.cryptopanic_collector import CryptoPanicCollector
     from data_center.collectors.news.feedparser_collector import FeedparserCollector
     from data_center.collectors.news.gdelt_collector import GdeltCollector
     from data_center.collectors.news.odaily_newsflash import OdailyNewsflashCollector
+
+    # 🆕 Scrapling 增强新闻源
+    from data_center.collectors.news.okx_announcement import OkxAnnouncementCollector
     from data_center.collectors.news.rsshub_collector import RsshubCollector
     from data_center.collectors.news.tavily_collector import TavilyCollector
     from data_center.collectors.news.theblockbeats_dataview import TheBlockBeatsDataviewCollector
-    # 🆕 Scrapling 增强新闻源
-    from data_center.collectors.news.okx_announcement import OkxAnnouncementCollector
-    from data_center.collectors.news.cointelegraph_cn import CointelegraphCnCollector
-    # 🆕 Phase G：BDSM 原生数据采集器（项目官网爬虫）
-    from data_center.collectors.bdsm.pump_native_collector import PumpNativeCollector
-    from data_center.collectors.bdsm.aave_native_collector import AaveNativeCollector
-    from data_center.collectors.bdsm.hype_native_collector import HypeNativeCollector
-    from data_center.collectors.bdsm.uniswap_native_collector import UniswapNativeCollector
-    from data_center.collectors.bdsm.circle_native_collector import CircleNativeCollector
-    from data_center.collectors.bdsm.solana_native_collector import SolanaNativeCollector
-    # 🆕 P0 基本面缺失数据补全（Binance 免费 API + 派生）
-    from data_center.collectors.chain.long_short_ratio_collector import LongShortRatioCollector
-    from data_center.collectors.chain.binance_funding_rate_collector import BinanceFundingRateCollector
-    from data_center.collectors.chain.utxo_age_collector import UTXOAgeDistributionCollector
-    from data_center.collectors.chain.social_volume_collector import SocialVolumeCollector
 
     reg.register("macro", "fred", FredCollector)
     reg.register("macro", "cme", FedEventCollector)
@@ -220,10 +242,23 @@ class DataCenter:
         bundle = self.monitoring
         start_ns = time.perf_counter_ns()
         # DSH trace 标志位（EN_DSH_TRACE=true 启用，供 34-前端应用训练系统 P1 采集器消费）
-        _en_dsh_trace = os.environ.get("EN_DSH_TRACE", "false").lower() in {"1", "true", "on", "yes"}
-        _dsh = {"runner_error": None, "silver_attempted": False,
-                "silver_gate_passed": None, "silver_error": None,
-                "dal_write_attempted": False} if _en_dsh_trace else None
+        _en_dsh_trace = os.environ.get("EN_DSH_TRACE", "false").lower() in {
+            "1",
+            "true",
+            "on",
+            "yes",
+        }
+        _dsh = (
+            {
+                "runner_error": None,
+                "silver_attempted": False,
+                "silver_gate_passed": None,
+                "silver_error": None,
+                "dal_write_attempted": False,
+            }
+            if _en_dsh_trace
+            else None
+        )
         try:
             result = runner(params)
         except Exception as exc:
@@ -243,15 +278,16 @@ class DataCenter:
                 )
                 bundle.metrics.record(metric)
 
-                bundle.alerts.emit(Alert(
-                    level=AlertLevel.ERROR,
-                    title=f"采集异常: {source}/{category}",
-                    message=(
-                        f"{type(exc).__name__}: {exc}"
-                        f" — duration_ms={round(duration_ms, 2)}"
-                    ),
-                    tags=["fetch_error", source, category, type(exc).__name__],
-                ))
+                bundle.alerts.emit(
+                    Alert(
+                        level=AlertLevel.ERROR,
+                        title=f"采集异常: {source}/{category}",
+                        message=(
+                            f"{type(exc).__name__}: {exc}" f" — duration_ms={round(duration_ms, 2)}"
+                        ),
+                        tags=["fetch_error", source, category, type(exc).__name__],
+                    )
+                )
             if _dsh is not None:
                 self._emit_dsh_trace(category, source, _dsh, duration_ms, 0)
             raise
@@ -262,37 +298,55 @@ class DataCenter:
         # ★ 硬门禁：QualityGate 未通过或清洗链异常 → 拦截，返回空列表（异常数据仅保留在Bronze层审计）
         _en_silver = os.environ.get("EN_SILVER", "true").lower() not in {"0", "false", "off", "no"}
         # SILVER_ALLOW_BRONZE_FALLBACK=true 时紧急回退到 Bronze（仅用于故障演练，默认关闭）
-        _allow_bronze_fallback = os.environ.get("SILVER_ALLOW_BRONZE_FALLBACK", "false").lower() in {"1", "true", "on", "yes"}
+        _allow_bronze_fallback = os.environ.get(
+            "SILVER_ALLOW_BRONZE_FALLBACK", "false"
+        ).lower() in {"1", "true", "on", "yes"}
         if _en_silver and result:
             if _dsh is not None:
                 _dsh["silver_attempted"] = True
-            _fail_open = os.environ.get("SILVER_FAIL_OPEN", "true").lower() not in {"0", "false", "off", "no"}
+            _fail_open = os.environ.get("SILVER_FAIL_OPEN", "true").lower() not in {
+                "0",
+                "false",
+                "off",
+                "no",
+            }
             try:
                 from data_cleaning.pipeline import DataCleaningPipeline, PipelineConfig
+
                 _hours = int(os.environ.get("SILVER_FRESHNESS_HOURS", "48"))
                 from datetime import timedelta as _td
-                _pipe = DataCleaningPipeline(PipelineConfig(
-                    enforce_hard_block=False,
-                    fail_open=_fail_open,
-                    freshness_threshold=_td(hours=_hours),
-                    category=category,   # ← news → DedupAlign FLAT 模式，保留每条 sub_category 语义
-                ))
+
+                _pipe = DataCleaningPipeline(
+                    PipelineConfig(
+                        enforce_hard_block=False,
+                        fail_open=_fail_open,
+                        freshness_threshold=_td(hours=_hours),
+                        category=category,  # ← news → DedupAlign FLAT 模式，保留每条 sub_category 语义
+                    )
+                )
                 _silver = _pipe.clean(result, source=source, category=category)
                 # Gate passed → 用 Silver DF 还原 records + 写入 DAL
                 if _silver.gate_passed:
                     if _dsh is not None:
                         _dsh["silver_gate_passed"] = True
                     from data_cleaning.adapters import cleaned_df_to_records as _to_recs
-                    result = _to_recs(_silver.df, source=source, category=category,
-                                       sub_category=result[0].sub_category if result else "")
+
+                    result = _to_recs(
+                        _silver.df,
+                        source=source,
+                        category=category,
+                        sub_category=result[0].sub_category if result else "",
+                    )
                     # P1 打通：Silver → 19-DAL 写入（fail-open）
                     try:
                         from data_cleaning.dal_sink import DalSink
+
                         _sub = result[0].sub_category if result else ""
                         if _dsh is not None:
                             _dsh["dal_write_attempted"] = True
-                        DalSink().write_silver(_silver, source=source,
-                                               category=category, sub_category=_sub)
+                        DalSink().write_silver(
+                            _silver, source=source, category=category, sub_category=_sub
+                        )
                     except Exception:  # noqa: BLE001
                         pass  # DAL 写入失败不影响主链路
                 else:
@@ -301,28 +355,39 @@ class DataCenter:
                     # ★ 硬门禁拦截：QualityGate 未通过 → 丢弃原始 Bronze 数据，返回空列表
                     # 异常数据仅保留在 Bronze 层（sink_sqlite.records）用于审计，不进入交易热路径
                     import logging as _logging
+
                     _silver_issues = _silver.quality_report or []
                     _logging.getLogger(__name__).warning(
                         "[Silver硬门禁] QualityGate未通过, 拦截Bronze数据: source=%s category=%s issues=%s",
-                        source, category,
+                        source,
+                        category,
                         [(i.code.value, str(i.message)[:80]) for i in _silver_issues][:3],
                     )
                     # 把 Silver 检测到的 quality issues 转发给 monitoring bundle 发出告警
                     # （否则拦截后 result=[]，后续 quality.check_all 只会发 EMPTY_RESULT，丢失 CONTRACT_INVALID 等告警）
                     if self.monitoring is not None and _silver_issues:
                         from data_center.monitoring.alerting import Alert, AlertLevel
+
                         for _issue in _silver_issues:
                             _issue_level = (
                                 AlertLevel.ERROR
                                 if _issue.code.value == "CONTRACT_INVALID"
                                 else AlertLevel.WARNING
                             )
-                            self.monitoring.alerts.emit(Alert(
-                                level=_issue_level,
-                                title=f"质量告警: {_issue.code.value}",
-                                message=_issue.message,
-                                tags=["quality", _issue.code.value, source, category, "silver_gate_blocked"],
-                            ))
+                            self.monitoring.alerts.emit(
+                                Alert(
+                                    level=_issue_level,
+                                    title=f"质量告警: {_issue.code.value}",
+                                    message=_issue.message,
+                                    tags=[
+                                        "quality",
+                                        _issue.code.value,
+                                        source,
+                                        category,
+                                        "silver_gate_blocked",
+                                    ],
+                                )
+                            )
                     result = [] if not _allow_bronze_fallback else result
             except Exception as _silver_exc:  # noqa: BLE001
                 if not _fail_open:
@@ -331,9 +396,11 @@ class DataCenter:
                     _dsh["silver_error"] = type(_silver_exc).__name__
                 # fail-open: Silver 清洗链异常 → 同样拦截，返回空（不回退到Bronze脏数据）
                 import logging as _logging
+
                 _logging.getLogger(__name__).warning(
                     "[Silver硬门禁] 清洗链异常, 拦截Bronze数据: source=%s category=%s",
-                    source, category,
+                    source,
+                    category,
                 )
                 result = [] if not _allow_bronze_fallback else result
 
@@ -369,17 +436,19 @@ class DataCenter:
                     if issue.code.value == "CONTRACT_INVALID"
                     else AlertLevel.WARNING
                 )
-                bundle.alerts.emit(Alert(
-                    level=issue_level,
-                    title=f"质量告警: {issue.code.value}",
-                    message=issue.message,
-                    tags=[
-                        "quality",
-                        issue.code.value,
-                        source,
-                        category,
-                    ],
-                ))
+                bundle.alerts.emit(
+                    Alert(
+                        level=issue_level,
+                        title=f"质量告警: {issue.code.value}",
+                        message=issue.message,
+                        tags=[
+                            "quality",
+                            issue.code.value,
+                            source,
+                            category,
+                        ],
+                    )
+                )
 
         return result
 
@@ -395,8 +464,9 @@ class DataCenter:
         return source in {"glassnode", "gdelt"}
 
     @staticmethod
-    def _emit_dsh_trace(category: str, source: str, dsh: dict,
-                        duration_ms: float, result_count: int) -> None:
+    def _emit_dsh_trace(
+        category: str, source: str, dsh: dict, duration_ms: float, result_count: int
+    ) -> None:
         """EN_DSH_TRACE=true 时输出路由链路 JSON 行到 stderr（供 P1 采集器消费）。
 
         node_sequence 组装:
@@ -408,6 +478,7 @@ class DataCenter:
             silver_gate_passed=False → + silver.gate_block (failure)
         """
         import json as _json
+
         nodes = ["dispatcher.fetch", "registry.get", "_fetch_monitored", "collector.fetch"]
         if dsh.get("runner_error"):
             nodes[-1] = "collector.error"
@@ -427,14 +498,20 @@ class DataCenter:
                 outcome = "failure"
         else:
             outcome = "success"
-        _line = _json.dumps({
-            "event": "dsh_trace",
-            "category": category,
-            "source": source,
-            "node_sequence": nodes,
-            "outcome": outcome,
-            "duration_ms": round(duration_ms, 2),
-            "result_count": result_count,
-        }, ensure_ascii=False) + "\n"
+        _line = (
+            _json.dumps(
+                {
+                    "event": "dsh_trace",
+                    "category": category,
+                    "source": source,
+                    "node_sequence": nodes,
+                    "outcome": outcome,
+                    "duration_ms": round(duration_ms, 2),
+                    "result_count": result_count,
+                },
+                ensure_ascii=False,
+            )
+            + "\n"
+        )
         sys.stderr.write(_line)
         sys.stderr.flush()

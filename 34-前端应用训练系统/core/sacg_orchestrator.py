@@ -18,15 +18,18 @@
 FAIL-OPEN: 每层异常被隔离记录（errors），不抛出；信号自身 degraded 由 route_signal
 字段表达，与编排层 degraded（阶段异常）分离。
 """
+
 from __future__ import annotations
+
 import json
 import os
-
+import uuid
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, List, Optional
 
 from core.c_drive_v3_router import CDriveV3Router
 from core.cognitive_loop import close_loop
+from core.event_emitter import emit_event
 from core.okr_acceptance import VERDICT_PASS, evaluate_nodes
 from core.okr_nodes import decompose_okr_nodes
 from core.route_confidence import L1_DIRECT, L2_HANDOFF, evaluate_route
@@ -39,8 +42,6 @@ from core.sufficiency import (
     evaluate_entry_sufficiency,
     evaluate_plan_sufficiency,
 )
-from core.event_emitter import emit_event
-import uuid
 
 
 def _gen_trace_id() -> str:
@@ -140,21 +141,25 @@ class SLayerPlanner:
     不确定区间（NEED_CLARIFY）产结构化选项问用户。
     """
 
-    def __init__(self, *, profiles: Optional[Dict[str, Dict[str, Any]]] = None,
-                 kickoff_keywords: Optional[tuple] = None,
-                 clarification_options: Optional[List[str]] = None,
-                 rea_fn: Optional[Callable] = None):
+    def __init__(
+        self,
+        *,
+        profiles: Optional[Dict[str, Dict[str, Any]]] = None,
+        kickoff_keywords: Optional[tuple] = None,
+        clarification_options: Optional[List[str]] = None,
+        rea_fn: Optional[Callable] = None,
+    ):
         self._profiles = profiles if profiles is not None else S_LAYER_INTENT_PROFILES
         self._kickoff_keywords = kickoff_keywords or ("开工",)
-        self._clarification_options = (
-            clarification_options or list(DEFAULT_CLARIFICATION_OPTIONS))
+        self._clarification_options = clarification_options or list(DEFAULT_CLARIFICATION_OPTIONS)
         # SPEC-v1.4 §3.5: REA 逆向解析工程（可选，FAIL-OPEN）
         self._rea_fn = rea_fn
 
     # -------- 内部 --------
 
-    def _expand(self, message: str, hint: Optional[str],
-                memories: List[Any], depth: Optional[str]) -> Dict[str, Any]:
+    def _expand(
+        self, message: str, hint: Optional[str], memories: List[Any], depth: Optional[str]
+    ) -> Dict[str, Any]:
         """S1 规划展开（意图档案驱动，P3.2 逻辑上移）。"""
         profile = self._profiles.get(hint or "")
         if profile is None:
@@ -190,6 +195,7 @@ class SLayerPlanner:
     @staticmethod
     def _top_experience(memories: List[Any], top_k: int = 3) -> List[str]:
         """广义认知系统经验注入：按 score 取 top_k 记忆要点（避免踩坑省去调研）。"""
+
         def _score(m: Any) -> float:
             if hasattr(m, "score"):
                 return float(m.score)
@@ -207,8 +213,7 @@ class SLayerPlanner:
         ranked = sorted(memories, key=_score, reverse=True)
         return [c for c in (_content(m) for m in ranked[:top_k]) if c]
 
-    def _rea_breakdown(self, message: str,
-                       hint: Optional[str]) -> tuple:
+    def _rea_breakdown(self, message: str, hint: Optional[str]) -> tuple:
         """REA 逆向解析拆解 → engineering_okr（为 A 层提供明确工程 OKR）。
 
         Returns: (engineering_okr | None, degraded: bool) — 全程 FAIL-OPEN。
@@ -224,19 +229,22 @@ class SLayerPlanner:
         okr: List[Dict[str, Any]] = []
         for ev in report.get("evidence") or []:
             if isinstance(ev, dict):
-                okr.append({
-                    "okr": ev.get("statement") or str(ev),
-                    "evidence_id": ev.get("evidence_id"),
-                    "source": "rea_evidence",
-                })
+                okr.append(
+                    {
+                        "okr": ev.get("statement") or str(ev),
+                        "evidence_id": ev.get("evidence_id"),
+                        "source": "rea_evidence",
+                    }
+                )
         for gap in report.get("known_gaps") or []:
             okr.append({"okr": f"补齐: {gap}", "source": "rea_known_gap"})
         return (okr or None), False
 
     # -------- 主入口 --------
 
-    def __call__(self, message: str, l1_intent_hint: Optional[str],
-                 memories: List[Any]) -> Dict[str, Any]:
+    def __call__(
+        self, message: str, l1_intent_hint: Optional[str], memories: List[Any]
+    ) -> Dict[str, Any]:
         hint = l1_intent_hint
         memories = memories or []
         profile = self._profiles.get(hint or "")
@@ -255,18 +263,20 @@ class SLayerPlanner:
         if entry.state == SUFFICIENT_DIRECT:
             out["plan"] = {
                 "intent_hint": hint,
-                "spec": {"intent": hint, "depth": depth,
-                         "source": "sufficient_direct",
-                         "version": "s-layer-v2",
-                         "recall_count": len(memories)},
+                "spec": {
+                    "intent": hint,
+                    "depth": depth,
+                    "source": "sufficient_direct",
+                    "version": "s-layer-v2",
+                    "recall_count": len(memories),
+                },
                 "plan_items": [message],
             }
             out["action"] = SUFFICIENT_DIRECT
             return out
 
         if entry.state == NEED_CLARIFY:
-            out["plan"] = {"intent_hint": hint, "spec": None,
-                           "plan_items": [message]}
+            out["plan"] = {"intent_hint": hint, "spec": None, "plan_items": [message]}
             out["action"] = NEED_CLARIFY
             out["clarification"] = {
                 "options": list(self._clarification_options),
@@ -277,7 +287,8 @@ class SLayerPlanner:
         if entry.state == NEED_RESEARCH:
             # 决策点 4：首版打桩（记录需求，不实际执行调研）
             out["research_request"] = {
-                "message": message, "intent_hint": hint,
+                "message": message,
+                "intent_hint": hint,
                 "match_score": entry.match_score,
                 "case_density": entry.case_density,
                 "mode": "stub",
@@ -301,8 +312,7 @@ class SLayerPlanner:
             plan["plan_items"].append(GENERIC_DEEPENING_ITEM)
             if plan.get("spec") is not None:
                 plan["spec"]["depth"] = current_depth
-            exit_eval = evaluate_plan_sufficiency(
-                plan, memories, depth=current_depth)
+            exit_eval = evaluate_plan_sufficiency(plan, memories, depth=current_depth)
         out["plan_sufficiency"] = exit_eval.to_dict()
 
         if exit_eval.state == EARLY_TERMINATE:
@@ -369,8 +379,9 @@ class SACGOrchestrator:
     # -------- 默认骨架实现（P3.2/P3.3/P3.5 替换） --------
 
     @staticmethod
-    def _default_s_planner(message: str, l1_intent_hint: Optional[str],
-                           memories: List[Any]) -> Dict[str, Any]:
+    def _default_s_planner(
+        message: str, l1_intent_hint: Optional[str], memories: List[Any]
+    ) -> Dict[str, Any]:
         """S 层默认规划（P3.2 深化）：消费 l1_intent_hint 先验。
 
         hint 命中 S_LAYER_INTENT_PROFILES → 按意图档案展开 plan_items，
@@ -401,10 +412,12 @@ class SACGOrchestrator:
         # engineering_okr 存在时优先消费（更具体的 OKR 节点）
         return decompose_okr_nodes(plan)
 
-    def _default_g_closer(self, plan: Dict[str, Any],
-                          node_results: List[Dict[str, Any]],
-                          acceptance: Optional[Dict[str, Any]] = None
-                          ) -> Dict[str, Any]:
+    def _default_g_closer(
+        self,
+        plan: Dict[str, Any],
+        node_results: List[Dict[str, Any]],
+        acceptance: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """P3.5: G 层四分流沉淀路由（规则化，禁新阈值，全程 FAIL-OPEN）。
 
         消费 A 层验收结果:
@@ -421,24 +434,32 @@ class SACGOrchestrator:
         try:
             if isinstance(acceptance, dict):
                 verdict = acceptance.get("verdict")
-                node_ids = [str(r.get("node_id")) for r in (node_results or [])
-                            if isinstance(r, dict) and r.get("node_id")]
+                node_ids = [
+                    str(r.get("node_id"))
+                    for r in (node_results or [])
+                    if isinstance(r, dict) and r.get("node_id")
+                ]
                 # 案例分流
                 if verdict == VERDICT_PASS and node_ids:
-                    sediments.append({"type": "case", "mode": SEDIMENT_ASYNC_STUB,
-                                      "nodes": node_ids})
+                    sediments.append(
+                        {"type": "case", "mode": SEDIMENT_ASYNC_STUB, "nodes": node_ids}
+                    )
                 # 流程分流
                 red_flags = [str(x) for x in (acceptance.get("red_flags") or [])]
                 if red_flags:
-                    sediments.append({"type": "skill", "mode": SEDIMENT_ASYNC_STUB,
-                                      "red_flags": red_flags})
+                    sediments.append(
+                        {"type": "skill", "mode": SEDIMENT_ASYNC_STUB, "red_flags": red_flags}
+                    )
                 # 文档分流
-                pending = [str(v.get("node_id"))
-                           for v in (acceptance.get("node_verdicts") or [])
-                           if isinstance(v, dict) and v.get("verdict") == "degraded"]
+                pending = [
+                    str(v.get("node_id"))
+                    for v in (acceptance.get("node_verdicts") or [])
+                    if isinstance(v, dict) and v.get("verdict") == "degraded"
+                ]
                 if pending:
-                    sediments.append({"type": "doc", "mode": SEDIMENT_ASYNC_STUB,
-                                      "pending": pending})
+                    sediments.append(
+                        {"type": "doc", "mode": SEDIMENT_ASYNC_STUB, "pending": pending}
+                    )
         except Exception:
             # FAIL-OPEN: 分流路由异常不影响认知闭环
             sediments = []
@@ -448,9 +469,11 @@ class SACGOrchestrator:
         cognitive = close_loop(
             decision="g_layer_closure",
             outcome=outcome,
-            content=(f"G层收尾: verdict={verdict or 'none'} "
-                     f"nodes={len(node_results or [])} "
-                     f"sediments={[s['type'] for s in sediments]}"),
+            content=(
+                f"G层收尾: verdict={verdict or 'none'} "
+                f"nodes={len(node_results or [])} "
+                f"sediments={[s['type'] for s in sediments]}"
+            ),
             tags="SACG,G层,四分流",
             record_fn=self._record_fn,
             verify_fn=self._verify_fn,
@@ -459,6 +482,7 @@ class SACGOrchestrator:
         # P1.5 埋点（spec §9.1 SACG 域采集点）：编排收尾摘要写入案例库，FAIL-OPEN
         try:
             from datetime import datetime as _dt
+
             _case = {
                 "ts": _dt.now().isoformat(timespec="seconds"),
                 "schema_version": "v2",
@@ -471,14 +495,13 @@ class SACGOrchestrator:
                 },
             }
             _store = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                "l1_case_store.jsonl")
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "l1_case_store.jsonl"
+            )
             with open(_store, "a", encoding="utf-8") as _f:
                 _f.write(json.dumps(_case, ensure_ascii=False) + "\n")
         except Exception:
             pass
-        return {"compressed": True, "settled": True,
-                "sediments": sediments, "cognitive": cognitive}
+        return {"compressed": True, "settled": True, "sediments": sediments, "cognitive": cognitive}
 
     # -------- 召回 --------
 
@@ -486,18 +509,22 @@ class SACGOrchestrator:
         if self._recall_fn is None:
             return []
         try:
-            return self._recall_fn(
-                context=f"{hint or ''}::{message}".strip(":"),
-                top_k=5,
-                min_quality="C",
-            ) or []
+            return (
+                self._recall_fn(
+                    context=f"{hint or ''}::{message}".strip(":"),
+                    top_k=5,
+                    min_quality="C",
+                )
+                or []
+            )
         except Exception:
             return []
 
     # -------- C 层：节点执行（委托 C-drive 决策门） --------
 
-    def _run_node(self, node: Dict[str, Any],
-                  l1_intent_hint: Optional[str] = None) -> Dict[str, Any]:
+    def _run_node(
+        self, node: Dict[str, Any], l1_intent_hint: Optional[str] = None
+    ) -> Dict[str, Any]:
         node_id = str(node.get("node_id") or "N?")
         node_result = SimpleNamespace(
             confidence=float(node.get("confidence", 0.5)),
@@ -559,9 +586,15 @@ class SACGOrchestrator:
 
         errors: List[str] = []
         _trace_id = _gen_trace_id()
-        emit_event(_trace_id, "dreamos", "orchestrator", "sacg",
-                   "graph_execute.start", "success",
-                   meta={"l1_intent_hint": l1_intent_hint})
+        emit_event(
+            _trace_id,
+            "dreamos",
+            "orchestrator",
+            "sacg",
+            "graph_execute.start",
+            "success",
+            meta={"l1_intent_hint": l1_intent_hint},
+        )
 
         # ── S 层：认知驱动规划入口（SPEC-v1.4 充分性状态机） ──
         action = "PROCEED"
@@ -574,10 +607,16 @@ class SACGOrchestrator:
         except Exception as e:
             errors.append(f"{STAGE_S}:{type(e).__name__}:{e}")
             plan = {"intent_hint": l1_intent_hint, "plan_items": []}
-        emit_event(_trace_id, "dreamos", STAGE_S, "s_planner",
-                   "layer_complete", "success" if not errors else "failure",
-                   error=None if not errors else errors[-1],
-                   meta={"action": action})
+        emit_event(
+            _trace_id,
+            "dreamos",
+            STAGE_S,
+            "s_planner",
+            "layer_complete",
+            "success" if not errors else "failure",
+            error=None if not errors else errors[-1],
+            meta={"action": action},
+        )
 
         # 新契约解包（SLayerPlanner）；旧契约裸 plan dict 直接透传
         if isinstance(plan, dict) and "plan" in plan and "action" in plan:
@@ -614,41 +653,53 @@ class SACGOrchestrator:
         # research_request 存在时透传给 A 层做 domain 分流（金融调研四维验收）
         try:
             plan_for_a = plan
-            if (research_request and isinstance(plan, dict)
-                    and "research_request" not in plan):
+            if research_request and isinstance(plan, dict) and "research_request" not in plan:
                 plan_for_a = {**plan, "research_request": research_request}
             nodes = self._a_decomposer(plan_for_a) or []
         except Exception as e:
             errors.append(f"{STAGE_A}:{type(e).__name__}:{e}")
             nodes = []
-        emit_event(_trace_id, "dreamos", STAGE_A, "a_decomposer",
-                   "layer_complete", "success" if nodes else "failure",
-                   meta={"node_count": len(nodes)})
+        emit_event(
+            _trace_id,
+            "dreamos",
+            STAGE_A,
+            "a_decomposer",
+            "layer_complete",
+            "success" if nodes else "failure",
+            meta={"node_count": len(nodes)},
+        )
 
         # ── C 层：逐节点执行（节点级异常隔离，不阻断其余节点） ──
         # P3.2: S 层消费的 hint 透传到 C 层节点决策门
         node_results: List[Dict[str, Any]] = []
         for node in nodes:
             try:
-                node_results.append(
-                    self._run_node(node, l1_intent_hint=l1_intent_hint))
+                node_results.append(self._run_node(node, l1_intent_hint=l1_intent_hint))
             except Exception as e:
                 node_id = str(node.get("node_id") or "N?")
                 errors.append(f"{STAGE_C}:{node_id}:{type(e).__name__}:{e}")
-                node_results.append({
-                    "node_id": node_id,
-                    "action": NODE_FAILED,
-                    "tier": None,
-                    "effort_level": None,
-                    "detail": None,
-                    "error": str(e),
-                })
-                emit_event(_trace_id, "dreamos", STAGE_C, node_id,
-                           "node_execute", "failure", error=str(e))
+                node_results.append(
+                    {
+                        "node_id": node_id,
+                        "action": NODE_FAILED,
+                        "tier": None,
+                        "effort_level": None,
+                        "detail": None,
+                        "error": str(e),
+                    }
+                )
+                emit_event(
+                    _trace_id, "dreamos", STAGE_C, node_id, "node_execute", "failure", error=str(e)
+                )
             else:
-                emit_event(_trace_id, "dreamos", STAGE_C,
-                           str(node.get("node_id") or "N?"),
-                           "node_execute", "success")
+                emit_event(
+                    _trace_id,
+                    "dreamos",
+                    STAGE_C,
+                    str(node.get("node_id") or "N?"),
+                    "node_execute",
+                    "success",
+                )
 
         # ── A 层验收：C 层执行结果回传 OKR 节点验收（P3.4，对账式逐节点核对） ──
         try:
@@ -667,12 +718,24 @@ class SACGOrchestrator:
         except Exception as e:
             errors.append(f"{STAGE_G}:{type(e).__name__}:{e}")
             closure = {"compressed": False, "settled": False}
-        emit_event(_trace_id, "dreamos", STAGE_G, "g_closer",
-                   "layer_complete", "success" if closure.get("settled") else "failure",
-                   meta={"sediment_types": [s.get("type") for s in (closure.get("sediments") or [])]})
-        emit_event(_trace_id, "dreamos", "orchestrator", "sacg",
-                   "graph_execute.end", "success" if not errors else "partial",
-                   error=None if not errors else errors[-1])
+        emit_event(
+            _trace_id,
+            "dreamos",
+            STAGE_G,
+            "g_closer",
+            "layer_complete",
+            "success" if closure.get("settled") else "failure",
+            meta={"sediment_types": [s.get("type") for s in (closure.get("sediments") or [])]},
+        )
+        emit_event(
+            _trace_id,
+            "dreamos",
+            "orchestrator",
+            "sacg",
+            "graph_execute.end",
+            "success" if not errors else "partial",
+            error=None if not errors else errors[-1],
+        )
 
         return {
             "route": L2_HANDOFF,

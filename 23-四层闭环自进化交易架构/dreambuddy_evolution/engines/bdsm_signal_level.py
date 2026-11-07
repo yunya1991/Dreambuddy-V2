@@ -13,6 +13,7 @@ three_factor_long 引擎（ThreeFactorLongDetector）经由 three_factor_signal 
 仓位/杠杆参数表为 spec §2.2 标定值，供调用方按层级取用；
 实际下单金额是否采用层级仓位由调用方风控（_apply_bdsm_scaling）决定。
 """
+
 from __future__ import annotations
 
 import logging
@@ -31,6 +32,7 @@ class BdsmSignalLevelResult:
         leverage: 层级杠杆 (spec §2.2: 3 / 3 / 5)
         is_trial: 是否试错单（做多恒 False）
     """
+
     level: str
     position_pct: float
     leverage: int

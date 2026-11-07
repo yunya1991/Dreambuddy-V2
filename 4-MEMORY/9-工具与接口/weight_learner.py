@@ -8,16 +8,18 @@
 3. 同源降权：高度正相关的验证器对被降权（避免同源信号重复计权）
 4. 权重版本：每次更新递增版本号，保留历史
 """
+
 from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 
 @dataclass(frozen=True)
 class WeightVersion:
     """权重版本记录。"""
+
     version_id: int
     weights: Dict[str, float]
     ts: float = field(default_factory=time.time)
@@ -40,7 +42,7 @@ class BradleyTerryLearner:
         self._stages = list(stages)
         self._lr = learning_rate
         self._min_strength = min_strength
-        self._strength: Dict[str, float] = {s: 1.0 for s in stages}
+        self._strength: Dict[str, float] = dict.fromkeys(stages, 1.0)
         self._version_id = 0
         self._history: List[WeightVersion] = [
             WeightVersion(version_id=0, weights=self.get_weights(), reason="init")
@@ -56,7 +58,7 @@ class BradleyTerryLearner:
         """返回归一化权重（和为 len(stages)，均值为 1）。"""
         total = sum(self._strength.values())
         if total <= 0:
-            return {s: 1.0 for s in self._stages}
+            return dict.fromkeys(self._stages, 1.0)
         n = len(self._stages)
         return {s: (self._strength[s] / total) * n for s in self._stages}
 
@@ -73,7 +75,7 @@ class BradleyTerryLearner:
                 self._history_verdicts[stage].append(0)  # abstain = 0
                 continue
             elif verdict == "pass":
-                self._strength[stage] *= (1.0 + self._lr)
+                self._strength[stage] *= 1.0 + self._lr
                 self._history_verdicts[stage].append(1)
                 changed = True
             elif verdict == "fail":
@@ -100,7 +102,7 @@ class BradleyTerryLearner:
         stages = list(self._strength.keys())
         # 计算 Pearson 相关系数矩阵
         correlations: Dict[str, Dict[str, float]] = {}
-        for i, s1 in enumerate(stages):
+        for i, s1 in enumerate(stages):  # noqa: B007
             correlations[s1] = {}
             for s2 in stages:
                 if s1 == s2:
@@ -111,7 +113,7 @@ class BradleyTerryLearner:
         # 找出高度正相关的验证器
         downweighted: set = set()
         for i, s1 in enumerate(stages):
-            for s2 in stages[i + 1:]:
+            for s2 in stages[i + 1 :]:
                 if correlations[s1].get(s2, 0.0) >= correlation_threshold:
                     downweighted.add(s1)
                     downweighted.add(s2)
@@ -135,7 +137,7 @@ class BradleyTerryLearner:
         h2 = h2[-n:]
         mean1 = sum(h1) / n
         mean2 = sum(h2) / n
-        cov = sum((a - mean1) * (b - mean2) for a, b in zip(h1, h2)) / n
+        cov = sum((a - mean1) * (b - mean2) for a, b in zip(h1, h2)) / n  # noqa: B905
         std1 = (sum((a - mean1) ** 2 for a in h1) / n) ** 0.5
         std2 = (sum((b - mean2) ** 2 for b in h2) / n) ** 0.5
         if std1 == 0 or std2 == 0:
@@ -144,11 +146,13 @@ class BradleyTerryLearner:
 
     def _bump_version(self, reason: str = "") -> None:
         self._version_id += 1
-        self._history.append(WeightVersion(
-            version_id=self._version_id,
-            weights=self.get_weights(),
-            reason=reason,
-        ))
+        self._history.append(
+            WeightVersion(
+                version_id=self._version_id,
+                weights=self.get_weights(),
+                reason=reason,
+            )
+        )
 
     def version_history(self) -> List[WeightVersion]:
         return list(self._history)

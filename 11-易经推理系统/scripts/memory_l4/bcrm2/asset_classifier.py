@@ -21,6 +21,7 @@
 
 FAIL-OPEN: 未知币种返回 ("crypto_major", "large")，不抛异常。
 """
+
 from __future__ import annotations
 
 import logging
@@ -55,48 +56,111 @@ MCAP_TRADFI = "tradfi"
 # ============================================================================
 
 # 美股代币（OKX USDT-SWAP 上的美股代币化合约）
-_US_STOCK_COINS = frozenset({
-    "AAPL", "AMZN", "GOOGL", "NVDA", "MSFT", "TSLA", "META", "NFLX",
-    "BABA", "MU", "SKHYNIX", "SNDK", "SPCX", "PLTR", "BMNR",
-})
+_US_STOCK_COINS = frozenset(
+    {
+        "AAPL",
+        "AMZN",
+        "GOOGL",
+        "NVDA",
+        "MSFT",
+        "TSLA",
+        "META",
+        "NFLX",
+        "BABA",
+        "MU",
+        "SKHYNIX",
+        "SNDK",
+        "SPCX",
+        "PLTR",
+        "BMNR",
+    }
+)
 
 # 加密属性美股代币（本质跟随加密市场，不跟随美股大盘）
-_CRYPTO_US_STOCK_COINS = frozenset({
-    "COIN", "MSTR", "CRCL",
-})
+_CRYPTO_US_STOCK_COINS = frozenset(
+    {
+        "COIN",
+        "MSTR",
+        "CRCL",
+    }
+)
 
 # BTC/ETH（市场风向标）
-_CRYPTO_MAJOR_COINS = frozenset({
-    "BTC", "ETH",
-})
+_CRYPTO_MAJOR_COINS = frozenset(
+    {
+        "BTC",
+        "ETH",
+    }
+)
 
 # 大市值加密（市值排名前列）
-_CRYPTO_LARGE_COINS = frozenset({
-    "BNB", "SOL", "XRP", "ADA", "DOGE", "AVAX", "DOT", "LINK",
-    "LTC", "NEAR", "APT",
-})
+_CRYPTO_LARGE_COINS = frozenset(
+    {
+        "BNB",
+        "SOL",
+        "XRP",
+        "ADA",
+        "DOGE",
+        "AVAX",
+        "DOT",
+        "LINK",
+        "LTC",
+        "NEAR",
+        "APT",
+    }
+)
 
 # 中市值加密
-_CRYPTO_MID_COINS = frozenset({
-    "MATIC", "UNI", "ATOM", "ETC", "FIL", "ARB", "OP", "PEPE",
-    "COMP", "TIA", "SUI", "SEI", "INJ", "STRK", "JUP", "WIF",
-    "JTO", "BLUR", "AAVE",
-})
+_CRYPTO_MID_COINS = frozenset(
+    {
+        "MATIC",
+        "UNI",
+        "ATOM",
+        "ETC",
+        "FIL",
+        "ARB",
+        "OP",
+        "PEPE",
+        "COMP",
+        "TIA",
+        "SUI",
+        "SEI",
+        "INJ",
+        "STRK",
+        "JUP",
+        "WIF",
+        "JTO",
+        "BLUR",
+        "AAVE",
+    }
+)
 
 # 小市值加密（其他）
-_CRYPTO_SMALL_COINS = frozenset({
-    "OKB", "HYPE", "PUMP",
-})
+_CRYPTO_SMALL_COINS = frozenset(
+    {
+        "OKB",
+        "HYPE",
+        "PUMP",
+    }
+)
 
 # Meme 币
-_CRYPTO_MEME_COINS = frozenset({
-    "DOGE", "PEPE", "WIF", "SHIB",
-})
+_CRYPTO_MEME_COINS = frozenset(
+    {
+        "DOGE",
+        "PEPE",
+        "WIF",
+        "SHIB",
+    }
+)
 
 # 贵金属
-_PRECIOUS_METAL_COINS = frozenset({
-    "XAU", "XAG",
-})
+_PRECIOUS_METAL_COINS = frozenset(
+    {
+        "XAU",
+        "XAG",
+    }
+)
 
 # 全量映射（优先级从高到低）
 _ALL_MAPPINGS = [
@@ -144,6 +208,7 @@ def classify_asset(coin: str) -> Tuple[str, str]:
     # 兜底：尝试从 asset_class_mapper 和 market_cap 动态查询
     try:
         from dreambuddy_evolution.engines.asset_class_mapper import get_asset_class
+
         fine = get_asset_class(cu)
         if fine == "us_stock":
             return (ASSET_US_STOCK, MCAP_TRADFI)
@@ -156,6 +221,7 @@ def classify_asset(coin: str) -> Tuple[str, str]:
 
     try:
         from bcrm2.market_cap import KNOWN_MCAP, MARKET_CAP_LARGE, MARKET_CAP_MID, MARKET_CAP_SMALL
+
         mcap = KNOWN_MCAP.get(cu)
         if mcap == MARKET_CAP_LARGE:
             return (ASSET_CRYPTO_LARGE, MCAP_LARGE)

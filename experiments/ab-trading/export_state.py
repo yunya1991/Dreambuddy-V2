@@ -4,13 +4,16 @@
 - GitHub Actions 可直接运行并提交到仓库
 用法：python3 export_state.py [output_path]
 """
-import json, os, sys, warnings
+
+import json
+import sys
+import warnings
 from pathlib import Path
 
 warnings.filterwarnings("ignore")
 BASE_DIR = Path(__file__).parent
-LOG_A    = BASE_DIR / "logs" / "agent_a"
-LOG_B    = BASE_DIR / "logs" / "agent_b"
+LOG_A = BASE_DIR / "logs" / "agent_a"
+LOG_B = BASE_DIR / "logs" / "agent_b"
 
 USER_A = "0x93842F1ea62E7E3c71494d9EA69EfC4F2D6e9934"
 USER_B = "0x6632da9c91A959eEBf1343f8AFAbf2807414004A"
@@ -31,11 +34,15 @@ def load_logs(log_dir: Path, limit: int = 30):
 
 def get_perp_state(user: str) -> dict:
     import requests
+
     s = requests.Session()
     s.trust_env = False
     try:
-        r = s.post("https://api.hyperliquid.xyz/info",
-                   json={"type": "clearinghouseState", "user": user}, timeout=8).json()
+        r = s.post(
+            "https://api.hyperliquid.xyz/info",
+            json={"type": "clearinghouseState", "user": user},
+            timeout=8,
+        ).json()
     except Exception as e:
         return {"equity": 0, "avail": 0, "positions": [], "error": str(e)}
     m = r.get("marginSummary", {})
@@ -43,32 +50,37 @@ def get_perp_state(user: str) -> dict:
     for p in r.get("assetPositions", []):
         pos = p.get("position", {})
         if float(pos.get("szi", 0)) != 0:
-            positions.append({
-                "coin":     pos.get("coin"),
-                "size":     float(pos.get("szi", 0)),
-                "entry_px": float(pos.get("entryPx") or 0),
-                "upnl":     float(pos.get("unrealizedPnl") or 0),
-                "leverage": float((pos.get("leverage") or {}).get("value", 1)),
-            })
+            positions.append(
+                {
+                    "coin": pos.get("coin"),
+                    "size": float(pos.get("szi", 0)),
+                    "entry_px": float(pos.get("entryPx") or 0),
+                    "upnl": float(pos.get("unrealizedPnl") or 0),
+                    "leverage": float((pos.get("leverage") or {}).get("value", 1)),
+                }
+            )
     equity = float(m.get("accountValue", 0))
-    avail  = float(m.get("marginAvailable") or 0)
+    avail = float(m.get("marginAvailable") or 0)
 
     if equity == 0:
         try:
-            r2 = s.post("https://api.hyperliquid.xyz/info",
-                        json={"type": "spotClearinghouseState", "user": user}, timeout=8).json()
+            r2 = s.post(
+                "https://api.hyperliquid.xyz/info",
+                json={"type": "spotClearinghouseState", "user": user},
+                timeout=8,
+            ).json()
             spot_usdc = next(
                 (float(b["total"]) for b in r2.get("balances", []) if b.get("coin") == "USDC"), 0
             )
             if spot_usdc > 0:
                 equity = spot_usdc
-                avail  = spot_usdc
+                avail = spot_usdc
         except Exception:
             pass
 
     return {
-        "equity":    equity,
-        "avail":     avail,
+        "equity": equity,
+        "avail": avail,
         "positions": positions,
     }
 
@@ -77,14 +89,14 @@ def build_state() -> dict:
     a = get_perp_state(USER_A)
     b = get_perp_state(USER_B)
     hl = {
-        "perp_equity":    a["equity"],
-        "perp_avail":     a["avail"],
+        "perp_equity": a["equity"],
+        "perp_avail": a["avail"],
         "perp_positions": a["positions"],
-        "b_equity":       b["equity"],
-        "b_avail":        b["avail"],
-        "b_positions":    b["positions"],
-        "spot_usdc":      0,
-        "total_equity":   a["equity"] + b["equity"],
+        "b_equity": b["equity"],
+        "b_avail": b["avail"],
+        "b_positions": b["positions"],
+        "spot_usdc": 0,
+        "total_equity": a["equity"] + b["equity"],
     }
     return {
         **hl,

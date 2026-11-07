@@ -12,8 +12,9 @@
 这样在下跌途中仓位更轻，亏损更少；确认底部后加满，享受反弹。
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import numpy as np
@@ -93,12 +94,14 @@ class TimingDipStrategy(EnhancedMA200Strategy):
         self.bb_std = bb_std
         self.bb_rebound_add = bb_rebound_add
 
-        self.stats.update({
-            "bb_rebound_days": 0,
-            "db_detected_days": 0,
-            "db_confirmed_days": 0,
-            "db_failed_days": 0,
-        })
+        self.stats.update(
+            {
+                "bb_rebound_days": 0,
+                "db_detected_days": 0,
+                "db_confirmed_days": 0,
+                "db_failed_days": 0,
+            }
+        )
 
     def _compute_bollinger_bands(self, close: np.ndarray) -> tuple:
         n = len(close)
@@ -106,7 +109,7 @@ class TimingDipStrategy(EnhancedMA200Strategy):
         mid = np.full(n, np.nan)
         lower = np.full(n, np.nan)
         for i in range(self.bb_period - 1, n):
-            window = close[i - self.bb_period + 1:i + 1]
+            window = close[i - self.bb_period + 1 : i + 1]
             m = np.mean(window)
             s = np.std(window)
             mid[i] = m
@@ -118,8 +121,8 @@ class TimingDipStrategy(EnhancedMA200Strategy):
         w = self.db_swing_window
         swing_lows = []
         for i in range(start + w, end - w + 1):
-            left = low[i - w:i]
-            right = low[i + 1:i + w + 1]
+            left = low[i - w : i]
+            right = low[i + 1 : i + w + 1]
             if low[i] < left.min() and low[i] <= right.min():
                 swing_lows.append((i, low[i]))
         return swing_lows
@@ -140,7 +143,8 @@ class TimingDipStrategy(EnhancedMA200Strategy):
         idx1, price1 = first_low
 
         candidates = [
-            (idx, p) for idx, p in swing_lows
+            (idx, p)
+            for idx, p in swing_lows
             if abs(idx - idx1) >= 20 and abs(p - price1) / price1 < self.db_max_low_diff_pct * 3
         ]
         if not candidates:
@@ -167,7 +171,7 @@ class TimingDipStrategy(EnhancedMA200Strategy):
 
         right_higher = price2 >= price1 * (1 - self.db_max_low_diff_pct * 0.5)
 
-        mid_segment = low[idx1 + 1:idx2]
+        mid_segment = low[idx1 + 1 : idx2]
         if len(mid_segment) < 2:
             return False, False, 0.0
         neckline = mid_segment.max()
@@ -204,7 +208,9 @@ class TimingDipStrategy(EnhancedMA200Strategy):
         close = prices["close"].values
         low = prices["low"].values
 
-        ma_series = pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        ma_series = (
+            pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        )
         ma = ma_series.values
 
         ma_slope = np.zeros(n)
@@ -212,10 +218,18 @@ class TimingDipStrategy(EnhancedMA200Strategy):
             if not np.isnan(ma[i]) and not np.isnan(ma[i - self.slope_period]):
                 ma_slope[i] = (ma[i] / ma[i - self.slope_period] - 1) * 100
 
-        weekly_ma200 = self._compute_weekly_ma200(prices) if (self.is_btc and self.weekly_ma200_dip_buy) else None
-        btc_regime = self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        weekly_ma200 = (
+            self._compute_weekly_ma200(prices)
+            if (self.is_btc and self.weekly_ma200_dip_buy)
+            else None
+        )
+        btc_regime = (
+            self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        )
 
-        bb_upper, bb_mid, bb_lower = self._compute_bollinger_bands(close) if self.use_bb_rebound else (None, None, None)
+        bb_upper, bb_mid, bb_lower = (
+            self._compute_bollinger_bands(close) if self.use_bb_rebound else (None, None, None)
+        )
 
         last_state = "init"
         short_entry_price = None
@@ -241,15 +255,20 @@ class TimingDipStrategy(EnhancedMA200Strategy):
 
             if self.is_btc:
                 base_dip_pos = 0.0
-                if self.weekly_ma200_dip_buy and not np.isnan(weekly_ma200[i]) and weekly_ma200[i] > 0:
+                if (
+                    self.weekly_ma200_dip_buy
+                    and not np.isnan(weekly_ma200[i])
+                    and weekly_ma200[i] > 0
+                ):
                     weekly_below_pct = (weekly_ma200[i] - close[i]) / weekly_ma200[i] * 100
                     if weekly_below_pct > 0:
                         levels_filled = min(
-                            int(weekly_below_pct / self.dip_buy_step_pct),
-                            self.dip_buy_levels
+                            int(weekly_below_pct / self.dip_buy_step_pct), self.dip_buy_levels
                         )
                         if levels_filled > 0:
-                            base_dip_pos = (levels_filled / self.dip_buy_levels) * self.dip_buy_max_position
+                            base_dip_pos = (
+                                levels_filled / self.dip_buy_levels
+                            ) * self.dip_buy_max_position
 
                 if price_above and slope_pos:
                     current_state = "bull"
@@ -266,8 +285,17 @@ class TimingDipStrategy(EnhancedMA200Strategy):
                         extra = 0.0
 
                         # 布林带反弹补仓
-                        if self.use_bb_rebound and bb_lower is not None and not np.isnan(bb_lower[i]) and i > 0:
-                            y_at_below = close[i-1] <= bb_lower[i-1] if not np.isnan(bb_lower[i-1]) else False
+                        if (
+                            self.use_bb_rebound
+                            and bb_lower is not None
+                            and not np.isnan(bb_lower[i])
+                            and i > 0
+                        ):
+                            y_at_below = (
+                                close[i - 1] <= bb_lower[i - 1]
+                                if not np.isnan(bb_lower[i - 1])
+                                else False
+                            )
                             t_rebound = close[i] > bb_lower[i]
                             if y_at_below and t_rebound and (i - last_bb_idx) >= bb_min_gap:
                                 extra += self.bb_rebound_add
@@ -276,7 +304,9 @@ class TimingDipStrategy(EnhancedMA200Strategy):
 
                         # 双底检测
                         if not db_confirmed:
-                            detected, confirmed, neckline = self._detect_double_bottom(low, close, i, db_breakout_idx)
+                            detected, confirmed, neckline = self._detect_double_bottom(
+                                low, close, i, db_breakout_idx
+                            )
                             if detected:
                                 self.stats["db_detected_days"] += 1
                                 db_breakout_idx = i
@@ -295,9 +325,15 @@ class TimingDipStrategy(EnhancedMA200Strategy):
                             else:
                                 # 补到目标仓位
                                 target_dip = self.db_boost_to + extra
-                                target_pos = min(base_dip_pos + target_dip, self.db_boost_to + self.bb_rebound_add)
+                                target_pos = min(
+                                    base_dip_pos + target_dip,
+                                    self.db_boost_to + self.bb_rebound_add,
+                                )
                         else:
-                            target_pos = min(base_dip_pos + extra, self.dip_buy_max_position + self.bb_rebound_add)
+                            target_pos = min(
+                                base_dip_pos + extra,
+                                self.dip_buy_max_position + self.bb_rebound_add,
+                            )
 
                         self.stats["dip_buy_days"] += 1
 
@@ -318,7 +354,11 @@ class TimingDipStrategy(EnhancedMA200Strategy):
                         if base_short > 0 and short_entry_price is None:
                             short_entry_price = close[i]
 
-                        if base_short > 0 and short_entry_price is not None and self.fib_take_profit:
+                        if (
+                            base_short > 0
+                            and short_entry_price is not None
+                            and self.fib_take_profit
+                        ):
                             fib_pos = self._calc_fib_tp_position(
                                 close[i], short_entry_price, True, base_short
                             )
@@ -339,7 +379,9 @@ class TimingDipStrategy(EnhancedMA200Strategy):
                                 self.stats["db_failed_days"] += 1
                             else:
                                 extra = self.db_boost_to
-                        target_pos = min(base_dip_pos + extra, self.db_boost_to + self.bb_rebound_add)
+                        target_pos = min(
+                            base_dip_pos + extra, self.db_boost_to + self.bb_rebound_add
+                        )
                         self.stats["dip_buy_days"] += 1
                     else:
                         current_state = "sideways"
@@ -385,7 +427,7 @@ class TimingDipStrategy(EnhancedMA200Strategy):
 
 
 if __name__ == "__main__":
-    import json
+    import json  # noqa: I001
     from ml.scenario_backtest_engine import ScenarioBacktestEngine
 
     with open("data/historical/BTC_1D_730d.json") as f:
@@ -402,17 +444,25 @@ if __name__ == "__main__":
     print("v2 基线...")
     v2 = EnhancedMA200Strategy(is_btc=True)
     v2_r = engine.run_scenario_backtest(prices, v2, "v2", symbol="BTC", experiment_name="v38_v2")
-    print(f"  夏普 {v2_r.overall_sharpe:.3f} | 收益 {v2_r.overall_total_return:.1%} | 评分 {v2_r.composite_score:.3f}")
+    print(
+        f"  夏普 {v2_r.overall_sharpe:.3f} | 收益 {v2_r.overall_total_return:.1%} | 评分 {v2_r.composite_score:.3f}"
+    )
 
     print("\n做空优化...")
     so = EnhancedMA200Strategy(is_btc=True, bear_short_level1_pct=0.0, bear_short_level2_pct=0.6)
     so_r = engine.run_scenario_backtest(prices, so, "so", symbol="BTC", experiment_name="v38_so")
-    print(f"  夏普 {so_r.overall_sharpe:.3f} | 收益 {so_r.overall_total_return:.1%} | 评分 {so_r.composite_score:.3f}")
+    print(
+        f"  夏普 {so_r.overall_sharpe:.3f} | 收益 {so_r.overall_total_return:.1%} | 评分 {so_r.composite_score:.3f}"
+    )
 
     print("\nv3.8 抄底时机优化...")
     v38 = TimingDipStrategy(is_btc=True)
-    v38_r = engine.run_scenario_backtest(prices, v38, "v38", symbol="BTC", experiment_name="v38_timing")
-    print(f"  夏普 {v38_r.overall_sharpe:.3f} | 收益 {v38_r.overall_total_return:.1%} | 评分 {v38_r.composite_score:.3f}")
+    v38_r = engine.run_scenario_backtest(
+        prices, v38, "v38", symbol="BTC", experiment_name="v38_timing"
+    )
+    print(
+        f"  夏普 {v38_r.overall_sharpe:.3f} | 收益 {v38_r.overall_total_return:.1%} | 评分 {v38_r.composite_score:.3f}"
+    )
 
     print("\n状态统计:")
     for k, v in sorted(v38.get_stats().items(), key=lambda x: -x[1]):
@@ -423,10 +473,22 @@ if __name__ == "__main__":
     print(f"{'指标':<18} {'v2':>12} {'做空优化':>12} {'v3.8':>12}")
     print("-" * 58)
     for name, v2v, sov, v38v, fmt in [
-        ("总收益", v2_r.overall_total_return, so_r.overall_total_return, v38_r.overall_total_return, ".1%"),
+        (
+            "总收益",
+            v2_r.overall_total_return,
+            so_r.overall_total_return,
+            v38_r.overall_total_return,
+            ".1%",
+        ),
         ("夏普", v2_r.overall_sharpe, so_r.overall_sharpe, v38_r.overall_sharpe, ".3f"),
         ("卡玛", v2_r.overall_calmar, so_r.overall_calmar, v38_r.overall_calmar, ".3f"),
-        ("回撤", v2_r.overall_max_drawdown, so_r.overall_max_drawdown, v38_r.overall_max_drawdown, ".1%"),
+        (
+            "回撤",
+            v2_r.overall_max_drawdown,
+            so_r.overall_max_drawdown,
+            v38_r.overall_max_drawdown,
+            ".1%",
+        ),
         ("评分", v2_r.composite_score, so_r.composite_score, v38_r.composite_score, ".3f"),
     ]:
         print(f"{name:<18} {v2v:>12{fmt}} {sov:>12{fmt}} {v38v:>12{fmt}}")

@@ -26,7 +26,7 @@ _RAG_INFRA_DIR = _THIS_DIR.parent
 if str(_RAG_INFRA_DIR) not in sys.path:
     sys.path.insert(0, str(_RAG_INFRA_DIR))
 
-from evolution.ingest import ingest_document
+from evolution.ingest import ingest_document  # noqa: E402
 
 
 def _slugify(text: str) -> str:
@@ -42,8 +42,9 @@ def _slugify(text: str) -> str:
     return s or "research"
 
 
-def _build_md(detection: Dict, research_content: str,
-            research_topic: str, research_scenario: str) -> tuple:
+def _build_md(
+    detection: Dict, research_content: str, research_topic: str, research_scenario: str
+) -> tuple:
     """按归档模板生成 Markdown 内容，返回 (md_text, date_str)。"""
     title = research_topic or f"{detection['category']}/{detection['subcategory']} 调研"
     date_str = datetime.now().strftime("%Y-%m-%d")
@@ -86,8 +87,14 @@ _最后更新：{date_str} | 来源：对话归档_
     return md, date_str
 
 
-def _update_index(knowledge_dir: Path, detection: Dict, final_path: Path,
-                 date_str: str, slug: str, research_topic: str) -> None:
+def _update_index(
+    knowledge_dir: Path,
+    detection: Dict,
+    final_path: Path,
+    date_str: str,
+    slug: str,
+    research_topic: str,
+) -> None:
     """更新 7-EXTERNAL-RESEARCH/INDEX.md，在维护规则前追加新条目。
 
     若 INDEX.md 不存在则创建最小模板；FAIL-OPEN：更新失败不阻塞归档。
@@ -96,8 +103,10 @@ def _update_index(knowledge_dir: Path, detection: Dict, final_path: Path,
     rel = final_path.relative_to(knowledge_dir)
     title = research_topic or slug
     tags_str = " ".join(detection["tags"][:5]) if detection["tags"] else "-"
-    entry = (f"- [{date_str}] [{title}]({rel.as_posix()}) — "
-             f"{detection['category']}/{detection['subcategory']} | 标签: {tags_str}")
+    entry = (
+        f"- [{date_str}] [{title}]({rel.as_posix()}) — "
+        f"{detection['category']}/{detection['subcategory']} | 标签: {tags_str}"
+    )
 
     try:
         if index_path.exists():
@@ -107,30 +116,36 @@ def _update_index(knowledge_dir: Path, detection: Dict, final_path: Path,
                 idx = content.find("## 归档记录")
                 next_sec = content.find("\n## ", idx + 1)
                 insert_pos = next_sec if next_sec != -1 else len(content)
-                new_content = (content[:insert_pos].rstrip()
-                               + "\n" + entry + "\n" + content[insert_pos:])
+                new_content = (
+                    content[:insert_pos].rstrip() + "\n" + entry + "\n" + content[insert_pos:]
+                )
             elif "## 维护规则" in content:
                 new_content = content.replace(
-                    "## 维护规则",
-                    f"## 归档记录\n\n{entry}\n\n## 维护规则", 1)
+                    "## 维护规则", f"## 归档记录\n\n{entry}\n\n## 维护规则", 1
+                )
             else:
-                new_content = (content.rstrip()
-                               + f"\n\n## 归档记录\n\n{entry}\n")
+                new_content = content.rstrip() + f"\n\n## 归档记录\n\n{entry}\n"
             index_path.write_text(new_content, encoding="utf-8")
         else:
             index_path.parent.mkdir(parents=True, exist_ok=True)
-            minimal = (f"# 7-EXTERNAL-RESEARCH — 外部资料素材库\n\n"
-                       f"## 归档记录\n\n{entry}\n\n"
-                       f"## 维护规则\n\n"
-                       f"- INDEX更新: 每次归档时同步更新本文件\n")
+            minimal = (
+                f"# 7-EXTERNAL-RESEARCH — 外部资料素材库\n\n"
+                f"## 归档记录\n\n{entry}\n\n"
+                f"## 维护规则\n\n"
+                f"- INDEX更新: 每次归档时同步更新本文件\n"
+            )
             index_path.write_text(minimal, encoding="utf-8")
     except Exception:
         pass  # FAIL-OPEN：INDEX 更新失败不阻塞
 
 
-def archive_research(detection: Dict, research_content: str,
-                    knowledge_dir: Path, research_topic: str = "",
-                    research_scenario: str = "") -> Dict:
+def archive_research(
+    detection: Dict,
+    research_content: str,
+    knowledge_dir: Path,
+    research_topic: str = "",
+    research_scenario: str = "",
+) -> Dict:
     """归档单条调研检测结果：生成 md、触发 ingest、更新 INDEX。
 
     Args:
@@ -145,8 +160,7 @@ def archive_research(detection: Dict, research_content: str,
         index_status/graph_status。
     """
     knowledge_dir = Path(knowledge_dir)
-    md_text, date_str = _build_md(detection, research_content,
-                                 research_topic, research_scenario)
+    md_text, date_str = _build_md(detection, research_content, research_topic, research_scenario)
     slug = _slugify(research_topic or (detection.get("keywords_matched") or ["research"])[0])
     filename = f"{date_str}-{slug}.md"
 
@@ -196,8 +210,7 @@ def archive_research(detection: Dict, research_content: str,
             pass
 
     # 更新 INDEX.md
-    _update_index(knowledge_dir, detection, final_path, date_str,
-                 slug, research_topic)
+    _update_index(knowledge_dir, detection, final_path, date_str, slug, research_topic)
 
     return {
         "status": result.get("status", "indexed"),

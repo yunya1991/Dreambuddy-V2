@@ -11,10 +11,8 @@
 
 import json
 import os
-import sys
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple
-from datetime import datetime, timezone
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -25,13 +23,14 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 DATA_DIR = os.path.join(ROOT, "user_data", "data", "hyperliquid", "futures")
 
 INITIAL_CAPITAL = 1000.0
-FEE_RATE = 0.0004          # 0.04% maker/taker (保守估计)
-SLIPPAGE = 0.0005          # 0.05%
-MAX_POSITION_PER_TRADE = 150.0   # 每笔最大保证金
+FEE_RATE = 0.0004  # 0.04% maker/taker (保守估计)
+SLIPPAGE = 0.0005  # 0.05%
+MAX_POSITION_PER_TRADE = 150.0  # 每笔最大保证金
 
 # ===========================================================================
 # 数据加载
 # ===========================================================================
+
 
 def load_bars(symbol: str) -> pd.DataFrame:
     path = os.path.join(DATA_DIR, f"{symbol}-5m-futures.json")
@@ -48,6 +47,7 @@ def load_bars(symbol: str) -> pd.DataFrame:
 # ===========================================================================
 # 通用指标
 # ===========================================================================
+
 
 def add_basic_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
@@ -77,10 +77,11 @@ def add_basic_indicators(df: pd.DataFrame) -> pd.DataFrame:
 # 信号生成器（对应三个策略的核心逻辑）
 # ===========================================================================
 
+
 @dataclass
 class Signal:
     bar_idx: int
-    direction: str           # "long" / "short"
+    direction: str  # "long" / "short"
     reason: str
     stop_loss: float
     take_profit: Optional[float] = None
@@ -89,11 +90,23 @@ class Signal:
 
 class Bot2Signal:
     """Bot2StrategyTrend 的核心信号逻辑"""
-    def __init__(self, stoploss=-0.028, rsi_range=35, adx_trend=25,
-                 volume_factor=1.2, mr_ema_dev=0.015, anti_chase_max_dev=0.08,
-                 anti_chase_max_rsi=78, anti_chase_bb=0.95,
-                 anti_chase_adx_slope=-0.5, anti_chase_pump=0.05,
-                 lookback=20, vol_threshold=0.02, tp_ratio=0.05):
+
+    def __init__(
+        self,
+        stoploss=-0.028,
+        rsi_range=35,
+        adx_trend=25,
+        volume_factor=1.2,
+        mr_ema_dev=0.015,
+        anti_chase_max_dev=0.08,
+        anti_chase_max_rsi=78,
+        anti_chase_bb=0.95,
+        anti_chase_adx_slope=-0.5,
+        anti_chase_pump=0.05,
+        lookback=20,
+        vol_threshold=0.02,
+        tp_ratio=0.05,
+    ):
         self.stoploss = stoploss
         self.rsi_range = rsi_range
         self.adx_trend = adx_trend
@@ -117,20 +130,26 @@ class Bot2Signal:
             price = float(row["close"])
 
             # 状态判定
-            regime_trend = 1 if (pd.notna(row["btc_volatility_4h"]) and
-                                 row["btc_volatility_4h"] >= self.vol_threshold) else 0
+            regime_trend = (
+                1
+                if (
+                    pd.notna(row["btc_volatility_4h"])
+                    and row["btc_volatility_4h"] >= self.vol_threshold
+                )
+                else 0
+            )
 
             # 追涨过滤
-            max_high = df["high"].iloc[max(0, i - self.lookback):i].max()
+            max_high = df["high"].iloc[max(0, i - self.lookback) : i].max()
             recent_pump = (price / max_high) - 1 if max_high > 0 else 0
             adx_slope = row["adx"] - df["adx"].iloc[i - 3] if i >= 3 else 0
 
             chase_risk = (
-                price > row["ema_trend"] * (1 + self.anti_chase_max_dev) or
-                row["rsi"] >= self.anti_chase_max_rsi or
-                (pd.notna(row["bb_percent"]) and row["bb_percent"] >= self.anti_chase_bb) or
-                adx_slope < self.anti_chase_adx_slope or
-                recent_pump >= self.anti_chase_pump
+                price > row["ema_trend"] * (1 + self.anti_chase_max_dev)
+                or row["rsi"] >= self.anti_chase_max_rsi
+                or (pd.notna(row["bb_percent"]) and row["bb_percent"] >= self.anti_chase_bb)
+                or adx_slope < self.anti_chase_adx_slope
+                or recent_pump >= self.anti_chase_pump
             )
 
             # 均值回归信号
@@ -142,7 +161,11 @@ class Bot2Signal:
             # 趋势跟踪信号
             t1 = price > row["ema_fast"] > row["ema_slow"] > row["ema_trend"]
             t2 = row["adx"] > self.adx_trend
-            t3 = row["volume"] > row["volume_mean"] * self.volume_factor if pd.notna(row["volume_mean"]) else False
+            t3 = (
+                row["volume"] > row["volume_mean"] * self.volume_factor
+                if pd.notna(row["volume_mean"])
+                else False
+            )
             trend_score = int(t1) + int(t2) + int(t3)
 
             entry = False
@@ -154,15 +177,24 @@ class Bot2Signal:
             if entry and not chase_risk:
                 sl = price * (1 + self.stoploss)
                 tp = price * (1 + self.tp_ratio)
-                signals.append(Signal(bar_idx=i, direction="long", reason=reason,
-                                       stop_loss=sl, take_profit=tp))
+                signals.append(
+                    Signal(bar_idx=i, direction="long", reason=reason, stop_loss=sl, take_profit=tp)
+                )
         return signals
 
 
 class SimpleStrategySignal:
     """SimpleStrategy（RSI + TEMA + 布林带 均值回归，多空双向）"""
-    def __init__(self, buy_rsi=27, sell_rsi=72, stoploss=-0.271,
-                 atr_mult=2.0, trail_atr_mult=1.5, allow_short=True):
+
+    def __init__(
+        self,
+        buy_rsi=27,
+        sell_rsi=72,
+        stoploss=-0.271,
+        atr_mult=2.0,
+        trail_atr_mult=1.5,
+        allow_short=True,
+    ):
         self.buy_rsi = buy_rsi
         self.sell_rsi = sell_rsi
         self.stoploss = stoploss
@@ -184,49 +216,70 @@ class SimpleStrategySignal:
             rsi = float(row["rsi"]) if pd.notna(row["rsi"]) else 50
             tema = float(row["tema"]) if pd.notna(row["tema"]) else price
             bb_mid = float(row["bb_middle"]) if pd.notna(row["bb_middle"]) else price
-            tema_prev = float(df["tema"].iloc[i - 1]) if i >= 1 and pd.notna(df["tema"].iloc[i - 1]) else tema
+            tema_prev = (
+                float(df["tema"].iloc[i - 1])
+                if i >= 1 and pd.notna(df["tema"].iloc[i - 1])
+                else tema
+            )
             atr = float(row["atr"]) if pd.notna(row["atr"]) and row["atr"] > 0 else price * 0.01
 
             # 做多信号
-            deep_mr = (rsi < self.buy_rsi and tema <= bb_mid and
-                        tema > tema_prev and vol > vol_mean)
-            mild_mr = (rsi < loose_buy and tema <= bb_mid and vol > vol_mean * 0.5)
+            deep_mr = rsi < self.buy_rsi and tema <= bb_mid and tema > tema_prev and vol > vol_mean
+            mild_mr = rsi < loose_buy and tema <= bb_mid and vol > vol_mean * 0.5
 
             if deep_mr or mild_mr:
                 sl = price - atr * self.atr_mult
                 tp = price + atr * self.atr_mult * 1.5  # 盈亏比 1.5
-                signals.append(Signal(
-                    bar_idx=i, direction="long",
-                    reason=f"rsi={rsi:.0f}_deep={deep_mr}",
-                    stop_loss=sl, take_profit=tp,
-                    trail_atr=atr * self.trail_atr_mult,
-                ))
+                signals.append(
+                    Signal(
+                        bar_idx=i,
+                        direction="long",
+                        reason=f"rsi={rsi:.0f}_deep={deep_mr}",
+                        stop_loss=sl,
+                        take_profit=tp,
+                        trail_atr=atr * self.trail_atr_mult,
+                    )
+                )
                 continue
 
             # 做空信号
             if self.allow_short:
-                deep_short = (rsi > self.sell_rsi and tema >= bb_mid and
-                              tema < tema_prev and vol > vol_mean)
-                mild_short = (rsi > loose_sell and tema >= bb_mid and vol > vol_mean * 0.5)
+                deep_short = (
+                    rsi > self.sell_rsi and tema >= bb_mid and tema < tema_prev and vol > vol_mean
+                )
+                mild_short = rsi > loose_sell and tema >= bb_mid and vol > vol_mean * 0.5
 
                 if deep_short or mild_short:
                     sl = price + atr * self.atr_mult
                     tp = price - atr * self.atr_mult * 1.5
-                    signals.append(Signal(
-                        bar_idx=i, direction="short",
-                        reason=f"rsi={rsi:.0f}_short_deep={deep_short}",
-                        stop_loss=sl, take_profit=tp,
-                        trail_atr=atr * self.trail_atr_mult,
-                    ))
+                    signals.append(
+                        Signal(
+                            bar_idx=i,
+                            direction="short",
+                            reason=f"rsi={rsi:.0f}_short_deep={deep_short}",
+                            stop_loss=sl,
+                            take_profit=tp,
+                            trail_atr=atr * self.trail_atr_mult,
+                        )
+                    )
 
         return signals
 
 
 class OTTSignal:
     """OTTStrategy 的简化信号：基于 EMA 趋势 + ADX 过滤"""
-    def __init__(self, stoploss=-0.15, tp_0=0.20, tp_60=0.12, adx_min=20,
-                 trail_activate=0.04, trail_offset=0.015,
-                 use_custom=True, allow_short=True):
+
+    def __init__(
+        self,
+        stoploss=-0.15,
+        tp_0=0.20,
+        tp_60=0.12,
+        adx_min=20,
+        trail_activate=0.04,
+        trail_offset=0.015,
+        use_custom=True,
+        allow_short=True,
+    ):
         self.stoploss = stoploss
         self.tp_0 = tp_0
         self.tp_60 = tp_60
@@ -247,32 +300,52 @@ class OTTSignal:
             adx = float(row["adx"]) if pd.notna(row["adx"]) else 0
             atr = float(row["atr"]) if pd.notna(row["atr"]) and row["atr"] > 0 else price * 0.01
             prev_price = float(df["close"].iloc[i - 1])
-            prev_slow = float(df["ema_slow"].iloc[i - 1]) if pd.notna(df["ema_slow"].iloc[i - 1]) else price
+            prev_slow = (
+                float(df["ema_slow"].iloc[i - 1]) if pd.notna(df["ema_slow"].iloc[i - 1]) else price
+            )
 
             # 做多: 价格在 EMA 上方 + EMA 上升 + ADX > 阈值
-            long_cond = (price > ema_slow and ema_slow > ema_trend and
-                        adx > self.adx_min and prev_price <= prev_slow)
+            long_cond = (
+                price > ema_slow
+                and ema_slow > ema_trend
+                and adx > self.adx_min
+                and prev_price <= prev_slow
+            )
             # 做空: 价格在 EMA 下方 + EMA 下降 + ADX > 阈值
-            short_cond = (self.allow_short and price < ema_slow and
-                         ema_slow < ema_trend and adx > self.adx_min and
-                         prev_price >= prev_slow)
+            short_cond = (
+                self.allow_short
+                and price < ema_slow
+                and ema_slow < ema_trend
+                and adx > self.adx_min
+                and prev_price >= prev_slow
+            )
 
             if long_cond:
                 sl = price * (1 + self.stoploss)
                 tp = price * (1 + self.tp_0)
-                signals.append(Signal(
-                    bar_idx=i, direction="long", reason=f"adx={adx:.0f}",
-                    stop_loss=sl, take_profit=tp,
-                    trail_atr=atr,
-                ))
+                signals.append(
+                    Signal(
+                        bar_idx=i,
+                        direction="long",
+                        reason=f"adx={adx:.0f}",
+                        stop_loss=sl,
+                        take_profit=tp,
+                        trail_atr=atr,
+                    )
+                )
             elif short_cond:
                 sl = price * (1 - self.stoploss)
                 tp = price * (1 - self.tp_60)
-                signals.append(Signal(
-                    bar_idx=i, direction="short", reason=f"adx={adx:.0f}",
-                    stop_loss=sl, take_profit=tp,
-                    trail_atr=atr,
-                ))
+                signals.append(
+                    Signal(
+                        bar_idx=i,
+                        direction="short",
+                        reason=f"adx={adx:.0f}",
+                        stop_loss=sl,
+                        take_profit=tp,
+                        trail_atr=atr,
+                    )
+                )
         return signals
 
 
@@ -280,13 +353,14 @@ class OTTSignal:
 # 事件驱动回测引擎
 # ===========================================================================
 
+
 @dataclass
 class Position:
     direction: str
     entry_price: float
     entry_idx: int
-    size: float              # 名义仓位数量（coin 数）
-    capital_used: float      # 占用保证金
+    size: float  # 名义仓位数量（coin 数）
+    capital_used: float  # 占用保证金
     stop_loss: float
     take_profit: float
     trail_atr: Optional[float]
@@ -361,10 +435,15 @@ class BacktestResult:
 
 
 class BacktestEngine:
-    def __init__(self, df: pd.DataFrame, initial_capital: float = INITIAL_CAPITAL,
-                 max_cap_per_trade: float = MAX_POSITION_PER_TRADE,
-                 fee_rate: float = FEE_RATE, slippage: float = SLIPPAGE,
-                 cooldown_bars: int = 5):
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        initial_capital: float = INITIAL_CAPITAL,
+        max_cap_per_trade: float = MAX_POSITION_PER_TRADE,
+        fee_rate: float = FEE_RATE,
+        slippage: float = SLIPPAGE,
+        cooldown_bars: int = 5,
+    ):
         self.df = df
         self.initial_capital = initial_capital
         self.capital = initial_capital
@@ -404,18 +483,30 @@ class BacktestEngine:
                     entry_idx = min(i + 1, n - 1)
                     entry_bar = self.df.iloc[entry_idx]
                     direction = next_signal.direction
-                    entry_price = float(entry_bar["open"]) * (1 + (self.slippage if direction == "long" else -self.slippage))
+                    entry_price = float(entry_bar["open"]) * (
+                        1 + (self.slippage if direction == "long" else -self.slippage)
+                    )
                     cap = min(self.max_cap, self.capital * 0.5)
                     size = cap / entry_price
 
                     # 调整 stop_loss 基于当前价格
-                    atr = float(self.df["atr"].iloc[entry_idx]) if pd.notna(self.df["atr"].iloc[entry_idx]) else entry_price * 0.01
+                    atr = (
+                        float(self.df["atr"].iloc[entry_idx])
+                        if pd.notna(self.df["atr"].iloc[entry_idx])
+                        else entry_price * 0.01
+                    )
                     if direction == "long":
                         sl = min(next_signal.stop_loss, entry_price - atr * 2)
                     else:
                         sl = max(next_signal.stop_loss, entry_price + atr * 2)
-                    tp = next_signal.take_profit if next_signal.take_profit else (
-                        entry_price * (1 + 0.05) if direction == "long" else entry_price * (1 - 0.05)
+                    tp = (
+                        next_signal.take_profit
+                        if next_signal.take_profit
+                        else (
+                            entry_price * (1 + 0.05)
+                            if direction == "long"
+                            else entry_price * (1 - 0.05)
+                        )
                     )
 
                     self.position = Position(
@@ -446,8 +537,9 @@ class BacktestEngine:
 
         return BacktestResult(trades=self.trades, equity_curve=equity)
 
-    def _check_exit(self, pos: Position, high: float, low: float, close: float, bar: pd.Series
-                    ) -> Tuple[Optional[float], Optional[str]]:
+    def _check_exit(
+        self, pos: Position, high: float, low: float, close: float, bar: pd.Series
+    ) -> Tuple[Optional[float], Optional[str]]:
         # 更新最佳价格（追踪止损）
         if pos.direction == "long":
             if high > pos.best_price:
@@ -500,12 +592,18 @@ class BacktestEngine:
         net_pnl = gross - fee
         pnl_pct = net_pnl / pos.capital_used
 
-        self.trades.append(Trade(
-            direction=pos.direction,
-            entry_price=pos.entry_price, entry_idx=pos.entry_idx,
-            exit_price=exit_price, exit_idx=exit_idx,
-            exit_reason=reason, pnl=net_pnl, pnl_pct=pnl_pct,
-        ))
+        self.trades.append(
+            Trade(
+                direction=pos.direction,
+                entry_price=pos.entry_price,
+                entry_idx=pos.entry_idx,
+                exit_price=exit_price,
+                exit_idx=exit_idx,
+                exit_reason=reason,
+                pnl=net_pnl,
+                pnl_pct=pnl_pct,
+            )
+        )
         self.capital += net_pnl
         self.position = None
 
@@ -513,6 +611,7 @@ class BacktestEngine:
 # ===========================================================================
 # 输出格式化
 # ===========================================================================
+
 
 def print_result(label: str, result: BacktestResult, show_top_losses: int = 5):
     print(f"\n{'='*80}")
@@ -525,7 +624,11 @@ def print_result(label: str, result: BacktestResult, show_top_losses: int = 5):
     print(f"  平均盈亏:       {result.avg_pnl:+.4f}")
     print(f"  平均盈利:       +{result.avg_win:.4f}")
     print(f"  平均亏损:       {result.avg_loss:.4f}")
-    print(f"  盈亏比:         {result.avg_win / (-result.avg_loss):.2f}" if result.avg_loss < 0 else "  盈亏比:         N/A")
+    print(
+        f"  盈亏比:         {result.avg_win / (-result.avg_loss):.2f}"
+        if result.avg_loss < 0
+        else "  盈亏比:         N/A"
+    )
     print(f"  Profit Factor:  {result.profit_factor:.2f}")
     print(f"  最大回撤 (%):   {result.max_drawdown:.2f}")
     print(f"  最终权益:       {result.equity_curve[-1]:.2f} (初始 {result.equity_curve[0]:.2f})")
@@ -536,8 +639,10 @@ def print_result(label: str, result: BacktestResult, show_top_losses: int = 5):
         print(f"\n  Top-{min(show_top_losses, len(sorted_trades))} 亏损交易:")
         for i, t in enumerate(sorted_trades[:show_top_losses]):
             dur = (t.exit_idx - t.entry_idx) * 5
-            print(f"    [{i+1}] {t.direction} 入场@{t.entry_price:.2f} 离场@{t.exit_price:.2f} "
-                  f"原因={t.exit_reason} 盈亏={t.pnl:+.2f} ({t.pnl_pct*100:+.1f}%) 持有~{dur}min")
+            print(
+                f"    [{i+1}] {t.direction} 入场@{t.entry_price:.2f} 离场@{t.exit_price:.2f} "
+                f"原因={t.exit_reason} 盈亏={t.pnl:+.2f} ({t.pnl_pct*100:+.1f}%) 持有~{dur}min"
+            )
 
     if result.trades:
         reasons = {}
@@ -550,13 +655,16 @@ def print_result(label: str, result: BacktestResult, show_top_losses: int = 5):
 # 主流程
 # ===========================================================================
 
-def compare_strategy(symbol: str, df: pd.DataFrame, configs: Dict[str, object]
-                    ) -> Dict[str, BacktestResult]:
+
+def compare_strategy(
+    symbol: str, df: pd.DataFrame, configs: Dict[str, object]
+) -> Dict[str, BacktestResult]:
     results: Dict[str, BacktestResult] = {}
     for name, signal_gen in configs.items():
         signals = signal_gen.generate(df)
-        engine = BacktestEngine(df, initial_capital=INITIAL_CAPITAL,
-                                max_cap_per_trade=MAX_POSITION_PER_TRADE)
+        engine = BacktestEngine(
+            df, initial_capital=INITIAL_CAPITAL, max_cap_per_trade=MAX_POSITION_PER_TRADE
+        )
         result = engine.run(signals)
         results[name] = result
         print_result(f"{symbol} - {name}", result)
@@ -566,11 +674,11 @@ def compare_strategy(symbol: str, df: pd.DataFrame, configs: Dict[str, object]
 def main():
     symbols = ["BTC_USDT", "ETH_USDT", "SOL_USDT"]
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("  经典指标系统 - 策略参数对比回测")
     print(f"  初始资金: {INITIAL_CAPITAL} USDT, 单笔最大保证金: {MAX_POSITION_PER_TRADE}")
     print(f"  手续费: {FEE_RATE*100:.2f}%, 滑点: {SLIPPAGE*100:.2f}%, bar内冷却 5 bar")
-    print("="*80)
+    print("=" * 80)
 
     summary = []
 
@@ -588,57 +696,68 @@ def main():
         # 基准优化组
         configs = {
             # ======== Bot2StrategyTrend ========
-            "[Bot2] 原始 (-2.8% 止损, 5% 止盈)":
-                Bot2Signal(stoploss=-0.028, tp_ratio=0.05),
-            "[Bot2] 优化1 (-8% 止损, 15% 止盈, 高阈值)":
-                Bot2Signal(stoploss=-0.08, tp_ratio=0.15, anti_chase_max_rsi=82,
-                          anti_chase_bb=0.98),
-            "[Bot2] 优化2 (ATR 止损, 趋势确认)":
-                Bot2Signal(stoploss=-0.06, tp_ratio=0.12, rsi_range=30,
-                          anti_chase_max_rsi=80),
-
+            "[Bot2] 原始 (-2.8% 止损, 5% 止盈)": Bot2Signal(stoploss=-0.028, tp_ratio=0.05),
+            "[Bot2] 优化1 (-8% 止损, 15% 止盈, 高阈值)": Bot2Signal(
+                stoploss=-0.08, tp_ratio=0.15, anti_chase_max_rsi=82, anti_chase_bb=0.98
+            ),
+            "[Bot2] 优化2 (ATR 止损, 趋势确认)": Bot2Signal(
+                stoploss=-0.06, tp_ratio=0.12, rsi_range=30, anti_chase_max_rsi=80
+            ),
             # ======== SimpleStrategy ========
-            "[Simple] 原始 (多空双向, -27.1% 止损)":
-                SimpleStrategySignal(allow_short=True),
-            "[Simple] 优化1 (仅做多, 收紧止损)":
-                SimpleStrategySignal(allow_short=False, atr_mult=3.0, trail_atr_mult=2.0),
-            "[Simple] 优化2 (多空 + 收紧 RSI 阈值)":
-                SimpleStrategySignal(buy_rsi=25, sell_rsi=75, allow_short=True,
-                                    atr_mult=2.5, trail_atr_mult=1.8),
-
+            "[Simple] 原始 (多空双向, -27.1% 止损)": SimpleStrategySignal(allow_short=True),
+            "[Simple] 优化1 (仅做多, 收紧止损)": SimpleStrategySignal(
+                allow_short=False, atr_mult=3.0, trail_atr_mult=2.0
+            ),
+            "[Simple] 优化2 (多空 + 收紧 RSI 阈值)": SimpleStrategySignal(
+                buy_rsi=25, sell_rsi=75, allow_short=True, atr_mult=2.5, trail_atr_mult=1.8
+            ),
             # ======== OTTStrategy ========
-            "[OTT] 原始 (15% 止损, 20% 止盈)":
-                OTTSignal(stoploss=-0.15, tp_0=0.20, tp_60=0.12),
-            "[OTT] 优化1 (收紧止损 + 更高 ADX)":
-                OTTSignal(stoploss=-0.08, tp_0=0.12, tp_60=0.06, adx_min=25),
-            "[OTT] 优化2 (仅做多 + 激进)":
-                OTTSignal(stoploss=-0.10, tp_0=0.15, tp_60=0.08, allow_short=False),
+            "[OTT] 原始 (15% 止损, 20% 止盈)": OTTSignal(stoploss=-0.15, tp_0=0.20, tp_60=0.12),
+            "[OTT] 优化1 (收紧止损 + 更高 ADX)": OTTSignal(
+                stoploss=-0.08, tp_0=0.12, tp_60=0.06, adx_min=25
+            ),
+            "[OTT] 优化2 (仅做多 + 激进)": OTTSignal(
+                stoploss=-0.10, tp_0=0.15, tp_60=0.08, allow_short=False
+            ),
         }
 
         results = compare_strategy(symbol, df, configs)
 
         # 汇总这个币种的结果
         for name, r in results.items():
-            summary.append({
-                "symbol": symbol, "name": name, "trades": r.total_trades,
-                "win_rate": r.win_rate * 100, "total_pnl": r.total_pnl,
-                "avg_pnl": r.avg_pnl, "pf": r.profit_factor,
-                "max_dd": r.max_drawdown, "final_eq": r.equity_curve[-1],
-            })
+            summary.append(
+                {
+                    "symbol": symbol,
+                    "name": name,
+                    "trades": r.total_trades,
+                    "win_rate": r.win_rate * 100,
+                    "total_pnl": r.total_pnl,
+                    "avg_pnl": r.avg_pnl,
+                    "pf": r.profit_factor,
+                    "max_dd": r.max_drawdown,
+                    "final_eq": r.equity_curve[-1],
+                }
+            )
 
     # ====================================================================
     # 跨币种汇总表
     # ====================================================================
-    print("\n\n" + "="*80)
+    print("\n\n" + "=" * 80)
     print("  跨币种汇总（同一策略在三币种上的平均表现）")
-    print("="*80)
+    print("=" * 80)
 
     by_strategy: Dict[str, Dict] = {}
     for s in summary:
         key = s["name"]
         if key not in by_strategy:
-            by_strategy[key] = {"trades": 0, "pnl": 0.0, "wr_sum": 0.0, "n": 0,
-                                "pf_sum": 0.0, "dd_sum": 0.0}
+            by_strategy[key] = {
+                "trades": 0,
+                "pnl": 0.0,
+                "wr_sum": 0.0,
+                "n": 0,
+                "pf_sum": 0.0,
+                "dd_sum": 0.0,
+            }
         agg = by_strategy[key]
         agg["trades"] += s["trades"]
         agg["pnl"] += s["total_pnl"]
@@ -651,14 +770,16 @@ def main():
     for name, agg in by_strategy.items():
         if agg["n"] == 0:
             continue
-        rows.append({
-            "策略": name,
-            "总交易": str(agg["trades"]),
-            "平均胜率%": f"{agg['wr_sum']/agg['n']:.1f}",
-            "总盈亏USDT": f"{agg['pnl']:+.2f}",
-            "平均PF": f"{agg['pf_sum']/agg['n']:.2f}",
-            "平均回撤%": f"{agg['dd_sum']/agg['n']:.1f}",
-        })
+        rows.append(
+            {
+                "策略": name,
+                "总交易": str(agg["trades"]),
+                "平均胜率%": f"{agg['wr_sum']/agg['n']:.1f}",
+                "总盈亏USDT": f"{agg['pnl']:+.2f}",
+                "平均PF": f"{agg['pf_sum']/agg['n']:.2f}",
+                "平均回撤%": f"{agg['dd_sum']/agg['n']:.1f}",
+            }
+        )
 
     # 排序：按总盈亏从高到低
     rows.sort(key=lambda r: float(r["总盈亏USDT"]), reverse=True)

@@ -17,9 +17,9 @@ class EvidenceLevel(str, Enum):
     """事实分级：从直接观察到未知。"""
 
     OBSERVATION = "observation"  # 直接观察到的事实（代码/数据）
-    DERIVATION = "derivation"    # 从观察推导的结论
-    INFERENCE = "inference"      # 基于推导的推断
-    UNKNOWN = "unknown"          # 已知的未知（无法确定）
+    DERIVATION = "derivation"  # 从观察推导的结论
+    INFERENCE = "inference"  # 基于推导的推断
+    UNKNOWN = "unknown"  # 已知的未知（无法确定）
 
 
 @dataclass

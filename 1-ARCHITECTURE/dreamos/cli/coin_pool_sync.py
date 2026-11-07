@@ -37,6 +37,7 @@ recs.json 输入格式（与池同构，币级 source/updated_at 可省略，由
 
 退出码: 0=成功, 1=输入校验失败/写入失败
 """
+
 from __future__ import annotations
 
 import argparse
@@ -83,7 +84,10 @@ def load_pool() -> dict:
     try:
         data = json.loads(POOL_FILE.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as e:
-        print(f"[coin_pool_sync] 现有池文件损坏({e})，将以空池重建（备份保留在 {POOL_BACKUP}）", file=sys.stderr)
+        print(
+            f"[coin_pool_sync] 现有池文件损坏({e})，将以空池重建（备份保留在 {POOL_BACKUP}）",
+            file=sys.stderr,
+        )
         shutil.copy2(POOL_FILE, POOL_BACKUP)
         return empty
 
@@ -97,7 +101,10 @@ def load_pool() -> dict:
                 item.setdefault("updated_at", ts)
         data["version"] = SCHEMA_VERSION
         data.setdefault("producers", [top_source] if top_source else [])
-        print(f"[coin_pool_sync] 检测到 v1 池，已按 v2 契约处理（source={top_source}）", file=sys.stderr)
+        print(
+            f"[coin_pool_sync] 检测到 v1 池，已按 v2 契约处理（source={top_source}）",
+            file=sys.stderr,
+        )
     return data
 
 
@@ -110,7 +117,7 @@ def _validate_entry(item: dict, pool_name: str, idx: int, source: str) -> dict:
     try:
         score = float(score)
     except (TypeError, ValueError):
-        raise ValueError(f"{pool_name}[{idx}] score 非数值: {item.get('score')!r}")
+        raise ValueError(f"{pool_name}[{idx}] score 非数值: {item.get('score')!r}")  # noqa: B904
     if not 0.0 <= score <= 1.0:
         raise ValueError(f"{pool_name}[{idx}] score 超出 [0,1]: {score}")
     reasons = item.get("reasons", [])
@@ -191,14 +198,18 @@ def atomic_write(pool: dict) -> None:
 def show() -> int:
     pool = load_pool()
     print(f"池文件: {POOL_FILE}")
-    print(f"version={pool.get('version')} week={pool.get('week')!r} source(最后写入)={pool.get('source')!r}")
+    print(
+        f"version={pool.get('version')} week={pool.get('week')!r} source(最后写入)={pool.get('source')!r}"
+    )
     print(f"producers: {pool.get('producers', [])}")
     print(f"timestamp: {pool.get('timestamp')}")
     for key, label in (("long_pool", "做多"), ("short_pool", "做空")):
         items = pool.get(key, [])
         print(f"\n【{label}池】{len(items)} 币:")
         for it in items:
-            print(f"  {it.get('symbol'):<8} score={it.get('score'):<6} by {it.get('source', '?')} @ {it.get('updated_at', '?')}")
+            print(
+                f"  {it.get('symbol'):<8} score={it.get('score'):<6} by {it.get('source', '?')} @ {it.get('updated_at', '?')}"
+            )
     if pool.get("conflict_symbols"):
         print(f"\n⚠️ 多空冲突 symbol: {pool['conflict_symbols']}")
     if pool.get("regime"):
@@ -213,8 +224,11 @@ def main() -> int:
     ap.add_argument("--source", help="写入方名称，如 hermes-weekly / model-X")
     ap.add_argument("--file", help="推荐 JSON 文件路径")
     ap.add_argument("--stdin", action="store_true", help="从 stdin 读取推荐 JSON")
-    ap.add_argument("--replace-source", action="store_true",
-                    help="整周刷新语义：先移除本写入方的旧条目（其他写入方不受影响）")
+    ap.add_argument(
+        "--replace-source",
+        action="store_true",
+        help="整周刷新语义：先移除本写入方的旧条目（其他写入方不受影响）",
+    )
     ap.add_argument("--week", help="覆盖周标签（默认当前 ISO 周）")
     ap.add_argument("--regime", help="本周 regime 描述（覆盖）")
     ap.add_argument("--notes", help="备注（覆盖）")

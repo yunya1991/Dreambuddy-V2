@@ -13,38 +13,39 @@ Walk-Forward 回测框架 — 实践检验真理的算法落地
   可重复性 → 固定随机种子，相同数据得到相同结果
 """
 
-import os
 import logging
+import os
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple, Optional, Any
-from dataclasses import dataclass, field
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
-from .bagua_feature_engine import BaguaFeatureEngine
-from .triple_barrier_labeler import DialecticalLabeler
-from .dialectical_ml_engine import DialecticalMLEngine
-from .cross_asset_features import compute_cross_asset_features
-from .classic_experience_features import ClassicExperienceFeatures
-from .fibonacci_features import FibonacciFeatures
-from .pivot_point_features import PivotPointFeatures
-from .rsi_sentiment_features import RSISentimentFeatures
-from .wdh_features import WDHFeatures
-from .cycle_features import CycleFeatures
-from .market_cap import MarketCapClassifier, apply_mcap_feature_config
-from .merrill_clock_features import MerrillClockFeatures
-from .feature_selector import FeatureSelector
-
+from .bagua_feature_engine import BaguaFeatureEngine  # noqa: E402
+from .classic_experience_features import ClassicExperienceFeatures  # noqa: E402
+from .cycle_features import CycleFeatures  # noqa: E402
+from .dialectical_ml_engine import DialecticalMLEngine  # noqa: E402
+from .feature_selector import FeatureSelector  # noqa: E402
+from .fibonacci_features import FibonacciFeatures  # noqa: E402
+from .market_cap import MarketCapClassifier  # noqa: E402
+from .merrill_clock_features import MerrillClockFeatures  # noqa: E402
+from .pivot_point_features import PivotPointFeatures  # noqa: E402
+from .rsi_sentiment_features import RSISentimentFeatures  # noqa: E402
+from .triple_barrier_labeler import DialecticalLabeler  # noqa: E402
+from .wdh_features import WDHFeatures  # noqa: E402
 
 # ============================================================
 # 回测结果数据结构
 # ============================================================
 
+
 @dataclass
 class Trade:
     """单笔交易记录"""
+
     entry_bar: int
     exit_bar: int
     direction: int  # 1=long, -1=short
@@ -58,20 +59,21 @@ class Trade:
     upper_gua: str = ""
     lower_gua: str = ""
     position_factor: float = 1.0
-    risk_level: str = ""          # P2-1: 卦象风险等级
-    development_stage: str = ""   # P2-1: 发展阶段
-    current_phase: str = ""       # P2-1: 六爻阶段
+    risk_level: str = ""  # P2-1: 卦象风险等级
+    development_stage: str = ""  # P2-1: 发展阶段
+    current_phase: str = ""  # P2-1: 六爻阶段
     # 五角校验字段
-    pentagon_verdict: str = ""    # STRONG_AGREE/MAJORITY_AGREE/DIVERGENT/CONFLICT
+    pentagon_verdict: str = ""  # STRONG_AGREE/MAJORITY_AGREE/DIVERGENT/CONFLICT
     pentagon_adjustment: float = 0.0  # 置信度调整
-    pentagon_reversal: bool = False   # 反转预警
-    pentagon_early_exit: bool = False # 提前退出信号
+    pentagon_reversal: bool = False  # 反转预警
+    pentagon_early_exit: bool = False  # 提前退出信号
     pentagon_position_factor: float = 1.0  # 仓位系数（五角校验调整后）
 
 
 @dataclass
 class FoldResult:
     """单个fold的结果"""
+
     fold_id: int
     train_start: int
     train_end: int
@@ -119,12 +121,13 @@ class FoldResult:
             return 0.0
         wins = sum(t.pnl_pct for t in self.trades if t.pnl_pct > 0)
         losses = abs(sum(t.pnl_pct for t in self.trades if t.pnl_pct < 0))
-        return wins / losses if losses > 0 else float('inf')
+        return wins / losses if losses > 0 else float("inf")
 
 
 @dataclass
 class BacktestResult:
     """完整回测结果"""
+
     symbol: str
     n_folds: int
     folds: List[FoldResult] = field(default_factory=list)
@@ -155,6 +158,7 @@ class BacktestResult:
 # ============================================================
 # Walk-Forward 回测引擎
 # ============================================================
+
 
 class WalkForwardBacktester:
     """
@@ -221,13 +225,16 @@ class WalkForwardBacktester:
         if self.enable_pentagon:
             try:
                 import sys as _sys
+
                 _l4 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                 if _l4 not in _sys.path:
                     _sys.path.insert(0, _l4)
                 from triangle_verifier import TriangleVerifier
+
                 self._triangle_verifier = TriangleVerifier()
             except Exception as _e:
                 import logging as _log
+
                 _log.getLogger(__name__).warning(f"五角校验器加载失败: {_e}")
                 self._triangle_verifier = None
                 self.enable_pentagon = False
@@ -322,37 +329,37 @@ class WalkForwardBacktester:
             self.use_meta_labeling = cfg.enable_meta_labeling
             # 美林时钟配置
             enable_merrill = cfg.enable_merrill
-            merrill_inflation = cfg.merrill_inflation
-            merrill_growth = cfg.merrill_growth
-            merrill_capital_flow = cfg.merrill_capital_flow
-            merrill_phase = cfg.merrill_phase
-            merrill_cross = cfg.merrill_cross
+            merrill_inflation = cfg.merrill_inflation  # noqa: F841
+            merrill_growth = cfg.merrill_growth  # noqa: F841
+            merrill_capital_flow = cfg.merrill_capital_flow  # noqa: F841
+            merrill_phase = cfg.merrill_phase  # noqa: F841
+            merrill_cross = cfg.merrill_cross  # noqa: F841
 
         # 1. 计算全部特征（统一走 FeatureRegistry）
-        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
         # 触发所有模块注册
         import scripts.memory_l4.bcrm2.bagua_feature_engine  # noqa: F401
         import scripts.memory_l4.bcrm2.classic_experience_features  # noqa: F401
+        import scripts.memory_l4.bcrm2.cross_asset_features  # noqa: F401
+        import scripts.memory_l4.bcrm2.cycle_features  # noqa: F401
         import scripts.memory_l4.bcrm2.fibonacci_features  # noqa: F401
+        import scripts.memory_l4.bcrm2.macro_features  # noqa: F401
+        import scripts.memory_l4.bcrm2.market_cap  # noqa: F401
+        import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa: F401
         import scripts.memory_l4.bcrm2.pivot_point_features  # noqa: F401
         import scripts.memory_l4.bcrm2.rsi_sentiment_features  # noqa: F401
         import scripts.memory_l4.bcrm2.wdh_features  # noqa: F401
-        import scripts.memory_l4.bcrm2.cycle_features  # noqa: F401
-        import scripts.memory_l4.bcrm2.market_cap  # noqa: F401
-        import scripts.memory_l4.bcrm2.cross_asset_features  # noqa: F401
-        import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa: F401
-        import scripts.memory_l4.bcrm2.macro_features  # noqa: F401
+        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
 
         # P1: 获取宏观数据（失败则跳过 macro 模块）
         # 优化：当 macro_config 所有维度都关闭时，跳过拉取
-        macro_all_disabled = (
-            self.macro_config is not None
-            and all(not v for v in self.macro_config.values())
+        macro_all_disabled = self.macro_config is not None and all(
+            not v for v in self.macro_config.values()
         )
         macro_df = None
         if not macro_all_disabled:
             try:
                 from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
+
                 fetcher = MacroDataFetcher()
                 macro_df = fetcher.fetch_all(self.symbol, df.index, live=False, verbose=verbose)
             except Exception as e:
@@ -371,14 +378,22 @@ class WalkForwardBacktester:
             registry_config.update(self.macro_config)
 
         enabled = ["bagua", "classic_exp", "fibonacci"]
-        if enable_pivot: enabled.append("pivot_point")
-        if enable_rsi: enabled.append("rsi_sentiment")
-        if enable_wdh: enabled.append("wdh")
-        if enable_cycle: enabled.append("cycle")
-        if enable_mcap: enabled.append("market_cap")
-        if enable_merrill: enabled.append("merrill_clock")
-        if ref_df is not None: enabled.append("cross_asset")
-        if macro_df is not None and not macro_df.empty: enabled.append("macro")
+        if enable_pivot:
+            enabled.append("pivot_point")
+        if enable_rsi:
+            enabled.append("rsi_sentiment")
+        if enable_wdh:
+            enabled.append("wdh")
+        if enable_cycle:
+            enabled.append("cycle")
+        if enable_mcap:
+            enabled.append("market_cap")
+        if enable_merrill:
+            enabled.append("merrill_clock")
+        if ref_df is not None:
+            enabled.append("cross_asset")
+        if macro_df is not None and not macro_df.empty:
+            enabled.append("macro")
 
         if verbose:
             print(f"[{self.symbol}] 计算 {len(enabled)} 个特征模块...")
@@ -428,14 +443,24 @@ class WalkForwardBacktester:
                 print(f"  Fold {i}: train[{ts}:{te}]={te-ts}根, test[{trs}:{tre}]={tre-trs}根")
 
         # 4. 逐fold回测
-        iterator = tqdm(enumerate(folds, 1), total=len(folds),
-                        desc=f"Walk-Forward [{self.symbol}]") if verbose else enumerate(folds, 1)
+        iterator = (
+            tqdm(enumerate(folds, 1), total=len(folds), desc=f"Walk-Forward [{self.symbol}]")
+            if verbose
+            else enumerate(folds, 1)
+        )
 
         for fold_id, (train_start, train_end, test_start, test_end) in iterator:
             fold_result = self._run_single_fold(
-                fold_id, df, features, labels,
-                train_start, train_end, test_start, test_end,
-                feature_names, feature_names_by_gua,
+                fold_id,
+                df,
+                features,
+                labels,
+                train_start,
+                train_end,
+                test_start,
+                test_end,
+                feature_names,
+                feature_names_by_gua,
                 verbose=verbose,
                 ref_df=ref_df,
                 cycle_feats=cycle_feats,
@@ -465,7 +490,7 @@ class WalkForwardBacktester:
         if test_size < self.min_test_bars:
             test_size = self.min_test_bars
 
-        test_start = train_end
+        test_start = train_end  # noqa: F841
         for i in range(self.n_folds):
             ts = 0
             te = train_end + i * test_size  # 训练集扩展
@@ -564,14 +589,19 @@ class WalkForwardBacktester:
                 print(f"  [{self.symbol}] 训练L2 Meta-Labeling模型 (V2互补特征)...")
             # V2版本: 需要传入ref_df和cycle_phase用于跨资产验证和周期特征
             l2_result = engine.train_l2(
-                X_train, y_train, 
+                X_train,
+                y_train,
                 df=df.iloc[train_start:train_end],
                 ref_df=ref_df.iloc[train_start:train_end] if ref_df is not None else None,
-                cycle_phase=cycle_feats.iloc[train_start:train_end] if cycle_feats is not None else None,
+                cycle_phase=(
+                    cycle_feats.iloc[train_start:train_end] if cycle_feats is not None else None
+                ),
             )
             if verbose and l2_result.get("ok", True):
-                print(f"  L2训练完成: long_acc={l2_result.get('long_train_accuracy', 'N/A'):.3f}, "
-                      f"short_acc={l2_result.get('short_train_accuracy', 'N/A'):.3f}")
+                print(
+                    f"  L2训练完成: long_acc={l2_result.get('long_train_accuracy', 'N/A'):.3f}, "
+                    f"short_acc={l2_result.get('short_train_accuracy', 'N/A'):.3f}"
+                )
 
         # 准备测试数据
         X_test_df = features.iloc[test_start:test_end][current_feat_names].copy()
@@ -579,7 +609,8 @@ class WalkForwardBacktester:
 
         # 预测 (V2版本: 需要传入ref_df和cycle_phase)
         preds = engine.predict(
-            X_test, with_gua=True, 
+            X_test,
+            with_gua=True,
             df=df.iloc[test_start:test_end],
             ref_df=ref_df.iloc[test_start:test_end] if ref_df is not None else None,
             cycle_phase=cycle_feats.iloc[test_start:test_end] if cycle_feats is not None else None,
@@ -589,6 +620,7 @@ class WalkForwardBacktester:
         regime_names = None
         if self.use_regime_switching:
             from .market_regime import MarketRegimeClassifier
+
             regime_cls = MarketRegimeClassifier(
                 feature_names_by_gua=current_feat_by_gua,
                 lookback_bars=20,
@@ -638,6 +670,7 @@ class WalkForwardBacktester:
         └─────────────────────────────────────────────────┘
         """
         from .market_regime import DEFAULT_REGIME_PARAMS
+
         # ---- P3-04 宏观特征 proxy 注入（延迟 import 避免循环依赖）----
         _has_macro_proxy = False
         _synthesize_macro_proxy = None
@@ -645,20 +678,23 @@ class WalkForwardBacktester:
         if self.enable_ohlcv_macro_proxy:
             try:
                 from .market_regime import (
-                    synthesize_macro_proxy_from_ohlcv,
                     apply_macro_regime_correction,
+                    synthesize_macro_proxy_from_ohlcv,
                 )
+
                 _synthesize_macro_proxy = synthesize_macro_proxy_from_ohlcv
                 _apply_macro_correction = apply_macro_regime_correction
                 _has_macro_proxy = True
             except Exception as _e:
                 import logging as _log
+
                 _log.getLogger(__name__).warning(
                     f"[P3-04] 宏观 proxy 加载失败，降级为纯 regime 切换: {_e}"
                 )
                 _has_macro_proxy = False
         try:
-            from ..yijing_exit_system import YijingExitSystem, YijingExitConfig, YijingExitAction
+            from ..yijing_exit_system import YijingExitAction, YijingExitConfig, YijingExitSystem
+
             yijing_exit = YijingExitSystem(config=YijingExitConfig())
             yijing_enabled = True
         except Exception:
@@ -713,7 +749,9 @@ class WalkForwardBacktester:
                     sl_tighten = pentagon_result.sl_tighten_factor
                     if not position.get("pentagon_sl_applied", False):
                         # 基于入场ATR距离重新计算收紧后的止损价
-                        orig_sl_dist = abs(entry_price - position.get("original_sl_price", sl_price))
+                        orig_sl_dist = abs(
+                            entry_price - position.get("original_sl_price", sl_price)
+                        )
                         new_sl_dist = orig_sl_dist * sl_tighten
                         if direction == 1:
                             new_sl = entry_price - new_sl_dist
@@ -776,13 +814,17 @@ class WalkForwardBacktester:
                         elif yijing_decision.action == YijingExitAction.NO_INTERVENE:
                             cfg_y = yijing_exit.config
                             risk_low = yijing_decision.yijing_risk_score < cfg_y.veto_risk_threshold
-                            value_high = yijing_decision.yijing_value_score > cfg_y.veto_value_threshold
+                            value_high = (
+                                yijing_decision.yijing_value_score > cfg_y.veto_value_threshold
+                            )
                             loss_ok = unrealized_pnl_pct > cfg_y.veto_max_loss_pct
                             not_expired = position_age_sec < cfg_y.veto_max_hold_sec
                             dir_ok = yijing_decision.direction_consistent
 
                             if risk_low and value_high and dir_ok and loss_ok and not_expired:
-                                position["yijing_hold_count"] = position.get("yijing_hold_count", 0) + 1
+                                position["yijing_hold_count"] = (
+                                    position.get("yijing_hold_count", 0) + 1
+                                )
                                 skip_classic = True
 
                 # ── 第二层：经典备用层（P0-2补全经典指标）──
@@ -807,8 +849,12 @@ class WalkForwardBacktester:
 
                     # ── 第三层：VETO 否决层（与实盘触发时机一致）──
                     # 经典决定 CLOSE/REDUCE 后，易经二次评估可否决
-                    if (exit_price is not None and classic_action in ("close", "reduce")
-                            and yijing_enabled and yijing_decision is not None):
+                    if (
+                        exit_price is not None
+                        and classic_action in ("close", "reduce")
+                        and yijing_enabled
+                        and yijing_decision is not None
+                    ):
                         hexagram = pred.get("hexagram")
                         if hexagram:
                             veto_decision = yijing_exit.evaluate(
@@ -821,16 +867,23 @@ class WalkForwardBacktester:
                                 classic_decision={"action": classic_action, "reason": exit_reason},
                                 mfe_pnl_pct=mfe_pnl_pct,
                             )
-                            if veto_decision.action in (YijingExitAction.VETO_CLOSE, YijingExitAction.VETO_REDUCE):
+                            if veto_decision.action in (
+                                YijingExitAction.VETO_CLOSE,
+                                YijingExitAction.VETO_REDUCE,
+                            ):
                                 exit_price = None
                                 exit_reason = None
-                                position["yijing_veto_count"] = position.get("yijing_veto_count", 0) + 1
+                                position["yijing_veto_count"] = (
+                                    position.get("yijing_veto_count", 0) + 1
+                                )
 
                 if exit_price is not None:
                     # 计算手续费 + 滑点（P0修正：滑点=成交额×滑点率，双边）
                     fee = entry_price * self.fee_rate + exit_price * self.fee_rate
                     slippage = (entry_price + exit_price) * self.slippage_rate
-                    raw_pnl = ((exit_price - entry_price) * direction - fee - slippage) / entry_price
+                    raw_pnl = (
+                        (exit_price - entry_price) * direction - fee - slippage
+                    ) / entry_price
 
                     # P0修复+v4: 仓位系数×五角校验仓位×五角校验杠杆 实际应用到PnL
                     pf = position.get("position_factor", 1.0)
@@ -887,11 +940,11 @@ class WalkForwardBacktester:
             # 先做方向归一化映射，避免后续 pnl 计算与统计混淆
             raw_direction = pred.get("direction", 0)
             if raw_direction == 1:
-                pred_dir_norm = 1   # UP → 做多
+                pred_dir_norm = 1  # UP → 做多
             elif raw_direction == 0:
                 pred_dir_norm = -1  # DOWN → 做空
             else:
-                pred_dir_norm = 0   # FLAT / 非法值
+                pred_dir_norm = 0  # FLAT / 非法值
 
             if position is None and pred["action"] == "OPEN" and pred_dir_norm != 0:
                 if bar_idx + 1 >= len(df):
@@ -1085,7 +1138,9 @@ class WalkForwardBacktester:
             hold_bars = (test_end - 1) - position["entry_bar"]
             fee = position["entry_price"] * self.fee_rate + exit_price * self.fee_rate
             slippage = (position["entry_price"] + exit_price) * self.slippage_rate
-            raw_pnl = ((exit_price - position["entry_price"]) * direction - fee - slippage) / position["entry_price"]
+            raw_pnl = (
+                (exit_price - position["entry_price"]) * direction - fee - slippage
+            ) / position["entry_price"]
 
             # P0修复+v4: 仓位系数×五角校验仓位×五角校验杠杆 实际应用到PnL
             pf = position.get("position_factor", 1.0)
@@ -1120,7 +1175,9 @@ class WalkForwardBacktester:
             trades.append(trade)
 
             # ── 注意力反馈：记录各源方向与实际方向 ──
-            if self._triangle_verifier is not None and hasattr(self._triangle_verifier, 'record_outcome'):
+            if self._triangle_verifier is not None and hasattr(
+                self._triangle_verifier, "record_outcome"
+            ):
                 pentagon_pos = position.get("pentagon_result")
                 if pentagon_pos is not None:
                     actual_dir = 1 if pnl_pct > 0 else (-1 if pnl_pct < 0 else 0)
@@ -1172,13 +1229,17 @@ class WalkForwardBacktester:
             if bar_idx < 20:
                 return None
 
-            recent_returns = _np.diff(_np.log(close[max(0, bar_idx-30):bar_idx+1]))
+            recent_returns = _np.diff(_np.log(close[max(0, bar_idx - 30) : bar_idx + 1]))
             recent_returns = recent_returns[~_np.isnan(recent_returns)]
             if len(recent_returns) < 5:
                 return None
 
             momentum = float(_np.mean(recent_returns[-10:]))
-            vol = float(_np.std(recent_returns[-20:])) if len(recent_returns) >= 20 else float(_np.std(recent_returns))
+            vol = (
+                float(_np.std(recent_returns[-20:]))
+                if len(recent_returns) >= 20
+                else float(_np.std(recent_returns))
+            )
 
             a0_result_dict = {
                 "direction_bias": momentum * 20,
@@ -1189,7 +1250,7 @@ class WalkForwardBacktester:
             market_snapshot = {"volatility": vol}
 
             # 切片DataFrame到当前K线
-            slice_df = df.iloc[:bar_idx + 1]
+            slice_df = df.iloc[: bar_idx + 1]
 
             result = self._triangle_verifier.verify(
                 bcrm2_direction=bcrm2_dir,
@@ -1205,7 +1266,9 @@ class WalkForwardBacktester:
             return None
 
     @staticmethod
-    def _compute_atr(high: np.ndarray, low: np.ndarray, close: np.ndarray, period: int = 14) -> np.ndarray:
+    def _compute_atr(
+        high: np.ndarray, low: np.ndarray, close: np.ndarray, period: int = 14
+    ) -> np.ndarray:
         """计算 ATR（Average True Range），用于跟踪止损"""
         n = len(high)
         tr = np.zeros(n)
@@ -1261,7 +1324,11 @@ class WalkForwardBacktester:
                 return {"exit_price": sl_price, "exit_reason": "classic_tb_sl", "action": "close"}
 
         if hold_bars >= max_hold:
-            return {"exit_price": current_price, "exit_reason": "classic_tb_time", "action": "close"}
+            return {
+                "exit_price": current_price,
+                "exit_reason": "classic_tb_time",
+                "action": "close",
+            }
 
         # ── P3: ATR 跟踪止损（P0-2补全）──
         atr = atr_values[bar_idx] if bar_idx < len(atr_values) else 0.0
@@ -1278,7 +1345,11 @@ class WalkForwardBacktester:
                     prev_trailing = new_trailing
                 # 检查是否触发跟踪止损
                 if low[bar_idx] <= prev_trailing and hold_bars >= 5:
-                    return {"exit_price": prev_trailing, "exit_reason": "classic_trailing_atr", "action": "close"}
+                    return {
+                        "exit_price": prev_trailing,
+                        "exit_reason": "classic_trailing_atr",
+                        "action": "close",
+                    }
             else:  # 空单
                 new_trailing = current_price * (1 + trailing_stop_pct)
                 prev_trailing = position.get("trailing_stop_price", sl_price)
@@ -1286,7 +1357,11 @@ class WalkForwardBacktester:
                     position["trailing_stop_price"] = new_trailing
                     prev_trailing = new_trailing
                 if high[bar_idx] >= prev_trailing and hold_bars >= 5:
-                    return {"exit_price": prev_trailing, "exit_reason": "classic_trailing_atr", "action": "close"}
+                    return {
+                        "exit_price": prev_trailing,
+                        "exit_reason": "classic_trailing_atr",
+                        "action": "close",
+                    }
 
         # ── P3.5: 移动止盈 Trailing TP（基于MFE回撤锁定利润）──
         # 与 Trailing Stop 互补：激活更早(1.5%)，回撤更敏感(40%)
@@ -1297,7 +1372,7 @@ class WalkForwardBacktester:
             mfe_pnl = pnl_pct_now
             position["mfe_pnl_pct"] = mfe_pnl
 
-        ttp_arm_pct = 0.015     # 盈利 ≥ 1.5% 激活
+        ttp_arm_pct = 0.015  # 盈利 ≥ 1.5% 激活
         ttp_retrace_ratio = 0.40  # 从 MFE 回撤 ≥ 40% 触发
         ttp_min_lock_pct = 0.003  # 至少锁定 0.3% 利润（避免盈利不足时还离场）
 
@@ -1318,11 +1393,19 @@ class WalkForwardBacktester:
         time_decay = max(0.0, 1.0 - (hold_bars / max(max_hold, 1)) * 0.8)
         # 小亏+持仓较长 → 减仓/离场（避免无限等待）
         if pnl_pct < -0.015 and hold_bars >= max_hold * 0.5 and time_decay < 0.6:
-            return {"exit_price": current_price, "exit_reason": "classic_vr_time_decay", "action": "close"}
+            return {
+                "exit_price": current_price,
+                "exit_reason": "classic_vr_time_decay",
+                "action": "close",
+            }
 
         # 微利+接近到期 → 止盈离场（锁定利润）
         if pnl_pct > 0.01 and hold_bars >= max_hold * 0.8:
-            return {"exit_price": current_price, "exit_reason": "classic_vr_take_profit", "action": "close"}
+            return {
+                "exit_price": current_price,
+                "exit_reason": "classic_vr_take_profit",
+                "action": "close",
+            }
 
         return {"exit_price": None, "exit_reason": "hold", "action": "hold"}
 
@@ -1349,7 +1432,7 @@ class WalkForwardBacktester:
         # 盈亏比
         wins = sum(p for p in pnls if p > 0)
         losses = abs(sum(p for p in pnls if p < 0))
-        result.profit_factor = wins / losses if losses > 0 else float('inf')
+        result.profit_factor = wins / losses if losses > 0 else float("inf")
 
         # 夏普比率（P0修正：用日收益序列年化，sqrt(252)）
         # 按 exit_bar // 24 聚合为"日"（假设 1H K 线，24 根=1天）
@@ -1396,12 +1479,19 @@ class WalkForwardBacktester:
                 "count": cnt,
                 "total_pnl": round(gua_pnl[gua], 2),
                 "avg_pnl": round(gua_pnl[gua] / cnt, 2),
-                "win_rate": round(sum(1 for t in trades if t.hexagram_name == gua and t.pnl_pct > 0) / cnt * 100, 1),
+                "win_rate": round(
+                    sum(1 for t in trades if t.hexagram_name == gua and t.pnl_pct > 0) / cnt * 100,
+                    1,
+                ),
             }
 
         # 上卦/下卦分布
-        result.upper_gua_stats = dict(sorted(upper_counts.items(), key=lambda x: x[1], reverse=True))
-        result.lower_gua_stats = dict(sorted(lower_counts.items(), key=lambda x: x[1], reverse=True))
+        result.upper_gua_stats = dict(
+            sorted(upper_counts.items(), key=lambda x: x[1], reverse=True)
+        )
+        result.lower_gua_stats = dict(
+            sorted(lower_counts.items(), key=lambda x: x[1], reverse=True)
+        )
 
     def _stats_for_trades(self, trades: List[Trade]) -> Dict:
         """为一组交易计算统计"""
@@ -1419,6 +1509,7 @@ class WalkForwardBacktester:
 # ============================================================
 # 报告生成
 # ============================================================
+
 
 def generate_report(result: BacktestResult, output_path: Optional[str] = None) -> str:
     """生成可读的回测报告"""
@@ -1442,21 +1533,29 @@ def generate_report(result: BacktestResult, output_path: Optional[str] = None) -
 
     # 分fold结果
     lines.append("【分Fold结果】")
-    lines.append(f"  {'Fold':<6} {'交易数':<8} {'胜率':<8} {'总收益':<10} {'最大回撤':<10} {'盈亏比':<8}")
+    lines.append(
+        f"  {'Fold':<6} {'交易数':<8} {'胜率':<8} {'总收益':<10} {'最大回撤':<10} {'盈亏比':<8}"
+    )
     lines.append(f"  {'-'*6} {'-'*8} {'-'*8} {'-'*10} {'-'*10} {'-'*8}")
     for f in result.folds:
-        lines.append(f"  {f.fold_id:<6} {f.n_trades:<8} {f.win_rate*100:<7.1f}% "
-                    f"{f.total_return:<9.2f}% {f.max_drawdown:<9.2f}% {f.profit_factor:<7.2f}")
+        lines.append(
+            f"  {f.fold_id:<6} {f.n_trades:<8} {f.win_rate*100:<7.1f}% "
+            f"{f.total_return:<9.2f}% {f.max_drawdown:<9.2f}% {f.profit_factor:<7.2f}"
+        )
     lines.append("")
 
     # 多空统计
     lines.append("【多空统计】")
-    lines.append(f"  多单: {result.long_stats.get('count', 0)}笔, "
-                f"胜率{result.long_stats.get('win_rate', 0)}%, "
-                f"总收益{result.long_stats.get('total_pnl', 0)}%")
-    lines.append(f"  空单: {result.short_stats.get('count', 0)}笔, "
-                f"胜率{result.short_stats.get('win_rate', 0)}%, "
-                f"总收益{result.short_stats.get('total_pnl', 0)}%")
+    lines.append(
+        f"  多单: {result.long_stats.get('count', 0)}笔, "
+        f"胜率{result.long_stats.get('win_rate', 0)}%, "
+        f"总收益{result.long_stats.get('total_pnl', 0)}%"
+    )
+    lines.append(
+        f"  空单: {result.short_stats.get('count', 0)}笔, "
+        f"胜率{result.short_stats.get('win_rate', 0)}%, "
+        f"总收益{result.short_stats.get('total_pnl', 0)}%"
+    )
     lines.append("")
 
     # 离场原因统计（易经离场 vs 经典离场）
@@ -1471,7 +1570,9 @@ def generate_report(result: BacktestResult, output_path: Optional[str] = None) -
             exit_reason_stats[reason]["wins"] += 1
 
     lines.append("【离场原因分布】")
-    lines.append(f"  {'离场原因':<22} {'次数':<6} {'占比':<8} {'胜率':<8} {'总收益':<10} {'平均':<8}")
+    lines.append(
+        f"  {'离场原因':<22} {'次数':<6} {'占比':<8} {'胜率':<8} {'总收益':<10} {'平均':<8}"
+    )
     lines.append(f"  {'-'*22} {'-'*6} {'-'*8} {'-'*8} {'-'*10} {'-'*8}")
     yijing_total = 0
     classic_total = 0
@@ -1480,14 +1581,20 @@ def generate_report(result: BacktestResult, output_path: Optional[str] = None) -
         pct = count / max(result.total_trades, 1) * 100
         win_rate = stats["wins"] / max(count, 1) * 100
         avg = stats["total_pnl"] / max(count, 1)
-        lines.append(f"  {reason:<22} {count:<6} {pct:<7.1f}% {win_rate:<7.1f}% "
-                    f"{stats['total_pnl']:<9.2f}% {avg:<7.2f}%")
+        lines.append(
+            f"  {reason:<22} {count:<6} {pct:<7.1f}% {win_rate:<7.1f}% "
+            f"{stats['total_pnl']:<9.2f}% {avg:<7.2f}%"
+        )
         if reason.startswith("yijing"):
             yijing_total += count
         else:
             classic_total += count
-    lines.append(f"  易经离场合计: {yijing_total} 笔 ({yijing_total/max(result.total_trades,1)*100:.1f}%)")
-    lines.append(f"  经典离场合计: {classic_total} 笔 ({classic_total/max(result.total_trades,1)*100:.1f}%)")
+    lines.append(
+        f"  易经离场合计: {yijing_total} 笔 ({yijing_total/max(result.total_trades,1)*100:.1f}%)"
+    )
+    lines.append(
+        f"  经典离场合计: {classic_total} 笔 ({classic_total/max(result.total_trades,1)*100:.1f}%)"
+    )
     lines.append("")
 
     # 卦象统计
@@ -1496,8 +1603,10 @@ def generate_report(result: BacktestResult, output_path: Optional[str] = None) -
         lines.append(f"  {'卦象':<15} {'次数':<6} {'胜率':<8} {'总收益':<10} {'平均':<8}")
         lines.append(f"  {'-'*15} {'-'*6} {'-'*8} {'-'*10} {'-'*8}")
         for gua, stats in result.hexagram_stats.items():
-            lines.append(f"  {gua:<15} {stats['count']:<6} {stats['win_rate']:<7.1f}% "
-                        f"{stats['total_pnl']:<9.2f}% {stats['avg_pnl']:<7.2f}%")
+            lines.append(
+                f"  {gua:<15} {stats['count']:<6} {stats['win_rate']:<7.1f}% "
+                f"{stats['total_pnl']:<9.2f}% {stats['avg_pnl']:<7.2f}%"
+            )
         lines.append("")
 
     # 八卦维度分布
@@ -1530,24 +1639,31 @@ def generate_report(result: BacktestResult, output_path: Optional[str] = None) -
             verdict_stats[v]["wins"] += 1 if t.pnl_pct > 0 else 0
             verdict_stats[v]["total_pnl"] += t.pnl_pct
 
-        lines.append(f"  {'校验结果':<18} {'次数':<6} {'占比':<8} {'胜率':<8} {'总收益':<10} {'平均':<8}")
+        lines.append(
+            f"  {'校验结果':<18} {'次数':<6} {'占比':<8} {'胜率':<8} {'总收益':<10} {'平均':<8}"
+        )
         lines.append(f"  {'-'*18} {'-'*6} {'-'*8} {'-'*8} {'-'*10} {'-'*8}")
         for v, stats in sorted(verdict_stats.items(), key=lambda x: -x[1]["count"]):
             count = stats["count"]
             pct = count / len(pentagon_trades) * 100
             win_rate = stats["wins"] / max(count, 1) * 100
             avg = stats["total_pnl"] / max(count, 1)
-            lines.append(f"  {v:<18} {count:<6} {pct:<7.1f}% {win_rate:<7.1f}% "
-                        f"{stats['total_pnl']:<9.2f}% {avg:<7.2f}%")
+            lines.append(
+                f"  {v:<18} {count:<6} {pct:<7.1f}% {win_rate:<7.1f}% "
+                f"{stats['total_pnl']:<9.2f}% {avg:<7.2f}%"
+            )
         lines.append("")
 
         # 五角校验预警离场统计
-        pentagon_exit_trades = [t for t in result.all_trades
-                                if t.exit_reason and t.exit_reason.startswith("pentagon")]
+        pentagon_exit_trades = [
+            t for t in result.all_trades if t.exit_reason and t.exit_reason.startswith("pentagon")
+        ]
         if pentagon_exit_trades:
-            lines.append(f"  五角校验提前离场: {len(pentagon_exit_trades)}笔, "
-                        f"胜率={sum(1 for t in pentagon_exit_trades if t.pnl_pct > 0)/len(pentagon_exit_trades)*100:.1f}%, "
-                        f"总收益={sum(t.pnl_pct for t in pentagon_exit_trades):.2f}%")
+            lines.append(
+                f"  五角校验提前离场: {len(pentagon_exit_trades)}笔, "
+                f"胜率={sum(1 for t in pentagon_exit_trades if t.pnl_pct > 0)/len(pentagon_exit_trades)*100:.1f}%, "
+                f"总收益={sum(t.pnl_pct for t in pentagon_exit_trades):.2f}%"
+            )
         lines.append("")
 
     # ── 卦象效果归因（P2-1: 多维度收益归因）──
@@ -1568,7 +1684,11 @@ def generate_report(result: BacktestResult, output_path: Optional[str] = None) -
         pnl = t.pnl_pct
         win = pnl > 0
 
-        for attr_key, attr_val in [("risk_level", risk), ("development_stage", stage), ("current_phase", phase)]:
+        for attr_key, attr_val in [
+            ("risk_level", risk),
+            ("development_stage", stage),
+            ("current_phase", phase),
+        ]:
             if not attr_val:
                 continue
             has_hex_attrs = True
@@ -1580,7 +1700,7 @@ def generate_report(result: BacktestResult, output_path: Optional[str] = None) -
 
     if has_hex_attrs:
         lines.append("【卦象效果归因 · 多维度】")
-        lines.append(f"  维度：风险等级 / 发展阶段 / 六爻阶段 → 对应胜率与收益表现")
+        lines.append("  维度：风险等级 / 发展阶段 / 六爻阶段 → 对应胜率与收益表现")
         lines.append("")
 
         for dim_key, dim_label in [
@@ -1598,8 +1718,10 @@ def generate_report(result: BacktestResult, output_path: Optional[str] = None) -
                 count = stats["count"]
                 win_rate = stats["wins"] / max(count, 1) * 100
                 avg = stats["total_pnl"] / max(count, 1)
-                lines.append(f"    {key:<12} {count:<6} {win_rate:<7.1f}% "
-                            f"{stats['total_pnl']:<9.2f}% {avg:<7.2f}%")
+                lines.append(
+                    f"    {key:<12} {count:<6} {win_rate:<7.1f}% "
+                    f"{stats['total_pnl']:<9.2f}% {avg:<7.2f}%"
+                )
             lines.append("")
 
     report = "\n".join(lines)

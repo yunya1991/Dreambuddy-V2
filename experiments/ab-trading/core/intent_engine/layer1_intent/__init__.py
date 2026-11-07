@@ -14,9 +14,9 @@ from .objective_types import (
 )
 
 __all__ = [
-    'ObjectiveExtractor',
-    'OBJECTIVE_TYPES',
-    'get_objective_type',
-    'list_objective_types',
-    'search_objective_types',
+    "ObjectiveExtractor",
+    "OBJECTIVE_TYPES",
+    "get_objective_type",
+    "list_objective_types",
+    "search_objective_types",
 ]

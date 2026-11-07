@@ -11,6 +11,7 @@
   python3 batch_enrich_frontmatter.py --dry-run
   python3 batch_enrich_frontmatter.py --apply
 """
+
 from __future__ import annotations
 
 import re
@@ -116,7 +117,7 @@ def enrich_frontmatter(skill_md: Path) -> tuple[bool, list[str]]:
         return False, []
 
     # 在 closing --- 前插入
-    closing_pos = m.end()  # 指向 closing --- 之后
+    closing_pos = m.end()  # 指向 closing --- 之后  # noqa: F841
     # 找到 closing --- 的位置
     # m.group(0) 是整个 frontmatter 块包括 --- 和 closing ---
     full_fm = m.group(0)
@@ -126,7 +127,7 @@ def enrich_frontmatter(skill_md: Path) -> tuple[bool, list[str]]:
     # 把 closing --- 替换为 字段 + closing ---
     new_full_fm = full_fm[:-4] + insert_text + "---\n"  # -4 去掉末尾的 "---\n"
 
-    new_raw = raw[:m.start()] + new_full_fm + raw[m.end():]
+    new_raw = raw[: m.start()] + new_full_fm + raw[m.end() :]
     skill_md.write_text(new_raw, encoding="utf-8")
     return True, added
 
@@ -152,13 +153,15 @@ def main() -> None:
             if changed:
                 modified += 1
                 if dry_run:
-                    print(f"[dry-run] {skill_md.relative_to(root.parent.parent) if root.parent.parent.exists() else skill_md}: +{added}")
+                    print(
+                        f"[dry-run] {skill_md.relative_to(root.parent.parent) if root.parent.parent.exists() else skill_md}: +{added}"
+                    )
                 else:
                     print(f"[applied] {skill_md.name}: +{added}")
             else:
                 skipped += 1
 
-    print(f"\n=== summary ===")
+    print("\n=== summary ===")
     print(f"total: {total}")
     print(f"modified: {modified}")
     print(f"already_complete: {skipped}")

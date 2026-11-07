@@ -8,12 +8,10 @@
 
 实施 spec 引用：.trae/documents/strategic-layer-restrict-and-adaptive-weights.md
 """
-import sys
-from pathlib import Path
-from typing import Any, Dict, Optional
-from unittest.mock import MagicMock, patch
 
-import pytest
+import sys  # noqa: I001
+from pathlib import Path
+from typing import Dict
 
 ROOT = Path(__file__).resolve().parents[3]  # 11-易经推理系统
 sys.path.insert(0, str(ROOT))
@@ -27,6 +25,7 @@ def _try_import():
             FiveDomainHeuristicScorer,
             FiveDomainState,
         )
+
         sentinel["loaded"] = True
         sentinel["FiveDomainHeuristicScorer"] = FiveDomainHeuristicScorer
         sentinel["FiveDomainState"] = FiveDomainState
@@ -200,9 +199,9 @@ class TestAdaptiveWeights:
         scores = _scores_all(60)
         # 开关关闭时的 total（硬编码）
         s_off = _make_scorer(enable_adaptive=False)
-        state_off = s_off.score_and_decide(raw_scores_by_class=scores)
+        state_off = s_off.score_and_decide(raw_scores_by_class=scores)  # noqa: F841
         # 开关开启时的 total（自适应）
-        state_on = s.score_and_decide(
+        state_on = s.score_and_decide(  # noqa: F841
             raw_scores_by_class=scores,
             force_vectors_by_class={"crypto_usdt": fv_extreme},
         )
@@ -216,14 +215,16 @@ class TestAdaptiveWeights:
             force_vectors_by_class={"crypto_usdt": fv_extreme},
         )
         # dao 权重提升后，total 应更高
-        t_off = state_off_diff.five_scores["crypto_usdt"]["dao"]
-        t_on = state_on_diff.five_scores["crypto_usdt"]["dao"]
+        t_off = state_off_diff.five_scores["crypto_usdt"]["dao"]  # noqa: F841
+        t_on = state_on_diff.five_scores["crypto_usdt"]["dao"]  # noqa: F841
         # five_scores 存原始评分，不是 total。比较 war_state/cap 间接验证。
         # 更好的验证：total 变化通过 cap 反映
         # 80*0.30+50*0.70 = 24+35 = 59 → cap=0.20 (硬编码)
         # 自适应后 dao 权重↑ → total 更接近 80 → 可能 ≥60 → cap=0.50
-        assert state_on_diff.aggregate_position_cap_pct["crypto_usdt"] >= \
-               state_off_diff.aggregate_position_cap_pct["crypto_usdt"]
+        assert (
+            state_on_diff.aggregate_position_cap_pct["crypto_usdt"]
+            >= state_off_diff.aggregate_position_cap_pct["crypto_usdt"]
+        )
 
     def test_adaptive_on_missing_fv(self):
         """enable=True, fv=None → 回退硬编码权重。"""

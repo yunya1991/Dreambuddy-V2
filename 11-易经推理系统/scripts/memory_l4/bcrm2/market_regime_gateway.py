@@ -10,6 +10,7 @@
 
 FAIL-OPEN: HMM 不收敛 / 数据不足 → 返回 "chop"（中性形态）。
 """
+
 from __future__ import annotations
 
 import logging
@@ -59,6 +60,7 @@ class MarketRegimeGateway:
         """懒加载 BTCRegimeDetector，导入失败时 FAIL-OPEN。"""
         try:
             from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
+
             self._detector = BTCRegimeDetector(
                 n_regimes=self._n_regimes,
                 window=self._window,
@@ -103,7 +105,9 @@ class MarketRegimeGateway:
             if closes.size < 2:
                 return _DEFAULT_REGIME
             rolling_max = np.maximum.accumulate(closes)
-            drawdown = (closes[-1] - rolling_max[-1]) / rolling_max[-1] if rolling_max[-1] > 0 else 0.0
+            drawdown = (
+                (closes[-1] - rolling_max[-1]) / rolling_max[-1] if rolling_max[-1] > 0 else 0.0
+            )
             if drawdown > -0.05:
                 return REGIME_BULL
             elif drawdown < -0.20:
@@ -122,7 +126,10 @@ class MarketRegimeGateway:
             try:
                 labels = self._detector.detect(closes)
                 if labels is not None:
-                    return [_HMM_LABEL_TO_REGIME.get(int(l), _DEFAULT_REGIME) for l in labels]
+                    return [
+                        _HMM_LABEL_TO_REGIME.get(int(l), _DEFAULT_REGIME)
+                        for l in labels  # noqa: E741
+                    ]  # noqa: E741
             except Exception:
                 pass
         # 兜底：对每个点用阈值法（简单实现）

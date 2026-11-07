@@ -10,12 +10,12 @@
 运行：
   python -m pytest 16-调控系统/scripts/param_center/tests/test_verifier.py -v
 """
+
 from __future__ import annotations
 
 import sys
-from dataclasses import dataclass
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -31,11 +31,10 @@ for p in [_YIJING_SCRIPTS, _SCRIPTS_16, _PARAM_CENTER]:
         sys.path.insert(0, sp)
 
 # 导入被测对象（实现尚未编写 → RED）
+from param_center.aggregator import ParamProposal  # noqa: E402
 from param_center.verifier import (  # noqa: E402
     BayesianVerifier,
-    VerificationResult,
 )
-from param_center.aggregator import ParamProposal  # noqa: E402
 
 
 def _make_proposal(sl=0.05, tp=0.15, atr=4.5, conf=0.8) -> ParamProposal:

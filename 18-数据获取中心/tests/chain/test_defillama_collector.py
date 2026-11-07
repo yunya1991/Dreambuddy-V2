@@ -7,8 +7,8 @@
 
 DeFiLlama 公共 API **无需 Key**，网络不通时降级返回空列表。
 """
-import pytest
 
+import pytest
 from data_center.core.contract import DataRecord
 from data_center.core.errors import RateLimitError
 
@@ -18,14 +18,18 @@ DEFILLAMA_MOD = "data_center.collectors.chain.defillama_collector.requests"
 def _chains_resp():
     return [
         {
-            "gecko_id": "ethereum", "name": "Ethereum", "symbol": "ETH",
+            "gecko_id": "ethereum",
+            "name": "Ethereum",
+            "symbol": "ETH",
             "tvl": 38_100_000_000.0,
             "tokenSymbol": "ETH",
             "cmcId": "1027",
             "chainId": "1",
         },
         {
-            "gecko_id": "tron", "name": "TRON", "symbol": "TRX",
+            "gecko_id": "tron",
+            "name": "TRON",
+            "symbol": "TRX",
             "tvl": 6_200_000_000.0,
             "tokenSymbol": "TRX",
             "cmcId": "1958",
@@ -46,12 +50,14 @@ class _Resp:
 
 def test_collector_importable():
     from data_center.collectors.chain.defillama_collector import DeFiLlamaCollector
+
     assert DeFiLlamaCollector.source == "defillama"
     assert DeFiLlamaCollector.category == "chain"
 
 
 def test_default_is_available_true_no_api_key_needed():
     from data_center.collectors.chain.defillama_collector import DeFiLlamaCollector
+
     # DeFiLlama 公共 API 不需要 Key，默认可用
     assert DeFiLlamaCollector().is_available() is True
 
@@ -82,10 +88,12 @@ def test_fetch_historical_chain_tvl_route(mocker):
     from data_center.collectors.chain.defillama_collector import DeFiLlamaCollector
 
     m = mocker.patch(DEFILLAMA_MOD)
-    m.get.return_value = _Resp([
-        {"date": 1704067200, "tvl": 38_000_000_000.0},
-        {"date": 1704153600, "tvl": 38_100_000_000.0},
-    ])
+    m.get.return_value = _Resp(
+        [
+            {"date": 1704067200, "tvl": 38_000_000_000.0},
+            {"date": 1704153600, "tvl": 38_100_000_000.0},
+        ]
+    )
 
     c = DeFiLlamaCollector()
     recs = c.fetch({"route": "historicalChainTvl", "chain": "Ethereum"})
@@ -135,13 +143,15 @@ def test_fees_summary_route(mocker):
 
     m = mocker.patch(DEFILLAMA_MOD)
     # summary/fees 返回 dailyFees 列表
-    m.get.return_value = _Resp({
-        "total24h": 1_200_000,
-        "totalDataChart": [
-            [1704067200, 800_000],
-            [1704153600, 1_200_000],
-        ],
-    })
+    m.get.return_value = _Resp(
+        {
+            "total24h": 1_200_000,
+            "totalDataChart": [
+                [1704067200, 800_000],
+                [1704153600, 1_200_000],
+            ],
+        }
+    )
 
     c = DeFiLlamaCollector()
     recs = c.fetch({"route": "fees", "chain": "Ethereum"})

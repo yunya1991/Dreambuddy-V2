@@ -5,10 +5,11 @@
   2. INGEST/DEFERRED/SKIP 决策阈值正确
   3. FAIL-OPEN：TDR 不可用时 novelty=0.5
 """
+
 import os
 import sys
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 # sys.path 注入
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -21,8 +22,8 @@ for _p in [_THIS_DIR, _ADAPTERS_DIR, _34_DIR, _SCRIPTS_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from generic_case_evaluator import GenericCaseEvaluator
-from interfaces.case_evaluator import IngestDecision
+from generic_case_evaluator import GenericCaseEvaluator  # noqa: E402
+from interfaces.case_evaluator import IngestDecision  # noqa: E402
 
 
 class GenericCaseEvaluatorTest(unittest.TestCase):
@@ -92,9 +93,13 @@ class GenericCaseEvaluatorTest(unittest.TestCase):
         # mock TDR retrieve 返回空（高新颖性）
         evaluator._tdr_retrieve = MagicMock(return_value={"ok": True, "scores": []})
         case = self._make_case(
-            outcome="success", quality="B", learned=["l1"],
-            actions=["a1"], known_gaps=["gap1"],
-            acceptance_evidence={"passed": True}, code_path="/tmp/test",
+            outcome="success",
+            quality="B",
+            learned=["l1"],
+            actions=["a1"],
+            known_gaps=["gap1"],
+            acceptance_evidence={"passed": True},
+            code_path="/tmp/test",
         )
         result = evaluator.evaluate(case)
         self.assertEqual(result.decision, IngestDecision.INGEST)
@@ -105,8 +110,11 @@ class GenericCaseEvaluatorTest(unittest.TestCase):
         # mock TDR retrieve 返回高相似度（低新颖性）
         evaluator._tdr_retrieve = MagicMock(return_value={"ok": True, "scores": [0.9]})
         case = self._make_case(
-            outcome="success", quality="A", learned=[],
-            actions=[], known_gaps=[],
+            outcome="success",
+            quality="A",
+            learned=[],
+            actions=[],
+            known_gaps=[],
         )
         result = evaluator.evaluate(case)
         self.assertEqual(result.decision, IngestDecision.SKIP)
@@ -114,7 +122,7 @@ class GenericCaseEvaluatorTest(unittest.TestCase):
     def test_fail_open_tdr_unavailable(self):
         """TDR 不可用时 novelty=0.5（中性）。"""
         evaluator = GenericCaseEvaluator()
-        with patch.object(evaluator, '_get_tdr_retrieve', return_value=None):
+        with patch.object(evaluator, "_get_tdr_retrieve", return_value=None):
             case = self._make_case()
             score = evaluator._assess_novelty(case)
             self.assertEqual(score, 0.5)

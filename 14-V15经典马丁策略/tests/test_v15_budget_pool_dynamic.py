@@ -7,16 +7,13 @@
 4. FAIL-OPEN：所有新配置读错/缺失→回退默认，不抛异常
 5. 基线regression：今日case avail=$46 eq=$654 MU&LINK持2/3→BTC conf72 allowed=True（之前=False）
 """
-from __future__ import annotations
 
-import importlib
+from __future__ import annotations  # noqa: I001
+
 import os
 import sys
 from pathlib import Path
 from typing import Optional
-from unittest.mock import patch
-
-import pytest
 
 _HERE = Path(__file__).resolve().parent
 _V15_ROOT = _HERE.parent
@@ -34,8 +31,14 @@ def _reload_cm(env: Optional[dict] = None):
     """在monkeypatch env后，重新加载capital_manager返回模块。"""
     # 先移除缓存以强制重新加载
     for mod in list(sys.modules.keys()):
-        if mod in ("capital_manager", "config_loader", "okx_client",
-                   "symbol_mapper", "token_pool_loader", "strategy_params"):
+        if mod in (
+            "capital_manager",
+            "config_loader",
+            "okx_client",
+            "symbol_mapper",
+            "token_pool_loader",
+            "strategy_params",
+        ):
             del sys.modules[mod]
     # 如果外部环境变量强制设置，注入到os.environ
     backup = {}
@@ -48,6 +51,7 @@ def _reload_cm(env: Optional[dict] = None):
                 os.environ[k] = str(v)
     try:
         import capital_manager  # type: ignore
+
         return capital_manager
     finally:
         for k, v in backup.items():
@@ -81,13 +85,22 @@ class TestS1BaselinePoolSize:
         cm = _reload_cm()
         # 新函数应存在：_resolve_v15_budget_pool(cap, v15_used=0)
         assert hasattr(cm, "_resolve_v15_budget_pool"), "缺少函数 _resolve_v15_budget_pool"
-        pool = cm._resolve_v15_budget_pool(_baseline_cap(), v15_used_usd=0.0, v15_state_positions=None)
+        pool = cm._resolve_v15_budget_pool(
+            _baseline_cap(), v15_used_usd=0.0, v15_state_positions=None
+        )
         # §1 6个返回字段都应存在
-        for f in ("pool_size_usdt", "budget_pool_gross", "v15_used_deducted",
-                  "budget_pool_net", "effective_min_margin", "dynamic_min_applied"):
+        for f in (
+            "pool_size_usdt",
+            "budget_pool_gross",
+            "v15_used_deducted",
+            "budget_pool_net",
+            "effective_min_margin",
+            "dynamic_min_applied",
+        ):
             assert f in pool, f"缺少返回字段 {f}: {list(pool.keys())}"
-        assert abs(pool["budget_pool_gross"] - 200.0) < 0.01, (
-            f"预期gross=$200(下限保障胜出), 实得${pool['budget_pool_gross']:.2f}")
+        assert (
+            abs(pool["budget_pool_gross"] - 200.0) < 0.01
+        ), f"预期gross=$200(下限保障胜出), 实得${pool['budget_pool_gross']:.2f}"
         # DEDUCT=true默认, v15_used=0 → net应等于gross
         assert abs(pool["budget_pool_net"] - pool["budget_pool_gross"]) < 0.01
 
@@ -108,7 +121,8 @@ class TestS1BaselinePoolSize:
         assert alloc["allowed"] is True, (
             f"alloc.allowed应为True(今日根因修复), 实际False原因={alloc.get('reason')}, "
             f"base=${alloc.get('base_usd'):.2f}, avail_budget=${alloc.get('available_budget')}, "
-            f"budget_pool_gross=${alloc.get('budget_pool_gross')}, net=${alloc.get('budget_pool_net')}")
+            f"budget_pool_gross=${alloc.get('budget_pool_gross')}, net=${alloc.get('budget_pool_net')}"
+        )
         # 同响应附带6个新字段
         assert "budget_pool_gross" in alloc
         assert "budget_pool_net" in alloc
@@ -158,7 +172,7 @@ class TestS2DeductUsed:
         assert abs(pool["v15_used_deducted"] - 100) < 0.01, pool
 
     def test_deduct_exceeds_gross_keeps_half_pool_reserve(self):
-        """v15_used=$500 >> gross=$200 (H4新语义) → 保留半池 net=\$100，不再扣到net=0。
+        r"""v15_used=$500 >> gross=$200 (H4新语义) → 保留半池 net=\$100，不再扣到net=0。
         历史遗留大仓位（LINK单仓per_coin=\$202）不应永远锁死新开机会。"""
         cm = _reload_cm()
         pool = cm._resolve_v15_budget_pool(_baseline_cap(), v15_used_usd=500)
@@ -193,8 +207,9 @@ class TestS3DynamicMinMargin:
         pool = cm._resolve_v15_budget_pool(_baseline_cap(avail=0, eq=100))
         # 固定MIN跟随配置，应等于载入的MIN_MARGIN_USD=10（配置值）
         EXPECTED = cm.MIN_MARGIN_USD
-        assert abs(pool["effective_min_margin"] - EXPECTED) < 0.01, (
-            f"预期MIN={EXPECTED}, 实际={pool}, cm.MIN={cm.MIN_MARGIN_USD}")
+        assert (
+            abs(pool["effective_min_margin"] - EXPECTED) < 0.01
+        ), f"预期MIN={EXPECTED}, 实际={pool}, cm.MIN={cm.MIN_MARGIN_USD}"
         assert pool["dynamic_min_applied"] is False
 
 
@@ -211,8 +226,7 @@ class TestS4FailOpenConfig:
 
     def test_garbage_ratio_cap_defaults_0_5(self):
         """V15_MAX_RATIO_CAP='abc'或负数→回退→CAP=50%。avail大时被eq×0.5钳制。"""
-        cm = _reload_cm({"V15_MAX_RATIO_CAP": "abc",
-                         "V15_POOL_SIZE_USDT": "200"})
+        cm = _reload_cm({"V15_MAX_RATIO_CAP": "abc", "V15_POOL_SIZE_USDT": "200"})
         pool = cm._resolve_v15_budget_pool(_baseline_cap(avail=9999, eq=400))
         # gross = min(max(200,9999)×1.0, 400×0.5=200) → 200
         assert abs(pool["budget_pool_gross"] - 200.0) < 0.01, pool

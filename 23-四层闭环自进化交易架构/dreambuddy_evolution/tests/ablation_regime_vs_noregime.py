@@ -13,6 +13,7 @@
 
 输出: dreambuddy_evolution/data/ablation_regime_vs_noregime.json
 """
+
 from __future__ import annotations
 
 import json
@@ -27,9 +28,12 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
-from dreambuddy_evolution.core.garch_fallback import GARCHFallback
-from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
+from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector  # noqa: E402, I001
+from dreambuddy_evolution.core.garch_fallback import GARCHFallback  # noqa: E402
+from dreambuddy_evolution.core.neural_sde_model import (  # noqa: E402
+    NeuralSDEModel,
+    NeuralSDETrainer,
+)  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -61,6 +65,7 @@ def _train_and_evaluate(
     """
     np.random.seed(seed)
     import torch
+
     torch.manual_seed(seed)
 
     model = NeuralSDEModel(device="cpu")
@@ -68,20 +73,30 @@ def _train_and_evaluate(
         raise RuntimeError("torch 不可用")
 
     trainer = NeuralSDETrainer(
-        model=model, lr=1e-4, seq_len=64, horizon=20,
-        batch_size=64, loss_type="mse",
+        model=model,
+        lr=1e-4,
+        seq_len=64,
+        horizon=20,
+        batch_size=64,
+        loss_type="mse",
     )
 
     t0 = time.time()
     report = trainer.train(
-        closes, epochs=epochs,
+        closes,
+        epochs=epochs,
         regime_labels=regime_labels,
         regime_balance=regime_balance,
     )
     train_time = time.time() - t0
-    logger.info("[%s] 训练: status=%s, n_windows=%d, final_loss=%.6f, 耗时=%.1fs",
-                label, report.get("status"), report.get("n_windows", 0),
-                report.get("final_loss", 0.0), train_time)
+    logger.info(
+        "[%s] 训练: status=%s, n_windows=%d, final_loss=%.6f, 耗时=%.1fs",
+        label,
+        report.get("status"),
+        report.get("n_windows", 0),
+        report.get("final_loss", 0.0),
+        train_time,
+    )
 
     if report.get("status") != "ok":
         raise RuntimeError(f"[{label}] 训练未完成: {report}")
@@ -91,8 +106,8 @@ def _train_and_evaluate(
     n_paths = 200
     n = len(closes)
     test_start = n - horizon - 1
-    history = closes[:test_start + 1]
-    actual = closes[test_start + 1:test_start + 1 + horizon]
+    history = closes[: test_start + 1]
+    actual = closes[test_start + 1 : test_start + 1 + horizon]
 
     # regime-aware 模型推理需要 regime 标签; no-regime 模型传 0 (匹配训练分布)
     # 关键: 训练时 regime_labels=None → 所有窗口 regime=0 → drift_net 收 [1,0,0] 常量
@@ -128,24 +143,28 @@ def main():
 
     with open(data_path) as f:
         closes = np.array(json.load(f), dtype=np.float64)
-    logger.info("加载 BTC 10y 1h close: %d 点, $%.2f → $%.2f",
-                len(closes), closes[0], closes[-1])
+    logger.info("加载 BTC 10y 1h close: %d 点, $%.2f → $%.2f", len(closes), closes[0], closes[-1])
 
     # 检测 regime labels
     detector = BTCRegimeDetector()
     regime_labels = detector.detect(closes)
     counts = np.bincount(regime_labels, minlength=3)
-    logger.info("regime 分布: bull=%d (%.1f%%) chop=%d (%.1f%%) bear=%d (%.1f%%)",
-                counts[0], 100*counts[0]/len(closes),
-                counts[1], 100*counts[1]/len(closes),
-                counts[2], 100*counts[2]/len(closes))
+    logger.info(
+        "regime 分布: bull=%d (%.1f%%) chop=%d (%.1f%%) bear=%d (%.1f%%)",
+        counts[0],
+        100 * counts[0] / len(closes),
+        counts[1],
+        100 * counts[1] / len(closes),
+        counts[2],
+        100 * counts[2] / len(closes),
+    )
 
     # GARCH baseline (固定参照)
     horizon = 20
     n = len(closes)
     test_start = n - horizon - 1
-    history = closes[:test_start + 1]
-    actual = closes[test_start + 1:test_start + 1 + horizon]
+    history = closes[: test_start + 1]
+    actual = closes[test_start + 1 : test_start + 1 + horizon]
     init_price = float(history[-1])
     returns = np.diff(np.log(history))
     init_vol = float(np.std(returns)) if len(returns) > 2 else 0.02
@@ -165,8 +184,8 @@ def main():
     logger.info("=" * 60)
     result_a = _train_and_evaluate(
         closes=closes,
-        regime_labels=None,           # ← 关键: 无 regime 信息
-        regime_balance="natural",     # 与 B 唯一差异 = 无 regime labels
+        regime_labels=None,  # ← 关键: 无 regime 信息
+        regime_balance="natural",  # 与 B 唯一差异 = 无 regime labels
         seed=SEED,
         epochs=EPOCHS,
         label="A-no-regime",
@@ -187,9 +206,7 @@ def main():
 
     # === 对比报告 ===
     regime_contribution = result_a["mae"] - result_b["mae"]
-    improvement_pct = (
-        (result_a["mae"] - result_b["mae"]) / max(result_a["mae"], 1e-8) * 100
-    )
+    improvement_pct = (result_a["mae"] - result_b["mae"]) / max(result_a["mae"], 1e-8) * 100
     # regime 是否有效: A 退化 (MAE_A > MAE_B) 且差异 > 5%
     regime_effective = (regime_contribution > 0) and (improvement_pct > 5.0)
 
@@ -238,8 +255,7 @@ def main():
     logger.info("实验 A (no-regime):  MAE=%.2f", result_a["mae"])
     logger.info("实验 B (regime):     MAE=%.2f", result_b["mae"])
     logger.info("GARCH baseline:       MAE=%.2f", garch_mae)
-    logger.info("regime 贡献:          %.2f (改善 %.1f%%)",
-                regime_contribution, improvement_pct)
+    logger.info("regime 贡献:          %.2f (改善 %.1f%%)", regime_contribution, improvement_pct)
     logger.info("regime 是否有效:     %s (阈值>5%%)", "YES" if regime_effective else "NO")
     logger.info("报告: %s", out_path)
 

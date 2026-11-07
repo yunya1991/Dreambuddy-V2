@@ -5,6 +5,7 @@
 ③triple_screen direction 列存在（ema13_slope_dir / macro_trend_dir）
 ④VIF 清洗后无 VIF>10 列（样本≥1000 时）
 """
+
 from __future__ import annotations
 
 import sys
@@ -27,18 +28,21 @@ def large_ohlcv():
     rng = np.random.default_rng(42)
     n = 1200
     close = 100 * np.exp(np.cumsum(rng.normal(0, 0.02, n)))
-    return pd.DataFrame({
-        "open": close * (1 + rng.normal(0, 0.004, n)),
-        "high": close * (1 + np.abs(rng.normal(0, 0.01, n))),
-        "low": close * (1 - np.abs(rng.normal(0, 0.01, n))),
-        "close": close,
-        "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
-    }, index=pd.date_range("2024-01-01", periods=n, freq="D"))
+    return pd.DataFrame(
+        {
+            "open": close * (1 + rng.normal(0, 0.004, n)),
+            "high": close * (1 + np.abs(rng.normal(0, 0.01, n))),
+            "low": close * (1 - np.abs(rng.normal(0, 0.01, n))),
+            "close": close,
+            "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
+        },
+        index=pd.date_range("2024-01-01", periods=n, freq="D"),
+    )
 
 
 def _build_pipeline():
-    from feature_hub.pipeline.feature_pipeline import FeaturePipeline
     from feature_hub.modules.loader import load_default_sets
+    from feature_hub.pipeline.feature_pipeline import FeaturePipeline
 
     pipe = FeaturePipeline()
     load_default_sets(pipe)
@@ -53,9 +57,15 @@ def test_t24_alt_trend_ensemble_4_assertions(large_ohlcv):
     assert len(fv.df.columns) >= 60, f"shape={len(fv.df.columns)} < 60"
 
     # ②elder_ray one-hot 列存在（VIF 会剔除共线 one-hot，保留 ≥2 列）
-    elder_onehot = [c for c in fv.df.columns if "elder_" in c and any(
-        cat in c for cat in ("bullish_strong", "bullish", "neutral", "bearish", "bearish_strong")
-    )]
+    elder_onehot = [
+        c
+        for c in fv.df.columns
+        if "elder_" in c
+        and any(
+            cat in c
+            for cat in ("bullish_strong", "bullish", "neutral", "bearish", "bearish_strong")
+        )
+    ]
     assert len(elder_onehot) >= 2, f"elder one-hot cols={len(elder_onehot)} < 2: {elder_onehot}"
 
     # ③triple_screen direction 列存在

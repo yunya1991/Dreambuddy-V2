@@ -10,11 +10,12 @@
     python3 backtest/run_backtest.py
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from backtest import (
+from backtest import (  # noqa: I001
     BacktestEngine,
     BacktestResult,
     BuyAndHoldStrategy,
@@ -35,7 +36,9 @@ def demo_sample_data_backtest():
     print("=" * 60)
 
     df = generate_sample_data(n_days=1000, start_price=100.0, volatility=0.02)
-    print(f"合成数据: {len(df)} 天, 起始价: {df['close'].iloc[0]:.2f}, 最终价: {df['close'].iloc[-1]:.2f}")
+    print(
+        f"合成数据: {len(df)} 天, 起始价: {df['close'].iloc[0]:.2f}, 最终价: {df['close'].iloc[-1]:.2f}"
+    )
 
     engine = BacktestEngine(
         initial_capital=10000.0,
@@ -100,8 +103,10 @@ def demo_real_data_backtest():
             signals = strategy.generate_signals(df)
             result = engine.run(df["close"], signals, symbol=name)
             results[name] = BacktestResult(result)
-            print(f"  完成: 收益 {results[name].total_return_pct:.2f}%, "
-                  f"夏普 {results[name].sharpe_ratio:.2f}")
+            print(
+                f"  完成: 收益 {results[name].total_return_pct:.2f}%, "
+                f"夏普 {results[name].sharpe_ratio:.2f}"
+            )
         except Exception as e:
             print(f"  失败: {e}")
 
@@ -129,14 +134,10 @@ def demo_train_test_split():
     strategy = MovingAverageStrategy(20, 200)
 
     train_signals = strategy.generate_signals(train_df)
-    train_result = BacktestResult(
-        engine.run(train_df["close"], train_signals, symbol="Train")
-    )
+    train_result = BacktestResult(engine.run(train_df["close"], train_signals, symbol="Train"))
 
     test_signals = strategy.generate_signals(test_df)
-    test_result = BacktestResult(
-        engine.run(test_df["close"], test_signals, symbol="Test")
-    )
+    test_result = BacktestResult(engine.run(test_df["close"], test_signals, symbol="Test"))
 
     print("\n--- 训练集表现 ---")
     print(f"  累计收益: {train_result.total_return_pct:.2f}%")
@@ -150,7 +151,9 @@ def demo_train_test_split():
 
     decay = 0
     if train_result.sharpe_ratio > 0:
-        decay = (train_result.sharpe_ratio - test_result.sharpe_ratio) / train_result.sharpe_ratio * 100
+        decay = (
+            (train_result.sharpe_ratio - test_result.sharpe_ratio) / train_result.sharpe_ratio * 100
+        )
     print(f"\n夏普衰减: {decay:.1f}% (越低越好，>50%可能过拟合)")
 
 

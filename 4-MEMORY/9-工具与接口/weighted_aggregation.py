@@ -11,6 +11,7 @@
 - 全 abstain 或总权重 0 → p=None（回退布尔路径）
 - 权重缩放不变性（归一化不影响 p）
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -24,6 +25,7 @@ class StageWeights:
     缺失 stage 默认权重 1.0（等权）。
     权重为 0 表示该阶段不参与聚合。
     """
+
     _weights: Dict[str, float] = field(default_factory=dict)
 
     def __post_init__(self) -> None:

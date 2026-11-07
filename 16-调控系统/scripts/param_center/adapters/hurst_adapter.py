@@ -10,6 +10,7 @@
     - 1: 0.45≤H≤0.55 随机游走 → "random"
     - 2: H>0.55 趋势性 → "trend"
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -20,8 +21,8 @@ from .base import BaseAdapter
 # Hurst category (int) → 调整系数
 # 真实返回: 0=均值回归, 1=随机, 2=趋势
 _HURST_ADJUST = {
-    0: {"sl_mult": 0.85, "tp_mult": 1.0},   # 震荡 → 收紧止损（趋势不明，快止损），止盈不变保持RR
-    1: {"sl_mult": 1.0, "tp_mult": 1.0},   # 随机 → 不变
+    0: {"sl_mult": 0.85, "tp_mult": 1.0},  # 震荡 → 收紧止损（趋势不明，快止损），止盈不变保持RR
+    1: {"sl_mult": 1.0, "tp_mult": 1.0},  # 随机 → 不变
     2: {"sl_mult": 0.9, "tp_mult": 1.2},  # 趋势 → 紧SL宽TP
 }
 _BASE = {"sl_floor": 0.05, "tp_floor": 0.15, "atr_mult": 4.5}
@@ -44,6 +45,7 @@ class HurstAdapter(BaseAdapter):
 
         try:
             from memory_l4.bcrm2.classic_experience_features import compute_hurst_features
+
             feats = compute_hurst_features(closes)
             # 真实返回 int 0/1/2（不是字符串）
             category_raw = feats.get("hurst_category", 1)

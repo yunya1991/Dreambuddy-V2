@@ -2,6 +2,7 @@
 
 模拟真实交易结算流程，验证方向3 逆向推导子系统的完整闭环。
 """
+
 import sys
 from pathlib import Path
 
@@ -68,8 +69,13 @@ def test_e2e_true_failure_full_chain(engine, deriver):
 
     # Step 5: 精准奖惩
     reward = engine.apply_reward_with_derive(
-        cs=cs, outcome="SL", cluster_id="C_BTC_MOM", ess_id="ess_btc_001",
-        gmax=0.3, snapshot=snapshot, derive_result=derive_result,
+        cs=cs,
+        outcome="SL",
+        cluster_id="C_BTC_MOM",
+        ess_id="ess_btc_001",
+        gmax=0.3,
+        snapshot=snapshot,
+        derive_result=derive_result,
     )
 
     # base_reward：CS≤-0.2 & SL → ess_delta=-0.05, gmax_mult=0.5
@@ -114,8 +120,13 @@ def test_e2e_false_failure_full_chain(engine, deriver):
     assert derive_result.root_cause_type == "unknown"
 
     reward = engine.apply_reward_with_derive(
-        cs=cs, outcome="SL", cluster_id="C_ETH_TREND", ess_id="ess_eth_001",
-        gmax=0.3, snapshot=snapshot, derive_result=derive_result,
+        cs=cs,
+        outcome="SL",
+        cluster_id="C_ETH_TREND",
+        ess_id="ess_eth_001",
+        gmax=0.3,
+        snapshot=snapshot,
+        derive_result=derive_result,
     )
 
     # 假失败：CS≥0.7&SL才触发gmax×1.2；此处CS=0.4走中性
@@ -153,8 +164,13 @@ def test_e2e_true_success_full_chain(engine, deriver):
     assert derive_result.wrong_dimensions == []
 
     reward = engine.apply_reward_with_derive(
-        cs=cs, outcome="TP", cluster_id="C_SOL_BREAK", ess_id="ess_sol_001",
-        gmax=0.3, snapshot=snapshot, derive_result=derive_result,
+        cs=cs,
+        outcome="TP",
+        cluster_id="C_SOL_BREAK",
+        ess_id="ess_sol_001",
+        gmax=0.3,
+        snapshot=snapshot,
+        derive_result=derive_result,
     )
 
     # CS≥0.9 & TP → ess_delta=+0.05

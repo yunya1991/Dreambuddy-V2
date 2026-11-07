@@ -7,6 +7,7 @@
 adaptive=true 启用 Scrapling 自适应解析，页面改版后自动重新定位元素。
 产出 DataRecord(category=news, source=cointelegraph_cn)。
 """
+
 from __future__ import annotations
 
 import logging
@@ -76,14 +77,16 @@ class CointelegraphCnCollector(BaseCollector):
                 continue
             if link and not link.startswith("http"):
                 link = "https://cn.cointelegraph.com" + link
-            recs.append(DataRecord(
-                source=self.source,
-                category="news",
-                sub_category="news",
-                timestamp=ts,
-                metrics={"title": title, "link": link, "summary": summary[:200]},
-                events=[],
-                timeseries=[],
-                raw={"title": title, "link": link, "summary": summary},
-            ))
+            recs.append(
+                DataRecord(
+                    source=self.source,
+                    category="news",
+                    sub_category="news",
+                    timestamp=ts,
+                    metrics={"title": title, "link": link, "summary": summary[:200]},
+                    events=[],
+                    timeseries=[],
+                    raw={"title": title, "link": link, "summary": summary},
+                )
+            )
         return recs

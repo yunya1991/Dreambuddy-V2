@@ -7,10 +7,10 @@ P1-1 RED: SignatureComputer 组件契约测试
 - extract_features(state_features, price_path)->list[float] — 17维签名特征
 - status()->dict — 后端可用性报告
 """
+
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 
 class TestSignatureComputerContract:
@@ -23,12 +23,14 @@ class TestSignatureComputerContract:
     def test_class_instantiates_with_default_depth(self):
         """SignatureComputer(signature_depth=3) 可实例化"""
         from dreambuddy_evolution.engines.signature_computer import SignatureComputer
+
         computer = SignatureComputer()
         assert computer is not None
 
     def test_class_instantiates_with_custom_depth(self):
         """SignatureComputer(signature_depth=2) 接收自定义深度"""
         from dreambuddy_evolution.engines.signature_computer import SignatureComputer
+
         computer = SignatureComputer(signature_depth=2)
         assert computer is not None
 
@@ -38,6 +40,7 @@ class TestPathToSignature:
 
     def test_returns_numpy_array(self):
         from dreambuddy_evolution.engines.signature_computer import SignatureComputer
+
         computer = SignatureComputer()
         path = np.array([100.0, 101.0, 102.0, 101.5, 103.0])
         sig = computer.path_to_signature(path)
@@ -47,6 +50,7 @@ class TestPathToSignature:
 
     def test_constant_path_has_zero_increment(self):
         from dreambuddy_evolution.engines.signature_computer import SignatureComputer
+
         computer = SignatureComputer()
         path = np.array([50.0, 50.0, 50.0])
         sig = computer.path_to_signature(path)
@@ -59,6 +63,7 @@ class TestBackendStatus:
 
     def test_status_returns_dict_with_signatory_key(self):
         from dreambuddy_evolution.engines.signature_computer import SignatureComputer
+
         computer = SignatureComputer()
         status = computer.status()
         assert isinstance(status, dict)

@@ -22,61 +22,60 @@ gate_level 含义:
 
 import json
 import os
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
-
+from datetime import datetime
+from typing import Dict, List, Optional
 
 # ── 配置 ────────────────────────────────────────────────────────────────────
 
+
 def _default_base() -> str:
     """注释文件目录（相对于本文件所在目录）."""
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        "Dreambuddy-V2", "6-TRADING")
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "Dreambuddy-V2", "6-TRADING")
 
 
 # 维度元数据: key → (显示名, 文件名, 最大有效天数, SKILL触发词, BTC-only)
 DIMENSION_META: Dict[str, Dict] = {
-    "cycle":        {
-        "name":      "减半/库存周期 (B)",
-        "file":      "screen1_cycle_annotation.json",
-        "max_days":  14,    # 确定性阶段变化慢，有效期更长
-        "skill":     "/screen1-halving-cycle",
-        "btc_only":  True,
+    "cycle": {
+        "name": "减半/库存周期 (B)",
+        "file": "screen1_cycle_annotation.json",
+        "max_days": 14,  # 确定性阶段变化慢，有效期更长
+        "skill": "/screen1-halving-cycle",
+        "btc_only": True,
     },
-    "miner":        {
-        "name":      "矿工经济 (C)",
-        "file":      "screen1_miner_annotation.json",
-        "max_days":  7,
-        "skill":     "/screen1-miner-economics",
-        "btc_only":  True,
+    "miner": {
+        "name": "矿工经济 (C)",
+        "file": "screen1_miner_annotation.json",
+        "max_days": 7,
+        "skill": "/screen1-miner-economics",
+        "btc_only": True,
     },
-    "onchain":      {
-        "name":      "链上估值 (D)",
-        "file":      "screen1_onchain_annotation.json",
-        "max_days":  7,
-        "skill":     "/screen1-onchain-valuation",
-        "btc_only":  True,
+    "onchain": {
+        "name": "链上估值 (D)",
+        "file": "screen1_onchain_annotation.json",
+        "max_days": 7,
+        "skill": "/screen1-onchain-valuation",
+        "btc_only": True,
     },
-    "macro":        {
-        "name":      "宏观金融 (E)",
-        "file":      "screen1_macro_annotation.json",
-        "max_days":  7,
-        "skill":     "/screen1-macro-finance",
-        "btc_only":  False,  # ETH/SOL 也可读取宏观
+    "macro": {
+        "name": "宏观金融 (E)",
+        "file": "screen1_macro_annotation.json",
+        "max_days": 7,
+        "skill": "/screen1-macro-finance",
+        "btc_only": False,  # ETH/SOL 也可读取宏观
     },
     "cross_market": {
-        "name":      "跨市场周期 (F)",
-        "file":      "screen1_cross_market_annotation.json",
-        "max_days":  7,
-        "skill":     "/screen1-cross-market",
-        "btc_only":  True,
+        "name": "跨市场周期 (F)",
+        "file": "screen1_cross_market_annotation.json",
+        "max_days": 7,
+        "skill": "/screen1-cross-market",
+        "btc_only": True,
     },
-    "cross_asset":  {
-        "name":      "A系列跨资产配置",
-        "file":      "screen1_cross_asset_annotation.json",
-        "max_days":  7,
-        "skill":     "/screen1-cross-asset",
-        "btc_only":  True,
+    "cross_asset": {
+        "name": "A系列跨资产配置",
+        "file": "screen1_cross_asset_annotation.json",
+        "max_days": 7,
+        "skill": "/screen1-cross-asset",
+        "btc_only": True,
     },
 }
 
@@ -88,16 +87,15 @@ DEPENDENCY_CHAIN: Dict[str, List[str]] = {
 # 核心维度（用于 gate_level 判断，不含 cross_asset 这个最终输出）
 CORE_DIMS = ["cycle", "miner", "onchain", "macro", "cross_market"]
 
-STATUS_FRESH   = "FRESH"
-STATUS_STALE   = "STALE"
+STATUS_FRESH = "FRESH"
+STATUS_STALE = "STALE"
 STATUS_MISSING = "MISSING"
 
-VALID_REGIMES = frozenset(
-    ["STRONG_BULL", "WEAK_BULL", "CONSOLIDATION", "WEAK_BEAR", "STRONG_BEAR"]
-)
+VALID_REGIMES = frozenset(["STRONG_BULL", "WEAK_BULL", "CONSOLIDATION", "WEAK_BEAR", "STRONG_BEAR"])
 
 
 # ── 内部工具 ─────────────────────────────────────────────────────────────────
+
 
 def _annotation_path(dim_key: str, base: str) -> str:
     return os.path.join(base, DIMENSION_META[dim_key]["file"])
@@ -148,6 +146,7 @@ def _dim_status(dim_key: str, base: str, today: datetime) -> Dict:
 
 # ── 主函数 ────────────────────────────────────────────────────────────────────
 
+
 def check_annotation_freshness(
     base: Optional[str] = None,
     today: Optional[datetime] = None,
@@ -184,7 +183,7 @@ def check_annotation_freshness(
         today = datetime.now()
 
     results: Dict[str, Dict] = {}
-    stale: List[str]   = []
+    stale: List[str] = []
     missing: List[str] = []
     dep_violations: List[str] = []
 
@@ -195,8 +194,10 @@ def check_annotation_freshness(
         meta = DIMENSION_META[dim]
         if meta["btc_only"] and not is_btc:
             results[dim] = {
-                "status": "SKIPPED", "age_days": None,
-                "updated": None, "data": None,
+                "status": "SKIPPED",
+                "age_days": None,
+                "updated": None,
+                "data": None,
             }
             continue
         info = _dim_status(dim, base, today)
@@ -217,11 +218,11 @@ def check_annotation_freshness(
             dep_info = results.get(dep, {})
             dep_status = dep_info.get("status", STATUS_MISSING)
             if dep_status in (STATUS_STALE, STATUS_MISSING):
-                dep_name  = DIMENSION_META.get(dep,  {}).get("name", dep)
-                dim_name  = DIMENSION_META.get(dim,  {}).get("name", dim)
-                dep_age   = dep_info.get("age_days")
-                dim_age   = dim_info.get("age_days", 0)
-                word      = "缺失" if dep_status == STATUS_MISSING else f"过期({dep_age}天)"
+                dep_name = DIMENSION_META.get(dep, {}).get("name", dep)
+                dim_name = DIMENSION_META.get(dim, {}).get("name", dim)
+                dep_age = dep_info.get("age_days")
+                dim_age = dim_info.get("age_days", 0)
+                word = "缺失" if dep_status == STATUS_MISSING else f"过期({dep_age}天)"
                 dep_violations.append(
                     f"{dim_name} annotation 存在(更新{dim_age}天前), "
                     f"但依赖的 {dep_name} {word} — "
@@ -229,7 +230,7 @@ def check_annotation_freshness(
                 )
 
     # ── 提取关键下游字段 ────────────────────────────────────────────────────
-    clock_stage  = None
+    clock_stage = None
     skill_regime = None
 
     cm_info = results.get("cross_market", {})
@@ -244,11 +245,9 @@ def check_annotation_freshness(
 
     # ── gate_level 判断 ─────────────────────────────────────────────────────
     # 只统计核心维度（非 cross_asset）
-    active_core = [d for d in CORE_DIMS
-                   if results.get(d, {}).get("status") != "SKIPPED"]
+    active_core = [d for d in CORE_DIMS if results.get(d, {}).get("status") != "SKIPPED"]
     n_total = len(active_core)
-    n_fresh = sum(1 for d in active_core
-                  if results.get(d, {}).get("status") == STATUS_FRESH)
+    n_fresh = sum(1 for d in active_core if results.get(d, {}).get("status") == STATUS_FRESH)
 
     if n_fresh == n_total and not dep_violations:
         gate_level = "FULL"
@@ -260,7 +259,7 @@ def check_annotation_freshness(
         gate_level = "BASELINE"
         gate_confidence_mult = 0.5
 
-    gate_pass = (gate_level == "FULL")
+    gate_pass = gate_level == "FULL"
 
     # ── 生成 TeamA 建议 ──────────────────────────────────────────────────────
     # 按依赖顺序排序（E 排在 F 前）
@@ -271,11 +270,9 @@ def check_annotation_freshness(
 
     recommendations: List[str] = []
     for dim in ordered_to_run:
-        meta  = DIMENSION_META[dim]
+        meta = DIMENSION_META[dim]
         label = "缺失" if dim in missing else "过期"
-        recommendations.append(
-            f"运行 {meta['skill']:35s}  [{meta['name']}  {label}]"
-        )
+        recommendations.append(f"运行 {meta['skill']:35s}  [{meta['name']}  {label}]")
 
     if dep_violations:
         recommendations.append(
@@ -285,65 +282,70 @@ def check_annotation_freshness(
     # ── 调度计划（可选，Hermes 消费）────────────────────────────────────────
     dispatch_plan: List[Dict] = []
     try:
-        from model_dispatcher import dispatch as _dispatch, get_task_info as _get_task_info
+        from model_dispatcher import dispatch as _dispatch
+        from model_dispatcher import get_task_info as _get_task_info
 
         # 仅为需要运行的维度 + 完整合成链生成调度项
         _dim_to_task = {
-            "cycle":        "dim_annotation_cycle",
-            "miner":        "dim_annotation_miner",
-            "onchain":      "dim_annotation_onchain",
-            "macro":        "dim_annotation_macro",
+            "cycle": "dim_annotation_cycle",
+            "miner": "dim_annotation_miner",
+            "onchain": "dim_annotation_onchain",
+            "macro": "dim_annotation_macro",
             "cross_market": "dim_annotation_cross_market",
         }
         _step = 1
         for dim in ordered_to_run:
-            tt    = _dim_to_task[dim]
+            tt = _dim_to_task[dim]
             model = _dispatch(tt)
-            info  = _get_task_info(tt)
-            dispatch_plan.append({
-                "step":        _step,
-                "task_type":   tt,
-                "model":       model,
-                "skill":       info["skill"],
-                "depends_on":  info["depends_on"],
-                "dim":         dim,
-                "reason":      "缺失" if dim in missing else "过期",
-            })
+            info = _get_task_info(tt)
+            dispatch_plan.append(
+                {
+                    "step": _step,
+                    "task_type": tt,
+                    "model": model,
+                    "skill": info["skill"],
+                    "depends_on": info["depends_on"],
+                    "dim": dim,
+                    "reason": "缺失" if dim in missing else "过期",
+                }
+            )
             _step += 1
 
         # 如果有维度需要更新，补充合成链
         if ordered_to_run:
             for tt in ["synthesis_a1", "synthesis_a2", "synthesis_a3", "synthesis_cross_asset"]:
                 model = _dispatch(tt)
-                info  = _get_task_info(tt)
-                dispatch_plan.append({
-                    "step":       _step,
-                    "task_type":  tt,
-                    "model":      model,
-                    "skill":      info["skill"],
-                    "depends_on": info["depends_on"],
-                    "dim":        None,
-                    "reason":     "合成链重跑",
-                })
+                info = _get_task_info(tt)
+                dispatch_plan.append(
+                    {
+                        "step": _step,
+                        "task_type": tt,
+                        "model": model,
+                        "skill": info["skill"],
+                        "depends_on": info["depends_on"],
+                        "dim": None,
+                        "reason": "合成链重跑",
+                    }
+                )
                 _step += 1
     except ImportError:
         pass  # model_dispatcher 不存在时优雅降级
 
     return {
-        "gate_pass":             gate_pass,
-        "gate_level":            gate_level,
-        "gate_checked_at":       today.strftime("%Y-%m-%d %H:%M"),
-        "dimensions":            results,
-        "stale_dims":            stale,
-        "missing_dims":          missing,
+        "gate_pass": gate_pass,
+        "gate_level": gate_level,
+        "gate_checked_at": today.strftime("%Y-%m-%d %H:%M"),
+        "dimensions": results,
+        "stale_dims": stale,
+        "missing_dims": missing,
         "dependency_violations": dep_violations,
-        "clock_stage":           clock_stage,
-        "skill_regime":          skill_regime,
-        "n_fresh":               n_fresh,
-        "n_total":               n_total,
-        "gate_confidence_mult":  gate_confidence_mult,
-        "recommendations":       recommendations,
-        "dispatch_plan":         dispatch_plan,
+        "clock_stage": clock_stage,
+        "skill_regime": skill_regime,
+        "n_fresh": n_fresh,
+        "n_total": n_total,
+        "gate_confidence_mult": gate_confidence_mult,
+        "recommendations": recommendations,
+        "dispatch_plan": dispatch_plan,
     }
 
 
@@ -364,12 +366,11 @@ def get_annotation_field(
 
 # ── 格式化报告 ────────────────────────────────────────────────────────────────
 
+
 def format_gate_report(g: Dict) -> str:
     """生成人类可读的门禁检查报告."""
-    icons = {STATUS_FRESH: "✅", STATUS_STALE: "⚠️",
-             STATUS_MISSING: "❌", "SKIPPED": "—"}
-    level_icon = {"FULL": "✅ FULL", "PARTIAL": "⚠️ PARTIAL",
-                  "BASELINE": "❌ BASELINE"}
+    icons = {STATUS_FRESH: "✅", STATUS_STALE: "⚠️", STATUS_MISSING: "❌", "SKIPPED": "—"}
+    level_icon = {"FULL": "✅ FULL", "PARTIAL": "⚠️ PARTIAL", "BASELINE": "❌ BASELINE"}
 
     lines = [
         "=" * 64,
@@ -383,15 +384,12 @@ def format_gate_report(g: Dict) -> str:
     for dim, info in g["dimensions"].items():
         if dim not in DIMENSION_META:
             continue
-        meta   = DIMENSION_META[dim]
-        st     = info.get("status", "UNKNOWN")
-        icon   = icons.get(st, "?")
-        age    = f"{info['age_days']}天前" if info.get("age_days") is not None else "—"
-        upd    = info.get("updated") or "—"
-        lines.append(
-            f"  {icon} {meta['name']:22s}  {st:8s}"
-            f"  更新: {upd:12s}  ({age})"
-        )
+        meta = DIMENSION_META[dim]
+        st = info.get("status", "UNKNOWN")
+        icon = icons.get(st, "?")
+        age = f"{info['age_days']}天前" if info.get("age_days") is not None else "—"
+        upd = info.get("updated") or "—"
+        lines.append(f"  {icon} {meta['name']:22s}  {st:8s}" f"  更新: {upd:12s}  ({age})")
 
     if g["dependency_violations"]:
         lines.append("─" * 64)
@@ -422,7 +420,9 @@ def format_gate_report(g: Dict) -> str:
 # ── 独立运行 ──────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    import sys, io
+    import io
+    import sys
+
     if sys.platform == "win32":
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
@@ -431,10 +431,11 @@ if __name__ == "__main__":
     print(format_gate_report(result))
 
     # 简单 smoke test
-    assert result["gate_level"] in ("FULL", "PARTIAL", "BASELINE"), \
-        f"gate_level 非法: {result['gate_level']}"
-    assert 0.0 <= result["gate_confidence_mult"] <= 1.0, \
-        "gate_confidence_mult 超出范围"
-    assert result["n_fresh"] <= result["n_total"], \
-        "n_fresh > n_total 不合理"
+    assert result["gate_level"] in (
+        "FULL",
+        "PARTIAL",
+        "BASELINE",
+    ), f"gate_level 非法: {result['gate_level']}"
+    assert 0.0 <= result["gate_confidence_mult"] <= 1.0, "gate_confidence_mult 超出范围"
+    assert result["n_fresh"] <= result["n_total"], "n_fresh > n_total 不合理"
     print("\n[SMOKE TEST] annotation_freshness_gate: OK")

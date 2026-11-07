@@ -18,32 +18,36 @@ Bayesian triggers:
     - No profit for >= 7 days → strategy review
     - Cross-month boundary → full parameter sweep
 """
+
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-from datetime import datetime, timedelta
-from dataclasses import dataclass, field
-from pathlib import Path
 import json
 import logging
 import os
-import uuid
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-from dreamos.capabilities.trading.coin_selector import CoinSelector
-from dreamos.capabilities.trading.yijing_signal_generator import YijingSignalGenerator
-from dreamos.capabilities.trading.v15_executor import V15Executor
-from dreamos.capabilities.trading.signal_router import SignalRouter
-from dreamos.capabilities.trading.cognitive_reviewer import CognitiveReviewer
-
+from dreamos.capabilities.trading.cognitive_reviewer import CognitiveReviewer  # noqa: E402
+from dreamos.capabilities.trading.coin_selector import CoinSelector  # noqa: E402
+from dreamos.capabilities.trading.signal_router import SignalRouter  # noqa: E402
+from dreamos.capabilities.trading.v15_executor import V15Executor  # noqa: E402
+from dreamos.capabilities.trading.yijing_signal_generator import YijingSignalGenerator  # noqa: E402
 
 # Bayesian optimization trigger thresholds
 BAYESIAN_LOSS_THRESHOLD = 3
 BAYESIAN_DAYS_THRESHOLD = 7
 
 # P1 状态持久化: 运行状态落盘,重启后自动恢复(不再失忆)
-STATE_FILE = Path(__file__).resolve().parent.parent.parent / "cli" / "scheduler_data" / "orchestrator_v2_state.json"
+STATE_FILE = (
+    Path(__file__).resolve().parent.parent.parent
+    / "cli"
+    / "scheduler_data"
+    / "orchestrator_v2_state.json"
+)
 _CYCLE_HISTORY_CAP = 200  # 历史记录上限,防止状态文件无限膨胀
 
 # P1-2: E层认知记忆持久化文件 (lessons 跨重启不丢失)
@@ -157,8 +161,14 @@ class OrchestratorV2:
                 "losses": self._losses,
                 "consecutive_losses": self._consecutive_losses,
                 "bayesian_optimizations": self._bayesian_optimizations,
-                "last_profit_date": self._last_profit_date.isoformat() if self._last_profit_date else None,
-                "last_optimization_date": self._last_optimization_date.isoformat() if self._last_optimization_date else None,
+                "last_profit_date": (
+                    self._last_profit_date.isoformat() if self._last_profit_date else None
+                ),
+                "last_optimization_date": (
+                    self._last_optimization_date.isoformat()
+                    if self._last_optimization_date
+                    else None
+                ),
                 "cycle_history": self._cycle_history[-_CYCLE_HISTORY_CAP:],
                 "saved_at": datetime.utcnow().isoformat() + "Z",
             }
@@ -198,6 +208,7 @@ class OrchestratorV2:
                     from dreamos.capabilities.trading.fundamental_injector import (
                         FundamentalDataInjector,
                     )
+
                     self._fundamental_injector = FundamentalDataInjector()
                 injected = self._fundamental_injector.inject(
                     market_data, market_data.get("symbol", "BTC")
@@ -225,12 +236,8 @@ class OrchestratorV2:
         cognitive_ctx: Dict[str, Any] = {}
         confidence_adjustment = 0.0
         try:
-            cognitive_ctx = self._reviewer.get_cognitive_context(
-                market_data.get("symbol")
-            )
-            confidence_adjustment = float(
-                cognitive_ctx.get("confidence_adjustment", 0.0) or 0.0
-            )
+            cognitive_ctx = self._reviewer.get_cognitive_context(market_data.get("symbol"))
+            confidence_adjustment = float(cognitive_ctx.get("confidence_adjustment", 0.0) or 0.0)
         except Exception as e:
             errors.append(f"cognitive_context: {e}")
             status = "PARTIAL"
@@ -313,11 +320,13 @@ class OrchestratorV2:
 
         # Update tracking
         self._total_cycles += 1
-        self._cycle_history.append({
-            "cycle_id": cycle_id,
-            "status": status,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-        })
+        self._cycle_history.append(
+            {
+                "cycle_id": cycle_id,
+                "status": status,
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+            }
+        )
 
         if errors:
             status = "FAILED" if status == "PARTIAL" and len(errors) >= 3 else status
@@ -392,7 +401,8 @@ class OrchestratorV2:
             "bayesian_optimizations": self._bayesian_optimizations,
             "last_optimization": (
                 self._last_optimization_date.isoformat() + "Z"
-                if self._last_optimization_date else None
+                if self._last_optimization_date
+                else None
             ),
         }
 
@@ -435,6 +445,7 @@ class OrchestratorV2:
 
 
 # ---- P1-3: 真实平仓回填入口 (E层认知闭环接线) ----
+
 
 def record_real_exit(trade_result: Dict[str, Any]) -> Dict[str, Any]:
     """P1-3: 真实平仓结果回填 —— E层认知闭环入口。
@@ -485,8 +496,8 @@ def record_real_exit(trade_result: Dict[str, Any]) -> Dict[str, Any]:
 
 # ---- Task 3: OrchestratorV2Node ----
 
-from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.registry.base import BaseNode  # noqa: E402
+from dreamos.shared.state import NodeResult, NodeStatus, State  # noqa: E402
 
 
 class OrchestratorV2Node(BaseNode):

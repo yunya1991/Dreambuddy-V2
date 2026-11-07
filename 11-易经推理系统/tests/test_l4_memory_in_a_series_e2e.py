@@ -5,10 +5,8 @@ A-series stages query L4 memory -> populate memory_refs -> artifacts contain ref
 Pipeline auto-rebuilds index after stats update
 """
 
-import json
-import shutil
-import sys
 import importlib.util
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
@@ -34,6 +32,7 @@ def _payload(out: Dict[str, Any]) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Helper: create synthetic L4 cases for retrieval
 # ---------------------------------------------------------------------------
+
 
 def _make_case(
     case_id: str,
@@ -63,10 +62,19 @@ def _make_case(
         "quadrant": {
             "x": 0.5 if pnl > 0 else -0.5,
             "y": 0.6,
-            "evidence": {"weights": {"perf": 0.4, "consistency": 0.4, "human": 0.2},
-                         "y_perf": 0.6, "y_consistency": 0.6, "y_human": 0.5, "notes": ""},
+            "evidence": {
+                "weights": {"perf": 0.4, "consistency": 0.4, "human": 0.2},
+                "y_perf": 0.6,
+                "y_consistency": 0.6,
+                "y_human": 0.5,
+                "notes": "",
+            },
         },
-        "review": {"summary": "good trade", "theory_practice_consistency": "consistent", "lessons": []},
+        "review": {
+            "summary": "good trade",
+            "theory_practice_consistency": "consistent",
+            "lessons": [],
+        },
         "execution": {"episode_refs": []},
     }
 
@@ -83,13 +91,13 @@ def _write_cases(cases_dir: Path, cases: list) -> None:
 # Use real .workbuddy paths for these tests (read-only or cleanup)
 # ---------------------------------------------------------------------------
 
-from scripts.memory_l4.paths import memory_l4_cases_dir, memory_l4_distills_dir, workbuddy_dir
-from scripts.memory_l4 import index_builder as idx_b
-
+from scripts.memory_l4 import index_builder as idx_b  # noqa: E402
+from scripts.memory_l4.paths import memory_l4_cases_dir  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # 1. Retrieval helper returns refs when index exists
 # ---------------------------------------------------------------------------
+
 
 def test_retrieval_helper_returns_refs_with_index():
     """When L4 cases and index exist, retrieval returns non-empty refs."""
@@ -111,7 +119,10 @@ def test_retrieval_helper_returns_refs_with_index():
 
     # Use a real case_id
     cid = cases[0]["case_id"]
-    payload = {"case_id": cid, "market_regime": cases[0].get("environment_snapshot", {}).get("regime", "bull")}
+    payload = {
+        "case_id": cid,
+        "market_regime": cases[0].get("environment_snapshot", {}).get("regime", "bull"),
+    }
 
     refs = mem_retriever.retrieve_memory_refs_for_stage("A3", payload, topk=3)
     assert isinstance(refs, list)
@@ -125,12 +136,15 @@ def test_retrieval_helper_returns_refs_with_index():
 # 2. Graceful degradation without matching case_id
 # ---------------------------------------------------------------------------
 
+
 def test_retrieval_helper_graceful_degrade_no_case_id():
     """When no case_id in payload, retrieval falls back to regime query or returns []."""
     mem_retriever = _load_module("workflows/trading-decision/orchestrator/memory_retriever.py")
 
     # No case_id, just a regime — should fall back to regime query
-    refs = mem_retriever.retrieve_memory_refs_for_stage("A3", {"market_regime": "nonexistent_regime_xyz"}, topk=3)
+    refs = mem_retriever.retrieve_memory_refs_for_stage(
+        "A3", {"market_regime": "nonexistent_regime_xyz"}, topk=3
+    )
     assert isinstance(refs, list)
     # May be empty since regime doesn't exist — the key is it doesn't raise
 
@@ -138,6 +152,7 @@ def test_retrieval_helper_graceful_degrade_no_case_id():
 # ---------------------------------------------------------------------------
 # 3. A3 entrypoint populates memory_refs when index has cases
 # ---------------------------------------------------------------------------
+
 
 def test_a3_entrypoint_populates_memory_refs(tmp_path: Path):
     """A3 simulation should populate memory_refs from L4 retrieval."""
@@ -180,6 +195,7 @@ def test_a3_entrypoint_populates_memory_refs(tmp_path: Path):
 # 4. A9 entrypoint populates memory_refs
 # ---------------------------------------------------------------------------
 
+
 def test_a9_entrypoint_populates_memory_refs(tmp_path: Path):
     """A9 exit should populate memory_refs from L4 retrieval."""
     # Write cases
@@ -219,6 +235,7 @@ def test_a9_entrypoint_populates_memory_refs(tmp_path: Path):
 # 5. Pipeline step_rebuild_index produces valid index
 # ---------------------------------------------------------------------------
 
+
 def test_pipeline_rebuild_index_produces_valid_index(tmp_path: Path):
     """step_rebuild_index should create a valid index file."""
     # Write test cases to real directory
@@ -249,6 +266,7 @@ def test_pipeline_rebuild_index_produces_valid_index(tmp_path: Path):
 # ---------------------------------------------------------------------------
 # 6. Full execution loop propagates memory_refs through stages
 # ---------------------------------------------------------------------------
+
 
 def test_full_loop_memory_refs_propagate(tmp_path: Path):
     """Running the execution loop should produce stage_outputs with memory_refs."""
@@ -314,6 +332,7 @@ def test_full_loop_memory_refs_propagate(tmp_path: Path):
 # ---------------------------------------------------------------------------
 # 7. A1 returns empty memory_refs (first stage)
 # ---------------------------------------------------------------------------
+
 
 def test_a1_returns_empty_memory_refs(tmp_path: Path):
     """A1 should always return empty memory_refs since it's the first stage."""

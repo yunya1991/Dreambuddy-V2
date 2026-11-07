@@ -7,12 +7,11 @@
 - 宏观：华尔街见闻（主源，api-one.wallstcn.com 信息流 + 详情页）
 """
 
-import json
+import json  # noqa: I001
 import re
 import time
 from datetime import datetime, timedelta, timezone
 from html import unescape
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from email.utils import parsedate_to_datetime
 from http.client import IncompleteRead
@@ -21,6 +20,7 @@ from urllib.request import Request, urlopen
 
 try:
     import requests
+
     HAS_REQUESTS = True
 except ImportError:
     HAS_REQUESTS = False
@@ -169,7 +169,9 @@ def _parse_odaily_detail(html: str) -> Tuple[Optional[str], str]:
 
 def _odaily_category_guess(title: str) -> str:
     t = title or ""
-    if re.search(r"(链上|地址|净流入|净流出|链上|矿工|gas|手续费|活跃|交易所余额|稳定币)", t, re.IGNORECASE):
+    if re.search(
+        r"(链上|地址|净流入|净流出|链上|矿工|gas|手续费|活跃|交易所余额|稳定币)", t, re.IGNORECASE
+    ):
         return "onchain_data"
     if re.search(r"(观点|认为|称|表示|发文|指出)", t):
         return "kols_view"
@@ -246,7 +248,11 @@ def _fetch_jinse_lives(hours: int, limit: int, fetched_at: str) -> List[Dict[str
                     title = _clamp(summary, 120) if summary else "无标题"
 
                 live_id = it.get("id")
-                source_url = f"https://jinse.cn/lives/{live_id}.html" if live_id else "https://jinse.cn/lives"
+                source_url = (
+                    f"https://jinse.cn/lives/{live_id}.html"
+                    if live_id
+                    else "https://jinse.cn/lives"
+                )
 
                 risk_flags: List[str] = []
                 if not summary:
@@ -410,7 +416,9 @@ def _degraded_macro_placeholder(fetched_at: str) -> List[Dict[str, Any]]:
     ]
 
 
-def fetch_odaily_newsflash(limit: int = 20, hours: int = 24, include_aux: bool = True) -> List[Dict[str, Any]]:
+def fetch_odaily_newsflash(
+    limit: int = 20, hours: int = 24, include_aux: bool = True
+) -> List[Dict[str, Any]]:
     """
     获取 Odaily 星球日报快讯
     方案：列表页 JSON-LD 拿 URL → 逐条详情页拿 published_time（UTC）与 description
@@ -677,10 +685,7 @@ def main():
 
     print("\n=== 测试完成 ===")
 
-    return {
-        "crypto_news": crypto_news,
-        "macro_news": macro_news
-    }
+    return {"crypto_news": crypto_news, "macro_news": macro_news}
 
 
 if __name__ == "__main__":

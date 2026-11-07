@@ -3,8 +3,9 @@
 定义训练系统从各数据源获取训练数据的统一接口。
 各数据源（Trae记忆、认知系统、SKILL、文档、33-REA）实现此协议。
 """
+
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
 
 class TrainingCase:

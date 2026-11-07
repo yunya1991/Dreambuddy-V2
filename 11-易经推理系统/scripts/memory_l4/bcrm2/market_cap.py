@@ -13,22 +13,23 @@
   SMALL (小市值): UNI, LINK, DOT等 — 题材驱动, 波动大
 """
 
+from dataclasses import dataclass
+from typing import Dict, Optional
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple, Optional
-from dataclasses import dataclass, field
-
 
 # 市值等级
 MARKET_CAP_LARGE = "large"
 MARKET_CAP_MID = "mid"
 MARKET_CAP_SMALL = "small"
-MARKET_CAP_TRADFI = "tradfi"   # TradFi 资产（黄金/标普等）
+MARKET_CAP_TRADFI = "tradfi"  # TradFi 资产（黄金/标普等）
 
 
 @dataclass
 class FeatureConfig:
     """按市值等级的特征配置预设"""
+
     # 八卦特征 (基础层, 全等级开启)
     enable_bagua: bool = True
     # 经典经验特征 (牛熊线+Elder-ray+三屏)
@@ -151,7 +152,7 @@ PRESET_CONFIGS = {
         enable_cross_asset=True,
         enable_mcap_feature=True,
         enable_meta_labeling=False,
-        enable_merrill=True,   # TradFi 资金轮动明显
+        enable_merrill=True,  # TradFi 资金轮动明显
         merrill_inflation=True,
         merrill_growth=True,
         merrill_capital_flow=True,
@@ -196,7 +197,7 @@ KNOWN_MCAP = {
     "NEAR": MARKET_CAP_MID,
     "AAVE": MARKET_CAP_SMALL,
     # 美股个股（按市值归类）
-    "NVDA": MARKET_CAP_TRADFI,   # 万亿市值
+    "NVDA": MARKET_CAP_TRADFI,  # 万亿市值
     "TSLA": MARKET_CAP_TRADFI,
     "MSFT": MARKET_CAP_TRADFI,
     "META": MARKET_CAP_TRADFI,
@@ -255,8 +256,8 @@ class MarketCapClassifier:
     def _estimate_from_klines(self, df: pd.DataFrame) -> str:
         """从K线数据估算市值等级"""
         close = df["close"].values
-        high = df["high"].values
-        low = df["low"].values
+        high = df["high"].values  # noqa: F841
+        low = df["low"].values  # noqa: F841
         volume = df["volume"].values if "volume" in df.columns else None
 
         # 1. 价格水平 (对数价格)
@@ -331,7 +332,11 @@ class MarketCapClassifier:
         close = df["close"].values
         returns = np.diff(np.log(close))
         if len(returns) > 0:
-            daily_vol = np.std(returns[-240:]) * np.sqrt(24) if len(returns) >= 240 else np.std(returns) * np.sqrt(24)
+            daily_vol = (
+                np.std(returns[-240:]) * np.sqrt(24)
+                if len(returns) >= 240
+                else np.std(returns) * np.sqrt(24)
+            )
         else:
             daily_vol = 0.05
         result["mcap_vol_ratio"] = daily_vol
@@ -371,7 +376,7 @@ def apply_mcap_feature_config(
 
 
 # ===== FeatureRegistry 注册 =====
-from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry  # noqa: E402
 
 FeatureRegistry.register(
     name="market_cap",

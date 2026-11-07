@@ -13,7 +13,6 @@
 """
 
 import sys
-import json
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -22,15 +21,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 # 添加 data_center 包路径
 sys.path.insert(0, str(Path(__file__).resolve().parents[6] / "18-数据获取中心"))
 
-from data_center.compat import run_full_collection
+from data_center.compat import run_full_collection  # noqa: I001
 from regime_classifier import run_regime_classification
-from storage import (
-    save_layer_raw,
-    save_output,
-    save_analysis_report,
-    HistoryRecorder,
-    timestamp
-)
+from storage import save_layer_raw, save_output, save_analysis_report, HistoryRecorder, timestamp
 
 # =============================================================================
 # 配置
@@ -48,6 +41,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 # 主流程
 # =============================================================================
 
+
 def run_flow_analysis() -> dict:
     """
     执行完整的资金流分析流程
@@ -59,12 +53,7 @@ def run_flow_analysis() -> dict:
     print("加密市场资金流分析系统 v2.1.0")
     print("=" * 60)
 
-    results = {
-        "analysis_timestamp": timestamp(),
-        "layers": {},
-        "regime_output": None,
-        "steps": []
-    }
+    results = {"analysis_timestamp": timestamp(), "layers": {}, "regime_output": None, "steps": []}
 
     # ==========================================================================
     # Step 1: 数据采集
@@ -81,19 +70,13 @@ def run_flow_analysis() -> dict:
             save_layer_raw(layer_name, layer_data)
 
         step_duration = (datetime.now() - step_start).total_seconds()
-        results["steps"].append({
-            "step": "data_collection",
-            "status": "ok",
-            "duration_sec": round(step_duration, 2)
-        })
+        results["steps"].append(
+            {"step": "data_collection", "status": "ok", "duration_sec": round(step_duration, 2)}
+        )
         print(f"[STEP 1] ✅ 数据采集完成 ({step_duration:.2f}s)")
 
     except Exception as e:
-        results["steps"].append({
-            "step": "data_collection",
-            "status": "failed",
-            "error": str(e)
-        })
+        results["steps"].append({"step": "data_collection", "status": "failed", "error": str(e)})
         print(f"[STEP 1] ❌ 数据采集失败：{e}")
         raise
 
@@ -108,19 +91,19 @@ def run_flow_analysis() -> dict:
         results["regime_output"] = regime_result
 
         step_duration = (datetime.now() - step_start).total_seconds()
-        results["steps"].append({
-            "step": "regime_classification",
-            "status": "ok",
-            "duration_sec": round(step_duration, 2)
-        })
+        results["steps"].append(
+            {
+                "step": "regime_classification",
+                "status": "ok",
+                "duration_sec": round(step_duration, 2),
+            }
+        )
         print(f"[STEP 2] ✅ Regime 分类完成 ({step_duration:.2f}s)")
 
     except Exception as e:
-        results["steps"].append({
-            "step": "regime_classification",
-            "status": "failed",
-            "error": str(e)
-        })
+        results["steps"].append(
+            {"step": "regime_classification", "status": "failed", "error": str(e)}
+        )
         print(f"[STEP 2] ❌ Regime 分类失败：{e}")
         raise
 
@@ -144,34 +127,30 @@ def run_flow_analysis() -> dict:
             filter_status=regime["filter"],
             risk_off=regime["risk_off"],
             confidence=results["regime_output"]["confidence"],
-            layer_signals=results["regime_output"]["layer_signals"]
+            layer_signals=results["regime_output"]["layer_signals"],
         )
 
         # 追加历史记录
         recorder = HistoryRecorder("regime_history")
-        recorder.append({
-            "timestamp": results["analysis_timestamp"],
-            "composite": results["regime_output"]["composite"],
-            "bias": regime["bias"],
-            "filter": regime["filter"],
-            "risk_off": regime["risk_off"],
-            "confidence": results["regime_output"]["confidence"]
-        })
+        recorder.append(
+            {
+                "timestamp": results["analysis_timestamp"],
+                "composite": results["regime_output"]["composite"],
+                "bias": regime["bias"],
+                "filter": regime["filter"],
+                "risk_off": regime["risk_off"],
+                "confidence": results["regime_output"]["confidence"],
+            }
+        )
 
         step_duration = (datetime.now() - step_start).total_seconds()
-        results["steps"].append({
-            "step": "save_results",
-            "status": "ok",
-            "duration_sec": round(step_duration, 2)
-        })
+        results["steps"].append(
+            {"step": "save_results", "status": "ok", "duration_sec": round(step_duration, 2)}
+        )
         print(f"[STEP 3] ✅ 结果保存完成 ({step_duration:.2f}s)")
 
     except Exception as e:
-        results["steps"].append({
-            "step": "save_results",
-            "status": "failed",
-            "error": str(e)
-        })
+        results["steps"].append({"step": "save_results", "status": "failed", "error": str(e)})
         print(f"[STEP 3] ❌ 结果保存失败：{e}")
         raise
 
@@ -207,6 +186,7 @@ def run_flow_analysis() -> dict:
 
     return results
 
+
 # =============================================================================
 # 命令行入口
 # =============================================================================
@@ -219,5 +199,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ 资金流分析失败：{e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

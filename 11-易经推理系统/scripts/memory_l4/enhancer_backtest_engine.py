@@ -23,14 +23,15 @@
 - 交易次数、持仓时间
 - 各市场状态下的表现分化
 """
-import os
-import sys
+
 import json
 import math
+import os
+import sys
+from collections import Counter, defaultdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from typing import Dict, List, Tuple, Optional, Any
-from dataclasses import dataclass, field, asdict
-from collections import defaultdict, Counter
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
@@ -39,18 +40,17 @@ import pandas as pd
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from memory_l4.ranging_market_enhancer import (
+from memory_l4.ranging_market_enhancer import (  # noqa: E402
     RangingMarketEnhancer,
-    MarketRegime,
-    BollingerSignal,
 )
 
-
 # ── 数据类 ──────────────────────────────────────────────────────────────────
+
 
 @dataclass
 class Trade:
     """单笔交易"""
+
     entry_time: str = ""
     exit_time: str = ""
     entry_price: float = 0.0
@@ -70,6 +70,7 @@ class Trade:
 @dataclass
 class BacktestResult:
     """回测结果"""
+
     symbol: str = ""
     timeframe: str = ""
     strategy: str = ""
@@ -94,6 +95,7 @@ class BacktestResult:
 
 # ── 基础策略：EMA交叉 + RSI过滤 ─────────────────────────────────────────────
 
+
 class EMATrendStrategy:
     """
     基础趋势跟踪策略：
@@ -102,8 +104,7 @@ class EMATrendStrategy:
     - RSI过滤：极端超买超卖区不反向开仓
     """
 
-    def __init__(self, fast_period: int = 10, slow_period: int = 30,
-                 rsi_period: int = 14):
+    def __init__(self, fast_period: int = 10, slow_period: int = 30, rsi_period: int = 14):
         self.fast_period = fast_period
         self.slow_period = slow_period
         self.rsi_period = rsi_period
@@ -113,77 +114,76 @@ class EMATrendStrategy:
         df = df.copy()
 
         # EMA
-        df['ema_fast'] = df['close'].ewm(span=self.fast_period, adjust=False).mean()
-        df['ema_slow'] = df['close'].ewm(span=self.slow_period, adjust=False).mean()
+        df["ema_fast"] = df["close"].ewm(span=self.fast_period, adjust=False).mean()
+        df["ema_slow"] = df["close"].ewm(span=self.slow_period, adjust=False).mean()
 
         # RSI
-        delta = df['close'].diff()
+        delta = df["close"].diff()
         gain = delta.where(delta > 0, 0)
         loss = -delta.where(delta < 0, 0)
         avg_gain = gain.rolling(window=self.rsi_period, min_periods=self.rsi_period).mean()
         avg_loss = loss.rolling(window=self.rsi_period, min_periods=self.rsi_period).mean()
         rs = avg_gain / avg_loss.replace(0, np.nan)
-        df['rsi'] = 100 - (100 / (1 + rs))
-        df['rsi'] = df['rsi'].fillna(50)
+        df["rsi"] = 100 - (100 / (1 + rs))
+        df["rsi"] = df["rsi"].fillna(50)
 
         # ATR
-        high = df['high']
-        low = df['low']
-        close = df['close']
-        tr = pd.concat([
-            high - low,
-            abs(high - close.shift(1)),
-            abs(low - close.shift(1))
-        ], axis=1).max(axis=1)
-        df['atr'] = tr.rolling(14, min_periods=1).mean()
+        high = df["high"]
+        low = df["low"]
+        close = df["close"]
+        tr = pd.concat(
+            [high - low, abs(high - close.shift(1)), abs(low - close.shift(1))], axis=1
+        ).max(axis=1)
+        df["atr"] = tr.rolling(14, min_periods=1).mean()
 
         # 信号：EMA方向（每10根K线重新评估一次，模拟易经推理模型的周期性输出）
-        df['signal'] = 'FLAT'
-        
+        df["signal"] = "FLAT"
+
         # 方向：EMA9在EMA21上方为UP，下方为DOWN
-        direction_up = df['ema_fast'] > df['ema_slow']
-        direction_down = df['ema_fast'] < df['ema_slow']
-        
+        direction_up = df["ema_fast"] > df["ema_slow"]
+        direction_down = df["ema_fast"] < df["ema_slow"]
+
         # 每10根K线产生一个新信号（避免过于频繁交易）
         signal_interval = 10
         for i in range(signal_interval, len(df)):
             if i % signal_interval == 0:
                 if direction_up.iloc[i]:
-                    df.loc[df.index[i], 'signal'] = 'UP'
+                    df.loc[df.index[i], "signal"] = "UP"
                 elif direction_down.iloc[i]:
-                    df.loc[df.index[i], 'signal'] = 'DOWN'
+                    df.loc[df.index[i], "signal"] = "DOWN"
 
         # 置信度：基于趋势强度和RSI位置计算
-        df['confidence'] = 0.5  # 默认
+        df["confidence"] = 0.5  # 默认
 
         # 趋势强度：EMA间距 / 价格
-        trend_strength = abs(df['ema_fast'] - df['ema_slow']) / df['ema_slow'] * 100
+        trend_strength = abs(df["ema_fast"] - df["ema_slow"]) / df["ema_slow"] * 100
         trend_strength_norm = (trend_strength / 5.0).clip(0, 1)  # 5%差距为满格
 
         # RSI位置：RSI距离50的距离
-        rsi_pos = abs(df['rsi'] - 50) / 50  # 0-1
+        rsi_pos = abs(df["rsi"] - 50) / 50  # 0-1
 
         # 合成置信度
-        df['confidence'] = 0.45 + 0.25 * trend_strength_norm + 0.2 * rsi_pos
-        df['confidence'] = df['confidence'].clip(0.35, 0.80)
+        df["confidence"] = 0.45 + 0.25 * trend_strength_norm + 0.2 * rsi_pos
+        df["confidence"] = df["confidence"].clip(0.35, 0.80)
 
         # 趋势强度（供增强器使用）
-        df['trend_strength'] = trend_strength_norm
+        df["trend_strength"] = trend_strength_norm
 
         # 震荡市检测：简化版
-        df['is_ranging'] = (trend_strength < 1.5) & (df['rsi'].between(35, 65))
-        df['ranging_confidence'] = np.where(df['is_ranging'], 0.6, 0.25)
+        df["is_ranging"] = (trend_strength < 1.5) & (df["rsi"].between(35, 65))
+        df["ranging_confidence"] = np.where(df["is_ranging"], 0.6, 0.25)
         # 更强的震荡市：趋势更弱+RSI更居中
-        strong_ranging = (trend_strength < 0.8) & (df['rsi'].between(42, 58))
-        df.loc[strong_ranging, 'ranging_confidence'] = 0.75
+        strong_ranging = (trend_strength < 0.8) & (df["rsi"].between(42, 58))
+        df.loc[strong_ranging, "ranging_confidence"] = 0.75
 
         # 波动率
-        df['volatility'] = df['atr'] / df['close']
+        df["volatility"] = df["atr"] / df["close"]
 
         return df
 
 
 # ── 回测引擎 ────────────────────────────────────────────────────────────────
+
 
 class EnhancerBacktestEngine:
     """
@@ -194,12 +194,15 @@ class EnhancerBacktestEngine:
     - 'enhanced': 增强器优化（动态阈值+布林确认+动态止损+MA200偏向）
     """
 
-    def __init__(self, symbol: str = "BTC", timeframe: str = "1H",
-                 initial_capital: float = 10000.0,
-                 position_pct: float = 0.1,  # 每次用10%资金
-                 commission_pct: float = 0.04,  # 手续费0.04%
-                 max_hold_bars: int = 120,  # 最长持有120根K线
-                 ):
+    def __init__(
+        self,
+        symbol: str = "BTC",
+        timeframe: str = "1H",
+        initial_capital: float = 10000.0,
+        position_pct: float = 0.1,  # 每次用10%资金
+        commission_pct: float = 0.04,  # 手续费0.04%
+        max_hold_bars: int = 120,  # 最长持有120根K线
+    ):
         self.symbol = symbol
         self.timeframe = timeframe
         self.initial_capital = initial_capital
@@ -224,16 +227,16 @@ class EnhancerBacktestEngine:
         # 生成基础信号
         df = self.base_strategy.generate_signals(df)
 
-        closes = df['close'].values.tolist()
-        highs = df['high'].values.tolist()
-        lows = df['low'].values.tolist()
-        signals = df['signal'].values
-        confidences = df['confidence'].values
-        atrs = df['atr'].values
-        volatilities = df['volatility'].values
-        is_rangings = df['is_ranging'].values
-        ranging_confs = df['ranging_confidence'].values
-        trend_strengths = df['trend_strength'].values
+        closes = df["close"].values.tolist()
+        highs = df["high"].values.tolist()
+        lows = df["low"].values.tolist()
+        signals = df["signal"].values
+        confidences = df["confidence"].values
+        atrs = df["atr"].values
+        volatilities = df["volatility"].values
+        is_rangings = df["is_ranging"].values
+        ranging_confs = df["ranging_confidence"].values
+        trend_strengths = df["trend_strength"].values
 
         # 回测状态
         capital = self.initial_capital
@@ -250,24 +253,26 @@ class EnhancerBacktestEngine:
 
         for i in range(len(df)):
             current_price = closes[i]
-            timestamp = str(df.index[i]) if hasattr(df.index[i], '__str__') else str(i)
+            timestamp = str(df.index[i]) if hasattr(df.index[i], "__str__") else str(i)
 
             # 检查持仓
             if position is not None:
-                position['hold_bars'] += 1
+                position["hold_bars"] += 1
 
                 # 检查止损止盈
                 pnl_pct = 0.0
-                if position['direction'] == 'long':
-                    pnl_pct = (current_price - position['entry_price']) / position['entry_price']
+                if position["direction"] == "long":
+                    pnl_pct = (current_price - position["entry_price"]) / position["entry_price"]
                 else:
-                    pnl_pct = (position['entry_price'] - current_price) / position['entry_price']
+                    pnl_pct = (position["entry_price"] - current_price) / position[  # noqa: F841
+                        "entry_price"
+                    ]  # noqa: F841
 
                 # 止损
-                if current_price <= position['stop_loss'] and position['direction'] == 'long':
+                if current_price <= position["stop_loss"] and position["direction"] == "long":
                     trade = self._close_position(position, current_price, timestamp, "stop_loss")
                     trades.append(trade)
-                    capital *= (1 + trade.pnl_pct - self.commission_pct / 100)
+                    capital *= 1 + trade.pnl_pct - self.commission_pct / 100
                     position = None
                     if trade.pnl_pct < 0:
                         consecutive_losses += 1
@@ -276,10 +281,10 @@ class EnhancerBacktestEngine:
                         consecutive_losses = 0
                     regime_trades[trade.regime].append(trade)
 
-                elif current_price >= position['stop_loss'] and position['direction'] == 'short':
+                elif current_price >= position["stop_loss"] and position["direction"] == "short":
                     trade = self._close_position(position, current_price, timestamp, "stop_loss")
                     trades.append(trade)
-                    capital *= (1 + trade.pnl_pct - self.commission_pct / 100)
+                    capital *= 1 + trade.pnl_pct - self.commission_pct / 100
                     position = None
                     if trade.pnl_pct < 0:
                         consecutive_losses += 1
@@ -289,10 +294,10 @@ class EnhancerBacktestEngine:
                     regime_trades[trade.regime].append(trade)
 
                 # 止盈
-                elif current_price >= position['take_profit'] and position['direction'] == 'long':
+                elif current_price >= position["take_profit"] and position["direction"] == "long":
                     trade = self._close_position(position, current_price, timestamp, "take_profit")
                     trades.append(trade)
-                    capital *= (1 + trade.pnl_pct - self.commission_pct / 100)
+                    capital *= 1 + trade.pnl_pct - self.commission_pct / 100
                     position = None
                     if trade.pnl_pct < 0:
                         consecutive_losses += 1
@@ -301,10 +306,10 @@ class EnhancerBacktestEngine:
                         consecutive_losses = 0
                     regime_trades[trade.regime].append(trade)
 
-                elif current_price <= position['take_profit'] and position['direction'] == 'short':
+                elif current_price <= position["take_profit"] and position["direction"] == "short":
                     trade = self._close_position(position, current_price, timestamp, "take_profit")
                     trades.append(trade)
-                    capital *= (1 + trade.pnl_pct - self.commission_pct / 100)
+                    capital *= 1 + trade.pnl_pct - self.commission_pct / 100
                     position = None
                     if trade.pnl_pct < 0:
                         consecutive_losses += 1
@@ -314,10 +319,10 @@ class EnhancerBacktestEngine:
                     regime_trades[trade.regime].append(trade)
 
                 # 时间止损
-                elif position['hold_bars'] >= self.max_hold_bars:
+                elif position["hold_bars"] >= self.max_hold_bars:
                     trade = self._close_position(position, current_price, timestamp, "time_stop")
                     trades.append(trade)
-                    capital *= (1 + trade.pnl_pct - self.commission_pct / 100)
+                    capital *= 1 + trade.pnl_pct - self.commission_pct / 100
                     position = None
                     if trade.pnl_pct < 0:
                         consecutive_losses += 1
@@ -327,12 +332,14 @@ class EnhancerBacktestEngine:
                     regime_trades[trade.regime].append(trade)
 
                 # 信号反转平仓
-                elif signals[i] != 'FLAT':
-                    sig_dir = 'long' if signals[i] == 'UP' else 'short'
-                    if sig_dir != position['direction']:
-                        trade = self._close_position(position, current_price, timestamp, "signal_reverse")
+                elif signals[i] != "FLAT":
+                    sig_dir = "long" if signals[i] == "UP" else "short"
+                    if sig_dir != position["direction"]:
+                        trade = self._close_position(
+                            position, current_price, timestamp, "signal_reverse"
+                        )
                         trades.append(trade)
-                        capital *= (1 + trade.pnl_pct - self.commission_pct / 100)
+                        capital *= 1 + trade.pnl_pct - self.commission_pct / 100
                         position = None
                         if trade.pnl_pct < 0:
                             consecutive_losses += 1
@@ -342,11 +349,11 @@ class EnhancerBacktestEngine:
                         regime_trades[trade.regime].append(trade)
 
             # 如果有空仓且有信号，考虑开仓
-            if position is None and signals[i] != 'FLAT' and i >= 200:
-                direction = 'long' if signals[i] == 'UP' else 'short'
+            if position is None and signals[i] != "FLAT" and i >= 200:
+                direction = "long" if signals[i] == "UP" else "short"
                 confidence = float(confidences[i])
                 atr = float(atrs[i])
-                volatility = float(volatilities[i])
+                volatility = float(volatilities[i])  # noqa: F841
                 is_ranging = bool(is_rangings[i])
                 ranging_conf = float(ranging_confs[i])
                 trend_strength = float(trend_strengths[i])
@@ -366,9 +373,9 @@ class EnhancerBacktestEngine:
                 else:
                     # 增强器模式：调用增强器
                     if i >= 200:
-                        window_closes = closes[max(0, i-250):i+1]
-                        window_highs = highs[max(0, i-250):i+1]
-                        window_lows = lows[max(0, i-250):i+1]
+                        window_closes = closes[max(0, i - 250) : i + 1]
+                        window_highs = highs[max(0, i - 250) : i + 1]
+                        window_lows = lows[max(0, i - 250) : i + 1]
 
                         enhance_result = self.enhancer.enhance(
                             price=current_price,
@@ -402,7 +409,7 @@ class EnhancerBacktestEngine:
 
                 if should_open:
                     # 计算止损止盈
-                    if direction == 'long':
+                    if direction == "long":
                         stop_loss = current_price - atr * sl_mult
                         take_profit = current_price + atr * tp_mult
                     else:
@@ -410,26 +417,26 @@ class EnhancerBacktestEngine:
                         take_profit = current_price - atr * tp_mult
 
                     position = {
-                        'entry_time': timestamp,
-                        'entry_price': current_price,
-                        'direction': direction,
-                        'stop_loss': stop_loss,
-                        'take_profit': take_profit,
-                        'confidence': confidence,
-                        'hold_bars': 0,
-                        'regime': regime_label,
-                        'bollinger_signal': boll_sig,
-                        'sl_atr_mult': sl_mult,
-                        'tp_atr_mult': tp_mult,
+                        "entry_time": timestamp,
+                        "entry_price": current_price,
+                        "direction": direction,
+                        "stop_loss": stop_loss,
+                        "take_profit": take_profit,
+                        "confidence": confidence,
+                        "hold_bars": 0,
+                        "regime": regime_label,
+                        "bollinger_signal": boll_sig,
+                        "sl_atr_mult": sl_mult,
+                        "tp_atr_mult": tp_mult,
                     }
 
             # 更新权益曲线
             equity = capital
             if position is not None:
-                if position['direction'] == 'long':
-                    unrealized = (current_price - position['entry_price']) / position['entry_price']
+                if position["direction"] == "long":
+                    unrealized = (current_price - position["entry_price"]) / position["entry_price"]
                 else:
-                    unrealized = (position['entry_price'] - current_price) / position['entry_price']
+                    unrealized = (position["entry_price"] - current_price) / position["entry_price"]
                 equity = capital * (1 + unrealized * self.position_pct)
 
             equity_curve.append(equity)
@@ -446,45 +453,53 @@ class EnhancerBacktestEngine:
             last_time = str(df.index[-1])
             trade = self._close_position(position, last_price, last_time, "end_of_data")
             trades.append(trade)
-            capital *= (1 + trade.pnl_pct - self.commission_pct / 100)
+            capital *= 1 + trade.pnl_pct - self.commission_pct / 100
             regime_trades[trade.regime].append(trade)
 
         # 计算指标
-        result = self._calc_metrics(trades, equity_curve, capital, max_dd,
-                                     max_consecutive_losses, mode, regime_trades)
+        result = self._calc_metrics(
+            trades, equity_curve, capital, max_dd, max_consecutive_losses, mode, regime_trades
+        )
         return result
 
-    def _close_position(self, position: Dict, exit_price: float,
-                         exit_time: str, exit_reason: str) -> Trade:
+    def _close_position(
+        self, position: Dict, exit_price: float, exit_time: str, exit_reason: str
+    ) -> Trade:
         """平仓并生成交易记录"""
-        if position['direction'] == 'long':
-            pnl_pct = (exit_price - position['entry_price']) / position['entry_price']
+        if position["direction"] == "long":
+            pnl_pct = (exit_price - position["entry_price"]) / position["entry_price"]
         else:
-            pnl_pct = (position['entry_price'] - exit_price) / position['entry_price']
+            pnl_pct = (position["entry_price"] - exit_price) / position["entry_price"]
 
         pnl_pct *= self.position_pct  # 按仓位比例
 
         return Trade(
-            entry_time=position['entry_time'],
+            entry_time=position["entry_time"],
             exit_time=exit_time,
-            entry_price=position['entry_price'],
+            entry_price=position["entry_price"],
             exit_price=exit_price,
-            direction=position['direction'],
+            direction=position["direction"],
             pnl_pct=pnl_pct,
             pnl=pnl_pct * self.initial_capital,
             exit_reason=exit_reason,
-            entry_confidence=position['confidence'],
-            regime=position.get('regime', ''),
-            bollinger_signal=position.get('bollinger_signal', ''),
-            sl_atr_mult=position.get('sl_atr_mult', 0),
-            tp_atr_mult=position.get('tp_atr_mult', 0),
-            hold_bars=position['hold_bars'],
+            entry_confidence=position["confidence"],
+            regime=position.get("regime", ""),
+            bollinger_signal=position.get("bollinger_signal", ""),
+            sl_atr_mult=position.get("sl_atr_mult", 0),
+            tp_atr_mult=position.get("tp_atr_mult", 0),
+            hold_bars=position["hold_bars"],
         )
 
-    def _calc_metrics(self, trades: List[Trade], equity_curve: List[float],
-                       final_capital: float, max_dd: float,
-                       max_consecutive_losses: int, mode: str,
-                       regime_trades: Dict[str, List[Trade]]) -> BacktestResult:
+    def _calc_metrics(
+        self,
+        trades: List[Trade],
+        equity_curve: List[float],
+        final_capital: float,
+        max_dd: float,
+        max_consecutive_losses: int,
+        mode: str,
+        regime_trades: Dict[str, List[Trade]],
+    ) -> BacktestResult:
         """计算回测指标"""
         total = len(trades)
         wins = [t for t in trades if t.pnl_pct > 0]
@@ -522,12 +537,14 @@ class EnhancerBacktestEngine:
             if not r_trades:
                 continue
             r_wins = [t for t in r_trades if t.pnl_pct > 0]
-            r_losses = [t for t in r_trades if t.pnl_pct < 0]
+            r_losses = [t for t in r_trades if t.pnl_pct < 0]  # noqa: F841
             regime_stats[regime] = {
-                'trades': len(r_trades),
-                'win_rate': len(r_wins) / len(r_trades) * 100 if r_trades else 0,
-                'avg_pnl_pct': sum(t.pnl_pct for t in r_trades) / len(r_trades) * 100 if r_trades else 0,
-                'total_pnl_pct': sum(t.pnl_pct for t in r_trades) * 100,
+                "trades": len(r_trades),
+                "win_rate": len(r_wins) / len(r_trades) * 100 if r_trades else 0,
+                "avg_pnl_pct": (
+                    sum(t.pnl_pct for t in r_trades) / len(r_trades) * 100 if r_trades else 0
+                ),
+                "total_pnl_pct": sum(t.pnl_pct for t in r_trades) * 100,
             }
 
         return BacktestResult(
@@ -556,9 +573,10 @@ class EnhancerBacktestEngine:
 
 # ── 报告生成 ────────────────────────────────────────────────────────────────
 
-def generate_comparison_report(baseline: BacktestResult,
-                                enhanced: BacktestResult,
-                                output_path: str):
+
+def generate_comparison_report(
+    baseline: BacktestResult, enhanced: BacktestResult, output_path: str
+):
     """生成对比报告"""
     report = {
         "timestamp": datetime.now().isoformat(),
@@ -567,12 +585,14 @@ def generate_comparison_report(baseline: BacktestResult,
         "initial_capital": 10000.0,
         "position_pct": 0.1,
         "baseline": {
-            k: v for k, v in asdict(baseline).items()
-            if k not in ('trades', 'equity_curve', 'regime_stats')
+            k: v
+            for k, v in asdict(baseline).items()
+            if k not in ("trades", "equity_curve", "regime_stats")
         },
         "enhanced": {
-            k: v for k, v in asdict(enhanced).items()
-            if k not in ('trades', 'equity_curve', 'regime_stats')
+            k: v
+            for k, v in asdict(enhanced).items()
+            if k not in ("trades", "equity_curve", "regime_stats")
         },
         "improvement": {
             "win_rate_delta": enhanced.win_rate - baseline.win_rate,
@@ -581,14 +601,15 @@ def generate_comparison_report(baseline: BacktestResult,
             "profit_factor_delta": enhanced.profit_factor - baseline.profit_factor,
             "sharpe_delta": enhanced.sharpe_ratio - baseline.sharpe_ratio,
             "calmar_delta": enhanced.calmar_ratio - baseline.calmar_ratio,
-            "max_consecutive_losses_delta": enhanced.max_consecutive_losses - baseline.max_consecutive_losses,
+            "max_consecutive_losses_delta": enhanced.max_consecutive_losses
+            - baseline.max_consecutive_losses,
             "trade_count_delta": enhanced.total_trades - baseline.total_trades,
         },
         "baseline_regime_stats": baseline.regime_stats,
         "enhanced_regime_stats": enhanced.regime_stats,
     }
 
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, ensure_ascii=False, default=str)
 
     return report
@@ -611,7 +632,13 @@ def print_comparison(baseline: BacktestResult, enhanced: BacktestResult):
         ("平均亏损(%)", baseline.avg_loss_pct, enhanced.avg_loss_pct, ".3f", "-"),
         ("盈亏比(PF)", baseline.profit_factor, enhanced.profit_factor, ".2f", "+"),
         ("最大回撤(%)", baseline.max_drawdown_pct, enhanced.max_drawdown_pct, ".2f", "-"),
-        ("最大连亏次数", baseline.max_consecutive_losses, enhanced.max_consecutive_losses, "d", "-"),
+        (
+            "最大连亏次数",
+            baseline.max_consecutive_losses,
+            enhanced.max_consecutive_losses,
+            "d",
+            "-",
+        ),
         ("夏普比率", baseline.sharpe_ratio, enhanced.sharpe_ratio, ".3f", "+"),
         ("Calmar比率", baseline.calmar_ratio, enhanced.calmar_ratio, ".3f", "+"),
         ("平均持仓(bar)", baseline.avg_hold_bars, enhanced.avg_hold_bars, ".1f", "~"),
@@ -653,10 +680,12 @@ def print_comparison(baseline: BacktestResult, enhanced: BacktestResult):
     print("📈 各市场状态表现对比（增强策略）")
     print("=" * 80)
     for regime, stats in sorted(enhanced.regime_stats.items()):
-        print(f"  {regime:20s}: {stats['trades']:3d} 笔  "
-              f"胜率={stats['win_rate']:5.1f}%  "
-              f"平均收益={stats['avg_pnl_pct']:+.3f}%  "
-              f"累计收益={stats['total_pnl_pct']:+.2f}%")
+        print(
+            f"  {regime:20s}: {stats['trades']:3d} 笔  "
+            f"胜率={stats['win_rate']:5.1f}%  "
+            f"平均收益={stats['avg_pnl_pct']:+.3f}%  "
+            f"累计收益={stats['total_pnl_pct']:+.2f}%"
+        )
 
     print()
     print("=" * 80)
@@ -671,18 +700,19 @@ def print_comparison(baseline: BacktestResult, enhanced: BacktestResult):
 
 # ── 主函数 ──────────────────────────────────────────────────────────────────
 
+
 def load_data(symbol: str, timeframe: str = "1H") -> pd.DataFrame:
     """加载K线数据"""
-    data_dir = os.path.join(BASE_DIR, 'data', 'klines')
+    data_dir = os.path.join(BASE_DIR, "data", "klines")
     filepath = os.path.join(data_dir, f"{symbol}_{timeframe}.csv")
 
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"数据文件不存在: {filepath}")
 
     df = pd.read_csv(filepath)
-    if 'timestamp' in df.columns:
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
-        df.set_index('timestamp', inplace=True)
+    if "timestamp" in df.columns:
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df.set_index("timestamp", inplace=True)
 
     df = df.sort_index()
     return df
@@ -690,6 +720,7 @@ def load_data(symbol: str, timeframe: str = "1H") -> pd.DataFrame:
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="增强器回测验证")
     parser.add_argument("--symbol", type=str, default="BTC", help="交易对")
     parser.add_argument("--timeframe", type=str, default="1H", help="时间周期")
@@ -715,22 +746,23 @@ def main():
     )
 
     # 基础策略回测
-    print(f"\n⚙️  运行基础策略回测...")
+    print("\n⚙️  运行基础策略回测...")
     baseline = engine.run(df, mode="baseline")
 
     # 增强策略回测
-    print(f"🚀 运行增强策略回测...")
+    print("🚀 运行增强策略回测...")
     enhanced = engine.run(df, mode="enhanced")
 
     # 打印对比
     print_comparison(baseline, enhanced)
 
     # 保存报告
-    output_dir = os.path.join(BASE_DIR, '..', 'data', 'backtest')
+    output_dir = os.path.join(BASE_DIR, "..", "data", "backtest")
     os.makedirs(output_dir, exist_ok=True)
 
     output_file = args.output or os.path.join(
-        output_dir, f"enhancer_backtest_{symbol}_{timeframe}.json")
+        output_dir, f"enhancer_backtest_{symbol}_{timeframe}.json"
+    )
     generate_comparison_report(baseline, enhanced, output_file)
 
     print(f"💾 报告已保存: {output_file}")
@@ -738,5 +770,5 @@ def main():
     print("✅ 回测完成")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

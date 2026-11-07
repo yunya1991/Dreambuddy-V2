@@ -3,7 +3,10 @@
 Channel directory guard — ensures 5 trading groups persist across gateway restarts.
 Run as a background daemon alongside the Hermes Gateway.
 """
-import json, os, time
+
+import json
+import os
+import time
 
 CHATS = [
     {"id": "oc_36c575b6f39a8df3dd75057a96685a21", "name": "Trading-Research", "type": "group"},
@@ -21,15 +24,15 @@ while True:
         if not os.path.exists(CHANNEL_DIR):
             continue
 
-        with open(CHANNEL_DIR, 'r') as f:
+        with open(CHANNEL_DIR, "r") as f:
             data = json.load(f)
 
-        existing_ids = {c['id'] for c in data.get('platforms', {}).get('feishu', [])}
-        needed = [c for c in CHATS if c['id'] not in existing_ids]
+        existing_ids = {c["id"] for c in data.get("platforms", {}).get("feishu", [])}
+        needed = [c for c in CHATS if c["id"] not in existing_ids]
 
         if needed:
-            data['platforms']['feishu'] = list(data['platforms'].get('feishu', [])) + needed
-            with open(CHANNEL_DIR, 'w') as f:
+            data["platforms"]["feishu"] = list(data["platforms"].get("feishu", [])) + needed
+            with open(CHANNEL_DIR, "w") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             print(f"Channel guard: added {len(needed)} groups")
     except Exception as e:

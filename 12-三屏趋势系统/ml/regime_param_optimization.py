@@ -11,12 +11,12 @@
 - 震荡: 不满足牛/熊条件的区域（MA交叉频繁、价格围绕MA200波动）
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import numpy as np
-import pandas as pd
+import pandas as pd  # noqa: I001
 import json
 from itertools import product
 from datetime import datetime
@@ -43,7 +43,7 @@ def classify_market_regime(prices, ma_long=200, ma_short=50, slope_window=20):
     返回: pd.Series, 每天一个值 "bull"/"bear"/"sideways"
     """
     close = prices["close"]
-    n = len(close)
+    n = len(close)  # noqa: F841
 
     ma200 = close.rolling(window=ma_long, min_periods=ma_long).mean()
     ma50 = close.rolling(window=ma_short, min_periods=ma_short).mean()
@@ -60,18 +60,8 @@ def classify_market_regime(prices, ma_long=200, ma_short=50, slope_window=20):
 
     regime = pd.Series("sideways", index=prices.index)
 
-    bull_mask = (
-        (close > ma200) &
-        (ma50 > ma200) &
-        (ma200_slope > 0.001) &
-        (trend_strength > 0.3)
-    )
-    bear_mask = (
-        (close < ma200) &
-        (ma50 < ma200) &
-        (ma200_slope < -0.001) &
-        (trend_strength > 0.3)
-    )
+    bull_mask = (close > ma200) & (ma50 > ma200) & (ma200_slope > 0.001) & (trend_strength > 0.3)
+    bear_mask = (close < ma200) & (ma50 < ma200) & (ma200_slope < -0.001) & (trend_strength > 0.3)
 
     regime[bull_mask] = "bull"
     regime[bear_mask] = "bear"
@@ -137,7 +127,7 @@ def scan_params(prices, regime, param_grid):
     warmup = min(80, n - 10)
 
     for idx, combo in enumerate(product(*param_grid.values())):
-        params = dict(zip(param_grid.keys(), combo))
+        params = dict(zip(param_grid.keys(), combo))  # noqa: B905
 
         strategy = LeastResistanceStrategy(
             warmup_periods=warmup,
@@ -152,10 +142,12 @@ def scan_params(prices, regime, param_grid):
 
         r = run_backtest_with_regime(prices, strategy, regime)
 
-        results.append({
-            "params": params,
-            **r,
-        })
+        results.append(
+            {
+                "params": params,
+                **r,
+            }
+        )
 
         if (idx + 1) % 10 == 0:
             print(f"  进度: {idx+1}/{total_combos} ({(idx+1)/total_combos*100:.0f}%)")
@@ -226,14 +218,16 @@ def main():
         "max_position": [0.4, 0.6, 0.8],
     }
 
-    print(f"\n[3] 参数扫描...")
+    print("\n[3] 参数扫描...")
     results = scan_params(prices, regime, param_grid)
 
     # 找出各状态最优参数
-    print(f"\n[4] 各市场状态最优参数:")
+    print("\n[4] 各市场状态最优参数:")
     best = find_best_per_regime(results)
 
-    print(f"\n{'状态':>8} {'收益%':>10} {'夏普':>8} {'回撤%':>8} {'交易':>6} {'持仓天':>8} | {'step':>5} {'holding':>8} {'confirm':>8} {'pos':>6}")
+    print(
+        f"\n{'状态':>8} {'收益%':>10} {'夏普':>8} {'回撤%':>8} {'交易':>6} {'持仓天':>8} | {'step':>5} {'holding':>8} {'confirm':>8} {'pos':>6}"
+    )
     print("-" * 95)
 
     for r_name in ["bull", "bear", "sideways", "overall"]:
@@ -241,13 +235,17 @@ def main():
             continue
         b = best[r_name]
         p = b["params"]
-        r_label = {"bull": "牛市", "bear": "熊市", "sideways": "震荡", "overall": "综合"}.get(r_name, r_name)
-        print(f"{r_label:>8} {b['return']:>+9.2f}% {b['sharpe']:>8.3f} {b['drawdown']:>7.2f}% "
-              f"{b['trades']:>6d} {b['avg_holding']:>7.1f}天 | "
-              f"{p['update_step']:>5} {p['min_holding_bars']:>8} {p['signal_confirm_bars']:>8} {p['max_position']:>6.1f}")
+        r_label = {"bull": "牛市", "bear": "熊市", "sideways": "震荡", "overall": "综合"}.get(
+            r_name, r_name
+        )
+        print(
+            f"{r_label:>8} {b['return']:>+9.2f}% {b['sharpe']:>8.3f} {b['drawdown']:>7.2f}% "
+            f"{b['trades']:>6d} {b['avg_holding']:>7.1f}天 | "
+            f"{p['update_step']:>5} {p['min_holding_bars']:>8} {p['signal_confirm_bars']:>8} {p['max_position']:>6.1f}"
+        )
 
     # 显示各状态下Top3
-    print(f"\n[5] 各状态Top3参数详情:")
+    print("\n[5] 各状态Top3参数详情:")
     for r_name in ["bull", "bear", "sideways"]:
         r_label = {"bull": "牛市", "bear": "熊市", "sideways": "震荡"}.get(r_name, r_name)
         if r_name == "overall":
@@ -265,9 +263,11 @@ def main():
             rs = r["regime_stats"].get(r_name, {})
             reg_ret = rs.get("return_pct", 0)
             reg_days = rs.get("days", 0)
-            print(f"    #{i+1} {r_name}收益={reg_ret:+.2f}% ({reg_days}天) | "
-                  f"总收益={r['return']:+.2f}% 夏普={r['sharpe']:.3f} | "
-                  f"step={p['update_step']} hold={p['min_holding_bars']} confirm={p['signal_confirm_bars']} pos={p['max_position']}")
+            print(
+                f"    #{i+1} {r_name}收益={reg_ret:+.2f}% ({reg_days}天) | "
+                f"总收益={r['return']:+.2f}% 夏普={r['sharpe']:.3f} | "
+                f"step={p['update_step']} hold={p['min_holding_bars']} confirm={p['signal_confirm_bars']} pos={p['max_position']}"
+            )
 
     # 保存结果
     os.makedirs("ml/optimization_results", exist_ok=True)
@@ -295,14 +295,16 @@ def main():
         }
 
     for r in results[:20]:
-        output["all_results"].append({
-            "params": r["params"],
-            "return": r["return"],
-            "sharpe": r["sharpe"],
-            "drawdown": r["drawdown"],
-            "trades": r["trades"],
-            "regime_stats": r["regime_stats"],
-        })
+        output["all_results"].append(
+            {
+                "params": r["params"],
+                "return": r["return"],
+                "sharpe": r["sharpe"],
+                "drawdown": r["drawdown"],
+                "trades": r["trades"],
+                "regime_stats": r["regime_stats"],
+            }
+        )
 
     result_file = f"ml/optimization_results/regime_param_optimization_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     with open(result_file, "w", encoding="utf-8") as f:

@@ -12,6 +12,7 @@ GraphQL API（无需 Key），直接 POST 查询。
 
 FAIL-OPEN: 网络异常/解析失败 → 返回空列表，不抛异常。
 """
+
 from __future__ import annotations
 
 import logging
@@ -34,27 +35,27 @@ _HTTP_HEADERS = {
 
 # AAVE V3 部署的主网链 ID（从 chains 查询获取，排除测试网）
 _CHAIN_IDS = [
-    1,       # Ethereum
-    42161,   # Arbitrum
-    43114,   # Avalanche
-    8453,    # Base
-    56,      # BSC
-    42220,   # Celo
-    100,     # Gnosis
-    59144,   # Linea
-    1088,    # Metis
-    10,      # Optimism
-    137,     # Polygon
+    1,  # Ethereum
+    42161,  # Arbitrum
+    43114,  # Avalanche
+    8453,  # Base
+    56,  # BSC
+    42220,  # Celo
+    100,  # Gnosis
+    59144,  # Linea
+    1088,  # Metis
+    10,  # Optimism
+    137,  # Polygon
     534352,  # Scroll
-    1868,    # Soneium
-    146,     # Sonic
-    324,     # zkSync
-    9745,    # Plasma
-    57073,   # Ink
-    5000,    # Mantle
-    4326,    # MegaETH
-    196,     # X Layer
-    143,     # Monad
+    1868,  # Soneium
+    146,  # Sonic
+    324,  # zkSync
+    9745,  # Plasma
+    57073,  # Ink
+    5000,  # Mantle
+    4326,  # MegaETH
+    196,  # X Layer
+    143,  # Monad
 ]
 
 _MARKETS_QUERY = """
@@ -126,12 +127,14 @@ class AaveNativeCollector(BaseCollector):
             total_liquidity += m_liq
 
             chain_info = m.get("chain", {})
-            chain_breakdown.append({
-                "chain": chain_info.get("name", ""),
-                "chain_id": chain_info.get("chainId", 0),
-                "market_size_usd": round(m_size, 2),
-                "available_liquidity_usd": round(m_liq, 2),
-            })
+            chain_breakdown.append(
+                {
+                    "chain": chain_info.get("name", ""),
+                    "chain_id": chain_info.get("chainId", 0),
+                    "market_size_usd": round(m_size, 2),
+                    "available_liquidity_usd": round(m_liq, 2),
+                }
+            )
 
             for r in m.get("reserves", []):
                 tok = r.get("underlyingToken", {})
@@ -139,26 +142,24 @@ class AaveNativeCollector(BaseCollector):
                 usd_val = float(sz.get("usd", 0) or 0) if isinstance(sz, dict) else 0.0
                 supply_info = r.get("supplyInfo", {}) or {}
                 borrow_info = r.get("borrowInfo", {}) or {}
-                supply_apy = float(
-                    (supply_info.get("apy", {}) or {}).get("value", 0) or 0
-                )
-                borrow_apy = float(
-                    (borrow_info.get("apy", {}) or {}).get("value", 0) or 0
-                )
+                supply_apy = float((supply_info.get("apy", {}) or {}).get("value", 0) or 0)
+                borrow_apy = float((borrow_info.get("apy", {}) or {}).get("value", 0) or 0)
                 borrow_total_usd = 0.0
                 bt = borrow_info.get("total", {})
                 if isinstance(bt, dict):
                     borrow_total_usd = float(bt.get("usd", 0) or 0)
                 if usd_val > 0:
-                    all_reserves.append({
-                        "symbol": tok.get("symbol", ""),
-                        "name": tok.get("name", ""),
-                        "chain": chain_info.get("name", ""),
-                        "usd": round(usd_val, 2),
-                        "supply_apy": round(supply_apy, 6),
-                        "borrow_apy": round(borrow_apy, 6),
-                        "borrow_total_usd": round(borrow_total_usd, 2),
-                    })
+                    all_reserves.append(
+                        {
+                            "symbol": tok.get("symbol", ""),
+                            "name": tok.get("name", ""),
+                            "chain": chain_info.get("name", ""),
+                            "usd": round(usd_val, 2),
+                            "supply_apy": round(supply_apy, 6),
+                            "borrow_apy": round(borrow_apy, 6),
+                            "borrow_total_usd": round(borrow_total_usd, 2),
+                        }
+                    )
 
         # 排序按 USD 降序
         all_reserves.sort(key=lambda x: -x["usd"])
@@ -178,18 +179,22 @@ class AaveNativeCollector(BaseCollector):
             "chain_count": len(chain_breakdown),
             "reserve_count": len(all_reserves),
             # E7 集中度：最大储备占比
-            "top_reserve_pct": round(
-                all_reserves[0]["usd"] / total_liquidity * 100, 2
-            ) if all_reserves and total_liquidity > 0 else 0.0,
+            "top_reserve_pct": (
+                round(all_reserves[0]["usd"] / total_liquidity * 100, 2)
+                if all_reserves and total_liquidity > 0
+                else 0.0
+            ),
         }
 
         # 链分布前3（E7 集中度）
         chain_breakdown.sort(key=lambda x: -x["market_size_usd"])
         for i, cb in enumerate(chain_breakdown[:3]):
             metrics[f"top_chain_{i+1}_name"] = cb["chain"]
-            metrics[f"top_chain_{i+1}_pct"] = round(
-                cb["market_size_usd"] / total_market_size * 100, 2
-            ) if total_market_size > 0 else 0.0
+            metrics[f"top_chain_{i+1}_pct"] = (
+                round(cb["market_size_usd"] / total_market_size * 100, 2)
+                if total_market_size > 0
+                else 0.0
+            )
 
         return DataRecord(
             source=self.source,
@@ -212,7 +217,7 @@ if __name__ == "__main__":
     recs = c.fetch({})
     if recs:
         r = recs[0]
-        import json
+
         print("metrics:")
         for k, v in r.metrics.items():
             print(f"  {k}: {v}")

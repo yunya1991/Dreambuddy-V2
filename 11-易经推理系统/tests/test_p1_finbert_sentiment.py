@@ -15,14 +15,14 @@ Spec: docs/superpowers/specs/2026-08-29-p1-finbert-sentiment-upgrade-spec.md
 夹具默认 monkeypatch.setenv("USE_FINBERT", "0") 防止 TC 真实触发模型下载；
 TC-2/3/4 显式 unset USE_FINBERT + monkeypatch fake pipeline 验证引擎路由代码。
 """
+
 from __future__ import annotations
 
 import builtins
 import math
-import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 from unittest.mock import MagicMock
 
 import pytest
@@ -56,14 +56,18 @@ def _default_no_finbert_download(monkeypatch):
 def _reload_sentiment():
     """强制重新加载 engines.sentiment_engine（因为 env/monkeypatch 只在 import 时读一次）。"""
     import importlib
+
     import engines.sentiment_engine as se_mod  # type: ignore
+
     importlib.reload(se_mod)
     return se_mod
 
 
 def _reload_computer():
     import importlib
+
     import five_domain_feature_computer as fc_mod  # type: ignore
+
     importlib.reload(fc_mod)
     return fc_mod
 
@@ -93,8 +97,11 @@ def _assert_dict_shape(r: Any, allow_score_zero: bool = False) -> None:
         assert k in r, f"返回 dict 缺少必须键 '{k}'"
     assert isinstance(r["score"], (int, float)), "score 必须是数字"
     assert isinstance(r["sentiment"], str), "sentiment 必须是 str"
-    assert r["sentiment"] in ("positive", "neutral", "negative"), \
-        f"sentiment 必须是三值之一，实际 {r['sentiment']!r}"
+    assert r["sentiment"] in (
+        "positive",
+        "neutral",
+        "negative",
+    ), f"sentiment 必须是三值之一，实际 {r['sentiment']!r}"
     assert isinstance(r["categories"], list), "categories 必须是 list"
     assert isinstance(r["matches"], dict), "matches 必须是 dict"
     # matches 必须有 positive/negative 两 int 键
@@ -215,8 +222,7 @@ def test_TC5_transformers_import_error_fallback(monkeypatch):
     engine = se_mod.SentimentEngine()
 
     # eng_ready 必须 False（因为 transformers 被拦，import 失败）
-    assert getattr(engine, "_eng_ready", True) is False, \
-        "import 失败时 _eng_ready 应为 False"
+    assert getattr(engine, "_eng_ready", True) is False, "import 失败时 _eng_ready 应为 False"
 
     texts = [
         "BTC 突破 80000 创新高 机构增持",
@@ -300,6 +306,7 @@ def test_TC8_integration_d1_decay_effect(monkeypatch, tmp_path):
     BASELINE_T = 1_788_081_600.0
 
     import time as _t_mod
+
     monkeypatch.setattr(_t_mod, "time", lambda: BASELINE_T)
 
     # Helper 根据小时偏移造 timestamp_ms
@@ -309,25 +316,50 @@ def test_TC8_integration_d1_decay_effect(monkeypatch, tmp_path):
     # 5 条夹具新闻：titles 按旧规则关键词会返回 偏+/偏-/中/偏-/偏+ 五档
     NEWS_FIXTURE: List[Dict[str, Any]] = [
         # 0h age（最新）：强正
-        {"source": "test", "category": "news", "sub_category": "t",
-         "title": "BTC ETF 批准 创新高 机构增持", "content": "贝莱德IBIT 单日净流入10亿美元",
-         "timestamp_ms": _ts_ms(0)},
+        {
+            "source": "test",
+            "category": "news",
+            "sub_category": "t",
+            "title": "BTC ETF 批准 创新高 机构增持",
+            "content": "贝莱德IBIT 单日净流入10亿美元",
+            "timestamp_ms": _ts_ms(0),
+        },
         # 3h age：强负
-        {"source": "test", "category": "news", "sub_category": "t",
-         "title": "SEC 起诉 抛售 爆仓", "content": "黑客盗取1亿美元USDT",
-         "timestamp_ms": _ts_ms(3)},
+        {
+            "source": "test",
+            "category": "news",
+            "sub_category": "t",
+            "title": "SEC 起诉 抛售 爆仓",
+            "content": "黑客盗取1亿美元USDT",
+            "timestamp_ms": _ts_ms(3),
+        },
         # 24h age：中性（无任何关键词 → score=0）
-        {"source": "test", "category": "news", "sub_category": "t",
-         "title": "美联储按兵不动 符合市场预期", "content": "CPI 2.1% 符合预期",
-         "timestamp_ms": _ts_ms(24)},
+        {
+            "source": "test",
+            "category": "news",
+            "sub_category": "t",
+            "title": "美联储按兵不动 符合市场预期",
+            "content": "CPI 2.1% 符合预期",
+            "timestamp_ms": _ts_ms(24),
+        },
         # 48h age：强负
-        {"source": "test", "category": "news", "sub_category": "t",
-         "title": "监管禁令 抛售 清算 爆仓", "content": "某交易所暂停提款",
-         "timestamp_ms": _ts_ms(48)},
+        {
+            "source": "test",
+            "category": "news",
+            "sub_category": "t",
+            "title": "监管禁令 抛售 清算 爆仓",
+            "content": "某交易所暂停提款",
+            "timestamp_ms": _ts_ms(48),
+        },
         # 72h age：强正
-        {"source": "test", "category": "news", "sub_category": "t",
-         "title": "ETF 通过 创新高 机构增持 资金流入", "content": "富达FBTC 获批准",
-         "timestamp_ms": _ts_ms(72)},
+        {
+            "source": "test",
+            "category": "news",
+            "sub_category": "t",
+            "title": "ETF 通过 创新高 机构增持 资金流入",
+            "content": "富达FBTC 获批准",
+            "timestamp_ms": _ts_ms(72),
+        },
     ]
 
     # 加载 computer + 强制 news_list 返回夹具值（monkeypatch 替换 _fetch_news_72h_limit200）
@@ -348,7 +380,7 @@ def test_TC8_integration_d1_decay_effect(monkeypatch, tmp_path):
     # 1) 跑 D1 计算（代码里自带 time.time = BASELINE_T → _now_ms = BASELINE_T*1000）
     d1_decay = computer._fd_S_dao_boost(None)
     assert isinstance(d1_decay, float), f"D1 返回不是 float: {type(d1_decay).__name__}"
-    assert d1_decay != 0.0, f"D1=0，5条夹具混合应该有非零值"
+    assert d1_decay != 0.0, "D1=0，5条夹具混合应该有非零值"
     assert abs(d1_decay) <= 0.10, f"D1={d1_decay} 超出 clamp 限制 ±0.10"
 
     # 2) 强制等权：把 se_mod.time_decay_weight 替换为 lambda *_: 1.0 → 再跑一次

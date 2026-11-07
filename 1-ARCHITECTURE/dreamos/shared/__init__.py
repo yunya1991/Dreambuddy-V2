@@ -9,23 +9,59 @@ Dreambuddy OS — shared 共享基础层
     - utils:       工具函数
 """
 
-from .state import State, NodeResult, NodeStatus, new_state
-from .interfaces import Node, Graph, Edge, Registry, Adapter
 from .errors import ErrorCode, OSError
-from .llm_client import LLMClient, LLMMessage, LLMResponse, get_default_client, set_default_client, make_messages
-from .utils import Timer, timed, gen_cycle_id, gen_session_id, safe_json, safe_get, retry, chunk, dedupe
+from .interfaces import Adapter, Edge, Graph, Node, Registry
+from .llm_client import (
+    LLMClient,
+    LLMMessage,
+    LLMResponse,
+    get_default_client,
+    make_messages,
+    set_default_client,
+)
+from .state import NodeResult, NodeStatus, State, new_state
+from .utils import (
+    Timer,
+    chunk,
+    dedupe,
+    gen_cycle_id,
+    gen_session_id,
+    retry,
+    safe_get,
+    safe_json,
+    timed,
+)
 
 __all__ = [
     # state
-    "State", "NodeResult", "NodeStatus", "new_state",
+    "State",
+    "NodeResult",
+    "NodeStatus",
+    "new_state",
     # interfaces
-    "Node", "Graph", "Edge", "Registry", "Adapter",
+    "Node",
+    "Graph",
+    "Edge",
+    "Registry",
+    "Adapter",
     # errors
-    "ErrorCode", "OSError",
+    "ErrorCode",
+    "OSError",
     # llm
-    "LLMClient", "LLMMessage", "LLMResponse",
-    "get_default_client", "set_default_client", "make_messages",
+    "LLMClient",
+    "LLMMessage",
+    "LLMResponse",
+    "get_default_client",
+    "set_default_client",
+    "make_messages",
     # utils
-    "Timer", "timed", "gen_cycle_id", "gen_session_id",
-    "safe_json", "safe_get", "retry", "chunk", "dedupe",
+    "Timer",
+    "timed",
+    "gen_cycle_id",
+    "gen_session_id",
+    "safe_json",
+    "safe_get",
+    "retry",
+    "chunk",
+    "dedupe",
 ]

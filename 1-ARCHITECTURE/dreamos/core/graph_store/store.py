@@ -24,14 +24,14 @@ G 层统一入口，整合:
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from dreamos.shared.state import State
 
-from .types import Checkpoint, CompressedState, HistoryEntry, ReplayResult
 from .checkpointer import Checkpointer
 from .compressor import ContextCompressor
 from .history import HistoryReplay
+from .types import CompressedState, HistoryEntry
 
 
 class GraphStore:
@@ -53,12 +53,14 @@ class GraphStore:
         state = store.rollback(cp_id)
     """
 
-    def __init__(self,
-                 max_checkpoints: int = 50,
-                 max_history: int = 200,
-                 auto_compress: bool = True,
-                 compress_threshold: int = 10000,
-                 storage_dir: Optional[str] = None):
+    def __init__(
+        self,
+        max_checkpoints: int = 50,
+        max_history: int = 200,
+        auto_compress: bool = True,
+        compress_threshold: int = 10000,
+        storage_dir: Optional[str] = None,
+    ):
         self._checkpointer = Checkpointer(
             max_checkpoints=max_checkpoints,
             storage_dir=storage_dir,
@@ -70,13 +72,16 @@ class GraphStore:
 
     # ── 检查点 ───────────────────────────────────────
 
-    def checkpoint(self, state: State, node_id: str = "",
-                   metadata: Optional[Dict[str, Any]] = None) -> str:
+    def checkpoint(
+        self, state: State, node_id: str = "", metadata: Optional[Dict[str, Any]] = None
+    ) -> str:
         """保存检查点
 
         如果 auto_compress=True 且 State 过大，会先压缩再保存。
         """
-        if self._auto_compress and self._compressor.should_compress(state, self._compress_threshold):
+        if self._auto_compress and self._compressor.should_compress(
+            state, self._compress_threshold
+        ):
             self._compressor.compress(state)
 
         return self._checkpointer.save(state, node_id, metadata)
@@ -95,8 +100,7 @@ class GraphStore:
 
     # ── 压缩 ─────────────────────────────────────────
 
-    def compress(self, state: State,
-                 keep_recent_trace: Optional[int] = None) -> CompressedState:
+    def compress(self, state: State, keep_recent_trace: Optional[int] = None) -> CompressedState:
         """手动压缩 State"""
         return self._compressor.compress(state, keep_recent_trace)
 

@@ -13,7 +13,7 @@ import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List
 
 from .output_contract import BCRMOutput
 
@@ -23,10 +23,7 @@ class CaseWriter:
     BCRM 案例写入器。
     """
 
-    def __init__(self,
-                 cases_dir: str = None,
-                 auto_flush: bool = True,
-                 max_queue_size: int = 100):
+    def __init__(self, cases_dir: str = None, auto_flush: bool = True, max_queue_size: int = 100):
         self.cases_dir = cases_dir
         self.auto_flush = auto_flush
         self.max_queue_size = max_queue_size
@@ -39,16 +36,18 @@ class CaseWriter:
         os.makedirs(self.cases_dir, exist_ok=True)
         return True
 
-    def write_case(self,
-                   market_snapshot: Dict[str, Any],
-                   bcrm_output: BCRMOutput,
-                   actual_outcome: Dict = None,
-                   contradiction_list: List[Dict] = None,
-                   memory_cases: List[Dict] = None,
-                   qmm_output: Dict = None,
-                   case_id: str = None,
-                   symbol: str = "UNKNOWN",
-                   timeframe: str = "1h") -> str:
+    def write_case(
+        self,
+        market_snapshot: Dict[str, Any],
+        bcrm_output: BCRMOutput,
+        actual_outcome: Dict = None,
+        contradiction_list: List[Dict] = None,
+        memory_cases: List[Dict] = None,
+        qmm_output: Dict = None,
+        case_id: str = None,
+        symbol: str = "UNKNOWN",
+        timeframe: str = "1h",
+    ) -> str:
         """
         写入单个案例。
 
@@ -90,42 +89,52 @@ class CaseWriter:
 
         return case_id
 
-    def _build_case(self,
-                    case_id: str,
-                    market_snapshot: Dict[str, Any],
-                    bcrm_output: BCRMOutput,
-                    actual_outcome: Dict = None,
-                    contradiction_list: List[Dict] = None,
-                    memory_cases: List[Dict] = None,
-                    qmm_output: Dict = None,
-                    symbol: str = "UNKNOWN",
-                    timeframe: str = "1h") -> Dict[str, Any]:
+    def _build_case(
+        self,
+        case_id: str,
+        market_snapshot: Dict[str, Any],
+        bcrm_output: BCRMOutput,
+        actual_outcome: Dict = None,
+        contradiction_list: List[Dict] = None,
+        memory_cases: List[Dict] = None,
+        qmm_output: Dict = None,
+        symbol: str = "UNKNOWN",
+        timeframe: str = "1h",
+    ) -> Dict[str, Any]:
         """构建案例结构。"""
         # 构建 thinking_chain 供 L4 检索
         thinking_chain = []
 
         # 步骤 1: 矛盾识别
         if contradiction_list:
-            thinking_chain.append({
-                "step": 1,
-                "name": "矛盾识别",
-                "contradictions": contradiction_list,
-            })
+            thinking_chain.append(
+                {
+                    "step": 1,
+                    "name": "矛盾识别",
+                    "contradictions": contradiction_list,
+                }
+            )
 
         # 八卦状态
-        thinking_chain.append({
-            "step": "bagua_state",
-            "bagua": bcrm_output.bagua,
-            "direction": bcrm_output.next_state.direction if bcrm_output.next_state else "UNKNOWN",
-        })
+        thinking_chain.append(
+            {
+                "step": "bagua_state",
+                "bagua": bcrm_output.bagua,
+                "direction": (
+                    bcrm_output.next_state.direction if bcrm_output.next_state else "UNKNOWN"
+                ),
+            }
+        )
 
         # 六十四卦结果
         if bcrm_output.hexagram and bcrm_output.hexagram.hexagram_name:
-            thinking_chain.append({
-                "step": "yijing",
-                "hexagram": bcrm_output.hexagram.hexagram_name,
-                "changing_yaos": bcrm_output.hexagram.changing_yaos,
-            })
+            thinking_chain.append(
+                {
+                    "step": "yijing",
+                    "hexagram": bcrm_output.hexagram.hexagram_name,
+                    "changing_yaos": bcrm_output.hexagram.changing_yaos,
+                }
+            )
 
         # 构建 tags
         tags = [
@@ -136,8 +145,10 @@ class CaseWriter:
         ]
 
         # 质变判定：通过 transformation_trigger.probability 判断
-        if (bcrm_output.transformation_trigger and
-                bcrm_output.transformation_trigger.probability == "HIGH"):
+        if (
+            bcrm_output.transformation_trigger
+            and bcrm_output.transformation_trigger.probability == "HIGH"
+        ):
             tags.append("qualitative_change")
 
         if bcrm_output.hexagram and bcrm_output.hexagram.hexagram_name:
@@ -158,8 +169,9 @@ class CaseWriter:
             "is_test": is_test,
             "symbol": symbol,
             "timeframe": timeframe,
-            "snapshot_ts": market_snapshot.get("snapshot_ts",
-                                               datetime.now(timezone.utc).isoformat()),
+            "snapshot_ts": market_snapshot.get(
+                "snapshot_ts", datetime.now(timezone.utc).isoformat()
+            ),
             "environment_snapshot": {
                 "price": market_snapshot.get("price", market_snapshot.get("close", 0)),
                 "regime": market_snapshot.get("regime", ""),
@@ -185,7 +197,8 @@ class CaseWriter:
             },
             "performance_metrics": {
                 "dialectic_confidence": (
-                    bcrm_output.next_state.confidence if bcrm_output.next_state else 0.0),
+                    bcrm_output.next_state.confidence if bcrm_output.next_state else 0.0
+                ),
                 "memory_used": len(memory_cases) if memory_cases else 0,
             },
         }
@@ -201,7 +214,7 @@ class CaseWriter:
         filepath = Path(self.cases_dir) / f"{case_id}.json"
 
         try:
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(case, f, ensure_ascii=False, indent=2)
         except Exception:
             pass
@@ -212,13 +225,15 @@ class CaseWriter:
             self._flush_case(case)
         self._queue.clear()
 
-    def update_outcome(self,
-                       case_id: str,
-                       actual_outcome: Dict[str, Any],
-                       is_correct: bool = None,
-                       price_change: float = None,
-                       dominant_side_switched: bool = None,
-                       gua_flipped: bool = None):
+    def update_outcome(
+        self,
+        case_id: str,
+        actual_outcome: Dict[str, Any],
+        is_correct: bool = None,
+        price_change: float = None,
+        dominant_side_switched: bool = None,
+        gua_flipped: bool = None,
+    ):
         """
         更新案例的实际结果。
 
@@ -238,7 +253,7 @@ class CaseWriter:
             return
 
         try:
-            with open(filepath, 'r', encoding='utf-8') as f:
+            with open(filepath, "r", encoding="utf-8") as f:
                 case = json.load(f)
 
             outcome = case.get("decision_outcome", {})
@@ -255,7 +270,7 @@ class CaseWriter:
 
             case["decision_outcome"] = outcome
 
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(case, f, ensure_ascii=False, indent=2)
         except Exception:
             pass

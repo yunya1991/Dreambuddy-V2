@@ -10,37 +10,37 @@ DreamOS 对话意图识别模块（操作系统内核 S 层）
     - multi_intent:   多意图检测器（三层：连接词/标的级/复合意图）
 """
 
-from .taxonomy import (
-    PrimaryIntent,
-    QueryIntent,
-    AnalysisIntent,
-    TradeIntent,
-    StrategyIntent,
-    RiskIntent,
-    DialogIntent,
-    INTENT_TAXONOMY,
-    get_primary_intent,
-    get_risk_level,
-    get_default_capability_route,
-    is_valid_secondary,
-    get_all_secondaries,
-)
-from .slots import (
-    normalize_stock,
-    normalize_timeframe,
-    normalize_quantity,
-    normalize_sector,
-    normalize_indicator,
-    extract_slots_from_text,
-)
-from .multi_intent import (
-    MultiIntentDetector,
-    CONJUNCTIONS,
-    COMPOUND_PATTERNS,
-)
 from .classifier import (
     DialogueIntentClassifier,
     DialogueIntentResult,
+)
+from .multi_intent import (
+    COMPOUND_PATTERNS,
+    CONJUNCTIONS,
+    MultiIntentDetector,
+)
+from .slots import (
+    extract_slots_from_text,
+    normalize_indicator,
+    normalize_quantity,
+    normalize_sector,
+    normalize_stock,
+    normalize_timeframe,
+)
+from .taxonomy import (
+    INTENT_TAXONOMY,
+    AnalysisIntent,
+    DialogIntent,
+    PrimaryIntent,
+    QueryIntent,
+    RiskIntent,
+    StrategyIntent,
+    TradeIntent,
+    get_all_secondaries,
+    get_default_capability_route,
+    get_primary_intent,
+    get_risk_level,
+    is_valid_secondary,
 )
 
 __all__ = [

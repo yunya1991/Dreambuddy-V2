@@ -14,8 +14,14 @@
   python3 auto_monitor.py --distill-only    # 仅执行复盘和PR评论
   python3 auto_monitor.py --check-only      # 仅检查状态不触发执行
 """
-import os, sys, json, subprocess, time, argparse, warnings
-from datetime import datetime, timezone, timedelta
+
+import os  # noqa: I001
+import sys
+import json
+import subprocess
+import argparse
+import warnings
+from datetime import datetime, timezone
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -29,18 +35,21 @@ load_dotenv(BASE_DIR / "config" / ".env")
 # ── 配置 ───────────────────────────────────────────────────────────────────
 AGENT_A_LOG_DIR = BASE_DIR / "logs" / "agent_a"
 AGENT_B_LOG_DIR = BASE_DIR / "logs" / "agent_b"
-MAX_IDLE_MINUTES = 240   # 超过4小时认为未正常运行
+MAX_IDLE_MINUTES = 240  # 超过4小时认为未正常运行
 GH_TOKEN = os.environ.get("GH_TOKEN", os.environ.get("GITHUB_TOKEN", ""))
 PR_NUMBER = "52"
 REPO = "yunya1991/Dreambuddy-V2"
 
 # ── 工具函数 ────────────────────────────────────────────────────────────────
 
+
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
+
 def _fmt_ts(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%d %H:%M:%S UTC")
+
 
 def get_latest_log_ts(log_dir: Path) -> datetime:
     """获取最近日志文件的时间戳"""
@@ -66,6 +75,7 @@ def get_latest_log_ts(log_dir: Path) -> datetime:
         mtime = logs[0].stat().st_mtime
         return datetime.fromtimestamp(mtime, tz=timezone.utc)
 
+
 def is_agent_running(agent_name: str, log_dir: Path) -> tuple[bool, str]:
     """检查 Agent 是否正常运行，返回 (是否正常, 状态说明)"""
     latest_ts = get_latest_log_ts(log_dir)
@@ -73,14 +83,16 @@ def is_agent_running(agent_name: str, log_dir: Path) -> tuple[bool, str]:
     idle_minutes = (now - latest_ts).total_seconds() / 60
 
     if latest_ts == datetime.min.replace(tzinfo=timezone.utc):
-        return False, f"从未运行过"
+        return False, "从未运行过"
 
     if idle_minutes > MAX_IDLE_MINUTES:
         return False, f"已空闲 {idle_minutes:.0f} 分钟（阈值 {MAX_IDLE_MINUTES} 分钟）"
 
     return True, f"最近运行 {_fmt_ts(latest_ts)}，空闲 {idle_minutes:.0f} 分钟"
 
+
 # ── 执行 Agent ──────────────────────────────────────────────────────────────
+
 
 def run_agent_a():
     """按记忆工作流执行 Agent A"""
@@ -94,13 +106,17 @@ def run_agent_a():
 
     try:
         result = subprocess.run(
-            ["python3", str(script)],
-            cwd=str(BASE_DIR),
-            capture_output=True, text=True, timeout=180
+            ["python3", str(script)], cwd=str(BASE_DIR), capture_output=True, text=True, timeout=180
         )
-        key_lines = [l for l in result.stdout.split("\n")
-                     if any(kw in l for kw in ["决策", "执行", "拦截", "通过", "权益", "USDC", "错误", "记忆", "大师"])
-                     and "Warning" not in l]
+        key_lines = [
+            l
+            for l in result.stdout.split("\n")  # noqa: E741
+            if any(
+                kw in l
+                for kw in ["决策", "执行", "拦截", "通过", "权益", "USDC", "错误", "记忆", "大师"]
+            )
+            and "Warning" not in l
+        ]
         for line in key_lines[-10:]:
             print(f"  {line.strip()}")
         if result.returncode != 0:
@@ -115,6 +131,7 @@ def run_agent_a():
         print(f"[AutoMonitor] Agent A 执行异常: {e}")
         return False
 
+
 def run_agent_b():
     """按完整流程执行 Agent B"""
     print("=" * 60)
@@ -127,13 +144,28 @@ def run_agent_b():
 
     try:
         result = subprocess.run(
-            ["python3", str(script)],
-            cwd=str(BASE_DIR),
-            capture_output=True, text=True, timeout=300
+            ["python3", str(script)], cwd=str(BASE_DIR), capture_output=True, text=True, timeout=300
         )
-        key_lines = [l for l in result.stdout.split("\n")
-                     if any(kw in l for kw in ["决策", "执行", "拦截", "通过", "权益", "USDC", "错误", "记忆", "闭环", "教训"])
-                     and "Warning" not in l]
+        key_lines = [
+            l
+            for l in result.stdout.split("\n")  # noqa: E741
+            if any(
+                kw in l
+                for kw in [
+                    "决策",
+                    "执行",
+                    "拦截",
+                    "通过",
+                    "权益",
+                    "USDC",
+                    "错误",
+                    "记忆",
+                    "闭环",
+                    "教训",
+                ]
+            )
+            and "Warning" not in l
+        ]
         for line in key_lines[-10:]:
             print(f"  {line.strip()}")
         if result.returncode != 0:
@@ -148,7 +180,9 @@ def run_agent_b():
         print(f"[AutoMonitor] Agent B 执行异常: {e}")
         return False
 
+
 # ── 复盘蒸馏学习 ────────────────────────────────────────────────────────────
+
 
 def load_logs(log_dir: Path, limit: int = 10) -> list:
     """加载最近 N 条日志"""
@@ -163,15 +197,19 @@ def load_logs(log_dir: Path, limit: int = 10) -> list:
             pass
     return logs
 
+
 def distill_agent_a():
     """Agent A 复盘蒸馏学习"""
     print("\n" + "=" * 60)
     print("[AutoMonitor] Agent A 复盘蒸馏学习")
     print("=" * 60)
 
-    from core.agent_a_memory import (
-        load_memory, save_memory, add_lesson,
-        update_equity_stats, maybe_switch_master,
+    from core.agent_a_memory import (  # noqa: I001
+        load_memory,
+        save_memory,
+        add_lesson,
+        update_equity_stats,
+        maybe_switch_master,
     )
 
     mem = load_memory()
@@ -182,11 +220,15 @@ def distill_agent_a():
         return
 
     # 统计最近交易
-    closed_trades = [l for l in logs if l.get("action") != "HOLD" and l.get("pnl_pct") is not None]
+    closed_trades = [
+        l for l in logs if l.get("action") != "HOLD" and l.get("pnl_pct") is not None  # noqa: E741
+    ]  # noqa: E741
     wins = [t for t in closed_trades if t.get("pnl_pct", 0) > 0]
     losses = [t for t in closed_trades if t.get("pnl_pct", 0) <= 0]
 
-    print(f"[AutoMonitor] 最近 {len(logs)} 轮，非HOLD {len(closed_trades)} 笔，盈利 {len(wins)} 笔，亏损 {len(losses)} 笔")
+    print(
+        f"[AutoMonitor] 最近 {len(logs)} 轮，非HOLD {len(closed_trades)} 笔，盈利 {len(wins)} 笔，亏损 {len(losses)} 笔"
+    )
 
     # 提取教训
     new_lessons = []
@@ -201,7 +243,7 @@ def distill_agent_a():
         new_lessons.append((lesson, 3, 3))
 
     # 检查连续亏损
-    recent_actions = [l.get("action") for l in logs[-10:]]
+    recent_actions = [l.get("action") for l in logs[-10:]]  # noqa: E741
     hold_streak = 0
     for a in reversed(recent_actions):
         if a == "HOLD":
@@ -230,6 +272,7 @@ def distill_agent_a():
     save_memory(mem)
     print(f"[AutoMonitor] Agent A 记忆已保存，当前大师: {mem.get('current_master')}")
 
+
 def distill_agent_b():
     """Agent B 复盘蒸馏学习"""
     print("\n" + "=" * 60)
@@ -249,11 +292,15 @@ def distill_agent_b():
             memory = json.load(f)
 
     # 统计
-    closed_trades = [l for l in logs if l.get("action") != "HOLD" and l.get("pnl_pct") is not None]
+    closed_trades = [
+        l for l in logs if l.get("action") != "HOLD" and l.get("pnl_pct") is not None  # noqa: E741
+    ]  # noqa: E741
     wins = [t for t in closed_trades if t.get("pnl_pct", 0) > 0]
     losses = [t for t in closed_trades if t.get("pnl_pct", 0) <= 0]
 
-    print(f"[AutoMonitor] 最近 {len(logs)} 轮，非HOLD {len(closed_trades)} 笔，盈利 {len(wins)} 笔，亏损 {len(losses)} 笔")
+    print(
+        f"[AutoMonitor] 最近 {len(logs)} 轮，非HOLD {len(closed_trades)} 笔，盈利 {len(wins)} 笔，亏损 {len(losses)} 笔"
+    )
 
     # 提取教训
     lessons = memory.get("lessons", [])
@@ -280,7 +327,9 @@ def distill_agent_b():
         json.dump(memory, f, ensure_ascii=False, indent=2)
     print(f"[AutoMonitor] Agent B 记忆已保存，共 {len(memory['lessons'])} 条教训")
 
+
 # ── PR 评论 ─────────────────────────────────────────────────────────────────
+
 
 def post_pr_comment():
     """在远端 PR 下创建评论"""
@@ -299,7 +348,9 @@ def post_pr_comment():
             result = subprocess.run(
                 ["python3", str(script)],
                 cwd=str(BASE_DIR),
-                capture_output=True, text=True, timeout=60
+                capture_output=True,
+                text=True,
+                timeout=60,
             )
             print(result.stdout[-500:] if len(result.stdout) > 500 else result.stdout)
             if "PR评论成功" in result.stdout:
@@ -313,7 +364,7 @@ def post_pr_comment():
             return False
     else:
         # 手动创建简单评论
-        cycle = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+        cycle = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         logs_a = load_logs(AGENT_A_LOG_DIR, limit=5)
         logs_b = load_logs(AGENT_B_LOG_DIR, limit=5)
 
@@ -337,12 +388,10 @@ def post_pr_comment():
 - 本报告由 auto_monitor.py 自动生成
 """
         url = f"https://api.github.com/repos/{REPO}/issues/{PR_NUMBER}/comments"
-        headers = {
-            "Authorization": f"token {GH_TOKEN}",
-            "Accept": "application/vnd.github.v3+json"
-        }
+        headers = {"Authorization": f"token {GH_TOKEN}", "Accept": "application/vnd.github.v3+json"}
         try:
             import requests
+
             r = requests.post(url, headers=headers, json={"body": body}, timeout=15)
             if r.status_code in (200, 201):
                 print("[AutoMonitor] PR 评论创建成功")
@@ -354,7 +403,9 @@ def post_pr_comment():
             print(f"[AutoMonitor] PR 评论异常: {e}")
             return False
 
+
 # ── 主流程 ──────────────────────────────────────────────────────────────────
+
 
 def main():
     parser = argparse.ArgumentParser(description="交易系统自动化监控")
@@ -396,6 +447,7 @@ def main():
     print("\n" + "=" * 60)
     print(f"[AutoMonitor] 完成 | {_fmt_ts(_now())}")
     print("=" * 60)
+
 
 if __name__ == "__main__":
     main()

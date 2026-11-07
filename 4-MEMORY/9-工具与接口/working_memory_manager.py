@@ -45,18 +45,16 @@
 """
 
 import json
-import os
-import re
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-
 # ============================================================
 # 数据模型
 # ============================================================
+
 
 @dataclass
 class MemoryBlock:
@@ -64,6 +62,7 @@ class MemoryBlock:
     工作记忆分区
     每个分区有独立的 Token 预算，超出时触发压缩。
     """
+
     name: str
     max_tokens: int = 2000
     items: Dict[str, str] = field(default_factory=dict)
@@ -108,6 +107,7 @@ class MemoryBlock:
 @dataclass
 class TaskInfo:
     """任务信息"""
+
     task_id: str = ""
     title: str = ""
     goal: str = ""
@@ -130,6 +130,7 @@ class TaskInfo:
 # 核心管理器
 # ============================================================
 
+
 class WorkingMemoryManager:
     """
     工作记忆管理器 (L0)
@@ -146,12 +147,12 @@ class WorkingMemoryManager:
 
     # 默认 Token 预算（可按任务调整）
     DEFAULT_BUDGETS = {
-        "task": 500,       # 任务信息：精简
-        "context": 2000,   # 上下文：中等
-        "scratch": 1500,   # 草稿区：中等
-        "process": 3000,   # 流程建议（元+应用双层），设计节 3.2
-        "episodic": 800,   # 情景缓冲器（决策事件序列），Baddeley 2000
-        "recall": 2500,    # P1-1: recall_block，缓存最近 recall 结果摘要
+        "task": 500,  # 任务信息：精简
+        "context": 2000,  # 上下文：中等
+        "scratch": 1500,  # 草稿区：中等
+        "process": 3000,  # 流程建议（元+应用双层），设计节 3.2
+        "episodic": 800,  # 情景缓冲器（决策事件序列），Baddeley 2000
+        "recall": 2500,  # P1-1: recall_block，缓存最近 recall 结果摘要
     }
 
     def __init__(
@@ -182,7 +183,9 @@ class WorkingMemoryManager:
         self.process_block = MemoryBlock("process", max_tokens=merged_budgets.get("process", 3000))
         self.process_block._readonly = True  # 只有 recall 注入能写，AI 自身不能改写
         # P1-1: 情景缓冲器（Baddeley 2000）——跨时间整合决策事件序列
-        self.episodic_block = MemoryBlock("episodic", max_tokens=merged_budgets.get("episodic", 800))
+        self.episodic_block = MemoryBlock(
+            "episodic", max_tokens=merged_budgets.get("episodic", 800)
+        )
         # P1-1: recall_block —— 缓存最近 recall 结果，三层记忆 Working 层
         self.recall_block = MemoryBlock("recall", max_tokens=merged_budgets.get("recall", 2500))
 
@@ -410,7 +413,9 @@ class WorkingMemoryManager:
             for k, v in self.episodic_block.items.items():
                 try:
                     ep = json.loads(v)
-                    lines.append(f"- **[{ep.get('stage', '?')}]** {ep.get('decision', '?')} — {ep.get('rationale', '')}")
+                    lines.append(
+                        f"- **[{ep.get('stage', '?')}]** {ep.get('decision', '?')} — {ep.get('rationale', '')}"
+                    )
                 except (json.JSONDecodeError, TypeError):
                     lines.append(f"- {k}: {v[:100]}")
             lines.append("")
@@ -425,7 +430,7 @@ class WorkingMemoryManager:
 
         # Token 使用情况
         total = self._total_tokens()
-        lines.append(f"---")
+        lines.append("---")
         lines.append(f"*工作记忆 Token 使用: {total} tokens*")
 
         return "\n".join(lines)
@@ -477,10 +482,13 @@ class WorkingMemoryManager:
         block.items = dict(new_items)
         block.items["_compressed_summary"] = summary
 
-        self._log("auto_compress", {
-            "block": block.name,
-            "removed_count": len(old_items),
-        })
+        self._log(
+            "auto_compress",
+            {
+                "block": block.name,
+                "removed_count": len(old_items),
+            },
+        )
 
     # ============================================================
     # 检查点机制
@@ -512,10 +520,7 @@ class WorkingMemoryManager:
                 "saved_at": datetime.now(timezone.utc).isoformat(),
             }
 
-            filepath.write_text(
-                json.dumps(data, indent=2, ensure_ascii=False),
-                encoding="utf-8"
-            )
+            filepath.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
             self._log("checkpoint", {"filepath": str(filepath)})
             return filepath
 
@@ -567,7 +572,7 @@ class WorkingMemoryManager:
                 self._log("restore", {"filepath": str(checkpoint_path)})
                 return True
 
-            except (json.JSONDecodeError, KeyError, TypeError) as e:
+            except (json.JSONDecodeError, KeyError, TypeError) as e:  # noqa: F841
                 return False
 
     def list_checkpoints(self) -> List[Dict[str, Any]]:
@@ -577,12 +582,14 @@ class WorkingMemoryManager:
         for cp_file in sorted(self.checkpoint_dir.glob(pattern)):
             try:
                 data = json.loads(cp_file.read_text(encoding="utf-8"))
-                checkpoints.append({
-                    "file": str(cp_file),
-                    "name": cp_file.stem,
-                    "saved_at": data.get("saved_at", ""),
-                    "status": data.get("task_info", {}).get("status", ""),
-                })
+                checkpoints.append(
+                    {
+                        "file": str(cp_file),
+                        "name": cp_file.stem,
+                        "saved_at": data.get("saved_at", ""),
+                        "status": data.get("task_info", {}).get("status", ""),
+                    }
+                )
             except json.JSONDecodeError:
                 continue
         return checkpoints
@@ -632,10 +639,13 @@ class WorkingMemoryManager:
             # 尝试写入目标应用记忆
             success = self._write_to_app_memory(target_memory_id, distill_data)
 
-            self._log("distill", {
-                "target": target_memory_id,
-                "success": success,
-            })
+            self._log(
+                "distill",
+                {
+                    "target": target_memory_id,
+                    "success": success,
+                },
+            )
 
             return {
                 "success": success,
@@ -665,6 +675,7 @@ class WorkingMemoryManager:
 
         try:
             import importlib.util
+
             spec = importlib.util.spec_from_file_location("app_memory", full_path)
             if not spec or not spec.loader:
                 return False
@@ -673,9 +684,13 @@ class WorkingMemoryManager:
 
             # 尝试获取接口类（不同应用记忆的类名不同）
             interface_class = None
-            for class_name in ["ExperimentMemoryInterface", "RiskMemoryInterface",
-                               "OpsMemoryInterface", "AppMemoryInterface",
-                               "TradingMemoryInterface"]:
+            for class_name in [
+                "ExperimentMemoryInterface",
+                "RiskMemoryInterface",
+                "OpsMemoryInterface",
+                "AppMemoryInterface",
+                "TradingMemoryInterface",
+            ]:
                 interface_class = getattr(module, class_name, None)
                 if interface_class:
                     break
@@ -684,12 +699,14 @@ class WorkingMemoryManager:
                 return False
 
             interface = interface_class()
-            interface.add({
-                "memory_type": "lesson",
-                "content": data["lesson_content"],
-                "confidence": data["confidence"],
-                "tags": data["tags"],
-            })
+            interface.add(
+                {
+                    "memory_type": "lesson",
+                    "content": data["lesson_content"],
+                    "confidence": data["confidence"],
+                    "tags": data["tags"],
+                }
+            )
             return True
 
         except Exception:
@@ -728,11 +745,13 @@ class WorkingMemoryManager:
 
     def _log(self, operation: str, details: Dict[str, Any]) -> None:
         """记录操作日志（用于蒸馏分析）。"""
-        self._operation_log.append({
-            "operation": operation,
-            "details": details,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        })
+        self._operation_log.append(
+            {
+                "operation": operation,
+                "details": details,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        )
 
     def get_stats(self) -> Dict[str, Any]:
         """获取工作记忆统计信息。"""
@@ -761,6 +780,7 @@ class WorkingMemoryManager:
 # ============================================================
 # 便捷函数
 # ============================================================
+
 
 def create_working_memory(
     title: str,

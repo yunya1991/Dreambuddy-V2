@@ -32,7 +32,7 @@ import math
 from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 
 def _is_finite(value: Any) -> bool:
@@ -88,8 +88,9 @@ class C8PerfAttributionNode(BaseNode):
         return trades
 
     @staticmethod
-    def _build_lessons(total_pnl: float, win_rate: float, trade_count: int,
-                       by_direction: Dict[str, float]) -> List[str]:
+    def _build_lessons(
+        total_pnl: float, win_rate: float, trade_count: int, by_direction: Dict[str, float]
+    ) -> List[str]:
         lessons: List[str] = []
         if trade_count == 0:
             return lessons

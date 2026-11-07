@@ -17,17 +17,13 @@
     train_from_collected(lookahead_days=7)
 """
 
-import json
-import os
-import sys
 import argparse
-from datetime import datetime, timezone
+import json
+import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict
 
-import numpy as np
 import pandas as pd
-
 
 # ── 路径配置 ──────────────────────────────────────────────────────────────
 
@@ -253,6 +249,7 @@ def train_from_collected(lookahead_days: int = 7, test_ratio: float = 0.3) -> Di
 
 # ── 命令行入口 ────────────────────────────────────────────────────────────
 
+
 def main():
     parser = argparse.ArgumentParser(description="集成模型样本标注与训练工具")
     parser.add_argument("--lookahead", type=int, default=7, help="前瞻天数（默认7）")
@@ -270,7 +267,11 @@ def main():
         if "_symbol" in df.columns:
             print("按币种统计:")
             for sym, cnt in df["_symbol"].value_counts().items():
-                labeled = df[df["_symbol"] == sym]["_future_return"].notna().sum() if "_future_return" in df.columns else 0
+                labeled = (
+                    df[df["_symbol"] == sym]["_future_return"].notna().sum()
+                    if "_future_return" in df.columns
+                    else 0
+                )
                 print(f"  {sym}: {cnt} 个（已标注 {labeled}）")
         return
 

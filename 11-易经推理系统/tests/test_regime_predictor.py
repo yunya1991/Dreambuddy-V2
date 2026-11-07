@@ -11,10 +11,10 @@ Phase 1: Regime Predictor TDD 测试矩阵
   cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统
   pytest tests/test_regime_predictor.py -v
 """
+
+import importlib
 import os
 import sys
-import importlib
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -43,7 +43,7 @@ def _build_long_ohlcv_and_features():
     """
     rng = np.random.RandomState(123)
     N = 1825
-    t = np.arange(N, dtype=float)
+    t = np.arange(N, dtype=float)  # noqa: F841
 
     # 三段不同阶段：
     #  0~500: 震荡累积（Range + Consolidation 多）
@@ -55,7 +55,7 @@ def _build_long_ohlcv_and_features():
     drift[500:1100] = 0.0038
     drift[1100:1220] = -0.0085  # 暴跌段
     drift[1220:1500] = -0.0007  # 派发期
-    drift[1500:1825] = 0.0012   # 恢复
+    drift[1500:1825] = 0.0012  # 恢复
 
     rets_noise = rng.randn(N) * 0.022
     # 在 500~1100 减小波动、1100~1220 放大波动
@@ -76,27 +76,38 @@ def _build_long_ohlcv_and_features():
     volume[980:1080] *= 2.2
 
     idx = pd.date_range("2020-01-01", periods=N, freq="D")
-    df = pd.DataFrame({
-        "open": open_,
-        "high": high,
-        "low": low,
-        "close": close,
-        "volume": volume,
-    }, index=idx)
+    df = pd.DataFrame(
+        {
+            "open": open_,
+            "high": high,
+            "low": low,
+            "close": close,
+            "volume": volume,
+        },
+        index=idx,
+    )
 
     # ===== 计算 Phase 0 特征 =====
     from bcrm2.feature_registry import FeatureRegistry
+
     FeatureRegistry.clear()
     import bcrm2.classic_experience_features as _c
     import bcrm2.cross_asset_features as _x
+
     importlib.reload(_c)
     importlib.reload(_x)
 
     # 8 币广度：用 BTC close 作为各个 alt 基础 + 微扰（保持同向/异向控制）
     coins_closes = {}
     alt_perturb = {
-        "BTC": 0.0, "ETH": 0.004, "SOL": 0.01, "BNB": 0.003,
-        "XRP": 0.006, "ADA": 0.008, "DOGE": 0.012, "AVAX": 0.009,
+        "BTC": 0.0,
+        "ETH": 0.004,
+        "SOL": 0.01,
+        "BNB": 0.003,
+        "XRP": 0.006,
+        "ADA": 0.008,
+        "DOGE": 0.012,
+        "AVAX": 0.009,
     }
     for coin, sigma in alt_perturb.items():
         if coin == "BTC":
@@ -135,14 +146,14 @@ class Test8StateLabeler:
 
         labels = generate_8state_label(features_long_df)
         uniq, counts = np.unique(labels.dropna().astype(str), return_counts=True)
-        distribution = dict(zip(uniq, counts))
+        distribution = dict(zip(uniq, counts))  # noqa: B905
         assert len(uniq) == 8, f"8 态应该都存在，实际 {sorted(uniq)}"
         for name, cnt in distribution.items():
             assert cnt >= 50, f"标签 {name} 样本数 {cnt} < 50，分布：{distribution}"
 
     def test_8state_labeler_correctness(self, features_long_df):
         """DoD: 牛市中段 → TREND_UP 类占主导（合成中对应上涨段）"""
-        from bcrm2.labels.regime_labeler import generate_8state_label, REGIME_ORDER
+        from bcrm2.labels.regime_labeler import generate_8state_label
 
         labels = generate_8state_label(features_long_df)
         # 选择明确的「牛市中段」窗口（上涨段 500~1100 的 600~700 日 ≈ labels.iloc[900~1000]）
@@ -151,12 +162,15 @@ class Test8StateLabeler:
         # 此处已持续上涨 1 年多，趋势标签应占多数。
         window = labels.iloc[900:1000].dropna().astype(str).tolist()
         from collections import Counter
+
         c = Counter(window)
         # 上涨段至少「强多/弱多/FOMO」占 ≥ 50%（更严格一点）
-        bullish_ratio = sum(c.get(k, 0) for k in ["TREND_UP_STRONG", "TREND_UP_MILD", "FOMO_RALLY"]) / max(1, len(window))
-        assert bullish_ratio >= 0.50, (
-            f"上涨段(900~1000) 趋势/狂热占比 {bullish_ratio:.2%} 应≥50%，Top3：{c.most_common(3)}"
-        )
+        bullish_ratio = sum(
+            c.get(k, 0) for k in ["TREND_UP_STRONG", "TREND_UP_MILD", "FOMO_RALLY"]
+        ) / max(1, len(window))
+        assert (
+            bullish_ratio >= 0.50
+        ), f"上涨段(900~1000) 趋势/狂热占比 {bullish_ratio:.2%} 应≥50%，Top3：{c.most_common(3)}"
 
         # 暴跌段 1100~1220 是合成数据的真实暴跌段，对应 VOLATILE_DROP 占比高
         # （调试验证：labels[1100:1220] 中 VOLATILE_DROP 约 79.2%）
@@ -164,9 +178,9 @@ class Test8StateLabeler:
         c2 = Counter(window_drop)
         drop_ratio = c2.get("VOLATILE_DROP", 0) + c2.get("DISTRIBUTION", 0)
         drop_ratio /= max(1, len(window_drop))
-        assert drop_ratio >= 0.30, (
-            f"暴跌段(1120~1235) 暴跌/派发占比 {drop_ratio:.2%} 应≥30%，Top：{c2.most_common(3)}"
-        )
+        assert (
+            drop_ratio >= 0.30
+        ), f"暴跌段(1120~1235) 暴跌/派发占比 {drop_ratio:.2%} 应≥30%，Top：{c2.most_common(3)}"
 
 
 # ============================================================
@@ -175,12 +189,15 @@ class Test8StateLabeler:
 class TestRegimePredictor:
     def test_regime_predictor_fit_predict(self, features_long_df):
         """DoD: 训练 + 预测 → 输出 8 态之一 + 置信度∈[0,1]"""
+        from bcrm2.labels.regime_labeler import REGIME_ORDER, generate_8state_label
         from bcrm2.regime_predictor import RegimePredictor
-        from bcrm2.labels.regime_labeler import generate_8state_label, REGIME_ORDER
 
         labels = generate_8state_label(features_long_df)
-        feature_cols = [c for c in features_long_df.columns
-                        if c not in ("close", "open", "high", "low", "volume")]
+        feature_cols = [
+            c
+            for c in features_long_df.columns
+            if c not in ("close", "open", "high", "low", "volume")
+        ]
         df = features_long_df.copy()
         df["label"] = labels
         df = df.dropna(subset=feature_cols + ["label"])
@@ -198,8 +215,9 @@ class TestRegimePredictor:
         y_pred, conf, proba = predictor.predict(X_test)
         # 输出 8 态之一
         unique_pred = set(y_pred.tolist())
-        assert len(unique_pred - set(REGIME_ORDER)) == 0, \
-            f"预测标签存在未知态：{unique_pred - set(REGIME_ORDER)}"
+        assert (
+            len(unique_pred - set(REGIME_ORDER)) == 0
+        ), f"预测标签存在未知态：{unique_pred - set(REGIME_ORDER)}"
         assert y_pred.ndim == 1 and len(y_pred) == len(X_test)
         # 置信度都在 [0, 1]
         assert np.all(conf >= 0.0) and np.all(conf <= 1.0)
@@ -215,13 +233,23 @@ class TestRegimePredictor:
         rng = np.random.RandomState(0)
         X = rng.randn(200, 8)  # 每列方差≈1
         feature_names = [
-            "adx_14", "hurst_exp_50", "bb_width_percentile_252", "distance_to_high_60d",  # 形态
-            "breadth_ma128_align", "btc_dominance_change_20d",                             # 广度
-            "some_other_feat", "other_feat_2",                                              # 其他
+            "adx_14",
+            "hurst_exp_50",
+            "bb_width_percentile_252",
+            "distance_to_high_60d",  # 形态
+            "breadth_ma128_align",
+            "btc_dominance_change_20d",  # 广度
+            "some_other_feat",
+            "other_feat_2",  # 其他
         ]
         cfg = {
             "feature_groups": {
-                "morphology": ["adx_14", "hurst_exp_50", "bb_width_percentile_252", "distance_to_high_60d"],
+                "morphology": [
+                    "adx_14",
+                    "hurst_exp_50",
+                    "bb_width_percentile_252",
+                    "distance_to_high_60d",
+                ],
                 "breadth": ["breadth_ma128_align", "btc_dominance_change_20d"],
                 "other": ["some_other_feat", "other_feat_2"],
             }
@@ -235,20 +263,21 @@ class TestRegimePredictor:
         # 形态组：放大 2.5 → 方差应 ≥ 2.0*原方差（单侧下界）
         morph_var_before = float(np.mean(np.var(X[:, morph_idx], axis=0)))
         morph_var_after = float(np.mean(np.var(X_scaled[:, morph_idx], axis=0)))
-        assert morph_var_after > morph_var_before * 2.0, (
-            f"形态组放大后方差 {morph_var_after:.3f} 应为原来 {morph_var_before:.3f} 的 2.0 倍以上"
-        )
+        assert (
+            morph_var_after > morph_var_before * 2.0
+        ), f"形态组放大后方差 {morph_var_after:.3f} 应为原来 {morph_var_before:.3f} 的 2.0 倍以上"
         # 广度组：放大 1.5 → 方差 ≥ 1.2 倍
         breadth_var_before = float(np.mean(np.var(X[:, breadth_idx], axis=0)))
         breadth_var_after = float(np.mean(np.var(X_scaled[:, breadth_idx], axis=0)))
-        assert breadth_var_after > breadth_var_before * 1.15, (
-            f"广度组放大后方差 {breadth_var_after:.3f} 应为原来 {breadth_var_before:.3f} 的 1.15 倍以上"
-        )
+        assert (
+            breadth_var_after > breadth_var_before * 1.15
+        ), f"广度组放大后方差 {breadth_var_after:.3f} 应为原来 {breadth_var_before:.3f} 的 1.15 倍以上"
         # 其他组：不变
         other_var_before = float(np.mean(np.var(X[:, other_idx], axis=0)))
         other_var_after = float(np.mean(np.var(X_scaled[:, other_idx], axis=0)))
-        assert abs(other_var_after - other_var_before) / max(1e-9, other_var_before) < 0.2, \
-            "其他组放大后方差不应变化"
+        assert (
+            abs(other_var_after - other_var_before) / max(1e-9, other_var_before) < 0.2
+        ), "其他组放大后方差不应变化"
 
 
 # ============================================================
@@ -261,24 +290,31 @@ class TestWalkForward:
         from bcrm2.walk_forward_splitter import walk_forward_time_series_split
 
         labels = generate_8state_label(features_long_df)
-        feature_cols = [c for c in features_long_df.columns
-                        if c not in ("close", "open", "high", "low", "volume")]
+        feature_cols = [
+            c
+            for c in features_long_df.columns
+            if c not in ("close", "open", "high", "low", "volume")
+        ]
         df = features_long_df.copy()
         df["label"] = labels
         df = df.dropna(subset=feature_cols + ["label"])
 
         # 5 折，每折 train_size≈70%，test_size≈20%，gap=20
-        splits = list(walk_forward_time_series_split(
-            len(df), n_splits=5, gap=20, train_ratio=0.7, test_ratio=0.2
-        ))
+        splits = list(
+            walk_forward_time_series_split(
+                len(df), n_splits=5, gap=20, train_ratio=0.7, test_ratio=0.2
+            )
+        )
         assert len(splits) == 5, f"应该 5 折，实际 {len(splits)}"
         for fold_i, (train_idx, test_idx) in enumerate(splits):
             # train 全部在 test 之前
-            assert train_idx.max() < test_idx.min(), \
-                f"fold {fold_i}: train.max {train_idx.max()} 应 < test.min {test_idx.min()}"
+            assert (
+                train_idx.max() < test_idx.min()
+            ), f"fold {fold_i}: train.max {train_idx.max()} 应 < test.min {test_idx.min()}"
             # gap=20：末尾到测试开头至少隔 gap
-            assert test_idx.min() - train_idx.max() >= 20, \
-                f"fold {fold_i}: 训练/测试间距 = {test_idx.min() - train_idx.max()} < 20"
+            assert (
+                test_idx.min() - train_idx.max() >= 20
+            ), f"fold {fold_i}: 训练/测试间距 = {test_idx.min() - train_idx.max()} < 20"
 
     def test_macro_f1_threshold(self, features_long_df):
         """
@@ -292,24 +328,29 @@ class TestWalkForward:
           - 因此，对合成数据设置合理阈值：Macro F1 ≥ 0.20。
         """
         from bcrm2.labels.regime_labeler import generate_8state_label
-        from bcrm2.walk_forward_splitter import walk_forward_time_series_split
         from bcrm2.regime_predictor import RegimePredictor
+        from bcrm2.walk_forward_splitter import walk_forward_time_series_split
         from sklearn.metrics import f1_score
 
         labels = generate_8state_label(features_long_df)
-        feature_cols = [c for c in features_long_df.columns
-                        if c not in ("close", "open", "high", "low", "volume")]
+        feature_cols = [
+            c
+            for c in features_long_df.columns
+            if c not in ("close", "open", "high", "low", "volume")
+        ]
         df = features_long_df.copy()
         df["label"] = labels
         df = df.dropna(subset=feature_cols + ["label"])
         X_all = df[feature_cols].to_numpy(dtype=float)
         y_all = df["label"].astype(str).to_numpy()
 
-        splits = list(walk_forward_time_series_split(
-            len(df), n_splits=5, gap=20, train_ratio=0.7, test_ratio=0.2
-        ))
+        splits = list(
+            walk_forward_time_series_split(
+                len(df), n_splits=5, gap=20, train_ratio=0.7, test_ratio=0.2
+            )
+        )
         macro_f1s = []
-        for fold_i, (train_idx, test_idx) in enumerate(splits):
+        for fold_i, (train_idx, test_idx) in enumerate(splits):  # noqa: B007
             X_tr, y_tr = X_all[train_idx], y_all[train_idx]
             X_te, y_te = X_all[test_idx], y_all[test_idx]
             if len(np.unique(y_tr)) < 8:
@@ -335,22 +376,27 @@ class TestWalkForward:
           - 合成数据阈值：Balanced Accuracy ≥ 0.29。
         """
         from bcrm2.labels.regime_labeler import generate_8state_label
-        from bcrm2.walk_forward_splitter import walk_forward_time_series_split
         from bcrm2.regime_predictor import RegimePredictor
+        from bcrm2.walk_forward_splitter import walk_forward_time_series_split
         from sklearn.metrics import balanced_accuracy_score
 
         labels = generate_8state_label(features_long_df)
-        feature_cols = [c for c in features_long_df.columns
-                        if c not in ("close", "open", "high", "low", "volume")]
+        feature_cols = [
+            c
+            for c in features_long_df.columns
+            if c not in ("close", "open", "high", "low", "volume")
+        ]
         df = features_long_df.copy()
         df["label"] = labels
         df = df.dropna(subset=feature_cols + ["label"])
         X_all = df[feature_cols].to_numpy(dtype=float)
         y_all = df["label"].astype(str).to_numpy()
 
-        splits = list(walk_forward_time_series_split(
-            len(df), n_splits=5, gap=20, train_ratio=0.7, test_ratio=0.2
-        ))
+        splits = list(
+            walk_forward_time_series_split(
+                len(df), n_splits=5, gap=20, train_ratio=0.7, test_ratio=0.2
+            )
+        )
         bas = []
         for train_idx, test_idx in splits:
             X_tr, y_tr = X_all[train_idx], y_all[train_idx]

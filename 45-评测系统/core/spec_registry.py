@@ -68,9 +68,7 @@ class SpecRegistry:
             raise SpecRegistryError(f"EvalSpec 缺必填字段: {missing}")
         spec_id = spec["spec_id"]
         if spec_id in self._specs:
-            raise SpecRegistryError(
-                f"spec_id 已注册，禁止原地修改（§2.2 版本不可变）: {spec_id}"
-            )
+            raise SpecRegistryError(f"spec_id 已注册，禁止原地修改（§2.2 版本不可变）: {spec_id}")
         # 深拷贝冻结，防止登记后被外部引用修改导致哈希漂移
         self._specs[spec_id] = json.loads(canonical_json(spec))
 

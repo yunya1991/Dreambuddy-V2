@@ -19,14 +19,13 @@ BaseNode 额外提供:
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
-from datetime import datetime
 
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.shared.capability import CapabilitySpec, CapabilityStatus, ProviderType
+from dreamos.shared.errors import ErrorCode
 from dreamos.shared.interfaces import Node
 from dreamos.shared.llm_client import LLMClient, get_default_client
+from dreamos.shared.state import NodeResult, NodeStatus, State
 from dreamos.shared.utils import Timer
-from dreamos.shared.errors import ErrorCode
-from dreamos.shared.capability import CapabilitySpec, ProviderType, CapabilityStatus
 
 
 class BaseNode(Node):
@@ -122,49 +121,57 @@ class BaseNode(Node):
         }
         if chain in chain_map:
             cap_id, desc = chain_map[chain]
-            caps.append(CapabilitySpec(
-                capability_id=cap_id,
-                category=cap_id.split(".")[0],
-                name=getattr(self, "name", "") or cap_id,
-                description=desc,
-                provider_id=node_id,
-                provider_type=ProviderType.NODE,
-                status=CapabilityStatus.AVAILABLE,
-                tags=[chain] if chain else [],
-            ))
+            caps.append(
+                CapabilitySpec(
+                    capability_id=cap_id,
+                    category=cap_id.split(".")[0],
+                    name=getattr(self, "name", "") or cap_id,
+                    description=desc,
+                    provider_id=node_id,
+                    provider_type=ProviderType.NODE,
+                    status=CapabilityStatus.AVAILABLE,
+                    tags=[chain] if chain else [],
+                )
+            )
 
         # 按 tags 推断附加能力
         if "external" in tags:
-            caps.append(CapabilitySpec(
-                capability_id="integration.subsystem",
-                category="integration",
-                name="外部子系统集成",
-                description="封装外部子系统（三屏/易经/V15 等）",
-                provider_id=node_id,
-                provider_type=ProviderType.SUBSYSTEM,
-                status=CapabilityStatus.AVAILABLE,
-            ))
+            caps.append(
+                CapabilitySpec(
+                    capability_id="integration.subsystem",
+                    category="integration",
+                    name="外部子系统集成",
+                    description="封装外部子系统（三屏/易经/V15 等）",
+                    provider_id=node_id,
+                    provider_type=ProviderType.SUBSYSTEM,
+                    status=CapabilityStatus.AVAILABLE,
+                )
+            )
         if "dsh" in tags:
             module = next((t for t in tags if t not in ("dsh", "external")), "")
-            caps.append(CapabilitySpec(
-                capability_id=f"analysis.{module}" if module else "analysis.dsh",
-                category="analysis",
-                name=f"DSH {module} subagent" if module else "DSH subagent",
-                provider_id=node_id,
-                provider_type=ProviderType.SUBAGENT,
-                status=CapabilityStatus.AVAILABLE,
-            ))
+            caps.append(
+                CapabilitySpec(
+                    capability_id=f"analysis.{module}" if module else "analysis.dsh",
+                    category="analysis",
+                    name=f"DSH {module} subagent" if module else "DSH subagent",
+                    provider_id=node_id,
+                    provider_type=ProviderType.SUBAGENT,
+                    status=CapabilityStatus.AVAILABLE,
+                )
+            )
 
         # 兜底：至少一条
         if not caps:
-            caps.append(CapabilitySpec(
-                capability_id=f"node.{node_id or 'unknown'}",
-                category="node",
-                name=getattr(self, "name", "") or node_id or "Node",
-                provider_id=node_id,
-                provider_type=ProviderType.NODE,
-                status=CapabilityStatus.AVAILABLE,
-            ))
+            caps.append(
+                CapabilitySpec(
+                    capability_id=f"node.{node_id or 'unknown'}",
+                    category="node",
+                    name=getattr(self, "name", "") or node_id or "Node",
+                    provider_id=node_id,
+                    provider_type=ProviderType.NODE,
+                    status=CapabilityStatus.AVAILABLE,
+                )
+            )
         return caps
 
     # ── 子类实现这个方法 ────────────────────────────────
@@ -276,7 +283,7 @@ class BaseNode(Node):
             if hasattr(cap, "status"):
                 cap.status = target
 
-    def _check_capabilities(self) -> Optional[List[str]]:
+    def _check_capabilities(self) -> Optional[List[str]]:  # noqa: F821
         """检查 required_capabilities 是否在注册表中可用
 
         Returns:
@@ -298,7 +305,7 @@ class BaseNode(Node):
         except Exception:  # noqa: BLE001
             return None
 
-        missing: List[str] = []
+        missing: List[str] = []  # noqa: F821
         for cap_id in required:
             providers = registry.find_nodes_by_capability(cap_id)
             available = any(
@@ -350,7 +357,7 @@ class BaseNode(Node):
             # 仅在异常值检测触发时调整 confidence
             # 正常平滑不降低 confidence，避免过度惩罚
             result.confidence = round(adj_conf, 4)
-        except Exception as e:
+        except Exception as e:  # noqa: F841
             # 平滑失败不影响原始信号
             pass
 

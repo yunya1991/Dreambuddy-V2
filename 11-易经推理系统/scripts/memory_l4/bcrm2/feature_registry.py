@@ -3,6 +3,7 @@
 H2 集成点：此文件仅做反向 re-export，保证所有 `from ...feature_registry import *` 调用方
 零感知、零回归。实际实现请勿在此修改，统一到 feature_hub 维护。
 """
+
 import sys
 from pathlib import Path
 

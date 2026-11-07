@@ -21,14 +21,14 @@
 停止：
   - kill <PID> 或 SIGTERM（收到后会优雅退出，不会中断正在执行的任务）
 """
+
 import argparse
 import logging
 import os
 import signal
 import sys
 import time
-import traceback
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # ── 基础路径 ────────────────────────────────────────────────────────────────
@@ -102,6 +102,7 @@ def run_strategy_update() -> bool:
     log.info("──▶ 触发 Agent B 策略参数优化 (update_classic_strategy_params)")
     try:
         from agents.agent_b_runner import update_classic_strategy_params
+
         update_classic_strategy_params()
         log.info("◀── Agent B 策略参数优化完成")
         return True
@@ -115,6 +116,7 @@ def run_memory_cleanup() -> bool:
     log.info("──▶ 触发记忆模块清理 (MemoryManager.clean_expired_memories)")
     try:
         from core.memory.memory_manager import MemoryManager
+
         m = MemoryManager()
         m.clean_expired_memories()
         log.info("◀── 记忆模块清理完成")
@@ -132,15 +134,13 @@ def _now_local() -> datetime:
 def _seconds_until_next(target_hour: int, target_minute: int) -> int:
     """计算距离下一个目标时刻的秒数"""
     now = _now_local()
-    target = now.replace(hour=target_hour, minute=target_minute,
-                         second=0, microsecond=0)
+    target = now.replace(hour=target_hour, minute=target_minute, second=0, microsecond=0)
     if target <= now:
         target += timedelta(days=1)
     return int((target - now).total_seconds())
 
 
-def _format_next_run(target_hour: int, target_minute: int,
-                     label: str) -> str:
+def _format_next_run(target_hour: int, target_minute: int, label: str) -> str:
     secs = _seconds_until_next(target_hour, target_minute)
     hrs, rem = divmod(secs, 3600)
     mins, _ = divmod(rem, 60)
@@ -151,7 +151,9 @@ def scheduler_loop():
     """主调度循环：按日历触发任务，避免重复执行"""
     log.info("=" * 60)
     log.info("Daily Scheduler 守护进程启动")
-    log.info(f"  时区: UTC{TZ_OFFSET_HOURS:+d} (本地时间 {_now_local().strftime('%Y-%m-%d %H:%M:%S')})")
+    log.info(
+        f"  时区: UTC{TZ_OFFSET_HOURS:+d} (本地时间 {_now_local().strftime('%Y-%m-%d %H:%M:%S')})"
+    )
     log.info(f"  策略更新:  每日 {STRATEGY_HOUR:02d}:{STRATEGY_MIN:02d} → logs/agent_b.log")
     log.info(f"  记忆清理:  每日 {MEMORY_HOUR:02d}:{MEMORY_MIN:02d} → logs/memory_cleanup.log")
     log.info(f"  检查间隔:  {CHECK_INTERVAL_SEC}s")
@@ -166,16 +168,20 @@ def scheduler_loop():
             today = now.date()
 
             # 1. 检查策略更新
-            if (last_run_date["strategy"] != today
-                    and now.hour == STRATEGY_HOUR
-                    and now.minute == STRATEGY_MIN):
+            if (
+                last_run_date["strategy"] != today
+                and now.hour == STRATEGY_HOUR
+                and now.minute == STRATEGY_MIN
+            ):
                 run_strategy_update()
                 last_run_date["strategy"] = today
 
             # 2. 检查记忆清理
-            if (last_run_date["memory"] != today
-                    and now.hour == MEMORY_HOUR
-                    and now.minute == MEMORY_MIN):
+            if (
+                last_run_date["memory"] != today
+                and now.hour == MEMORY_HOUR
+                and now.minute == MEMORY_MIN
+            ):
                 run_memory_cleanup()
                 last_run_date["memory"] = today
 
@@ -207,14 +213,16 @@ def scheduler_loop():
 # ── 入口 ────────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description="每日调度守护进程")
-    parser.add_argument("--foreground", action="store_true",
-                        help="前台运行（默认如果是 start_daemon 会 setsid 后台）")
-    parser.add_argument("--run-now", action="store_true",
-                        help="立即执行两个任务一次（用于手动冒烟测试）")
-    parser.add_argument("--run-strategy-now", action="store_true",
-                        help="立即执行策略更新一次")
-    parser.add_argument("--run-memory-now", action="store_true",
-                        help="立即执行记忆清理一次")
+    parser.add_argument(
+        "--foreground",
+        action="store_true",
+        help="前台运行（默认如果是 start_daemon 会 setsid 后台）",
+    )
+    parser.add_argument(
+        "--run-now", action="store_true", help="立即执行两个任务一次（用于手动冒烟测试）"
+    )
+    parser.add_argument("--run-strategy-now", action="store_true", help="立即执行策略更新一次")
+    parser.add_argument("--run-memory-now", action="store_true", help="立即执行记忆清理一次")
     args = parser.parse_args()
 
     if args.run_now:

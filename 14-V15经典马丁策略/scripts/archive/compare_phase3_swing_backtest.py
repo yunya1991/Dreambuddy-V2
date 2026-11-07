@@ -16,11 +16,13 @@ Phase 3 回测: swing 势场效果 vs Phase 2（基线）
   Δ 介于 [-5%, +5%] → 保持关闭（边际收益不够）
   Δ<-5% → 显著劣化，提交但关闭并附报告
 """
+
 from __future__ import annotations
-import sys
+
 import json
+import sys
 from pathlib import Path
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
 
 BASE_DIR = Path(__file__).parent
 sys.path.insert(0, str(BASE_DIR / "core"))
@@ -29,9 +31,9 @@ sys.path.insert(0, str(BASE_DIR / "lib"))
 # 前置：把 phase2/3 力学化 BTC short_enabled 序列注入 confirmed_btc_short_enabled
 # 策略：改写 regime_manager.compute_confirmed_regimes_by_date —— 不，直接在 run_backtest 里
 # 我们通过 monkey-patch DirectionGate + compute_confirmed_regimes_by_date 实现 mode switch
-import regime_manager as RM_M
-import direction_gate as DG_M
-from v15_backtest import run_backtest, fetch_klines, _timestamp_to_date_str
+import direction_gate as DG_M  # noqa: E402
+import regime_manager as RM_M  # noqa: E402
+from v15_backtest import _timestamp_to_date_str, fetch_klines, run_backtest  # noqa: E402
 
 SWING_WINDOW = 30  # 30 根日线收盘价用于 swing 检测
 
@@ -109,13 +111,18 @@ def precompute_mechanistic_btc_short_enabled(
     # RM 连续确认（batch 去重），支持 mechanistic_ctx 动态天数：
     confirmed_states = []
     # 用逐 bar 模拟，因为 compute_confirmed_regimes_by_date 暂不支持 mechanistic_ctx 序列
-    rm = RM_M.RegimeManager(confirm_days=confirm_days, initial_regime="long_preferred")
+    rm = RM_M.RegimeManager(  # noqa: F841
+        confirm_days=confirm_days, initial_regime="long_preferred"
+    )  # noqa: F841
     # 需要逐日的 a,v,threshold → 只能从 raw_states 的对应 mechanistic 重算
     # 简化：这里 fallback 使用 compute_confirmed_regimes_by_date 标准3日确认；
     # 与 Phase 2 的实盘路径差异仅在"减速检测动态天数"，对 short_enabled 长期比例影响较小，
     # 重点是 swing 力场对 raw_regime 的改变 → 仍然可比。
     confirmed_states = RM_M.compute_confirmed_regimes_by_date(
-        raw_states, dates, confirm_days=confirm_days, initial_regime="long_preferred",
+        raw_states,
+        dates,
+        confirm_days=confirm_days,
+        initial_regime="long_preferred",
     )
     return [s == "short_allowed" for s in confirmed_states]
 
@@ -124,8 +131,9 @@ def precompute_mechanistic_btc_short_enabled(
 # Backtest runner (patch confirmed_btc_short_enabled via monkeypatch)
 # ================================================================
 def run_backtest_patched_mode(
-    coin: str, klines: List[Dict],
-    mode: str,   # "classic" | "phase2" | "phase3"
+    coin: str,
+    klines: List[Dict],
+    mode: str,  # "classic" | "phase2" | "phase3"
 ) -> Dict:
     """
     通过 monkey-patch：如果 mode=classic，直接 run_backtest(use_direction_gate=True)。
@@ -139,9 +147,12 @@ def run_backtest_patched_mode(
 
     if mode == "classic":
         return run_backtest(
-            coin=coin, klines=klines,
-            use_atr=True, use_trailing_tp=True,
-            use_direction_gate=True, long_only=False,
+            coin=coin,
+            klines=klines,
+            use_atr=True,
+            use_trailing_tp=True,
+            use_direction_gate=True,
+            long_only=False,
             base_position_pct=0.22,
         )
 
@@ -173,7 +184,7 @@ def run_backtest_patched_mode(
     # 直接调用策略的 strategy_params：
     sys.path.insert(0, str(BASE_DIR / "lib"))
     sys.path.insert(0, str(BASE_DIR / "core"))
-    from strategy_params import get_coin_strategy_params, calc_daily_ma128
+    from strategy_params import get_coin_strategy_params
 
     # 获取同区间的 BTC 4h klines 与 daily MA128 等序列
     btc_params = get_coin_strategy_params("BTC", "LONG")
@@ -205,7 +216,7 @@ def run_backtest_patched_mode(
             if i + 1 < period:
                 out.append(None)
             else:
-                out.append(sum(values[i + 1 - period:i + 1]) / period)
+                out.append(sum(values[i + 1 - period : i + 1]) / period)
         return out
 
     sma128 = rolling_sma(btc_1d_closes_sorted, 128)
@@ -214,7 +225,9 @@ def run_backtest_patched_mode(
     date_to_sma: Dict[str, float] = {}
     date_to_sma200w: Dict[str, float] = {}
     date_to_close: Dict[str, float] = {}
-    for d, c, m128, m200w in zip(btc_1d_dates_sorted, btc_1d_closes_sorted, sma128, sma200w):
+    for d, c, m128, m200w in zip(  # noqa: B905
+        btc_1d_dates_sorted, btc_1d_closes_sorted, sma128, sma200w
+    ):  # noqa: B905
         date_to_close[d] = c
         if m128 is not None:
             date_to_sma[d] = m128
@@ -244,7 +257,11 @@ def run_backtest_patched_mode(
     ma200_series = ffill(ma200_series)
 
     confirmed = precompute_mechanistic_btc_short_enabled(
-        klines, daily_closes_series, ma128_series, ma200_series, mode=mode,
+        klines,
+        daily_closes_series,
+        ma128_series,
+        ma200_series,
+        mode=mode,
     )
 
     # 将 confirmed bools 转换为 BTC windvane_states（Short_allowed/Long_only）
@@ -253,7 +270,11 @@ def run_backtest_patched_mode(
     # Patch：通过 monkey-patch compute_confirmed_regimes_by_date（windvane 路径版本）
     #   —— 在 use_btc_windvane=True 内部执行 compute_confirmed_states 前直接设置
     #   —— 替换 btc_windvane_states 数组
-    orig_fn = V15BT.compute_confirmed_regimes_by_date if hasattr(V15BT, "compute_confirmed_regimes_by_date") else None
+    orig_fn = (
+        V15BT.compute_confirmed_regimes_by_date
+        if hasattr(V15BT, "compute_confirmed_regimes_by_date")
+        else None
+    )
     # compute_confirmed_regimes_by_date 在 v15_backtest 内部是局部import，我们 patch regime_manager.compute_confirmed_regimes_by_date
     orig_rm_fn = RM_M.compute_confirmed_regimes_by_date
 
@@ -263,7 +284,12 @@ def run_backtest_patched_mode(
 
     # 策略：用 btc_windvane_states 注入的方式——用 patch RegimeManager.update，
     #   使得其返回对应 idx 的状态
-    idx_counter = {"i": -1, "mode": "init", "windvane": windvane_states, "direction_gate": []}
+    idx_counter = {  # noqa: F841
+        "i": -1,
+        "mode": "init",
+        "windvane": windvane_states,
+        "direction_gate": [],
+    }  # noqa: F841
 
     # 因为很难 patch 中间变量，这里我们改为：使用 monkey-patch 把
     # confirmed_btc_short_enabled 直接映射为 bar_regimes 中的 regime，但这也会影响后续。
@@ -274,8 +300,10 @@ def run_backtest_patched_mode(
 
     def _patched_compute(raw_list, date_list, **kwargs):
         # 如果 raw_list 长度等于我们的目标 且 当前处于回测里（根据全局开关），直接返回 windvane_states
-        if (len(raw_list) == len(windvane_states)
-                and all(r in ("LONG_ONLY", "SHORT_ALLOWED", "LONG_ONLY_FORCE") for r in raw_list[:min(5, len(raw_list))])):
+        if len(raw_list) == len(windvane_states) and all(
+            r in ("LONG_ONLY", "SHORT_ALLOWED", "LONG_ONLY_FORCE")
+            for r in raw_list[: min(5, len(raw_list))]
+        ):
             # 第一次调用（windvane）：返回预计算序列
             return list(windvane_states)
         return orig_rm_fn(raw_list, date_list, **kwargs)
@@ -287,10 +315,14 @@ def run_backtest_patched_mode(
             V15BT.compute_confirmed_regimes_by_date = _patched_compute
 
         result = run_backtest(
-            coin=coin, klines=klines,
-            use_atr=True, use_trailing_tp=True,
-            use_btc_windvane=True, use_direction_gate=False,
-            long_only=False, base_position_pct=0.22,
+            coin=coin,
+            klines=klines,
+            use_atr=True,
+            use_trailing_tp=True,
+            use_btc_windvane=True,
+            use_direction_gate=False,
+            long_only=False,
+            base_position_pct=0.22,
         )
     finally:
         RM_M.compute_confirmed_regimes_by_date = orig_rm_fn
@@ -327,8 +359,8 @@ for coin in COINS:
         continue
 
     r_cls = run_backtest_patched_mode(coin, klines, "classic")
-    r_p2  = run_backtest_patched_mode(coin, klines, "phase2")
-    r_p3  = run_backtest_patched_mode(coin, klines, "phase3")
+    r_p2 = run_backtest_patched_mode(coin, klines, "phase2")
+    r_p3 = run_backtest_patched_mode(coin, klines, "phase3")
     rows.append((coin, r_cls, r_p2, r_p3))
 
     def safe_m(r):
@@ -341,16 +373,15 @@ for coin in COINS:
         print(f"    回测失败. cls={m_cls} p2={m_p2} p3={m_p3}")
         continue
     print(f"\n    {coin} 详细对比 (Classic vs Phase2 vs Phase3):")
-    print(f"    {'指标':<14}  {'Classic':>10}  {'Phase2':>10}  {'Phase3':>10}  "
-          f"{'Δ3-2':>10}")
+    print(f"    {'指标':<14}  {'Classic':>10}  {'Phase2':>10}  {'Phase3':>10}  " f"{'Δ3-2':>10}")
     print(f"    {'-'*62}")
     for name, key, mult in [
-        ("总收益%",    "total_return_pct", 1.0),
-        ("交易数",      "total_trades",     1.0),
-        ("胜率%",       "win_rate",         100.0),
-        ("盈亏比",      "profit_factor",    1.0),
-        ("最大回撤%",  "max_drawdown_pct", 1.0),
-        ("夏普比",      "sharpe_ratio",     1.0),
+        ("总收益%", "total_return_pct", 1.0),
+        ("交易数", "total_trades", 1.0),
+        ("胜率%", "win_rate", 100.0),
+        ("盈亏比", "profit_factor", 1.0),
+        ("最大回撤%", "max_drawdown_pct", 1.0),
+        ("夏普比", "sharpe_ratio", 1.0),
     ]:
         v_cls = round(m_cls[key] * mult, 2) if m_cls else "N/A"
         v_p2 = round(m_p2[key] * mult, 2)
@@ -362,29 +393,41 @@ for coin in COINS:
 print("\n" + "=" * 110)
 print("  📊 Phase 3 Swing 势场 汇总对比 (Phase2 vs Phase3)")
 print("=" * 110)
-print(f"  {'币种':>5}  {'模型':>8}  {'总收益%':>10}  {'交易数':>6}  {'胜率%':>6}  {'盈亏比':>6}  "
-      f"{'回撤%':>7}  {'夏普':>8}  Δ收益%")
+print(
+    f"  {'币种':>5}  {'模型':>8}  {'总收益%':>10}  {'交易数':>6}  {'胜率%':>6}  {'盈亏比':>6}  "
+    f"{'回撤%':>7}  {'夏普':>8}  Δ收益%"
+)
 print("  " + "-" * 105)
 
 summary = []
-for coin, r_cls, r_p2, r_p3 in rows:
+for coin, r_cls, r_p2, r_p3 in rows:  # noqa: B007
     for label, r in [("Phase2", r_p2), ("Phase3", r_p3)]:
         if not r or "error" in r:
             continue
         m = r["metrics"]
-        print(f"  {coin:>5}  {label:>8}  {m['total_return_pct']:>+10.2f}  {m['total_trades']:>6}  "
-              f"{m['win_rate']*100:>6.2f}  {m['profit_factor']:>6.2f}  "
-              f"{m['max_drawdown_pct']:>7.2f}  {m['sharpe_ratio']:>8.4f}")
+        print(
+            f"  {coin:>5}  {label:>8}  {m['total_return_pct']:>+10.2f}  {m['total_trades']:>6}  "
+            f"{m['win_rate']*100:>6.2f}  {m['profit_factor']:>6.2f}  "
+            f"{m['max_drawdown_pct']:>7.2f}  {m['sharpe_ratio']:>8.4f}"
+        )
     # Δ收益 Phase3 - Phase2
-    if (r_p2 and "error" not in r_p2 and "metrics" in r_p2 and
-            r_p3 and "error" not in r_p3 and "metrics" in r_p3):
+    if (
+        r_p2
+        and "error" not in r_p2
+        and "metrics" in r_p2
+        and r_p3
+        and "error" not in r_p3
+        and "metrics" in r_p3
+    ):
         delta_ret = r_p3["metrics"]["total_return_pct"] - r_p2["metrics"]["total_return_pct"]
         delta_sharpe = r_p3["metrics"]["sharpe_ratio"] - r_p2["metrics"]["sharpe_ratio"]
         delta_dd = r_p3["metrics"]["max_drawdown_pct"] - r_p2["metrics"]["max_drawdown_pct"]
         summary.append((coin, delta_ret, delta_sharpe, delta_dd))
         mark = "✅" if delta_ret >= 5 else "⚠️" if delta_ret >= -5 else "❌"
-        print(f"  {'':>14} Phase3-Phase2 Δ: ret {delta_ret:+.2f}%  sharpe {delta_sharpe:+.4f}  "
-              f"dd {delta_dd:+.2f}%  {mark}")
+        print(
+            f"  {'':>14} Phase3-Phase2 Δ: ret {delta_ret:+.2f}%  sharpe {delta_sharpe:+.4f}  "
+            f"dd {delta_dd:+.2f}%  {mark}"
+        )
     print("  " + "-" * 105)
 
 # 组合 Δ 总结
@@ -410,8 +453,12 @@ if summary:
     # 保存 JSON 报告到 phase3_report.json
     report = {
         "currency_pairs": [
-            {"coin": s[0], "delta_return_pct": round(s[1], 4),
-             "delta_sharpe": round(s[2], 6), "delta_drawdown_pct": round(s[3], 4)}
+            {
+                "coin": s[0],
+                "delta_return_pct": round(s[1], 4),
+                "delta_sharpe": round(s[2], 6),
+                "delta_drawdown_pct": round(s[3], 4),
+            }
             for s in summary
         ],
         "avg_delta_return_pct": round(avg_ret, 4),

@@ -6,21 +6,21 @@
 3. 与V4基线对比，决定是否保留
 """
 
+import json
 import os
 import sys
-import json
 import time
+
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
 from sklearn.metrics import roc_auc_score
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 sys.path.insert(0, os.path.dirname(BASE_DIR))
 
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
-from ml.four_objective_feature_mapper import FourObjectiveFeatureMapper, ObjectiveType
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
 
 
 def load_btc_data() -> pd.DataFrame:
@@ -40,9 +40,12 @@ def load_trend_features(prices: pd.DataFrame) -> pd.DataFrame:
     """加载趋势特征（三重滤网）"""
     try:
         from ml.feature_engineer import TrendFeatureEngineer
+
         trend_fe = TrendFeatureEngineer()
         trend_df = trend_fe.create_features(prices, label_lookahead=20)
-        trend_cols = [c for c in trend_df.columns if c not in ["future_return", "label", "label_reg"]]
+        trend_cols = [
+            c for c in trend_df.columns if c not in ["future_return", "label", "label_reg"]
+        ]
         trend_features = trend_df[trend_cols].copy()
         return trend_features
     except Exception as e:
@@ -50,7 +53,9 @@ def load_trend_features(prices: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(index=prices.index)
 
 
-def generate_top_exit_labels(closes: np.ndarray, lookahead: int = 20, threshold: float = 0.20) -> np.ndarray:
+def generate_top_exit_labels(
+    closes: np.ndarray, lookahead: int = 20, threshold: float = 0.20
+) -> np.ndarray:
     """TOP_EXIT标签：未来20日收盘价跌幅>20% → 1"""
     n = len(closes)
     labels = np.zeros(n)
@@ -62,7 +67,9 @@ def generate_top_exit_labels(closes: np.ndarray, lookahead: int = 20, threshold:
     return labels
 
 
-def generate_bear_exit_labels(closes: np.ndarray, lookahead: int = 30, threshold: float = 0.30) -> np.ndarray:
+def generate_bear_exit_labels(
+    closes: np.ndarray, lookahead: int = 30, threshold: float = 0.30
+) -> np.ndarray:
     """BEAR_EXIT标签：未来30日涨幅>30% → 1（做空平仓信号）"""
     n = len(closes)
     labels = np.zeros(n)
@@ -103,7 +110,7 @@ def walk_forward_validation(
 
     splits = list(reversed(splits))
 
-    for i, (tr_s, tr_e, te_s, te_e) in enumerate(splits):
+    for i, (tr_s, tr_e, te_s, te_e) in enumerate(splits):  # noqa: B007
         X_train = features.iloc[tr_s:tr_e][feature_names].values
         y_train = labels[tr_s:tr_e]
         X_test = features.iloc[te_s:te_e][feature_names].values
@@ -149,7 +156,11 @@ def walk_forward_validation(
     decay_rate = 1.0 - (avg_test_auc / avg_train_auc) if avg_train_auc > 0 else 0.0
 
     # 跨折平均特征重要性
-    avg_importances = np.mean(feature_importances, axis=0) if feature_importances else np.zeros(len(feature_names))
+    avg_importances = (
+        np.mean(feature_importances, axis=0)
+        if feature_importances
+        else np.zeros(len(feature_names))
+    )
     importance_rank = np.argsort(-avg_importances)
 
     return {
@@ -169,8 +180,9 @@ def main():
 
     prices = load_btc_data()
     closes = prices["close"].values
-    print("\n数据: {}天, {} ~ {}".format(
-        len(prices), prices.index[0].date(), prices.index[-1].date()))
+    print(
+        "\n数据: {}天, {} ~ {}".format(len(prices), prices.index[0].date(), prices.index[-1].date())
+    )
 
     # 1. 计算哲学特征（含V5.1新增8个）
     print("\n【1. 计算哲学特征（V5.1 = 24 + 8 = 32维）】")
@@ -195,14 +207,23 @@ def main():
     # 4. V5.1新增特征数值合理性校验
     print("\n【4. V5.1新增特征数值合理性校验】")
     v51_features = [
-        "cycle_phase", "drawdown_from_cycle_peak", "months_since_cycle_peak", "bear_phase_progress",
-        "drawdown_vs_hist_avg", "cycle_path_similarity", "vol_regime_ratio", "bear_severity_score",
+        "cycle_phase",
+        "drawdown_from_cycle_peak",
+        "months_since_cycle_peak",
+        "bear_phase_progress",
+        "drawdown_vs_hist_avg",
+        "cycle_path_similarity",
+        "vol_regime_ratio",
+        "bear_severity_score",
     ]
     for fname in v51_features:
         if fname in all_feats.columns:
             vals = all_feats[fname]
-            print("  {:>30}: min={:>8.2f}, max={:>8.2f}, mean={:>8.2f}".format(
-                fname, vals.min(), vals.max(), vals.mean()))
+            print(
+                "  {:>30}: min={:>8.2f}, max={:>8.2f}, mean={:>8.2f}".format(
+                    fname, vals.min(), vals.max(), vals.mean()
+                )
+            )
 
     # 当前时点特征值
     print("\n  当前时点({})特征值:".format(str(prices.index[-1].date())))
@@ -220,8 +241,13 @@ def main():
     feature_names = all_feats.columns.tolist()
     t0 = time.time()
     top_exit_result = walk_forward_validation(
-        all_feats, top_exit_labels, feature_names,
-        n_splits=12, train_days=730, test_days=180, step_days=180
+        all_feats,
+        top_exit_labels,
+        feature_names,
+        n_splits=12,
+        train_days=730,
+        test_days=180,
+        step_days=180,
     )
     print("  平均训练AUC: {:.4f}".format(top_exit_result["avg_train_auc"]))
     print("  平均测试AUC: {:.4f}".format(top_exit_result["avg_test_auc"]))
@@ -248,8 +274,13 @@ def main():
 
     t0 = time.time()
     bear_exit_result = walk_forward_validation(
-        all_feats, bear_exit_labels, feature_names,
-        n_splits=12, train_days=730, test_days=180, step_days=180
+        all_feats,
+        bear_exit_labels,
+        feature_names,
+        n_splits=12,
+        train_days=730,
+        test_days=180,
+        step_days=180,
     )
     print("  平均训练AUC: {:.4f}".format(bear_exit_result["avg_train_auc"]))
     print("  平均测试AUC: {:.4f}".format(bear_exit_result["avg_test_auc"]))
@@ -289,11 +320,13 @@ def main():
         },
         "v51_top_exit_ranks": {
             fname: int(np.where(ranking == feature_names.index(fname))[0][0] + 1)
-            for fname in v51_features if fname in feature_names
+            for fname in v51_features
+            if fname in feature_names
         },
         "v51_bear_exit_ranks": {
             fname: int(np.where(ranking_be == feature_names.index(fname))[0][0] + 1)
-            for fname in v51_features if fname in feature_names
+            for fname in v51_features
+            if fname in feature_names
         },
     }
 
@@ -311,11 +344,17 @@ def main():
     baseline_top_exit_auc = 0.69
     cur_top_exit_auc = top_exit_result["avg_test_auc"]
     if cur_top_exit_auc >= baseline_top_exit_auc:
-        print("  TOP_EXIT AUC: {:.4f} >= 基线 {:.4f} → ✅ 保留V5.1特征".format(
-            cur_top_exit_auc, baseline_top_exit_auc))
+        print(
+            "  TOP_EXIT AUC: {:.4f} >= 基线 {:.4f} → ✅ 保留V5.1特征".format(
+                cur_top_exit_auc, baseline_top_exit_auc
+            )
+        )
     else:
-        print("  TOP_EXIT AUC: {:.4f} < 基线 {:.4f} → ❌ 建议回退V5.1特征".format(
-            cur_top_exit_auc, baseline_top_exit_auc))
+        print(
+            "  TOP_EXIT AUC: {:.4f} < 基线 {:.4f} → ❌ 建议回退V5.1特征".format(
+                cur_top_exit_auc, baseline_top_exit_auc
+            )
+        )
 
 
 if __name__ == "__main__":

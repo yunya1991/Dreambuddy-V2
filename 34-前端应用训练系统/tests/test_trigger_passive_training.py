@@ -7,12 +7,13 @@
   4. run_trigger: 编排器创建失败 → FAIL-OPEN 不崩溃
   5. run_trigger: trigger_passive_training 异常 → FAIL-OPEN 不崩溃
 """
+
 import json
 import os
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 # sys.path 注入
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -23,7 +24,7 @@ for _p in [_THIS_DIR, _34_DIR, _CORE_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from trigger_passive_training import _prepare_record_params, run_trigger
+from trigger_passive_training import _prepare_record_params, run_trigger  # noqa: E402
 
 
 class PrepareRecordParamsTest(unittest.TestCase):

@@ -3,6 +3,7 @@
 GDELT DOC 2.0 API 直连（requests），无 Key 需求，query -> articles -> DataRecord(category=news)。
 GDELT 是免费开放的全球新闻事件数据库，覆盖全球多语言新闻。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone

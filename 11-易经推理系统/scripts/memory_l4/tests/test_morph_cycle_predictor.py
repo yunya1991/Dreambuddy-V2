@@ -3,14 +3,13 @@
 位置: scripts/memory_l4/tests/test_morph_cycle_predictor.py
 运行: cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4 && python -m pytest tests/test_morph_cycle_predictor.py -v
 """
+
 from __future__ import annotations
 
 import json
-import sqlite3
 import sys
-import tempfile
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List
 
 import numpy as np
 import pytest
@@ -19,8 +18,8 @@ import pytest
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2.storage import EvolutionStorageSQLite, RegimeStateFrame
-from bcrm2.morph_cycle_predictor import MorphCyclePredictor
+from bcrm2.morph_cycle_predictor import MorphCyclePredictor  # noqa: E402
+from bcrm2.storage import EvolutionStorageSQLite, RegimeStateFrame  # noqa: E402
 
 
 # ================================================================
@@ -31,10 +30,12 @@ def _make_synthetic_frames(days: int, seed: int = 42) -> List[RegimeStateFrame]:
     rng = np.random.default_rng(seed)
     t = np.arange(days, dtype=float)
     # 多周期叠加：120天(主) + 60天 + 30天
-    level_raw = (2.0 * np.sin(2 * np.pi * t / 120.0 + 0.5)
-                 + 1.2 * np.sin(2 * np.pi * t / 60.0 - 0.8)
-                 + 0.5 * np.sin(2 * np.pi * t / 30.0 + 0.3)
-                 + rng.normal(0, 0.15, days))
+    level_raw = (
+        2.0 * np.sin(2 * np.pi * t / 120.0 + 0.5)
+        + 1.2 * np.sin(2 * np.pi * t / 60.0 - 0.8)
+        + 0.5 * np.sin(2 * np.pi * t / 30.0 + 0.3)
+        + rng.normal(0, 0.15, days)
+    )
     # level_smooth：EMA(α=0.3)
     smooth = np.zeros(days)
     smooth[0] = level_raw[0]
@@ -48,35 +49,47 @@ def _make_synthetic_frames(days: int, seed: int = 42) -> List[RegimeStateFrame]:
     frames = []
     for i in range(days):
         from datetime import date, timedelta
+
         d = date(2026, 1, 1) + timedelta(days=i)
-        frames.append(RegimeStateFrame(
-            t=d.strftime("%Y-%m-%d"),
-            price=float(price_base[i]),
-            level_raw=float(level_raw[i]),
-            trend_raw=float(trend_smooth[i]),
-            level_smooth=float(smooth[i]),
-            trend_smooth=float(trend_smooth[i] * 5.0),
-            regime_probs={
-                "TREND_UP_STRONG": float(max(0, smooth[i]) / 8.0),
-                "TREND_BULL": float(max(0, smooth[i]) / 8.0),
-                "RANGE_BOUND": float(1.0 - abs(smooth[i]) / 4.0) * 0.5,
-                "RANGING": 0.1,
-                "MEAN_REVERTING": 0.05,
-                "TREND_BEAR": float(max(0, -smooth[i]) / 8.0),
-                "STRONG_TREND_BEAR": 0.0,
-                "VOLATILE_DROP": 0.0,
-            },
-            top3=[["TREND_BULL", 0.4], ["RANGE_BOUND", 0.3], ["MEAN_REVERTING", 0.2]],
-            consensus=float(np.clip(1.0 - float(np.std(level_raw[i-10:i] if i >= 10 else level_raw[:i+1])) / 2.0, 0.1, 0.95)),
-            hmm_state=2 if smooth[i] > 0 else 0,
-            bocpd_cp_prob=0.01,
-            indicators={},
-        ))
+        frames.append(
+            RegimeStateFrame(
+                t=d.strftime("%Y-%m-%d"),
+                price=float(price_base[i]),
+                level_raw=float(level_raw[i]),
+                trend_raw=float(trend_smooth[i]),
+                level_smooth=float(smooth[i]),
+                trend_smooth=float(trend_smooth[i] * 5.0),
+                regime_probs={
+                    "TREND_UP_STRONG": float(max(0, smooth[i]) / 8.0),
+                    "TREND_BULL": float(max(0, smooth[i]) / 8.0),
+                    "RANGE_BOUND": float(1.0 - abs(smooth[i]) / 4.0) * 0.5,
+                    "RANGING": 0.1,
+                    "MEAN_REVERTING": 0.05,
+                    "TREND_BEAR": float(max(0, -smooth[i]) / 8.0),
+                    "STRONG_TREND_BEAR": 0.0,
+                    "VOLATILE_DROP": 0.0,
+                },
+                top3=[["TREND_BULL", 0.4], ["RANGE_BOUND", 0.3], ["MEAN_REVERTING", 0.2]],
+                consensus=float(
+                    np.clip(
+                        1.0
+                        - float(np.std(level_raw[i - 10 : i] if i >= 10 else level_raw[: i + 1]))
+                        / 2.0,
+                        0.1,
+                        0.95,
+                    )
+                ),
+                hmm_state=2 if smooth[i] > 0 else 0,
+                bocpd_cp_prob=0.01,
+                indicators={},
+            )
+        )
     return frames
 
 
-def _populate_storage(storage: EvolutionStorageSQLite, frames: List[RegimeStateFrame],
-                      symbol: str = "BTCUSDT") -> None:
+def _populate_storage(
+    storage: EvolutionStorageSQLite, frames: List[RegimeStateFrame], symbol: str = "BTCUSDT"
+) -> None:
     storage.upsert_daily_batch(symbol, frames)
 
 
@@ -124,13 +137,14 @@ def test_T_A1_prediction_snapshot_recorded(tmp_storage):
 # T_A2: 误差回填
 # ================================================================
 def test_T_A2_error_backfill(tmp_storage):
-    predictor = MorphCyclePredictor(tmp_storage)
+    predictor = MorphCyclePredictor(tmp_storage)  # noqa: F841
 
     # 用中间位置日期预测（让部分 target_date 落在已有的日级范围内，可回填）
     # 先将预测设置为中间日期（比如第 150 天作为 prediction_date，预测未来 10 天）
-    frames = _make_synthetic_frames(days=180, seed=42)
+    frames = _make_synthetic_frames(days=180, seed=42)  # noqa: F841
     # 直接调用 insert_prediction_log 模拟 10 天前做的预测，target_date 已在 regime_state_daily
     from datetime import date, timedelta
+
     # prediction_date = 第 160 天
     # target_date = 第 161..170 天（都在 regime_state_daily 中，可回填）
     for i in range(1, 11):
@@ -214,17 +228,23 @@ def test_T_A4_forecast_smooth_after_correction(tmp_storage):
     # 回填 20 条大误差
     for h in range(1, 21):
         from datetime import date, timedelta
+
         p = (date(2026, 1, 1) + timedelta(days=159)).strftime("%Y-%m-%d")
         t = (date(2026, 1, 1) + timedelta(days=159 + h)).strftime("%Y-%m-%d")
         tmp_storage.insert_prediction_log(
-            "BTCUSDT", p, t, h,
-            predicted_l=float(-h * 0.1),   # 预测随 horizon 变化
+            "BTCUSDT",
+            p,
+            t,
+            h,
+            predicted_l=float(-h * 0.1),  # 预测随 horizon 变化
             predicted_t=0.0,
             fft_components=[{"period": 120.0, "amplitude": 1.0}],
             hermite_params={"m0_base": 0.0, "m1_base": 0.0},
         )
     cur = tmp_storage._conn.cursor()
-    cur.execute("UPDATE morph_prediction_log SET actual_l = predicted_l + 0.8, error_l = 0.8 WHERE actual_l IS NULL")
+    cur.execute(
+        "UPDATE morph_prediction_log SET actual_l = predicted_l + 0.8, error_l = 0.8 WHERE actual_l IS NULL"
+    )
     tmp_storage._conn.commit()
 
     predictor.evaluate_and_correct("BTCUSDT", min_filled_samples=5)
@@ -251,21 +271,32 @@ def test_T_A5_mae_non_increasing_across_corrections(tmp_storage):
 
     for round_i in range(5):
         # 为该轮写入 10 条历史预测 + 回填误差（误差随 round_i 下降）
-        base_prediction_date = (date(2026, 1, 1) + timedelta(days=100 + round_i * 10)).strftime("%Y-%m-%d")
+        base_prediction_date = (date(2026, 1, 1) + timedelta(days=100 + round_i * 10)).strftime(
+            "%Y-%m-%d"
+        )
         for h in range(1, 11):
             # 真实 L = 从 storage 取的一个历史值
-            t_row = cur = tmp_storage._conn.cursor().execute(
-                "SELECT level_smooth FROM regime_state_daily WHERE symbol='BTCUSDT' "
-                "ORDER BY timestamp DESC LIMIT 1 OFFSET ?",
-                (round_i * 3 + h,),
-            ).fetchone()
+            t_row = cur = (  # noqa: F841
+                tmp_storage._conn.cursor()
+                .execute(
+                    "SELECT level_smooth FROM regime_state_daily WHERE symbol='BTCUSDT' "
+                    "ORDER BY timestamp DESC LIMIT 1 OFFSET ?",
+                    (round_i * 3 + h,),
+                )
+                .fetchone()
+            )
             actual_l = float(t_row["level_smooth"]) if t_row else 0.0
             # 预测 L = 真实 + 随 round_i 减小的系统偏差
             bias = 1.0 - round_i * 0.15  # 每轮偏差减 0.15
             predicted_l = actual_l + bias + np.random.default_rng(round_i * 10 + h).normal(0, 0.05)
-            target_date = (date(2026, 1, 1) + timedelta(days=100 + round_i * 10 + h)).strftime("%Y-%m-%d")
+            target_date = (date(2026, 1, 1) + timedelta(days=100 + round_i * 10 + h)).strftime(
+                "%Y-%m-%d"
+            )
             tmp_storage.insert_prediction_log(
-                "BTCUSDT", base_prediction_date, target_date, h,
+                "BTCUSDT",
+                base_prediction_date,
+                target_date,
+                h,
                 predicted_l=float(predicted_l),
                 predicted_t=0.0,
                 fft_components=[{"period": 120.0, "amplitude": 1.0}],
@@ -297,10 +328,14 @@ def test_T_A5_mae_non_increasing_across_corrections(tmp_storage):
     print(f"MAE 序列: {[round(m, 4) for m in maes]}")
     assert len(maes) >= 4, f"至少 4 轮 MAE 记录，实际 {len(maes)}"
     # 允许 10% 以内的轻微波动（统计噪声），但首尾必须显著下降
-    end_better = maes[-1] <= maes[0] * 0.8, f"末轮 MAE={maes[-1]:.4f} 应 ≤ 首轮 × 0.8 = {maes[0] * 0.8:.4f}"
+    end_better = (
+        maes[-1] <= maes[0] * 0.8,
+        f"末轮 MAE={maes[-1]:.4f} 应 ≤ 首轮 × 0.8 = {maes[0] * 0.8:.4f}",
+    )
     # 至少 60% 的相邻对是 "不增"（含 <= 前值×1.10 的轻微波动）
-    non_inc_ratio = sum(1 for i in range(len(maes) - 1)
-                        if maes[i + 1] <= maes[i] * 1.10) / max(len(maes) - 1, 1)
+    non_inc_ratio = sum(1 for i in range(len(maes) - 1) if maes[i + 1] <= maes[i] * 1.10) / max(
+        len(maes) - 1, 1
+    )
     assert end_better[0], end_better[1] + f"，序列: {maes}"
     assert non_inc_ratio >= 0.5, f"非递增相邻对占比 {non_inc_ratio:.0%} 应 ≥ 50%，序列: {maes}"
 
@@ -325,7 +360,9 @@ def test_predict_response_schema(tmp_storage):
 
 def test_T_A6_auto_correct_hook(tmp_storage):
     """T_A6: predict() 前自动触发修正 hook（自动识别样本+冷却保护）。"""
-    from datetime import datetime, timezone, timedelta as td
+    from datetime import datetime, timezone
+    from datetime import timedelta as td
+
     predictor = MorphCyclePredictor(tmp_storage)
 
     # 第 1 次 predict → 应检查自动修正，但因样本不足跳过
@@ -333,17 +370,21 @@ def test_T_A6_auto_correct_hook(tmp_storage):
     assert r1["ok"]
     auto = r1["correction"]["auto"]
     # auto hook 返回 None → triggered=False（因样本不足 3 条）
-    assert auto["triggered"] is False, \
-        f"首次无样本，auto 不应 triggered，actual={auto}"
+    assert auto["triggered"] is False, f"首次无样本，auto 不应 triggered，actual={auto}"
 
     # 造 4 条已回填数据 + 1 条过期修正时间戳（绕过冷却）
     base_pred_date = "2026-04-01"
     from datetime import date
+
     for h in range(1, 5):
         target_date = (date(2026, 4, 1) + td(days=h)).strftime("%Y-%m-%d")
         tmp_storage.insert_prediction_log(
-            "BTCUSDT", base_pred_date, target_date, h,
-            predicted_l=0.5 + h * 0.02, predicted_t=0.0,
+            "BTCUSDT",
+            base_pred_date,
+            target_date,
+            h,
+            predicted_l=0.5 + h * 0.02,
+            predicted_t=0.0,
             fft_components=[{"period": 120.0, "amplitude": 1.0}],
             hermite_params={"m0_base": 0.0, "m1_base": 0.0},
         )
@@ -374,8 +415,7 @@ def test_T_A6_auto_correct_hook(tmp_storage):
     assert r2["ok"]
     auto = r2["correction"]["auto"]
     print(f"auto 第 2 次 predict: {auto}")
-    assert auto["triggered"] is True, \
-        f"4 条样本 + 冷却过期，应自动触发，actual={auto}"
+    assert auto["triggered"] is True, f"4 条样本 + 冷却过期，应自动触发，actual={auto}"
     # filled_total >= 4
     assert auto["filled_total"] is None or int(auto["filled_total"]) >= 4
 
@@ -384,5 +424,4 @@ def test_T_A6_auto_correct_hook(tmp_storage):
     assert r3["ok"]
     auto3 = r3["correction"]["auto"]
     print(f"auto 第 3 次 predict: {auto3}")
-    assert auto3["triggered"] is False, \
-        f"第 2 次刚修完，冷却期，应不触发，actual={auto3}"
+    assert auto3["triggered"] is False, f"第 2 次刚修完，冷却期，应不触发，actual={auto3}"

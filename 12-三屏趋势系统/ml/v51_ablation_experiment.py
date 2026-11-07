@@ -13,21 +13,21 @@
   - bear_severity_score     (#41, 33.3)
 """
 
+import json
 import os
 import sys
-import json
 import time
+
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
 from sklearn.metrics import roc_auc_score
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.feature_engineer import TrendFeatureEngineer
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
-
+from ml.feature_engineer import TrendFeatureEngineer  # noqa: E402
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
 
 # V5.1 核心特征（保留）
 V51_CORE_FEATURES = [
@@ -67,8 +67,9 @@ def generate_top_exit_labels(closes, lookahead=20, threshold=0.20):
     return labels
 
 
-def walk_forward_validation(features, labels, feature_names,
-                            n_splits=12, train_days=730, test_days=180, step_days=180):
+def walk_forward_validation(
+    features, labels, feature_names, n_splits=12, train_days=730, test_days=180, step_days=180
+):
     n = len(features)
     feature_importances = []
     train_aucs, test_aucs = [], []
@@ -95,10 +96,15 @@ def walk_forward_validation(features, labels, feature_names,
             continue
 
         model = lgb.LGBMClassifier(
-            n_estimators=200, max_depth=6, learning_rate=0.05,
-            num_leaves=31, min_child_samples=20,
-            subsample=0.8, colsample_bytree=0.8,
-            random_state=42, verbose=-1,
+            n_estimators=200,
+            max_depth=6,
+            learning_rate=0.05,
+            num_leaves=31,
+            min_child_samples=20,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42,
+            verbose=-1,
         )
         model.fit(X_train, y_train)
 
@@ -114,7 +120,11 @@ def walk_forward_validation(features, labels, feature_names,
     avg_test_auc = float(np.mean(test_aucs)) if test_aucs else 0.0
     avg_train_auc = float(np.mean(train_aucs)) if train_aucs else 0.0
     decay_rate = 1.0 - (avg_test_auc / avg_train_auc) if avg_train_auc > 0 else 0.0
-    avg_importances = np.mean(feature_importances, axis=0) if feature_importances else np.zeros(len(feature_names))
+    avg_importances = (
+        np.mean(feature_importances, axis=0)
+        if feature_importances
+        else np.zeros(len(feature_names))
+    )
 
     return {
         "avg_test_auc": avg_test_auc,
@@ -150,15 +160,23 @@ def main():
 
     # 三组对比
     experiments = {
-        "V4基线(74维)": [c for c in all_features.columns
-                        if c not in V51_LOW_EFFICACY_FEATURES + V51_CORE_FEATURES + ["rsi_14", "volume_ratio_20d"]],
+        "V4基线(74维)": [
+            c
+            for c in all_features.columns
+            if c
+            not in V51_LOW_EFFICACY_FEATURES + V51_CORE_FEATURES + ["rsi_14", "volume_ratio_20d"]
+        ],
         "V5.1全部(84维)": all_features.columns.tolist(),
-        "V5.1核心3特征(77维)": [c for c in all_features.columns
-                              if c not in V51_LOW_EFFICACY_FEATURES],
+        "V5.1核心3特征(77维)": [
+            c for c in all_features.columns if c not in V51_LOW_EFFICACY_FEATURES
+        ],
     }
 
-    print("\n{:<25} | {:>10} | {:>10} | {:>10} | {:>8}".format(
-        "实验", "特征数", "测试AUC", "训练AUC", "衰减率"))
+    print(
+        "\n{:<25} | {:>10} | {:>10} | {:>10} | {:>8}".format(
+            "实验", "特征数", "测试AUC", "训练AUC", "衰减率"
+        )
+    )
     print("-" * 75)
 
     results = {}
@@ -166,9 +184,16 @@ def main():
         t0 = time.time()
         result = walk_forward_validation(all_features, labels, feat_names)
         elapsed = time.time() - t0
-        print("{:<25} | {:>10} | {:>10.4f} | {:>10.4f} | {:>7.1f}%  ({:.1f}s)".format(
-            name, len(feat_names), result["avg_test_auc"], result["avg_train_auc"],
-            result["decay_rate"] * 100, elapsed))
+        print(
+            "{:<25} | {:>10} | {:>10.4f} | {:>10.4f} | {:>7.1f}%  ({:.1f}s)".format(
+                name,
+                len(feat_names),
+                result["avg_test_auc"],
+                result["avg_train_auc"],
+                result["decay_rate"] * 100,
+                elapsed,
+            )
+        )
         results[name] = result
 
     # 核心特征重要性
@@ -181,8 +206,7 @@ def main():
         if fname in feat_names:
             idx = feat_names.index(fname)
             rank = np.where(ranking == idx)[0][0] + 1
-            print("  {:>30}: 排名#{:>3}, 重要性 {:.1f}".format(
-                fname, rank, importances[idx]))
+            print("  {:>30}: 排名#{:>3}, 重要性 {:.1f}".format(fname, rank, importances[idx]))
 
     # 决策
     print("\n" + "=" * 80)
@@ -212,7 +236,11 @@ def main():
         "core_v51_auc": core_auc,
         "core_features": V51_CORE_FEATURES,
         "low_efficacy_features": V51_LOW_EFFICACY_FEATURES,
-        "decision": "keep_core" if core_auc >= baseline_auc else ("keep_core_warn" if core_auc > full_auc else "rollback"),
+        "decision": (
+            "keep_core"
+            if core_auc >= baseline_auc
+            else ("keep_core_warn" if core_auc > full_auc else "rollback")
+        ),
     }
     output_path = os.path.join(BASE_DIR, "ml/backtest_results/v51_ablation_result.json")
     with open(output_path, "w") as f:

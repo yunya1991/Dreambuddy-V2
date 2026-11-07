@@ -23,36 +23,40 @@ BTC风向标机制：
   - 当BTC有效跌破日线MA128（连续3日收盘价低于MA128），全系统做空闸门打开
   - 其他币种根据自身位置判断：跌破周MA200则强制做多
 """
-from __future__ import annotations
 
-from dataclasses import dataclass, field
+from __future__ import annotations  # noqa: I001
+
+from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Dict, List, Tuple, Any
+from typing import Optional, Dict, List, Any
 import math
 
 
 class MarketRegime(str, Enum):
     """市场状态"""
-    LONG_PREFERRED = "long_preferred"      # 做多优先（价格在日MA128上方）
-    SHORT_ALLOWED = "short_allowed"        # 允许做空（BTC有效跌破MA128，在周MA200上方）
-    LONG_ONLY_FORCE = "long_only_force"    # 强制做多（跌至周MA200）
+
+    LONG_PREFERRED = "long_preferred"  # 做多优先（价格在日MA128上方）
+    SHORT_ALLOWED = "short_allowed"  # 允许做空（BTC有效跌破MA128，在周MA200上方）
+    LONG_ONLY_FORCE = "long_only_force"  # 强制做多（跌至周MA200）
 
 
 class TradeDirection(str, Enum):
     """交易方向许可"""
-    LONG_ONLY = "long_only"     # 只允许做多
-    SHORT_ONLY = "short_only"   # 只允许做空
-    BOTH = "both"               # 多空都允许
-    NONE = "none"               # 都不允许（异常状态）
+
+    LONG_ONLY = "long_only"  # 只允许做多
+    SHORT_ONLY = "short_only"  # 只允许做空
+    BOTH = "both"  # 多空都允许
+    NONE = "none"  # 都不允许（异常状态）
 
 
 @dataclass
 class GateResult:
     """方向控制判断结果"""
+
     regime: MarketRegime
     allowed_direction: TradeDirection
-    price_vs_daily_ma128: str    # "above" / "below" / "unknown"
-    price_vs_weekly_ma200: str   # "above" / "below" / "unknown"
+    price_vs_daily_ma128: str  # "above" / "below" / "unknown"
+    price_vs_weekly_ma200: str  # "above" / "below" / "unknown"
     daily_ma128: Optional[float]
     weekly_ma200: Optional[float]
     current_price: float
@@ -110,8 +114,9 @@ class DirectionGate:
             # 可以做空
     """
 
-    def __init__(self, allow_short: bool = True, buffer_pct: float = 0.01,
-                 use_mechanistic: bool = False):
+    def __init__(
+        self, allow_short: bool = True, buffer_pct: float = 0.01, use_mechanistic: bool = False
+    ):
         """
         Args:
             allow_short: 全局做空开关。False 时永远只做多
@@ -186,14 +191,16 @@ class DirectionGate:
         if recent_daily_closes is None:
             recent_daily_closes = []
 
-        daily_buffer = daily_ma128 * self.buffer_pct
+        daily_buffer = daily_ma128 * self.buffer_pct  # noqa: F841
         weekly_buffer = weekly_ma200 * self.buffer_pct
 
         price_vs_daily = self._pos(current_price, daily_ma128)
         price_vs_weekly = self._pos(current_price, weekly_ma200)
 
         # ── 有效跌破判断：连续3日收盘价低于MA128 ──
-        has_valid_breakdown = self._check_valid_breakdown(recent_daily_closes, daily_ma128)
+        has_valid_breakdown = self._check_valid_breakdown(  # noqa: F841
+            recent_daily_closes, daily_ma128
+        )  # noqa: F841
 
         # ── 核心状态判断 ──
 
@@ -223,7 +230,7 @@ class DirectionGate:
                 daily_ma128=daily_ma128,
                 weekly_ma200=weekly_ma200,
                 current_price=current_price,
-                reason=f"BTC做空闸门未打开(btc_short_enabled=false), 只做多",
+                reason="BTC做空闸门未打开(btc_short_enabled=false), 只做多",
             )
 
         # 情况3: BTC做空闸门打开 + 在周MA200上方 → 允许做空
@@ -304,6 +311,7 @@ def evaluate_direction(
 
 # ── 向后兼容函数 ──────────────────────────────────────────────
 
+
 def evaluate_direction_v1(
     current_price: float,
     daily_ma200: Optional[float] = None,
@@ -337,18 +345,22 @@ def evaluate_direction_v1(
 #           三屏 least_resistance 支撑阻力距离能量
 # ===================================================================
 
+
 @dataclass
 class MAForceFieldResult:
     """双均线力场计算结果"""
-    F_daily: float          # MA128 弹簧力（正=向上/支撑，负=向下/阻力）
-    F_weekly: float         # MA200 弹簧力
-    w_daily: float          # MA128 距离权重
-    w_weekly: float         # MA200 距离权重
-    F_net: float            # 加权合力 F_net = F_d*w_d + F_w*w_w
+
+    F_daily: float  # MA128 弹簧力（正=向上/支撑，负=向下/阻力）
+    F_weekly: float  # MA200 弹簧力
+    w_daily: float  # MA128 距离权重
+    w_weekly: float  # MA200 距离权重
+    F_net: float  # 加权合力 F_net = F_d*w_d + F_w*w_w
     dist_to_daily_pct: float  # 价格距MA128的百分比(正=上方，负=下方)
-    dist_to_weekly_pct: float # 价格距MA200的百分比(正=上方，负=下方)
-    dominant_ma: str        # 主导均线（距离更近、权重更大的一方）"daily_ma128" | "weekly_ma200"
-    dominant_role: str      # 主导角色："resistance"(上方阻力) | "support"(下方支撑) | "aligned"(两线同向)
+    dist_to_weekly_pct: float  # 价格距MA200的百分比(正=上方，负=下方)
+    dominant_ma: str  # 主导均线（距离更近、权重更大的一方）"daily_ma128" | "weekly_ma200"
+    dominant_role: (
+        str  # 主导角色："resistance"(上方阻力) | "support"(下方支撑) | "aligned"(两线同向)
+    )
 
 
 # ===================================================================
@@ -358,19 +370,21 @@ class MAForceFieldResult:
 #   力 = -∇U: F = (A/σ²) · x_dist · exp(-x_dist² / 2σ²)   (高取+低取−)
 # ===================================================================
 
+
 @dataclass
 class SwingPoint:
     """单个摆动点"""
+
     price: float
-    type: str           # "high" / "low"
+    type: str  # "high" / "low"
     dist_pct: float = 0.0  # 距当前价的百分比(计算时填充)
 
 
 @dataclass
 class SwingForceResult:
-    F_swing_net: float           # swing 合力
-    upward_barrier: float        # 上方 swing high 的力（应<0 表示向下排斥阻力）
-    downward_pull: float         # 下方 swing low 的力（应<0 表示向下吸引支撑）
+    F_swing_net: float  # swing 合力
+    upward_barrier: float  # 上方 swing high 的力（应<0 表示向下排斥阻力）
+    downward_pull: float  # 下方 swing low 的力（应<0 表示向下吸引支撑）
     swing_points: List[SwingPoint]  # 被使用的 swing 点列表
 
 
@@ -388,7 +402,7 @@ def detect_swing_points(closes: List[float], window: int = 3) -> List[SwingPoint
     pts: List[SwingPoint] = []
     n = len(closes)
     for i in range(window, n - window):
-        w = closes[i - window:i + window + 1]
+        w = closes[i - window : i + window + 1]
         c = closes[i]
         if c == max(w):
             pts.append(SwingPoint(price=float(c), type="high"))
@@ -448,20 +462,22 @@ def _compute_swing_force_field(
     但它们的影响通常较小（距离已远，高斯衰减到近 0）。
     """
     if not swing_points:
-        return SwingForceResult(F_swing_net=0.0, upward_barrier=0.0, downward_pull=0.0, swing_points=[])
+        return SwingForceResult(
+            F_swing_net=0.0, upward_barrier=0.0, downward_pull=0.0, swing_points=[]
+        )
 
     F_net = 0.0
-    up_barrier = 0.0   # 上方 high 产生的向下阻力
-    down_pull = 0.0    # 下方 low 产生的向下吸引
+    up_barrier = 0.0  # 上方 high 产生的向下阻力
+    down_pull = 0.0  # 下方 low 产生的向下吸引
     for sp in swing_points:
         # 填充 dist_pct 诊断字段
         sp.dist_pct = (price - sp.price) / sp.price * 100 if sp.price else 0
         f = _swing_point_force(price, sp.price, sp.type, amplitude=amplitude, sigma_pct=sigma_pct)
         F_net += f
-        if sp.type == "high" and price < sp.price:   # high 在上方
-            up_barrier += f                           # 应 < 0
-        elif sp.type == "low" and price > sp.price:   # low 在下方
-            down_pull += f                            # 应 < 0
+        if sp.type == "high" and price < sp.price:  # high 在上方
+            up_barrier += f  # 应 < 0
+        elif sp.type == "low" and price > sp.price:  # low 在下方
+            down_pull += f  # 应 < 0
     return SwingForceResult(
         F_swing_net=F_net,
         upward_barrier=up_barrier,
@@ -488,8 +504,8 @@ def _ma_spring_force(price: float, ma: float, spring_k: float = 2.0) -> float:
     """
     if ma == 0:
         return 0.0
-    deviation = (price - ma) / ma       # 归一化偏离 = (price - x0) / x0
-    return -spring_k * deviation         # F = -k × deviation
+    deviation = (price - ma) / ma  # 归一化偏离 = (price - x0) / x0
+    return -spring_k * deviation  # F = -k × deviation
 
 
 def _distance_weight(dist_pct: float) -> float:
@@ -600,11 +616,12 @@ class VelocityIntegrator:
         v = vi.step(acceleration=F_net / mass)      # 每轮调一次
         save_state_dict = vi.save_state()           # 持久化
     """
-    decay: float = 0.85              # 摩擦衰减系数(每步)，0.85≈保留85%
-    market_mass: float = 1.0         # 市场质量 m，越大越难转向
-    threshold: float = 0.02          # 速度阈值，映射3状态
-    velocity: float = 0.0            # 当前速度 v
-    step_count: int = 0              # 累计步数
+
+    decay: float = 0.85  # 摩擦衰减系数(每步)，0.85≈保留85%
+    market_mass: float = 1.0  # 市场质量 m，越大越难转向
+    threshold: float = 0.02  # 速度阈值，映射3状态
+    velocity: float = 0.0  # 当前速度 v
+    step_count: int = 0  # 累计步数
 
     def step(self, acceleration: float) -> float:
         """
@@ -765,7 +782,9 @@ def _evaluate_mechanistic_impl(
                     f"dominant={ff.dominant_ma}/{ff.dominant_role}, F_net={ff.F_net:+.4f}"
                 )
             elif regime == MarketRegime.LONG_PREFERRED:
-                direction = TradeDirection.LONG_ONLY if not allow_short else TradeDirection.LONG_ONLY
+                direction = (
+                    TradeDirection.LONG_ONLY if not allow_short else TradeDirection.LONG_ONLY
+                )
                 # 若允许做空但 v>0（向上）则依然只做多（趋势向上时做空无优势）
                 reason = (
                     f"mechanistic: v={v:+.4f}>+(向上), 只做多; "
@@ -784,9 +803,9 @@ def _evaluate_mechanistic_impl(
         "F_weekly": round(ff.F_weekly, 6),
         "w_daily": round(ff.w_daily, 4),
         "w_weekly": round(ff.w_weekly, 4),
-        "F_ma_net": round(ff.F_net, 6),              # Phase 1 原合力
-        "F_swing_net": round(F_swing_net, 6),        # Phase 3 swing 合力
-        "F_net": round(F_net, 6),                    # 总合力（MA + swing_weight×swing）
+        "F_ma_net": round(ff.F_net, 6),  # Phase 1 原合力
+        "F_swing_net": round(F_swing_net, 6),  # Phase 3 swing 合力
+        "F_net": round(F_net, 6),  # 总合力（MA + swing_weight×swing）
         "swing_weight": swing_weight,
         "dist_to_daily_pct": round(ff.dist_to_daily_pct, 3),
         "dist_to_weekly_pct": round(ff.dist_to_weekly_pct, 3),
@@ -918,7 +937,9 @@ if __name__ == "__main__":
         recent_daily_closes=[62000, 61500, 61000],
         btc_short_enabled=False,
     )
-    print(f"\n场景1 (BTC做空闸门关闭): {r.regime.value}, 做多={r.long_enabled}, 做空={r.short_enabled}")
+    print(
+        f"\n场景1 (BTC做空闸门关闭): {r.regime.value}, 做多={r.long_enabled}, 做空={r.short_enabled}"
+    )
     print(f"  {r.reason}")
 
     # 场景2: BTC有效跌破MA128（连续3日收盘价低于MA128）→ 做空闸门打开
@@ -929,7 +950,9 @@ if __name__ == "__main__":
         recent_daily_closes=[59000, 58500, 58000],
         btc_short_enabled=True,
     )
-    print(f"\n场景2 (BTC有效跌破MA128, 做空闸门打开): {r.regime.value}, 做多={r.long_enabled}, 做空={r.short_enabled}")
+    print(
+        f"\n场景2 (BTC有效跌破MA128, 做空闸门打开): {r.regime.value}, 做多={r.long_enabled}, 做空={r.short_enabled}"
+    )
     print(f"  {r.reason}")
 
     # 场景3: BTC做空闸门打开但跌至周MA200 → 强制做多
@@ -940,7 +963,9 @@ if __name__ == "__main__":
         recent_daily_closes=[54500, 54000, 53500],
         btc_short_enabled=True,
     )
-    print(f"\n场景3 (跌至周MA200, 强制做多): {r.regime.value}, 做多={r.long_enabled}, 做空={r.short_enabled}")
+    print(
+        f"\n场景3 (跌至周MA200, 强制做多): {r.regime.value}, 做多={r.long_enabled}, 做空={r.short_enabled}"
+    )
     print(f"  {r.reason}")
 
     # 场景4: 全局开关关闭
@@ -951,7 +976,9 @@ if __name__ == "__main__":
         weekly_ma200=55000,
         btc_short_enabled=True,
     )
-    print(f"\n场景4 (全局做空关闭): {r.regime.value}, 做多={r.long_enabled}, 做空={r.short_enabled}")
+    print(
+        f"\n场景4 (全局做空关闭): {r.regime.value}, 做多={r.long_enabled}, 做空={r.short_enabled}"
+    )
     print(f"  {r.reason}")
 
     # 场景5: 非BTC币种，BTC做空闸门打开
@@ -961,7 +988,9 @@ if __name__ == "__main__":
         weekly_ma200=3800,
         btc_short_enabled=True,
     )
-    print(f"\n场景5 (ETH,BTC做空闸门打开): {r.regime.value}, 做多={r.long_enabled}, 做空={r.short_enabled}")
+    print(
+        f"\n场景5 (ETH,BTC做空闸门打开): {r.regime.value}, 做多={r.long_enabled}, 做空={r.short_enabled}"
+    )
     print(f"  {r.reason}")
 
     # 场景6: 非BTC币种，BTC做空闸门打开但跌至周MA200
@@ -971,5 +1000,7 @@ if __name__ == "__main__":
         weekly_ma200=3800,
         btc_short_enabled=True,
     )
-    print(f"\n场景6 (ETH跌至周MA200, 强制做多): {r.regime.value}, 做多={r.long_enabled}, 做空={r.short_enabled}")
+    print(
+        f"\n场景6 (ETH跌至周MA200, 强制做多): {r.regime.value}, 做多={r.long_enabled}, 做空={r.short_enabled}"
+    )
     print(f"  {r.reason}")

@@ -22,11 +22,11 @@ Phase 3 统一 AI 离场评估主脚本 — 决策执行层完整版
   BACKTEST=1 python 16-调控系统/scripts/phase3_exit_evaluator.py
 """
 
-import sys
-import os
 import json
-from pathlib import Path
+import os
+import sys
 from datetime import datetime, timezone
+from pathlib import Path
 
 MODULE_DIR = Path(__file__).parent.parent
 ARTIFACTS_DIR = MODULE_DIR / "artifacts" / "exit-evaluations"
@@ -34,21 +34,17 @@ CORE_DIR = MODULE_DIR / "core"
 
 sys.path.insert(0, str(CORE_DIR))
 
-from unified_position_query import fetch_all_positions, get_position_summary
-from skill_engine import SkillEngine
-
-import a1_research_adapter
-import a2_first_principles_adapter
-import a3_strategy_adapter
-import a9_exit_decision
-import technical_exit_adapter
-import aam_deliverer
-import feedback_and_permission
-import strategy_exit_adapter
-from enhanced_evolution import get_enhanced_evolution
-from backtest_framework import (
-    generate_simulated_bars, compare_strategies, save_backtest_results,
+import aam_deliverer  # noqa: E402
+import feedback_and_permission  # noqa: E402
+import technical_exit_adapter  # noqa: E402
+from backtest_framework import (  # noqa: E402
+    compare_strategies,
+    generate_simulated_bars,
+    save_backtest_results,
 )
+from enhanced_evolution import get_enhanced_evolution  # noqa: E402
+from skill_engine import SkillEngine  # noqa: E402
+from unified_position_query import fetch_all_positions  # noqa: E402
 
 USE_LLM = os.environ.get("USE_LLM", "").lower() in ("1", "true", "yes", "on")
 USE_REALTIME = os.environ.get("USE_REALTIME", "").lower() in ("1", "true", "yes", "on")
@@ -60,7 +56,12 @@ RUN_EVOLUTION = os.environ.get("EVOLUTION", "").lower() in ("1", "true", "yes", 
 def _fetch_market_data(positions: list) -> dict:
     if USE_REALTIME:
         try:
-            from realtime_market_stream import get_realtime_snapshot, start_realtime_stream, stop_realtime_stream
+            from realtime_market_stream import (
+                get_realtime_snapshot,
+                start_realtime_stream,
+                stop_realtime_stream,
+            )
+
             symbols = []
             for p in positions:
                 sym = p.get("symbol", "").upper()
@@ -70,6 +71,7 @@ def _fetch_market_data(positions: list) -> dict:
                 symbols = ["BTC", "ETH", "SOL"]
             start_realtime_stream(symbols)
             import time
+
             time.sleep(2)
             snapshot = get_realtime_snapshot(symbols)
             if snapshot:
@@ -79,6 +81,7 @@ def _fetch_market_data(positions: list) -> dict:
             pass
 
     from market_data_fetcher import fetch_market_data
+
     return fetch_market_data(positions)
 
 
@@ -86,7 +89,7 @@ def _fuse_all_evaluations(macro_evals: list, positions: list, market: dict, a1_r
     """融合宏观+技术，生成最终离场建议（增强版进化系统）"""
     research = a1_result.data.get("research_report", {}) if a1_result.data else {}
     market_state = research.get("market_state", {})
-    
+
     evolution = get_enhanced_evolution()
 
     fused = []
@@ -102,22 +105,23 @@ def _fuse_all_evaluations(macro_evals: list, positions: list, market: dict, a1_r
 
         # 获取进化后的参数
         evolved_params = evolution.get_evolved_params(strategy_id)
-        
+
         fused_eval = technical_exit_adapter.fuse_macro_technical(
-            macro_eval, tech_signal,
+            macro_eval,
+            tech_signal,
             position_info=pos,
             strategy_id=strategy_id,
         )
-        
+
         # 置信度门槛检查（使用进化后的参数）
         action = fused_eval.get("recommended_action", "HOLD")
         confidence = fused_eval.get("confidence", 0.5)
         p0_triggered = fused_eval.get("technical_input", {}).get("p0_triggered", False)
-        
+
         if not p0_triggered:
             threshold_close = evolved_params.get("confidence_threshold_close", 0.70)
             threshold_reduce = evolved_params.get("confidence_threshold_reduce", 0.60)
-            
+
             if action == "CLOSE" and confidence < threshold_close:
                 fused_eval["recommended_action"] = "OBSERVE"
                 fused_eval["confidence_gated"] = True
@@ -134,10 +138,12 @@ def _fuse_all_evaluations(macro_evals: list, positions: list, market: dict, a1_r
                 fused_eval["confidence_gated"] = False
         else:
             fused_eval["confidence_gated"] = False
-        
+
         final_action = fused_eval.get("recommended_action", "HOLD")
         final_urgency = fused_eval.get("urgency", "LOW")
-        perm_check = feedback_and_permission.can_auto_execute(system_name, final_action, final_urgency)
+        perm_check = feedback_and_permission.can_auto_execute(
+            system_name, final_action, final_urgency
+        )
 
         fused_eval["position"] = {
             "symbol": pos.get("symbol", ""),
@@ -151,7 +157,7 @@ def _fuse_all_evaluations(macro_evals: list, positions: list, market: dict, a1_r
         }
         fused_eval["permission_check"] = perm_check
         fused_eval["evolution_params"] = evolved_params
-        
+
         try:
             decision_id = evolution.record_decision(fused_eval)
             fused_eval["decision_id"] = decision_id
@@ -190,10 +196,10 @@ def _generate_phase3_report(
     """生成 Phase 3 Markdown 报告"""
     lines = []
 
-    lines.append(f"# 离场战略评估报告（Phase 3 完整版）")
+    lines.append("# 离场战略评估报告（Phase 3 完整版）")
     lines.append("")
     lines.append(f"**生成时间**: {datetime.now(timezone.utc).isoformat()}")
-    lines.append(f"**评估版本**: Phase 3 — 宏观+技术融合决策 + AAM投递")
+    lines.append("**评估版本**: Phase 3 — 宏观+技术融合决策 + AAM投递")
     lines.append("")
 
     summary = a9_result.data.get("overall_summary", {}) if a9_result.data else {}
@@ -257,9 +263,12 @@ def _generate_phase3_report(
     lines.append("| 策略 | 设计哲学 | 宏观影响力 | 技术权重 | 宏观权重 | 关键原则 |")
     lines.append("|------|----------|-----------|---------|---------|---------|")
 
-    from strategy_exit_adapter import get_all_strategy_designs, ExitDesignPhilosophy, MacroExitInfluenceLevel
+    from strategy_exit_adapter import (
+        get_all_strategy_designs,
+    )
+
     all_designs = get_all_strategy_designs()
-    for sid, design in sorted(all_designs.items()):
+    for sid, design in sorted(all_designs.items()):  # noqa: B007
         philo_map = {
             "martingale": "马丁格尔",
             "trend_following": "趋势跟踪",
@@ -275,8 +284,12 @@ def _generate_phase3_report(
             "none": "不干预",
         }
         philo = philo_map.get(design.philosophy.value, design.philosophy.value)
-        influence = influence_map.get(design.macro_influence_level.value, design.macro_influence_level.value)
-        key_principle = design.macro_should_not_intervene[0] if design.macro_should_not_intervene else "—"
+        influence = influence_map.get(
+            design.macro_influence_level.value, design.macro_influence_level.value
+        )
+        key_principle = (
+            design.macro_should_not_intervene[0] if design.macro_should_not_intervene else "—"
+        )
         lines.append(
             f"| {design.strategy_name} | {philo} | {influence} | "
             f"{design.technical_signal_weight:.0%} | {design.macro_signal_weight:.0%} | "
@@ -284,15 +297,21 @@ def _generate_phase3_report(
         )
 
     lines.append("")
-    lines.append("> **核心原则**：宏观离场是「增强」而非「替代」策略原生离场机制。"
-                 "马丁策略浮亏是正常设计，不应因浮亏建议平仓；"
-                 "趋势跟踪以技术面为准，宏观仅作补充。")
+    lines.append(
+        "> **核心原则**：宏观离场是「增强」而非「替代」策略原生离场机制。"
+        "马丁策略浮亏是正常设计，不应因浮亏建议平仓；"
+        "趋势跟踪以技术面为准，宏观仅作补充。"
+    )
     lines.append("")
 
     lines.append("## 五、融合决策（逐持仓）")
     lines.append("")
-    lines.append("| 系统 | 币种 | 方向 | 宏观建议 | 调整后宏观 | 技术建议 | 融合建议 | 置信度 | 合理性 |")
-    lines.append("|------|------|------|----------|-----------|----------|----------|--------|--------|")
+    lines.append(
+        "| 系统 | 币种 | 方向 | 宏观建议 | 调整后宏观 | 技术建议 | 融合建议 | 置信度 | 合理性 |"
+    )
+    lines.append(
+        "|------|------|------|----------|-----------|----------|----------|--------|--------|"
+    )
 
     for ev in fused_evaluations:
         pos = ev.get("position", {})
@@ -333,7 +352,7 @@ def _generate_phase3_report(
             lines.append(f"- **原始建议**: {rational.get('original_action', 'N/A')}")
             lines.append(f"- **调整后建议**: **{rational.get('adjusted_action', 'N/A')}**")
             lines.append(f"- **策略哲学**: {rational.get('philosophy', 'N/A')}")
-            lines.append(f"- **调整原因**:")
+            lines.append("- **调整原因**:")
             for reason in rational.get("reasons", []):
                 lines.append(f"  - {reason}")
             lines.append("")
@@ -348,10 +367,14 @@ def _generate_phase3_report(
     lines.append("| 系统 | 权限等级 | 自动执行阈值 | 最大减仓比例 |")
     lines.append("|------|----------|------------|------------|")
     for sys_name, perm in perm_config.get("systems", {}).items():
-        lines.append(f"| {sys_name} | {perm.get('permission_level', 'N/A')} | {perm.get('auto_execute_urgency', 'N/A')} | {perm.get('max_auto_reduce_pct', 0):.0%} |")
+        lines.append(
+            f"| {sys_name} | {perm.get('permission_level', 'N/A')} | {perm.get('auto_execute_urgency', 'N/A')} | {perm.get('max_auto_reduce_pct', 0):.0%} |"
+        )
     lines.append("")
-    lines.append("> 说明：当前为建议制，所有建议需人工确认后执行。"
-                 "如需自动执行，请在 `config/permission_config.json` 中调整权限等级。")
+    lines.append(
+        "> 说明：当前为建议制，所有建议需人工确认后执行。"
+        "如需自动执行，请在 `config/permission_config.json` 中调整权限等级。"
+    )
     lines.append("")
 
     if backtest_results:
@@ -360,10 +383,16 @@ def _generate_phase3_report(
         baseline = backtest_results.get("baseline")
         macro = backtest_results.get("macro_enhanced")
         if baseline and macro:
-            lines.append(f"- **纯技术离场**: 胜率 {baseline.win_rate:.1%}, 收益 {baseline.total_return_pct:+.2f}%, 回撤 {baseline.max_drawdown_pct:.2f}%")
-            lines.append(f"- **宏观+技术融合**: 胜率 {macro.win_rate:.1%}, 收益 {macro.total_return_pct:+.2f}%, 回撤 {macro.max_drawdown_pct:.2f}%")
+            lines.append(
+                f"- **纯技术离场**: 胜率 {baseline.win_rate:.1%}, 收益 {baseline.total_return_pct:+.2f}%, 回撤 {baseline.max_drawdown_pct:.2f}%"
+            )
+            lines.append(
+                f"- **宏观+技术融合**: 胜率 {macro.win_rate:.1%}, 收益 {macro.total_return_pct:+.2f}%, 回撤 {macro.max_drawdown_pct:.2f}%"
+            )
             ret_diff = macro.total_return_pct - baseline.total_return_pct
-            lines.append(f"- **效果**: {'宏观胜出' if ret_diff > 0 else '技术胜出'} (收益差 {ret_diff:+.2f}%)")
+            lines.append(
+                f"- **效果**: {'宏观胜出' if ret_diff > 0 else '技术胜出'} (收益差 {ret_diff:+.2f}%)"
+            )
         lines.append("")
 
     lines.append("## 九、免责声明")
@@ -424,11 +453,14 @@ def main():
     print(f"  → 数据来源: {market.get('BTC', {}).get('source', 'unknown')}")
 
     print("\n[步骤 3/9] A1 深度调研（dream-strategy-research）...")
-    a1_result = engine.execute("dream-strategy-research", {
-        "market": market,
-        "positions": all_positions,
-        "use_llm": USE_LLM,
-    })
+    a1_result = engine.execute(
+        "dream-strategy-research",
+        {
+            "market": market,
+            "positions": all_positions,
+            "use_llm": USE_LLM,
+        },
+    )
     a1_report = a1_result.data.get("research_report", {}) if a1_result.data else {}
     ms = a1_report.get("market_state", {})
     sig = a1_report.get("signal_sufficiency", {})
@@ -440,7 +472,9 @@ def main():
     if isinstance(dream, dict) and dream.get("incorporated"):
         print(f"  → 🌙 做梦产物: 已集成 (最新 {dream.get('latest_date', 'N/A')})")
     else:
-        reason = dream.get("note", dream.get("reason", "未找到")) if isinstance(dream, dict) else "无"
+        reason = (
+            dream.get("note", dream.get("reason", "未找到")) if isinstance(dream, dict) else "无"
+        )
         print(f"  → 🌙 做梦产物: 未集成 ({reason})")
 
     archives = a1_report.get("archive_findings", [])
@@ -453,12 +487,15 @@ def main():
         print(f"  → 🤖 LLM增强: 已启用{fb}")
 
     print("\n[步骤 4/9] A2 第一性原理分析（dream-first-principles）...")
-    a2_result = engine.execute("dream-first-principles", {
-        "market": market,
-        "a1_result": a1_result.data,
-        "positions": all_positions,
-        "use_llm": USE_LLM,
-    })
+    a2_result = engine.execute(
+        "dream-first-principles",
+        {
+            "market": market,
+            "a1_result": a1_result.data,
+            "positions": all_positions,
+            "use_llm": USE_LLM,
+        },
+    )
     fp = a2_result.data.get("first_principles_analysis", {}) if a2_result.data else {}
     syn = fp.get("synthesis", {})
     regime = a2_result.data.get("market_regime_classification", {}) if a2_result.data else {}
@@ -472,13 +509,16 @@ def main():
         print(f"  → 🤖 LLM增强: 已启用{fb}")
 
     print("\n[步骤 5/9] A3 战略合成（dream-strategy-designer）...")
-    a3_result = engine.execute("dream-strategy-designer", {
-        "a1_result": a1_result.data,
-        "a2_result": a2_result.data,
-        "positions": all_positions,
-        "market": market,
-        "use_llm": USE_LLM,
-    })
+    a3_result = engine.execute(
+        "dream-strategy-designer",
+        {
+            "a1_result": a1_result.data,
+            "a2_result": a2_result.data,
+            "positions": all_positions,
+            "market": market,
+            "use_llm": USE_LLM,
+        },
+    )
     sd = a3_result.data.get("strategy_directive", {}) if a3_result.data else {}
     print(f"  → 战略方向: {sd.get('directive_bias', 'N/A')}")
     print(f"  → 仓位修正: {sd.get('position_modifier', 0):.2f}x")
@@ -490,11 +530,14 @@ def main():
         print(f"  → 🤖 LLM增强: 已启用{fb}")
 
     print("\n[步骤 6/9] 技术离场分析（technical-exit-adapter）...")
-    tech_result = technical_exit_adapter.technical_exit_handler({
-        "positions": all_positions,
-        "market": market,
-        "a1_result": a1_result.data,
-    }, engine)
+    tech_result = technical_exit_adapter.technical_exit_handler(
+        {
+            "positions": all_positions,
+            "market": market,
+            "a1_result": a1_result.data,
+        },
+        engine,
+    )
     tech_summary = tech_result.get("summary", {})
     print(f"  → P0硬退出触发: {tech_summary.get('p0_triggered_count', 0)} 个")
     print(f"  → P1技术信号: {tech_summary.get('p1_triggered_count', 0)} 个")
@@ -502,22 +545,27 @@ def main():
     print(f"  → 技术减仓: {tech_summary.get('reduce_count', 0)} 个")
 
     print("\n[步骤 7/9] A9 宏观离场决策 + 宏观技术融合...")
-    a9_result = engine.execute("dream-exit-skill-v2", {
-        "positions": all_positions,
-        "a1_result": a1_result.data,
-        "a2_result": a2_result.data,
-        "a3_result": a3_result.data,
-        "market": market,
-    })
+    a9_result = engine.execute(
+        "dream-exit-skill-v2",
+        {
+            "positions": all_positions,
+            "a1_result": a1_result.data,
+            "a2_result": a2_result.data,
+            "a3_result": a3_result.data,
+            "market": market,
+        },
+    )
     a9_evals = a9_result.data.get("exit_evaluations", []) if a9_result.data else []
 
     fused_evals = _fuse_all_evaluations(a9_evals, all_positions, market, a1_result)
     fused_stats = _calc_fused_stats(fused_evals)
-    print(f"  → 融合后建议: CLOSE={fused_stats['close_count']}, "
-          f"REDUCE={fused_stats['reduce_count']}, "
-          f"HOLD={fused_stats['hold_count']}, "
-          f"OBSERVE={fused_stats['observe_count']}, "
-          f"RAISE_TP={fused_stats['raise_tp_count']}")
+    print(
+        f"  → 融合后建议: CLOSE={fused_stats['close_count']}, "
+        f"REDUCE={fused_stats['reduce_count']}, "
+        f"HOLD={fused_stats['hold_count']}, "
+        f"OBSERVE={fused_stats['observe_count']}, "
+        f"RAISE_TP={fused_stats['raise_tp_count']}"
+    )
     print(f"  → 置信度门槛拦截: {fused_stats['gated_count']} 个（降级为观察）")
     print(f"  → 可自动执行: {fused_stats['auto_executable_count']} 个")
 
@@ -526,7 +574,7 @@ def main():
     # ==========================================
     evolution = get_enhanced_evolution()
     evolution_summary = evolution.get_summary()
-    print(f"\n  📈 进化系统状态:")
+    print("\n  📈 进化系统状态:")
     print(f"    总决策: {evolution_summary.get('total_decisions', 0)}")
     print(f"    已评估: {evolution_summary.get('total_evaluated', 0)}")
     print(f"    整体准确率: {evolution_summary.get('overall_accuracy', 0):.1%}")
@@ -548,44 +596,46 @@ def main():
         print(f"  → 回测报告: {report_path}")
     else:
         print("\n[步骤 8/11] 回测验证: 跳过（设置 BACKTEST=1 启用）")
-    
+
     if RUN_EVOLUTION:
         print("\n[步骤 9/11] 三层进化闭环...")
-        print(f"  Layer 1: A8 理论实践验证...")
+        print("  Layer 1: A8 理论实践验证...")
         a8_result = evolution.run_a8_inspection()
         a8_contradictions = len(a8_result.get("contradictions", []))
         a8_proposals = len(a8_result.get("evolution_proposals", []))
         print(f"    → 发现矛盾: {a8_contradictions} 个, 生成提议: {a8_proposals} 个")
-        
-        print(f"  Layer 2: 做梦部潜意识分析...")
+
+        print("  Layer 2: 做梦部潜意识分析...")
         dream_result = evolution.run_dream_analysis()
         dream_proposals = len(dream_result.get("evolution_proposals", []))
         print(f"    → 生成提议: {dream_proposals} 个")
-        
-        print(f"  Layer 3: 数据驱动调优...")
+
+        print("  Layer 3: 数据驱动调优...")
         dd_count = 0
         for sid in ["v15_martin", "screen_trend", "yijing_bcrm", "agent_a", "agent_b", "agent_c"]:
             dd = evolution.propose_data_driven_adjustment(sid, min_samples=3)
             if dd:
                 dd_count += 1
         print(f"    → 数据驱动提议: {dd_count} 个")
-        
-        print(f"\n  回测验证 + 采纳...")
+
+        print("\n  回测验证 + 采纳...")
         cycle_report = evolution.run_full_evolution_cycle(min_samples=3, run_backtest=True)
-        evolution_cycle_report = cycle_report
+        evolution_cycle_report = cycle_report  # noqa: F841
         print(f"    → 总提议: {cycle_report.get('proposals_generated', 0)} 个")
         print(f"    → 回测验证: {cycle_report.get('proposals_backtested', 0)} 个")
         print(f"    → 采纳: {cycle_report.get('proposals_adopted', 0)} 个")
-        
+
         layer_stats = evolution_summary.get("layer_stats", {})
-        print(f"\n  各进化层统计:")
+        print("\n  各进化层统计:")
         for layer, stats in layer_stats.items():
             layer_name = {
                 "a8_theory_practice": "A8理论实践",
                 "dream_oneirology": "做梦部",
                 "data_driven": "数据驱动",
             }.get(layer, layer)
-            print(f"    {layer_name}: 提议{stats.get('proposed',0)} 采纳{stats.get('adopted',0)} 拒绝{stats.get('rejected',0)}")
+            print(
+                f"    {layer_name}: 提议{stats.get('proposed',0)} 采纳{stats.get('adopted',0)} 拒绝{stats.get('rejected',0)}"
+            )
     else:
         print("\n[步骤 9/11] 进化闭环: 跳过（设置 EVOLUTION=1 或 BACKTEST=1 启用）")
 
@@ -594,8 +644,15 @@ def main():
     evaluation_id = f"phase3_{timestamp}"
 
     report = _generate_phase3_report(
-        positions_data, market, a1_result, a2_result, a3_result,
-        a9_result, tech_result, fused_evals, backtest_results
+        positions_data,
+        market,
+        a1_result,
+        a2_result,
+        a3_result,
+        a9_result,
+        tech_result,
+        fused_evals,
+        backtest_results,
     )
 
     full_data = {
@@ -642,7 +699,7 @@ def main():
             status = "✅" if ok else "❌"
             print(f"    · {ch}: {status}")
         if delivery_result.index_updated:
-            print(f"  → Index 更新: ✅")
+            print("  → Index 更新: ✅")
         if delivery_result.errors:
             for err in delivery_result.errors:
                 print(f"  → 错误: {err}")
@@ -652,14 +709,18 @@ def main():
     print("\n" + "=" * 70)
     print("  ✅ Phase 3 评估完成！")
     print("=" * 70)
-    print(f"\n  核心结论:")
-    overall = a9_result.data.get("overall_summary", {}).get("overall_stance", "UNKNOWN") if a9_result.data else "UNKNOWN"
+    print("\n  核心结论:")
+    overall = (
+        a9_result.data.get("overall_summary", {}).get("overall_stance", "UNKNOWN")
+        if a9_result.data
+        else "UNKNOWN"
+    )
     print(f"    整体立场: {overall}")
     print(f"    持仓总数: {len(fused_evals)}")
     print(f"    建议平仓: {fused_stats['close_count']} 个")
     print(f"    建议减仓: {fused_stats['reduce_count']} 个")
     print(f"    可自动执行: {fused_stats['auto_executable_count']} 个")
-    print(f"\n  产物文件:")
+    print("\n  产物文件:")
     print(f"    {json_path}")
     print(f"    {md_path}")
 

@@ -6,6 +6,7 @@
   T7. test_calibrate_centers_on_labels            — 冷启动校准：用真实标签统计 (L,T) 均值
   T8. test_end_to_end_sample200                   — 200 根合成 OHLCV 全链：Bank→Composer→Smoother→Mapper
 """
+
 from __future__ import annotations
 
 import sys
@@ -22,12 +23,11 @@ if str(_BCRM2_ROOT) not in sys.path:
     sys.path.insert(0, str(_BCRM2_ROOT))
 
 # 故意导入 — 如果模块不存在会 ImportError（RED）
-from bcrm2.temporal_smoother import TemporalSmoother, SmootherOutput  # noqa: E402
-from bcrm2.regime_mapper import RegimeMapper, REGIME_ORDER, REGIME_CENTERS  # noqa: E402
-
 # D1 已测通过的模块可直接复用
 from bcrm2.indicators import IndicatorBank  # noqa: E402
+from bcrm2.regime_mapper import REGIME_ORDER, RegimeMapper  # noqa: E402
 from bcrm2.score_composer import ScoreComposer  # noqa: E402
+from bcrm2.temporal_smoother import SmootherOutput, TemporalSmoother  # noqa: E402
 
 
 # Fixture：300+200 合成 OHLCV（复用 Day 1）
@@ -38,15 +38,18 @@ def synth_ohlcv_500() -> pd.DataFrame:
     t_up = np.linspace(100, 180, n_up)
     t_down = np.linspace(180, 140, n_down)
     close = np.concatenate([t_up, t_down])
-    close *= (1 + rng.normal(0, 0.01, n_up + n_down))
+    close *= 1 + rng.normal(0, 0.01, n_up + n_down)
     idx = pd.date_range("2020-01-01", periods=n_up + n_down, freq="D")
-    df = pd.DataFrame({
-        "open":  close * (1 + rng.normal(0, 0.004, n_up + n_down)),
-        "high":  close * (1 + np.abs(rng.normal(0, 0.01, n_up + n_down))),
-        "low":   close * (1 - np.abs(rng.normal(0, 0.01, n_up + n_down))),
-        "close": close,
-        "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n_up + n_down)),
-    }, index=idx)
+    df = pd.DataFrame(
+        {
+            "open": close * (1 + rng.normal(0, 0.004, n_up + n_down)),
+            "high": close * (1 + np.abs(rng.normal(0, 0.01, n_up + n_down))),
+            "low": close * (1 - np.abs(rng.normal(0, 0.01, n_up + n_down))),
+            "close": close,
+            "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n_up + n_down)),
+        },
+        index=idx,
+    )
     return df
 
 
@@ -87,8 +90,9 @@ def test_temporal_smoother_shape_3state(synth_ohlcv_500):
     # 连续性：smooth vs raw 不应大幅偏离（p95 ≤ 0.6）
     dL_smooth = np.abs(np.diff(out.level_smooth.values))
     dT_smooth = np.abs(np.diff(out.trend_smooth.values))
-    assert np.percentile(dL_smooth + dT_smooth, 95) <= 0.9, \
-        "HMM/EMA 平滑后不应引入突变：p95 |ΔL+ΔT| 应 ≤ 0.9"
+    assert (
+        np.percentile(dL_smooth + dT_smooth, 95) <= 0.9
+    ), "HMM/EMA 平滑后不应引入突变：p95 |ΔL+ΔT| 应 ≤ 0.9"
 
 
 # ================================================================
@@ -101,10 +105,10 @@ def test_regime_probs_sum_to_1_stable():
 
     # 人工构造一些有代表性的 L, T 点
     probes = [
-        ("FOMO_RALLY zone",       +3.5, +2.5),
-        ("TREND_UP_STRONG zone",  +2.0, +3.5),
-        ("RANGE_BOUND zone",       0.0,  0.0),
-        ("VOLATILE_DROP zone",    +1.5, -3.0),
+        ("FOMO_RALLY zone", +3.5, +2.5),
+        ("TREND_UP_STRONG zone", +2.0, +3.5),
+        ("RANGE_BOUND zone", 0.0, 0.0),
+        ("VOLATILE_DROP zone", +1.5, -3.0),
     ]
 
     for tag, L, T in probes:
@@ -130,8 +134,9 @@ def test_regime_probs_sum_to_1_stable():
 
         # 确定性：相同输入第二次调用结果一致
         result2 = mapper.map_frame(L, T, feature_row=None)
-        assert abs(result["consensus"] - result2["consensus"]) < 1e-12, \
-            f"{tag}：两次调用 consensus 不一致"
+        assert (
+            abs(result["consensus"] - result2["consensus"]) < 1e-12
+        ), f"{tag}：两次调用 consensus 不一致"
 
     # 全序列 transform：批量接口 regime_probs 每行 Σ = 1
     n = 120
@@ -161,8 +166,13 @@ def test_calibrate_centers_on_labels(synth_ohlcv_500):
     from bcrm2.labels.regime_labeler import generate_8state_label
 
     _, L, T = _compose_scores(synth_ohlcv_500)
-    labels = generate_8state_label(synth_ohlcv_500, forward_days=10, lookback=80,
-                                   use_rolling_quantile=True, target_balance=True)
+    labels = generate_8state_label(
+        synth_ohlcv_500,
+        forward_days=10,
+        lookback=80,
+        use_rolling_quantile=True,
+        target_balance=True,
+    )
 
     # 标签可能在前 lookback + 最后 forward_days 有 NaN；仅用有效样本
     valid = labels.notna()
@@ -197,8 +207,9 @@ def test_calibrate_centers_on_labels(synth_ohlcv_500):
         Lm = L[valid][labels[valid] == regime].mean()
         Tm = T[valid][labels[valid] == regime].mean()
         res = mapper.map_frame(float(Lm), float(Tm), feature_row=None)
-        assert res["top3"][0][0] == regime, \
-            f"类内均值点 ({Lm:.2f},{Tm:.2f}) Top-1 = {res['top3'][0][0]}，应为 {regime}"
+        assert (
+            res["top3"][0][0] == regime
+        ), f"类内均值点 ({Lm:.2f},{Tm:.2f}) Top-1 = {res['top3'][0][0]}，应为 {regime}"
 
 
 # ================================================================
@@ -213,18 +224,24 @@ def test_end_to_end_sample200(synth_ohlcv_500):
     so = TemporalSmoother(n_hmm_states=3, random_state=42).transform(L, T)
 
     mapper = RegimeMapper()
-    frames = mapper.transform_sequence(so.level_smooth, so.trend_smooth,
-                                        indicators=indicators)
+    frames = mapper.transform_sequence(so.level_smooth, so.trend_smooth, indicators=indicators)
 
     assert len(frames) == 200, f"trajectory 长度={len(frames)}，期望 200"
 
     # 逐帧结构 + 基本质量
     avg_consensus = 0.0
-    top1_counts = {r: 0 for r in REGIME_ORDER}
+    top1_counts = dict.fromkeys(REGIME_ORDER, 0)
     for i, f in enumerate(frames):
         # 必填键
-        for k in ("level_smooth", "trend_smooth", "regime_probs", "top3",
-                  "consensus", "hmm_state", "bocpd_cp_prob"):
+        for k in (
+            "level_smooth",
+            "trend_smooth",
+            "regime_probs",
+            "top3",
+            "consensus",
+            "hmm_state",
+            "bocpd_cp_prob",
+        ):
             assert k in f, f"frame {i} 缺失 {k}"
         # 概率总和
         assert abs(sum(f["regime_probs"].values()) - 1.0) < 1e-9

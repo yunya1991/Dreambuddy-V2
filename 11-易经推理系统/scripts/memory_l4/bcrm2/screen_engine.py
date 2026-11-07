@@ -5,14 +5,14 @@
   - L2（默认开）：战略层防守档 + 仓位过重 + 特征重叠高时，抑制仓位放大。
   - L3（默认关）：防守档下连续高仓位亏损累计达到阈值，暂停交易若干小时。
 """
+
 from __future__ import annotations
 
 import copy
-from datetime import datetime, timezone
-from typing import Any, Iterable, Optional
+from datetime import datetime
+from typing import Any, Iterable
 
 import pandas as pd
-
 
 # ============================================================================
 # FEATURE_INTEGRATION_GUARD 默认配置（10 子开关 + 参数，严格对齐全局 fixture）
@@ -53,6 +53,7 @@ def get_feature_integration_guard() -> dict:
 # L1 审计标签（强制开启，纯记录）
 # ============================================================================
 
+
 def attach_l1_audit(trade_dict: dict, war_state: str, overlap_pct: float) -> dict:
     """把战略层 war_state 和特征重叠率注入到 trade 记录（纯记录，不改变决策）。
 
@@ -83,13 +84,15 @@ def compute_source_overlap_pct(lstar_sources: Iterable, strategic_sources: Itera
 # L2 同向抑制（默认开）
 # ============================================================================
 
+
 def _war_state_ge(war_state: str, threshold: str) -> bool:
     """war_state 严重程度 ≥ 阈值？未知档按 ALLOW 处理（FAIL-OPEN：不触发抑制）。"""
     return _WAR_STATE_RANK.get(war_state, 0) >= _WAR_STATE_RANK.get(threshold, 0)
 
 
-def apply_l2_if_needed(position_pct: float, war_state: str, overlap_pct: float,
-                       guard_cfg: dict, trade_id: str = "") -> tuple:
+def apply_l2_if_needed(
+    position_pct: float, war_state: str, overlap_pct: float, guard_cfg: dict, trade_id: str = ""
+) -> tuple:
     """L2 同向抑制：防守档 + 高仓位 + 高重叠 → 把仓位 cap 到指定上限。
 
     Returns:
@@ -117,7 +120,11 @@ def apply_l2_if_needed(position_pct: float, war_state: str, overlap_pct: float,
     new_pos = min(float(position_pct), cap_after)
     tid = f"trade={trade_id} " if trade_id else ""
     # 统一用两位小数（匹配测试 fixture 的典型断言：0.62→0.40 / FREEZE 等）
-    pp_str = f"{position_pct:.2f}" if abs(position_pct - round(position_pct, 2)) < 1e-9 else f"{position_pct}"
+    pp_str = (
+        f"{position_pct:.2f}"
+        if abs(position_pct - round(position_pct, 2)) < 1e-9
+        else f"{position_pct}"
+    )
     np_str = f"{new_pos:.2f}" if abs(new_pos - round(new_pos, 2)) < 1e-9 else f"{new_pos}"
     overlap_str = f"{overlap_pct:.3f}"
     log_line = (
@@ -131,13 +138,13 @@ def apply_l2_if_needed(position_pct: float, war_state: str, overlap_pct: float,
 # L3 反向熔断（默认关）
 # ============================================================================
 
+
 def _is_defensive_war_state(ws: str) -> bool:
     """防守档：COOLDOWN 或 FREEZE（ALLOW 不算）。"""
     return _WAR_STATE_RANK.get(ws, 0) >= _WAR_STATE_RANK["COOLDOWN"]
 
 
-def check_l3_and_maybe_pause(recent_trades: list, guard_cfg: dict,
-                             now: Any = None) -> tuple:
+def check_l3_and_maybe_pause(recent_trades: list, guard_cfg: dict, now: Any = None) -> tuple:
     """L3 反向熔断：防守档 + 连续 N 笔≥30% 仓位亏损 → 暂停 P 小时。
 
     Args:

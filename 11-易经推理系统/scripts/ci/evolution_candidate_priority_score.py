@@ -3,7 +3,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Optional, Any, Dict, List
+from typing import Any, Dict, List
 
 
 def _load_json(path: Path) -> Dict[str, Any]:
@@ -52,7 +52,9 @@ def main(argv: List[str] = None) -> int:
     args = parse_args(argv if argv is not None else sys.argv[1:])
     candidate = _load_json(Path(args.candidate_json))
     decision = _load_json(Path(args.decision_json))
-    reports_payload = _load_json(Path(args.reports_json)) if str(args.reports_json).strip() else {"reports": []}
+    reports_payload = (
+        _load_json(Path(args.reports_json)) if str(args.reports_json).strip() else {"reports": []}
+    )
 
     score = 50
     breakdown: Dict[str, int] = {"base": 50}
@@ -73,7 +75,9 @@ def main(argv: List[str] = None) -> int:
     score += stage_bonus
 
     approval = decision.get("approval", {})
-    approval_decision = str(approval.get("decision") or "").strip().lower() if isinstance(approval, dict) else ""
+    approval_decision = (
+        str(approval.get("decision") or "").strip().lower() if isinstance(approval, dict) else ""
+    )
     if approval_decision == "approve":
         breakdown["approval"] = 10
     elif approval_decision == "reject":

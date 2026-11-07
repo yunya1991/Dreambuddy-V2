@@ -21,7 +21,9 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
                     "trending": [{"symbol": "AAA", "chainId": "56", "contractAddress": "0xaaa"}],
                     "top_search": [{"symbol": "AAA", "chainId": "56", "contractAddress": "0xaaa"}],
                     "smart_money_inflow": [{"tokenName": "BBB/USDT", "ca": "0xbbb"}],
-                    "top_traders_pnl": [{"address": "0x222", "addressLabel": "top_trader_1", "realizedPnl": 123.0}],
+                    "top_traders_pnl": [
+                        {"address": "0x222", "addressLabel": "top_trader_1", "realizedPnl": 123.0}
+                    ],
                 },
                 "priority": ["smart_money_inflow", "trending"],
             }
@@ -43,14 +45,24 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
                 "ok": True,
                 "found": True,
                 "token": {"symbol": sym, "chainId": "56", "contractAddress": ca},
-                "market": {"liquidity": liq, "volume24h": vol, "percentChange24h": chg, "holders": 12345},
+                "market": {
+                    "liquidity": liq,
+                    "volume24h": vol,
+                    "percentChange24h": chg,
+                    "holders": 12345,
+                },
             }
 
         def _addr_stub(inp):
             return {
                 "ok": True,
-                "summary": {"address": (inp or {}).get("address"), "chainId": (inp or {}).get("chainId")},
-                "positions": [{"contractAddress": "0xaaa", "valueUsd_est": 1000.0, "remainQty": 1.0}],
+                "summary": {
+                    "address": (inp or {}).get("address"),
+                    "chainId": (inp or {}).get("chainId"),
+                },
+                "positions": [
+                    {"contractAddress": "0xaaa", "valueUsd_est": 1000.0, "remainQty": 1.0}
+                ],
             }
 
         def _llm_stub(*, provider, model, messages, timeout_sec=30, **kwargs):
@@ -60,7 +72,16 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
                     "confidence": 0.9,
                     "regime": "flow_driven",
                     "summary": "Flows converging with attention on AAA/BBB.",
-                    "watchlist": [{"symbol": "AAA", "chainId": "56", "contractAddress": "0xaaa", "reason": "overlap", "risk": "volatility", "invalidations": ["liquidity drops"]}],
+                    "watchlist": [
+                        {
+                            "symbol": "AAA",
+                            "chainId": "56",
+                            "contractAddress": "0xaaa",
+                            "reason": "overlap",
+                            "risk": "volatility",
+                            "invalidations": ["liquidity drops"],
+                        }
+                    ],
                     "risk_alerts": ["Thin liquidity risk for small caps."],
                     "actions": ["Monitor overlap tokens with sufficient liquidity."],
                     "tweets": ["t1", "t2", "t3", "t4"],
@@ -100,33 +121,61 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
             svc.AUTOMATION["web3_market_digest_min_overlap_sources"] = 1
             svc.AUTOMATION["web3_market_digest_liquidity_floor_usd"] = 1_000_000
             svc.AUTOMATION["web3_market_digest_volume24h_floor_usd"] = 1_000_000
-            svc.AUTOMATION["web3_market_digest_watch_addresses"] = [{"tag": "whale1", "address": "0x111", "chainId": "56"}]
+            svc.AUTOMATION["web3_market_digest_watch_addresses"] = [
+                {"tag": "whale1", "address": "0x111", "chainId": "56"}
+            ]
             svc.AUTOMATION["web3_market_digest_llm_enabled"] = True
             svc.AUTOMATION["web3_market_digest_confidence_threshold"] = 0.6
             svc.AUTOMATION["web3_market_digest_thread_ttl_sec"] = 1800
 
-            svc.CONFIG["agent_push"] = {"twitter_enabled": True, "twitter_llm_provider": "ollama", "twitter_llm_model": "unit"}
+            svc.CONFIG["agent_push"] = {
+                "twitter_enabled": True,
+                "twitter_llm_provider": "ollama",
+                "twitter_llm_model": "unit",
+            }
 
-            rep = svc._automation_web3_market_digest_run(1_700_000_000_000, force=True, trigger_event="unit_test", source="unit_test")
+            rep = svc._automation_web3_market_digest_run(
+                1_700_000_000_000, force=True, trigger_event="unit_test", source="unit_test"
+            )
             self.assertTrue(bool(rep.get("ok")))
             d = rep.get("digest") if isinstance(rep.get("digest"), dict) else {}
             self.assertEqual(str(d.get("kind") or ""), "web3.market_digest")
             self.assertTrue(isinstance(d.get("tweets"), list))
             dv1 = d.get("digest_v1") if isinstance(d.get("digest_v1"), dict) else {}
             self.assertEqual(str(dv1.get("schema") or ""), "web3_market_digest_v1")
-            self.assertTrue(isinstance((dv1.get("thread") if isinstance(dv1.get("thread"), dict) else {}).get("tweets"), list))
+            self.assertTrue(
+                isinstance(
+                    (dv1.get("thread") if isinstance(dv1.get("thread"), dict) else {}).get(
+                        "tweets"
+                    ),
+                    list,
+                )
+            )
             factors = d.get("factors") if isinstance(d.get("factors"), dict) else {}
-            cmr = factors.get("crypto_market_rank") if isinstance(factors.get("crypto_market_rank"), dict) else {}
+            cmr = (
+                factors.get("crypto_market_rank")
+                if isinstance(factors.get("crypto_market_rank"), dict)
+                else {}
+            )
             self.assertTrue(isinstance(cmr.get("attention_factors"), dict))
             self.assertTrue(isinstance(cmr.get("flow_factors"), dict))
             self.assertTrue(isinstance(cmr.get("top_trader_factors"), dict))
-            qti = factors.get("query_token_info") if isinstance(factors.get("query_token_info"), dict) else {}
+            qti = (
+                factors.get("query_token_info")
+                if isinstance(factors.get("query_token_info"), dict)
+                else {}
+            )
             toks = qti.get("tokens") if isinstance(qti.get("tokens"), list) else []
             self.assertTrue(len(toks) >= 1)
             self.assertTrue(isinstance((toks[0] if toks else {}).get("metadata"), dict))
             self.assertTrue(isinstance((toks[0] if toks else {}).get("market"), dict))
             wa = d.get("watch_addresses") if isinstance(d.get("watch_addresses"), list) else []
-            self.assertTrue(any(isinstance(x, dict) and str(x.get("address") or "").lower() == "0x222" for x in wa))
+            self.assertTrue(
+                any(
+                    isinstance(x, dict) and str(x.get("address") or "").lower() == "0x222"
+                    for x in wa
+                )
+            )
             self.assertTrue(len(enqueued.get("tweets") or []) >= 3)
             self.assertEqual(str(enqueued.get("intent_level") or ""), "L2")
         finally:
@@ -159,10 +208,26 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
                 "regime_guess": "flow_driven",
                 "digest_v1": {
                     "snapshot": {"regime": "flow_driven"},
-                    "rankings": {"smart_money_inflow": [{"tokenName": "AAA/USDT"}], "trending": [{"symbol": "AAA"}], "top_search": [{"symbol": "AAA"}]},
-                    "candidates": {"C2": [{"symbol": "AAA", "contractAddress": "0xaaa", "chainId": "56"}]},
-                    "token_info": [{"symbol": "AAA", "contractAddress": "0xaaa", "liquidity_usd": 30_000_000, "volume24h_usd": 10_000_000}],
-                    "constraints": {"min_liquidity_usd": 20_000_000, "min_volume24h_usd": 5_000_000},
+                    "rankings": {
+                        "smart_money_inflow": [{"tokenName": "AAA/USDT"}],
+                        "trending": [{"symbol": "AAA"}],
+                        "top_search": [{"symbol": "AAA"}],
+                    },
+                    "candidates": {
+                        "C2": [{"symbol": "AAA", "contractAddress": "0xaaa", "chainId": "56"}]
+                    },
+                    "token_info": [
+                        {
+                            "symbol": "AAA",
+                            "contractAddress": "0xaaa",
+                            "liquidity_usd": 30_000_000,
+                            "volume24h_usd": 10_000_000,
+                        }
+                    ],
+                    "constraints": {
+                        "min_liquidity_usd": 20_000_000,
+                        "min_volume24h_usd": 5_000_000,
+                    },
                     "address_insights": [],
                 },
             }
@@ -171,10 +236,26 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
                 "regime_guess": "flow_driven",
                 "digest_v1": {
                     "snapshot": {"regime": "flow_driven"},
-                    "rankings": {"smart_money_inflow": [{"tokenName": "AAA/USDT"}], "trending": [{"symbol": "AAA"}], "top_search": [{"symbol": "AAA"}]},
-                    "candidates": {"C2": [{"symbol": "AAA", "contractAddress": "0xaaa", "chainId": "56"}]},
-                    "token_info": [{"symbol": "AAA", "contractAddress": "0xaaa", "liquidity_usd": 31_000_000, "volume24h_usd": 10_500_000}],
-                    "constraints": {"min_liquidity_usd": 20_000_000, "min_volume24h_usd": 5_000_000},
+                    "rankings": {
+                        "smart_money_inflow": [{"tokenName": "AAA/USDT"}],
+                        "trending": [{"symbol": "AAA"}],
+                        "top_search": [{"symbol": "AAA"}],
+                    },
+                    "candidates": {
+                        "C2": [{"symbol": "AAA", "contractAddress": "0xaaa", "chainId": "56"}]
+                    },
+                    "token_info": [
+                        {
+                            "symbol": "AAA",
+                            "contractAddress": "0xaaa",
+                            "liquidity_usd": 31_000_000,
+                            "volume24h_usd": 10_500_000,
+                        }
+                    ],
+                    "constraints": {
+                        "min_liquidity_usd": 20_000_000,
+                        "min_volume24h_usd": 5_000_000,
+                    },
                     "address_insights": [],
                 },
             }
@@ -193,20 +274,55 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
                 "digest_v1": {
                     "snapshot": {"regime": "flow_driven"},
                     "thread": {"tweets": ["a", "b"]},
-                    "constraints": {"min_liquidity_usd": 20_000_000, "min_volume24h_usd": 5_000_000, "max_slippage_bps": 300, "max_position_pct": 0.05},
-                    "rankings": {"smart_money_inflow": [{"tokenName": "AAA/USDT"}], "trending": [{"symbol": "AAA"}], "top_search": [{"symbol": "AAA"}]},
-                    "candidates": {"C2": [{"symbol": "AAA", "contractAddress": "0xaaa", "chainId": "56", "reason": "overlap", "risk": "", "invalidations": ["liq_drop"]}]},
-                    "token_info": [{"symbol": "AAA", "contractAddress": "0xaaa", "liquidity_usd": 32_000_000, "volume24h_usd": 11_000_000}],
+                    "constraints": {
+                        "min_liquidity_usd": 20_000_000,
+                        "min_volume24h_usd": 5_000_000,
+                        "max_slippage_bps": 300,
+                        "max_position_pct": 0.05,
+                    },
+                    "rankings": {
+                        "smart_money_inflow": [{"tokenName": "AAA/USDT"}],
+                        "trending": [{"symbol": "AAA"}],
+                        "top_search": [{"symbol": "AAA"}],
+                    },
+                    "candidates": {
+                        "C2": [
+                            {
+                                "symbol": "AAA",
+                                "contractAddress": "0xaaa",
+                                "chainId": "56",
+                                "reason": "overlap",
+                                "risk": "",
+                                "invalidations": ["liq_drop"],
+                            }
+                        ]
+                    },
+                    "token_info": [
+                        {
+                            "symbol": "AAA",
+                            "contractAddress": "0xaaa",
+                            "liquidity_usd": 32_000_000,
+                            "volume24h_usd": 11_000_000,
+                        }
+                    ],
                     "address_insights": [],
                 },
             }
-            n = svc._auto_trade_emit_decisions_from_digest(trace_id="t1", ts_ms=1_700_000_000_000 + 4_000_000, chain_id="56", digest=digest)
+            n = svc._auto_trade_emit_decisions_from_digest(
+                trace_id="t1", ts_ms=1_700_000_000_000 + 4_000_000, chain_id="56", digest=digest
+            )
             self.assertGreaterEqual(int(n), 1)
-            decision_rows = [p for (nm, p) in captured if str(nm) == svc._auto_trade_decision_outbox_name()]
+            decision_rows = [
+                p for (nm, p) in captured if str(nm) == svc._auto_trade_decision_outbox_name()
+            ]
             score_rows = [p for (nm, p) in captured if str(nm) == "trade_decision_scores.jsonl"]
             self.assertGreaterEqual(len(decision_rows), 1)
             self.assertGreaterEqual(len(score_rows), 1)
-            sc = (decision_rows[0] if isinstance(decision_rows[0], dict) else {}).get("scoring") if decision_rows else {}
+            sc = (
+                (decision_rows[0] if isinstance(decision_rows[0], dict) else {}).get("scoring")
+                if decision_rows
+                else {}
+            )
             self.assertTrue(isinstance(sc, dict))
             self.assertTrue("calibrated_prob" in sc)
             ci = sc.get("confidence_interval") if isinstance(sc, dict) else {}
@@ -233,12 +349,14 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
             _ = inp
             traders = []
             for i in range(12):
-                traders.append({
-                    "address": f"0x{i:040x}",
-                    "addressLabel": f"trader_{i+1}",
-                    "realizedPnl": 1000 + i,
-                    "winRate": 0.6,
-                })
+                traders.append(
+                    {
+                        "address": f"0x{i:040x}",
+                        "addressLabel": f"trader_{i+1}",
+                        "realizedPnl": 1000 + i,
+                        "winRate": 0.6,
+                    }
+                )
             return {
                 "ok": True,
                 "ranks": {
@@ -256,7 +374,12 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
                 "ok": True,
                 "found": True,
                 "token": {"symbol": "AAA", "chainId": "56", "contractAddress": "0xaaa"},
-                "market": {"liquidity": 30_000_000, "volume24h": 10_000_000, "percentChange24h": 2.5, "holders": 10000},
+                "market": {
+                    "liquidity": 30_000_000,
+                    "volume24h": 10_000_000,
+                    "percentChange24h": 2.5,
+                    "holders": 10000,
+                },
             }
 
         def _addr_stub(inp):
@@ -264,9 +387,16 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
             k = int(addr[-1], 16) if addr else 0
             return {
                 "ok": True,
-                "summary": {"address": (inp or {}).get("address"), "chainId": (inp or {}).get("chainId")},
+                "summary": {
+                    "address": (inp or {}).get("address"),
+                    "chainId": (inp or {}).get("chainId"),
+                },
                 "positions": [
-                    {"contractAddress": "0xaaa", "valueUsd_est": 30000 - 1000 * k, "remainQty": 1.0},
+                    {
+                        "contractAddress": "0xaaa",
+                        "valueUsd_est": 30000 - 1000 * k,
+                        "remainQty": 1.0,
+                    },
                     {"contractAddress": "0xbbb", "valueUsd_est": 20000 - 500 * k, "remainQty": 1.0},
                     {"contractAddress": "0xccc", "valueUsd_est": 10000 - 300 * k, "remainQty": 1.0},
                 ],
@@ -279,7 +409,16 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
                     "confidence": 0.9,
                     "regime": "flow_driven",
                     "summary": "ok",
-                    "watchlist": [{"symbol": "AAA", "chainId": "56", "contractAddress": "0xaaa", "reason": "overlap", "risk": "", "invalidations": ["liq_drop"]}],
+                    "watchlist": [
+                        {
+                            "symbol": "AAA",
+                            "chainId": "56",
+                            "contractAddress": "0xaaa",
+                            "reason": "overlap",
+                            "risk": "",
+                            "invalidations": ["liq_drop"],
+                        }
+                    ],
                     "risk_alerts": [],
                     "actions": [],
                     "tweets": ["t1", "t2", "t3", "t4"],
@@ -299,7 +438,11 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
             svc._skill_binance_web3_query_address_info = _addr_stub
             svc._agent_llm_chat = _llm_stub
             svc._agent_outbox_append_jsonl = _outbox_stub
-            svc._twitter_thread_publish_request_enqueue = lambda **kwargs: {"id": "evt1", "event": {"type": "twitter.thread.publish.request"}, "ts": 1}
+            svc._twitter_thread_publish_request_enqueue = lambda **kwargs: {
+                "id": "evt1",
+                "event": {"type": "twitter.thread.publish.request"},
+                "ts": 1,
+            }
             svc._twitter_rate_limit_reasons = lambda: []
             svc.AUTOMATION["enable_web3_market_digest"] = True
             svc.AUTOMATION["web3_market_digest_chain_id"] = "56"
@@ -310,12 +453,22 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
             svc.AUTOMATION["web3_market_digest_volume24h_floor_usd"] = 1_000_000
             svc.AUTOMATION["web3_market_digest_watch_addresses"] = []
             svc.AUTOMATION["web3_market_digest_llm_enabled"] = True
-            svc.CONFIG["agent_push"] = {"twitter_enabled": True, "twitter_llm_provider": "ollama", "twitter_llm_model": "unit"}
-            rep = svc._automation_web3_market_digest_run(1_700_100_000_000, force=True, trigger_event="unit_test_top10", source="unit_test")
+            svc.CONFIG["agent_push"] = {
+                "twitter_enabled": True,
+                "twitter_llm_provider": "ollama",
+                "twitter_llm_model": "unit",
+            }
+            rep = svc._automation_web3_market_digest_run(
+                1_700_100_000_000, force=True, trigger_event="unit_test_top10", source="unit_test"
+            )
             self.assertTrue(bool(rep.get("ok")))
             d = rep.get("digest") if isinstance(rep.get("digest"), dict) else {}
             wa = d.get("watch_addresses") if isinstance(d.get("watch_addresses"), list) else []
-            top_traders = [x for x in wa if isinstance(x, dict) and str(x.get("source") or "") == "top_traders_pnl"]
+            top_traders = [
+                x
+                for x in wa
+                if isinstance(x, dict) and str(x.get("source") or "") == "top_traders_pnl"
+            ]
             self.assertGreaterEqual(len(top_traders), 10)
             tws = d.get("tweets") if isinstance(d.get("tweets"), list) else []
             tw5 = ""
@@ -353,7 +506,11 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
         orig_sec = getattr(svc, "_binance_spot_skill_secret", None)
         captured = []
         bak_auto = dict(svc.AUTOMATION)
-        bak_state = dict(svc.TRACKER_STATE.get("auto_trade") if isinstance(svc.TRACKER_STATE.get("auto_trade"), dict) else {})
+        bak_state = dict(
+            svc.TRACKER_STATE.get("auto_trade")
+            if isinstance(svc.TRACKER_STATE.get("auto_trade"), dict)
+            else {}
+        )
 
         def _outbox_stub(name, payload):
             captured.append((str(name), dict(payload or {})))
@@ -396,26 +553,58 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
                 {
                     "decision_id": "d1",
                     "candidate": {"symbol": "AAA", "contractAddress": "0xaaa"},
-                    "scoring": {"recommend_buy": True, "calibrated_prob": 0.61, "thresholds": {"prob_min_buy": 0.60}},
+                    "scoring": {
+                        "recommend_buy": True,
+                        "calibrated_prob": 0.61,
+                        "thresholds": {"prob_min_buy": 0.60},
+                    },
                 },
                 {
                     "decision_id": "d2",
                     "candidate": {"symbol": "BBB", "contractAddress": "0xbbb"},
-                    "scoring": {"recommend_buy": True, "calibrated_prob": 0.80, "thresholds": {"prob_min_buy": 0.60}},
+                    "scoring": {
+                        "recommend_buy": True,
+                        "calibrated_prob": 0.80,
+                        "thresholds": {"prob_min_buy": 0.60},
+                    },
                 },
             ]
-            rep = svc._auto_trade_execute_binance_spot_from_decisions(trace_id="t_exec", ts_ms=1_700_000_000_000, chain_id="56", rows=rows)
+            rep = svc._auto_trade_execute_binance_spot_from_decisions(
+                trace_id="t_exec", ts_ms=1_700_000_000_000, chain_id="56", rows=rows
+            )
             self.assertTrue(bool(rep.get("ok")))
             self.assertEqual(int(rep.get("attempted") or 0), 1)
             self.assertEqual(int(rep.get("executed") or 0), 1)
             prechecks = [p for (n, p) in captured if n == "trade_prechecks.jsonl"]
-            intents = [p for (n, p) in captured if n == "orders.jsonl" and str(p.get("type") or "") == "order.intent"]
-            receipts = [p for (n, p) in captured if n == "orders.jsonl" and str(p.get("type") or "") == "order.receipt"]
+            intents = [
+                p
+                for (n, p) in captured
+                if n == "orders.jsonl" and str(p.get("type") or "") == "order.intent"
+            ]
+            receipts = [
+                p
+                for (n, p) in captured
+                if n == "orders.jsonl" and str(p.get("type") or "") == "order.receipt"
+            ]
             self.assertGreaterEqual(len(prechecks), 2)
             self.assertEqual(len(intents), 1)
             self.assertGreaterEqual(len(receipts), 1)
-            self.assertTrue(any(str((p.get("gate") if isinstance(p.get("gate"), dict) else {}).get("reason") or "") == "tradeable_block" for p in prechecks))
-            self.assertTrue(any(str(r.get("status") or "") == "blocked" for r in (rep.get("receipts") if isinstance(rep.get("receipts"), list) else [])))
+            self.assertTrue(
+                any(
+                    str(
+                        (p.get("gate") if isinstance(p.get("gate"), dict) else {}).get("reason")
+                        or ""
+                    )
+                    == "tradeable_block"
+                    for p in prechecks
+                )
+            )
+            self.assertTrue(
+                any(
+                    str(r.get("status") or "") == "blocked"
+                    for r in (rep.get("receipts") if isinstance(rep.get("receipts"), list) else [])
+                )
+            )
         finally:
             svc.AUTOMATION.clear()
             svc.AUTOMATION.update(bak_auto)
@@ -436,7 +625,7 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
                 svc._binance_spot_skill_secret = orig_sec
 
     def test_live_toggle_requires_password(self) -> None:
-        import ml_trade_service as svc
+        import ml_trade_service as svc  # noqa: I001
         import os
 
         orig_gov = getattr(svc, "_governance_write_auth_ok", None)
@@ -449,7 +638,12 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
         try:
             svc._governance_write_auth_ok = lambda: True
             svc._is_local_request = lambda: True
-            svc._governance_require_approval_or_error = lambda data, trace_id, action: (True, "appr1", {}, 200)
+            svc._governance_require_approval_or_error = lambda data, trace_id, action: (
+                True,
+                "appr1",
+                {},
+                200,
+            )
             svc._rollback_snapshot_append = lambda **kwargs: {"id": "rb1"}
             svc._save_config = lambda: None
             svc.AUTOMATION["auto_trade_enabled"] = False
@@ -459,11 +653,30 @@ class TestWeb3MarketDigestAutomation(unittest.TestCase):
             os.environ["CONFIG_TOKEN"] = "ct1"
 
             c = svc.app.test_client()
-            r1 = c.post("/automation/config", json={"trace_id": "t1", "confirm_live": True, "auto_trade_enabled": True})
+            r1 = c.post(
+                "/automation/config",
+                json={"trace_id": "t1", "confirm_live": True, "auto_trade_enabled": True},
+            )
             self.assertEqual(int(r1.status_code), 400)
-            r2 = c.post("/automation/config", json={"trace_id": "t2", "confirm_live": True, "auto_trade_enabled": True, "auto_trade_enable_password": "bad"})
+            r2 = c.post(
+                "/automation/config",
+                json={
+                    "trace_id": "t2",
+                    "confirm_live": True,
+                    "auto_trade_enabled": True,
+                    "auto_trade_enable_password": "bad",
+                },
+            )
             self.assertEqual(int(r2.status_code), 400)
-            r3 = c.post("/automation/config", json={"trace_id": "t3", "confirm_live": True, "auto_trade_enabled": True, "auto_trade_enable_password": "pw1"})
+            r3 = c.post(
+                "/automation/config",
+                json={
+                    "trace_id": "t3",
+                    "confirm_live": True,
+                    "auto_trade_enabled": True,
+                    "auto_trade_enable_password": "pw1",
+                },
+            )
             self.assertEqual(int(r3.status_code), 200)
         finally:
             svc.AUTOMATION.clear()

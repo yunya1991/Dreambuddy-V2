@@ -6,6 +6,7 @@ DSH 训练数据源采集器在素材量大时，先经 41 BM25 召回预筛相�
     from adapters.fis_material_prefilter import prefiler_material
     hits = prefiler_material("资金面 矛盾", limit=5)
 """
+
 import json
 import os
 import subprocess
@@ -26,7 +27,9 @@ def prefiler_material(query: str, limit: int = 5) -> List[Dict[str, Any]]:
         proc = subprocess.run(
             [_FIS_CLI, _FIS_SCRIPT],
             input=json.dumps({"cmd": "recall", "query": str(query), "limit": int(limit)}),
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
             env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD")},
         )
         res = json.loads(proc.stdout or "{}")
@@ -55,7 +58,9 @@ def search_evidence(query: str, limit: int = 3) -> List[Dict[str, Any]]:
         proc = subprocess.run(
             [_FIS_CLI, _FIS_SCRIPT],
             input=json.dumps({"cmd": "search", "query": str(query), "limit": int(limit)}),
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
             env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD")},
         )
         res = json.loads(proc.stdout or "{}")
@@ -64,11 +69,13 @@ def search_evidence(query: str, limit: int = 3) -> List[Dict[str, Any]]:
         evidence = []
         for h in res.get("hits", []):
             src = h.get("source") or {}
-            evidence.append({
-                "path": src.get("path"),
-                "line": src.get("line", 0),
-                "score": h.get("score", 0.0),
-            })
+            evidence.append(
+                {
+                    "path": src.get("path"),
+                    "line": src.get("line", 0),
+                    "score": h.get("score", 0.0),
+                }
+            )
         return evidence
     except Exception:
         return []  # FAIL-OPEN

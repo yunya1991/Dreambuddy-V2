@@ -14,20 +14,20 @@ Dream Universal Gateway - 桥接层API服务器 v1.1
 端口: 3847
 """
 
-import sys
 import os
+import sys
 from pathlib import Path
 
 # 添加项目根目录到路径
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from bridge.api.dream_api_server import create_app
-from bridge.api.realtime_api import init_socketio
+from bridge.api.dream_api_server import create_app  # noqa: E402
+from bridge.api.realtime_api import init_socketio  # noqa: E402
 
 if __name__ == "__main__":
     app = create_app()
-    
+
     # 尝试初始化 WebSocket
     try:
         socketio = init_socketio(app)
@@ -37,12 +37,12 @@ if __name__ == "__main__":
         print("   Run: pip install flask-socketio")
         ws_enabled = False
         socketio = None
-    
+
     # 启动配置
     host = os.getenv("BRIDGE_HOST", "127.0.0.1")
     port = int(os.getenv("BRIDGE_PORT", "3847"))
     debug = os.getenv("BRIDGE_DEBUG", "false").lower() == "true"
-    
+
     print(f"""
 ╔══════════════════════════════════════════════════════════════╗
 ║        Dream Universal Gateway - Bridge API Server v1.1      ║
@@ -65,7 +65,7 @@ if __name__ == "__main__":
 ║  WebSocket:   ws://{host}:{port}/socket.io/                     ║
 ╚══════════════════════════════════════════════════════════════╝
     """)
-    
+
     if socketio:
         # 使用 SocketIO 运行 (allow_unsafe_werkzeug 用于生产环境)
         socketio.run(app, host=host, port=port, debug=debug, allow_unsafe_werkzeug=True)

@@ -12,6 +12,7 @@
   python trigger_passive_training.py --case-data case.json --frontend-url http://localhost:3001
   python trigger_passive_training.py --case-data case.json --no-rea
 """
+
 import argparse
 import json
 import os
@@ -66,10 +67,7 @@ def _prepare_record_params(wrapup_case: dict, result: dict) -> Optional[Dict[str
     ]
     content = " | ".join(content_lines)
 
-    tags = (
-        f"wrapup,收尾,认知闭环,完成闭环,{domain_tag},"
-        f"hermes反思,被动训练,在线辅导"
-    )
+    tags = f"wrapup,收尾,认知闭环,完成闭环,{domain_tag}," f"hermes反思,被动训练,在线辅导"
 
     return {
         "content": content,
@@ -100,6 +98,7 @@ def run_trigger(
     # 2. 创建编排器（FAIL-OPEN）
     try:
         from orchestrator_factory import create_orchestrator
+
         orchestrator = create_orchestrator(
             frontend_url=frontend_url,
             enable_rea=enable_rea,
@@ -125,6 +124,7 @@ def run_trigger(
     # 4. 若辅导启动：执行辅导循环 + 生成监控清单 + 准备 record 参数
     if result.get("status") == "coaching_started":
         from coaching_loop import CoachingSession
+
         session = CoachingSession(result.get("coaching_context", {}))
         # v0.2: 自动执行辅导循环（监控+纠正+评估）
         session.run_coaching_cycle()

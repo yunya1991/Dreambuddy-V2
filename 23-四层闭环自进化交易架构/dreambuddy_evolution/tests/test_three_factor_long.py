@@ -8,10 +8,9 @@
   - btc_regime == "STRONG" (BTC 与美股脱钩，独立强势)
   - etf_flow_norm > +0.1 (ETF 净流入)
 """
-import sys
-from pathlib import Path
 
-import pytest
+import sys  # noqa: I001
+from pathlib import Path
 
 # ---- path inject ----
 REPO = Path(__file__).resolve().parents[2]
@@ -27,6 +26,7 @@ class TestThreeFactorLongDetector:
         from dreambuddy_evolution.engines.three_factor_long import (
             ThreeFactorLongDetector,
         )
+
         detector = ThreeFactorLongDetector()
         result = detector.detect(
             pattern_factor=0.8,
@@ -40,6 +40,7 @@ class TestThreeFactorLongDetector:
         from dreambuddy_evolution.engines.three_factor_long import (
             ThreeFactorLongDetector,
         )
+
         detector = ThreeFactorLongDetector()
         result = detector.detect(
             pattern_factor=0.3,
@@ -53,6 +54,7 @@ class TestThreeFactorLongDetector:
         from dreambuddy_evolution.engines.three_factor_long import (
             ThreeFactorLongDetector,
         )
+
         detector = ThreeFactorLongDetector()
         result = detector.detect(
             pattern_factor=0.8,
@@ -66,6 +68,7 @@ class TestThreeFactorLongDetector:
         from dreambuddy_evolution.engines.three_factor_long import (
             ThreeFactorLongDetector,
         )
+
         detector = ThreeFactorLongDetector()
         result = detector.detect(
             pattern_factor=0.8,
@@ -79,6 +82,7 @@ class TestThreeFactorLongDetector:
         from dreambuddy_evolution.engines.three_factor_long import (
             ThreeFactorLongDetector,
         )
+
         detector = ThreeFactorLongDetector()
         # pattern_factor=None
         assert detector.detect(pattern_factor=None, btc_regime="STRONG", etf_flow_norm=0.3) is False
@@ -91,10 +95,11 @@ class TestThreeFactorLongDetector:
 
     def test_switch_disabled(self):
         """enable_three_factor_long=False → 不计算，返回 False"""
+        from dreambuddy_evolution.agi_config import get_switch, set_switch
         from dreambuddy_evolution.engines.three_factor_long import (
             ThreeFactorLongDetector,
         )
-        from dreambuddy_evolution.agi_config import set_switch, get_switch
+
         # 保存原值
         _orig = get_switch("enable_three_factor_long")
         try:
@@ -114,6 +119,7 @@ class TestThreeFactorLongDetector:
         from dreambuddy_evolution.engines.three_factor_long import (
             ThreeFactorLongDetector,
         )
+
         detector = ThreeFactorLongDetector()
         result = detector.detect(
             pattern_factor=0.5,
@@ -127,6 +133,7 @@ class TestThreeFactorLongDetector:
         from dreambuddy_evolution.engines.three_factor_long import (
             ThreeFactorLongDetector,
         )
+
         detector = ThreeFactorLongDetector()
         result = detector.detect(
             pattern_factor=0.8,

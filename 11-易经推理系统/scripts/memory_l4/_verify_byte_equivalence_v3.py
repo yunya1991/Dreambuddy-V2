@@ -34,8 +34,8 @@ from pathlib import Path
 _THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_THIS_DIR.parent.parent))  # 11-易经推理系统/
 
-from dataclasses import dataclass
-from typing import Tuple
+from dataclasses import dataclass  # noqa: E402
+from typing import Tuple  # noqa: E402
 
 
 # ============================================================
@@ -49,7 +49,7 @@ class ByteEqScenario:
     elder_grade: str
     core_confidence: float
     base_position_usdt: float  # 改造前（无方案 C）的目标仓位
-    max_position_cap: float   # 资金调控上限
+    max_position_cap: float  # 资金调控上限
 
 
 # 三组典型场景：BTC BLOCK（P1 拦截）/ COIN WEAK（弱共振）/ ETH STANDARD（标准放行）
@@ -60,7 +60,7 @@ SCENARIOS: Tuple[ByteEqScenario, ...] = (
         p1_out="BLOCK",
         elder_grade="ALIGN_BASIC",
         core_confidence=0.7955,
-        base_position_usdt=176.02,      # 对应实盘日志 max_position_usdt=176.02
+        base_position_usdt=176.02,  # 对应实盘日志 max_position_usdt=176.02
         max_position_cap=176.02,
     ),
     ByteEqScenario(
@@ -93,12 +93,11 @@ def compute_phase_c_disabled_multipliers(scenario: ByteEqScenario) -> dict:
     所有因子必须 == 1.0 或 == 0（block_new_open=False），保证零影响。
     """
     from scripts.memory_l4 import phase_c_constants as C
-    from scripts.memory_l4.three_layer_weighter import ThreeLayerWeighter
-    from scripts.memory_l4.elastic_gate_3l import ElasticGate3L
     from scripts.memory_l4.bcrm_continuity_observer import BCRMContinuityObserver
     from scripts.memory_l4.btc_self_reflex_valve import BTCSelfReflexValve
-    from scripts.memory_l4.winprob_engine import WinProbEngine
     from scripts.memory_l4.portfolio_risk_fuses import PortfolioRiskFuses
+    from scripts.memory_l4.three_layer_weighter import ThreeLayerWeighter
+    from scripts.memory_l4.winprob_engine import WinProbEngine
 
     results = {"name": scenario.name}
 
@@ -160,9 +159,7 @@ def compute_phase_c_disabled_multipliers(scenario: ByteEqScenario) -> dict:
     assert act.emergency_shutdown is False
 
     # --- 合成：方案 C 全关时对 base_position_usdt 的净影响 = 1.0
-    net_mult = (
-        eg3l_mult * lam * mult_wp * act.sl_mult_adj * act.tp_mult_adj
-    )
+    net_mult = eg3l_mult * lam * mult_wp * act.sl_mult_adj * act.tp_mult_adj
     results["phase_c_net_multiplier"] = net_mult
     return results
 

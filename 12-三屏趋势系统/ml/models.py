@@ -11,7 +11,8 @@ PyTorch LSTM: 用于时序特征的序列建模，有效缓解过拟合
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
+
 import numpy as np
 import pandas as pd
 
@@ -26,9 +27,13 @@ class MLModel(ABC):
         self.feature_names: List[str] = []
 
     @abstractmethod
-    def fit(self, X: pd.DataFrame, y: pd.Series,
-            X_val: Optional[pd.DataFrame] = None,
-            y_val: Optional[pd.Series] = None) -> "MLModel":
+    def fit(
+        self,
+        X: pd.DataFrame,
+        y: pd.Series,
+        X_val: Optional[pd.DataFrame] = None,
+        y_val: Optional[pd.Series] = None,
+    ) -> "MLModel":
         """训练模型"""
         pass
 
@@ -46,34 +51,38 @@ class MLModel(ABC):
         """特征重要性"""
         if self.model is None or not self.feature_names:
             return pd.Series()
-        if hasattr(self.model, 'feature_importances_'):
-            return pd.Series(
-                self.model.feature_importances_,
-                index=self.feature_names
-            ).sort_values(ascending=False)
+        if hasattr(self.model, "feature_importances_"):
+            return pd.Series(self.model.feature_importances_, index=self.feature_names).sort_values(
+                ascending=False
+            )
         return pd.Series()
 
     def save(self, path: str):
         """保存模型"""
         import pickle
-        with open(path, 'wb') as f:
-            pickle.dump({
-                'model': self.model,
-                'params': self.params,
-                'feature_names': self.feature_names,
-                'is_trained': self.is_trained,
-            }, f)
+
+        with open(path, "wb") as f:
+            pickle.dump(
+                {
+                    "model": self.model,
+                    "params": self.params,
+                    "feature_names": self.feature_names,
+                    "is_trained": self.is_trained,
+                },
+                f,
+            )
 
     @classmethod
     def load(cls, path: str) -> "MLModel":
         """加载模型"""
         import pickle
-        with open(path, 'rb') as f:
+
+        with open(path, "rb") as f:
             data = pickle.load(f)
-        instance = cls(params=data['params'])
-        instance.model = data['model']
-        instance.feature_names = data['feature_names']
-        instance.is_trained = data['is_trained']
+        instance = cls(params=data["params"])
+        instance.model = data["model"]
+        instance.feature_names = data["feature_names"]
+        instance.is_trained = data["is_trained"]
         return instance
 
 
@@ -86,22 +95,22 @@ class LightGBMModel(MLModel):
 
     def __init__(self, params: Optional[Dict] = None):
         default_params = {
-            'objective': 'binary',
-            'metric': 'binary_logloss',
-            'boosting_type': 'gbdt',
-            'num_leaves': 31,
-            'learning_rate': 0.05,
-            'feature_fraction': 0.8,
-            'bagging_fraction': 0.8,
-            'bagging_freq': 5,
-            'min_data_in_leaf': 20,
-            'max_depth': -1,
-            'lambda_l1': 0.0,
-            'lambda_l2': 0.0,
-            'verbose': -1,
-            'n_estimators': 200,
-            'early_stopping_rounds': 30,
-            'random_state': 42,
+            "objective": "binary",
+            "metric": "binary_logloss",
+            "boosting_type": "gbdt",
+            "num_leaves": 31,
+            "learning_rate": 0.05,
+            "feature_fraction": 0.8,
+            "bagging_fraction": 0.8,
+            "bagging_freq": 5,
+            "min_data_in_leaf": 20,
+            "max_depth": -1,
+            "lambda_l1": 0.0,
+            "lambda_l2": 0.0,
+            "verbose": -1,
+            "n_estimators": 200,
+            "early_stopping_rounds": 30,
+            "random_state": 42,
         }
         if params:
             default_params.update(params)
@@ -114,16 +123,16 @@ class LightGBMModel(MLModel):
 
         train_data = lgb.Dataset(X, label=y)
         valid_sets = [train_data]
-        valid_names = ['train']
+        valid_names = ["train"]
 
         if X_val is not None and y_val is not None:
             val_data = lgb.Dataset(X_val, label=y_val, reference=train_data)
             valid_sets.append(val_data)
-            valid_names.append('valid')
+            valid_names.append("valid")
 
-        n_estimators = self.params.pop('n_estimators', 200)
-        early_stopping = self.params.pop('early_stopping_rounds', None)
-        verbose = self.params.get('verbose', -1)
+        n_estimators = self.params.pop("n_estimators", 200)
+        early_stopping = self.params.pop("early_stopping_rounds", None)
+        verbose = self.params.get("verbose", -1)
 
         callbacks = []
         if early_stopping:
@@ -139,9 +148,9 @@ class LightGBMModel(MLModel):
         )
 
         self.is_trained = True
-        self.params['n_estimators'] = n_estimators
-        self.params['early_stopping_rounds'] = early_stopping
-        self.params['verbose'] = verbose
+        self.params["n_estimators"] = n_estimators
+        self.params["early_stopping_rounds"] = early_stopping
+        self.params["verbose"] = verbose
         return self
 
     def predict_proba(self, X):
@@ -158,20 +167,20 @@ class XGBoostModel(MLModel):
 
     def __init__(self, params: Optional[Dict] = None):
         default_params = {
-            'objective': 'binary:logistic',
-            'eval_metric': 'logloss',
-            'booster': 'gbtree',
-            'max_depth': 6,
-            'learning_rate': 0.05,
-            'n_estimators': 200,
-            'subsample': 0.8,
-            'colsample_bytree': 0.8,
-            'min_child_weight': 1,
-            'gamma': 0,
-            'reg_alpha': 0,
-            'reg_lambda': 1,
-            'random_state': 42,
-            'early_stopping_rounds': 30,
+            "objective": "binary:logistic",
+            "eval_metric": "logloss",
+            "booster": "gbtree",
+            "max_depth": 6,
+            "learning_rate": 0.05,
+            "n_estimators": 200,
+            "subsample": 0.8,
+            "colsample_bytree": 0.8,
+            "min_child_weight": 1,
+            "gamma": 0,
+            "reg_alpha": 0,
+            "reg_lambda": 1,
+            "random_state": 42,
+            "early_stopping_rounds": 30,
         }
         if params:
             default_params.update(params)
@@ -182,8 +191,8 @@ class XGBoostModel(MLModel):
 
         self.feature_names = list(X.columns)
 
-        n_estimators = self.params.pop('n_estimators', 200)
-        early_stopping = self.params.pop('early_stopping_rounds', None)
+        n_estimators = self.params.pop("n_estimators", 200)
+        early_stopping = self.params.pop("early_stopping_rounds", None)
 
         eval_set = [(X, y)]
         if X_val is not None and y_val is not None:
@@ -198,8 +207,8 @@ class XGBoostModel(MLModel):
         self.model.fit(X, y, eval_set=eval_set, verbose=False)
 
         self.is_trained = True
-        self.params['n_estimators'] = n_estimators
-        self.params['early_stopping_rounds'] = early_stopping
+        self.params["n_estimators"] = n_estimators
+        self.params["early_stopping_rounds"] = early_stopping
         return self
 
     def predict_proba(self, X):
@@ -216,10 +225,10 @@ class LogisticModel(MLModel):
 
     def __init__(self, params: Optional[Dict] = None):
         default_params = {
-            'C': 1.0,
-            'max_iter': 1000,
-            'solver': 'lbfgs',
-            'random_state': 42,
+            "C": 1.0,
+            "max_iter": 1000,
+            "solver": "lbfgs",
+            "random_state": 42,
         }
         if params:
             default_params.update(params)
@@ -249,32 +258,36 @@ class LogisticModel(MLModel):
     def feature_importance(self) -> pd.Series:
         if self.model is None or not self.feature_names:
             return pd.Series()
-        return pd.Series(
-            np.abs(self.model.coef_[0]),
-            index=self.feature_names
-        ).sort_values(ascending=False)
+        return pd.Series(np.abs(self.model.coef_[0]), index=self.feature_names).sort_values(
+            ascending=False
+        )
 
     def save(self, path: str):
         import pickle
-        with open(path, 'wb') as f:
-            pickle.dump({
-                'model': self.model,
-                'scaler': getattr(self, 'scaler', None),
-                'params': self.params,
-                'feature_names': self.feature_names,
-                'is_trained': self.is_trained,
-            }, f)
+
+        with open(path, "wb") as f:
+            pickle.dump(
+                {
+                    "model": self.model,
+                    "scaler": getattr(self, "scaler", None),
+                    "params": self.params,
+                    "feature_names": self.feature_names,
+                    "is_trained": self.is_trained,
+                },
+                f,
+            )
 
     @classmethod
     def load(cls, path: str) -> "LogisticModel":
         import pickle
-        with open(path, 'rb') as f:
+
+        with open(path, "rb") as f:
             data = pickle.load(f)
-        instance = cls(params=data['params'])
-        instance.model = data['model']
-        instance.scaler = data.get('scaler')
-        instance.feature_names = data['feature_names']
-        instance.is_trained = data['is_trained']
+        instance = cls(params=data["params"])
+        instance.model = data["model"]
+        instance.scaler = data.get("scaler")
+        instance.feature_names = data["feature_names"]
+        instance.is_trained = data["is_trained"]
         return instance
 
 
@@ -291,23 +304,22 @@ class LSTMModel(MLModel):
 
     def __init__(self, params: Optional[Dict] = None):
         default_params = {
-            'hidden_dim': 32,
-            'num_layers': 2,
-            'dropout': 0.5,
-            'weight_decay': 0.01,
-            'lr': 0.001,
-            'batch_size': 32,
-            'epochs': 15,
-            'patience': 5,
-            'seq_length': 20,
-            'pos_weight': True,
+            "hidden_dim": 32,
+            "num_layers": 2,
+            "dropout": 0.5,
+            "weight_decay": 0.01,
+            "lr": 0.001,
+            "batch_size": 32,
+            "epochs": 15,
+            "patience": 5,
+            "seq_length": 20,
+            "pos_weight": True,
         }
         if params:
             default_params.update(params)
         super().__init__(default_params)
 
     def _build_model(self, input_dim: int):
-        import torch
         import torch.nn as nn
 
         class LSTMNet(nn.Module):
@@ -315,16 +327,18 @@ class LSTMModel(MLModel):
                 super(LSTMNet, self).__init__()
                 self.input_dropout = nn.Dropout(dropout * 0.5)
                 self.lstm = nn.LSTM(
-                    input_dim, hidden_dim, num_layers,
+                    input_dim,
+                    hidden_dim,
+                    num_layers,
                     batch_first=True,
-                    dropout=dropout if num_layers > 1 else 0
+                    dropout=dropout if num_layers > 1 else 0,
                 )
                 self.fc = nn.Sequential(
                     nn.Linear(hidden_dim, 16),
                     nn.ReLU(),
                     nn.Dropout(dropout),
                     nn.Linear(16, 1),
-                    nn.Sigmoid()
+                    nn.Sigmoid(),
                 )
 
             def forward(self, x):
@@ -334,20 +348,17 @@ class LSTMModel(MLModel):
                 return self.fc(out).squeeze()
 
         return LSTMNet(
-            input_dim,
-            self.params['hidden_dim'],
-            self.params['num_layers'],
-            self.params['dropout']
+            input_dim, self.params["hidden_dim"], self.params["num_layers"], self.params["dropout"]
         )
 
     def _create_sequences(self, X: np.ndarray, y: Optional[np.ndarray] = None):
-        seq_len = self.params['seq_length']
+        seq_len = self.params["seq_length"]
         n = len(X)
         X_seqs = []
         y_seqs = []
 
         for i in range(seq_len, n):
-            X_seqs.append(X[i - seq_len:i])
+            X_seqs.append(X[i - seq_len : i])
             if y is not None:
                 y_seqs.append(y[i])
 
@@ -366,8 +377,9 @@ class LSTMModel(MLModel):
         self.feature_names = list(X.columns)
         input_dim = len(self.feature_names)
 
-        if not hasattr(self, 'scaler'):
+        if not hasattr(self, "scaler"):
             from sklearn.preprocessing import StandardScaler
+
             self.scaler = StandardScaler()
             X_scaled = self.scaler.fit_transform(X)
         else:
@@ -384,43 +396,32 @@ class LSTMModel(MLModel):
         self.model = self._build_model(input_dim)
 
         pos_weight_val = 1.0
-        if self.params.get('pos_weight'):
+        if self.params.get("pos_weight"):
             pos_count = max((y_train_seqs > 0.5).sum(), 1)
             neg_count = len(y_train_seqs) - pos_count
             pos_weight_val = neg_count / pos_count
 
-        criterion = nn.BCELoss()
+        criterion = nn.BCELoss()  # noqa: F841
         optimizer = optim.Adam(
-            self.model.parameters(),
-            lr=self.params['lr'],
-            weight_decay=self.params['weight_decay']
+            self.model.parameters(), lr=self.params["lr"], weight_decay=self.params["weight_decay"]
         )
 
         train_dataset = TensorDataset(
-            torch.FloatTensor(X_train_seqs),
-            torch.FloatTensor(y_train_seqs)
+            torch.FloatTensor(X_train_seqs), torch.FloatTensor(y_train_seqs)
         )
-        train_loader = DataLoader(
-            train_dataset,
-            batch_size=self.params['batch_size'],
-            shuffle=True
-        )
+        train_loader = DataLoader(train_dataset, batch_size=self.params["batch_size"], shuffle=True)
 
-        best_val_loss = float('inf')
+        best_val_loss = float("inf")
         patience_counter = 0
         best_state = None
         pos_weight_tensor = torch.tensor([pos_weight_val], dtype=torch.float32)
 
-        for epoch in range(self.params['epochs']):
+        for epoch in range(self.params["epochs"]):  # noqa: B007
             self.model.train()
             for X_batch, y_batch in train_loader:
                 optimizer.zero_grad()
                 outputs = self.model(X_batch)
-                weight = torch.where(
-                    y_batch > 0.5,
-                    pos_weight_tensor,
-                    torch.ones_like(y_batch)
-                )
+                weight = torch.where(y_batch > 0.5, pos_weight_tensor, torch.ones_like(y_batch))
                 loss = nn.functional.binary_cross_entropy(outputs, y_batch, weight=weight)
                 loss.backward()
                 optimizer.step()
@@ -438,7 +439,7 @@ class LSTMModel(MLModel):
                     best_state = {k: v.clone() for k, v in self.model.state_dict().items()}
                 else:
                     patience_counter += 1
-                    if patience_counter >= self.params['patience']:
+                    if patience_counter >= self.params["patience"]:
                         break
             else:
                 best_state = {k: v.clone() for k, v in self.model.state_dict().items()}
@@ -451,6 +452,7 @@ class LSTMModel(MLModel):
 
     def predict_proba(self, X):
         import torch
+
         if self.model is None:
             raise ValueError("模型未训练")
 
@@ -461,7 +463,7 @@ class LSTMModel(MLModel):
         with torch.no_grad():
             preds = self.model(torch.FloatTensor(X_seqs)).numpy()
 
-        seq_len = self.params['seq_length']
+        seq_len = self.params["seq_length"]
         full_preds = np.zeros(len(X))
         full_preds[:seq_len] = 0.5
         full_preds[seq_len:] = preds
@@ -472,42 +474,46 @@ class LSTMModel(MLModel):
 
     def save(self, path: str):
         import pickle
-        import torch
+
         state_dict = self.model.state_dict() if self.model else None
         state_dict_cpu = {}
         if state_dict:
             for k, v in state_dict.items():
                 state_dict_cpu[k] = v.cpu().clone()
 
-        with open(path, 'wb') as f:
-            pickle.dump({
-                'model_type': 'lstm',
-                'state_dict': state_dict_cpu,
-                'scaler': getattr(self, 'scaler', None),
-                'params': self.params,
-                'feature_names': self.feature_names,
-                'is_trained': self.is_trained,
-            }, f)
+        with open(path, "wb") as f:
+            pickle.dump(
+                {
+                    "model_type": "lstm",
+                    "state_dict": state_dict_cpu,
+                    "scaler": getattr(self, "scaler", None),
+                    "params": self.params,
+                    "feature_names": self.feature_names,
+                    "is_trained": self.is_trained,
+                },
+                f,
+            )
 
     @classmethod
     def load(cls, path: str) -> "LSTMModel":
         import pickle
-        with open(path, 'rb') as f:
-            data = pickle.load(f)
-        instance = cls(params=data['params'])
-        instance.feature_names = data['feature_names']
-        instance.is_trained = data['is_trained']
-        instance.scaler = data.get('scaler')
 
-        if data.get('state_dict') and instance.feature_names:
+        with open(path, "rb") as f:
+            data = pickle.load(f)
+        instance = cls(params=data["params"])
+        instance.feature_names = data["feature_names"]
+        instance.is_trained = data["is_trained"]
+        instance.scaler = data.get("scaler")
+
+        if data.get("state_dict") and instance.feature_names:
             input_dim = len(instance.feature_names)
             instance.model = instance._build_model(input_dim)
-            instance.model.load_state_dict(data['state_dict'])
+            instance.model.load_state_dict(data["state_dict"])
 
         return instance
 
 
-def create_model(model_type: str = 'lightgbm', params: Optional[Dict] = None) -> MLModel:
+def create_model(model_type: str = "lightgbm", params: Optional[Dict] = None) -> MLModel:
     """工厂函数：创建模型实例
 
     参数:
@@ -515,10 +521,10 @@ def create_model(model_type: str = 'lightgbm', params: Optional[Dict] = None) ->
         params: 模型参数
     """
     models = {
-        'lightgbm': LightGBMModel,
-        'xgboost': XGBoostModel,
-        'logistic': LogisticModel,
-        'lstm': LSTMModel,
+        "lightgbm": LightGBMModel,
+        "xgboost": XGBoostModel,
+        "logistic": LogisticModel,
+        "lstm": LSTMModel,
     }
     if model_type not in models:
         raise ValueError(f"未知模型类型: {model_type}, 可选: {list(models.keys())}")

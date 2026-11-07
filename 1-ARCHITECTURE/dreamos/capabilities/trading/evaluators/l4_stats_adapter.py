@@ -14,9 +14,8 @@ from __future__ import annotations
 
 import json
 import logging
-import sys
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -27,18 +26,20 @@ logger = logging.getLogger("l4_stats_adapter")
 # 数据类型
 # ============================================================
 
+
 @dataclass
 class SubsystemStats:
     """子系统在某个 regime 下的统计"""
-    subsystem_id: str           # C_S3_TREND / C_MARTIN_V15 / A_YJ_INFER
-    system_source: str         # three_screen / martin_v15 / yijing_inference
-    regime: str                # trend_up / trend_down / ranging_up / ...
+
+    subsystem_id: str  # C_S3_TREND / C_MARTIN_V15 / A_YJ_INFER
+    system_source: str  # three_screen / martin_v15 / yijing_inference
+    regime: str  # trend_up / trend_down / ranging_up / ...
     total_trades: int = 0
     winning_trades: int = 0
     win_rate: float = 0.0
     avg_pnl: float = 0.0
     total_pnl: float = 0.0
-    confidence: float = 0.0    # 基于样本量的置信度 (0-1)
+    confidence: float = 0.0  # 基于样本量的置信度 (0-1)
 
     def to_dict(self) -> dict:
         return {
@@ -88,6 +89,7 @@ for trend in ("BULL", "BEAR", "NEUTRAL"):
 # ============================================================
 # L4 案例库统计适配器
 # ============================================================
+
 
 class L4StatsAdapter:
     """L4 案例库统计适配器 — Level 1 粗筛
@@ -168,10 +170,14 @@ class L4StatsAdapter:
             if pnl_pct is None:
                 continue
 
-            groups[(regime, src)].append({
-                "pnl_pct": float(pnl_pct),
-                "is_correct": bool(is_correct) if is_correct is not None else (float(pnl_pct) > 0),
-            })
+            groups[(regime, src)].append(
+                {
+                    "pnl_pct": float(pnl_pct),
+                    "is_correct": (
+                        bool(is_correct) if is_correct is not None else (float(pnl_pct) > 0)
+                    ),
+                }
+            )
 
         # 计算统计
         result: Dict[str, Dict[str, SubsystemStats]] = defaultdict(dict)
@@ -220,6 +226,7 @@ class L4StatsAdapter:
             Dict[regime, Dict[subsystem_id, SubsystemStats]]
         """
         import time
+
         now = time.time()
         if self._cache is not None and not force_refresh and (now - self._cache_ts < 300):
             return self._cache

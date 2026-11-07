@@ -11,6 +11,7 @@ TDD 测试: P0 接入 RegimeGateSwitch + TrendFollowing + GridTrading + ShadowRL
   T7. ShadowRLTrainer 训练结果可通过 get_trained_policy 获取
   T8. run_symbol 返回结果中包含 regime 字段
 """
+
 from __future__ import annotations
 
 import sys
@@ -22,7 +23,7 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
+from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline  # noqa: E402
 
 
 def _make_market_data(symbol="BTC-USDT-SWAP"):
@@ -77,7 +78,9 @@ def test_regime_trend_adds_trend_following_path():
     paths = pipeline._discover_paths(r_out, market_data, "BTC-USDT-SWAP")
     sources = [p.get("source", "") for p in paths]
     # 应包含 trend_following 来源的路径
-    assert any("trend" in s for s in sources), f"TREND regime 应有 trend_following 路径，实际 sources={sources}"
+    assert any(
+        "trend" in s for s in sources
+    ), f"TREND regime 应有 trend_following 路径，实际 sources={sources}"
 
 
 # ====================================================================
@@ -109,6 +112,7 @@ def test_regime_crisis_returns_pause():
 
     # 直接 mock detect_regime 返回 CRISIS
     from unittest.mock import patch
+
     with patch.object(pipeline._regime_gate.__class__, "detect_regime", return_value="CRISIS"):
         r_out = {"R_up": 0.5, "R_down": 0.5, "R_up_mod": 0.5, "R_down_mod": 0.5}
         paths = pipeline._discover_paths(r_out, market_data, "BTC-USDT-SWAP")
@@ -134,16 +138,19 @@ def test_pipeline_trainer_can_train():
     pipeline = EvolutionPipeline()
     # 构造模拟样本
     import numpy as np
+
     np.random.seed(42)
     samples = []
-    for i in range(50):
-        samples.append({
-            "symbol": "BTC-USDT-SWAP",
-            "state": {"features": np.random.randn(5).tolist()},
-            "action": f"action_{np.random.randint(0, 3)}",
-            "reward": float(np.random.randn() * 0.1),
-            "next_state": {"features": np.random.randn(5).tolist()},
-        })
+    for i in range(50):  # noqa: B007
+        samples.append(
+            {
+                "symbol": "BTC-USDT-SWAP",
+                "state": {"features": np.random.randn(5).tolist()},
+                "action": f"action_{np.random.randint(0, 3)}",
+                "reward": float(np.random.randn() * 0.1),
+                "next_state": {"features": np.random.randn(5).tolist()},
+            }
+        )
     result = pipeline.shadow_rl_trainer.train_policy(samples, epochs=10, gene_id="test")
     assert result["status"] in ("trained", "degraded")
     if result["status"] == "trained":

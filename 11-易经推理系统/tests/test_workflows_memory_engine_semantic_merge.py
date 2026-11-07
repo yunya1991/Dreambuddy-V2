@@ -95,7 +95,9 @@ def test_memory_engine_default_semantic_retriever_prefers_vector_docs(tmp_path):
 def test_memory_engine_semantic_retriever_fallback_when_vector_docs_invalid(tmp_path):
     vector_dir = tmp_path / "vector"
     vector_dir.mkdir(parents=True, exist_ok=True)
-    (vector_dir / "manifest.json").write_text('{"version":"v0.1","docs_file":"docs.jsonl"}\n', encoding="utf-8")
+    (vector_dir / "manifest.json").write_text(
+        '{"version":"v0.1","docs_file":"docs.jsonl"}\n', encoding="utf-8"
+    )
     (vector_dir / "docs.jsonl").write_text("{not-json-line}\n", encoding="utf-8")
 
     memory = MemoryEngine(
@@ -118,7 +120,9 @@ def test_memory_engine_semantic_retriever_fallback_when_vector_docs_invalid(tmp_
 def test_memory_engine_semantic_retriever_reads_docs_file_from_manifest(tmp_path):
     vector_dir = tmp_path / "vector"
     vector_dir.mkdir(parents=True, exist_ok=True)
-    (vector_dir / "manifest.json").write_text('{"version":"v0.1","docs_file":"custom_docs.jsonl"}\n', encoding="utf-8")
+    (vector_dir / "manifest.json").write_text(
+        '{"version":"v0.1","docs_file":"custom_docs.jsonl"}\n', encoding="utf-8"
+    )
     (vector_dir / "custom_docs.jsonl").write_text(
         '{"id":"TC_MF:intent.question","kind":"case","text":"风险 空仓","refs":{"case_id":"TC_MF","field":"intent.question"}}\n',
         encoding="utf-8",
@@ -135,7 +139,13 @@ def test_memory_engine_retrieve_writes_audit_artifact_when_enabled(tmp_path):
     audit_dir = tmp_path / "audit"
     memory = MemoryEngine(
         audit_dir=audit_dir,
-        cases=[{"case_id": "TC_A", "intent": {"question": "风险 空仓"}, "review": {"summary": "", "lessons": []}}],
+        cases=[
+            {
+                "case_id": "TC_A",
+                "intent": {"question": "风险 空仓"},
+                "review": {"summary": "", "lessons": []},
+            }
+        ],
         distills=[],
     )
 
@@ -160,7 +170,13 @@ def test_memory_engine_retrieve_no_audit_artifact_by_default(tmp_path):
     audit_dir = tmp_path / "audit"
     memory = MemoryEngine(
         audit_dir=audit_dir,
-        cases=[{"case_id": "TC_A", "intent": {"question": "风险 空仓"}, "review": {"summary": "", "lessons": []}}],
+        cases=[
+            {
+                "case_id": "TC_A",
+                "intent": {"question": "风险 空仓"},
+                "review": {"summary": "", "lessons": []},
+            }
+        ],
         distills=[],
     )
 
@@ -174,7 +190,13 @@ def test_memory_engine_audit_rotation_keeps_latest_n(tmp_path):
     memory = MemoryEngine(
         audit_dir=audit_dir,
         max_audit_files_per_day=2,
-        cases=[{"case_id": "TC_A", "intent": {"question": "风险 空仓"}, "review": {"summary": "", "lessons": []}}],
+        cases=[
+            {
+                "case_id": "TC_A",
+                "intent": {"question": "风险 空仓"},
+                "review": {"summary": "", "lessons": []},
+            }
+        ],
         distills=[],
     )
 

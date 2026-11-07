@@ -5,6 +5,7 @@ Rule: for every task listed in spec tasks.md (11 numbered tasks) we give
 exists in the tests dir). Scale = 0 → 5. score = completed_match_count
 / total_tasks * 5 (ceil to 5 if everything perfect). Minimum 4.0 required.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -13,7 +14,6 @@ import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
 
 _TASK_ID_RE = re.compile(r"##\s*Task\s*(?P<id>\d+)")
 _STATUS_RE = re.compile(r"-\s*\*\*Status\*\*\s*:\s*`(?P<s>[^`]+)`")
@@ -26,7 +26,7 @@ def _parse_tasks(tasks_md_path: str | Path) -> List[Dict[str, Any]]:
     parts: List[tuple[int, str]] = []  # (task_id, chunk)
     for m in _TASK_ID_RE.finditer(text):
         task_id = int(m.group("id"))
-        parts.append((task_id, text[m.end():]))
+        parts.append((task_id, text[m.end() :]))
     # For each chunk, find the first Status line (the "- **Status**:" one
     # that appears at the beginning of each block).
     result: List[Dict[str, Any]] = []
@@ -72,8 +72,12 @@ def score_report_spec_vs_tests(
     tasks = _parse_tasks(tasks_md_path)
     total = len(tasks)
     if total == 0:
-        return {"score_0_to_5": 0.0, "summary_by_task_id": {},
-                 "total_tasks": 0, "errors": ["no tasks found"]}
+        return {
+            "score_0_to_5": 0.0,
+            "summary_by_task_id": {},
+            "total_tasks": 0,
+            "errors": ["no tasks found"],
+        }
     points = 0.0
     summary_by_task_id: Dict[int, Dict[str, Any]] = {}
     for t in tasks:
@@ -112,29 +116,22 @@ def score_report_spec_vs_tests(
         "threshold_required_ge": 4.0,
         "pass": bool(score_0_to_5 >= 4.0),
         "total_tasks": total,
-        "completed_count": sum(
-            1 for t in tasks if t["status"] == "completed"
-        ),
+        "completed_count": sum(1 for t in tasks if t["status"] == "completed"),
         "test_files_found_count": sum(
-            1 for tid in summary_by_task_id
-            if summary_by_task_id[tid]["test_file"]
+            1 for tid in summary_by_task_id if summary_by_task_id[tid]["test_file"]
         ),
         "points_total_max": total,
         "points_achieved": round(points, 3),
-        "summary_by_task_id": {k: summary_by_task_id[k]
-                                for k in sorted(summary_by_task_id)},
+        "summary_by_task_id": {k: summary_by_task_id[k] for k in sorted(summary_by_task_id)},
     }
 
 
 def run_cli(argv: Optional[List[str]] = None) -> int:
     p = argparse.ArgumentParser(description="Docs consistency rubric.")
-    p.add_argument("--tasks-md", required=True,
-                   help="Path to spec tasks.md (from spec mode).")
-    p.add_argument("--tests-dir", required=True,
-                   help="Path to TEE tests/ directory.")
+    p.add_argument("--tasks-md", required=True, help="Path to spec tasks.md (from spec mode).")
+    p.add_argument("--tests-dir", required=True, help="Path to TEE tests/ directory.")
     args = p.parse_args(argv)
-    out = score_report_spec_vs_tests(
-        tasks_md_path=args.tasks_md, tests_dir=args.tests_dir)
+    out = score_report_spec_vs_tests(tasks_md_path=args.tasks_md, tests_dir=args.tests_dir)
     print(json.dumps(out, ensure_ascii=False, indent=2))
     return 0 if out["pass"] else 2
 

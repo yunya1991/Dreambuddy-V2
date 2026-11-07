@@ -39,53 +39,48 @@ G层 - 图存储/压缩层
 - 执行模式识别
 """
 
-from .types import (
-    # 基础类型
-    NodeId,
-    EdgeId,
-    NodeStatus,
-    NodeType,
-    ComponentType,
-    CompressionStrategy,
-    NodeMetadata,
-    # G.B - Blueprint
-    BNode,
-    BEdge,
-    BlueprintGraph,
-    # G.A - Architecture
-    ANode,
-    AEdge,
-    ArchitectureGraph,
-    # G.C - Chronicle
-    CNode,
-    CEdge,
-    ChronicleGraph,
-    # 结果
-    CompressionResult,
-)
-
-from .compressor import (
-    ValueScorer,
-    GraphCompressor,
-)
-
-from .expander import (
-    GraphExpander,
-)
-
-from .manager import (
-    GraphStorageManager,
-)
-
 from .bridge import (
     GraphStorageBridge,
 )
-
+from .compressor import (
+    GraphCompressor,
+    ValueScorer,
+)
+from .expander import (
+    GraphExpander,
+)
 from .history import (
-    HistoryRecord,
-    SimilarTaskMatch,
     ExecutionPattern,
+    HistoryRecord,
     HistoryRetriever,
+    SimilarTaskMatch,
+)
+from .manager import (
+    GraphStorageManager,
+)
+from .types import (
+    AEdge,
+    # G.A - Architecture
+    ANode,
+    ArchitectureGraph,
+    BEdge,
+    BlueprintGraph,
+    # G.B - Blueprint
+    BNode,
+    CEdge,
+    ChronicleGraph,
+    # G.C - Chronicle
+    CNode,
+    ComponentType,
+    # 结果
+    CompressionResult,
+    CompressionStrategy,
+    EdgeId,
+    # 基础类型
+    NodeId,
+    NodeMetadata,
+    NodeStatus,
+    NodeType,
 )
 
 __all__ = [

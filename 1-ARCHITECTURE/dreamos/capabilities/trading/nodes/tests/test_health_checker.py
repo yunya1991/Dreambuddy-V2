@@ -3,20 +3,17 @@ L2 自检测: DreamOS HealthChecker 单测
 覆盖: 节点注册表完整性 / Budget 余量 / Reflector 异常率 / 整体状态汇总 / 认知库记录
 """
 
-import sys
+import sys  # noqa: I001
 from pathlib import Path
 from unittest.mock import MagicMock
-
-import pytest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[5]
 sys.path.insert(0, str(PROJECT_ROOT / "1-ARCHITECTURE"))
 
-from dreamos.core.compute.health_checker import (
+from dreamos.core.compute.health_checker import (  # noqa: E402
     DreamOSHealthChecker,
-    HealthStatus,
     HealthCheckResult,
-    SystemHealthReport,
+    HealthStatus,
     record_anomaly_to_cognitive,
 )
 
@@ -246,9 +243,7 @@ class TestRecordAnomaly:
 
     def test_record_without_fn(self):
         """未配置 record_fn 时仅日志（不抛异常）"""
-        anomaly = HealthCheckResult(
-            name="test", status=HealthStatus.DEGRADED, message="test"
-        )
+        anomaly = HealthCheckResult(name="test", status=HealthStatus.DEGRADED, message="test")
         # 不应抛异常
         record_anomaly_to_cognitive(anomaly, record_fn=None)
 

@@ -2,6 +2,7 @@
 
 注册模块的输入→输出列映射，verify_closed() 检测断链（L3 Fail-Fast）。
 """
+
 from __future__ import annotations
 
 import logging
@@ -28,6 +29,7 @@ class LineageTracker:
     ) -> None:
         """注册一个模块的输入→输出映射"""
         from datetime import datetime
+
         ts = timestamp or datetime.now().isoformat()
         rec = LineageRecord(
             timestamp=ts,

@@ -9,6 +9,7 @@
   - layer_tags 扁平化：List[LayerTag] → List[str]（取 tag["layer"]）
   - FAIL-OPEN：TDR 不可用时返回空列表
 """
+
 import os
 import sys
 from typing import List, Optional
@@ -22,7 +23,7 @@ for _p in [_THIS_DIR, os.path.dirname(_THIS_DIR), _SCRIPTS_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 
 class TDRTrainingDataProvider(TrainingDataProvider):
@@ -41,6 +42,7 @@ class TDRTrainingDataProvider(TrainingDataProvider):
         if self._tdr is None:
             try:
                 from case_bank_server import fetch_since, retrieve_cases
+
                 self._tdr = {"fetch_since": fetch_since, "retrieve": retrieve_cases}
             except Exception:
                 self._tdr = {}
@@ -83,10 +85,7 @@ class TDRTrainingDataProvider(TrainingDataProvider):
         """
         raw_tags = raw.get("layer_tags", [])
         if isinstance(raw_tags, list):
-            layer_tags = [
-                t.get("layer", "") if isinstance(t, dict) else str(t)
-                for t in raw_tags
-            ]
+            layer_tags = [t.get("layer", "") if isinstance(t, dict) else str(t) for t in raw_tags]
         else:
             layer_tags = []
 

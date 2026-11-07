@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
 """RuminationEngine 单测（P2-7 静息态反刍）"""
+
 import json
 import sys
 import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent))
 
-from rumination_engine import RuminationEngine, RuminationFinding
+from rumination_engine import RuminationEngine
 
 
 def _write_episode(dir_path: Path, ts: str, coin: str, regime: str, direction: str, pnl_pct: float):
     ep = {
-        "ts": ts, "inst_id": f"{coin}-USDT-SWAP", "coin": coin,
-        "regime": regime, "direction": direction, "pnl_pct": pnl_pct,
+        "ts": ts,
+        "inst_id": f"{coin}-USDT-SWAP",
+        "coin": coin,
+        "regime": regime,
+        "direction": direction,
+        "pnl_pct": pnl_pct,
     }
     fname = f"live_{coin}_{ts.replace(':', '').replace('-', '').replace('+', '')}.json"
     (dir_path / fname).write_text(json.dumps(ep), encoding="utf-8")
@@ -26,12 +32,14 @@ def test_ruminate_finds_deviation():
         now = datetime.now(timezone.utc)
         # BTC ranging LONG 4笔全亏（胜率0%，远低于基线）
         for i in range(4):
-            _write_episode(ep_dir, (now - timedelta(days=i)).isoformat(),
-                           "BTC", "ranging", "LONG", -1.0)
+            _write_episode(
+                ep_dir, (now - timedelta(days=i)).isoformat(), "BTC", "ranging", "LONG", -1.0
+            )
         # ETH trending SHORT 4笔全赢（胜率100%，远高于基线）
         for i in range(4):
-            _write_episode(ep_dir, (now - timedelta(days=i)).isoformat(),
-                           "ETH", "trending", "SHORT", 1.0)
+            _write_episode(
+                ep_dir, (now - timedelta(days=i)).isoformat(), "ETH", "trending", "SHORT", 1.0
+            )
 
         engine = RuminationEngine()
         findings = engine.ruminate(str(ep_dir), lookback_days=7)
@@ -69,11 +77,23 @@ def test_ruminate_filters_small_deviation():
         # 8 笔 BTC ranging LONG：4 赢 4 输 = 50% 胜率，基线也 50%，偏离≈0
         # 用不同小时偏移避免文件名冲突
         for i in range(4):
-            _write_episode(ep_dir, (now - timedelta(days=i, hours=1)).isoformat(),
-                           "BTC", "ranging", "LONG", 1.0)
+            _write_episode(
+                ep_dir,
+                (now - timedelta(days=i, hours=1)).isoformat(),
+                "BTC",
+                "ranging",
+                "LONG",
+                1.0,
+            )
         for i in range(4):
-            _write_episode(ep_dir, (now - timedelta(days=i, hours=2)).isoformat(),
-                           "BTC", "ranging", "LONG", -1.0)
+            _write_episode(
+                ep_dir,
+                (now - timedelta(days=i, hours=2)).isoformat(),
+                "BTC",
+                "ranging",
+                "LONG",
+                -1.0,
+            )
 
         engine = RuminationEngine()
         findings = engine.ruminate(str(ep_dir), lookback_days=7)
@@ -86,8 +106,9 @@ def test_finding_text_format():
         ep_dir = Path(d)
         now = datetime.now(timezone.utc)
         for i in range(4):
-            _write_episode(ep_dir, (now - timedelta(days=i)).isoformat(),
-                           "BTC", "ranging", "LONG", -1.0)
+            _write_episode(
+                ep_dir, (now - timedelta(days=i)).isoformat(), "BTC", "ranging", "LONG", -1.0
+            )
         engine = RuminationEngine()
         findings = engine.ruminate(str(ep_dir), lookback_days=7)
         assert len(findings) == 1

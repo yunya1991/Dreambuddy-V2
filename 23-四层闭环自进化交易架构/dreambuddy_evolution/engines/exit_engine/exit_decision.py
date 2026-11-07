@@ -8,6 +8,7 @@
   - tp_px: 建议的止盈价（0.0 表示不变）
   - confidence: 决策置信度 [0, 1]
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

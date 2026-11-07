@@ -9,10 +9,11 @@
 
 测试目录：scripts/memory_l4/tests/test_capital_control_integration.py
 """
+
 import sys
 import time
 from pathlib import Path
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -52,6 +53,7 @@ def _make_trader():
 # ① 初始化相关：组件懒加载 / 失败降级为 None
 # ================================================================
 
+
 class TestCapitalControlInit:
     """_init_capital_control：失败降级为 None，不抛出异常。"""
 
@@ -88,6 +90,7 @@ class TestCapitalControlInit:
 # ② _fetch_capital_advice：限流缓存 / 异常返回 None（fail-open）
 # ================================================================
 
+
 class TestFetchCapitalAdvice:
 
     def test_returns_none_when_component_none(self):
@@ -102,9 +105,13 @@ class TestFetchCapitalAdvice:
         t = _make_trader()
         fake_component = MagicMock()
         fake_advice = {
-            "allowed": True, "reason": "ok",
-            "max_position_usdt": 80.0, "current_avail": 400.0,
-            "margin_pressure": "LOW", "used_pct": 10.0, "total_eq": 1200.0,
+            "allowed": True,
+            "reason": "ok",
+            "max_position_usdt": 80.0,
+            "current_avail": 400.0,
+            "margin_pressure": "LOW",
+            "used_pct": 10.0,
+            "total_eq": 1200.0,
         }
         fake_component.get_capital_advice.return_value = fake_advice
         t._capital_ctrl = fake_component
@@ -120,9 +127,15 @@ class TestFetchCapitalAdvice:
         """force=True → 即便 TTL 内也调用 real API。"""
         t = _make_trader()
         fake_component = MagicMock()
-        advice_1 = {"allowed": True, "reason": "ok",
-                    "max_position_usdt": 80.0, "current_avail": 400.0,
-                    "margin_pressure": "LOW", "used_pct": 10.0, "total_eq": 1200.0}
+        advice_1 = {
+            "allowed": True,
+            "reason": "ok",
+            "max_position_usdt": 80.0,
+            "current_avail": 400.0,
+            "margin_pressure": "LOW",
+            "used_pct": 10.0,
+            "total_eq": 1200.0,
+        }
         advice_2 = dict(advice_1)
         advice_2["max_position_usdt"] = 120.0
         fake_component.get_capital_advice.return_value = advice_2
@@ -151,15 +164,14 @@ class TestFetchCapitalAdvice:
 # ③ _apply_capital_control_to_position：allowed / max_position 叠加
 # ================================================================
 
+
 class TestApplyCapitalControl:
 
     def test_none_advice_passthrough(self):
         """advice=None → 仓位原样返回，不改动。"""
         t = _make_trader()
         t._capital_ctrl = None
-        final_pos, log = PollingTrader._apply_capital_control_to_position(
-            t, "BTC", 150.0, 1200.0
-        )
+        final_pos, log = PollingTrader._apply_capital_control_to_position(t, "BTC", 150.0, 1200.0)
         assert final_pos == 150.0
         assert log == ""
 
@@ -177,9 +189,7 @@ class TestApplyCapitalControl:
             "total_eq": 400.0,
         }
         t._capital_ctrl = fake_component
-        final_pos, log = PollingTrader._apply_capital_control_to_position(
-            t, "BTC", 150.0, 1200.0
-        )
+        final_pos, log = PollingTrader._apply_capital_control_to_position(t, "BTC", 150.0, 1200.0)
         assert final_pos == 0.0
         assert "HIGH" in log
         # WARN 日志被调用（前置约束拦截）
@@ -192,14 +202,16 @@ class TestApplyCapitalControl:
         t = _make_trader()
         fake_component = MagicMock()
         fake_component.get_capital_advice.return_value = {
-            "allowed": True, "reason": "ok",
-            "max_position_usdt": 50.0, "current_avail": 250.0,
-            "margin_pressure": "MEDIUM", "used_pct": 60.0, "total_eq": 1200.0,
+            "allowed": True,
+            "reason": "ok",
+            "max_position_usdt": 50.0,
+            "current_avail": 250.0,
+            "margin_pressure": "MEDIUM",
+            "used_pct": 60.0,
+            "total_eq": 1200.0,
         }
         t._capital_ctrl = fake_component
-        final_pos, log = PollingTrader._apply_capital_control_to_position(
-            t, "UNI", 200.0, 1200.0
-        )
+        final_pos, log = PollingTrader._apply_capital_control_to_position(t, "UNI", 200.0, 1200.0)
         assert final_pos == 150.0  # 50U保证金 × 3x杠杆 = 150U名义
         assert "50" in log
         # 有日志且含 "仓位上限叠加缩仓"
@@ -211,14 +223,16 @@ class TestApplyCapitalControl:
         t = _make_trader()
         fake_component = MagicMock()
         fake_component.get_capital_advice.return_value = {
-            "allowed": True, "reason": "ok",
-            "max_position_usdt": 200.0, "current_avail": 1000.0,
-            "margin_pressure": "LOW", "used_pct": 5.0, "total_eq": 1500.0,
+            "allowed": True,
+            "reason": "ok",
+            "max_position_usdt": 200.0,
+            "current_avail": 1000.0,
+            "margin_pressure": "LOW",
+            "used_pct": 5.0,
+            "total_eq": 1500.0,
         }
         t._capital_ctrl = fake_component
-        final_pos, log = PollingTrader._apply_capital_control_to_position(
-            t, "ETH", 150.0, 1500.0
-        )
+        final_pos, log = PollingTrader._apply_capital_control_to_position(t, "ETH", 150.0, 1500.0)
         assert final_pos == 150.0
         assert "LOW" in log
         calls = str(t._log.call_args_list)
@@ -230,14 +244,16 @@ class TestApplyCapitalControl:
         t = _make_trader()
         fake_component = MagicMock()
         fake_component.get_capital_advice.return_value = {
-            "allowed": True, "reason": "ok",
-            "max_position_usdt": 100.0, "current_avail": 800.0,
-            "margin_pressure": "LOW", "used_pct": 0.0, "total_eq": 1500.0,
+            "allowed": True,
+            "reason": "ok",
+            "max_position_usdt": 100.0,
+            "current_avail": 800.0,
+            "margin_pressure": "LOW",
+            "used_pct": 0.0,
+            "total_eq": 1500.0,
         }
         t._capital_ctrl = fake_component
-        final_pos, log = PollingTrader._apply_capital_control_to_position(
-            t, "BTC", 0.0, 1500.0
-        )
+        final_pos, log = PollingTrader._apply_capital_control_to_position(t, "BTC", 0.0, 1500.0)
         assert final_pos == 0.0
 
     def test_fail_open_exception_returns_original(self):
@@ -246,9 +262,7 @@ class TestApplyCapitalControl:
         fake_component = MagicMock()
         fake_component.get_capital_advice.side_effect = RuntimeError("network down")
         t._capital_ctrl = fake_component
-        final_pos, log = PollingTrader._apply_capital_control_to_position(
-            t, "BTC", 150.0, 1500.0
-        )
+        final_pos, log = PollingTrader._apply_capital_control_to_position(t, "BTC", 150.0, 1500.0)
         assert final_pos == 150.0
         assert log == ""
 
@@ -256,6 +270,7 @@ class TestApplyCapitalControl:
 # ================================================================
 # ④ 业务集成点：_open_position 中调用顺序 & return 拦截
 # ================================================================
+
 
 class TestOpenPositionIntegration:
     """_open_position 调用路径（_apply_capital_control_to_position 返回 0 时必须 return）。
@@ -268,16 +283,18 @@ class TestOpenPositionIntegration:
         t = _make_trader()
         fake_component = MagicMock()
         fake_component.get_capital_advice.return_value = {
-            "allowed": False, "reason": "high_pressure_OPEN_blocked",
-            "max_position_usdt": 0.0, "current_avail": 10.0,
-            "margin_pressure": "HIGH", "used_pct": 98.0, "total_eq": 500.0,
+            "allowed": False,
+            "reason": "high_pressure_OPEN_blocked",
+            "max_position_usdt": 0.0,
+            "current_avail": 10.0,
+            "margin_pressure": "HIGH",
+            "used_pct": 98.0,
+            "total_eq": 500.0,
         }
         t._capital_ctrl = fake_component
 
         # 先调一次 apply 以模拟被拦截返回 0
-        final_pos, _log = PollingTrader._apply_capital_control_to_position(
-            t, "BTC", 150.0, 500.0
-        )
+        final_pos, _log = PollingTrader._apply_capital_control_to_position(t, "BTC", 150.0, 500.0)
         assert final_pos == 0.0
 
         # 模拟 _open_position 的关键分支：position_usdt<=0 时 return

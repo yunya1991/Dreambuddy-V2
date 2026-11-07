@@ -8,15 +8,14 @@
 输出：
     runtime/five_domain_optimal_weights.json
 """
+
 from __future__ import annotations
 
 import json
-import os
-import sqlite3
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import optuna
@@ -32,12 +31,12 @@ if str(_HERE) not in sys.path:
 
 from five_domain_feature_computer import FiveDomainFeatureComputer  # noqa: E402
 from five_domain_ic_analysis import (  # noqa: E402
-    _get_daily_snapshots,
-    _fetch_yf_returns,
-    _build_snapshot_for_date,
-    ASSET_RETURN_MAP,
     _DB_PATH,
+    ASSET_RETURN_MAP,
+    _fetch_yf_returns,
+    _get_daily_snapshots,
 )
+
 _DB = _DB_PATH
 
 
@@ -151,7 +150,8 @@ def precompute_domain_scores() -> Dict[str, Dict[str, Dict[str, float]]]:
             filled = {}
             for cls, cd in coin_data.items():
                 fcd = _fill_proxy_fields(
-                    cd, cls_prices.get(cls, {}),
+                    cd,
+                    cls_prices.get(cls, {}),
                     cls_price_history.get(cls, []),
                     date_str,
                 )
@@ -245,7 +245,10 @@ def compute_walkforward_sharpe(
         daily_rets = []
         for d in val_dates:
             dims = scores[d].get(asset_class, {})
-            total = sum(w[i] * dims.get(dim, 50.0) for i, dim in enumerate(("dao", "tian", "di", "jiang", "fa")))
+            total = sum(
+                w[i] * dims.get(dim, 50.0)
+                for i, dim in enumerate(("dao", "tian", "di", "jiang", "fa"))
+            )
             pos = score_to_position(total)
             ret = returns.get(d, 0.0)
             daily_rets.append(pos * ret)
@@ -285,7 +288,9 @@ def compute_max_drawdown(
     daily_rets = []
     for d in all_dates:
         dims = scores[d].get(asset_class, {})
-        total = sum(w[i] * dims.get(dim, 50.0) for i, dim in enumerate(("dao", "tian", "di", "jiang", "fa")))
+        total = sum(
+            w[i] * dims.get(dim, 50.0) for i, dim in enumerate(("dao", "tian", "di", "jiang", "fa"))
+        )
         pos = score_to_position(total)
         ret = returns.get(d, 0.0)
         daily_rets.append(pos * ret)
@@ -379,8 +384,7 @@ class FiveDomainWeightOptimizer:
     def _compute_baseline(self) -> float:
         """等权基线 Sharpe。"""
         baseline = {"dao": 0.2, "tian": 0.2, "di": 0.2, "jiang": 0.2, "fa": 0.2}
-        return compute_walkforward_sharpe(
-            self.scores, self.returns, baseline, self.asset_class)
+        return compute_walkforward_sharpe(self.scores, self.returns, baseline, self.asset_class)
 
     def optimize(self) -> Dict[str, Any]:
         print(f"[OPT] 资产类: {self.asset_class}")
@@ -415,8 +419,7 @@ class FiveDomainWeightOptimizer:
         total = sum(weights.values())
         weights = {k: v / total for k, v in weights.items()}
 
-        return compute_walkforward_sharpe(
-            self.scores, self.returns, weights, self.asset_class)
+        return compute_walkforward_sharpe(self.scores, self.returns, weights, self.asset_class)
 
     @staticmethod
     def _normalize_weights(params: Dict[str, float]) -> Dict[str, float]:
@@ -469,15 +472,21 @@ def main() -> None:
         result["sobol_sensitivity"] = sobol
 
         results[cls] = result
-        print(f"[OPT] {cls} 完成: 基线={result['baseline_sharpe']:.4f} "
-              f"最优={result['best_sharpe']:.4f} "
-              f"提升={result['sharpe_improvement']:+.4f}")
+        print(
+            f"[OPT] {cls} 完成: 基线={result['baseline_sharpe']:.4f} "
+            f"最优={result['best_sharpe']:.4f} "
+            f"提升={result['sharpe_improvement']:+.4f}"
+        )
         print(f"      权重: {result['best_weights']}")
-        print(f"      回撤: 基线={baseline_mdd:.2%} 最优={best_mdd:.2%} "
-              f"比率={mdd_ratio:.3f} {'✅' if mdd_pass else '❌'}")
-        print(f"      Sobol': 均值变化={sobol['mean_change_pct']:.1f}% "
-              f"最大变化={sobol['max_change_pct']:.1f}% "
-              f"{'✅' if sobol['pass'] else '❌'}")
+        print(
+            f"      回撤: 基线={baseline_mdd:.2%} 最优={best_mdd:.2%} "
+            f"比率={mdd_ratio:.3f} {'✅' if mdd_pass else '❌'}"
+        )
+        print(
+            f"      Sobol': 均值变化={sobol['mean_change_pct']:.1f}% "
+            f"最大变化={sobol['max_change_pct']:.1f}% "
+            f"{'✅' if sobol['pass'] else '❌'}"
+        )
 
     # 保存
     output = {

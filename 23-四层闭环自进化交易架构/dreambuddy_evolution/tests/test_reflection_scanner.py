@@ -1,28 +1,26 @@
 """Test ReflectionScanner class prior inheritance (P1a) and asset class mapper."""
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import json
 import sys
 from pathlib import Path
-
-import pytest
 
 # Ensure package importable
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from dreambuddy_evolution.engines.asset_class_mapper import (
+from dreambuddy_evolution.engines.asset_class_mapper import (  # noqa: E402
+    CRYPTO_ALT,
+    CRYPTO_DEFI,
+    CRYPTO_LAYER1,
+    CRYPTO_MAJOR,
+    CRYPTO_MEME,
+    PRECIOUS_METAL,
+    US_STOCK,
     get_asset_class,
     get_coarse_class,
-    get_all_classified_coins,
-    CRYPTO_MAJOR,
-    CRYPTO_LAYER1,
-    CRYPTO_DEFI,
-    CRYPTO_MEME,
-    CRYPTO_ALT,
-    US_STOCK,
-    PRECIOUS_METAL,
 )
 
 
@@ -62,13 +60,74 @@ class TestAssetClassMapper:
     def test_all_scan_coins_classified(self):
         """Every coin in SCAN_COINS must be classified (regression guard)."""
         SCAN_COINS = [
-            "UNI", "PUMP", "HYPE", "AAVE", "SOL", "CRCL", "ETH", "BTC", "ZEC", "ARB",
-            "MU", "SKHYNIX", "XAU", "XAG", "GOOGL", "NVDA", "AMZN", "OKB", "SNDK", "SPCX",
-            "COIN", "BMNR", "MSTR", "BNB", "LINK", "DOGE", "XRP", "ADA", "DOT", "AVAX",
-            "MATIC", "LTC", "TRX", "ATOM", "NEAR", "APT", "OP", "INJ", "PEPE", "WIF",
-            "SHIB", "TON", "SUI", "FIL", "ETC", "IMX", "SEI", "TIA", "JUP", "RUNE",
-            "VET", "FTM", "ALGO", "HBAR", "ICP", "EGLD", "XTZ", "XLM", "EOS",
-            "CRO", "QNT", "GRT", "SNX", "COMP", "MKR", "DYDX", "GMX", "RDNT",
+            "UNI",
+            "PUMP",
+            "HYPE",
+            "AAVE",
+            "SOL",
+            "CRCL",
+            "ETH",
+            "BTC",
+            "ZEC",
+            "ARB",
+            "MU",
+            "SKHYNIX",
+            "XAU",
+            "XAG",
+            "GOOGL",
+            "NVDA",
+            "AMZN",
+            "OKB",
+            "SNDK",
+            "SPCX",
+            "COIN",
+            "BMNR",
+            "MSTR",
+            "BNB",
+            "LINK",
+            "DOGE",
+            "XRP",
+            "ADA",
+            "DOT",
+            "AVAX",
+            "MATIC",
+            "LTC",
+            "TRX",
+            "ATOM",
+            "NEAR",
+            "APT",
+            "OP",
+            "INJ",
+            "PEPE",
+            "WIF",
+            "SHIB",
+            "TON",
+            "SUI",
+            "FIL",
+            "ETC",
+            "IMX",
+            "SEI",
+            "TIA",
+            "JUP",
+            "RUNE",
+            "VET",
+            "FTM",
+            "ALGO",
+            "HBAR",
+            "ICP",
+            "EGLD",
+            "XTZ",
+            "XLM",
+            "EOS",
+            "CRO",
+            "QNT",
+            "GRT",
+            "SNX",
+            "COMP",
+            "MKR",
+            "DYDX",
+            "GMX",
+            "RDNT",
         ]
         missing = [c for c in SCAN_COINS if get_asset_class(c) is None]
         assert not missing, f"Unclassified coins: {missing}"
@@ -88,6 +147,7 @@ class TestReflectionScannerClassPrior:
     def test_get_coin_stats_no_trades_returns_default(self):
         """Unknown coin with no class prior returns default values."""
         from dreambuddy_evolution.engines.reflection_scanner import ReflectionScanner
+
         rs = ReflectionScanner(project_root="/tmp")
         # Force empty cache
         rs._cache = {}
@@ -101,6 +161,7 @@ class TestReflectionScannerClassPrior:
     def test_class_prior_ri_capped_at_065(self):
         """Class prior reflection_ri should be capped at 0.65."""
         from dreambuddy_evolution.engines.reflection_scanner import ReflectionScanner
+
         rs = ReflectionScanner(project_root="/tmp")
         # Manually set high-ri class prior
         rs._class_priors = {
@@ -127,6 +188,7 @@ class TestReflectionScannerClassPrior:
     def test_real_trades_coin_not_prior(self):
         """Coin with trade records should never have is_prior=True."""
         from dreambuddy_evolution.engines.reflection_scanner import ReflectionScanner
+
         rs = ReflectionScanner(project_root="/tmp")
         # Set cache with a real trade coin
         rs._cache = {
@@ -150,6 +212,7 @@ class TestReflectionScannerClassPrior:
     def test_fail_open_on_missing_class_priors(self):
         """If _class_priors is missing or broken, get_coin_stats returns default."""
         from dreambuddy_evolution.engines.reflection_scanner import ReflectionScanner
+
         rs = ReflectionScanner(project_root="/tmp")
         rs._cache = {}
         rs._cache_ts = float("inf")

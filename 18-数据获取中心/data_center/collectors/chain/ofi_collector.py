@@ -15,6 +15,7 @@ OFI 计算:
 
 FAIL-OPEN 铁律: API 异常 → 返回空列表不阻塞，不抛错。
 """
+
 from __future__ import annotations
 
 import logging
@@ -48,9 +49,7 @@ class OfiCollector(BaseCollector):
     def __init__(self, config: dict | None = None):
         super().__init__(config)
         # snapshot 间隔配置，默认 60 秒 (1min)
-        self.snapshot_interval_sec: int = int(
-            self.config.get("snapshot_interval_sec", 60)
-        )
+        self.snapshot_interval_sec: int = int(self.config.get("snapshot_interval_sec", 60))
         self._depth: int = int(self.config.get("depth", _DEFAULT_DEPTH))
 
     def is_available(self) -> bool:
@@ -87,7 +86,10 @@ class OfiCollector(BaseCollector):
                 last_err = e
                 logger.debug(
                     "OfiCollector %s 获取 %s 失败 (%s: %s), 尝试下一个交易所",
-                    ex_id, symbol, type(e).__name__, str(e)[:120],
+                    ex_id,
+                    symbol,
+                    type(e).__name__,
+                    str(e)[:120],
                 )
                 continue
 
@@ -95,21 +97,15 @@ class OfiCollector(BaseCollector):
         logger.debug("OfiCollector all exchanges failed: %s", last_err)
         return []
 
-    def _build_records(
-        self, order_book: dict, symbol: str, exchange_id: str
-    ) -> list[DataRecord]:
+    def _build_records(self, order_book: dict, symbol: str, exchange_id: str) -> list[DataRecord]:
         """从订单簿构建 DataRecord。"""
         try:
             bids = order_book.get("bids", [])
             asks = order_book.get("asks", [])
 
             # sum quantities for each side
-            bid_volume = sum(
-                float(qty) for _, qty in bids[: self._depth] if qty is not None
-            )
-            ask_volume = sum(
-                float(qty) for _, qty in asks[: self._depth] if qty is not None
-            )
+            bid_volume = sum(float(qty) for _, qty in bids[: self._depth] if qty is not None)
+            ask_volume = sum(float(qty) for _, qty in asks[: self._depth] if qty is not None)
             ofi_value = bid_volume - ask_volume
 
             rec = DataRecord(

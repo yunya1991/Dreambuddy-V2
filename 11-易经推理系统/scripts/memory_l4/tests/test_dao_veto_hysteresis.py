@@ -17,11 +17,10 @@ FREEZE/ALLOW 来回切换（dao=39→FREEZE, dao=40→正常）。
   4. 38 ≤ dao ≤ 43 且上轮已冻结 → dao_jv_fou_jue=True
   5. FAIL-OPEN：scorer 新建时 _dao_veto_frozen 默认为 False
 """
-import sys
+
+import sys  # noqa: I001
 from pathlib import Path
 from typing import Dict
-
-import pytest
 
 ROOT = Path(__file__).resolve().parents[3]  # 11-易经推理系统
 sys.path.insert(0, str(ROOT))
@@ -33,6 +32,7 @@ def _try_import():
         from scripts.memory_l4.five_domain_scorer import (  # noqa: E402
             FiveDomainHeuristicScorer,
         )
+
         sentinel["loaded"] = True
         sentinel["Scorer"] = FiveDomainHeuristicScorer
     except Exception as exc:  # noqa: BLE001

@@ -21,6 +21,7 @@ SPEC: SPEC-ds4架构借鉴与系统增强.md §3.2 Dimension 3
   HC-DS4-04: 降级决策必须可观测（日志记录级别和原因）
   HC-DS4-05: 降级到规则基线时，决策质量不得低于当前四层闭环基线
 """
+
 from __future__ import annotations
 
 import logging
@@ -36,20 +37,20 @@ class DegradationLevel(IntEnum):
     使用 IntEnum 自带的 .name 属性获取级别名称（如 "FULL"）.
     """
 
-    FULL = 0          # 完整推理
-    SIMPLIFIED = 1    # 简化推理
-    RULE_BASELINE = 2 # 规则基线
-    FAIL_OPEN = 3     # 中性兜底
+    FULL = 0  # 完整推理
+    SIMPLIFIED = 1  # 简化推理
+    RULE_BASELINE = 2  # 规则基线
+    FAIL_OPEN = 3  # 中性兜底
 
 
 class ResourceAwareDegrader:
     """资源感知的主动降级阶梯."""
 
     # 阈值配置
-    SAMPLE_THRESHOLD_SIMPLIFIED = 2000   # < 2000 → 简化
+    SAMPLE_THRESHOLD_SIMPLIFIED = 2000  # < 2000 → 简化
     SAMPLE_THRESHOLD_RULE_BASELINE = 100  # < 100 → 规则基线
-    INFERENCE_TIMEOUT_MS = 5000          # > 5000ms → FAIL-OPEN
-    SYSTEM_LOAD_THRESHOLD = 0.9          # > 0.9 → FAIL-OPEN
+    INFERENCE_TIMEOUT_MS = 5000  # > 5000ms → FAIL-OPEN
+    SYSTEM_LOAD_THRESHOLD = 0.9  # > 0.9 → FAIL-OPEN
 
     # 路径来源分类
     DEEP_REASONING_SOURCES = {"deep_reasoning", "path_integral", "neural_sde"}
@@ -89,7 +90,9 @@ class ResourceAwareDegrader:
         if isinstance(sample_count, (int, float)):
             if sample_count < self.SAMPLE_THRESHOLD_RULE_BASELINE:
                 level = max(level, DegradationLevel.RULE_BASELINE)
-                reasons.append(f"sample_count={sample_count} < {self.SAMPLE_THRESHOLD_RULE_BASELINE}")
+                reasons.append(
+                    f"sample_count={sample_count} < {self.SAMPLE_THRESHOLD_RULE_BASELINE}"
+                )
             elif sample_count < self.SAMPLE_THRESHOLD_SIMPLIFIED:
                 level = max(level, DegradationLevel.SIMPLIFIED)
                 reasons.append(f"sample_count={sample_count} < {self.SAMPLE_THRESHOLD_SIMPLIFIED}")
@@ -116,11 +119,9 @@ class ResourceAwareDegrader:
 
         # HC-DS4-04: 降级决策可观测
         if level > DegradationLevel.FULL:
-            logger.info("[DS4-D3] degradation → level=%s reason=%s",
-                        level.name, reason)
+            logger.info("[DS4-D3] degradation → level=%s reason=%s", level.name, reason)
         else:
-            logger.debug("[DS4-D3] level=%s reason=%s",
-                         level.name, reason)
+            logger.debug("[DS4-D3] level=%s reason=%s", level.name, reason)
 
         return {"level": level, "reason": reason}
 

@@ -38,11 +38,7 @@ def compute_trend_velocity(events: List[CleanedEvent]) -> Dict:
 
     # 速度稳定性（最近 3 个速度的 stdev 倒数）
     recent_v = velocities[-3:] if len(velocities) >= 3 else velocities
-    v_confidence = (
-        1.0 / (1.0 + statistics.stdev(recent_v))
-        if len(recent_v) >= 2
-        else 0.5
-    )
+    v_confidence = 1.0 / (1.0 + statistics.stdev(recent_v)) if len(recent_v) >= 2 else 0.5
 
     # 变化点检测
     eps = 0.001
@@ -58,9 +54,7 @@ def compute_trend_velocity(events: List[CleanedEvent]) -> Dict:
     }
 
 
-def _detect_change_point(
-    v: float, a: float, velocities: List[float], eps: float
-) -> str:
+def _detect_change_point(v: float, a: float, velocities: List[float], eps: float) -> str:
     """检测趋势变化点。"""
     if abs(v) < eps and abs(a) < eps:
         return "STABLE"

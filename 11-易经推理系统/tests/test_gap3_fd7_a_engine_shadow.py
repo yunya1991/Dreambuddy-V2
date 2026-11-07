@@ -7,16 +7,12 @@ A 级 shadow 审计输入，使 fd_A_dao_mean 和 fd_A_tian_mean 非 0。
 
 关键约束：只影响 Shadow 审计（只读），绝对不修改 result / 不影响生产注入红线。
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import json
-import os
 import sys
-import tempfile
 from pathlib import Path
-from typing import Any, Dict, Optional
-
-import pytest
 
 THIS_DIR = Path(__file__).resolve().parent
 _REPO = THIS_DIR.parent
@@ -34,6 +30,7 @@ if str(_FUND_ENGINES) not in sys.path:
 
 def _get_computer_cls():
     from five_domain_feature_computer import FiveDomainFeatureComputer
+
     return FiveDomainFeatureComputer
 
 
@@ -70,7 +67,7 @@ class TestGap3AEngineShadowFromResult:
         # 构造生产数据：3 资产类 dao 评分
         result = {
             "crypto_usdt": {"dao": 72, "tian": 65, "di": 60, "jiang": 70, "fa": 68},
-            "us_stock":    {"dao": 58, "tian": 55, "di": 50, "jiang": 60, "fa": 55},
+            "us_stock": {"dao": 58, "tian": 55, "di": 50, "jiang": 60, "fa": 55},
             "precious_metal": {"dao": 66, "tian": 60, "di": 58, "jiang": 65, "fa": 62},
         }
         system_state = {"win_rate": 0.62, "profit_factor": 1.8}
@@ -81,9 +78,9 @@ class TestGap3AEngineShadowFromResult:
         assert len(records) >= 1, "Shadow JSONL 应写入至少 1 条"
         rec = records[-1]
         # A 级 dao 应非 0（从 result dao 评分构造 r3d 后计算）
-        assert rec["fd_A_dao_mean"] != 0.0, (
-            f"fd_A_dao_mean 应非 0（从 result dao 评分构造 r3d 后计算），实际={rec['fd_A_dao_mean']}"
-        )
+        assert (
+            rec["fd_A_dao_mean"] != 0.0
+        ), f"fd_A_dao_mean 应非 0（从 result dao 评分构造 r3d 后计算），实际={rec['fd_A_dao_mean']}"
         assert abs(rec["fd_A_dao_mean"]) <= 0.05, f"A 级 clamp ±0.05 越界: {rec['fd_A_dao_mean']}"
 
     def test_a_tian_mean_nonzero_from_system_state_win_rate(self, tmp_path, monkeypatch):
@@ -98,19 +95,29 @@ class TestGap3AEngineShadowFromResult:
         records = _read_shadow_jsonl(c._fd7_shadow_jsonl_path)
         assert len(records) >= 1
         rec = records[-1]
-        assert rec["fd_A_tian_mean"] != 0.0, (
-            f"fd_A_tian_mean 应非 0（从 win_rate/profit_factor 构造 signal），实际={rec['fd_A_tian_mean']}"
-        )
+        assert (
+            rec["fd_A_tian_mean"] != 0.0
+        ), f"fd_A_tian_mean 应非 0（从 win_rate/profit_factor 构造 signal），实际={rec['fd_A_tian_mean']}"
         assert abs(rec["fd_A_tian_mean"]) <= 0.05, f"A 级 clamp ±0.05 越界: {rec['fd_A_tian_mean']}"
 
     def test_reason_code_not_fd7_no_data_when_both_a_engines_active(self, tmp_path, monkeypatch):
         """S 级有 news + A 级有数据 → reason_code 应为 FD7_OK（不再 FD7_NO_DATA）。"""
         c = _make_computer_with_shadow(tmp_path, monkeypatch)
         # 让 news_list 非空
-        monkeypatch.setattr(c, "_fetch_news_72h_limit200", lambda *a, **kw: [
-            {"source": "odaily", "category": "news", "sub_category": "x",
-             "title": "BTC涨", "content": "BTC突破", "timestamp_ms": 1700000000000}
-        ])
+        monkeypatch.setattr(
+            c,
+            "_fetch_news_72h_limit200",
+            lambda *a, **kw: [
+                {
+                    "source": "odaily",
+                    "category": "news",
+                    "sub_category": "x",
+                    "title": "BTC涨",
+                    "content": "BTC突破",
+                    "timestamp_ms": 1700000000000,
+                }
+            ],
+        )
         result = {
             "crypto_usdt": {"dao": 72, "tian": 65, "di": 60, "jiang": 70, "fa": 68},
         }
@@ -119,9 +126,9 @@ class TestGap3AEngineShadowFromResult:
         records = _read_shadow_jsonl(c._fd7_shadow_jsonl_path)
         assert len(records) >= 1
         rec = records[-1]
-        assert rec["shadow_reason_code"] == "FD7_OK", (
-            f"有 news + A 级有数据 → reason 应 FD7_OK，实际={rec['shadow_reason_code']}"
-        )
+        assert (
+            rec["shadow_reason_code"] == "FD7_OK"
+        ), f"有 news + A 级有数据 → reason 应 FD7_OK，实际={rec['shadow_reason_code']}"
 
     def test_shadow_does_not_modify_result(self, tmp_path, monkeypatch):
         """Shadow 调用后 result 不变（只读铁律）。"""

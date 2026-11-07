@@ -7,15 +7,15 @@ Group 2 (test_phase2_strict_criteria.py): 严格型「一损全弃」判定
 Group 3 (test_phase3_injection_logging.py): 特征注入三层判据日志
 Group 4 (test_dual_guard_l1l2l3.py): 战略层冲突双保险 L1/L2/L3
 """
+
 import numpy as np
 import pandas as pd
 import pytest
-from datetime import datetime, timezone, timedelta
-
 
 # ============================================================
 # Fixtures
 # ============================================================
+
 
 @pytest.fixture
 def sample_ohlcv_500():
@@ -50,32 +50,39 @@ def panewslab_macro_4h_sparse():
     drop_idx = [30, 60, 90, 120]
     dates = dates.delete(drop_idx)
     N = len(dates)
-    df = pd.DataFrame({
-        # 宏观金融 7 列 原始值
-        "pn_us_vix":            np.random.uniform(14, 36, N),    # VIX 14~36
-        "pn_us_10yr_yield":     np.random.uniform(3.0, 4.8, N),  # 美债
-        "pn_us_fedfunds":       np.random.uniform(4.0, 5.8, N),  # FedFunds
-        "pn_us_cpi_yoy":        np.random.uniform(1.5, 4.5, N),  # CPI YoY
-        "pn_us_sp500_chg_pct":  np.random.randn(N) * 0.8,        # S&P 1d 变动 %
-        "pn_us_dollar_index":   np.random.uniform(99, 108, N),   # DXY
-        "pn_btc_etf_daily_flow_usd_millions": np.random.uniform(-200, 400, N),  # BTC ETF 单日净流入 M
-        "pn_rwa_tvl_usd_billions": np.random.uniform(600, 900, N),              # RWA TVL B
-        "pn_rwa_change7d_pct":      np.random.randn(N) * 0.5,                   # 7 日增速
-        "pn_treasury_total_btc_holdings": np.cumsum(np.random.randint(-20, 60, N)) + 1000,  # 国库 BTC 持有
-        # BTC 链上 5 列 原始值
-        "pn_whale_netflow_cap_pct":   np.random.uniform(-1.2, 1.5, N),  # 巨鲸净流入占比
-        "pn_ex_bal_BTC_chg30d_pct":   np.random.uniform(-5, 3, N),       # 交易所 30d 变动
-        "defi_breadth_currentRange":  np.random.randint(0, 4, N).astype(float),  # DeFi 广度 0-3
-        "fut_liq_long_24h_usd_millions":  np.random.uniform(50, 800, N),  # 多头爆仓 M
-        "fut_open_interest_usd_billions": np.random.uniform(18, 40, N),   # 期货 OI B
-        "pn_btc_dominance_pct":       np.random.uniform(48, 64, N),       # BTC 占比
-    }, index=dates)
+    df = pd.DataFrame(
+        {
+            # 宏观金融 7 列 原始值
+            "pn_us_vix": np.random.uniform(14, 36, N),  # VIX 14~36
+            "pn_us_10yr_yield": np.random.uniform(3.0, 4.8, N),  # 美债
+            "pn_us_fedfunds": np.random.uniform(4.0, 5.8, N),  # FedFunds
+            "pn_us_cpi_yoy": np.random.uniform(1.5, 4.5, N),  # CPI YoY
+            "pn_us_sp500_chg_pct": np.random.randn(N) * 0.8,  # S&P 1d 变动 %
+            "pn_us_dollar_index": np.random.uniform(99, 108, N),  # DXY
+            "pn_btc_etf_daily_flow_usd_millions": np.random.uniform(
+                -200, 400, N
+            ),  # BTC ETF 单日净流入 M
+            "pn_rwa_tvl_usd_billions": np.random.uniform(600, 900, N),  # RWA TVL B
+            "pn_rwa_change7d_pct": np.random.randn(N) * 0.5,  # 7 日增速
+            "pn_treasury_total_btc_holdings": np.cumsum(np.random.randint(-20, 60, N))
+            + 1000,  # 国库 BTC 持有
+            # BTC 链上 5 列 原始值
+            "pn_whale_netflow_cap_pct": np.random.uniform(-1.2, 1.5, N),  # 巨鲸净流入占比
+            "pn_ex_bal_BTC_chg30d_pct": np.random.uniform(-5, 3, N),  # 交易所 30d 变动
+            "defi_breadth_currentRange": np.random.randint(0, 4, N).astype(float),  # DeFi 广度 0-3
+            "fut_liq_long_24h_usd_millions": np.random.uniform(50, 800, N),  # 多头爆仓 M
+            "fut_open_interest_usd_billions": np.random.uniform(18, 40, N),  # 期货 OI B
+            "pn_btc_dominance_pct": np.random.uniform(48, 64, N),  # BTC 占比
+        },
+        index=dates,
+    )
     return df
 
 
 # ============================================================
 # Group 1a: 宏观金融特征衍生（7 个）
 # ============================================================
+
 
 class TestMacroFinanceExtensionsDerive:
     """宏观金融 7 个新特征的数值正确性。
@@ -90,8 +97,10 @@ class TestMacroFinanceExtensionsDerive:
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
 
         macro_aligned = MacroDataFetcher.align_to_klines(
-            panewslab_macro_4h_sparse, sample_ohlcv_500.index,
-            lookahead_guard=1, max_gap_bars=4,
+            panewslab_macro_4h_sparse,
+            sample_ohlcv_500.index,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
         feats = mf.MacroFeatures().compute(sample_ohlcv_500, macro_df=macro_aligned)
         assert "vix_zone" in feats.columns, "vix_zone 特征未生成（FAIL-RED）"
@@ -101,7 +110,15 @@ class TestMacroFinanceExtensionsDerive:
         assert set(v.unique()) <= {0.0, 1.0, 2.0, 3.0}, f"vix_zone 非 0/1/2/3: {v.unique()}"
         # 具体分桶：VIX=15 → 0, VIX=24 → 1, VIX=30 → 2, VIX=40 → 3
         assert feats["vix_zone"][macro_aligned["pn_us_vix"].ffill() < 20].dropna().eq(0).all()
-        assert feats["vix_zone"][(macro_aligned["pn_us_vix"].ffill() >= 28) & (macro_aligned["pn_us_vix"].ffill() < 35)].dropna().eq(2).all()
+        assert (
+            feats["vix_zone"][
+                (macro_aligned["pn_us_vix"].ffill() >= 28)
+                & (macro_aligned["pn_us_vix"].ffill() < 35)
+            ]
+            .dropna()
+            .eq(2)
+            .all()
+        )
 
     # ── 2. us_macro_regime ──
     def test_us_macro_regime_categories(self, sample_ohlcv_500, panewslab_macro_4h_sparse):
@@ -110,8 +127,10 @@ class TestMacroFinanceExtensionsDerive:
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
 
         macro_aligned = MacroDataFetcher.align_to_klines(
-            panewslab_macro_4h_sparse, sample_ohlcv_500.index,
-            lookahead_guard=1, max_gap_bars=4,
+            panewslab_macro_4h_sparse,
+            sample_ohlcv_500.index,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
         feats = mf.MacroFeatures().compute(sample_ohlcv_500, macro_df=macro_aligned)
         assert "us_macro_regime" in feats.columns
@@ -128,8 +147,10 @@ class TestMacroFinanceExtensionsDerive:
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
 
         macro_aligned = MacroDataFetcher.align_to_klines(
-            panewslab_macro_4h_sparse, sample_ohlcv_500.index,
-            lookahead_guard=1, max_gap_bars=4,
+            panewslab_macro_4h_sparse,
+            sample_ohlcv_500.index,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
         feats = mf.MacroFeatures().compute(sample_ohlcv_500, macro_df=macro_aligned)
         assert "sp500_7d_break" in feats.columns
@@ -145,8 +166,10 @@ class TestMacroFinanceExtensionsDerive:
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
 
         macro_aligned = MacroDataFetcher.align_to_klines(
-            panewslab_macro_4h_sparse, sample_ohlcv_500.index,
-            lookahead_guard=1, max_gap_bars=4,
+            panewslab_macro_4h_sparse,
+            sample_ohlcv_500.index,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
         feats = mf.MacroFeatures().compute(sample_ohlcv_500, macro_df=macro_aligned)
         assert "dxy_strength" in feats.columns
@@ -161,8 +184,10 @@ class TestMacroFinanceExtensionsDerive:
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
 
         macro_aligned = MacroDataFetcher.align_to_klines(
-            panewslab_macro_4h_sparse, sample_ohlcv_500.index,
-            lookahead_guard=1, max_gap_bars=4,
+            panewslab_macro_4h_sparse,
+            sample_ohlcv_500.index,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
         feats = mf.MacroFeatures().compute(sample_ohlcv_500, macro_df=macro_aligned)
         assert "btc_etf_flow_3d" in feats.columns
@@ -179,12 +204,16 @@ class TestMacroFinanceExtensionsDerive:
         macro_extra["stablecoin_supply"] = np.random.uniform(100e9, 150e9, len(macro_extra))
 
         macro_aligned = MacroDataFetcher.align_to_klines(
-            macro_extra, sample_ohlcv_500.index,
-            lookahead_guard=1, max_gap_bars=4,
+            macro_extra,
+            sample_ohlcv_500.index,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
         feats = mf.MacroFeatures().compute(sample_ohlcv_500, macro_df=macro_aligned)
         assert "rwa_liquidity_pulse" in feats.columns, "rwa_liquidity_pulse 未生成"
-        assert "stablecoin_minus_rwa" in feats.columns, "stablecoin_minus_rwa 残差未生成（用于消解多重共线性）"
+        assert (
+            "stablecoin_minus_rwa" in feats.columns
+        ), "stablecoin_minus_rwa 残差未生成（用于消解多重共线性）"
         x1 = feats["rwa_liquidity_pulse"].dropna()
         x2 = feats["stablecoin_minus_rwa"].dropna()
         assert len(x1) > 50 and len(x2) > 50
@@ -196,8 +225,10 @@ class TestMacroFinanceExtensionsDerive:
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
 
         macro_aligned = MacroDataFetcher.align_to_klines(
-            panewslab_macro_4h_sparse, sample_ohlcv_500.index,
-            lookahead_guard=1, max_gap_bars=4,
+            panewslab_macro_4h_sparse,
+            sample_ohlcv_500.index,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
         feats = mf.MacroFeatures().compute(sample_ohlcv_500, macro_df=macro_aligned)
         assert "treasury_balance_delta" in feats.columns
@@ -207,33 +238,54 @@ class TestMacroFinanceExtensionsDerive:
     # ── 8. ALL_FEATURES 必须收录新特征 + FEATURE_TO_DIM 维度 = macro_finance_ext/btc_onchain_ext ──
     def test_all_features_registry_contains_12_new(self):
         import scripts.memory_l4.bcrm2.macro_features as mf
+
         expected = {
             # 宏观金融 7
-            "vix_zone", "us_macro_regime", "sp500_7d_break", "dxy_strength",
-            "btc_etf_flow_3d", "rwa_liquidity_pulse", "treasury_balance_delta",
+            "vix_zone",
+            "us_macro_regime",
+            "sp500_7d_break",
+            "dxy_strength",
+            "btc_etf_flow_3d",
+            "rwa_liquidity_pulse",
+            "treasury_balance_delta",
             # BTC 链上 5
-            "whale_netflow_pulse", "exchange_btc_30d", "defi_breadth",
-            "oi_liq_pressure", "btc_dom_delta",
+            "whale_netflow_pulse",
+            "exchange_btc_30d",
+            "defi_breadth",
+            "oi_liq_pressure",
+            "btc_dom_delta",
         }
-        assert expected.issubset(set(mf.MacroFeatures.ALL_FEATURES)), \
-            f"ALL_FEATURES 缺少: {expected - set(mf.MacroFeatures.ALL_FEATURES)}"
+        assert expected.issubset(
+            set(mf.MacroFeatures.ALL_FEATURES)
+        ), f"ALL_FEATURES 缺少: {expected - set(mf.MacroFeatures.ALL_FEATURES)}"
         dims = mf.MacroFeatures.FEATURE_TO_DIM
         for n in expected:
             assert dims[n] in {"macro_finance_ext", "btc_onchain_ext"}, f"{n} dim={dims[n]}"
 
     # ── 9. 两级开关：维度级关断 macro_enable_macro_finance_ext → 7 个宏观金融特征全部不生成 ──
-    def test_dim_level_switch_disables_macro_finance_ext(self, sample_ohlcv_500, panewslab_macro_4h_sparse):
+    def test_dim_level_switch_disables_macro_finance_ext(
+        self, sample_ohlcv_500, panewslab_macro_4h_sparse
+    ):
         import scripts.memory_l4.bcrm2.macro_features as mf
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
 
         macro_aligned = MacroDataFetcher.align_to_klines(
-            panewslab_macro_4h_sparse, sample_ohlcv_500.index,
-            lookahead_guard=1, max_gap_bars=4,
+            panewslab_macro_4h_sparse,
+            sample_ohlcv_500.index,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
         cfg = {"macro_enable_macro_finance_ext": False, "macro_enable_btc_onchain_ext": True}
         feats = mf.MacroFeatures().compute(sample_ohlcv_500, macro_df=macro_aligned, config=cfg)
-        for f in ["vix_zone", "us_macro_regime", "sp500_7d_break", "dxy_strength",
-                  "btc_etf_flow_3d", "rwa_liquidity_pulse", "treasury_balance_delta"]:
+        for f in [
+            "vix_zone",
+            "us_macro_regime",
+            "sp500_7d_break",
+            "dxy_strength",
+            "btc_etf_flow_3d",
+            "rwa_liquidity_pulse",
+            "treasury_balance_delta",
+        ]:
             assert f not in feats.columns, f"维度关断失败: {f} 仍生成"
         # BTC 链上特征仍应生成
         assert "whale_netflow_pulse" in feats.columns or "defi_breadth" in feats.columns
@@ -243,17 +295,22 @@ class TestMacroFinanceExtensionsDerive:
 # Group 1b: BTC 链上特征衍生（5 个）
 # ============================================================
 
+
 class TestBtcOnchainExtensionsDerive:
     """BTC 链上 5 个新特征数值正确性。"""
 
     # ── 1. whale_netflow_pulse ──
-    def test_whale_pulse_3d_rolling_mean_std_norm(self, sample_ohlcv_500, panewslab_macro_4h_sparse):
+    def test_whale_pulse_3d_rolling_mean_std_norm(
+        self, sample_ohlcv_500, panewslab_macro_4h_sparse
+    ):
         import scripts.memory_l4.bcrm2.macro_features as mf
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
 
         macro_aligned = MacroDataFetcher.align_to_klines(
-            panewslab_macro_4h_sparse, sample_ohlcv_500.index,
-            lookahead_guard=1, max_gap_bars=4,
+            panewslab_macro_4h_sparse,
+            sample_ohlcv_500.index,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
         feats = mf.MacroFeatures().compute(sample_ohlcv_500, macro_df=macro_aligned)
         assert "whale_netflow_pulse" in feats.columns
@@ -266,8 +323,10 @@ class TestBtcOnchainExtensionsDerive:
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
 
         macro_aligned = MacroDataFetcher.align_to_klines(
-            panewslab_macro_4h_sparse, sample_ohlcv_500.index,
-            lookahead_guard=1, max_gap_bars=4,
+            panewslab_macro_4h_sparse,
+            sample_ohlcv_500.index,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
         feats = mf.MacroFeatures().compute(sample_ohlcv_500, macro_df=macro_aligned)
         assert "exchange_btc_30d" in feats.columns
@@ -283,8 +342,10 @@ class TestBtcOnchainExtensionsDerive:
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
 
         macro_aligned = MacroDataFetcher.align_to_klines(
-            panewslab_macro_4h_sparse, sample_ohlcv_500.index,
-            lookahead_guard=1, max_gap_bars=4,
+            panewslab_macro_4h_sparse,
+            sample_ohlcv_500.index,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
         feats = mf.MacroFeatures().compute(sample_ohlcv_500, macro_df=macro_aligned)
         assert "defi_breadth" in feats.columns
@@ -299,8 +360,10 @@ class TestBtcOnchainExtensionsDerive:
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
 
         macro_aligned = MacroDataFetcher.align_to_klines(
-            panewslab_macro_4h_sparse, sample_ohlcv_500.index,
-            lookahead_guard=1, max_gap_bars=4,
+            panewslab_macro_4h_sparse,
+            sample_ohlcv_500.index,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
         feats = mf.MacroFeatures().compute(sample_ohlcv_500, macro_df=macro_aligned)
         assert "oi_liq_pressure" in feats.columns
@@ -316,8 +379,10 @@ class TestBtcOnchainExtensionsDerive:
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
 
         macro_aligned = MacroDataFetcher.align_to_klines(
-            panewslab_macro_4h_sparse, sample_ohlcv_500.index,
-            lookahead_guard=1, max_gap_bars=4,
+            panewslab_macro_4h_sparse,
+            sample_ohlcv_500.index,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
         feats = mf.MacroFeatures().compute(sample_ohlcv_500, macro_df=macro_aligned)
         assert "btc_dom_delta" in feats.columns
@@ -331,6 +396,7 @@ class TestBtcOnchainExtensionsDerive:
 # Group 1c: 时间对齐规则（严格 ffill + max_gap=4，禁 bfill/interp）
 # ============================================================
 
+
 class TestAlignWithPanewslabGapRule:
     """按经验 979688：必须先打印三要素，严格对齐，严禁 bfill 或线性插值引入未来信息。"""
 
@@ -343,19 +409,28 @@ class TestAlignWithPanewslabGapRule:
         # 100 根 1H bar
         bar_idx = pd.date_range("2024-01-01 00:00", periods=100, freq="1h", tz="UTC")
         # Panewslab 每 4h 一条，但故意中间挖一条缺口（索引 24 与 36 之间缺 32 = 16h 跨度）
-        pn_idx = pd.date_range("2024-01-01 04:00", periods=10, freq="4h", tz="UTC").delete(5)  # 去掉 idx=5 (24h)
-        pn = pd.DataFrame({"pn_us_vix": [15.0, 16.0, 17.0, 18.0, 19.0, 25.0, 26.0, 27.0, 28.0]}, index=pn_idx)
+        pn_idx = pd.date_range("2024-01-01 04:00", periods=10, freq="4h", tz="UTC").delete(
+            5
+        )  # 去掉 idx=5 (24h)
+        pn = pd.DataFrame(
+            {"pn_us_vix": [15.0, 16.0, 17.0, 18.0, 19.0, 25.0, 26.0, 27.0, 28.0]}, index=pn_idx
+        )
         # 跨度：索引 4 (20:00, 19.0) → 索引 6 (next day 04:00, 25.0)，中间 12 根 bar 应填充 ≤4 bar 后 NaN 维持
 
         aligned = MacroDataFetcher.align_to_klines(
-            pn, bar_idx, lookahead_guard=1, max_gap_bars=4,
+            pn,
+            bar_idx,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
 
         assert "pn_us_vix" in aligned.columns
         col = aligned["pn_us_vix"]
         # 找缺口区间（20:00 ~ 次日04:00之间 = bar_idx 约 21..28）
         gap_start = pd.Timestamp("2024-01-02 00:00", tz="UTC")
-        gap_region = col.loc[(bar_idx >= gap_start) & (bar_idx <= pd.Timestamp("2024-01-02 04:00", tz="UTC"))]
+        gap_region = col.loc[
+            (bar_idx >= gap_start) & (bar_idx <= pd.Timestamp("2024-01-02 04:00", tz="UTC"))
+        ]
         # 其中后几根必须是 NaN（max_gap=4 用尽）
         assert gap_region.isna().any(), "max_gap_bars=4 后仍填充，未来信息泄漏！"
 
@@ -369,7 +444,10 @@ class TestAlignWithPanewslabGapRule:
         pn = pd.DataFrame({"v": [99.0]}, index=pn_idx)
 
         aligned = MacroDataFetcher.align_to_klines(
-            pn, bar_idx, lookahead_guard=1, max_gap_bars=4,
+            pn,
+            bar_idx,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
         # bar 0..4：lookahead_guard=1 时，bar i 的 guard=i-1。bar=0: guard=-1 前无值 → NaN
         # bar 1..4: guard 分别为 0..3，pn_idx=5h → 5h > 0..3h (bar_idx 的 guard 时间) → 仍 NaN
@@ -385,21 +463,26 @@ class TestAlignWithPanewslabGapRule:
         不新建脚本，直接在 align_to_klines 返回值可选附带三要素证据，或暴露 align 证据函数。
         """
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
-        assert hasattr(MacroDataFetcher, "compute_alignment_evidence"), \
-            "MacroDataFetcher 应暴露 compute_alignment_evidence 返回三要素证据元组"
+
+        assert hasattr(
+            MacroDataFetcher, "compute_alignment_evidence"
+        ), "MacroDataFetcher 应暴露 compute_alignment_evidence 返回三要素证据元组"
 
         bar_idx = pd.date_range("2024-01-01", periods=10, freq="1h", tz="UTC")
         pn_idx = pd.date_range("2024-01-01 04:00", periods=3, freq="4h", tz="UTC")
         pn = pd.DataFrame({"x": [1.0, 2.0, 3.0]}, index=pn_idx)
 
         ev = MacroDataFetcher.compute_alignment_evidence(pn, bar_idx)
-        assert isinstance(ev, tuple) and len(ev) == 5, "证据应返回 (kline_first, kline_last, pn_first, pn_last, intersected_count)"
+        assert (
+            isinstance(ev, tuple) and len(ev) == 5
+        ), "证据应返回 (kline_first, kline_last, pn_first, pn_last, intersected_count)"
         assert ev[4] > 0, "交集 count 必须 >0"
 
 
 # ============================================================
 # Group 1d: FeatureRegistry 集成（12 新特征通过 Registry 暴露）
 # ============================================================
+
 
 class TestExtendedMacroRegistryIntegration:
     """12 新特征必须在 FeatureRegistry 中可启用/禁用。"""
@@ -419,8 +502,9 @@ class TestExtendedMacroRegistryIntegration:
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
 
         # ① 静态注册（必须即使没有数据也在 FEATURE_TO_DIM 中定义，确保开关可配置）
-        assert len(mf_mod.MacroFeatures.ALL_FEATURES) >= 37, \
-            f"ALL_FEATURES 注册数不足 37 (24旧+12新+残差)，实际={len(mf_mod.MacroFeatures.ALL_FEATURES)}"
+        assert (
+            len(mf_mod.MacroFeatures.ALL_FEATURES) >= 37
+        ), f"ALL_FEATURES 注册数不足 37 (24旧+12新+残差)，实际={len(mf_mod.MacroFeatures.ALL_FEATURES)}"
 
         # ② 构造完整输入（Panewslab + 旧宏观列）：模拟 fear_greed/funding/tvl/hash/social/market_cap 存在
         macro_full = panewslab_macro_4h_sparse.copy()
@@ -441,11 +525,15 @@ class TestExtendedMacroRegistryIntegration:
         macro_full["ath_drop_pct"] = np.random.uniform(-60, 0, N)
 
         macro_aligned = MacroDataFetcher.align_to_klines(
-            macro_full, sample_ohlcv_500.index,
-            lookahead_guard=1, max_gap_bars=4,
+            macro_full,
+            sample_ohlcv_500.index,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
         feats, by_gua = FeatureRegistry.compute_all(
-            df=sample_ohlcv_500, macro_df=macro_aligned, symbol="BTC",
+            df=sample_ohlcv_500,
+            macro_df=macro_aligned,
+            symbol="BTC",
             enabled=["bagua", "fibonacci", "macro"],
         )
         assert "macro" in by_gua
@@ -454,14 +542,18 @@ class TestExtendedMacroRegistryIntegration:
         # 36 - 6（长窗口删）≈ 30 合理
         assert count >= 30, f"macro 特征数应 ≥30 (24旧+12新-长窗口过滤)，实际={count}"
 
-    def test_feature_knob_macro_feat_vix_zone_false(self, sample_ohlcv_500, panewslab_macro_4h_sparse):
+    def test_feature_knob_macro_feat_vix_zone_false(
+        self, sample_ohlcv_500, panewslab_macro_4h_sparse
+    ):
         """特征级关断 macro_feat_vix_zone=False → 输出不含 vix_zone。"""
         import scripts.memory_l4.bcrm2.macro_features as mf
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
 
         macro_aligned = MacroDataFetcher.align_to_klines(
-            panewslab_macro_4h_sparse, sample_ohlcv_500.index,
-            lookahead_guard=1, max_gap_bars=4,
+            panewslab_macro_4h_sparse,
+            sample_ohlcv_500.index,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
         cfg = {"macro_feat_vix_zone": False}  # 单特征关
         feats = mf.MacroFeatures().compute(sample_ohlcv_500, macro_df=macro_aligned, config=cfg)
@@ -469,15 +561,25 @@ class TestExtendedMacroRegistryIntegration:
         # 其他同类维度特征仍应生成（如 us_macro_regime）
         assert "us_macro_regime" in feats.columns
 
-    def test_dim_level_btc_onchain_ext_false_disables_5(self, sample_ohlcv_500, panewslab_macro_4h_sparse):
+    def test_dim_level_btc_onchain_ext_false_disables_5(
+        self, sample_ohlcv_500, panewslab_macro_4h_sparse
+    ):
         import scripts.memory_l4.bcrm2.macro_features as mf
         from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
 
         macro_aligned = MacroDataFetcher.align_to_klines(
-            panewslab_macro_4h_sparse, sample_ohlcv_500.index,
-            lookahead_guard=1, max_gap_bars=4,
+            panewslab_macro_4h_sparse,
+            sample_ohlcv_500.index,
+            lookahead_guard=1,
+            max_gap_bars=4,
         )
         cfg = {"macro_enable_macro_finance_ext": True, "macro_enable_btc_onchain_ext": False}
         feats = mf.MacroFeatures().compute(sample_ohlcv_500, macro_df=macro_aligned, config=cfg)
-        for f in ["whale_netflow_pulse", "exchange_btc_30d", "defi_breadth", "oi_liq_pressure", "btc_dom_delta"]:
+        for f in [
+            "whale_netflow_pulse",
+            "exchange_btc_30d",
+            "defi_breadth",
+            "oi_liq_pressure",
+            "btc_dom_delta",
+        ]:
             assert f not in feats.columns, f"btc_onchain_ext 关断失败 {f}"

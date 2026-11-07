@@ -7,13 +7,20 @@ from pandas import DataFrame
 from datetime import datetime
 from typing import Optional
 import talib.abstract as ta
+
 try:
     import freqtrade.vendor.qtpylib.indicators as qtpylib
 except Exception:
     from technical import qtpylib
 
 from freqtrade.persistence import Trade
-from freqtrade.strategy import IStrategy, IntParameter, DecimalParameter, BooleanParameter, merge_informative_pair
+from freqtrade.strategy import (
+    IStrategy,
+    IntParameter,
+    DecimalParameter,
+    BooleanParameter,
+    merge_informative_pair,
+)
 
 
 class OttStrategy(IStrategy):
@@ -24,25 +31,21 @@ class OttStrategy(IStrategy):
     - 多空对称，适合合约/现货
     - 内置追踪止损 + 时间兜底
     """
+
     INTERFACE_VERSION = 3
 
     timeframe = "1h"
     can_short = True
 
     # ROI
-    minimal_roi = {
-        "0": 0.20,
-        "60": 0.12,
-        "240": 0.06,
-        "720": 0
-    }
+    minimal_roi = {"0": 0.20, "60": 0.12, "240": 0.06, "720": 0}
 
     # 止损
     stoploss = -0.15
 
     # 追踪止损（主力止损）
     trailing_stop = True
-    trailing_stop_positive = 0.02        # 盈利2%后开始追踪
+    trailing_stop_positive = 0.02  # 盈利2%后开始追踪
     trailing_stop_positive_offset = 0.04  # 盈利4%后激活
     trailing_only_offset_is_reached = True
 
@@ -181,15 +184,21 @@ class OttStrategy(IStrategy):
                 btc_rs_df = btc_rs_df[["date", "btc_close"]]
                 if btc_rs_source_tf != self.timeframe:
                     btc_rs_df = self._resample_btc_close(btc_rs_df, self.timeframe)
-                dataframe = merge_informative_pair(dataframe, btc_rs_df, self.timeframe, self.timeframe, ffill=True)
+                dataframe = merge_informative_pair(
+                    dataframe, btc_rs_df, self.timeframe, self.timeframe, ffill=True
+                )
 
             if btc_1d is not None and len(btc_1d) > 0 and "date" in btc_1d.columns:
                 btc_1d = btc_1d.copy()
                 btc_1d["btc_close"] = btc_1d["close"]
                 btc_1d["btc_ema"] = ta.EMA(btc_1d, timeperiod=self.btc_ema_period.value)
-                btc_1d["btc_ema_slope"] = btc_1d["btc_ema"] - btc_1d["btc_ema"].shift(self.btc_ema_slope_lookback.value)
+                btc_1d["btc_ema_slope"] = btc_1d["btc_ema"] - btc_1d["btc_ema"].shift(
+                    self.btc_ema_slope_lookback.value
+                )
                 btc_1d = btc_1d[["date", "btc_close", "btc_ema", "btc_ema_slope"]]
-                dataframe = merge_informative_pair(dataframe, btc_1d, self.timeframe, self.btc_regime_timeframe, ffill=True)
+                dataframe = merge_informative_pair(
+                    dataframe, btc_1d, self.timeframe, self.btc_regime_timeframe, ffill=True
+                )
 
             btc_close_tf_col = f"btc_close_{self.timeframe}"
             if btc_close_tf_col not in dataframe.columns and "btc_close" in dataframe.columns:
@@ -199,9 +208,17 @@ class OttStrategy(IStrategy):
             btc_ema_1d_col = f"btc_ema_{self.btc_regime_timeframe}"
             btc_ema_slope_1d_col = f"btc_ema_slope_{self.btc_regime_timeframe}"
 
-            if btc_close_1d_col in dataframe.columns and btc_ema_1d_col in dataframe.columns and btc_ema_slope_1d_col in dataframe.columns:
-                dataframe["btc_regime_long"] = (dataframe[btc_close_1d_col] > dataframe[btc_ema_1d_col]) & (dataframe[btc_ema_slope_1d_col] > 0)
-                dataframe["btc_regime_short"] = (dataframe[btc_close_1d_col] < dataframe[btc_ema_1d_col]) & (dataframe[btc_ema_slope_1d_col] < 0)
+            if (
+                btc_close_1d_col in dataframe.columns
+                and btc_ema_1d_col in dataframe.columns
+                and btc_ema_slope_1d_col in dataframe.columns
+            ):
+                dataframe["btc_regime_long"] = (
+                    dataframe[btc_close_1d_col] > dataframe[btc_ema_1d_col]
+                ) & (dataframe[btc_ema_slope_1d_col] > 0)
+                dataframe["btc_regime_short"] = (
+                    dataframe[btc_close_1d_col] < dataframe[btc_ema_1d_col]
+                ) & (dataframe[btc_ema_slope_1d_col] < 0)
 
             if btc_close_tf_col in dataframe.columns:
                 btc_close = dataframe[btc_close_tf_col].replace(0, np.nan)
@@ -209,15 +226,16 @@ class OttStrategy(IStrategy):
                 dataframe["rs_btc"] = rs
                 dataframe["rs_btc_ema"] = rs.ewm(span=self.rs_ema_period.value, adjust=False).mean()
                 dataframe["rs_btc_slope"] = rs - rs.shift(self.rs_slope_lookback.value)
-                dataframe["rs_long_ok"] = (dataframe["rs_btc"] > dataframe["rs_btc_ema"]) & (dataframe["rs_btc_slope"] > 0)
-                dataframe["rs_short_ok"] = (dataframe["rs_btc"] < dataframe["rs_btc_ema"]) & (dataframe["rs_btc_slope"] < 0)
+                dataframe["rs_long_ok"] = (dataframe["rs_btc"] > dataframe["rs_btc_ema"]) & (
+                    dataframe["rs_btc_slope"] > 0
+                )
+                dataframe["rs_short_ok"] = (dataframe["rs_btc"] < dataframe["rs_btc_ema"]) & (
+                    dataframe["rs_btc_slope"] < 0
+                )
 
         # 计算 OTT
         ott_df = self.ott_indicator(
-            dataframe,
-            pds=self.pds.value,
-            percent=self.percent.value,
-            shift=self.ott_shift.value
+            dataframe, pds=self.pds.value, percent=self.percent.value, shift=self.ott_shift.value
         )
         dataframe["ott"] = ott_df["OTT"]
         dataframe["var"] = ott_df["VAR"]
@@ -228,7 +246,9 @@ class OttStrategy(IStrategy):
         dataframe["adx"] = ta.ADX(dataframe, timeperiod=self.adx_period.value)
         dataframe["ema_trend"] = ta.EMA(dataframe, timeperiod=self.ema_trend_period.value)
         dataframe["ema_regime"] = ta.EMA(dataframe, timeperiod=self.ema_regime_period.value)
-        dataframe["ema_regime_slope"] = dataframe["ema_regime"] - dataframe["ema_regime"].shift(self.regime_slope_lookback.value)
+        dataframe["ema_regime_slope"] = dataframe["ema_regime"] - dataframe["ema_regime"].shift(
+            self.regime_slope_lookback.value
+        )
 
         dataframe["atr"] = ta.ATR(dataframe, timeperiod=self.atr_period.value)
         dataframe["atr_ratio"] = dataframe["atr"] / dataframe["close"].replace(0, np.nan)
@@ -243,7 +263,9 @@ class OttStrategy(IStrategy):
 
         return dataframe
 
-    def ott_indicator(self, dataframe: DataFrame, pds: int = 2, percent: float = 1.4, shift: int = 2):
+    def ott_indicator(
+        self, dataframe: DataFrame, pds: int = 2, percent: float = 1.4, shift: int = 2
+    ):
         """向量化优化版 OTT 计算"""
         df = dataframe.copy()
 
@@ -275,8 +297,16 @@ class OttStrategy(IStrategy):
         short_stop = new_short_stop.copy()
 
         for i in range(1, len(df)):
-            long_stop.iat[i] = max(float(long_stop.iat[i - 1]), float(new_long_stop.iat[i])) if var.iat[i] > long_stop.iat[i - 1] else float(new_long_stop.iat[i])
-            short_stop.iat[i] = min(float(short_stop.iat[i - 1]), float(new_short_stop.iat[i])) if var.iat[i] < short_stop.iat[i - 1] else float(new_short_stop.iat[i])
+            long_stop.iat[i] = (
+                max(float(long_stop.iat[i - 1]), float(new_long_stop.iat[i]))
+                if var.iat[i] > long_stop.iat[i - 1]
+                else float(new_long_stop.iat[i])
+            )
+            short_stop.iat[i] = (
+                min(float(short_stop.iat[i - 1]), float(new_short_stop.iat[i]))
+                if var.iat[i] < short_stop.iat[i - 1]
+                else float(new_short_stop.iat[i])
+            )
 
         # 趋势方向
         direction = pd.Series(1, index=df.index)  # 默认多头
@@ -293,11 +323,7 @@ class OttStrategy(IStrategy):
         ott_raw = np.where(var > mt, mt * (200 + percent) / 200, mt * (200 - percent) / 200)
         ott = pd.Series(ott_raw, index=df.index).shift(shift)
 
-        return pd.DataFrame({
-            "OTT": ott,
-            "VAR": var,
-            "DIR": direction
-        })
+        return pd.DataFrame({"OTT": ott, "VAR": var, "DIR": direction})
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[:, "enter_long"] = 0
@@ -309,16 +335,29 @@ class OttStrategy(IStrategy):
         long_signal = (
             cross_up
             if self.use_crossover_long.value
-            else (dataframe["var"] > dataframe["ott"]) & (cross_up.rolling(self.signal_lookback_long.value).max() > 0)
+            else (dataframe["var"] > dataframe["ott"])
+            & (cross_up.rolling(self.signal_lookback_long.value).max() > 0)
         )
         short_signal = cross_down
 
         # 多重过滤
-        volume_ok_long = (dataframe["volume_ratio"] > self.volume_multiplier.value) if self.enable_volume_filter_long.value else True
-        adx_strong_long = (dataframe["adx"] > self.adx_threshold.value) if self.enable_adx_filter_long.value else True
+        volume_ok_long = (
+            (dataframe["volume_ratio"] > self.volume_multiplier.value)
+            if self.enable_volume_filter_long.value
+            else True
+        )
+        adx_strong_long = (
+            (dataframe["adx"] > self.adx_threshold.value)
+            if self.enable_adx_filter_long.value
+            else True
+        )
         rsi_ok_long = dataframe["rsi"] > self.rsi_oversold.value
         rsi_not_overbought = dataframe["rsi"] < self.rsi_max_long.value
-        above_trend_long = (dataframe["close"] > (dataframe["ema_trend"] * (1 - self.trend_tolerance_long.value))) if self.enable_trend_filter_long.value else True
+        above_trend_long = (
+            (dataframe["close"] > (dataframe["ema_trend"] * (1 - self.trend_tolerance_long.value)))
+            if self.enable_trend_filter_long.value
+            else True
+        )
         if self.enable_regime_filter_long.value:
             regime_ok_long = dataframe["close"] > dataframe["ema_regime"]
             if self.require_regime_slope_long.value:
@@ -327,16 +366,20 @@ class OttStrategy(IStrategy):
             regime_ok_long = True
         atr_ok = dataframe["atr_ratio"] > self.atr_min_ratio.value
 
-        rsi_ok_short = (dataframe["rsi"] < self.rsi_max_short.value) & (dataframe["rsi"] > self.rsi_min_short.value)
+        rsi_ok_short = (dataframe["rsi"] < self.rsi_max_short.value) & (
+            dataframe["rsi"] > self.rsi_min_short.value
+        )
         below_trend = dataframe["close"] < dataframe["ema_trend"]
-        regime_short_ok = (dataframe["close"] < dataframe["ema_regime"]) & (dataframe["ema_regime_slope"] < 0)
+        regime_short_ok = (dataframe["close"] < dataframe["ema_regime"]) & (
+            dataframe["ema_regime_slope"] < 0
+        )
 
         # 多头入场
         long_condition = (
-            cross_up &
-            atr_ok &
-            (dataframe["close"] > dataframe["ema_trend"] * 0.995) &
-            (dataframe["ott_dir"] == 1)
+            cross_up
+            & atr_ok
+            & (dataframe["close"] > dataframe["ema_trend"] * 0.995)
+            & (dataframe["ott_dir"] == 1)
         )
 
         is_btc_pair = metadata.get("pair") in ("BTC/USDT:USDT", "BTC/USDT")
@@ -348,11 +391,11 @@ class OttStrategy(IStrategy):
         dataframe.loc[long_condition, "enter_long"] = 1
 
         short_condition = (
-            self.enable_short.value &
-            atr_ok &
-            (dataframe["close"] < dataframe["ema_trend"] * 1.005) &
-            (dataframe["ott_dir"] == -1) &
-            short_signal
+            self.enable_short.value
+            & atr_ok
+            & (dataframe["close"] < dataframe["ema_trend"] * 1.005)
+            & (dataframe["ott_dir"] == -1)
+            & short_signal
         )
 
         if self.enable_btc_filter_short.value:
@@ -380,8 +423,15 @@ class OttStrategy(IStrategy):
 
         return dataframe
 
-    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
-                       current_rate: float, current_profit: float, **kwargs) -> float:
+    def custom_stoploss(
+        self,
+        pair: str,
+        trade: Trade,
+        current_time: datetime,
+        current_rate: float,
+        current_profit: float,
+        **kwargs,
+    ) -> float:
         hold_hours = (current_time - trade.open_date_utc).total_seconds() / 3600
         if current_profit > 0.06:
             return -0.005
@@ -403,5 +453,5 @@ class OttStrategy(IStrategy):
                 "RSI": {"rsi": {"color": "purple"}},
                 "ADX": {"adx": {"color": "brown"}},
                 "Volume Ratio": {"volume_ratio": {"color": "green"}},
-            }
+            },
         }

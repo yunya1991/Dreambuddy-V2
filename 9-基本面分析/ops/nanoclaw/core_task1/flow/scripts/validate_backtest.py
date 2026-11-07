@@ -13,10 +13,9 @@
 """
 
 import json
-import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 # =============================================================================
 # 配置
@@ -32,12 +31,13 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 # 验证配置
 VALIDATION_CONFIG = {
     "max_data_lag_minutes": 5,  # 数据允许的最大延迟（分钟）
-    "strict_mode": True,        # 严格模式：任何前视偏差都视为失败
+    "strict_mode": True,  # 严格模式：任何前视偏差都视为失败
 }
 
 # =============================================================================
 # 验证逻辑
 # =============================================================================
+
 
 def parse_timestamp(ts_str: str) -> Optional[datetime]:
     """解析 ISO 格式时间戳"""
@@ -45,7 +45,7 @@ def parse_timestamp(ts_str: str) -> Optional[datetime]:
         return None
     try:
         return datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
-    except:
+    except:  # noqa: E722
         return None
 
 
@@ -63,7 +63,7 @@ def validate_regime_record(record: dict) -> dict:
         "timestamp": record.get("timestamp", ""),
         "valid": True,
         "issues": [],
-        "data_freshness": {}
+        "data_freshness": {},
     }
 
     regime_ts = parse_timestamp(record.get("timestamp", ""))
@@ -73,7 +73,7 @@ def validate_regime_record(record: dict) -> dict:
         return result
 
     # 检查各层数据的时间戳
-    layer_signals = record.get("layer_signals", {})
+    layer_signals = record.get("layer_signals", {})  # noqa: F841
     diagnostics = record.get("diagnostics", {})
     data_freshness = diagnostics.get("data_freshness", {})
 
@@ -89,7 +89,7 @@ def validate_regime_record(record: dict) -> dict:
         result["data_freshness"][layer_name] = {
             "data_timestamp": data_ts_str,
             "regime_timestamp": record.get("timestamp", ""),
-            "diff_minutes": round(diff_minutes, 2)
+            "diff_minutes": round(diff_minutes, 2),
         }
 
         # 检查前视偏差：数据时间戳不能晚于 Regime 时间戳
@@ -131,11 +131,9 @@ def load_and_validate_records() -> List[dict]:
             validation["source_file"] = file.name
             all_validations.append(validation)
         except Exception as e:
-            all_validations.append({
-                "source_file": file.name,
-                "valid": False,
-                "issues": [f"加载失败：{e}"]
-            })
+            all_validations.append(
+                {"source_file": file.name, "valid": False, "issues": [f"加载失败：{e}"]}
+            )
 
     # 从 history 目录加载 JSONL 记录
     history_files = sorted(HISTORY_DIR.glob("regime_history_*.jsonl"))
@@ -150,7 +148,7 @@ def load_and_validate_records() -> List[dict]:
                         validation = validate_regime_record(record)
                         validation["source_file"] = f"{history_file.name}"
                         all_validations.append(validation)
-                    except:
+                    except:  # noqa: E722
                         pass
 
     return all_validations
@@ -266,7 +264,7 @@ def generate_validation_report(validations: List[dict]) -> str:
         report += "\n✅ 所有记录均通过验证，无前视偏差问题。\n"
 
     # 数据新鲜度统计
-    report += f"""
+    report += """
 ---
 
 ## 🔍 数据新鲜度分析
@@ -334,6 +332,7 @@ def generate_validation_report(validations: List[dict]) -> str:
 # 主流程
 # =============================================================================
 
+
 def run_validation() -> dict:
     """
     执行完整的前视偏差验证流程
@@ -351,7 +350,7 @@ def run_validation() -> dict:
         "valid_records": 0,
         "invalid_records": 0,
         "issues": [],
-        "report_path": None
+        "report_path": None,
     }
 
     # ==========================================================================
@@ -367,11 +366,13 @@ def run_validation() -> dict:
     # 收集所有问题
     for v in validations:
         if v.get("issues"):
-            result["issues"].append({
-                "file": v.get("source_file", ""),
-                "timestamp": v.get("timestamp", ""),
-                "issues": v.get("issues", [])
-            })
+            result["issues"].append(
+                {
+                    "file": v.get("source_file", ""),
+                    "timestamp": v.get("timestamp", ""),
+                    "issues": v.get("issues", []),
+                }
+            )
 
     print(f"  总记录数：{result['total_records']}")
     print(f"  有效记录：{result['valid_records']}")

@@ -3,13 +3,13 @@
 只对比抄底优化的效果，用分场景回测引擎准确计算。
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import json
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import pandas as pd
-import numpy as np
+import pandas as pd  # noqa: I001
 
 from backtest.strategy import EnhancedMA200Strategy
 from ml.enhanced_ma200_v31_strategy import EnhancedMA200V31Strategy
@@ -46,15 +46,23 @@ def run_compare():
     # v2
     print("⏳ 运行 v2 基线...")
     v2 = EnhancedMA200Strategy(is_btc=True)
-    v2_r = engine.run_scenario_backtest(prices, v2, "v2_baseline", symbol="BTC", experiment_name="v2_v31_compare_v2")
-    print(f"  ✅ 完成 | 夏普 {v2_r.overall_sharpe:.3f} | 收益 {v2_r.overall_total_return:.1%} | 评分 {v2_r.composite_score:.3f}")
+    v2_r = engine.run_scenario_backtest(
+        prices, v2, "v2_baseline", symbol="BTC", experiment_name="v2_v31_compare_v2"
+    )
+    print(
+        f"  ✅ 完成 | 夏普 {v2_r.overall_sharpe:.3f} | 收益 {v2_r.overall_total_return:.1%} | 评分 {v2_r.composite_score:.3f}"
+    )
     print()
 
     # v3.1
     print("⏳ 运行 v3.1 精准抄底...")
     v31 = EnhancedMA200V31Strategy(is_btc=True)
-    v31_r = engine.run_scenario_backtest(prices, v31, "v31_dip_enhanced", symbol="BTC", experiment_name="v2_v31_compare_v31")
-    print(f"  ✅ 完成 | 夏普 {v31_r.overall_sharpe:.3f} | 收益 {v31_r.overall_total_return:.1%} | 评分 {v31_r.composite_score:.3f}")
+    v31_r = engine.run_scenario_backtest(
+        prices, v31, "v31_dip_enhanced", symbol="BTC", experiment_name="v2_v31_compare_v31"
+    )
+    print(
+        f"  ✅ 完成 | 夏普 {v31_r.overall_sharpe:.3f} | 收益 {v31_r.overall_total_return:.1%} | 评分 {v31_r.composite_score:.3f}"
+    )
     print()
 
     # 整体对比
@@ -167,8 +175,12 @@ def run_compare():
 
     print()
     print("📊 DIP_BUY改善：")
-    print(f"  胜率: {v2_dip.win_rate:.2%} → {v31_dip.win_rate:.2%} ({v31_dip.win_rate - v2_dip.win_rate:+.2%})")
-    print(f"  收益: {v2_dip.avg_return:.2%} → {v31_dip.avg_return:.2%} ({v31_dip.avg_return - v2_dip.avg_return:+.2%})")
+    print(
+        f"  胜率: {v2_dip.win_rate:.2%} → {v31_dip.win_rate:.2%} ({v31_dip.win_rate - v2_dip.win_rate:+.2%})"
+    )
+    print(
+        f"  收益: {v2_dip.avg_return:.2%} → {v31_dip.avg_return:.2%} ({v31_dip.avg_return - v2_dip.avg_return:+.2%})"
+    )
     print()
     print("💡 分析：")
     if v31_dip.win_rate > v2_dip.win_rate and v31_dip.avg_return > v2_dip.avg_return:

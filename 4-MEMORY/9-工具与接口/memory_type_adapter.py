@@ -5,13 +5,14 @@
 
 工程约束：HC-1a（独立模块，不修改认知核心）/ FAIL-OPEN
 """
+
 from __future__ import annotations
 
 from typing import Any
 
 # 记忆类型常量
-TYPE_SEMANTIC = "semantic"      # 事实/规则/硬约束/偏好
-TYPE_EPISODIC = "episodic"      # 事件/经历/解决路径（默认）
+TYPE_SEMANTIC = "semantic"  # 事实/规则/硬约束/偏好
+TYPE_EPISODIC = "episodic"  # 事件/经历/解决路径（默认）
 TYPE_PROCEDURAL = "procedural"  # 技能/工作流/方法
 
 VALID_TYPES = {TYPE_SEMANTIC, TYPE_EPISODIC, TYPE_PROCEDURAL}
@@ -74,8 +75,9 @@ def filter_by_type(memories: list[dict[str, Any]], mem_type: str | None) -> list
     return [m for m in memories if m.get("type", TYPE_EPISODIC) == target]
 
 
-def attach_type(memory: dict[str, Any], mem_type: str | None = None,
-                tags: list[str] | None = None) -> dict[str, Any]:
+def attach_type(
+    memory: dict[str, Any], mem_type: str | None = None, tags: list[str] | None = None
+) -> dict[str, Any]:
     """为记忆附加 type 字段。
 
     Args:

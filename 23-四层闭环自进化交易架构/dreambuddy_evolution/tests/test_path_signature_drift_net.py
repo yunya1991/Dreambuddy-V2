@@ -10,13 +10,11 @@ NeuralSDE 架构升级 — 路径依赖 SDE (Path-Signature Drift).
 
 参考: .trae/specs/neural-sde-architecture-upgrade/spec.md §5
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
-
-import numpy as np
-import pytest
 
 # 确保 REPO 在 sys.path
 REPO = Path(__file__).resolve().parents[2]
@@ -173,8 +171,7 @@ class TestCSInputDimensionUnchanged:
 
         policy = _MLPPolicyBase()
         assert policy.get_cs_input_dimension() == 8, (
-            "CS 公式输入维度应为 8 (项目硬约束), "
-            f"实际={policy.get_cs_input_dimension()}"
+            "CS 公式输入维度应为 8 (项目硬约束), " f"实际={policy.get_cs_input_dimension()}"
         )
 
 
@@ -186,4 +183,5 @@ class TestCSInputDimensionUnchanged:
 def _torch():
     """安全获取 torch (pytest 时 torch 应可用)."""
     import torch
+
     return torch

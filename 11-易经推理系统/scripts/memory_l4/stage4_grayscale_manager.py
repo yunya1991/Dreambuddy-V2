@@ -11,14 +11,14 @@
     python stage4_grayscale_manager.py --gate-check  # 晋升门槛检查
     python stage4_grayscale_manager.py --promote war_state  # 推进 war_state 灰度
 """
+
 from __future__ import annotations
 
 import json
-import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 _HERE = Path(__file__).resolve().parent
 _REPO = _HERE.parent.parent.parent
@@ -38,7 +38,10 @@ if str(_HERE) not in sys.path:
 # ============================================================
 GRAYSCALE_STAGES = {
     "shadow": {"desc": "影子模式（仅记录，不影响实盘）", "gate": "实盘影子数据积累"},
-    "war_state": {"desc": "开启 war_state 拦截（FREEZE/COOLDOWN/ALLOW）", "gate": "≥30天影子+war_state命中率≥70%"},
+    "war_state": {
+        "desc": "开启 war_state 拦截（FREEZE/COOLDOWN/ALLOW）",
+        "gate": "≥30天影子+war_state命中率≥70%",
+    },
     "style_mask": {"desc": "开启 style_mask 过滤（策略白名单）", "gate": "war_state稳定≥14天"},
     "position_cap": {"desc": "开启 position_cap 仓位上限", "gate": "style_mask稳定≥14天"},
     "full": {"desc": "全部开关生效", "gate": "position_cap稳定≥14天+回撤≤基线1.05×"},
@@ -101,6 +104,7 @@ def get_shadow_stats() -> Dict[str, Any]:
         if cls_recs:
             war_states = [r.get("fd_war_state", "UNKNOWN") for r in cls_recs if "fd_war_state" in r]
             from collections import Counter
+
             stats["by_class"][cls] = {
                 "count": len(cls_recs),
                 "war_state_dist": dict(Counter(war_states)) if war_states else {},
@@ -116,10 +120,14 @@ def get_ab_stats() -> Dict[str, Any]:
 
     stats = {"count": len(records), "by_class": {}}
     for cls in ("crypto_usdt", "us_stock", "precious_metal"):
-        diffs = [r[cls]["sentiment_diff"] for r in records
-                 if cls in r and isinstance(r[cls], dict) and r[cls].get("sentiment_diff") is not None]
+        diffs = [
+            r[cls]["sentiment_diff"]
+            for r in records
+            if cls in r and isinstance(r[cls], dict) and r[cls].get("sentiment_diff") is not None
+        ]
         if diffs:
             import statistics
+
             stats["by_class"][cls] = {
                 "samples": len(diffs),
                 "mean_diff": round(statistics.mean(diffs), 4),
@@ -143,14 +151,18 @@ def check_gates() -> Dict[str, Any]:
     # IC 重训练文件时间
     ic_retrain_count = 0
     if _IC_WEIGHTS.exists():
-        ic_mtime = datetime.fromtimestamp(_IC_WEIGHTS.stat().st_mtime)
+        ic_mtime = datetime.fromtimestamp(_IC_WEIGHTS.stat().st_mtime)  # noqa: F841
         # 简单用文件修改次数近似，实际需记录重训练日志
         ic_retrain_count = 1
 
     gates = {
         "shadow_days": {"value": shadow_days, "threshold": 90, "pass": shadow_days >= 90},
         "finbert_ab_samples": {"value": ab_samples, "threshold": 30, "pass": ab_samples >= 30},
-        "ic_retrain_count": {"value": ic_retrain_count, "threshold": 2, "pass": ic_retrain_count >= 2},
+        "ic_retrain_count": {
+            "value": ic_retrain_count,
+            "threshold": 2,
+            "pass": ic_retrain_count >= 2,
+        },
     }
 
     all_pass = all(g["pass"] for g in gates.values())
@@ -158,8 +170,11 @@ def check_gates() -> Dict[str, Any]:
         "current_stage": state["current_stage"],
         "gates": gates,
         "all_pass": all_pass,
-        "next_stage": GRAYSCALE_ORDER[GRAYSCALE_ORDER.index(state["current_stage"]) + 1]
-                      if state["current_stage"] in GRAYSCALE_ORDER[:-1] else "full",
+        "next_stage": (
+            GRAYSCALE_ORDER[GRAYSCALE_ORDER.index(state["current_stage"]) + 1]
+            if state["current_stage"] in GRAYSCALE_ORDER[:-1]
+            else "full"
+        ),
     }
 
 
@@ -188,11 +203,13 @@ def promote_stage(stage: str) -> Dict[str, Any]:
 
     # 推进
     state["current_stage"] = stage
-    state["promotions"].append({
-        "stage": stage,
-        "timestamp": datetime.now().isoformat(),
-        "gates": gate_result["gates"],
-    })
+    state["promotions"].append(
+        {
+            "stage": stage,
+            "timestamp": datetime.now().isoformat(),
+            "gates": gate_result["gates"],
+        }
+    )
     save_promote_state(state)
 
     return {
@@ -209,18 +226,22 @@ def print_status() -> None:
     ab_stats = get_ab_stats()
 
     print("=" * 60)
-    print(f"战略层阶段4 灰度状态")
+    print("战略层阶段4 灰度状态")
     print("=" * 60)
-    print(f"当前阶段: {state['current_stage']} — {GRAYSCALE_STAGES[state['current_stage']]['desc']}")
+    print(
+        f"当前阶段: {state['current_stage']} — {GRAYSCALE_STAGES[state['current_stage']]['desc']}"
+    )
     print()
     print(f"影子数据更新: {shadow_stats.get('latest_updated', 'N/A')}")
     print(f"最新 war_state: {shadow_stats.get('latest_war_state', {})}")
     print(f"最新 cap: {shadow_stats.get('latest_cap', {})}")
-    fs = shadow_stats.get('latest_five_scores', {})
+    fs = shadow_stats.get("latest_five_scores", {})
     if fs:
         for cls, scores in fs.items():
-            print(f"  {cls}: dao={scores.get('dao')} tian={scores.get('tian')} di={scores.get('di')}")
-    if shadow_stats.get('count', 0) > 0:
+            print(
+                f"  {cls}: dao={scores.get('dao')} tian={scores.get('tian')} di={scores.get('di')}"
+            )
+    if shadow_stats.get("count", 0) > 0:
         print(f"历史影子日志: {shadow_stats['count']} 条")
     print()
     print(f"FinBERT A/B: {ab_stats.get('count', 0)} 天记录")

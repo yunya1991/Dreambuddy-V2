@@ -10,14 +10,20 @@
 4. 重要事件：经济数据/政策事件窗口
 5. 自主申请：执行器检测到关键价位时主动申请
 """
-import os, json, time, subprocess, warnings
-from datetime import datetime, timezone, timedelta
+
+import os  # noqa: I001
+import json
+import time
+import subprocess
+import warnings
+from datetime import datetime, timezone
 from pathlib import Path
 
 warnings.filterwarnings("ignore")
 
 try:
     from dotenv import load_dotenv
+
     load_dotenv(Path(__file__).parent / "config" / ".env")
 except Exception:
     pass
@@ -27,10 +33,10 @@ STATE_FILE = BASE_DIR / "data" / "screen_orchestrator_state.json"
 SCHED_FILE = BASE_DIR / "data" / "screen_self_schedule.json"
 LOG_FILE = BASE_DIR / "logs" / "screen_orchestrator.log"
 
-NORMAL_INTERVAL_H = 1      # 放宽验证阶段：1H心跳
-VOLATILITY_PCT = 2.0       # 降低波动阈值，更易触发
-EVENT_WINDOW_H = 0.5       # 缩短事件窗口
-INTEL_CHECK_INTERVAL_H = 1 # 研报检查间隔缩短
+NORMAL_INTERVAL_H = 1  # 放宽验证阶段：1H心跳
+VOLATILITY_PCT = 2.0  # 降低波动阈值，更易触发
+EVENT_WINDOW_H = 0.5  # 缩短事件窗口
+INTEL_CHECK_INTERVAL_H = 1  # 研报检查间隔缩短
 
 HOME_BIN = "/opt/homebrew/bin"
 os.environ["PATH"] = HOME_BIN + ":" + os.environ.get("PATH", "")
@@ -46,6 +52,7 @@ def log(msg: str):
 
 
 # ── 状态管理 ──────────────────────────────────────────────────────────────
+
 
 def load_state() -> dict:
     if STATE_FILE.exists():
@@ -74,6 +81,7 @@ def save_state(state: dict):
 
 # ── 自主调度申请 ──────────────────────────────────────────────────────────
 
+
 def load_schedule_requests() -> list:
     if not SCHED_FILE.exists():
         return []
@@ -96,13 +104,15 @@ def clear_expired_requests() -> list:
 
 def request_early_run(reason: str, run_at_ts: float, priority: str = "normal"):
     reqs = load_schedule_requests()
-    reqs.append({
-        "reason": reason,
-        "run_at_ts": run_at_ts,
-        "expires_ts": run_at_ts + 3600,
-        "priority": priority,
-        "created_ts": time.time(),
-    })
+    reqs.append(
+        {
+            "reason": reason,
+            "run_at_ts": run_at_ts,
+            "expires_ts": run_at_ts + 3600,
+            "priority": priority,
+            "created_ts": time.time(),
+        }
+    )
     SCHED_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(SCHED_FILE, "w") as f:
         json.dump(reqs, f, indent=2, ensure_ascii=False)
@@ -111,16 +121,24 @@ def request_early_run(reason: str, run_at_ts: float, priority: str = "normal"):
 
 # ── 市场波动检测（零 Token） ──────────────────────────────────────────────
 
+
 def check_market_volatility() -> dict:
     """检测 BTC 1h 波动（OKX 行情）"""
     try:
         import subprocess
+
         r = subprocess.run(
             ["okx", "market", "ticker", "BTC-USDT-SWAP", "--json"],
-            capture_output=True, text=True, timeout=10,
-            env={**os.environ, "NO_UPDATE_CHECK": "1", "PATH": os.environ["PATH"]}
+            capture_output=True,
+            text=True,
+            timeout=10,
+            env={**os.environ, "NO_UPDATE_CHECK": "1", "PATH": os.environ["PATH"]},
         )
-        stdout = "\n".join(l for l in r.stdout.split("\n") if "Update available" not in l and "Run: npm" not in l).strip()
+        stdout = "\n".join(
+            l
+            for l in r.stdout.split("\n")  # noqa: E741
+            if "Update available" not in l and "Run: npm" not in l  # noqa: E741
+        ).strip()
         if r.returncode != 0:
             return {"change_pct": 0, "direction": "N/A"}
         if not stdout.startswith("["):
@@ -135,17 +153,24 @@ def check_market_volatility() -> dict:
             return {"change_pct": 0, "direction": "N/A"}
         change_pct = abs((last - open24h) / open24h * 100)
         direction = "UP" if last > open24h else "DOWN"
-        return {"change_pct": round(change_pct, 2), "direction": direction, "last": last, "open24h": open24h}
+        return {
+            "change_pct": round(change_pct, 2),
+            "direction": direction,
+            "last": last,
+            "open24h": open24h,
+        }
     except Exception as e:
         return {"change_pct": 0, "direction": "ERROR", "error": str(e)}
 
 
 # ── 研报更新检测 ──────────────────────────────────────────────────────────
 
+
 def check_new_intel() -> bool:
     """检测 A6 情报是否有新内容"""
     try:
         from report_loader import load_a6_intel
+
         intel = load_a6_intel()
         state = load_state()
         if intel and not intel.get("error"):
@@ -161,12 +186,14 @@ def check_new_intel() -> bool:
 
 # ── 重要事件检测 ──────────────────────────────────────────────────────────
 
+
 def check_upcoming_events() -> list:
     """检查未来24h重要事件（零Token，本地已知事件 + 研报提示）"""
     events = []
 
     try:
         from report_loader import load_a6_intel
+
         intel = load_a6_intel()
         if intel and not intel.get("error"):
             p0 = intel.get("p0_alerts", 0)
@@ -185,6 +212,7 @@ def check_upcoming_events() -> list:
 
 
 # ── 触发决策 ──────────────────────────────────────────────────────────────
+
 
 def should_trigger(state: dict) -> tuple:
     """
@@ -227,6 +255,7 @@ def should_trigger(state: dict) -> tuple:
 
 # ── 执行三屏交易 ──────────────────────────────────────────────────────────
 
+
 def run_screen_trade(reason: str):
     """执行三屏马丁巡检"""
     log(f"🚀 触发三屏马丁执行 — {reason}")
@@ -235,23 +264,33 @@ def run_screen_trade(reason: str):
         result = subprocess.run(
             ["python3", str(script_path), "run", reason],
             cwd=str(BASE_DIR),
-            capture_output=True, text=True, timeout=180,
-            env={**os.environ, "PYTHONPATH": str(BASE_DIR)}
+            capture_output=True,
+            text=True,
+            timeout=180,
+            env={**os.environ, "PYTHONPATH": str(BASE_DIR)},
         )
-        key_lines = [l for l in result.stdout.split("\n")
-                     if any(kw in l for kw in ["决策", "开仓", "加仓", "止盈", "ACTION", "INFO", "ERROR", "SUCCESS"])
-                     and "Warning" not in l and "Update" not in l]
+        key_lines = [
+            l
+            for l in result.stdout.split("\n")  # noqa: E741
+            if any(
+                kw in l
+                for kw in ["决策", "开仓", "加仓", "止盈", "ACTION", "INFO", "ERROR", "SUCCESS"]
+            )
+            and "Warning" not in l
+            and "Update" not in l
+        ]
         for line in key_lines[:10]:
             log(f"  {line.strip()}")
         if result.returncode != 0:
             log(f"  ❌ 退出码 {result.returncode}: {result.stderr[:200]}")
     except subprocess.TimeoutExpired:
-        log(f"  ⚠️ 超时: screen_executor.py")
+        log("  ⚠️ 超时: screen_executor.py")
     except Exception as e:
         log(f"  ❌ 执行失败: {e}")
 
 
 # ── 主函数 ────────────────────────────────────────────────────────────────
+
 
 def _validate_candidates_config():
     """
@@ -261,28 +300,36 @@ def _validate_candidates_config():
     try:
         from screen_engine import CANDIDATE_COINS, scan_candidates
         from screen_executor import STATE_FILE as EXEC_STATE_FILE
-        
+
         config_count = len(CANDIDATE_COINS)
-        
+
         if EXEC_STATE_FILE.exists():
             try:
                 with open(EXEC_STATE_FILE) as f:
                     exec_state = json.load(f)
                 saved_candidates = exec_state.get("candidates", [])
                 saved_count = len(saved_candidates)
-                
+
                 if saved_count != config_count:
-                    log(f"⚠️ 候选币种配置不一致！状态文件={saved_count}个，当前配置={config_count}个，重新扫描...")
+                    log(
+                        f"⚠️ 候选币种配置不一致！状态文件={saved_count}个，当前配置={config_count}个，重新扫描..."
+                    )
                     new_candidates = scan_candidates()
                     actual_count = len(new_candidates)
                     exec_state["candidates"] = [
-                        {"symbol": c["symbol"], "direction": c["direction"], 
-                         "score_pct": c["score_pct"], "vol_mult": c["vol_mult"]}
+                        {
+                            "symbol": c["symbol"],
+                            "direction": c["direction"],
+                            "score_pct": c["score_pct"],
+                            "vol_mult": c["vol_mult"],
+                        }
                         for c in new_candidates
                     ]
                     with open(EXEC_STATE_FILE, "w") as f:
                         json.dump(exec_state, f, indent=2, ensure_ascii=False)
-                    log(f"✅ 候选币种已重新同步: {actual_count}个（配置{config_count}个，{config_count - actual_count}个因下架/无数据被过滤）")
+                    log(
+                        f"✅ 候选币种已重新同步: {actual_count}个（配置{config_count}个，{config_count - actual_count}个因下架/无数据被过滤）"
+                    )
             except Exception as e:
                 log(f"⚠️ 校验候选币种配置失败: {e}")
     except Exception as e:
@@ -298,9 +345,12 @@ def main():
     # 模式检测（每轮都检测，必要时切换）
     try:
         from mode_manager import check_and_switch_mode
+
         mode_result = check_and_switch_mode()
         if mode_result.get("switched"):
-            log(f"🔄 模式切换: {mode_result['old_mode']} → {mode_result['new_mode']} ({mode_result['reason']})")
+            log(
+                f"🔄 模式切换: {mode_result['old_mode']} → {mode_result['new_mode']} ({mode_result['reason']})"
+            )
     except Exception as e:
         log(f"模式检测异常: {e}")
 
@@ -327,6 +377,7 @@ def get_orchestrator_state() -> dict:
     mode_state = {}
     try:
         from mode_manager import get_current_state
+
         mode_state = get_current_state()
     except Exception:
         pass

@@ -5,6 +5,7 @@
 
 工程约束：HC-1a（独立模块）/ FAIL-OPEN / 不自动修改
 """
+
 from __future__ import annotations
 
 import json
@@ -95,14 +96,16 @@ def _detect_duplicates(memories: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if len(group) > 1:
             for idx in group:
                 visited[idx] = True
-            duplicates.append({
-                "group_size": len(group),
-                "memory_ids": [memories[idx].get("memory_id", f"m-{idx}") for idx in group],
-                "representative": memories[group[0]].get("content", "")[:150],
-                "avg_confidence": round(
-                    sum(memories[idx].get("confidence", 0) for idx in group) / len(group), 4
-                ),
-            })
+            duplicates.append(
+                {
+                    "group_size": len(group),
+                    "memory_ids": [memories[idx].get("memory_id", f"m-{idx}") for idx in group],
+                    "representative": memories[group[0]].get("content", "")[:150],
+                    "avg_confidence": round(
+                        sum(memories[idx].get("confidence", 0) for idx in group) / len(group), 4
+                    ),
+                }
+            )
     return duplicates
 
 
@@ -113,12 +116,14 @@ def _detect_stale(memories: list[dict[str, Any]]) -> list[dict[str, Any]]:
         conf = m.get("confidence", 1.0)
         verify = m.get("verify_count", 0)
         if conf < _STALE_CONFIDENCE and verify >= _STALE_VERIFY_MIN:
-            stale.append({
-                "memory_id": m.get("memory_id", "unknown"),
-                "confidence": conf,
-                "verify_count": verify,
-                "content": m.get("content", "")[:150],
-            })
+            stale.append(
+                {
+                    "memory_id": m.get("memory_id", "unknown"),
+                    "confidence": conf,
+                    "verify_count": verify,
+                    "content": m.get("content", "")[:150],
+                }
+            )
     return stale
 
 
@@ -136,14 +141,16 @@ def _detect_contradictions(memories: list[dict[str, Any]]) -> list[dict[str, Any
         low, high = sorted_mems[0], sorted_mems[-1]
         diff = high.get("confidence", 0) - low.get("confidence", 0)
         if diff > _CONFLICT_CONFIDENCE_DIFF:
-            contradictions.append({
-                "category": cat,
-                "low_memory_id": low.get("memory_id"),
-                "low_confidence": low.get("confidence"),
-                "high_memory_id": high.get("memory_id"),
-                "high_confidence": high.get("confidence"),
-                "confidence_diff": round(diff, 4),
-            })
+            contradictions.append(
+                {
+                    "category": cat,
+                    "low_memory_id": low.get("memory_id"),
+                    "low_confidence": low.get("confidence"),
+                    "high_memory_id": high.get("memory_id"),
+                    "high_confidence": high.get("confidence"),
+                    "confidence_diff": round(diff, 4),
+                }
+            )
     return contradictions
 
 
@@ -154,12 +161,14 @@ def _detect_improvements(memories: list[dict[str, Any]]) -> list[dict[str, Any]]
         conf = m.get("confidence", 0)
         verify = m.get("verify_count", 0)
         if _IMPROVEMENT_LOW <= conf < _IMPROVEMENT_HIGH and verify >= _IMPROVEMENT_VERIFY_MIN:
-            improvements.append({
-                "memory_id": m.get("memory_id", "unknown"),
-                "confidence": conf,
-                "verify_count": verify,
-                "content": m.get("content", "")[:150],
-            })
+            improvements.append(
+                {
+                    "memory_id": m.get("memory_id", "unknown"),
+                    "confidence": conf,
+                    "verify_count": verify,
+                    "content": m.get("content", "")[:150],
+                }
+            )
     return improvements
 
 
@@ -175,7 +184,9 @@ def run_health_audit() -> dict[str, Any]:
         improvements = _detect_improvements(memories)
 
         total_issues = len(duplicates) + len(stale) + len(contradictions)
-        health_score = max(0, 100 - (len(duplicates) * 2 + len(stale) * 3 + len(contradictions) * 5))
+        health_score = max(
+            0, 100 - (len(duplicates) * 2 + len(stale) * 3 + len(contradictions) * 5)
+        )
 
         return {
             "status": "ok",

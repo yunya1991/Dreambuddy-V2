@@ -16,6 +16,7 @@
   evidence_backed / gap_closed: 首版不做证据比对 → action 正常时 degraded(evidence_pending)
 整体 verdict: any fail → fail；else any degraded/extras → degraded；else pass；空节点 → degraded
 """
+
 import os
 import sys
 
@@ -38,15 +39,25 @@ from core.sacg_orchestrator import SACGOrchestrator  # noqa: E402
 
 
 def _node(node_id="N1", verify=VERIFY_C_ACTION, **kw):
-    n = {"node_id": node_id, "objective": "obj", "criteria": "crit",
-         "source": "plan_item", "verify": verify}
+    n = {
+        "node_id": node_id,
+        "objective": "obj",
+        "criteria": "crit",
+        "source": "plan_item",
+        "verify": verify,
+    }
     n.update(kw)
     return n
 
 
 def _result(node_id="N1", action="CONTINUE", **kw):
-    r = {"node_id": node_id, "action": action, "tier": "Tier1",
-         "effort_level": "light", "detail": {}}
+    r = {
+        "node_id": node_id,
+        "action": action,
+        "tier": "Tier1",
+        "effort_level": "light",
+        "detail": {},
+    }
     r.update(kw)
     return r
 
@@ -93,8 +104,7 @@ class TestCActionVerdict:
 class TestEvidenceVerifyTypes:
     def test_evidence_backed_pending(self):
         """首版不做证据比对：action 正常 → degraded(evidence_pending)"""
-        out = evaluate_nodes(
-            [_node(verify=VERIFY_EVIDENCE, evidence_id="EV-1")], [_result()])
+        out = evaluate_nodes([_node(verify=VERIFY_EVIDENCE, evidence_id="EV-1")], [_result()])
         v = out["node_verdicts"][0]
         assert v["verdict"] == VERDICT_DEGRADED
         assert v["reason"] == "evidence_pending"
@@ -105,8 +115,7 @@ class TestEvidenceVerifyTypes:
         assert out["node_verdicts"][0]["reason"] == "evidence_pending"
 
     def test_evidence_type_still_fails_on_bad_action(self):
-        out = evaluate_nodes(
-            [_node(verify=VERIFY_EVIDENCE)], [_result(action="FAILED")])
+        out = evaluate_nodes([_node(verify=VERIFY_EVIDENCE)], [_result(action="FAILED")])
         assert out["node_verdicts"][0]["verdict"] == VERDICT_FAIL
 
 
@@ -126,8 +135,7 @@ class TestReconciliation:
 
     def test_counts_and_red_flags(self):
         nodes = [_node("N1"), _node("N2"), _node("N3")]
-        results = [_result("N1"), _result("N2", action="REDO"),
-                   _result("N3", action="FAILED")]
+        results = [_result("N1"), _result("N2", action="REDO"), _result("N3", action="FAILED")]
         out = evaluate_nodes(nodes, results)
         assert out["counts"] == {"pass": 1, "degraded": 1, "fail": 1}
         assert out["red_flags"] == ["N3"]
@@ -155,8 +163,7 @@ class TestOrchestratorAcceptanceIntegration:
     def test_handle_output_has_acceptance(self):
         """C 层结果回传 A 层验收: handle() 输出携带 acceptance 字段"""
         orch = SACGOrchestrator(router=FakeRouter())
-        out = orch.handle("这次FOMC怎么看", l1_intent_hint="event_analysis",
-                          memories=[])
+        out = orch.handle("这次FOMC怎么看", l1_intent_hint="event_analysis", memories=[])
         assert "acceptance" in out
         acc = out["acceptance"]
         assert acc["verdict"] in (VERDICT_PASS, VERDICT_DEGRADED, VERDICT_FAIL)
@@ -166,16 +173,14 @@ class TestOrchestratorAcceptanceIntegration:
 
     def test_acceptance_reflects_failed_node(self):
         orch = SACGOrchestrator(router=FakeRouter(action="EARLY_TERMINATE"))
-        out = orch.handle("这次FOMC怎么看", l1_intent_hint="event_analysis",
-                          memories=[])
+        out = orch.handle("这次FOMC怎么看", l1_intent_hint="event_analysis", memories=[])
         assert out["acceptance"]["verdict"] == VERDICT_FAIL
         assert out["acceptance"]["red_flags"]
 
     def test_flow_unchanged(self):
         """验收不阻断主流程: stages/action/node_results 保持原样"""
         orch = SACGOrchestrator(router=FakeRouter(action="FAILED"))
-        out = orch.handle("这次FOMC怎么看", l1_intent_hint="event_analysis",
-                          memories=[])
+        out = orch.handle("这次FOMC怎么看", l1_intent_hint="event_analysis", memories=[])
         assert out["stages"] == ["S", "A", "C", "G"]
         assert out["action"] == "PROCEED"
         assert out["node_results"]
@@ -189,12 +194,15 @@ class TestOrchestratorAcceptanceIntegration:
 #       实践/理论/回测缺失 → degraded({dim}_pending, 首版规则化)；其余不拓展
 # ============================================================
 
+
 class TestFinanceDomainMarking:
     """节点 domain 标记: item 显式 > plan 级显式 > research_request 推断"""
 
     def test_research_request_marks_finance_domain(self):
-        plan = {"plan_items": ["背景梳理", "影响推演"],
-                "research_request": {"message": "x", "mode": "stub"}}
+        plan = {
+            "plan_items": ["背景梳理", "影响推演"],
+            "research_request": {"message": "x", "mode": "stub"},
+        }
         nodes = decompose_okr_nodes(plan)
         assert all(n["domain"] == FINANCE_DOMAIN for n in nodes)
 
@@ -203,10 +211,11 @@ class TestFinanceDomainMarking:
         assert decompose_okr_nodes(plan)[0]["domain"] == FINANCE_DOMAIN
 
     def test_item_domain_overrides(self):
-        plan = {"domain": FINANCE_DOMAIN,
-                "plan_items": ["x"],
-                "engineering_okr": [{"okr": "y", "source": "rea_evidence",
-                                     "domain": "code_dev"}]}
+        plan = {
+            "domain": FINANCE_DOMAIN,
+            "plan_items": ["x"],
+            "engineering_okr": [{"okr": "y", "source": "rea_evidence", "domain": "code_dev"}],
+        }
         nodes = decompose_okr_nodes(plan)
         assert nodes[0]["domain"] == "code_dev"
 
@@ -217,12 +226,21 @@ class TestFinanceDomainMarking:
 
 def _finance_result(node_id="N1", action="CONTINUE", evidence=None):
     detail = {} if evidence is None else {"finance_evidence": evidence}
-    return {"node_id": node_id, "action": action, "tier": "Tier1",
-            "effort_level": "light", "detail": detail}
+    return {
+        "node_id": node_id,
+        "action": action,
+        "tier": "Tier1",
+        "effort_level": "light",
+        "detail": detail,
+    }
 
 
-_FULL_EVIDENCE = {"practice": "VM-xxx 实践记忆", "theory": "利率平价理论",
-                  "backtest": "washout 回测 2024 样本外验证", "data_source": "OKX API"}
+_FULL_EVIDENCE = {
+    "practice": "VM-xxx 实践记忆",
+    "theory": "利率平价理论",
+    "backtest": "washout 回测 2024 样本外验证",
+    "data_source": "OKX API",
+}
 
 
 class TestFinanceAcceptance:
@@ -230,12 +248,15 @@ class TestFinanceAcceptance:
         return _node(node_id, domain=FINANCE_DOMAIN)
 
     def test_full_evidence_passes(self):
-        out = evaluate_nodes([self._fin_node()],
-                             [_finance_result(evidence=_FULL_EVIDENCE)])
+        out = evaluate_nodes([self._fin_node()], [_finance_result(evidence=_FULL_EVIDENCE)])
         v = out["node_verdicts"][0]
         assert v["verdict"] == VERDICT_PASS
-        assert v["dimensions"] == {"practice": "pass", "theory": "pass",
-                                   "backtest": "pass", "data_source": "pass"}
+        assert v["dimensions"] == {
+            "practice": "pass",
+            "theory": "pass",
+            "backtest": "pass",
+            "data_source": "pass",
+        }
 
     def test_missing_theory_degraded(self):
         ev = dict(_FULL_EVIDENCE, theory=None)
@@ -249,8 +270,7 @@ class TestFinanceAcceptance:
         """数据真实是硬门: 造假标记 → fail(data_fabricated)，其余维度再好也 fail"""
         for fake in ("fabricated", "synthetic", "mock"):
             ev = dict(_FULL_EVIDENCE, data_source=fake)
-            out = evaluate_nodes([self._fin_node()],
-                                 [_finance_result(evidence=ev)])
+            out = evaluate_nodes([self._fin_node()], [_finance_result(evidence=ev)])
             v = out["node_verdicts"][0]
             assert v["verdict"] == VERDICT_FAIL
             assert v["dimensions"]["data_source"] == "fail"
@@ -273,8 +293,8 @@ class TestFinanceAcceptance:
     def test_bad_action_still_fails(self):
         """动作硬失败优先于维度评估"""
         out = evaluate_nodes(
-            [self._fin_node()],
-            [_finance_result(action="FAILED", evidence=_FULL_EVIDENCE)])
+            [self._fin_node()], [_finance_result(action="FAILED", evidence=_FULL_EVIDENCE)]
+        )
         assert out["node_verdicts"][0]["verdict"] == VERDICT_FAIL
 
     def test_non_finance_node_unchanged(self):
@@ -286,11 +306,12 @@ class TestFinanceAcceptance:
 
     def test_orchestrator_finance_integration(self):
         """注入金融 domain 节点: 验收走四维分流"""
+
         def fin_decomposer(plan):
             return [_node("N1", domain=FINANCE_DOMAIN)]
+
         orch = SACGOrchestrator(router=FakeRouter(), a_decomposer=fin_decomposer)
-        out = orch.handle("这次FOMC怎么看", l1_intent_hint="event_analysis",
-                          memories=[])
+        out = orch.handle("这次FOMC怎么看", l1_intent_hint="event_analysis", memories=[])
         v = out["acceptance"]["node_verdicts"][0]
         # FakeRouter detail 无 finance_evidence → degraded（FAIL-OPEN）
         assert v["verdict"] == VERDICT_DEGRADED
@@ -303,6 +324,7 @@ class TestFinanceAcceptance:
 #   data_source: 来源具体 → pass；含糊来源（"公开数据"等）→ degraded(source_vague)
 # 依据: Bailey & López de Prado 样本外纪律 + FinGround 原子声明可溯源
 # ============================================================
+
 
 class TestFinanceSubRules:
     def _fin_node(self, node_id="N1"):
@@ -318,11 +340,9 @@ class TestFinanceSubRules:
         assert "oos_pending" in v["reasons"]
 
     def test_walkforward_backtest_passes(self):
-        for marker in ("walk-forward 2023-2024", "样本外滚动验证",
-                       "out-of-sample test"):
+        for marker in ("walk-forward 2023-2024", "样本外滚动验证", "out-of-sample test"):
             ev = dict(_FULL_EVIDENCE, backtest=marker)
-            out = evaluate_nodes([self._fin_node()],
-                                 [_finance_result(evidence=ev)])
+            out = evaluate_nodes([self._fin_node()], [_finance_result(evidence=ev)])
             v = out["node_verdicts"][0]
             assert v["dimensions"]["backtest"] == "pass", marker
             assert v["verdict"] == VERDICT_PASS
@@ -331,8 +351,7 @@ class TestFinanceSubRules:
         """来源含糊（"公开数据"/"网络"）→ degraded(source_vague)：不可核验"""
         for vague in ("公开数据", "网络", "公开资料", "网上资料"):
             ev = dict(_FULL_EVIDENCE, data_source=vague)
-            out = evaluate_nodes([self._fin_node()],
-                                 [_finance_result(evidence=ev)])
+            out = evaluate_nodes([self._fin_node()], [_finance_result(evidence=ev)])
             v = out["node_verdicts"][0]
             assert v["dimensions"]["data_source"] == "degraded", vague
             assert "source_vague" in v["reasons"]
@@ -342,8 +361,7 @@ class TestFinanceSubRules:
         """具体来源（含 API/库名）→ pass；含糊词作为修饰不影响具体来源判定"""
         for src in ("OKX API 2024-01~2024-12", "Tushare Pro", "Wind 万得"):
             ev = dict(_FULL_EVIDENCE, data_source=src)
-            out = evaluate_nodes([self._fin_node()],
-                                 [_finance_result(evidence=ev)])
+            out = evaluate_nodes([self._fin_node()], [_finance_result(evidence=ev)])
             assert out["node_verdicts"][0]["dimensions"]["data_source"] == "pass", src
 
     def test_fabricated_still_hard_fails(self):

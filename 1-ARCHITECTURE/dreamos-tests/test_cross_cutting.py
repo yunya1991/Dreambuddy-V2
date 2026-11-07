@@ -7,14 +7,15 @@ DreamOS 横切关注点测试
     Budget: 全局预算 / 成本追踪
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def test_registry_loader_config():
     """测试注册表从字典配置加载（API节点）"""
-    from dreamos.registry import RegistryLoader, NodeRegistry
+    from dreamos.registry import RegistryLoader, NodeRegistry  # noqa: I001
 
     registry = NodeRegistry()
     loader = RegistryLoader(registry)
@@ -49,9 +50,12 @@ def test_registry_loader_config():
 
 def test_version_management():
     """测试版本管理"""
-    from dreamos.registry import (
-        parse_version, compare_versions, satisfies_requirement,
-        VersionedNodeMixin, RegistryExtension,
+    from dreamos.registry import (  # noqa: I001
+        parse_version,
+        compare_versions,
+        satisfies_requirement,
+        VersionedNodeMixin,
+        RegistryExtension,
     )
     from dreamos.registry.base import BaseNode
     from dreamos.registry.node_registry import NodeRegistry
@@ -121,7 +125,7 @@ def test_version_management():
 
 def test_evolution_lessons():
     """测试经验教训提炼"""
-    from dreamos.evolution import LessonDistiller
+    from dreamos.evolution import LessonDistiller  # noqa: I001
     from dreamos.core.graph_store.types import HistoryEntry
 
     distiller = LessonDistiller(min_occurrences=2)
@@ -130,43 +134,49 @@ def test_evolution_lessons():
     entries = []
     # 3 次 HOLD（低置信度场景）
     for i in range(3):
-        entries.append(HistoryEntry(
-            cycle_id=f"c{i}",
-            intent_type="TREND_FOLLOWING",
-            planned_chain="A",
-            final_action="HOLD",
-            final_confidence=0.3,
-            total_tokens=1000,
-            success_rate=0.8,
-        ))
+        entries.append(
+            HistoryEntry(
+                cycle_id=f"c{i}",
+                intent_type="TREND_FOLLOWING",
+                planned_chain="A",
+                final_action="HOLD",
+                final_confidence=0.3,
+                total_tokens=1000,
+                success_rate=0.8,
+            )
+        )
     # 2 次 LONG（正常场景）
     for i in range(2):
-        entries.append(HistoryEntry(
-            cycle_id=f"c_long_{i}",
-            intent_type="TREND_FOLLOWING",
-            planned_chain="A",
-            final_action="LONG",
-            final_confidence=0.7,
-            total_tokens=800,
-            success_rate=0.9,
-        ))
+        entries.append(
+            HistoryEntry(
+                cycle_id=f"c_long_{i}",
+                intent_type="TREND_FOLLOWING",
+                planned_chain="A",
+                final_action="LONG",
+                final_confidence=0.7,
+                total_tokens=800,
+                success_rate=0.9,
+            )
+        )
     # 高预算消耗
     for i in range(3):
-        entries.append(HistoryEntry(
-            cycle_id=f"c_budget_{i}",
-            intent_type="BREAKOUT",
-            planned_chain="C",
-            final_action="LONG",
-            final_confidence=0.6,
-            total_tokens=9000,
-            success_rate=0.5,
-        ))
+        entries.append(
+            HistoryEntry(
+                cycle_id=f"c_budget_{i}",
+                intent_type="BREAKOUT",
+                planned_chain="C",
+                final_action="LONG",
+                final_confidence=0.6,
+                total_tokens=9000,
+                success_rate=0.5,
+            )
+        )
 
     lessons = distiller.distill(entries)
-    assert len(lessons) > 0, f"期望至少 1 条教训，实际 0 条"
+    assert len(lessons) > 0, "期望至少 1 条教训，实际 0 条"
 
     # 应该有策略类或预算类教训
-    categories = {l.category for l in lessons}
+    categories = {l.category for l in lessons}  # noqa: E741
     assert len(categories) > 0
 
     print(f"✅ 经验教训提炼测试通过 ({len(lessons)} 条教训, categories={categories})")
@@ -174,7 +184,7 @@ def test_evolution_lessons():
 
 def test_evolution_gap_analysis():
     """测试知行差距分析"""
-    from dreamos.evolution import GapAnalyzer
+    from dreamos.evolution import GapAnalyzer  # noqa: I001
     from dreamos.core.graph_store.types import HistoryEntry
 
     analyzer = GapAnalyzer()
@@ -182,14 +192,16 @@ def test_evolution_gap_analysis():
     # 准备混合数据
     entries = []
     for i in range(4):
-        entries.append(HistoryEntry(
-            cycle_id=f"c{i}",
-            intent_type="TREND_FOLLOWING",
-            planned_chain="A",
-            final_action="LONG" if i < 2 else "SHORT",  # 方向不一致
-            final_confidence=0.6 + i * 0.05,
-            success_rate=0.75,
-        ))
+        entries.append(
+            HistoryEntry(
+                cycle_id=f"c{i}",
+                intent_type="TREND_FOLLOWING",
+                planned_chain="A",
+                final_action="LONG" if i < 2 else "SHORT",  # 方向不一致
+                final_confidence=0.6 + i * 0.05,
+                success_rate=0.75,
+            )
+        )
 
     result = analyzer.analyze(entries)
     assert result.overall_gap_score >= 0
@@ -202,32 +214,36 @@ def test_evolution_gap_analysis():
 
 def test_evolution_node_optimizer():
     """测试节点优化建议"""
-    from dreamos.evolution import NodeOptimizer
+    from dreamos.evolution import NodeOptimizer  # noqa: I001
     from dreamos.core.graph_store.types import HistoryEntry
 
     optimizer = NodeOptimizer()
 
     entries = []
     for i in range(3):
-        entries.append(HistoryEntry(
-            cycle_id=f"c{i}",
-            intent_type="TREND_FOLLOWING",
-            planned_chain="A",
-            final_action="LONG",
-            final_confidence=0.7,
-            total_tokens=1500,
-            success_rate=0.8,
-        ))
+        entries.append(
+            HistoryEntry(
+                cycle_id=f"c{i}",
+                intent_type="TREND_FOLLOWING",
+                planned_chain="A",
+                final_action="LONG",
+                final_confidence=0.7,
+                total_tokens=1500,
+                success_rate=0.8,
+            )
+        )
     for i in range(3):
-        entries.append(HistoryEntry(
-            cycle_id=f"c2{i}",
-            intent_type="BREAKOUT",
-            planned_chain="C",
-            final_action="LONG",
-            final_confidence=0.4,
-            total_tokens=800,
-            success_rate=0.5,
-        ))
+        entries.append(
+            HistoryEntry(
+                cycle_id=f"c2{i}",
+                intent_type="BREAKOUT",
+                planned_chain="C",
+                final_action="LONG",
+                final_confidence=0.4,
+                total_tokens=800,
+                success_rate=0.5,
+            )
+        )
 
     node_stats = {
         "A0": {"success_rate": 0.9, "avg_latency_ms": 100},
@@ -247,8 +263,7 @@ def test_evolution_node_optimizer():
 def test_evolution_engine():
     """测试进化引擎"""
     from dreamos.evolution import EvolutionEngine
-    from dreamos.core.graph_store.types import HistoryEntry
-    from dreamos.shared.state import State, NodeResult, new_state
+    from dreamos.shared.state import NodeResult, new_state
 
     engine = EvolutionEngine(min_occurrences=2)
 
@@ -261,11 +276,14 @@ def test_evolution_engine():
         state.final_action = "LONG"
         state.final_confidence = 0.6
 
-        engine.record_from_state(state, {
-            "total_tokens": 500,
-            "total_latency_ms": 1000,
-            "success_rate": 1.0,
-        })
+        engine.record_from_state(
+            state,
+            {
+                "total_tokens": 500,
+                "total_latency_ms": 1000,
+                "success_rate": 1.0,
+            },
+        )
 
     assert engine.history_count == 5
 
@@ -281,12 +299,14 @@ def test_evolution_engine():
     assert len(report.suggestions) >= 0
     assert "total_cycles" in report.performance_metrics
 
-    print(f"✅ 进化引擎测试通过 (cycles={report.cycles_analyzed}, lessons={len(report.lessons)}, suggestions={len(report.suggestions)})")
+    print(
+        f"✅ 进化引擎测试通过 (cycles={report.cycles_analyzed}, lessons={len(report.lessons)}, suggestions={len(report.suggestions)})"
+    )
 
 
 def test_global_budget():
     """测试全局预算管理器"""
-    from dreamos.budget import GlobalBudgetManager, BudgetLevel, BUDGET_MODES
+    from dreamos.budget import GlobalBudgetManager, BudgetLevel, BUDGET_MODES  # noqa: I001
 
     # 三档预算
     assert BUDGET_MODES["lean"]["per_cycle"] == 3000
@@ -396,7 +416,7 @@ def test_budget_cycle():
     assert budget.used_per_day == 2000
 
     budget.consume(1000, layer="sense")
-    used2 = budget.end_cycle()
+    used2 = budget.end_cycle()  # noqa: F841
 
     # 日总消耗
     assert budget.used_per_day == 3000

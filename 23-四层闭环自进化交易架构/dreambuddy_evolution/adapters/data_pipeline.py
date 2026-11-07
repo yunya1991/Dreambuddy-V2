@@ -6,6 +6,7 @@ SPEC §3
 FAIL-OPEN: 任一适配器异常 → 该字段缺失 → R 向量该维度走 0.5 兜底
 性能预算: <1s
 """
+
 from __future__ import annotations
 
 import logging
@@ -13,22 +14,22 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
-from .cognitive_bridge import CognitiveBridge
+from ..core.event_window_tracker import EventWindowTracker
+from ..core.general_event_window_tracker import GeneralEventWindowTracker
 from .capital_rotation import CapitalRotationAdapter
+from .cognitive_bridge import CognitiveBridge
+from .coin_scanner import CoinScanner
 from .data_center import DataCenterAdapter
 from .ess_provider import ESSDirectionProvider
+from .ftc_executor import evaluate_ftc
+from .ftc_orchestrator import FTCOrchestrator
 from .narrative_adapter import NarrativeAdapter
 from .okx_market import OKXMarketAdapter
+from .path_library import PathLibrary
 from .ripple_provider import RippleDataProvider
 from .sentiment_bridge import SentimentBridge
 from .subsystem_bridge import SubSystemBridge
 from .traditional_finance import TraditionalFinanceBridge
-from .path_library import PathLibrary
-from .coin_scanner import CoinScanner
-from .ftc_orchestrator import FTCOrchestrator
-from .ftc_executor import evaluate_ftc
-from ..core.event_window_tracker import EventWindowTracker
-from ..core.general_event_window_tracker import GeneralEventWindowTracker
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,9 @@ class DataPipelineAdapter:
             data_center_db=data_center_db,
             sentiment_engine=sentiment_engine,
         )
-        self._ess = ESSDirectionProvider(gene_data_root, min_sample=min_sample) if gene_data_root else None
+        self._ess = (
+            ESSDirectionProvider(gene_data_root, min_sample=min_sample) if gene_data_root else None
+        )
         self._subsystem = SubSystemBridge(trader) if trader else None
         self._cognitive = CognitiveBridge(db_path=cognitive_db, enabled=cognitive_enabled)
         # Phase 2: odaily 叙事标签库（data_center_db 存在时启用）
@@ -269,8 +272,9 @@ class DataPipelineAdapter:
             #   ranging       → 衰减资金流信号（均值回归主导）
             #   crisis        → 抑制信号（降杠杆）
             regime = tf_result["regime"]
-            regime_mult = {"trend_up": 1.3, "trend_down": 1.3,
-                           "ranging": 0.7, "crisis": 0.3}.get(regime, 1.0)
+            regime_mult = {"trend_up": 1.3, "trend_down": 1.3, "ranging": 0.7, "crisis": 0.3}.get(
+                regime, 1.0
+            )
             if "capital_flow" in kline_data:
                 kline_data["capital_flow"] = max(
                     -1.0, min(1.0, kline_data["capital_flow"] * regime_mult)
@@ -312,7 +316,9 @@ class DataPipelineAdapter:
                 best_ftc = None
                 for ftc in top_ftcs:
                     sig = evaluate_ftc(ftc, kline_data)
-                    if sig["signal"] != "WAIT" and (best_signal is None or sig["confidence"] > best_signal["confidence"]):
+                    if sig["signal"] != "WAIT" and (
+                        best_signal is None or sig["confidence"] > best_signal["confidence"]
+                    ):
                         best_signal = sig
                         best_ftc = ftc
                 if best_ftc and best_signal:
@@ -381,6 +387,7 @@ class DataPipelineAdapter:
         #    单向依赖不回写；fail-open：40 产出物缺失/过期/异常时 available=False
         try:
             from dreambuddy_evolution.adapters.macro_constraint_adapter import load_macro_constraint
+
             kline_data["macro_constraint"] = load_macro_constraint()
         except Exception as e:
             logger.warning("[FO] macro_constraint injection crash: %s", e)
@@ -414,6 +421,7 @@ class DataPipelineAdapter:
         """
         import json as _json
         import os as _os
+
         # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导
         _root = _os.environ.get("DREAMBUDDY_ROOT") or _os.path.dirname(
             _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
@@ -424,7 +432,7 @@ class DataPipelineAdapter:
                 return {"available": False, "note": "42 层总线状态不存在（fail-open）"}
             with open(bus_path, encoding="utf-8") as f:
                 bus = _json.load(f)
-            for sig in (bus.get("signals") or []):
+            for sig in bus.get("signals") or []:
                 if sig.get("source") == "strategic_extension":
                     return {
                         "available": True,
@@ -457,6 +465,7 @@ class DataPipelineAdapter:
             oi = kline_data.get("open_interest")
             if oi is not None and oi > 0:
                 import math
+
                 oi_log = math.log10(max(oi, 1))
                 return max(-1.0, min(1.0, (oi_log - 6.0) / 2.0))
             return None
@@ -551,9 +560,7 @@ class DataPipelineAdapter:
                 md = item.get("meeting_date", "")
                 if md:
                     try:
-                        dt = datetime.strptime(md, "%Y-%m-%d").replace(
-                            tzinfo=timezone.utc
-                        )
+                        dt = datetime.strptime(md, "%Y-%m-%d").replace(tzinfo=timezone.utc)
                     except ValueError:
                         continue
             if dt is None:
@@ -608,9 +615,7 @@ class DataPipelineAdapter:
                 rec_ts = data.get("_record_timestamp", "")
                 if rec_ts:
                     try:
-                        rec_dt = datetime.fromisoformat(
-                            rec_ts.replace("Z", "+00:00")
-                        )
+                        rec_dt = datetime.fromisoformat(rec_ts.replace("Z", "+00:00"))
                         if (now - rec_dt).total_seconds() < 48 * 3600:
                             event_type = et
                             break
@@ -640,9 +645,7 @@ class DataPipelineAdapter:
 
         return event_ctx, cesi
 
-    def _route_general_events(
-        self, event_ctx: dict[str, Any], now: datetime
-    ) -> dict[str, Any]:
+    def _route_general_events(self, event_ctx: dict[str, Any], now: datetime) -> dict[str, Any]:
         """SPEC-Phase2 §8.3: 通用事件窗口路由。
 
         查询 tech_upgrade（CoinMarketCal）/ congressional_hearing 等轨道A事件，
@@ -706,9 +709,7 @@ class DataPipelineAdapter:
                             tzinfo=timezone.utc
                         )
                     else:
-                        event_dt = datetime.fromisoformat(
-                            event_date_str.replace("Z", "+00:00")
-                        )
+                        event_dt = datetime.fromisoformat(event_date_str.replace("Z", "+00:00"))
                     break
                 except Exception:
                     continue

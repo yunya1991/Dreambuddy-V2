@@ -4,13 +4,12 @@
 回测结果：胜率76.59%，总收益仅5.23%，账户收益仅0.26%
 本脚本深入分析每笔交易明细，定位根因。
 """
+
 import sys
-import os
-import json
-import math
-import numpy as np
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
+
+import numpy as np
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SCRIPT_DIR = str(BASE_DIR / "scripts" / "memory_l4")
@@ -19,10 +18,12 @@ if SCRIPT_DIR in sys.path:
 PROJECT_ROOT = str(BASE_DIR)
 sys.path.insert(0, PROJECT_ROOT)
 
-import pandas as pd
-from scripts.memory_l4.classic_exit_system import ExitConfig
-from scripts.memory_l4.exit_backtest_optimize import (
-    run_backtest, load_trades, load_klines, SYMBOLS, LEVERAGE, FEE_PCT,
+from scripts.memory_l4.classic_exit_system import ExitConfig  # noqa: E402
+from scripts.memory_l4.exit_backtest_optimize import (  # noqa: E402
+    FEE_PCT,
+    LEVERAGE,
+    SYMBOLS,
+    run_backtest,
 )
 
 # 修复后参数
@@ -32,14 +33,24 @@ CONFIG = ExitConfig(
     l2_close_threshold=0.75,
     l2_reduce_threshold=0.55,
     apply_leverage_to_thresholds=True,
-    tb_enabled=True, tb_sl_atr_mult=1.5, tb_tp_atr_mult=3.0,
-    tb_sl_min_pct=0.045, tb_tp_min_pct=0.04,
-    trailing_enabled=True, trailing_arm_profit_pct=0.04, trailing_retrace_pct=0.035,
-    tstp_enabled=True, inflight_cooldown_sec=180,
-    l0_risk_gate_enabled=True, l0_risk_gate_close_enabled=False,
-    l0_risk_gate_cooldown_min=60.0, l0_risk_gate_confirm_n=3,
-    l0_risk_gate_long_thr=0.65, l0_risk_gate_short_thr=0.60,
-    l0_risk_gate_min_hold_sec=3600.0, l0_risk_gate_profit_bypass_pct=0.05,
+    tb_enabled=True,
+    tb_sl_atr_mult=1.5,
+    tb_tp_atr_mult=3.0,
+    tb_sl_min_pct=0.045,
+    tb_tp_min_pct=0.04,
+    trailing_enabled=True,
+    trailing_arm_profit_pct=0.04,
+    trailing_retrace_pct=0.035,
+    tstp_enabled=True,
+    inflight_cooldown_sec=180,
+    l0_risk_gate_enabled=True,
+    l0_risk_gate_close_enabled=False,
+    l0_risk_gate_cooldown_min=60.0,
+    l0_risk_gate_confirm_n=3,
+    l0_risk_gate_long_thr=0.65,
+    l0_risk_gate_short_thr=0.60,
+    l0_risk_gate_min_hold_sec=3600.0,
+    l0_risk_gate_profit_bypass_pct=0.05,
 )
 
 
@@ -57,7 +68,7 @@ def main():
     losses = [p for p in pnls if p <= 0]
 
     print(f"\n{'─'*70}")
-    print(f"  1. 单笔盈亏分布")
+    print("  1. 单笔盈亏分布")
     print(f"{'─'*70}")
     print(f"  总交易: {len(pnls)}")
     print(f"  盈利: {len(wins)}笔, 亏损: {len(losses)}笔")
@@ -66,12 +77,12 @@ def main():
     print(f"  平均单笔收益: {np.mean(pnls):.4f}%")
     print(f"  中位数收益: {np.median(pnls):.4f}%")
 
-    print(f"\n  盈利交易统计:")
+    print("\n  盈利交易统计:")
     print(f"    平均盈利: {np.mean(wins):.4f}%  中位数: {np.median(wins):.4f}%")
     print(f"    最大盈利: {max(wins):.4f}%  最小盈利: {min(wins):.4f}%")
     print(f"    总盈利: {sum(wins):.2f}%")
 
-    print(f"\n  亏损交易统计:")
+    print("\n  亏损交易统计:")
     print(f"    平均亏损: {np.mean(losses):.4f}%  中位数: {np.median(losses):.4f}%")
     print(f"    最大亏损: {min(losses):.4f}%  最小亏损: {max(losses):.4f}%")
     print(f"    总亏损: {sum(losses):.2f}%")
@@ -81,7 +92,7 @@ def main():
 
     # ── 2. 盈亏区间分布 ──
     print(f"\n{'─'*70}")
-    print(f"  2. 盈亏区间分布（单笔pnl_pct）")
+    print("  2. 盈亏区间分布（单笔pnl_pct）")
     print(f"{'─'*70}")
     buckets = [
         ("大亏  <-3%", lambda p: p < -3),
@@ -104,7 +115,7 @@ def main():
 
     # ── 3. 手续费侵蚀分析 ──
     print(f"\n{'─'*70}")
-    print(f"  3. 手续费侵蚀分析")
+    print("  3. 手续费侵蚀分析")
     print(f"{'─'*70}")
     total_fee = 0.0
     total_gross_pnl = 0.0
@@ -121,7 +132,7 @@ def main():
     print(f"  总交易: {len(results)}笔")
     print(f"  减仓交易: {sum(1 for r in results if r.reduce_count > 0)}笔")
     print(f"  总减仓次数: {sum(r.reduce_count for r in results)}")
-    print(f"  ")
+    print("  ")
     print(f"  总毛收益(扣费前): {total_gross_pnl:.2f}%")
     print(f"  总手续费: {total_fee:.2f}%")
     print(f"  总净收益(扣费后): {total_net_pnl:.2f}%")
@@ -131,20 +142,22 @@ def main():
 
     # ── 4. 仓位管理分析 ──
     print(f"\n{'─'*70}")
-    print(f"  4. 仓位管理分析")
+    print("  4. 仓位管理分析")
     print(f"{'─'*70}")
     position_size_pct = 0.05  # 回测引擎使用5%仓位
-    account_return = sum(pnls) * position_size_pct
+    account_return = sum(pnls) * position_size_pct  # noqa: F841
     print(f"  单笔仓位: {position_size_pct*100:.0f}% of capital")
     print(f"  杠杆: {LEVERAGE}x")
     print(f"  有效暴露: {position_size_pct*LEVERAGE*100:.0f}% of capital per trade")
     print(f"  总收益率(简单加总): {sum(pnls):.2f}%")
     print(f"  账户收益率: {sum(pnls)*position_size_pct:.2f}%")
-    print(f"  说明: 账户收益 = 总收益 × 仓位比例 = {sum(pnls):.2f}% × {position_size_pct} = {sum(pnls)*position_size_pct:.2f}%")
+    print(
+        f"  说明: 账户收益 = 总收益 × 仓位比例 = {sum(pnls):.2f}% × {position_size_pct} = {sum(pnls)*position_size_pct:.2f}%"
+    )
 
     # ── 5. exit_reason与盈亏关系 ──
     print(f"\n{'─'*70}")
-    print(f"  5. exit_reason与盈亏关系")
+    print("  5. exit_reason与盈亏关系")
     print(f"{'─'*70}")
     reason_stats = defaultdict(lambda: {"count": 0, "total_pnl": 0.0, "wins": 0, "pnls": []})
     for r in results:
@@ -162,11 +175,13 @@ def main():
         wr = s["wins"] / s["count"] * 100 if s["count"] > 0 else 0
         avg = np.mean(s["pnls"])
         med = np.median(s["pnls"])
-        print(f"  {reason:<30} {s['count']:>5} {wr:>6.1f}% {s['total_pnl']:>+10.2f}% {avg:>+8.4f}% {med:>+8.4f}%")
+        print(
+            f"  {reason:<30} {s['count']:>5} {wr:>6.1f}% {s['total_pnl']:>+10.2f}% {avg:>+8.4f}% {med:>+8.4f}%"
+        )
 
     # ── 6. 持仓时间与盈亏关系 ──
     print(f"\n{'─'*70}")
-    print(f"  6. 持仓时间与盈亏关系")
+    print("  6. 持仓时间与盈亏关系")
     print(f"{'─'*70}")
     hold_buckets = [
         ("1-3 bars (1-3h)", lambda r: 1 <= r.hold_bars <= 3),
@@ -187,17 +202,19 @@ def main():
         total = sum(ps)
         avg = np.mean(ps)
         avg_hold = np.mean([r.hold_bars for r in rs])
-        print(f"  {label:<25} {len(rs):>5} {wr:>6.1f}% {total:>+10.2f}% {avg:>+8.4f}% {avg_hold:>8.1f}")
+        print(
+            f"  {label:<25} {len(rs):>5} {wr:>6.1f}% {total:>+10.2f}% {avg:>+8.4f}% {avg_hold:>8.1f}"
+        )
 
     # ── 7. 核心问题诊断 ──
     print(f"\n{'='*70}")
-    print(f"  7. 核心问题诊断")
+    print("  7. 核心问题诊断")
     print(f"{'='*70}")
 
     avg_win = np.mean(wins)
     avg_loss = abs(np.mean(losses))
-    total_gross = sum(wins)
-    total_loss = abs(sum(losses))
+    total_gross = sum(wins)  # noqa: F841
+    total_loss = abs(sum(losses))  # noqa: F841
 
     print(f"""
   ┌─────────────────────────────────────────────────────────────────┐
@@ -233,18 +250,18 @@ def main():
 """)
 
     # ┌─ 根因总结 ─┐
-    print(f"  【根因总结】")
-    print(f"  高胜率(76.59%)来自大量微利离场(trailing_tp/tstp_chop)")
-    print(f"  低收益(5.23%)来自三个叠加因素:")
-    print(f"    1. 手续费侵蚀: 50.4%总费用吃掉90%+的毛收益 ← 核心杀手")
+    print("  【根因总结】")
+    print("  高胜率(76.59%)来自大量微利离场(trailing_tp/tstp_chop)")
+    print("  低收益(5.23%)来自三个叠加因素:")
+    print("    1. 手续费侵蚀: 50.4%总费用吃掉90%+的毛收益 ← 核心杀手")
     print(f"    2. 单笔利润太薄: 平均盈利{avg_win:.2f}%，大量0~0.2%微利交易")
-    print(f"    3. 仓位5%保守: 账户收益仅0.26%，策略收益未有效放大")
-    print(f"  ")
-    print(f"  优化方向:")
-    print(f"    A. 降低交易频率: 减少短持仓微利交易（提高trailing_arm/trailing_retrace）")
-    print(f"    B. 放大止盈空间: trailing_retrace 0.035→0.05，让利润奔跑更久")
-    print(f"    C. 提高仓位比例: 5%→10-15%，或动态仓位（高信心加仓）")
-    print(f"    D. 过滤低信号交易: confidence<0.6的不开仓，减少无谓的高频交易")
+    print("    3. 仓位5%保守: 账户收益仅0.26%，策略收益未有效放大")
+    print("  ")
+    print("  优化方向:")
+    print("    A. 降低交易频率: 减少短持仓微利交易（提高trailing_arm/trailing_retrace）")
+    print("    B. 放大止盈空间: trailing_retrace 0.035→0.05，让利润奔跑更久")
+    print("    C. 提高仓位比例: 5%→10-15%，或动态仓位（高信心加仓）")
+    print("    D. 过滤低信号交易: confidence<0.6的不开仓，减少无谓的高频交易")
 
     return 0
 

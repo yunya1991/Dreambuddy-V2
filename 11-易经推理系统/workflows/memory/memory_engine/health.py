@@ -5,7 +5,9 @@ def _clamp(value: float, low: float, high: float) -> float:
     return max(low, min(high, value))
 
 
-def compute_health_score(report: Dict[str, Any], index_data: Optional[Dict[str, Any]] = None) -> float:
+def compute_health_score(
+    report: Dict[str, Any], index_data: Optional[Dict[str, Any]] = None
+) -> float:
     summary = (report or {}).get("summary") or {}
     issues = (report or {}).get("issues") or []
 

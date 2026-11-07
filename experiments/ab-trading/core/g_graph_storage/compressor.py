@@ -16,28 +16,26 @@ G层 - 图压缩器
 - 边：只保留与保留节点相关的边
 """
 
-import time
 import copy
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass
+import time
+from typing import Dict, List, Optional, Tuple
 
 from .types import (
-    ChronicleGraph,
+    ANode,
     ArchitectureGraph,
     BlueprintGraph,
+    ChronicleGraph,
     CNode,
-    ANode,
-    BNode,
-    NodeStatus,
     CompressionResult,
     CompressionStrategy,
     NodeId,
+    NodeStatus,
 )
-
 
 # ============================================================
 # 价值评估器
 # ============================================================
+
 
 class ValueScorer:
     """节点价值评估器"""
@@ -54,12 +52,8 @@ class ValueScorer:
     def score_chronicle_node(self, node: CNode, chronicle: ChronicleGraph) -> float:
         """评估 Chronicle 节点的价值"""
         # 归一化各项指标
-        max_tokens = max(1, max(
-            n.metadata.token_cost for n in chronicle.nodes.values()
-        ))
-        max_latency = max(1, max(
-            n.duration_ms for n in chronicle.nodes.values()
-        ))
+        max_tokens = max(1, max(n.metadata.token_cost for n in chronicle.nodes.values()))
+        max_latency = max(1, max(n.duration_ms for n in chronicle.nodes.values()))
 
         # Token消耗得分
         token_score = node.metadata.token_cost / max_tokens
@@ -100,6 +94,7 @@ class ValueScorer:
         # 基于输出大小（粗略估计）
         try:
             import json
+
             output_str = json.dumps(node.outputs, ensure_ascii=False)
             size_score = min(1.0, len(output_str) / 5000.0)
         except Exception:
@@ -136,6 +131,7 @@ class ValueScorer:
 # ============================================================
 # 图压缩器
 # ============================================================
+
 
 class GraphCompressor:
     """图压缩器
@@ -188,9 +184,7 @@ class GraphCompressor:
             node_scores = self._score_all_nodes(chronicle)
 
             # 2. 根据策略选择要保留的节点
-            preserved_ids = self._select_preserved_nodes(
-                node_scores, chronicle, ratio, strat
-            )
+            preserved_ids = self._select_preserved_nodes(node_scores, chronicle, ratio, strat)
 
             # 3. 创建压缩后的 Chronicle
             compressed_chronicle = self._create_compressed_chronicle(
@@ -199,14 +193,10 @@ class GraphCompressor:
 
             result.compressed_chronicle = compressed_chronicle
             result.preserved_nodes = preserved_ids
-            result.compressed_nodes = [
-                nid for nid in chronicle.nodes
-                if nid not in preserved_ids
-            ]
+            result.compressed_nodes = [nid for nid in chronicle.nodes if nid not in preserved_ids]
             result.compressed_size = self._calc_chronicle_size(compressed_chronicle)
             result.compression_ratio = (
-                result.compressed_size / result.original_size
-                if result.original_size > 0 else 1.0
+                result.compressed_size / result.original_size if result.original_size > 0 else 1.0
             )
             result.success = True
 
@@ -266,17 +256,13 @@ class GraphCompressor:
             (压缩结果, 压缩后的蓝图)
         """
         # 先压缩到 Architecture
-        result, compressed_arch = self.compress_to_architecture(
-            chronicle, architecture
-        )
+        result, compressed_arch = self.compress_to_architecture(chronicle, architecture)
 
         if not result.success:
             return result, blueprint
 
         # 再压缩到 Blueprint
-        compressed_bp = self._sync_blueprint_with_architecture(
-            blueprint, compressed_arch
-        )
+        compressed_bp = self._sync_blueprint_with_architecture(blueprint, compressed_arch)
 
         result.compressed_blueprint = compressed_bp
 
@@ -457,13 +443,11 @@ class GraphCompressor:
         # 统计每个 BNode 对应的压缩比例
         for bnode in compressed_bp.nodes.values():
             related_anodes = [
-                anode for anode in architecture.nodes.values()
-                if anode.parent_bnode_id == bnode.id
+                anode for anode in architecture.nodes.values() if anode.parent_bnode_id == bnode.id
             ]
             if related_anodes:
                 compressed_count = sum(
-                    1 for anode in related_anodes
-                    if anode.metadata.status == NodeStatus.COMPRESSED
+                    1 for anode in related_anodes if anode.metadata.status == NodeStatus.COMPRESSED
                 )
                 ratio = compressed_count / len(related_anodes)
                 bnode.metadata.value_score = 1.0 - ratio
@@ -475,6 +459,7 @@ class GraphCompressor:
         # 使用有效数据大小（非元数据）来评估压缩效果
         # 计算所有节点的输出+输入数据总大小
         import json
+
         total_data_size = 0
         for node in chronicle.nodes.values():
             if not node.is_compressed:

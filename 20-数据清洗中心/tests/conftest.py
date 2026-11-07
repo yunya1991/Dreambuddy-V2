@@ -1,11 +1,12 @@
 """20号测试 conftest：统一处理跨包 import（18-data_center / 20-data_cleaning）。"""
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]        # 20-数据清洗中心/
-PROJECT = Path(__file__).resolve().parents[2]     # dreambuddy-v2/
+ROOT = Path(__file__).resolve().parents[1]  # 20-数据清洗中心/
+PROJECT = Path(__file__).resolve().parents[2]  # dreambuddy-v2/
 
 # 20号主包（data_cleaning）
 if str(ROOT) not in sys.path:

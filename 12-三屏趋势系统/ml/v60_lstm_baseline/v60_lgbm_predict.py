@@ -3,20 +3,24 @@
 输出: ml/backtest_results/v60_lgbm_proba_{symbol}.json
 """
 
+import argparse
+import json
 import os
 import sys
-import json
 import time
-import argparse
+
 import numpy as np
 import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, BASE_DIR)
-sys.path.insert(0, os.path.join(BASE_DIR, '12-三屏趋势系统'))
+sys.path.insert(0, os.path.join(BASE_DIR, "12-三屏趋势系统"))
 
-from ml.v60_lstm_baseline.v60_common import (
-    load_coin_data, generate_labels, build_features, walk_forward_splits,
+from ml.v60_lstm_baseline.v60_common import (  # noqa: E402
+    build_features,
+    generate_labels,
+    load_coin_data,
+    walk_forward_splits,
 )
 
 
@@ -50,10 +54,17 @@ def main():
     from ml.models import LightGBMModel
 
     lgbm_params = {
-        'n_estimators': 200, 'learning_rate': 0.05, 'num_leaves': 31,
-        'min_data_in_leaf': 20, 'lambda_l2': 0.1,
-        'feature_fraction': 0.8, 'bagging_fraction': 0.8, 'bagging_freq': 5,
-        'early_stopping_rounds': 30, 'verbose': -1, 'random_state': 42,
+        "n_estimators": 200,
+        "learning_rate": 0.05,
+        "num_leaves": 31,
+        "min_data_in_leaf": 20,
+        "lambda_l2": 0.1,
+        "feature_fraction": 0.8,
+        "bagging_fraction": 0.8,
+        "bagging_freq": 5,
+        "early_stopping_rounds": 30,
+        "verbose": -1,
+        "random_state": 42,
     }
 
     t0 = time.time()
@@ -83,14 +94,17 @@ def main():
     print(f"  概率: 均值={np.mean(top_proba):.3f}, 最大={np.max(top_proba):.3f}")
 
     out_path = os.path.join(BASE_DIR, f"ml/backtest_results/v60_lgbm_proba_{args.symbol}.json")
-    with open(out_path, 'w') as f:
-        json.dump({
-            'symbol': args.symbol,
-            'model': 'LightGBM',
-            'task': 'TOP_EXIT',
-            'n': int(n),
-            'proba': top_proba.tolist(),
-        }, f)
+    with open(out_path, "w") as f:
+        json.dump(
+            {
+                "symbol": args.symbol,
+                "model": "LightGBM",
+                "task": "TOP_EXIT",
+                "n": int(n),
+                "proba": top_proba.tolist(),
+            },
+            f,
+        )
     print(f"  已保存: {out_path}")
 
 

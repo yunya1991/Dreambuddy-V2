@@ -3,16 +3,17 @@
 对比原版和优化版（降低交易频率+趋势过滤+最小持仓）的表现。
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import numpy as np
+import numpy as np  # noqa: I001
 import pandas as pd
 
 from data.market_data import fetch_historical_candles
 from backtest.engine import BacktestEngine
-from backtest.strategy import LeastResistanceStrategy, MovingAverageStrategy
+from backtest.strategy import LeastResistanceStrategy
 
 
 def fetch_real_data(inst_id, days=730):
@@ -57,20 +58,40 @@ def main():
     symbols = [("BTC-USDT", "BTC"), ("ETH-USDT", "ETH"), ("SOL-USDT", "SOL"), ("UNI-USDT", "UNI")]
 
     strategies = [
-        ("原版", lambda n: LeastResistanceStrategy(
-            warmup_periods=min(80, n-10), update_step=1,
-            enable_trend_filter=False, min_holding_bars=1, signal_confirm_bars=1,
-        )),
-        ("优化版v1", lambda n: LeastResistanceStrategy(
-            warmup_periods=min(80, n-10), update_step=3,
-            min_holding_bars=5, signal_confirm_bars=2,
-            enable_trend_filter=True, bear_short_only=True, bull_long_only=False,
-        )),
-        ("优化版v2(强过滤)", lambda n: LeastResistanceStrategy(
-            warmup_periods=min(80, n-10), update_step=5,
-            min_holding_bars=10, signal_confirm_bars=3,
-            enable_trend_filter=True, bear_short_only=True, bull_long_only=False,
-        )),
+        (
+            "原版",
+            lambda n: LeastResistanceStrategy(
+                warmup_periods=min(80, n - 10),
+                update_step=1,
+                enable_trend_filter=False,
+                min_holding_bars=1,
+                signal_confirm_bars=1,
+            ),
+        ),
+        (
+            "优化版v1",
+            lambda n: LeastResistanceStrategy(
+                warmup_periods=min(80, n - 10),
+                update_step=3,
+                min_holding_bars=5,
+                signal_confirm_bars=2,
+                enable_trend_filter=True,
+                bear_short_only=True,
+                bull_long_only=False,
+            ),
+        ),
+        (
+            "优化版v2(强过滤)",
+            lambda n: LeastResistanceStrategy(
+                warmup_periods=min(80, n - 10),
+                update_step=5,
+                min_holding_bars=10,
+                signal_confirm_bars=3,
+                enable_trend_filter=True,
+                bear_short_only=True,
+                bull_long_only=False,
+            ),
+        ),
     ]
 
     all_results = {sname: [] for sname, _ in strategies}
@@ -83,7 +104,7 @@ def main():
 
         prices = fetch_real_data(inst_id, days=730)
         if prices.empty:
-            print(f"  数据获取失败")
+            print("  数据获取失败")
             continue
 
         n = len(prices)
@@ -98,13 +119,15 @@ def main():
             r = run_backtest(prices, strategy, sname)
             if r:
                 all_results[sname].append(r["return"])
-                print(f"  {r['name']:>12} {r['return']:>+9.2f}% {r['sharpe']:>8.3f} "
-                      f"{r['drawdown']:>7.2f}% {r['trades']:>6d} {r['avg_holding']:>7.1f}天")
+                print(
+                    f"  {r['name']:>12} {r['return']:>+9.2f}% {r['sharpe']:>8.3f} "
+                    f"{r['drawdown']:>7.2f}% {r['trades']:>6d} {r['avg_holding']:>7.1f}天"
+                )
 
         print(f"  {'买入持有':>12} {bh:>+9.2f}%")
 
     print(f"\n\n{'='*80}")
-    print(f"  汇总：各策略平均收益")
+    print("  汇总：各策略平均收益")
     print(f"{'='*80}")
     print(f"\n  {'策略':>12} {'BTC':>10} {'ETH':>10} {'SOL':>10} {'UNI':>10} {'平均':>10}")
     print(f"  {'-'*65}")
@@ -119,8 +142,10 @@ def main():
         print(line)
 
     if all_results["原版"] and all_results["优化版v1"]:
-        print(f"\n  优化效果（原版 -> 优化版v1）:")
-        print(f"    平均收益: {np.mean(all_results['原版']):+.2f}% -> {np.mean(all_results['优化版v1']):+.2f}%")
+        print("\n  优化效果（原版 -> 优化版v1）:")
+        print(
+            f"    平均收益: {np.mean(all_results['原版']):+.2f}% -> {np.mean(all_results['优化版v1']):+.2f}%"
+        )
 
 
 if __name__ == "__main__":

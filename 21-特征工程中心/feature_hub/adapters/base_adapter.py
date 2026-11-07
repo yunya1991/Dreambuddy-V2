@@ -1,4 +1,5 @@
 """Adapter 基类 — 统一 compute 接口"""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

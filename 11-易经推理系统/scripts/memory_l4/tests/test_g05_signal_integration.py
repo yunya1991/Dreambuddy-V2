@@ -7,13 +7,11 @@ G-05 实盘信号接入集成测试
 不调用真实的 tick_and_check（那是 G-05 红灯测试的职责）。
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import MagicMock
 
 _THIS_DIR = Path(__file__).resolve().parent
 _PROJECT_ROOT = _THIS_DIR.parent.parent
@@ -46,7 +44,9 @@ def _build_prf_ctx_like_polling_trader(
     # ② avg_float_loss_pct_15m
     try:
         _today_stats = perf_tracker.get_today_stats() or {}
-        _prf_ctx["avg_float_loss_pct_15m"] = float(_today_stats.get("avg_float_loss_pct_15m", 0.0) or 0.0)
+        _prf_ctx["avg_float_loss_pct_15m"] = float(
+            _today_stats.get("avg_float_loss_pct_15m", 0.0) or 0.0
+        )
     except Exception:
         _prf_ctx["avg_float_loss_pct_15m"] = 0.0
 
@@ -67,7 +67,9 @@ def _build_prf_ctx_like_polling_trader(
 
     # ⑤ G-05 4判据信号
     try:
-        _shift_result = getattr(pipeline, "_last_shift_result", None) if pipeline is not None else None
+        _shift_result = (
+            getattr(pipeline, "_last_shift_result", None) if pipeline is not None else None
+        )
         _prf_ctx["primary_dim_jumped"] = _shift_result is not None
     except Exception:
         _prf_ctx["primary_dim_jumped"] = False
@@ -75,11 +77,17 @@ def _build_prf_ctx_like_polling_trader(
     try:
         _mech_active = False
         if pipeline is not None:
-            _rm = pipeline._get_reflexivity_monitor() if hasattr(pipeline, "_get_reflexivity_monitor") else None
+            _rm = (
+                pipeline._get_reflexivity_monitor()
+                if hasattr(pipeline, "_get_reflexivity_monitor")
+                else None
+            )
             if _rm is not None:
                 _si = _rm.check_self_influence()
-                _mech_active = bool(_si.get("self_influence_detected", False)) and \
-                               float(_si.get("influence_coefficient", 0.0)) > 0.02
+                _mech_active = (
+                    bool(_si.get("self_influence_detected", False))
+                    and float(_si.get("influence_coefficient", 0.0)) > 0.02
+                )
         _prf_ctx["mechanism_active"] = _mech_active
     except Exception:
         _prf_ctx["mechanism_active"] = False
@@ -176,9 +184,14 @@ def test_t_s3_no_bounce_consecutive_down():
 
 def test_t_s3_has_bounce_not_consecutive():
     """③ K线有反弹 → no_bounce_at_key=False."""
-    klines = [{"close": 100.0}, {"close": 99.0}, {"close": 98.0},
-              {"close": 99.5},  # 反弹
-              {"close": 97.0}, {"close": 96.0}]
+    klines = [
+        {"close": 100.0},
+        {"close": 99.0},
+        {"close": 98.0},
+        {"close": 99.5},  # 反弹
+        {"close": 97.0},
+        {"close": 96.0},
+    ]
     ctx = _build_prf_ctx_like_polling_trader(recent_klines=klines)
     assert ctx["no_bounce_at_key"] is False
 

@@ -22,12 +22,11 @@ V1-6: 硬约束集成测试
 """
 
 import json
-import os
+import subprocess
 import sys
+import threading
 import time
 import uuid
-import subprocess
-import threading
 from pathlib import Path
 
 BRIDGE_DIR = Path(__file__).resolve().parent.parent
@@ -152,8 +151,7 @@ def test_hc1b_no_direct_dreambuddy_import():
     ]
 
     for forbidden in forbidden_imports:
-        assert forbidden not in server_code, \
-            f"server.py 不应包含 '{forbidden}' — HC-1b 违规"
+        assert forbidden not in server_code, f"server.py 不应包含 '{forbidden}' — HC-1b 违规"
 
     # 应该有 HTTP 调用（通过 urllib）而非直接 import
     assert "urllib.request" in server_code, "server.py 应通过 HTTP 调用外部 API"
@@ -176,15 +174,18 @@ def test_hc2_trading_path_constraint():
             result = harness.call_method(method, {"node_id": "test"})
             assert result.get("ok"), f"交易方法 {method} 应返回 ok"
             # 交易路径应有 constraint_passed 标记
-            assert "constraint_passed" in str(result), \
-                f"交易方法 {method} 应有 constraint_passed 标记"
+            assert "constraint_passed" in str(
+                result
+            ), f"交易方法 {method} 应有 constraint_passed 标记"
             print(f"  ✓ {method}: constraint_passed={result.get('constraint_passed')}")
 
         # 非交易路径不应有 constraint_passed
         non_trading = harness.call_method("technical_indicators", {"symbol": "BTC"})
         assert non_trading.get("ok"), "非交易方法应返回 ok"
-        assert not non_trading.get("constraint_passed") or non_trading.get("constraint_passed") is False, \
-            "非交易方法不应有 constraint_passed=True"
+        assert (
+            not non_trading.get("constraint_passed")
+            or non_trading.get("constraint_passed") is False
+        ), "非交易方法不应有 constraint_passed=True"
 
         print("  ✓ 非交易方法无 constraint_passed")
         print("  HC-2 PASS: 交易路径硬约束检查生效")
@@ -234,7 +235,7 @@ def test_hc7_all_methods_fail_open():
         result1 = r1.get("result", {})
         assert result1.get("status") == "degraded", "应为 degraded"
         assert result1.get("neutral_default", {}).get("signal") == "neutral"
-        print(f"  ✓ technical_indicators: FAIL-OPEN (degraded + neutral)")
+        print("  ✓ technical_indicators: FAIL-OPEN (degraded + neutral)")
 
         # fundamental_analysis: 3456 不可达 → degraded
         r2 = harness.call_method("fundamental_analysis", {"symbol": "BTC"})
@@ -242,24 +243,29 @@ def test_hc7_all_methods_fail_open():
         result2 = r2.get("result", {})
         assert result2.get("status") == "degraded", "应为 degraded"
         assert result2.get("neutral_default", {}).get("signal") == "neutral"
-        print(f"  ✓ fundamental_analysis: FAIL-OPEN (degraded + neutral)")
+        print("  ✓ fundamental_analysis: FAIL-OPEN (degraded + neutral)")
 
         # session_consumer: 文件写入 → 即使文件系统问题也不崩溃
-        r3 = harness.call_method("session_consumer", {
-            "event_type": "graph_node",
-            "event_data": {"seq": 1},
-            "session_id": "hc7-test",
-        })
+        r3 = harness.call_method(
+            "session_consumer",
+            {
+                "event_type": "graph_node",
+                "event_data": {"seq": 1},
+                "session_id": "hc7-test",
+            },
+        )
         assert r3.get("ok"), "session_consumer 应返回 ok"
         result3 = r3.get("result", {})
-        assert result3.get("status") in ("ok", "degraded"), \
-            f"session_consumer 应为 ok 或 degraded, got: {result3.get('status')}"
+        assert result3.get("status") in (
+            "ok",
+            "degraded",
+        ), f"session_consumer 应为 ok 或 degraded, got: {result3.get('status')}"
         print(f"  ✓ session_consumer: {result3.get('status')}")
 
         # IntentGateway: 即使误判也不阻塞
         r4 = harness.call_method("intent_gateway", {"user_input": "test query"})
         assert r4.get("ok"), "intent_gateway 应返回 ok (FAIL-OPEN)"
-        print(f"  ✓ intent_gateway: FAIL-OPEN")
+        print("  ✓ intent_gateway: FAIL-OPEN")
 
         print("  HC-7 PASS: 所有方法 FAIL-OPEN")
     finally:

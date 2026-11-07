@@ -5,10 +5,10 @@ Regime 状态机分类逻辑
 """
 
 import json
-import os
 import math
-from pathlib import Path
+import os
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Optional
 
 # 配置
@@ -22,11 +22,13 @@ os.makedirs(RAW_DIR, exist_ok=True)
 # 信号计算工具函数
 # =============================================================================
 
+
 def normalize_to_range(value: float, min_v: float, max_v: float) -> float:
     if max_v == min_v:
         return 0.0
     out = 2.0 * (value - min_v) / (max_v - min_v) - 1.0
     return max(-1.0, min(1.0, float(out)))
+
 
 def z_score(value: float, mean: float, std: float) -> float:
     """计算 z-score，限制在 [-3, 3]"""
@@ -34,9 +36,11 @@ def z_score(value: float, mean: float, std: float) -> float:
         return 0.0
     return max(-3, min(3, (value - mean) / std))
 
+
 def sigmoid(x: float) -> float:
     """Sigmoid 函数，输出 [0, 1]"""
     return 1 / (1 + math.exp(-x))
+
 
 def calculate_funding_score(funding_rate: float) -> float:
     """
@@ -55,6 +59,7 @@ def calculate_funding_score(funding_rate: float) -> float:
         # 线性插值
         return -normalize_to_range(funding_rate, -0.0005, 0.0005)
 
+
 def calculate_oi_score(oi_current: float, oi_24h_ago: float) -> float:
     """
     持仓量变化评分
@@ -68,6 +73,7 @@ def calculate_oi_score(oi_current: float, oi_24h_ago: float) -> float:
     # OI 变化率标准化到 [-1, 1]
     # >50% 增长 -> +1, <-50% -> -1
     return normalize_to_range(change_pct, -0.5, 0.5)
+
 
 def calculate_liquidation_risk(liquidation_24h: float, oi_total: float) -> float:
     """
@@ -87,7 +93,10 @@ def calculate_liquidation_risk(liquidation_24h: float, oi_total: float) -> float
     else:
         return 0.1  # 低风险
 
-def calculate_stablecoin_supply_score(current: float, historical_avg: float, historical_std: float) -> float:
+
+def calculate_stablecoin_supply_score(
+    current: float, historical_avg: float, historical_std: float
+) -> float:
     """
     稳定币供应量评分
     - 供应量增长 -> 资金流入 -> 正分
@@ -96,11 +105,13 @@ def calculate_stablecoin_supply_score(current: float, historical_avg: float, his
     # z-score 转 [-1, 1]
     return math.tanh(z / 2)
 
+
 def calculate_dxy_score(dxy_current: float, dxy_ma20: float) -> float:
     if dxy_ma20 == 0:
         return 0.0
     change = (dxy_current - dxy_ma20) / dxy_ma20
     return -normalize_to_range(change, -0.02, 0.02)
+
 
 def calculate_exchange_flow_score(net_flow_24h: float, reserve_total: float) -> float:
     """
@@ -113,6 +124,7 @@ def calculate_exchange_flow_score(net_flow_24h: float, reserve_total: float) -> 
     ratio = net_flow_24h / reserve_total
     # 净流入>2% -> 强负分，净流出>2% -> 强正分
     return -normalize_to_range(ratio, -0.02, 0.02)
+
 
 def calculate_etf_flow_score(etf_data: dict) -> float:
     """
@@ -146,9 +158,11 @@ def calculate_etf_flow_score(etf_data: dict) -> float:
     else:
         return eth_score
 
+
 # =============================================================================
 # Layer 信号计算
 # =============================================================================
+
 
 def _load_skill_snapshot_value_map() -> dict[str, float]:
     p = Path(OUTPUT_DIR) / "web3_skill_snapshot_latest.json"
@@ -220,7 +234,11 @@ def _build_snapshot_items_from_layers(layers: dict) -> list[dict]:
             "source": "regime-layer-proxy",
             "latency_sec": None,
             "revision": {"provider_revision_ts": now_ts},
-            "quality": {"status": status, "reasons": (["layer_proxy"] if value is not None else ["missing"]), "error": ("" if value is not None else "value_unavailable")},
+            "quality": {
+                "status": status,
+                "reasons": (["layer_proxy"] if value is not None else ["missing"]),
+                "error": ("" if value is not None else "value_unavailable"),
+            },
             "generated_at": now_ts,
         }
 
@@ -233,7 +251,7 @@ def _build_snapshot_items_from_layers(layers: dict) -> list[dict]:
     bn = (lev.get("binance") or {}) if isinstance(lev, dict) else {}
     cme = (lev.get("cme_oi") or {}) if isinstance(lev, dict) else {}
     bridge = (lev.get("bridge") or {}) if isinstance(lev, dict) else {}
-    gn = (onc.get("glassnode") or {}) if isinstance(onc, dict) else {}
+    gn = (onc.get("glassnode") or {}) if isinstance(onc, dict) else {}  # noqa: F841
     wh = (onc.get("whale_alert") or {}) if isinstance(onc, dict) else {}
     es = (onc.get("etherscan") or {}) if isinstance(onc, dict) else {}
     gate_addr = (onc.get("gate_address_tracker") or {}) if isinstance(onc, dict) else {}
@@ -248,7 +266,11 @@ def _build_snapshot_items_from_layers(layers: dict) -> list[dict]:
         if flow_v is not None:
             funding_bps = max(-35.0, min(35.0, math.tanh(flow_v / 1e9) * 20.0))
 
-    oi_usd = _num(cg.get("open_interest")) if not isinstance(cg.get("open_interest"), dict) else _num((cg.get("open_interest") or {}).get("value"))
+    oi_usd = (
+        _num(cg.get("open_interest"))
+        if not isinstance(cg.get("open_interest"), dict)
+        else _num((cg.get("open_interest") or {}).get("value"))
+    )
     if oi_usd is None:
         cme_oi = _num(cme.get("open_interest"))
         if cme_oi is not None:
@@ -265,7 +287,13 @@ def _build_snapshot_items_from_layers(layers: dict) -> list[dict]:
     if whale_delta is None:
         whale_delta = _num(bridge.get("netflow_usd"))
     if whale_delta is None:
-        deep_upgrades = _num(((gate_addr.get("summary") or {}) if isinstance(gate_addr.get("summary"), dict) else {}).get("deep_upgrades"))
+        deep_upgrades = _num(
+            (
+                (gate_addr.get("summary") or {})
+                if isinstance(gate_addr.get("summary"), dict)
+                else {}
+            ).get("deep_upgrades")
+        )
         if deep_upgrades is not None:
             whale_delta = deep_upgrades * 500000.0
 
@@ -282,7 +310,9 @@ def _build_snapshot_items_from_layers(layers: dict) -> list[dict]:
 
     stable_supply = _num(stable.get("total_supply_usd"))
     cex_reserve = _num(cex.get("total_reserve_usd"))
-    dxy_cur = _num(((macro.get("dxy") or {}) if isinstance(macro.get("dxy"), dict) else {}).get("current"))
+    dxy_cur = _num(
+        ((macro.get("dxy") or {}) if isinstance(macro.get("dxy"), dict) else {}).get("current")
+    )
     macro_pressure = None
     if dxy_cur is not None:
         macro_pressure = max(0.0, min(1.0, abs(dxy_cur - 103.0) / 7.0))
@@ -295,8 +325,16 @@ def _build_snapshot_items_from_layers(layers: dict) -> list[dict]:
     smart_money = None
     if isinstance(bweb3.get("market_rank"), dict):
         market_rank = bweb3.get("market_rank") or {}
-        n1 = len(market_rank.get("trending_tokens") or []) if isinstance(market_rank.get("trending_tokens"), list) else 0
-        n2 = len(market_rank.get("top_search") or []) if isinstance(market_rank.get("top_search"), list) else 0
+        n1 = (
+            len(market_rank.get("trending_tokens") or [])
+            if isinstance(market_rank.get("trending_tokens"), list)
+            else 0
+        )
+        n2 = (
+            len(market_rank.get("top_search") or [])
+            if isinstance(market_rank.get("top_search"), list)
+            else 0
+        )
         social_heat = max(-1.0, min(1.0, (n1 + n2) / 20.0))
     if bweb3.get("smart_money_inflow") is not None:
         smart_money = _num(bweb3.get("smart_money_inflow"))
@@ -327,7 +365,11 @@ def _ensure_skill_snapshot_from_layers(layers: dict) -> None:
     try:
         if p.exists() and p.is_file():
             obj = json.loads(p.read_text(encoding="utf-8", errors="replace"))
-            rows = obj.get("items") if isinstance(obj, dict) and isinstance(obj.get("items"), list) else []
+            rows = (
+                obj.get("items")
+                if isinstance(obj, dict) and isinstance(obj.get("items"), list)
+                else []
+            )
             existing_rows = [r for r in rows if isinstance(r, dict)]
     except Exception:
         existing_rows = []
@@ -349,22 +391,14 @@ def _ensure_skill_snapshot_from_layers(layers: dict) -> None:
 
 def calculate_leverage_signal(leverage_data: dict) -> dict:
     """计算 Layer2 杠杆层信号"""
-    result = {
-        "score": 0.0,
-        "components": {},
-        "data_freshness": None
-    }
+    result = {"score": 0.0, "components": {}, "data_freshness": None}
 
     # Binance 资金费率
     binance_fr = leverage_data.get("binance", {}).get("funding_rate", {})
     if binance_fr and binance_fr.get("last_funding_rate"):
         fr = float(binance_fr["last_funding_rate"])
         fr_score = calculate_funding_score(fr)
-        result["components"]["funding_rate"] = {
-            "value": fr,
-            "score": fr_score,
-            "weight": 0.35
-        }
+        result["components"]["funding_rate"] = {"value": fr, "score": fr_score, "weight": 0.35}
 
     snap = _load_skill_snapshot_value_map()
     if "funding_rate" not in result["components"]:
@@ -377,7 +411,7 @@ def calculate_leverage_signal(leverage_data: dict) -> dict:
             result["components"]["funding_rate_proxy"] = {
                 "value": fr,
                 "score": fr_score,
-                "weight": 0.30
+                "weight": 0.30,
             }
 
     oi_data = leverage_data.get("coinglass", {}).get("open_interest", {})
@@ -393,11 +427,7 @@ def calculate_leverage_signal(leverage_data: dict) -> dict:
         oi_usd = snap.get("oi_usd__btc__coinglass__na")
     if isinstance(oi_usd, float):
         oi_score = normalize_to_range(math.log10(max(1.0, oi_usd)), 8.0, 12.0)
-        result["components"]["oi_usd"] = {
-            "value": oi_usd,
-            "score": oi_score,
-            "weight": 0.35
-        }
+        result["components"]["oi_usd"] = {"value": oi_usd, "score": oi_score, "weight": 0.35}
 
     # 清算数据
     liq_data = leverage_data.get("coinglass", {}).get("liquidation_24h", {})
@@ -416,7 +446,7 @@ def calculate_leverage_signal(leverage_data: dict) -> dict:
         result["components"]["liq_pressure"] = {
             "value": liq_val,
             "score": liq_score,
-            "weight": 0.35
+            "weight": 0.35,
         }
 
     # 综合计算 (简化版，实际需要根据完整数据)
@@ -424,19 +454,15 @@ def calculate_leverage_signal(leverage_data: dict) -> dict:
     weights = [c["weight"] for c in result["components"].values()]
 
     if scores:
-        result["score"] = sum(s * w for s, w in zip(scores, weights)) / sum(weights)
+        result["score"] = sum(s * w for s, w in zip(scores, weights)) / sum(weights)  # noqa: B905
 
     result["data_freshness"] = leverage_data.get("binance", {}).get("timestamp")
     return result
 
+
 def calculate_exogenous_signal(exogenous_data: dict) -> dict:
     """计算 Layer1 外生资金信号"""
-    result = {
-        "score": 0.0,
-        "components": {},
-        "weights": {},
-        "data_freshness": None
-    }
+    result = {"score": 0.0, "components": {}, "weights": {}, "data_freshness": None}
 
     # 1. ETF 流向 (权重 30%)
     etf_data = exogenous_data.get("etf_flow") or {}
@@ -451,7 +477,7 @@ def calculate_exogenous_signal(exogenous_data: dict) -> dict:
     if sc_data.get("total_supply_usd"):
         total = sc_data["total_supply_usd"]
         hist_avg = 180e9  # 1800 亿假设
-        hist_std = 10e9   # 100 亿波动
+        hist_std = 10e9  # 100 亿波动
         sc_score = calculate_stablecoin_supply_score(total, hist_avg, hist_std)
         result["components"]["stablecoin_supply"] = sc_score
         result["weights"]["stablecoin_supply"] = 0.20
@@ -527,8 +553,7 @@ def calculate_exogenous_signal(exogenous_data: dict) -> dict:
     if result["components"]:
         total_weight = sum(result["weights"].values())
         weighted_sum = sum(
-            result["components"][k] * result["weights"][k]
-            for k in result["components"]
+            result["components"][k] * result["weights"][k] for k in result["components"]
         )
         result["score"] = weighted_sum / total_weight
 
@@ -536,14 +561,10 @@ def calculate_exogenous_signal(exogenous_data: dict) -> dict:
     print(f"  [Regime] Exogenous Composite: {result['score']:+.4f}")
     return result
 
+
 def calculate_onchain_signal(onchain_data: dict) -> dict:
     """计算 Layer3 链上行为信号"""
-    result = {
-        "score": 0.0,
-        "components": {},
-        "weights": {},
-        "data_freshness": None
-    }
+    result = {"score": 0.0, "components": {}, "weights": {}, "data_freshness": None}
 
     snap = _load_skill_snapshot_value_map()
     # 1. Whale Alert 大额转账
@@ -560,7 +581,9 @@ def calculate_onchain_signal(onchain_data: dict) -> dict:
         result["weights"]["whale_activity"] = 0.30
         print(f"  [Regime] Whale Activity Score: {whale_score:+.4f} (net_flow={net_flow})")
     elif isinstance(snap.get("whale_position_delta_usd__btc__hyperliquid__perp"), float):
-        whale_proxy = abs(float(snap.get("whale_position_delta_usd__btc__hyperliquid__perp") or 0.0))
+        whale_proxy = abs(
+            float(snap.get("whale_position_delta_usd__btc__hyperliquid__perp") or 0.0)
+        )
         whale_score = normalize_to_range(math.log10(max(1.0, whale_proxy)), 4.0, 9.0)
         result["components"]["whale_activity_proxy"] = whale_score
         result["weights"]["whale_activity_proxy"] = 0.30
@@ -569,7 +592,7 @@ def calculate_onchain_signal(onchain_data: dict) -> dict:
     # 2. Gate Address Tracker 地址追踪 (新增，权重更高)
     gate_data = onchain_data.get("gate_address_tracker", {})
     if gate_data.get("address_profiles"):
-        profiles = gate_data.get("address_profiles", [])
+        profiles = gate_data.get("address_profiles", [])  # noqa: F841
         deep_upgrades = gate_data.get("summary", {}).get("deep_upgrades", 0)
         fund_flow_risks = gate_data.get("fund_flow_risks", [])
 
@@ -590,7 +613,9 @@ def calculate_onchain_signal(onchain_data: dict) -> dict:
 
         result["components"]["gate_address_tracker"] = gate_score
         result["weights"]["gate_address_tracker"] = 0.40
-        print(f"  [Regime] Gate Address Tracker Score: {gate_score:+.4f} (deep_upgrades={deep_upgrades})")
+        print(
+            f"  [Regime] Gate Address Tracker Score: {gate_score:+.4f} (deep_upgrades={deep_upgrades})"
+        )
     elif isinstance(snap.get("whale_position_delta_usd__btc__hyperliquid__perp"), float):
         gate_proxy = abs(float(snap.get("whale_position_delta_usd__btc__hyperliquid__perp") or 0.0))
         gate_score = normalize_to_range(math.log10(max(1.0, gate_proxy)), 4.0, 9.0) * 0.7
@@ -636,8 +661,7 @@ def calculate_onchain_signal(onchain_data: dict) -> dict:
     if result["components"]:
         total_weight = sum(result["weights"].values())
         weighted_sum = sum(
-            result["components"][k] * result["weights"][k]
-            for k in result["components"]
+            result["components"][k] * result["weights"][k] for k in result["components"]
         )
         result["score"] = weighted_sum / total_weight
     else:
@@ -648,9 +672,11 @@ def calculate_onchain_signal(onchain_data: dict) -> dict:
     print(f"  [Regime] Onchain Composite: {result['score']:+.4f}")
     return result
 
+
 # =============================================================================
 # Regime 聚合分类
 # =============================================================================
+
 
 def classify_regime(
     exogenous_score: float,
@@ -658,7 +684,7 @@ def classify_regime(
     onchain_score: float,
     data_freshness: dict,
     coverage: float = 1.0,
-    critical_missing_sources: Optional[list] = None
+    critical_missing_sources: Optional[list] = None,
 ) -> dict:
     w_exo, w_lev, w_onc = 0.35, 0.35, 0.30
     comp_raw = w_exo * exogenous_score + w_lev * leverage_score + w_onc * onchain_score
@@ -705,8 +731,9 @@ def classify_regime(
         "risk_off": risk_off,
         "composite_raw": round(comp_raw, 4),
         "composite": round(composite, 4),
-        "signal_std": round(std_score, 4)
+        "signal_std": round(std_score, 4),
     }
+
 
 def is_data_stale(timestamp_str: str, hours: int = 6) -> bool:
     """检查数据是否过期"""
@@ -716,12 +743,14 @@ def is_data_stale(timestamp_str: str, hours: int = 6) -> bool:
         ts = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
         age = datetime.now(timezone.utc) - ts
         return age.total_seconds() > hours * 3600
-    except:
+    except:  # noqa: E722
         return True
+
 
 # =============================================================================
 # 置信度校准
 # =============================================================================
+
 
 def calculate_freshness_confidence(data_freshness: dict) -> float:
     """
@@ -734,7 +763,7 @@ def calculate_freshness_confidence(data_freshness: dict) -> float:
     ages = []
     now = datetime.now(timezone.utc)
 
-    for layer, ts_str in data_freshness.items():
+    for layer, ts_str in data_freshness.items():  # noqa: B007
         if ts_str:
             try:
                 ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
@@ -742,10 +771,11 @@ def calculate_freshness_confidence(data_freshness: dict) -> float:
                 # 指数衰减：每 6 小时减半
                 confidence = 0.5 ** (age_hours / 6)
                 ages.append(confidence)
-            except:
+            except:  # noqa: E722
                 ages.append(0.0)
 
     return sum(ages) / len(ages) if ages else 0.0
+
 
 def calculate_historical_confidence(regime_history: list, window_days: int = 30) -> float:
     """
@@ -769,12 +799,13 @@ def calculate_historical_confidence(regime_history: list, window_days: int = 30)
 
     return correct / min(len(regime_history), window_days)
 
+
 def calculate_final_confidence(
     freshness_conf: float,
     historical_conf: float,
     signal_std: float,
     coverage: float = 1.0,
-    quality_penalty: float = 0.0
+    quality_penalty: float = 0.0,
 ) -> float:
     base_confidence = 0.4 * freshness_conf + 0.6 * historical_conf
     std_penalty = min(0.3, signal_std * 0.5)
@@ -783,6 +814,7 @@ def calculate_final_confidence(
     q_penalty = max(0.0, min(0.6, float(quality_penalty or 0.0)))
     final_confidence = max(0.1, base_confidence - std_penalty - coverage_penalty - q_penalty)
     return round(final_confidence, 2)
+
 
 def _parse_iso_ts(ts: Optional[str]) -> Optional[datetime]:
     if not ts:
@@ -794,6 +826,7 @@ def _parse_iso_ts(ts: Optional[str]) -> Optional[datetime]:
         return dt
     except Exception:
         return None
+
 
 def _as_bool(v: Any) -> Optional[bool]:
     if isinstance(v, bool):
@@ -811,18 +844,25 @@ def _as_bool(v: Any) -> Optional[bool]:
             return False
     return None
 
+
 def _extract_quality_hints(source: Optional[dict]) -> dict:
     if not isinstance(source, dict):
         return {"quality": "", "backfilled": False, "suspect": False, "reasons": []}
     reasons = []
-    quality_raw = str(
-        source.get("quality")
-        or source.get("data_quality")
-        or source.get("_quality")
-        or source.get("quality_status")
-        or ""
-    ).strip().lower()
-    explicit_quality = quality_raw if quality_raw in {"ok", "stale", "missing", "backfilled", "suspect"} else ""
+    quality_raw = (
+        str(
+            source.get("quality")
+            or source.get("data_quality")
+            or source.get("_quality")
+            or source.get("quality_status")
+            or ""
+        )
+        .strip()
+        .lower()
+    )
+    explicit_quality = (
+        quality_raw if quality_raw in {"ok", "stale", "missing", "backfilled", "suspect"} else ""
+    )
     backfilled = False
     suspect = False
     for k in ("backfilled", "is_backfilled", "revision_backfilled", "is_revised"):
@@ -861,7 +901,11 @@ def _extract_quality_hints(source: Optional[dict]) -> dict:
             if (lsec is not None) and (wsec is not None) and (lsec > wsec):
                 backfilled = True
                 reasons.append(f"{rev_name}.late_seconds>{wsec}")
-        if str(rev_obj.get("reason") or "").strip().lower() in {"late_arrival", "forced_env", "explicit"}:
+        if str(rev_obj.get("reason") or "").strip().lower() in {
+            "late_arrival",
+            "forced_env",
+            "explicit",
+        }:
             if _as_bool(rev_obj.get("is_backfilled")) is True:
                 backfilled = True
                 reasons.append(f"{rev_name}.reason={str(rev_obj.get('reason'))}")
@@ -886,7 +930,15 @@ def _extract_quality_hints(source: Optional[dict]) -> dict:
         "reasons": reasons,
     }
 
-def _status_from_source(*, has_value: bool, err: Optional[str], ts: Optional[str], source: Optional[dict], stale_hours: int = 6) -> dict:
+
+def _status_from_source(
+    *,
+    has_value: bool,
+    err: Optional[str],
+    ts: Optional[str],
+    source: Optional[dict],
+    stale_hours: int = 6,
+) -> dict:
     hints = _extract_quality_hints(source)
     reasons = list(hints.get("reasons") or [])
     explicit = str(hints.get("quality") or "").strip().lower()
@@ -939,18 +991,39 @@ def _load_skill_snapshot_ready_bases() -> set[str]:
 def _quality_recovery_bindbase_map() -> dict[str, list[str]]:
     return {
         "etf": ["spot_etf_netflow_usd__btc__all__na", "spot_etf_netflow_usd__eth__all__na"],
-        "stablecoin": ["stablecoin_usdt_exchange_inflow_usd__all__all__all", "stablecoin_usdt_exchange_balance_usd__all__all__all"],
+        "stablecoin": [
+            "stablecoin_usdt_exchange_inflow_usd__all__all__all",
+            "stablecoin_usdt_exchange_balance_usd__all__all__all",
+        ],
         "cex_reserves": ["cex_exchange_reserve_usd__all__all__all"],
-        "macro_dxy": ["macro_event_pressure_score__btc__macro__na", "macro_event_pressure_score__all__all__na"],
-        "binance_web3_market": ["social_heat_event_score__btc__all__na", "smart_money_inflow_score__all__all__all"],
+        "macro_dxy": [
+            "macro_event_pressure_score__btc__macro__na",
+            "macro_event_pressure_score__all__all__na",
+        ],
+        "binance_web3_market": [
+            "social_heat_event_score__btc__all__na",
+            "smart_money_inflow_score__all__all__all",
+        ],
         "coinglass": ["oi_usd__btc__binance__perp", "oi_usd__btc__okx__perp"],
-        "binance_funding": ["funding_rate_bps__btc__binance__na", "funding_rate_bps__btc__okx__perp"],
+        "binance_funding": [
+            "funding_rate_bps__btc__binance__na",
+            "funding_rate_bps__btc__okx__perp",
+        ],
         "cme_oi": ["oi_usd__btc__binance__perp", "oi_usd__btc__okx__perp"],
-        "bridge_flow": ["smart_money_inflow_score__all__all__all", "whale_position_delta_usd__btc__hyperliquid__perp"],
+        "bridge_flow": [
+            "smart_money_inflow_score__all__all__all",
+            "whale_position_delta_usd__btc__hyperliquid__perp",
+        ],
         "etherscan_gas": ["macro_event_pressure_score__btc__macro__na"],
         "glassnode": ["smart_money_inflow_score__all__all__all"],
-        "whale_alert": ["smart_money_inflow_score__all__all__all", "whale_position_delta_usd__btc__binance__perp"],
-        "gate_address_tracker": ["smart_money_inflow_score__all__all__all", "whale_position_delta_usd__btc__binance__perp"],
+        "whale_alert": [
+            "smart_money_inflow_score__all__all__all",
+            "whale_position_delta_usd__btc__binance__perp",
+        ],
+        "gate_address_tracker": [
+            "smart_money_inflow_score__all__all__all",
+            "whale_position_delta_usd__btc__binance__perp",
+        ],
     }
 
 
@@ -983,7 +1056,9 @@ def assess_data_quality(layers: dict, freshness: dict) -> dict:
     gate_addr = (onc.get("gate_address_tracker") or {}) if isinstance(onc, dict) else {}  # NEW
 
     # Check data availability
-    etf_has = (etf.get("btc_etf_net_inflow") is not None) or (etf.get("eth_etf_net_inflow") is not None)
+    etf_has = (etf.get("btc_etf_net_inflow") is not None) or (
+        etf.get("eth_etf_net_inflow") is not None
+    )
     stable_raw = stable.get("total_supply_usd")
     stable_has = False
     try:
@@ -999,16 +1074,30 @@ def assess_data_quality(layers: dict, freshness: dict) -> dict:
         cex_has = False
 
     # Evaluate actual presence, fallback to checks if there are nested errors but valid proxies exist
-    macro_has = isinstance(macro.get("dxy"), dict) and (macro.get("dxy") or {}).get("current") is not None
-    if not macro_has and macro.get("error") and macro.get("us10y"): # Handle partial failure gracefully
+    macro_has = (
+        isinstance(macro.get("dxy"), dict) and (macro.get("dxy") or {}).get("current") is not None
+    )
+    if (
+        not macro_has and macro.get("error") and macro.get("us10y")
+    ):  # Handle partial failure gracefully
         macro_has = True
 
     # Binance Web3 check - 聪明钱流入/市场排名数据
-    binance_web3_has = bool(binance_web3.get("smart_money_inflow") or binance_web3.get("market_rank"))
+    binance_web3_has = bool(
+        binance_web3.get("smart_money_inflow") or binance_web3.get("market_rank")
+    )
 
     # Leverage checks
-    cg_has = any([(cg.get("funding_rate") is not None), (cg.get("open_interest") is not None), (cg.get("liquidation_24h") is not None)])
-    bn_has = isinstance(bn.get("funding_rate"), dict) and ((bn.get("funding_rate") or {}).get("last_funding_rate") is not None)
+    cg_has = any(
+        [
+            (cg.get("funding_rate") is not None),
+            (cg.get("open_interest") is not None),
+            (cg.get("liquidation_24h") is not None),
+        ]
+    )
+    bn_has = isinstance(bn.get("funding_rate"), dict) and (
+        (bn.get("funding_rate") or {}).get("last_funding_rate") is not None
+    )
 
     cme_has = cme.get("open_interest") is not None
 
@@ -1019,47 +1108,185 @@ def assess_data_quality(layers: dict, freshness: dict) -> dict:
         bridge_has = False
 
     # Onchain checks
-    gn_has = any([(gn.get("exchange_inflow_btc") is not None), (gn.get("exchange_outflow_btc") is not None), (gn.get("exchange_balance_btc") is not None)])
+    gn_has = any(
+        [
+            (gn.get("exchange_inflow_btc") is not None),
+            (gn.get("exchange_outflow_btc") is not None),
+            (gn.get("exchange_balance_btc") is not None),
+        ]
+    )
     wh_has = isinstance(wh.get("transactions"), list) and len(wh.get("transactions") or []) > 0
     es_has = es.get("gas_price_gwei") is not None
-    gate_has = isinstance(gate_addr.get("address_profiles"), list) and len(gate_addr.get("address_profiles") or []) > 0  # NEW
+    gate_has = (
+        isinstance(gate_addr.get("address_profiles"), list)
+        and len(gate_addr.get("address_profiles") or []) > 0
+    )  # NEW
 
     # Assess status for each source
-    s_etf = _status_from_source(has_value=bool(etf_has), err=etf.get("error"), ts=etf.get("timestamp"), source=etf)
-    s_stable = _status_from_source(has_value=bool(stable_has), err=stable.get("error"), ts=stable.get("timestamp"), source=stable)
-    s_cex = _status_from_source(has_value=bool(cex_has), err=cex.get("error"), ts=cex.get("timestamp"), source=cex)
-    s_macro = _status_from_source(has_value=bool(macro_has), err=macro.get("error"), ts=macro.get("timestamp"), source=macro)
-    s_binance_web3 = _status_from_source(has_value=bool(binance_web3_has), err=binance_web3.get("error"), ts=binance_web3.get("timestamp"), source=binance_web3)  # NEW
-    s_cg = _status_from_source(has_value=bool(cg_has), err=cg.get("error"), ts=cg.get("timestamp"), source=cg)
-    s_bn = _status_from_source(has_value=bool(bn_has), err=bn.get("error"), ts=bn.get("timestamp"), source=bn)
-    s_cme = _status_from_source(has_value=bool(cme_has), err=cme.get("error"), ts=cme.get("timestamp"), source=cme)
-    s_bridge = _status_from_source(has_value=bool(bridge_has), err=bridge.get("error"), ts=bridge.get("timestamp"), source=bridge)
-    s_gn = _status_from_source(has_value=bool(gn_has), err=gn.get("error"), ts=gn.get("timestamp"), source=gn)
-    s_wh = _status_from_source(has_value=bool(wh_has), err=wh.get("error"), ts=wh.get("timestamp"), source=wh)
-    s_es = _status_from_source(has_value=bool(es_has), err=es.get("error"), ts=es.get("timestamp"), source=es)
-    s_gate = _status_from_source(has_value=bool(gate_has), err=gate_addr.get("error"), ts=gate_addr.get("timestamp"), source=gate_addr)  # NEW
+    s_etf = _status_from_source(
+        has_value=bool(etf_has), err=etf.get("error"), ts=etf.get("timestamp"), source=etf
+    )
+    s_stable = _status_from_source(
+        has_value=bool(stable_has),
+        err=stable.get("error"),
+        ts=stable.get("timestamp"),
+        source=stable,
+    )
+    s_cex = _status_from_source(
+        has_value=bool(cex_has), err=cex.get("error"), ts=cex.get("timestamp"), source=cex
+    )
+    s_macro = _status_from_source(
+        has_value=bool(macro_has), err=macro.get("error"), ts=macro.get("timestamp"), source=macro
+    )
+    s_binance_web3 = _status_from_source(
+        has_value=bool(binance_web3_has),
+        err=binance_web3.get("error"),
+        ts=binance_web3.get("timestamp"),
+        source=binance_web3,
+    )  # NEW
+    s_cg = _status_from_source(
+        has_value=bool(cg_has), err=cg.get("error"), ts=cg.get("timestamp"), source=cg
+    )
+    s_bn = _status_from_source(
+        has_value=bool(bn_has), err=bn.get("error"), ts=bn.get("timestamp"), source=bn
+    )
+    s_cme = _status_from_source(
+        has_value=bool(cme_has), err=cme.get("error"), ts=cme.get("timestamp"), source=cme
+    )
+    s_bridge = _status_from_source(
+        has_value=bool(bridge_has),
+        err=bridge.get("error"),
+        ts=bridge.get("timestamp"),
+        source=bridge,
+    )
+    s_gn = _status_from_source(
+        has_value=bool(gn_has), err=gn.get("error"), ts=gn.get("timestamp"), source=gn
+    )
+    s_wh = _status_from_source(
+        has_value=bool(wh_has), err=wh.get("error"), ts=wh.get("timestamp"), source=wh
+    )
+    s_es = _status_from_source(
+        has_value=bool(es_has), err=es.get("error"), ts=es.get("timestamp"), source=es
+    )
+    s_gate = _status_from_source(
+        has_value=bool(gate_has),
+        err=gate_addr.get("error"),
+        ts=gate_addr.get("timestamp"),
+        source=gate_addr,
+    )  # NEW
 
     checks = [
         # Exogenous layer (7 metrics)
-        {"name": "etf", "layer": "exogenous", "critical": True, "status": s_etf.get("status"), "status_reasons": s_etf.get("reasons"), "error": etf.get("error")},
-        {"name": "stablecoin", "layer": "exogenous", "critical": False, "status": s_stable.get("status"), "status_reasons": s_stable.get("reasons"), "error": stable.get("error")},
-        {"name": "cex_reserves", "layer": "exogenous", "critical": False, "status": s_cex.get("status"), "status_reasons": s_cex.get("reasons"), "error": cex.get("error")},
-        {"name": "macro_dxy", "layer": "exogenous", "critical": False, "status": s_macro.get("status"), "status_reasons": s_macro.get("reasons"), "error": macro.get("error")},
-        {"name": "binance_web3_market", "layer": "exogenous", "critical": False, "status": s_binance_web3.get("status"), "status_reasons": s_binance_web3.get("reasons"), "error": binance_web3.get("error")},  # NEW
+        {
+            "name": "etf",
+            "layer": "exogenous",
+            "critical": True,
+            "status": s_etf.get("status"),
+            "status_reasons": s_etf.get("reasons"),
+            "error": etf.get("error"),
+        },
+        {
+            "name": "stablecoin",
+            "layer": "exogenous",
+            "critical": False,
+            "status": s_stable.get("status"),
+            "status_reasons": s_stable.get("reasons"),
+            "error": stable.get("error"),
+        },
+        {
+            "name": "cex_reserves",
+            "layer": "exogenous",
+            "critical": False,
+            "status": s_cex.get("status"),
+            "status_reasons": s_cex.get("reasons"),
+            "error": cex.get("error"),
+        },
+        {
+            "name": "macro_dxy",
+            "layer": "exogenous",
+            "critical": False,
+            "status": s_macro.get("status"),
+            "status_reasons": s_macro.get("reasons"),
+            "error": macro.get("error"),
+        },
+        {
+            "name": "binance_web3_market",
+            "layer": "exogenous",
+            "critical": False,
+            "status": s_binance_web3.get("status"),
+            "status_reasons": s_binance_web3.get("reasons"),
+            "error": binance_web3.get("error"),
+        },  # NEW
         # Leverage layer (4 metrics)
-        {"name": "coinglass", "layer": "leverage", "critical": False, "status": s_cg.get("status"), "status_reasons": s_cg.get("reasons"), "error": cg.get("error")},
-        {"name": "binance_funding", "layer": "leverage", "critical": True, "status": s_bn.get("status"), "status_reasons": s_bn.get("reasons"), "error": bn.get("error")},
-        {"name": "cme_oi", "layer": "leverage", "critical": False, "status": s_cme.get("status"), "status_reasons": s_cme.get("reasons"), "error": cme.get("error")},
-        {"name": "bridge_flow", "layer": "leverage", "critical": False, "status": s_bridge.get("status"), "status_reasons": s_bridge.get("reasons"), "error": bridge.get("error")},
+        {
+            "name": "coinglass",
+            "layer": "leverage",
+            "critical": False,
+            "status": s_cg.get("status"),
+            "status_reasons": s_cg.get("reasons"),
+            "error": cg.get("error"),
+        },
+        {
+            "name": "binance_funding",
+            "layer": "leverage",
+            "critical": True,
+            "status": s_bn.get("status"),
+            "status_reasons": s_bn.get("reasons"),
+            "error": bn.get("error"),
+        },
+        {
+            "name": "cme_oi",
+            "layer": "leverage",
+            "critical": False,
+            "status": s_cme.get("status"),
+            "status_reasons": s_cme.get("reasons"),
+            "error": cme.get("error"),
+        },
+        {
+            "name": "bridge_flow",
+            "layer": "leverage",
+            "critical": False,
+            "status": s_bridge.get("status"),
+            "status_reasons": s_bridge.get("reasons"),
+            "error": bridge.get("error"),
+        },
         # Onchain layer (4 metrics)
-        {"name": "etherscan_gas", "layer": "onchain", "critical": True, "status": s_es.get("status"), "status_reasons": s_es.get("reasons"), "error": es.get("error")},
-        {"name": "glassnode", "layer": "onchain", "critical": True, "status": s_gn.get("status"), "status_reasons": s_gn.get("reasons"), "error": gn.get("error")},
-        {"name": "whale_alert", "layer": "onchain", "critical": True, "status": s_wh.get("status"), "status_reasons": s_wh.get("reasons"), "error": wh.get("error")},
-        {"name": "gate_address_tracker", "layer": "onchain", "critical": False, "status": s_gate.get("status"), "status_reasons": s_gate.get("reasons"), "error": gate_addr.get("error")},  # NEW
+        {
+            "name": "etherscan_gas",
+            "layer": "onchain",
+            "critical": True,
+            "status": s_es.get("status"),
+            "status_reasons": s_es.get("reasons"),
+            "error": es.get("error"),
+        },
+        {
+            "name": "glassnode",
+            "layer": "onchain",
+            "critical": True,
+            "status": s_gn.get("status"),
+            "status_reasons": s_gn.get("reasons"),
+            "error": gn.get("error"),
+        },
+        {
+            "name": "whale_alert",
+            "layer": "onchain",
+            "critical": True,
+            "status": s_wh.get("status"),
+            "status_reasons": s_wh.get("reasons"),
+            "error": wh.get("error"),
+        },
+        {
+            "name": "gate_address_tracker",
+            "layer": "onchain",
+            "critical": False,
+            "status": s_gate.get("status"),
+            "status_reasons": s_gate.get("reasons"),
+            "error": gate_addr.get("error"),
+        },  # NEW
     ]
     snapshot_ready = _load_skill_snapshot_ready_bases()
     recovery_map = _quality_recovery_bindbase_map()
-    if True: # Always process recovery
+    if True:  # Always process recovery
         for c in checks:
             if not isinstance(c, dict):
                 continue
@@ -1074,7 +1301,7 @@ def assess_data_quality(layers: dict, freshness: dict) -> dict:
                 if bb and bb in snapshot_ready:
                     hit = bb
                     break
-            
+
             # If not in snapshot_ready, but we know it's backfilled by flow_collector internally
             if not hit and c.get("error") is None and st == "backfilled":
                 hit = "internal_backfill"
@@ -1083,11 +1310,13 @@ def assess_data_quality(layers: dict, freshness: dict) -> dict:
             elif not hit:
                 # If we don't have a snapshot backfill, fallback to the default internal fallback so UI is not noisy
                 hit = "internal_backfill"
-                
+
             c["status"] = "backfilled"
             rs = c.get("status_reasons") if isinstance(c.get("status_reasons"), list) else []
             rs = [str(x) for x in rs if str(x or "").strip()]
-            rs = [x for x in rs if "skill_snapshot_backfill" not in x] # remove old to avoid duplicates
+            rs = [
+                x for x in rs if "skill_snapshot_backfill" not in x
+            ]  # remove old to avoid duplicates
             rs.append(f"skill_snapshot_backfill:{hit}")
             c["status_reasons"] = rs
             c["error"] = None
@@ -1101,7 +1330,11 @@ def assess_data_quality(layers: dict, freshness: dict) -> dict:
     # usable 包括 ok, stale, backfilled (backfilled 数据虽旧但仍可用)
     usable = counts["ok"] + counts["stale"] + counts["backfilled"]
     coverage = (usable / total) if total else 0.0
-    critical_missing = [c["name"] for c in checks if c.get("critical") and str(c.get("status")) in {"missing", "suspect"}]
+    critical_missing = [
+        c["name"]
+        for c in checks
+        if c.get("critical") and str(c.get("status")) in {"missing", "suspect"}
+    ]
     directional_guard = {"exogenous": False, "leverage": False, "onchain": False}
     for c in checks:
         layer = str(c.get("layer") or "").strip()
@@ -1128,9 +1361,11 @@ def assess_data_quality(layers: dict, freshness: dict) -> dict:
         "errors": errors,
     }
 
+
 # =============================================================================
 # 主流程
 # =============================================================================
+
 
 def run_regime_classification(collection_result: dict = None) -> dict:
     """
@@ -1152,20 +1387,20 @@ def run_regime_classification(collection_result: dict = None) -> dict:
             "exogenous": {
                 "etf_flow": {"btc_etf_net_inflow": 125e6, "eth_etf_net_inflow": 45e6},
                 "stablecoin": {"total_supply_usd": 185e9},
-                "macro": {"dxy": {"current": 102.5}}
+                "macro": {"dxy": {"current": 102.5}},
             },
             "leverage": {
                 "binance": {
                     "funding_rate": {"last_funding_rate": 0.0001},
-                    "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                    "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                 },
-                "coinglass": {}
+                "coinglass": {},
             },
             "onchain": {
                 "whale_alert": {"transactions": [], "exchange_inflows": 3, "exchange_outflows": 5},
                 "etherscan": {"gas_price_gwei": 45},
-                "glassnode": {}
-            }
+                "glassnode": {},
+            },
         }
     _ensure_skill_snapshot_from_layers(layers)
 
@@ -1179,7 +1414,7 @@ def run_regime_classification(collection_result: dict = None) -> dict:
     freshness = {
         "leverage": leverage_signal.get("data_freshness"),
         "exogenous": exogenous_signal.get("data_freshness"),
-        "onchain": onchain_signal.get("data_freshness")
+        "onchain": onchain_signal.get("data_freshness"),
     }
 
     quality = assess_data_quality(layers, freshness)
@@ -1200,7 +1435,7 @@ def run_regime_classification(collection_result: dict = None) -> dict:
         onc_score_for_composite,
         freshness,
         coverage=float(quality.get("coverage", 0.0) or 0.0),
-        critical_missing_sources=list(quality.get("critical_missing_sources") or [])
+        critical_missing_sources=list(quality.get("critical_missing_sources") or []),
     )
 
     # 5. 置信度校准
@@ -1212,7 +1447,7 @@ def run_regime_classification(collection_result: dict = None) -> dict:
         historical_conf,
         regime_output["signal_std"],
         coverage=float(quality.get("coverage", 0.0) or 0.0),
-        quality_penalty=float(quality.get("quality_penalty", 0.0) or 0.0)
+        quality_penalty=float(quality.get("quality_penalty", 0.0) or 0.0),
     )
 
     print(f"  Freshness Confidence: {freshness_conf:.2f}")
@@ -1224,18 +1459,18 @@ def run_regime_classification(collection_result: dict = None) -> dict:
         "layer_signals": {
             "exogenous": round(exogenous_signal["score"], 4),
             "leverage": round(leverage_signal["score"], 4),
-            "onchain": round(onchain_signal["score"], 4)
+            "onchain": round(onchain_signal["score"], 4),
         },
         "layer_signals_for_composite": {
             "exogenous": round(exo_score_for_composite, 4),
             "leverage": round(lev_score_for_composite, 4),
-            "onchain": round(onc_score_for_composite, 4)
+            "onchain": round(onc_score_for_composite, 4),
         },
         "composite": regime_output["composite"],
         "regime_output": {
             "bias": regime_output["bias"],
             "filter": regime_output["filter"],
-            "risk_off": regime_output["risk_off"]
+            "risk_off": regime_output["risk_off"],
         },
         "confidence": final_confidence,
         "diagnostics": {
@@ -1252,7 +1487,7 @@ def run_regime_classification(collection_result: dict = None) -> dict:
         "errors": list(quality.get("errors") or []),
     }
 
-    print(f"\n[Regime] Classification complete:")
+    print("\n[Regime] Classification complete:")
     print(f"  Bias: {result['regime_output']['bias']}")
     print(f"  Filter: {result['regime_output']['filter']}")
     print(f"  Risk-off: {result['regime_output']['risk_off']}")
@@ -1260,6 +1495,7 @@ def run_regime_classification(collection_result: dict = None) -> dict:
     print(f"  Confidence: {result['confidence']:.2f}")
 
     return result
+
 
 def generate_analysis_md(regime_result: dict) -> str:
     """生成 Markdown 分析报告"""
@@ -1305,17 +1541,22 @@ def generate_analysis_md(regime_result: dict) -> str:
 """
     return md
 
+
 if __name__ == "__main__":
     result = run_regime_classification()
 
     # Save raw json output
-    json_file = os.path.join(OUTPUT_DIR, f"flow_regime_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.json")
+    json_file = os.path.join(
+        OUTPUT_DIR, f"flow_regime_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.json"
+    )
     with open(json_file, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
 
     # 生成 MD 报告
     md_content = generate_analysis_md(result)
-    md_file = os.path.join(OUTPUT_DIR, f"flow_analysis_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.md")
+    md_file = os.path.join(
+        OUTPUT_DIR, f"flow_analysis_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M')}.md"
+    )
     with open(md_file, "w", encoding="utf-8") as f:
         f.write(md_content)
     print(f"[INFO] Analysis saved to {md_file} and {json_file}")

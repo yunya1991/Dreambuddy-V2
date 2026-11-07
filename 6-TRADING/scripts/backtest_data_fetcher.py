@@ -12,48 +12,50 @@
     python3 backtest_data_fetcher.py --inst BTC-USDT-SWAP --bar 1D --from 2025-01-01 --to 2026-05-16
 """
 
-import os
+import argparse
 import csv
 import time
-import json
-import requests
-import argparse
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
+
+import requests
 
 # ==================== 配置 ====================
-BASE_URL    = "https://www.okx.com"
-DATA_DIR    = Path(__file__).parent.parent / "data" / "backtest"
-SLEEP_MS    = 200    # API请求间隔 (毫秒)，避免限流
-PAGE_LIMIT  = 100    # 每页最多100根K线
+BASE_URL = "https://www.okx.com"
+DATA_DIR = Path(__file__).parent.parent / "data" / "backtest"
+SLEEP_MS = 200  # API请求间隔 (毫秒)，避免限流
+PAGE_LIMIT = 100  # 每页最多100根K线
 
 BAR_MILLIS = {
-    "1W":  7 * 24 * 3600 * 1000,
-    "1D":  1 * 24 * 3600 * 1000,
-    "4H":  4  *   3600 * 1000,
-    "1H":  1  *   3600 * 1000,
-    "15m": 15 *     60 * 1000,
+    "1W": 7 * 24 * 3600 * 1000,
+    "1D": 1 * 24 * 3600 * 1000,
+    "4H": 4 * 3600 * 1000,
+    "1H": 1 * 3600 * 1000,
+    "15m": 15 * 60 * 1000,
 }
 
 
 # ==================== 核心函数 ====================
 
-def _fetch_page(inst_id: str, bar: str, after: Optional[str] = None, before: Optional[str] = None) -> List[List]:
+
+def _fetch_page(
+    inst_id: str, bar: str, after: Optional[str] = None, before: Optional[str] = None
+) -> List[List]:
     """
     获取一页K线数据（最多100根）
-    
+
     OKX history-candles 接口说明:
       after  = 请求此时间戳之前的数据 (更早的数据)
       before = 请求此时间戳之后的数据 (更新的数据)
-      
+
     返回格式: [[ts, open, high, low, close, vol, volCcy, volCcyQuote, confirm], ...]
     其中 ts 单位为毫秒，数据按时间降序排列（最新在前）
     """
     params = {
         "instId": inst_id,
-        "bar":    bar,
-        "limit":  str(PAGE_LIMIT),
+        "bar": bar,
+        "limit": str(PAGE_LIMIT),
     }
     if after:
         params["after"] = str(after)
@@ -76,22 +78,18 @@ def _fetch_page(inst_id: str, bar: str, after: Optional[str] = None, before: Opt
 
 
 def fetch_historical_candles(
-    inst_id: str,
-    bar: str,
-    start_ts: int,
-    end_ts: int,
-    verbose: bool = True
+    inst_id: str, bar: str, start_ts: int, end_ts: int, verbose: bool = True
 ) -> List[Dict]:
     """
     获取完整历史K线 (start_ts ~ end_ts)，自动分页
-    
+
     Args:
         inst_id:  交易对，如 "BTC-USDT-SWAP"
         bar:      K线周期，如 "1D" "1W" "4H" "1H"
         start_ts: 开始时间戳（毫秒）
         end_ts:   结束时间戳（毫秒）
         verbose:  是否输出进度
-        
+
     Returns:
         按时间升序排列的K线列表，每条格式:
         {
@@ -106,7 +104,7 @@ def fetch_historical_candles(
     """
     if verbose:
         start_dt = datetime.fromtimestamp(start_ts / 1000)
-        end_dt   = datetime.fromtimestamp(end_ts   / 1000)
+        end_dt = datetime.fromtimestamp(end_ts / 1000)
         print(f"📥 获取K线数据: {inst_id} | {bar} | {start_dt:%Y-%m-%d} ~ {end_dt:%Y-%m-%d}")
 
     all_candles: List[List] = []
@@ -130,7 +128,9 @@ def fetch_historical_candles(
         earliest_ts = int(page[-1][0])
         if verbose and page_count % 5 == 0:
             earliest_dt = datetime.fromtimestamp(earliest_ts / 1000)
-            print(f"  📦 第{page_count}页 | 最早: {earliest_dt:%Y-%m-%d} | 累计 {len(all_candles)} 根")
+            print(
+                f"  📦 第{page_count}页 | 最早: {earliest_dt:%Y-%m-%d} | 累计 {len(all_candles)} 根"
+            )
 
         # 已经到达 start_ts 之前，停止
         if earliest_ts <= start_ts:
@@ -156,35 +156,34 @@ def fetch_historical_candles(
     # 格式化为 dict
     result = []
     for c in unique:
-        result.append({
-            "ts":    int(c[0]),
-            "open":  float(c[1]),
-            "high":  float(c[2]),
-            "low":   float(c[3]),
-            "close": float(c[4]),
-            "vol":   float(c[5]),
-            "volUsd": float(c[7]) if len(c) > 7 else 0.0,
-        })
+        result.append(
+            {
+                "ts": int(c[0]),
+                "open": float(c[1]),
+                "high": float(c[2]),
+                "low": float(c[3]),
+                "close": float(c[4]),
+                "vol": float(c[5]),
+                "volUsd": float(c[7]) if len(c) > 7 else 0.0,
+            }
+        )
 
     return result
 
 
 # ==================== 缓存 ====================
 
+
 def _cache_path(inst_id: str, bar: str, start_ts: int, end_ts: int) -> Path:
     inst_safe = inst_id.replace("-", "_")
     start_d = datetime.fromtimestamp(start_ts / 1000).strftime("%Y%m%d")
-    end_d   = datetime.fromtimestamp(end_ts   / 1000).strftime("%Y%m%d")
+    end_d = datetime.fromtimestamp(end_ts / 1000).strftime("%Y%m%d")
     filename = f"{inst_safe}_{bar}_{start_d}_{end_d}.csv"
     return DATA_DIR / filename
 
 
 def load_or_fetch(
-    inst_id: str,
-    bar: str,
-    start_ts: int,
-    end_ts: int,
-    force_refresh: bool = False
+    inst_id: str, bar: str, start_ts: int, end_ts: int, force_refresh: bool = False
 ) -> List[Dict]:
     """
     优先从缓存加载，缓存不存在时获取并保存
@@ -205,7 +204,9 @@ def load_or_fetch(
 
 def _save_csv(candles: List[Dict], path: Path):
     with open(path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["ts", "open", "high", "low", "close", "vol", "volUsd"])
+        writer = csv.DictWriter(
+            f, fieldnames=["ts", "open", "high", "low", "close", "vol", "volUsd"]
+        )
         writer.writeheader()
         writer.writerows(candles)
 
@@ -215,19 +216,22 @@ def _load_csv(path: Path) -> List[Dict]:
     with open(path, "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            result.append({
-                "ts":    int(row["ts"]),
-                "open":  float(row["open"]),
-                "high":  float(row["high"]),
-                "low":   float(row["low"]),
-                "close": float(row["close"]),
-                "vol":   float(row["vol"]),
-                "volUsd": float(row["volUsd"]),
-            })
+            result.append(
+                {
+                    "ts": int(row["ts"]),
+                    "open": float(row["open"]),
+                    "high": float(row["high"]),
+                    "low": float(row["low"]),
+                    "close": float(row["close"]),
+                    "vol": float(row["vol"]),
+                    "volUsd": float(row["volUsd"]),
+                }
+            )
     return result
 
 
 # ==================== 工具函数 ====================
+
 
 def dt_to_ts(date_str: str) -> int:
     """日期字符串转毫秒时间戳，如 '2025-01-01'"""
@@ -243,6 +247,7 @@ def ts_to_dt(ts: int) -> datetime:
 def resample_to_weekly(daily_candles: List[Dict]) -> List[Dict]:
     """将日线数据重采样为周线（周一开盘到周日收盘）"""
     from collections import defaultdict
+
     weeks: Dict[str, List[Dict]] = defaultdict(list)
 
     for c in daily_candles:
@@ -254,15 +259,17 @@ def resample_to_weekly(daily_candles: List[Dict]) -> List[Dict]:
     result = []
     for week_key in sorted(weeks.keys()):
         day_list = weeks[week_key]
-        result.append({
-            "ts":    day_list[0]["ts"],
-            "open":  day_list[0]["open"],
-            "high":  max(d["high"] for d in day_list),
-            "low":   min(d["low"]  for d in day_list),
-            "close": day_list[-1]["close"],
-            "vol":   sum(d["vol"]  for d in day_list),
-            "volUsd": sum(d["volUsd"] for d in day_list),
-        })
+        result.append(
+            {
+                "ts": day_list[0]["ts"],
+                "open": day_list[0]["open"],
+                "high": max(d["high"] for d in day_list),
+                "low": min(d["low"] for d in day_list),
+                "close": day_list[-1]["close"],
+                "vol": sum(d["vol"] for d in day_list),
+                "volUsd": sum(d["volUsd"] for d in day_list),
+            }
+        )
 
     return result
 
@@ -270,7 +277,7 @@ def resample_to_weekly(daily_candles: List[Dict]) -> List[Dict]:
 def add_technical_indicators(candles: List[Dict]) -> List[Dict]:
     """
     添加技术指标 (用于三屏信号评分)
-    
+
     指标:
       - EMA_20:   20周期EMA
       - EMA_50:   50周期EMA
@@ -281,8 +288,8 @@ def add_technical_indicators(candles: List[Dict]) -> List[Dict]:
       - sma5/13/30/65/128/200: 简单均线 (MA区间经验法则用)
     """
     closes = [c["close"] for c in candles]
-    highs  = [c["high"]  for c in candles]
-    lows   = [c["low"]   for c in candles]
+    highs = [c["high"] for c in candles]
+    lows = [c["low"] for c in candles]
     n = len(closes)
 
     # EMA计算 (length 由 src 本身决定，不依赖外层 n)
@@ -296,15 +303,15 @@ def add_technical_indicators(candles: List[Dict]) -> List[Dict]:
             elif i == period - 1:
                 result[i] = sum(src[:period]) / period
             else:
-                result[i] = src[i] * k + result[i-1] * (1 - k)
+                result[i] = src[i] * k + result[i - 1] * (1 - k)
         return result
 
     # RSI计算
     def rsi(src, period=14):
         result = [None] * n
         for i in range(period, n):
-            gains = [max(src[j] - src[j-1], 0) for j in range(i-period+1, i+1)]
-            losses = [max(src[j-1] - src[j], 0) for j in range(i-period+1, i+1)]
+            gains = [max(src[j] - src[j - 1], 0) for j in range(i - period + 1, i + 1)]
+            losses = [max(src[j - 1] - src[j], 0) for j in range(i - period + 1, i + 1)]
             avg_gain = sum(gains) / period
             avg_loss = sum(losses) / period
             if avg_loss == 0:
@@ -320,30 +327,28 @@ def add_technical_indicators(candles: List[Dict]) -> List[Dict]:
         tr_list = []
         for i in range(1, n):
             tr = max(
-                highs[i] - lows[i],
-                abs(highs[i] - closes[i-1]),
-                abs(lows[i]  - closes[i-1])
+                highs[i] - lows[i], abs(highs[i] - closes[i - 1]), abs(lows[i] - closes[i - 1])
             )
             tr_list.append(tr)
-        for i in range(period, len(tr_list)+1):
+        for i in range(period, len(tr_list) + 1):
             if i == period:
                 result[i] = sum(tr_list[:period]) / period
-            elif result[i-1] is not None:
-                result[i] = (result[i-1] * (period-1) + tr_list[i-1]) / period
+            elif result[i - 1] is not None:
+                result[i] = (result[i - 1] * (period - 1) + tr_list[i - 1]) / period
         return result
 
     # 成交量均值
     vols = [c["vol"] for c in candles]
     vol_ma20 = [None] * n
     for i in range(19, n):
-        vol_ma20[i] = sum(vols[i-19:i+1]) / 20
+        vol_ma20[i] = sum(vols[i - 19 : i + 1]) / 20
 
-    ema20  = ema(closes, 20)
-    ema50  = ema(closes, 50)
-    ema12  = ema(closes, 12)
-    ema26  = ema(closes, 26)
-    rsi14  = rsi(closes, 14)
-    atr14  = atr(14)
+    ema20 = ema(closes, 20)
+    ema50 = ema(closes, 50)
+    ema12 = ema(closes, 12)
+    ema26 = ema(closes, 26)
+    rsi14 = rsi(closes, 14)
+    atr14 = atr(14)
 
     macd_line = [
         (ema12[i] - ema26[i]) if (ema12[i] is not None and ema26[i] is not None) else None
@@ -351,7 +356,7 @@ def add_technical_indicators(candles: List[Dict]) -> List[Dict]:
     ]
     macd_values = [v for v in macd_line if v is not None]
     # EMA函数需要独立列表，传入 macd_values 并获取对应长度的 signal_line
-    signal_raw = ema(macd_values, 9)   # 长度 == len(macd_values)
+    signal_raw = ema(macd_values, 9)  # 长度 == len(macd_values)
     # 对齐 signal_line 到原始长度
     full_signal = [None] * n
     j = 0
@@ -366,17 +371,19 @@ def add_technical_indicators(candles: List[Dict]) -> List[Dict]:
     for p in _MA_PERIODS:
         arr = [None] * n
         for i in range(p - 1, n):
-            arr[i] = sum(closes[i - p + 1:i + 1]) / p
+            arr[i] = sum(closes[i - p + 1 : i + 1]) / p
         sma_arrays[p] = arr
 
     for i, c in enumerate(candles):
-        c["ema20"]     = ema20[i]
-        c["ema50"]     = ema50[i]
-        c["macd"]      = macd_line[i]
+        c["ema20"] = ema20[i]
+        c["ema50"] = ema50[i]
+        c["macd"] = macd_line[i]
         c["macd_signal"] = full_signal[i]
-        c["macd_hist"] = (macd_line[i] - full_signal[i]) if (macd_line[i] and full_signal[i]) else None
-        c["rsi"]       = rsi14[i]
-        c["atr"]       = atr14[i]
+        c["macd_hist"] = (
+            (macd_line[i] - full_signal[i]) if (macd_line[i] and full_signal[i]) else None
+        )
+        c["rsi"] = rsi14[i]
+        c["atr"] = atr14[i]
         c["vol_ratio"] = (vols[i] / vol_ma20[i]) if vol_ma20[i] else None
         for p in _MA_PERIODS:
             c[f"sma{p}"] = sma_arrays[p][i]
@@ -388,15 +395,15 @@ def add_technical_indicators(candles: List[Dict]) -> List[Dict]:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="OKX历史K线数据获取工具")
-    parser.add_argument("--inst",    default="BTC-USDT-SWAP", help="交易对 (默认: BTC-USDT-SWAP)")
-    parser.add_argument("--bar",     default="1D",             help="K线周期 1W/1D/4H/1H (默认: 1D)")
-    parser.add_argument("--from",    dest="start", default="2025-01-01", help="开始日期 YYYY-MM-DD")
-    parser.add_argument("--to",      dest="end",   default="2026-05-16", help="结束日期 YYYY-MM-DD")
-    parser.add_argument("--refresh", action="store_true",    help="强制刷新缓存")
+    parser.add_argument("--inst", default="BTC-USDT-SWAP", help="交易对 (默认: BTC-USDT-SWAP)")
+    parser.add_argument("--bar", default="1D", help="K线周期 1W/1D/4H/1H (默认: 1D)")
+    parser.add_argument("--from", dest="start", default="2025-01-01", help="开始日期 YYYY-MM-DD")
+    parser.add_argument("--to", dest="end", default="2026-05-16", help="结束日期 YYYY-MM-DD")
+    parser.add_argument("--refresh", action="store_true", help="强制刷新缓存")
     args = parser.parse_args()
 
     start_ts = dt_to_ts(args.start)
-    end_ts   = dt_to_ts(args.end)
+    end_ts = dt_to_ts(args.end)
 
     candles = load_or_fetch(args.inst, args.bar, start_ts, end_ts, force_refresh=args.refresh)
     candles = add_technical_indicators(candles)
@@ -404,7 +411,7 @@ if __name__ == "__main__":
     print(f"\n✅ 获取 {len(candles)} 根 {args.bar} K线 ({args.inst})")
     if candles:
         first = ts_to_dt(candles[0]["ts"])
-        last  = ts_to_dt(candles[-1]["ts"])
+        last = ts_to_dt(candles[-1]["ts"])
         print(f"   时间范围: {first:%Y-%m-%d} ~ {last:%Y-%m-%d}")
         print(f"   最新收盘: ${candles[-1]['close']:,.2f}")
         print(f"   ATR(14):  ${candles[-1].get('atr') or 0:,.2f}")

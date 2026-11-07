@@ -9,10 +9,9 @@
   T6  SHADOW → LIVE → SHADOW 状态机闭环（30 笔配对样本 SHADOW 晋升、LIVE 7天样本劣化回滚）
   T7  state_file 原子写 & crash 后空 state 恢复（读取损坏 JSON 返回空）
 """
+
 from __future__ import annotations
 
-import json
-import os
 import random
 import sys
 from datetime import datetime, timedelta, timezone
@@ -27,19 +26,17 @@ if str(_V15_ROOT) not in sys.path:
     sys.path.insert(0, str(_V15_ROOT))
 
 from ab_shadow_comparator import (  # noqa: E402
-    ABShadowComparator,
-    ABComparatorState,
-    STATE_SHADOW,
-    STATE_LIVE,
-    STATE_DISABLED,
     MIN_SAMPLES_FOR_TEST,
     SHADOW_TO_LIVE_MIN_GAIN,
+    STATE_LIVE,
+    STATE_SHADOW,
+    ABShadowComparator,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def fresh_state(tmp_path):
@@ -59,15 +56,22 @@ def _ts(hours_offset: int) -> str:
 # T1 + T2
 # ---------------------------------------------------------------------------
 
+
 def test_t1_decision_record_new_fields(fresh_state):
     comp, _ = fresh_state
     # 模拟开仓决策时记录，带 position_ref
     ref = ABShadowComparator.build_position_ref("BTC", "2026-08-19T00:00:00Z")
     comp.record_decision(
-        symbol="BTC", baseline_action="OPEN", ai_action="SKIP",
-        baseline_confidence=0.8, ai_confidence=0.3,
-        baseline_pnl=0.0, ai_predicted_pnl=0.0,
-        ai_p_bust=0.7, ai_drawdown=-0.25, decision_diff="G-D1 skip",
+        symbol="BTC",
+        baseline_action="OPEN",
+        ai_action="SKIP",
+        baseline_confidence=0.8,
+        ai_confidence=0.3,
+        baseline_pnl=0.0,
+        ai_predicted_pnl=0.0,
+        ai_p_bust=0.7,
+        ai_drawdown=-0.25,
+        decision_diff="G-D1 skip",
         position_ref=ref,
     )
     rec = comp.state.records[-1]
@@ -105,6 +109,7 @@ def test_t2_build_position_ref_granularity_and_types():
 # T3 精确 t CDF
 # ---------------------------------------------------------------------------
 
+
 def test_t3_exact_t_cdf(fresh_state):
     comp, _ = fresh_state
     # 零差场景 → p 应该≈1.0
@@ -125,6 +130,7 @@ def test_t3_exact_t_cdf(fresh_state):
 # T4 backfill 匹配策略
 # ---------------------------------------------------------------------------
 
+
 def test_t4_backfill_matching_modes(fresh_state):
     comp, _ = fresh_state
     coin = "SOL"
@@ -132,19 +138,37 @@ def test_t4_backfill_matching_modes(fresh_state):
     # A) position_ref 精确匹配
     ts = "2026-08-01T10:00:00Z"
     ref = ABShadowComparator.build_position_ref(coin, ts)
-    comp.record_decision(symbol=coin, baseline_action="OPEN", ai_action="OPEN",
-                         baseline_confidence=0.9, ai_confidence=0.95,
-                         baseline_pnl=0.0, ai_predicted_pnl=0.0, position_ref=ref)
+    comp.record_decision(
+        symbol=coin,
+        baseline_action="OPEN",
+        ai_action="OPEN",
+        baseline_confidence=0.9,
+        ai_confidence=0.95,
+        baseline_pnl=0.0,
+        ai_predicted_pnl=0.0,
+        position_ref=ref,
+    )
     # 插入另一条（干扰），同 symbol 不同 ref
     ts2 = "2026-08-01T11:00:00Z"
     ref2 = ABShadowComparator.build_position_ref(coin, ts2)
-    comp.record_decision(symbol=coin, baseline_action="OPEN", ai_action="SKIP",
-                         baseline_confidence=0.85, ai_confidence=0.25,
-                         baseline_pnl=0.0, ai_predicted_pnl=0.0, position_ref=ref2)
+    comp.record_decision(
+        symbol=coin,
+        baseline_action="OPEN",
+        ai_action="SKIP",
+        baseline_confidence=0.85,
+        ai_confidence=0.25,
+        baseline_pnl=0.0,
+        ai_predicted_pnl=0.0,
+        position_ref=ref2,
+    )
     # 回填 ts2，应精确命中第 2 条
-    n = comp.backfill_trade_result(symbol=coin, entry_timestamp=ts2,
-                                   baseline_pnl_usdt=-0.5, baseline_pnl_pct=-0.05,
-                                   exit_reason="bust")
+    n = comp.backfill_trade_result(
+        symbol=coin,
+        entry_timestamp=ts2,
+        baseline_pnl_usdt=-0.5,
+        baseline_pnl_pct=-0.05,
+        exit_reason="bust",
+    )
     assert n == 1
     r2 = comp.state.records[-1]
     assert r2["pnl_backfilled"] is True
@@ -155,27 +179,39 @@ def test_t4_backfill_matching_modes(fresh_state):
     # B) Fallback 模式：position_ref 不匹配 但 7天内+symbol+OPEN/ADDON+未回填命中
     ts_near = datetime.utcnow() - timedelta(minutes=30)
     # 一条不带 ref 的记录（模拟老版本数据）
-    comp.record_decision(symbol=coin, baseline_action="OPEN", ai_action="OPEN",
-                         baseline_confidence=0.9, ai_confidence=0.9,
-                         baseline_pnl=0.0, ai_predicted_pnl=0.0,
-                         position_ref="")
-    n2 = comp.backfill_trade_result(symbol=coin, entry_timestamp=ts_near,
-                                    baseline_pnl_usdt=0.2, baseline_pnl_pct=0.02,
-                                    exit_reason="tp")
+    comp.record_decision(
+        symbol=coin,
+        baseline_action="OPEN",
+        ai_action="OPEN",
+        baseline_confidence=0.9,
+        ai_confidence=0.9,
+        baseline_pnl=0.0,
+        ai_predicted_pnl=0.0,
+        position_ref="",
+    )
+    n2 = comp.backfill_trade_result(
+        symbol=coin,
+        entry_timestamp=ts_near,
+        baseline_pnl_usdt=0.2,
+        baseline_pnl_pct=0.02,
+        exit_reason="tp",
+    )
     assert n2 == 1
     last = comp.state.records[-1]
     assert last["pnl_backfilled"] is True
     assert last["position_ref"] != "", "fallback命中时应补上position_ref"
 
     # C) 完全不匹配：symbol 错 → 返回 0
-    n3 = comp.backfill_trade_result(symbol="DOESNOTEXIST", entry_timestamp=ts_near,
-                                    baseline_pnl_usdt=0.2, baseline_pnl_pct=0.02)
+    n3 = comp.backfill_trade_result(
+        symbol="DOESNOTEXIST", entry_timestamp=ts_near, baseline_pnl_usdt=0.2, baseline_pnl_pct=0.02
+    )
     assert n3 == 0
 
 
 # ---------------------------------------------------------------------------
 # T5 PnL 规则正确性
 # ---------------------------------------------------------------------------
+
 
 def test_t5_ai_path_pnl_estimates(fresh_state):
     comp, _ = fresh_state
@@ -191,12 +227,23 @@ def test_t5_ai_path_pnl_estimates(fresh_state):
     for i, (ba, aa, bl_usdt, ratio, exp_ai, desc) in enumerate(cases):
         ts = datetime(2026, 8, 1, 9, i, tzinfo=timezone.utc).isoformat()
         ref = ABShadowComparator.build_position_ref(coin, ts)
-        comp.record_decision(symbol=coin, baseline_action=ba, ai_action=aa,
-                             baseline_confidence=0.8, ai_confidence=0.8,
-                             baseline_pnl=0.0, ai_predicted_pnl=0.0, position_ref=ref)
-        n = comp.backfill_trade_result(symbol=coin, entry_timestamp=ts,
-                                       baseline_pnl_usdt=bl_usdt, baseline_pnl_pct=0.01,
-                                       ai_addon_delta_ratio=ratio)
+        comp.record_decision(
+            symbol=coin,
+            baseline_action=ba,
+            ai_action=aa,
+            baseline_confidence=0.8,
+            ai_confidence=0.8,
+            baseline_pnl=0.0,
+            ai_predicted_pnl=0.0,
+            position_ref=ref,
+        )
+        n = comp.backfill_trade_result(
+            symbol=coin,
+            entry_timestamp=ts,
+            baseline_pnl_usdt=bl_usdt,
+            baseline_pnl_pct=0.01,
+            ai_addon_delta_ratio=ratio,
+        )
         assert n == 1, desc
         r = comp.state.records[-1]
         assert r["ai_predicted_pnl"] == pytest.approx(exp_ai, abs=1e-4), desc
@@ -205,6 +252,7 @@ def test_t5_ai_path_pnl_estimates(fresh_state):
 # ---------------------------------------------------------------------------
 # T6 状态机闭环（SHADOW→LIVE 晋升 & LIVE→SHADOW 回滚）
 # ---------------------------------------------------------------------------
+
 
 def test_t6_state_machine_promote_and_rollback(fresh_state):
     comp, state_file = fresh_state
@@ -218,19 +266,41 @@ def test_t6_state_machine_promote_and_rollback(fresh_state):
         ref = ABShadowComparator.build_position_ref("BTC", entry_ts)
         if i < 15:
             # AI 同意开，基线赚 1%
-            comp.record_decision(symbol="BTC", baseline_action="OPEN", ai_action="OPEN",
-                                 baseline_confidence=0.9, ai_confidence=0.95,
-                                 baseline_pnl=0.0, ai_predicted_pnl=0.0, position_ref=ref)
-            comp.backfill_trade_result(symbol="BTC", entry_timestamp=entry_ts,
-                                       baseline_pnl_usdt=0.10, baseline_pnl_pct=0.01)
+            comp.record_decision(
+                symbol="BTC",
+                baseline_action="OPEN",
+                ai_action="OPEN",
+                baseline_confidence=0.9,
+                ai_confidence=0.95,
+                baseline_pnl=0.0,
+                ai_predicted_pnl=0.0,
+                position_ref=ref,
+            )
+            comp.backfill_trade_result(
+                symbol="BTC",
+                entry_timestamp=entry_ts,
+                baseline_pnl_usdt=0.10,
+                baseline_pnl_pct=0.01,
+            )
         else:
             # AI 否决 SKIP，基线爆亏 3%
-            comp.record_decision(symbol="BTC", baseline_action="OPEN", ai_action="SKIP",
-                                 baseline_confidence=0.9, ai_confidence=0.1,
-                                 baseline_pnl=0.0, ai_predicted_pnl=0.0, position_ref=ref)
-            comp.backfill_trade_result(symbol="BTC", entry_timestamp=entry_ts,
-                                       baseline_pnl_usdt=-0.30, baseline_pnl_pct=-0.03,
-                                       ai_skipped_open_pnl=0.0)
+            comp.record_decision(
+                symbol="BTC",
+                baseline_action="OPEN",
+                ai_action="SKIP",
+                baseline_confidence=0.9,
+                ai_confidence=0.1,
+                baseline_pnl=0.0,
+                ai_predicted_pnl=0.0,
+                position_ref=ref,
+            )
+            comp.backfill_trade_result(
+                symbol="BTC",
+                entry_timestamp=entry_ts,
+                baseline_pnl_usdt=-0.30,
+                baseline_pnl_pct=-0.03,
+                ai_skipped_open_pnl=0.0,
+            )
 
     report = comp.generate_report()
     ev = report["evaluation"]
@@ -253,13 +323,24 @@ def test_t6_state_machine_promote_and_rollback(fresh_state):
         # AI 持续比基线差 1.5% (每笔)
         base_usdt = 0.10
         ai_usdt = 0.10 - 0.03  # AI 更差
-        comp.record_decision(symbol="BTC", baseline_action="OPEN", ai_action="OPEN",
-                             baseline_confidence=0.9, ai_confidence=0.8,
-                             baseline_pnl=base_usdt, ai_predicted_pnl=ai_usdt,
-                             position_ref=ref, decision_diff="ai-underperf")
+        comp.record_decision(
+            symbol="BTC",
+            baseline_action="OPEN",
+            ai_action="OPEN",
+            baseline_confidence=0.9,
+            ai_confidence=0.8,
+            baseline_pnl=base_usdt,
+            ai_predicted_pnl=ai_usdt,
+            position_ref=ref,
+            decision_diff="ai-underperf",
+        )
         # 显式回填（即使 record 给了 PnL 也再 backfill 一次，验证不覆盖已有 backfilled=false 外）
-        comp.backfill_trade_result(symbol="BTC", entry_timestamp=entry_ts,
-                                   baseline_pnl_usdt=base_usdt, baseline_pnl_pct=0.01)
+        comp.backfill_trade_result(
+            symbol="BTC",
+            entry_timestamp=entry_ts,
+            baseline_pnl_usdt=base_usdt,
+            baseline_pnl_pct=0.01,
+        )
         # 因为回填后 record 标记 pnl_backfilled=True，但我们上面的 record_decision 又写了一个新的
         # （这里 baseline_pnl 直接写了值，但 backfill 会匹配 position_ref）
 
@@ -273,12 +354,22 @@ def test_t6_state_machine_promote_and_rollback(fresh_state):
             entry_dt = datetime.utcnow() - timedelta(days=1) + timedelta(hours=i * 2)
             entry_ts = entry_dt.isoformat() + "Z"
             ref = ABShadowComparator.build_position_ref("BTC", entry_ts)
-            comp.record_decision(symbol="BTC", baseline_action="OPEN", ai_action="OPEN",
-                                 baseline_confidence=0.9, ai_confidence=0.8,
-                                 baseline_pnl=0.0, ai_predicted_pnl=0.0,
-                                 position_ref=ref)
-            comp.backfill_trade_result(symbol="BTC", entry_timestamp=entry_ts,
-                                       baseline_pnl_usdt=0.15, baseline_pnl_pct=0.015)
+            comp.record_decision(
+                symbol="BTC",
+                baseline_action="OPEN",
+                ai_action="OPEN",
+                baseline_confidence=0.9,
+                ai_confidence=0.8,
+                baseline_pnl=0.0,
+                ai_predicted_pnl=0.0,
+                position_ref=ref,
+            )
+            comp.backfill_trade_result(
+                symbol="BTC",
+                entry_timestamp=entry_ts,
+                baseline_pnl_usdt=0.15,
+                baseline_pnl_pct=0.015,
+            )
             # 覆写 ai_predicted_pnl：backfill 默认 ba==aa → 相同 PnL，这里手动再改造成 AI 差
             rec = next(r for r in reversed(comp.state.records) if r["position_ref"] == ref)
             rec["ai_predicted_pnl"] = round(0.15 - 0.07, 4)  # AI 更差
@@ -286,13 +377,15 @@ def test_t6_state_machine_promote_and_rollback(fresh_state):
         comp._save_state()
         ev2 = comp.evaluate()
 
-    assert ev2.get("state") == STATE_SHADOW or ev2.get("transition") == "LIVE→SHADOW (rollback)", \
-        f"LIVE 7天劣化应回滚: state={ev2.get('state')}, trans={ev2.get('transition')}, t={ev2.get('t_test')}"
+    assert (
+        ev2.get("state") == STATE_SHADOW or ev2.get("transition") == "LIVE→SHADOW (rollback)"
+    ), f"LIVE 7天劣化应回滚: state={ev2.get('state')}, trans={ev2.get('transition')}, t={ev2.get('t_test')}"
 
 
 # ---------------------------------------------------------------------------
 # T7 原子写 + 损坏 JSON 恢复
 # ---------------------------------------------------------------------------
+
 
 def test_t7_corrupted_state_recovery(tmp_path):
     f = tmp_path / "corrupt.json"
@@ -303,9 +396,15 @@ def test_t7_corrupted_state_recovery(tmp_path):
     assert comp.get_state() == STATE_SHADOW
     assert comp.state.records == []
     # record 之后原子写，读取回来应当无损
-    comp.record_decision(symbol="BTC", baseline_action="OPEN", ai_action="OPEN",
-                         baseline_confidence=0.9, ai_confidence=0.9,
-                         baseline_pnl=0.0, ai_predicted_pnl=0.0)
+    comp.record_decision(
+        symbol="BTC",
+        baseline_action="OPEN",
+        ai_action="OPEN",
+        baseline_confidence=0.9,
+        ai_confidence=0.9,
+        baseline_pnl=0.0,
+        ai_predicted_pnl=0.0,
+    )
     f2 = ABShadowComparator(state_file=str(f))
     assert len(f2.state.records) == 1
     # state_file.tmp 不应残留
@@ -315,6 +414,7 @@ def test_t7_corrupted_state_recovery(tmp_path):
 # ---------------------------------------------------------------------------
 # T8: 双基线版本对比 — 静态基线（v15策略）+ 动态基线（最优AI版本）
 # ---------------------------------------------------------------------------
+
 
 def test_t8_dynamic_baseline_set_and_get(tmp_path):
     """set_dynamic_baseline + generate_report 包含动态基线信息。"""

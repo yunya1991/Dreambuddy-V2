@@ -6,6 +6,7 @@
 
 幂等：init_db_schema 全部 CREATE TABLE IF NOT EXISTS。
 """
+
 import argparse
 import os
 
@@ -17,9 +18,7 @@ def init_schema(db_path: str) -> int:
 
     with get_sqlite_connection(db_path) as conn:
         init_db_schema(conn)
-        count = conn.execute(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type='table'"
-        ).fetchone()[0]
+        count = conn.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'").fetchone()[0]
     return count
 
 

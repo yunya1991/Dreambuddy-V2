@@ -2,14 +2,12 @@
 
 SPEC v2.0-rc3 第 4.5 节：从交叉质询中提取精彩 Q&A 作为营销素材。
 """
-from __future__ import annotations
 
-from datetime import datetime
+from __future__ import annotations  # noqa: I001
 
-import pytest
 
-from core.models import Argument, CrossExamination, Turn
 from core.marketing import MarketingExtractor
+from core.models import Argument, CrossExamination, Turn
 
 
 class TestExtractCrossExamHighlights:
@@ -19,8 +17,11 @@ class TestExtractCrossExamHighlights:
         """无 CrossExamination 时返回空列表。"""
         extractor = MarketingExtractor()
         transcript = [
-            Turn(speaker="bull", round=1,
-                 content=Argument(thesis="t", arguments=[], quote="", confidence=0.8, raw="")),
+            Turn(
+                speaker="bull",
+                round=1,
+                content=Argument(thesis="t", arguments=[], quote="", confidence=0.8, raw=""),
+            ),
         ]
         result = extractor._extract_cross_exam_highlights(transcript)
         assert result == []
@@ -29,7 +30,8 @@ class TestExtractCrossExamHighlights:
         """犀利问题被提取。"""
         extractor = MarketingExtractor()
         ce = CrossExamination(
-            questioner="bear", respondent="bull",
+            questioner="bear",
+            respondent="bull",
             questions=["你的数据来源是什么？"],
             answers=["来源是 CoinGecko 2024年Q3报告，数据经过交叉验证"],
             raw="",
@@ -45,7 +47,8 @@ class TestExtractCrossExamHighlights:
         """简短回答（<20字）被提取（被问倒）。"""
         extractor = MarketingExtractor()
         ce = CrossExamination(
-            questioner="bear", respondent="bull",
+            questioner="bear",
+            respondent="bull",
             questions=["普通问题"],
             answers=["不知道"],  # <20 字
             raw="",
@@ -58,7 +61,8 @@ class TestExtractCrossExamHighlights:
         """普通 Q&A 不被提取（非犀利且回答充分）。"""
         extractor = MarketingExtractor()
         ce = CrossExamination(
-            questioner="bear", respondent="bull",
+            questioner="bear",
+            respondent="bull",
             questions=["普通问题"],
             answers=["这是一个详细的回答，超过二十个字，不会被提取"],
             raw="",
@@ -71,7 +75,8 @@ class TestExtractCrossExamHighlights:
         """bull 提问时标注"正方质询反方"。"""
         extractor = MarketingExtractor()
         ce = CrossExamination(
-            questioner="bull", respondent="bear",
+            questioner="bull",
+            respondent="bear",
             questions=["数据来源是什么？"],
             answers=["来源可靠"],
             raw="",
@@ -85,7 +90,8 @@ class TestExtractCrossExamHighlights:
         """bear 提问时标注"反方质询正方"。"""
         extractor = MarketingExtractor()
         ce = CrossExamination(
-            questioner="bear", respondent="bull",
+            questioner="bear",
+            respondent="bull",
             questions=["数据来源是什么？"],
             answers=["来源可靠"],
             raw="",
@@ -99,13 +105,15 @@ class TestExtractCrossExamHighlights:
         """多条 CrossExamination 分别提取。"""
         extractor = MarketingExtractor()
         ce1 = CrossExamination(
-            questioner="bear", respondent="bull",
+            questioner="bear",
+            respondent="bull",
             questions=["数据来源？", "如何解释矛盾？"],
             answers=["不知道", "无法解释"],
             raw="",
         )
         ce2 = CrossExamination(
-            questioner="bull", respondent="bear",
+            questioner="bull",
+            respondent="bear",
             questions=["为什么？"],
             answers=["不知道"],
             raw="",

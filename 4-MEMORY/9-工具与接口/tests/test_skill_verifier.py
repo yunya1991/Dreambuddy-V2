@@ -3,21 +3,20 @@
 
 Task 12 遗漏交付物补齐——验证事后校验引擎对原版 SKILL.md 的 Checklist + HARD-GATE 校验。
 """
-import sys
-from pathlib import Path
 
-import pytest
+import sys  # noqa: I001
+from pathlib import Path
 
 _SCRIPT_DIR = Path(__file__).parent
 _PARENT = _SCRIPT_DIR.parent
 if str(_PARENT) not in sys.path:
     sys.path.insert(0, str(_PARENT))
 
-from cognitive_superpowers import SuperpowersSkill
-from skill_verifier import (
-    verify_skill_followed,
-    compute_follow_score,
+from cognitive_superpowers import SuperpowersSkill  # noqa: E402
+from skill_verifier import (  # noqa: E402
     FOLLOW_SCORE_THRESHOLD,
+    compute_follow_score,
+    verify_skill_followed,
 )
 
 
@@ -56,8 +55,10 @@ def test_follow_score_threshold_is_035():
 def test_compute_follow_score_formula():
     """follow_score = (checklist_matched/total)*0.6 + (gate_respected/total)*0.4"""
     score = compute_follow_score(
-        checklist_matched=2, checklist_total=3,
-        gate_respected=2, gate_total=2,
+        checklist_matched=2,
+        checklist_total=3,
+        gate_respected=2,
+        gate_total=2,
     )
     expected = (2 / 3) * 0.6 + (2 / 2) * 0.4
     assert abs(score - expected) < 0.01
@@ -113,6 +114,12 @@ def test_verify_result_has_required_fields():
     skill = _make_skill("x", gates=["g1"], checklists=["c1"])
     chain = _make_chain(("file_change", "edit x.py", {"file": "x.py"}))
     result = verify_skill_followed(skill, chain)
-    for key in ("followed", "score", "checklist_matched", "checklist_missed",
-                "gate_violations", "gate_respected"):
+    for key in (
+        "followed",
+        "score",
+        "checklist_matched",
+        "checklist_missed",
+        "gate_violations",
+        "gate_respected",
+    ):
         assert key in result, f"Missing key: {key}"

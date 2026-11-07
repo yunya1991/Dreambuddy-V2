@@ -19,9 +19,7 @@ Half-Kelly：
   确保单笔最大亏损 ≤ risk_per_trade（默认 2%）
 """
 
-from __future__ import annotations
-
-from typing import Optional
+from __future__ import annotations  # noqa: I001
 
 
 class KellySizer:

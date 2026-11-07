@@ -22,9 +22,9 @@ C层 - 执行反思进化器
 import json
 import time
 import uuid
-from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 
 def _gen_id(prefix: str) -> str:
@@ -35,9 +35,11 @@ def _gen_id(prefix: str) -> str:
 # 反思结果数据结构
 # ============================================================
 
+
 @dataclass
 class ReflectionInsight:
     """反思洞察"""
+
     insight_id: str = field(default_factory=lambda: _gen_id("insight"))
     category: str = ""  # efficiency / quality / path / node / decision
     level: str = "info"  # info / warning / error / improvement
@@ -61,6 +63,7 @@ class ReflectionInsight:
 @dataclass
 class ExecutionReflection:
     """执行反思结果"""
+
     reflection_id: str = field(default_factory=lambda: _gen_id("refl"))
     blueprint_id: str = ""
     objective_id: str = ""
@@ -112,6 +115,7 @@ class ExecutionReflection:
 # 记忆库（简单实现）
 # ============================================================
 
+
 class MemoryStore:
     """记忆库
 
@@ -126,7 +130,9 @@ class MemoryStore:
         if store_path:
             self.store_path = Path(store_path)
         else:
-            self.store_path = Path(__file__).parent.parent.parent / "data" / "reflection_memory.json"
+            self.store_path = (
+                Path(__file__).parent.parent.parent / "data" / "reflection_memory.json"
+            )
 
         self._cache: Optional[Dict] = None
 
@@ -165,7 +171,7 @@ class MemoryStore:
 
         if self.store_path.exists():
             try:
-                with open(self.store_path, 'r', encoding='utf-8') as f:
+                with open(self.store_path, "r", encoding="utf-8") as f:
                     self._cache = json.load(f)
                     return self._cache
             except Exception:
@@ -177,7 +183,7 @@ class MemoryStore:
     def _save_data(self, data: Dict):
         """保存数据"""
         self.store_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.store_path, 'w', encoding='utf-8') as f:
+        with open(self.store_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         self._cache = data
 
@@ -187,18 +193,20 @@ class MemoryStore:
             data["lessons_index"] = {}
 
         # 按目标类型分类（这里简化处理）
-        obj_type = reflection.objective_id.split('_')[0] if reflection.objective_id else "default"
+        obj_type = reflection.objective_id.split("_")[0] if reflection.objective_id else "default"
 
         if obj_type not in data["lessons_index"]:
             data["lessons_index"][obj_type] = []
 
         for lesson in reflection.lessons_learned:
-            data["lessons_index"][obj_type].append({
-                "lesson": lesson,
-                "reflection_id": reflection.reflection_id,
-                "score": reflection.overall_score,
-                "timestamp": reflection.created_at,
-            })
+            data["lessons_index"][obj_type].append(
+                {
+                    "lesson": lesson,
+                    "reflection_id": reflection.reflection_id,
+                    "score": reflection.overall_score,
+                    "timestamp": reflection.created_at,
+                }
+            )
 
         # 只保留最近100条
         data["lessons_index"][obj_type] = data["lessons_index"][obj_type][-100:]
@@ -207,6 +215,7 @@ class MemoryStore:
 # ============================================================
 # 执行反思器
 # ============================================================
+
 
 class ExecutionReflector:
     """执行反思进化器
@@ -289,29 +298,27 @@ class ExecutionReflector:
         reflection = ExecutionReflection()
 
         if blueprint:
-            reflection.blueprint_id = getattr(blueprint, 'blueprint_id', '')
-            reflection.objective_id = getattr(blueprint, 'objective_id', '')
+            reflection.blueprint_id = getattr(blueprint, "blueprint_id", "")
+            reflection.objective_id = getattr(blueprint, "objective_id", "")
 
         # 执行反思
         try:
             if self.use_llm:
-                reflection = self._reflect_with_llm(
-                    execution_history, blueprint, context
-                )
+                reflection = self._reflect_with_llm(execution_history, blueprint, context)
             else:
-                reflection = self._reflect_with_rules(
-                    execution_history, blueprint, context
-                )
+                reflection = self._reflect_with_rules(execution_history, blueprint, context)
         except Exception as e:
             reflection = self._reflect_with_rules(execution_history, blueprint, context)
-            reflection.insights.append(ReflectionInsight(
-                category="quality",
-                level="warning",
-                title="LLM反思失败",
-                description=f"LLM反思异常，使用规则反思: {e}",
-                suggestion="检查LLM服务状态",
-                confidence=0.5,
-            ))
+            reflection.insights.append(
+                ReflectionInsight(
+                    category="quality",
+                    level="warning",
+                    title="LLM反思失败",
+                    description=f"LLM反思异常，使用规则反思: {e}",
+                    suggestion="检查LLM服务状态",
+                    confidence=0.5,
+                )
+            )
 
         # 持久化
         if self.enable_persistence:
@@ -349,8 +356,8 @@ class ExecutionReflector:
             if llm_output:
                 reflection = self._parse_reflection_output(llm_output)
                 if blueprint:
-                    reflection.blueprint_id = getattr(blueprint, 'blueprint_id', '')
-                    reflection.objective_id = getattr(blueprint, 'objective_id', '')
+                    reflection.blueprint_id = getattr(blueprint, "blueprint_id", "")
+                    reflection.objective_id = getattr(blueprint, "objective_id", "")
                 return reflection
         except Exception:
             pass
@@ -377,15 +384,15 @@ class ExecutionReflector:
         parts.append("## 执行历史")
         total_duration = 0
         for i, result in enumerate(execution_history):
-            duration = getattr(result, 'duration_ms', 0)
+            duration = getattr(result, "duration_ms", 0)
             total_duration += duration
-            confidence = getattr(result, 'confidence', 0)
-            status = getattr(result, 'status', 'unknown')
+            confidence = getattr(result, "confidence", 0)
+            status = getattr(result, "status", "unknown")
             parts.append(f"### 节点 {i+1}: {result.node_id}")
             parts.append(f"- 状态: {status.value if hasattr(status, 'value') else status}")
             parts.append(f"- 耗时: {duration:.0f}ms")
             parts.append(f"- 置信度: {confidence:.2f}")
-            error = getattr(result, 'error', None)
+            error = getattr(result, "error", None)
             if error:
                 parts.append(f"- 错误: {error}")
             parts.append("")
@@ -412,7 +419,7 @@ class ExecutionReflector:
             start = llm_output.find("{")
             end = llm_output.rfind("}")
             if start >= 0 and end >= 0:
-                json_str = llm_output[start:end + 1]
+                json_str = llm_output[start : end + 1]
 
             data = json.loads(json_str)
 
@@ -439,14 +446,16 @@ class ExecutionReflector:
                 reflection.insights.append(insight)
 
         except Exception as e:
-            reflection.insights.append(ReflectionInsight(
-                category="quality",
-                level="error",
-                title="反思结果解析失败",
-                description=str(e),
-                suggestion="检查LLM输出格式",
-                confidence=0.3,
-            ))
+            reflection.insights.append(
+                ReflectionInsight(
+                    category="quality",
+                    level="error",
+                    title="反思结果解析失败",
+                    description=str(e),
+                    suggestion="检查LLM输出格式",
+                    confidence=0.3,
+                )
+            )
 
         return reflection
 
@@ -461,8 +470,8 @@ class ExecutionReflector:
 
         # 填充蓝图信息
         if blueprint:
-            reflection.blueprint_id = getattr(blueprint, 'blueprint_id', '')
-            reflection.objective_id = getattr(blueprint, 'objective_id', '')
+            reflection.blueprint_id = getattr(blueprint, "blueprint_id", "")
+            reflection.objective_id = getattr(blueprint, "objective_id", "")
 
         if not execution_history:
             reflection.overall_score = 0.0
@@ -471,16 +480,12 @@ class ExecutionReflector:
 
         # 基础统计
         total = len(execution_history)
-        successful = sum(
-            1 for r in execution_history
-            if hasattr(r, 'is_success') and r.is_success
-        )
+        successful = sum(1 for r in execution_history if hasattr(r, "is_success") and r.is_success)
         failed = total - successful
 
-        total_duration = sum(getattr(r, 'duration_ms', 0) for r in execution_history)
+        total_duration = sum(getattr(r, "duration_ms", 0) for r in execution_history)
         avg_confidence = (
-            sum(getattr(r, 'confidence', 0) for r in execution_history) / total
-            if total > 0 else 0
+            sum(getattr(r, "confidence", 0) for r in execution_history) / total if total > 0 else 0
         )
 
         # 计算各维度得分
@@ -496,41 +501,47 @@ class ExecutionReflector:
 
         # 节点评分
         for r in execution_history:
-            if hasattr(r, 'is_success') and r.is_success:
-                reflection.node_scores[r.node_id] = getattr(r, 'confidence', 0.5)
+            if hasattr(r, "is_success") and r.is_success:
+                reflection.node_scores[r.node_id] = getattr(r, "confidence", 0.5)
             else:
                 reflection.node_scores[r.node_id] = 0.0
 
         # 生成洞察
         if failed > 0:
-            reflection.insights.append(ReflectionInsight(
-                category="quality",
-                level="error",
-                title=f"{failed}个节点失败",
-                description=f"执行中有{failed}/{total}个节点失败",
-                suggestion="检查失败节点的原因，考虑降级或替换",
-                confidence=0.9,
-            ))
+            reflection.insights.append(
+                ReflectionInsight(
+                    category="quality",
+                    level="error",
+                    title=f"{failed}个节点失败",
+                    description=f"执行中有{failed}/{total}个节点失败",
+                    suggestion="检查失败节点的原因，考虑降级或替换",
+                    confidence=0.9,
+                )
+            )
 
         if avg_confidence < 0.5:
-            reflection.insights.append(ReflectionInsight(
-                category="quality",
-                level="warning",
-                title="整体置信度偏低",
-                description=f"平均置信度仅{avg_confidence:.2f}",
-                suggestion="考虑增加更多数据源或使用更高质量的模型",
-                confidence=0.8,
-            ))
+            reflection.insights.append(
+                ReflectionInsight(
+                    category="quality",
+                    level="warning",
+                    title="整体置信度偏低",
+                    description=f"平均置信度仅{avg_confidence:.2f}",
+                    suggestion="考虑增加更多数据源或使用更高质量的模型",
+                    confidence=0.8,
+                )
+            )
 
         if total_duration > 30000:
-            reflection.insights.append(ReflectionInsight(
-                category="efficiency",
-                level="warning",
-                title="执行耗时较长",
-                description=f"总耗时{total_duration:.0f}ms，超过30秒",
-                suggestion="考虑并行执行或优化慢节点",
-                confidence=0.7,
-            ))
+            reflection.insights.append(
+                ReflectionInsight(
+                    category="efficiency",
+                    level="warning",
+                    title="执行耗时较长",
+                    description=f"总耗时{total_duration:.0f}ms，超过30秒",
+                    suggestion="考虑并行执行或优化慢节点",
+                    confidence=0.7,
+                )
+            )
 
         # 经验教训
         if successful == total:

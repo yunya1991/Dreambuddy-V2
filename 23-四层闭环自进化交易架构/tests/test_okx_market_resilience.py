@@ -2,12 +2,11 @@
 OKXMarketAdapter 韧性测试 — 重试 + TTL 缓存 + stale 降级
 TDD RED→GREEN：验证 OKX API 单次失败不再直穿下游 6 层 fallback
 """
+
 from __future__ import annotations
 
 import time
 from unittest.mock import MagicMock
-
-import pytest
 
 from dreambuddy_evolution.adapters.okx_market import OKXMarketAdapter
 
@@ -44,8 +43,9 @@ def _make_kline_resp(n_candles=200):
     base = 100.0
     for i in range(n_candles):
         c = base + i * 0.1
-        candles.append({"o": str(c), "h": str(c + 0.5), "l": str(c - 0.5),
-                        "c": str(c), "vol": "100"})
+        candles.append(
+            {"o": str(c), "h": str(c + 0.5), "l": str(c - 0.5), "c": str(c), "vol": "100"}
+        )
     # OKX 返回降序（新→旧）
     return {"ok": True, "candles": list(reversed(candles))}
 
@@ -75,13 +75,13 @@ def test_retry_succeeds_on_second_attempt():
 def test_stale_cache_fallback_on_all_failures(caplog):
     """全部失败 + 有过期缓存 → 返回 stale 数据并打 FO-raw-stale 日志"""
     import logging
+
     client = _FakeClient()
     client.get_kline_mock.return_value = None  # 始终失败
 
     adapter = OKXMarketAdapter(client)
     # 手动注入过期缓存（模拟上次成功响应）
-    adapter._last_good["kline:BTC-USDT"] = (time.time() - 3600,
-                                            {"close": [100.0], "ma_200": 100.0})
+    adapter._last_good["kline:BTC-USDT"] = (time.time() - 3600, {"close": [100.0], "ma_200": 100.0})
 
     with caplog.at_level(logging.WARNING, logger="dreambuddy_evolution.adapters.okx_market"):
         result = adapter._fetch_kline("BTC-USDT", limit=200)

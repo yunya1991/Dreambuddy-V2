@@ -16,6 +16,7 @@
   TR-4.13 node_sequence 含研讨专用节点 (camp/debate/round/bias/conclusion)
   TR-4.14 每个报告生成多条 case (按Round或阵营拆分)
 """
+
 import os
 import sys
 import tempfile
@@ -43,7 +44,7 @@ class MasterSeminarCollectorTest(unittest.TestCase):
         # 样本1: 完整研讨报告
         sem1 = os.path.join(cls._reports_dir, "SEM_20260429_104041.md")
         with open(sem1, "w") as f:
-            f.write(textwrap.dedent('''
+            f.write(textwrap.dedent("""
                 # 大师研讨报告
 
                 **研讨ID**: SEM_20260429_104041
@@ -127,12 +128,12 @@ class MasterSeminarCollectorTest(unittest.TestCase):
 
                 ### 风险警告
                 - 多空分歧较大，注意仓位控制
-            ''').strip())
+            """).strip())
 
         # 样本2: 简短研讨报告
         sem2 = os.path.join(cls._reports_dir, "SEM_20260429_104453.md")
         with open(sem2, "w") as f:
-            f.write(textwrap.dedent('''
+            f.write(textwrap.dedent("""
                 # 大师研讨报告
                 **研讨ID**: SEM_20260429_104453
                 **当前Regime**: RANGE
@@ -157,44 +158,51 @@ class MasterSeminarCollectorTest(unittest.TestCase):
                 ### 多空倾向
                 倾向: 中性 (+0.00)
                 置信度: 45%
-            ''').strip())
+            """).strip())
 
     @classmethod
     def tearDownClass(cls):
         import shutil
+
         shutil.rmtree(cls._tmpdir, ignore_errors=True)
 
     # ===== TR-4.1: 类存在且实现接口 =====
     def test_4_1_class_exists_and_implements_interface(self):
-        from master_seminar_collector import MasterSeminarCollector
         from interfaces.training_data_provider import TrainingDataProvider
+        from master_seminar_collector import MasterSeminarCollector
+
         collector = MasterSeminarCollector()
         self.assertIsInstance(collector, TrainingDataProvider)
 
     # ===== TR-4.2: get_source_name =====
     def test_4_2_source_name(self):
         from master_seminar_collector import MasterSeminarCollector
+
         self.assertEqual(MasterSeminarCollector().get_source_name(), "master_seminar")
 
     # ===== TR-4.3: get_quality_threshold =====
     def test_4_3_quality_threshold(self):
         from master_seminar_collector import MasterSeminarCollector
+
         self.assertEqual(MasterSeminarCollector().get_quality_threshold(), "A")
 
     # ===== TR-4.4: fetch_cases 采集 TrainingCase =====
     def test_4_4_fetch_cases_returns_training_cases(self):
         from master_seminar_collector import MasterSeminarCollector
+
         collector = MasterSeminarCollector()
         collector.reports_root = self._reports_dir
         cases = collector.fetch_cases(limit=100)
         self.assertGreater(len(cases), 0)
         from interfaces.training_data_provider import TrainingCase
+
         for c in cases:
             self.assertIsInstance(c, TrainingCase)
 
     # ===== TR-4.5: intent 含 seminar =====
     def test_4_5_intent_contains_seminar(self):
         from master_seminar_collector import MasterSeminarCollector
+
         c = MasterSeminarCollector()
         c.reports_root = self._reports_dir
         cases = c.fetch_cases(limit=100)
@@ -204,16 +212,19 @@ class MasterSeminarCollectorTest(unittest.TestCase):
     # ===== TR-4.6: node_sequence ≥5 =====
     def test_4_6_node_sequence_min_length(self):
         from master_seminar_collector import MasterSeminarCollector
+
         c = MasterSeminarCollector()
         c.reports_root = self._reports_dir
         cases = c.fetch_cases(limit=100)
         for case in cases:
-            self.assertGreaterEqual(len(case.actions), 5,
-                                    f"intent='{case.intent}' len={len(case.actions)}")
+            self.assertGreaterEqual(
+                len(case.actions), 5, f"intent='{case.intent}' len={len(case.actions)}"
+            )
 
     # ===== TR-4.7: layer_tags 含 DSH =====
     def test_4_7_layer_tags_contains_dsh(self):
         from master_seminar_collector import MasterSeminarCollector
+
         c = MasterSeminarCollector()
         c.reports_root = self._reports_dir
         cases = c.fetch_cases(limit=100)
@@ -223,6 +234,7 @@ class MasterSeminarCollectorTest(unittest.TestCase):
     # ===== TR-4.8: outcome == success =====
     def test_4_8_outcome_is_success(self):
         from master_seminar_collector import MasterSeminarCollector
+
         c = MasterSeminarCollector()
         c.reports_root = self._reports_dir
         cases = c.fetch_cases(limit=100)
@@ -232,6 +244,7 @@ class MasterSeminarCollectorTest(unittest.TestCase):
     # ===== TR-4.9: metadata 含 seminar_id =====
     def test_4_9_metadata_contains_seminar_id(self):
         from master_seminar_collector import MasterSeminarCollector
+
         c = MasterSeminarCollector()
         c.reports_root = self._reports_dir
         cases = c.fetch_cases(limit=100)
@@ -242,6 +255,7 @@ class MasterSeminarCollectorTest(unittest.TestCase):
     # ===== TR-4.10: 识别阵营结构 =====
     def test_4_10_recognizes_camp_structure(self):
         from master_seminar_collector import MasterSeminarCollector
+
         c = MasterSeminarCollector()
         c.reports_root = self._reports_dir
         cases = c.fetch_cases(limit=100)
@@ -256,6 +270,7 @@ class MasterSeminarCollectorTest(unittest.TestCase):
     # ===== TR-4.11: FAIL-OPEN 目录不存在 =====
     def test_4_11_fail_open_dir_not_exist(self):
         from master_seminar_collector import MasterSeminarCollector
+
         c = MasterSeminarCollector()
         c.reports_root = "/nonexistent/seminars"
         self.assertEqual(c.fetch_cases(limit=100), [])
@@ -263,6 +278,7 @@ class MasterSeminarCollectorTest(unittest.TestCase):
     # ===== TR-4.12: FAIL-OPEN 单个文件异常 =====
     def test_4_12_fail_open_single_file_error(self):
         from master_seminar_collector import MasterSeminarCollector
+
         bad = os.path.join(self._reports_dir, "SEM_bad.md")
         with open(bad, "w") as f:
             f.write("\x00\x01\x02binary\xff\xfe")
@@ -274,11 +290,22 @@ class MasterSeminarCollectorTest(unittest.TestCase):
     # ===== TR-4.13: node_sequence 含研讨专用节点 =====
     def test_4_13_node_sequence_contains_seminar_nodes(self):
         from master_seminar_collector import MasterSeminarCollector
+
         c = MasterSeminarCollector()
         c.reports_root = self._reports_dir
         cases = c.fetch_cases(limit=100)
-        seminar_kw = ["camp", "debate", "round", "bias", "conclusion",
-                      "阵营", "辩论", "倾向", "结论", "master"]
+        seminar_kw = [
+            "camp",
+            "debate",
+            "round",
+            "bias",
+            "conclusion",
+            "阵营",
+            "辩论",
+            "倾向",
+            "结论",
+            "master",
+        ]
         has = False
         for case in cases:
             ns = " ".join(case.actions).lower()
@@ -290,12 +317,12 @@ class MasterSeminarCollectorTest(unittest.TestCase):
     # ===== TR-4.14: 每个报告生成多条 case =====
     def test_4_14_multiple_cases_per_report(self):
         from master_seminar_collector import MasterSeminarCollector
+
         c = MasterSeminarCollector()
         c.reports_root = self._reports_dir
         cases = c.fetch_cases(limit=100)
         # 样本1有5个Round → 应拆出≥2条 case
-        self.assertGreaterEqual(len(cases), 2,
-                                f"应≥2条case, got {len(cases)}")
+        self.assertGreaterEqual(len(cases), 2, f"应≥2条case, got {len(cases)}")
 
 
 if __name__ == "__main__":

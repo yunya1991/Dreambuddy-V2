@@ -14,10 +14,10 @@ SPEC-AGI升级蓝图.md §4.2.5
 HC-AGI-11: 签名深度depth≤5
 FAIL-OPEN: signatory不可用时用numpy手动计算迭代积分.
 """
+
 from __future__ import annotations
 
 import logging
-import math
 
 import numpy as np
 
@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 try:
     import signatory  # type: ignore
     import torch
+
     _SIGNATORY_AVAILABLE = True
 except Exception:  # noqa: BLE001
     _SIGNATORY_AVAILABLE = False
@@ -35,6 +36,7 @@ except Exception:  # noqa: BLE001
 # 尝试导入 esig（signatory 替代，签名计算）
 try:
     import esig  # type: ignore
+
     _ESIG_AVAILABLE = True
 except Exception:  # noqa: BLE001
     _ESIG_AVAILABLE = False
@@ -136,7 +138,7 @@ class SignatureEngine:
         n = len(path)
         t = np.linspace(0.0, 1.0, n)  # 归一化时间 [0, 1]
         dx = np.diff(path)
-        dt = np.diff(t)
+        dt = np.diff(t)  # noqa: F841
         delta_x = path[-1] - path[0]
 
         features: list[float] = []
@@ -146,27 +148,29 @@ class SignatureEngine:
 
         if self.depth >= 2:
             # Level 2: 价格二次变分 Δx^2/2
-            features.append(float(delta_x ** 2 / 2.0))
+            features.append(float(delta_x**2 / 2.0))
             # Level 2: 时价交叉项 ∫ t dx （捕获lead-lag）
             cross = float(np.sum(t[:-1] * dx))
             features.append(cross)
 
         if self.depth >= 3:
             # Level 3: 价格三次变分 Δx^3/6
-            features.append(float(delta_x ** 3 / 6.0))
+            features.append(float(delta_x**3 / 6.0))
             # Level 3: 二次交叉 ∫ t dx * Δx
-            cross_l3 = float(cross * delta_x) if self.depth >= 2 else float(np.sum(t[:-1] * dx) * delta_x)
+            cross_l3 = (
+                float(cross * delta_x) if self.depth >= 2 else float(np.sum(t[:-1] * dx) * delta_x)
+            )
             features.append(cross_l3)
             # Level 3: 路径总波动（roughness）
-            roughness = float(np.sum(dx ** 2))
+            roughness = float(np.sum(dx**2))
             features.append(roughness)
 
         if self.depth >= 4:
-            features.append(float(delta_x ** 4 / 24.0))
-            features.append(float(np.sum(dx ** 3)))
+            features.append(float(delta_x**4 / 24.0))
+            features.append(float(np.sum(dx**3)))
 
         if self.depth >= 5:
-            features.append(float(delta_x ** 5 / 120.0))
+            features.append(float(delta_x**5 / 120.0))
             features.append(float(np.sum(np.abs(dx))))
 
         return np.array(features, dtype=np.float64)

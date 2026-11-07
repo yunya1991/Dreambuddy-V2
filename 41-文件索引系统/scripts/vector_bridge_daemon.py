@@ -12,11 +12,11 @@
   3. socket 权限 666（ubuntu 侧 searcher 可连接）
   4. 启动时预加载 chromadb（消除首查冷启动）
 """
+
 import json
 import os
 import socket
 import sys
-import time
 
 SOCK_PATH = "/tmp/fis_vector_bridge.sock"
 IDLE_TIMEOUT = 600  # 秒
@@ -26,6 +26,7 @@ RAG_INFRA = "/home/luke/dreambuddy/2-KNOWLEDGE/9-RAG-INFRA"
 def load_search():
     sys.path.insert(0, RAG_INFRA)
     from vector_store.search import search
+
     return search
 
 
@@ -37,12 +38,14 @@ def handle(search_fn, req):
     results = search_fn(query, top_k=top_k) or []
     out = []
     for r in results:
-        out.append({
-            "source_file": str(r.get("source_file") or "").strip("/"),
-            "score": float(r.get("score") or 0.0),
-            "snippet": str(r.get("content") or "")[:200],
-            "heading": str(r.get("heading") or ""),
-        })
+        out.append(
+            {
+                "source_file": str(r.get("source_file") or "").strip("/"),
+                "score": float(r.get("score") or 0.0),
+                "snippet": str(r.get("content") or "")[:200],
+                "heading": str(r.get("heading") or ""),
+            }
+        )
     return {"ok": True, "results": out}
 
 

@@ -2,7 +2,6 @@ import importlib.util
 import json
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -39,7 +38,13 @@ def test_priority_score_outputs_tier_and_breakdown(tmp_path):
         decision_path,
         {
             "decision": "approve",
-            "stage_results": {"audit": True, "sandbox": True, "stress": True, "scenario": True, "backtest": True},
+            "stage_results": {
+                "audit": True,
+                "sandbox": True,
+                "stress": True,
+                "scenario": True,
+                "backtest": True,
+            },
             "approval": {"decision": "approve"},
         },
     )
@@ -81,12 +86,25 @@ def test_priority_score_penalizes_reject_and_violations(tmp_path):
     reports_path = tmp_path / "reports.json"
     output_path = tmp_path / "score.json"
 
-    _write_json(candidate_path, {"candidate_id": "cand-002", "trace_id": "trace-002", "risk_assessment": {"risk_level": "high"}})
+    _write_json(
+        candidate_path,
+        {
+            "candidate_id": "cand-002",
+            "trace_id": "trace-002",
+            "risk_assessment": {"risk_level": "high"},
+        },
+    )
     _write_json(
         decision_path,
         {
             "decision": "reject",
-            "stage_results": {"audit": True, "sandbox": True, "stress": False, "scenario": False, "backtest": False},
+            "stage_results": {
+                "audit": True,
+                "sandbox": True,
+                "stress": False,
+                "scenario": False,
+                "backtest": False,
+            },
             "approval": {"decision": "reject"},
         },
     )

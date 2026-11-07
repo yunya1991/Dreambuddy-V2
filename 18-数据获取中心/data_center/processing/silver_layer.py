@@ -15,11 +15,11 @@ project_memory 硬约束:
 
 FAIL-OPEN 铁律: 异常 → 保留原始数据不阻塞
 """
+
 from __future__ import annotations
 
 import logging
 
-import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -38,9 +38,7 @@ def dedup_by_timestamp_symbol(df: pd.DataFrame) -> pd.DataFrame:
         return df if df is not None else pd.DataFrame()
     if "timestamp" not in df.columns or "symbol" not in df.columns:
         return df
-    return df.drop_duplicates(
-        subset=["timestamp", "symbol"], keep="first"
-    ).reset_index(drop=True)
+    return df.drop_duplicates(subset=["timestamp", "symbol"], keep="first").reset_index(drop=True)
 
 
 def filter_3sigma(df: pd.DataFrame, field: str) -> pd.DataFrame:
@@ -174,7 +172,5 @@ class SilverLayerCleaner:
         # 3. IQR 过滤
         result = filter_iqr(result, value_field)
         # 4. 动态 ATR 过滤
-        result = filter_dynamic_atr(
-            result, value_field, window=self._window, k=self._k
-        )
+        result = filter_dynamic_atr(result, value_field, window=self._window, k=self._k)
         return result

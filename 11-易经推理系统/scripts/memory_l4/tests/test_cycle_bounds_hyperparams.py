@@ -5,23 +5,22 @@
 
 对应 Spec §3bis.4.3 新增超参。
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
-
-import pytest
 
 # Add bcrm2 to sys.path
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2 import morph_cycle_predictor as mcp
-
+from bcrm2 import morph_cycle_predictor as mcp  # noqa: E402
 
 # ================================================================
 # T1: CYCLE_BOUNDS_* 超参存在性与默认值
 # ================================================================
+
 
 class TestCycleBoundsHyperparams:
     """验证大周期弹性边界约束的所有超参都已定义且默认值正确。"""
@@ -82,7 +81,12 @@ class TestCycleBoundsHyperparamsConsistency:
         # 既有大调整超参
         assert hasattr(mcp, "ANCHOR_SWITCH_COOLDOWN_HOURS")
         # 新增边界约束超参前缀应为 CYCLE_BOUNDS_
-        for name in ["CYCLE_BOUNDS_ENABLED", "CYCLE_BOUNDS_INTERP",
-                     "CYCLE_BOUNDS_DECAY_DEFAULT", "CYCLE_BOUNDS_DECAY_BY_PHASE",
-                     "CYCLE_BOUNDS_AMPLITUDE_MULT", "CYCLE_BOUNDS_OVERSHOOT_TRIGGER"]:
+        for name in [
+            "CYCLE_BOUNDS_ENABLED",
+            "CYCLE_BOUNDS_INTERP",
+            "CYCLE_BOUNDS_DECAY_DEFAULT",
+            "CYCLE_BOUNDS_DECAY_BY_PHASE",
+            "CYCLE_BOUNDS_AMPLITUDE_MULT",
+            "CYCLE_BOUNDS_OVERSHOOT_TRIGGER",
+        ]:
             assert hasattr(mcp, name), f"缺少超参: {name}"

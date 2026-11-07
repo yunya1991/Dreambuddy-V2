@@ -22,9 +22,9 @@ C层特点：
 
 import time
 import uuid
-from typing import Dict, List, Optional, Any, Literal, Union
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 def _gen_id(prefix: str) -> str:
@@ -35,12 +35,14 @@ def _gen_id(prefix: str) -> str:
 # C层：执行层 - 执行上下文
 # ============================================================
 
+
 @dataclass
 class ExecutionContext:
     """执行上下文
 
     贯穿整个执行流程的上下文信息
     """
+
     # 基础信息
     execution_id: str = field(default_factory=lambda: _gen_id("exec"))
     session_id: Optional[str] = None
@@ -85,8 +87,10 @@ class ExecutionContext:
 # C层：执行层 - 节点执行结果
 # ============================================================
 
+
 class NodeStatus(Enum):
     """节点执行状态枚举"""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -101,6 +105,7 @@ class NodeExecutionResult:
 
     C层节点执行后的完整结果
     """
+
     node_id: str
     node_name: str = ""
     status: NodeStatus = NodeStatus.PENDING
@@ -131,7 +136,7 @@ class NodeExecutionResult:
 
     # 源信息
     source_module: Optional[str] = None  # 实际调用的模块
-    source_chain: Optional[str] = None   # A链/C链/F链
+    source_chain: Optional[str] = None  # A链/C链/F链
     fallback_used: bool = False
 
     # 元信息
@@ -203,12 +208,14 @@ class NodeExecutionResult:
 # C层：执行层 - 动态链融合
 # ============================================================
 
+
 @dataclass
 class ChainFusionDecision:
     """动态链融合决策
 
     AI大模型分析执行结果后做出的决策
     """
+
     decision_id: str = field(default_factory=lambda: _gen_id("fusion"))
     node_id: str = ""
     analysis_result: str = ""  # 大模型的分析结果
@@ -247,12 +254,14 @@ class ChainFusionDecision:
 # C层：执行层 - 结果聚合
 # ============================================================
 
+
 @dataclass
 class AggregatedResult:
     """聚合结果
 
     多链/多模块结果的聚合
     """
+
     result_id: str = field(default_factory=lambda: _gen_id("agg"))
 
     # 聚合信息

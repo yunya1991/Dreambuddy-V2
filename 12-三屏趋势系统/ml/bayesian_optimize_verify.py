@@ -3,18 +3,21 @@
 
 将9年数据分为样本内（前2/3）和样本外（后1/3），验证优化参数在样本外的表现。
 """
+
+import json
 import os
 import sys
-import json
+
 import numpy as np
-import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.bayesian_optimize_v4_wave import (
-    load_data, compute_v4_position, generate_wave_signals,
-    compute_v4_wave_mutex_fusion, backtest_position,
+from ml.bayesian_optimize_v4_wave import (  # noqa: E402
+    compute_v4_position,
+    compute_v4_wave_mutex_fusion,
+    generate_wave_signals,
+    load_data,
 )
 
 
@@ -25,7 +28,7 @@ def split_backtest(prices, v4_pos, v4_dir, fusion_pos, fusion_dir, split_ratio=0
 
     in_sample_end = split_idx
     out_sample_start = 730 if 730 < in_sample_end else 0
-    out_sample_start_oos = in_sample_end
+    out_sample_start_oos = in_sample_end  # noqa: F841
 
     def slice_bt(pos, dir_, start, end):
         if end <= start:
@@ -87,13 +90,19 @@ def verify_params(symbol, default_params, optimized_params):
     wave_signals, wave_confs = generate_wave_signals(prices, zigzag_threshold=zigzag)
 
     default_pos, default_dir = compute_v4_wave_mutex_fusion(
-        v4_pos, v4_dir, wave_signals, wave_confs,
+        v4_pos,
+        v4_dir,
+        wave_signals,
+        wave_confs,
         wave_weight=default_params["wave_weight"],
         confirm_threshold=default_params["confirm_threshold"],
         bottom_position_cap=default_params["bottom_position_cap"],
     )
     opt_pos, opt_dir = compute_v4_wave_mutex_fusion(
-        v4_pos, v4_dir, wave_signals, wave_confs,
+        v4_pos,
+        v4_dir,
+        wave_signals,
+        wave_confs,
         wave_weight=optimized_params["wave_weight"],
         confirm_threshold=optimized_params["confirm_threshold"],
         bottom_position_cap=optimized_params["bottom_position_cap"],
@@ -102,18 +111,29 @@ def verify_params(symbol, default_params, optimized_params):
     default_split = split_backtest(prices, v4_pos, v4_dir, default_pos, default_dir)
     opt_split = split_backtest(prices, v4_pos, v4_dir, opt_pos, opt_dir)
 
-    print(f"\n{'指标':<10} {'默认(样本内)':>14} {'默认(样本外)':>14} {'优化(样本内)':>14} {'优化(样本外)':>14} {'外样本差异':>12}")
+    print(
+        f"\n{'指标':<10} {'默认(样本内)':>14} {'默认(样本外)':>14} {'优化(样本内)':>14} {'优化(样本外)':>14} {'外样本差异':>12}"
+    )
     print("-" * 80)
-    for key, label in [("ann_return", "年化"), ("sharpe", "夏普"), ("max_drawdown", "回撤"), ("calmar", "Calmar")]:
+    for key, label in [
+        ("ann_return", "年化"),
+        ("sharpe", "夏普"),
+        ("max_drawdown", "回撤"),
+        ("calmar", "Calmar"),
+    ]:
         def_v = default_split["in_sample"][key]
         def_o = default_split["out_sample"][key]
         opt_v = opt_split["in_sample"][key]
         opt_o = opt_split["out_sample"][key]
         diff = opt_o - def_o
         if key == "max_drawdown":
-            print(f"{label:<10} {def_v*100:>13.2f}% {def_o*100:>13.2f}% {opt_v*100:>13.2f}% {opt_o*100:>13.2f}% {diff*100:>+11.2f}%")
+            print(
+                f"{label:<10} {def_v*100:>13.2f}% {def_o*100:>13.2f}% {opt_v*100:>13.2f}% {opt_o*100:>13.2f}% {diff*100:>+11.2f}%"
+            )
         else:
-            print(f"{label:<10} {def_v:>14.4f} {def_o:>14.4f} {opt_v:>14.4f} {opt_o:>14.4f} {diff:>+12.4f}")
+            print(
+                f"{label:<10} {def_v:>14.4f} {def_o:>14.4f} {opt_v:>14.4f} {opt_o:>14.4f} {diff:>+12.4f}"
+            )
 
     oos_better = opt_split["out_sample"]["ann_return"] > default_split["out_sample"]["ann_return"]
     oos_calmar_better = opt_split["out_sample"]["calmar"] > default_split["out_sample"]["calmar"]
@@ -137,7 +157,10 @@ def verify_params(symbol, default_params, optimized_params):
 
 if __name__ == "__main__":
     results = []
-    for symbol, opt_file in [("BTC", "bayesian_optimization_BTC.json"), ("ETH", "bayesian_optimization_ETH.json")]:
+    for symbol, opt_file in [
+        ("BTC", "bayesian_optimization_BTC.json"),
+        ("ETH", "bayesian_optimization_ETH.json"),
+    ]:
         opt_path = os.path.join(BASE_DIR, f"ml/backtest_results/{opt_file}")
         if not os.path.exists(opt_path):
             print(f"跳过 {symbol}：未找到优化结果文件")
@@ -150,7 +173,7 @@ if __name__ == "__main__":
         results.append(r)
 
     print(f"\n{'='*80}")
-    print(f"  样本外验证总结")
+    print("  样本外验证总结")
     print(f"{'='*80}")
     for r in results:
         sym = r["symbol"]
@@ -158,8 +181,14 @@ if __name__ == "__main__":
         opt_o = r["optimized"]["out_sample"]["ann_return"] * 100
         def_c = r["default"]["out_sample"]["calmar"]
         opt_c = r["optimized"]["out_sample"]["calmar"]
-        status = "✅" if r["oos_better"] and r["oos_calmar_better"] else ("⚠️" if r["oos_better"] or r["oos_calmar_better"] else "❌")
-        print(f"  {sym}: 默认外样本 {def_o:.2f}%(C{def_c:.2f}) → 优化外样本 {opt_o:.2f}%(C{opt_c:.2f})  {status}")
+        status = (
+            "✅"
+            if r["oos_better"] and r["oos_calmar_better"]
+            else ("⚠️" if r["oos_better"] or r["oos_calmar_better"] else "❌")
+        )
+        print(
+            f"  {sym}: 默认外样本 {def_o:.2f}%(C{def_c:.2f}) → 优化外样本 {opt_o:.2f}%(C{opt_c:.2f})  {status}"
+        )
 
     all_pass = all(r["oos_better"] and r["oos_calmar_better"] for r in results)
     print()

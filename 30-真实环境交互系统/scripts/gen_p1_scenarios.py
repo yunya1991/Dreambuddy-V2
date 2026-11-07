@@ -10,7 +10,8 @@
 用法: cd 30-真实环境交互系统 && python scripts/gen_p1_scenarios.py
 输出: scenarios/intent_training/*.yaml
 """
-import yaml
+
+import yaml  # noqa: I001
 from pathlib import Path
 
 # 5 个币种，用于模板组合
@@ -22,7 +23,11 @@ MATRIX = [
     {
         "gold_intent": "trend_following",
         "scenario_id": "TREND_UP",
-        "market_features": {"regime": "trending", "volatility": "medium", "data_freshness": "realtime"},
+        "market_features": {
+            "regime": "trending",
+            "volatility": "medium",
+            "data_freshness": "realtime",
+        },
         "train_templates": [
             "{coin} 现在是上升趋势吗，要不要顺势加仓",
             "{coin} 涨得不错，趋势还能延续吗",
@@ -56,7 +61,11 @@ MATRIX = [
     {
         "gold_intent": "breakout",
         "scenario_id": "BREAKOUT_UP",
-        "market_features": {"regime": "breakout", "volatility": "high", "data_freshness": "realtime"},
+        "market_features": {
+            "regime": "breakout",
+            "volatility": "high",
+            "data_freshness": "realtime",
+        },
         "train_templates": [
             "{coin} 突破前高了，能追突破吗",
             "{coin} 向上突破，突破策略怎么做",
@@ -82,8 +91,9 @@ def expand_queries(templates, coins):
     return queries
 
 
-def gen_scenario(intent: str, scenario_id: str, split: str, idx: int,
-                 query: str, market_features: dict) -> dict:
+def gen_scenario(
+    intent: str, scenario_id: str, split: str, idx: int, query: str, market_features: dict
+) -> dict:
     """生成单个场景 YAML 字典"""
     return {
         "name": f"P1-{intent.upper()}-{scenario_id}-{split}-{idx:03d}",
@@ -98,11 +108,19 @@ def gen_scenario(intent: str, scenario_id: str, split: str, idx: int,
         },
         "steps": [
             {"name": "打开聊天页面", "action": "navigate", "url": "http://localhost:3001/chat"},
-            {"name": "输入问法", "action": "type",
-             "selector": "textarea, input[type='text'], [contenteditable]",
-             "text": query, "human": True},
-            {"name": "提交查询", "action": "click",
-             "selector": "button[type='submit'], button:has-text('发送')", "human": True},
+            {
+                "name": "输入问法",
+                "action": "type",
+                "selector": "textarea, input[type='text'], [contenteditable]",
+                "text": query,
+                "human": True,
+            },
+            {
+                "name": "提交查询",
+                "action": "click",
+                "selector": "button[type='submit'], button:has-text('发送')",
+                "human": True,
+            },
             {"name": "等待响应", "action": "wait", "seconds": 3},
         ],
     }
@@ -116,20 +134,31 @@ def main():
         train_queries = expand_queries(entry["train_templates"], COINS)
         eval_queries = expand_queries(entry["eval_templates"], COINS)
         for idx, q in enumerate(train_queries, 1):
-            sc = gen_scenario(entry["gold_intent"], entry["scenario_id"], "train", idx, q, entry["market_features"])
+            sc = gen_scenario(
+                entry["gold_intent"],
+                entry["scenario_id"],
+                "train",
+                idx,
+                q,
+                entry["market_features"],
+            )
             fname = f"{entry['gold_intent']}_{entry['scenario_id']}_train_{idx:03d}.yaml"
             with open(out_dir / fname, "w", encoding="utf-8") as f:
                 yaml.dump(sc, f, allow_unicode=True, sort_keys=False)
             count += 1
         for idx, q in enumerate(eval_queries, 1):
-            sc = gen_scenario(entry["gold_intent"], entry["scenario_id"], "eval", idx, q, entry["market_features"])
+            sc = gen_scenario(
+                entry["gold_intent"], entry["scenario_id"], "eval", idx, q, entry["market_features"]
+            )
             fname = f"{entry['gold_intent']}_{entry['scenario_id']}_eval_{idx:03d}.yaml"
             with open(out_dir / fname, "w", encoding="utf-8") as f:
                 yaml.dump(sc, f, allow_unicode=True, sort_keys=False)
             count += 1
     print(f"生成 {count} 个场景文件 → {out_dir}")
     for entry in MATRIX:
-        print(f"  {entry['gold_intent']}: train={len(entry['train_templates'])*len(COINS)}, eval={len(entry['eval_templates'])*len(COINS)}")
+        print(
+            f"  {entry['gold_intent']}: train={len(entry['train_templates'])*len(COINS)}, eval={len(entry['eval_templates'])*len(COINS)}"
+        )
 
 
 if __name__ == "__main__":

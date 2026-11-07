@@ -14,6 +14,7 @@
   TR-1.11 FAIL-OPEN: AST 解析异常跳过该文件不崩溃
   TR-1.12 node_sequence 含 assert 终节点
 """
+
 import os
 import sys
 import tempfile
@@ -39,7 +40,7 @@ class TddTestCollectorTest(unittest.TestCase):
         # 样本1: 普通测试函数 + 调用链 + assert
         cls._file1 = os.path.join(cls._tmpdir, "test_score_b.py")
         with open(cls._file1, "w") as f:
-            f.write(textwrap.dedent('''
+            f.write(textwrap.dedent("""
                 def compute_score_b(cont, conf):
                     return 0.6 * cont + 0.4 * conf
 
@@ -54,12 +55,12 @@ class TddTestCollectorTest(unittest.TestCase):
                     score = compute_score_b(0.9, 0.9)
                     clamped = clamp(score, 0, 0.8)
                     assert clamped == 0.8
-            '''))
+            """))
 
         # 样本2: 参数化测试 @pytest.mark.parametrize
         cls._file2 = os.path.join(cls._tmpdir, "test_parametrize.py")
         with open(cls._file2, "w") as f:
-            f.write(textwrap.dedent('''
+            f.write(textwrap.dedent("""
                 import pytest
 
                 def compute_score_b_with_event_boost(cont, conf, strength):
@@ -76,12 +77,12 @@ class TddTestCollectorTest(unittest.TestCase):
                     score, boost = compute_score_b_with_event_boost(cont, conf, strength)
                     assert abs(boost - expected_boost) < 1e-3
                     assert abs(score - expected_score_b) < 1e-3
-            '''))
+            """))
 
         # 样本3: 测试类 + 多方法 + mock 调用(应被过滤)
         cls._file3 = os.path.join(cls._tmpdir, "test_exit_manager.py")
         with open(cls._file3, "w") as f:
-            f.write(textwrap.dedent('''
+            f.write(textwrap.dedent("""
                 from unittest.mock import MagicMock, patch
 
                 class ExitManager:
@@ -111,15 +112,15 @@ class TddTestCollectorTest(unittest.TestCase):
                         mgr = ExitManager(strategies=[s])
                         decision = mgr.evaluate("BTC", {}, {})
                         assert decision == "pass"
-            '''))
+            """))
 
         # 样本4: 非 test_ 前缀文件(不应被采集)
         cls._file4 = os.path.join(cls._tmpdir, "helper_utils.py")
         with open(cls._file4, "w") as f:
-            f.write(textwrap.dedent('''
+            f.write(textwrap.dedent("""
                 def helper_function():
                     return 42
-            '''))
+            """))
 
         # 样本5: 空文件
         cls._file5 = os.path.join(cls._tmpdir, "test_empty.py")
@@ -129,31 +130,36 @@ class TddTestCollectorTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import shutil
+
         shutil.rmtree(cls._tmpdir, ignore_errors=True)
 
     # ===== TR-1.1: 类存在且实现接口 =====
     def test_class_exists_and_implements_interface(self):
         """TddTestCollector 应存在且实现 TrainingDataProvider。"""
-        from tdd_test_collector import TddTestCollector
         from interfaces.training_data_provider import TrainingDataProvider
+        from tdd_test_collector import TddTestCollector
+
         collector = TddTestCollector()
         self.assertIsInstance(collector, TrainingDataProvider)
 
     # ===== TR-1.2: get_source_name =====
     def test_get_source_name(self):
         from tdd_test_collector import TddTestCollector
+
         collector = TddTestCollector()
         self.assertEqual(collector.get_source_name(), "tdd_test")
 
     # ===== TR-1.3: get_quality_threshold =====
     def test_get_quality_threshold(self):
         from tdd_test_collector import TddTestCollector
+
         collector = TddTestCollector()
         self.assertEqual(collector.get_quality_threshold(), "B")
 
     # ===== TR-1.4: fetch_cases 采集 TrainingCase =====
     def test_fetch_cases_returns_training_cases(self):
         from tdd_test_collector import TddTestCollector
+
         collector = TddTestCollector(scan_dirs=[(self._tmpdir, "test_domain")])
         cases = collector.fetch_cases(limit=100)
         self.assertGreater(len(cases), 0, "应至少采集1条 TrainingCase")
@@ -164,6 +170,7 @@ class TddTestCollectorTest(unittest.TestCase):
     # ===== TR-1.5: intent 格式 (去 test_ 前缀) =====
     def test_intent_strips_test_prefix(self):
         from tdd_test_collector import TddTestCollector
+
         collector = TddTestCollector(scan_dirs=[(self._tmpdir, "test_domain")])
         cases = collector.fetch_cases(limit=100)
         intents = [c.intent for c in cases]
@@ -177,6 +184,7 @@ class TddTestCollectorTest(unittest.TestCase):
     # ===== TR-1.6: node_sequence 包含 AST 调用链 =====
     def test_node_sequence_contains_call_chain(self):
         from tdd_test_collector import TddTestCollector
+
         collector = TddTestCollector(scan_dirs=[(self._tmpdir, "test_domain")])
         cases = collector.fetch_cases(limit=100)
         # 找 test_formula_basic 对应的 case
@@ -185,22 +193,28 @@ class TddTestCollectorTest(unittest.TestCase):
         case = formula_cases[0]
         # node_sequence 应含 compute_score_b 调用
         actions_str = ",".join(case.actions)
-        self.assertIn("compute_score_b", actions_str,
-                      f"node_sequence 应含 compute_score_b 调用, got: {case.actions}")
+        self.assertIn(
+            "compute_score_b",
+            actions_str,
+            f"node_sequence 应含 compute_score_b 调用, got: {case.actions}",
+        )
 
     # ===== TR-1.7: 参数化测试生成多条 TrainingCase =====
     def test_parametrize_generates_multiple_cases(self):
         from tdd_test_collector import TddTestCollector
+
         collector = TddTestCollector(scan_dirs=[(self._tmpdir, "test_domain")])
         cases = collector.fetch_cases(limit=100)
         # test_formula_and_clamp 有3个 parametrize 场景 → 3条 case
         clamp_cases = [c for c in cases if "formula_and_clamp" in c.intent]
-        self.assertGreaterEqual(len(clamp_cases), 3,
-                                f"参数化应生成≥3条 case, got {len(clamp_cases)}")
+        self.assertGreaterEqual(
+            len(clamp_cases), 3, f"参数化应生成≥3条 case, got {len(clamp_cases)}"
+        )
 
     # ===== TR-1.8: layer_tags 包含 DSH =====
     def test_layer_tags_contains_dsh(self):
         from tdd_test_collector import TddTestCollector
+
         collector = TddTestCollector(scan_dirs=[(self._tmpdir, "test_domain")])
         cases = collector.fetch_cases(limit=100)
         self.assertGreater(len(cases), 0)
@@ -210,6 +224,7 @@ class TddTestCollectorTest(unittest.TestCase):
     # ===== TR-1.9: 过滤框架调用 =====
     def test_filters_framework_calls(self):
         from tdd_test_collector import TddTestCollector
+
         collector = TddTestCollector(scan_dirs=[(self._tmpdir, "test_domain")])
         cases = collector.fetch_cases(limit=100)
         # MagicMock/patch/pytest 不应出现在 node_sequence 中
@@ -217,12 +232,14 @@ class TddTestCollectorTest(unittest.TestCase):
         for c in cases:
             for action in c.actions:
                 for token in framework_tokens:
-                    self.assertNotIn(token, action,
-                                     f"框架调用 {token} 不应在 node_sequence 中: {action}")
+                    self.assertNotIn(
+                        token, action, f"框架调用 {token} 不应在 node_sequence 中: {action}"
+                    )
 
     # ===== TR-1.10: FAIL-OPEN 目录不存在 =====
     def test_fail_open_dir_missing(self):
         from tdd_test_collector import TddTestCollector
+
         collector = TddTestCollector(scan_dirs=[("/nonexistent/dir", "none")])
         cases = collector.fetch_cases(limit=10)
         self.assertEqual(cases, [])
@@ -231,6 +248,7 @@ class TddTestCollectorTest(unittest.TestCase):
     def test_fail_open_syntax_error(self):
         """语法错误的文件应被跳过,不崩溃。"""
         from tdd_test_collector import TddTestCollector
+
         # 创建含语法错误的目录
         bad_dir = tempfile.mkdtemp(prefix="tdd_bad_")
         bad_file = os.path.join(bad_dir, "test_syntax_error.py")
@@ -242,18 +260,17 @@ class TddTestCollectorTest(unittest.TestCase):
             self.assertEqual(cases, [], "语法错误文件应跳过返回空列表")
         finally:
             import shutil
+
             shutil.rmtree(bad_dir, ignore_errors=True)
 
     # ===== TR-1.12: node_sequence 含 assert 终节点 =====
     def test_node_sequence_contains_assert(self):
         from tdd_test_collector import TddTestCollector
+
         collector = TddTestCollector(scan_dirs=[(self._tmpdir, "test_domain")])
         cases = collector.fetch_cases(limit=100)
         # 至少有一条 case 的 node_sequence 含 assert 节点
-        has_assert = any(
-            any("assert" in a.lower() for a in c.actions)
-            for c in cases
-        )
+        has_assert = any(any("assert" in a.lower() for a in c.actions) for c in cases)
         self.assertTrue(has_assert, "至少一条 case 的 node_sequence 应含 assert 终节点")
 
 

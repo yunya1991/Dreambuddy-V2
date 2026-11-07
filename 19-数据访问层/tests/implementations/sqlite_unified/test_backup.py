@@ -14,9 +14,9 @@ TDD：P3-1 backup.py（全量备份 + SHA256 校验 + AES256 加密）
   3. AES256-GCM 加密（passphrase 非 None 时；否则明文 .db）
   4. 备份文件名：dreambuddy_core_YYYYmmdd_HHMMSS.db[.enc]
 """
+
 from __future__ import annotations
 
-import os
 import tempfile
 from pathlib import Path
 
@@ -40,8 +40,10 @@ def db_path():
 # ===========================================================================
 def test_plain_backup_creates_db_and_sha256(db_path, tmp_path):
     from dreambuddy_dal.implementations.sqlite_unified.backup import (
-        backup_database, verify_backup,
+        backup_database,
+        verify_backup,
     )
+
     backup_dir = tmp_path / "backups"
     backup_dir.mkdir()
     bpath = backup_database(db_path, str(backup_dir), encrypt=False)
@@ -57,13 +59,17 @@ def test_plain_backup_creates_db_and_sha256(db_path, tmp_path):
 # ===========================================================================
 def test_encrypted_backup_roundtrip(db_path, tmp_path):
     from dreambuddy_dal.implementations.sqlite_unified.backup import (
-        backup_database, verify_backup,
+        backup_database,
+        verify_backup,
     )
+
     backup_dir = tmp_path / "backups"
     backup_dir.mkdir()
     bpath = backup_database(
-        db_path, str(backup_dir),
-        encrypt=True, passphrase="test_pass_123",
+        db_path,
+        str(backup_dir),
+        encrypt=True,
+        passphrase="test_pass_123",
     )
     assert Path(bpath).exists()
     assert bpath.endswith(".enc")
@@ -76,13 +82,17 @@ def test_encrypted_backup_roundtrip(db_path, tmp_path):
 # ===========================================================================
 def test_encrypted_backup_wrong_passphrase_fails(db_path, tmp_path):
     from dreambuddy_dal.implementations.sqlite_unified.backup import (
-        backup_database, verify_backup,
+        backup_database,
+        verify_backup,
     )
+
     backup_dir = tmp_path / "backups"
     backup_dir.mkdir()
     bpath = backup_database(
-        db_path, str(backup_dir),
-        encrypt=True, passphrase="correct_pass",
+        db_path,
+        str(backup_dir),
+        encrypt=True,
+        passphrase="correct_pass",
     )
     ok = verify_backup(bpath, passphrase="wrong_pass")
     assert ok is False
@@ -93,12 +103,14 @@ def test_encrypted_backup_wrong_passphrase_fails(db_path, tmp_path):
 # ===========================================================================
 def test_backup_is_valid_sqlite(db_path, tmp_path):
     from dreambuddy_dal.implementations.sqlite_unified.backup import backup_database
+
     backup_dir = tmp_path / "backups"
     backup_dir.mkdir()
     bpath = backup_database(db_path, str(backup_dir), encrypt=False)
     with get_sqlite_connection(bpath) as conn:
-        tables = [r[0] for r in conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table'"
-        ).fetchall()]
+        tables = [
+            r[0]
+            for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        ]
     assert "ma_schema_version" in tables
     assert "tr_trades" in tables

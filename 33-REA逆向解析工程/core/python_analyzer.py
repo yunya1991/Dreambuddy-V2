@@ -41,13 +41,15 @@ class PythonAnalyzer(AnalyzerBase):
             return AnalyzeResult(
                 target=target,
                 summary=f"语法错误: {e}",
-                evidence=[Evidence(
-                    result=f"语法错误: {e}",
-                    provenance={"file": target, "line": e.lineno},
-                    confidence=1.0,
-                    known_gaps=["无法分析语法错误的文件"],
-                    level="observation",
-                )],
+                evidence=[
+                    Evidence(
+                        result=f"语法错误: {e}",
+                        provenance={"file": target, "line": e.lineno},
+                        confidence=1.0,
+                        known_gaps=["无法分析语法错误的文件"],
+                        level="observation",
+                    )
+                ],
                 raw={"error": "syntax_error", "detail": str(e)},
             )
 
@@ -81,20 +83,24 @@ class PythonAnalyzer(AnalyzerBase):
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    imports.append({
-                        "type": "import",
-                        "module": alias.name,
-                        "asname": alias.asname,
-                        "line": node.lineno,
-                    })
+                    imports.append(
+                        {
+                            "type": "import",
+                            "module": alias.name,
+                            "asname": alias.asname,
+                            "line": node.lineno,
+                        }
+                    )
             elif isinstance(node, ast.ImportFrom):
-                imports.append({
-                    "type": "from",
-                    "module": node.module or "",
-                    "names": [a.name for a in node.names],
-                    "level": node.level,
-                    "line": node.lineno,
-                })
+                imports.append(
+                    {
+                        "type": "from",
+                        "module": node.module or "",
+                        "names": [a.name for a in node.names],
+                        "level": node.level,
+                        "line": node.lineno,
+                    }
+                )
         return imports
 
     def _extract_classes(self, tree: ast.Module, target: str) -> list[dict]:
@@ -104,21 +110,27 @@ class PythonAnalyzer(AnalyzerBase):
                 methods = []
                 for item in node.body:
                     if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                        methods.append({
-                            "name": item.name,
-                            "args": [a.arg for a in item.args.args],
-                            "decorators": [self._decorator_name(d) for d in item.decorator_list],
-                            "line": item.lineno,
-                            "is_async": isinstance(item, ast.AsyncFunctionDef),
-                        })
-                classes.append({
-                    "name": node.name,
-                    "bases": [self._expr_name(b) for b in node.bases],
-                    "decorators": [self._decorator_name(d) for d in node.decorator_list],
-                    "methods": methods,
-                    "line": node.lineno,
-                    "docstring": ast.get_docstring(node),
-                })
+                        methods.append(
+                            {
+                                "name": item.name,
+                                "args": [a.arg for a in item.args.args],
+                                "decorators": [
+                                    self._decorator_name(d) for d in item.decorator_list
+                                ],
+                                "line": item.lineno,
+                                "is_async": isinstance(item, ast.AsyncFunctionDef),
+                            }
+                        )
+                classes.append(
+                    {
+                        "name": node.name,
+                        "bases": [self._expr_name(b) for b in node.bases],
+                        "decorators": [self._decorator_name(d) for d in node.decorator_list],
+                        "methods": methods,
+                        "line": node.lineno,
+                        "docstring": ast.get_docstring(node),
+                    }
+                )
         return classes
 
     def _extract_functions(self, tree: ast.Module, target: str) -> list[dict]:
@@ -137,45 +149,56 @@ class PythonAnalyzer(AnalyzerBase):
                             break
                 if is_method:
                     continue
-                functions.append({
-                    "name": node.name,
-                    "args": [a.arg for a in node.args.args],
-                    "defaults": len(node.args.defaults),
-                    "decorators": [self._decorator_name(d) for d in node.decorator_list],
-                    "line": node.lineno,
-                    "is_async": isinstance(node, ast.AsyncFunctionDef),
-                    "docstring": ast.get_docstring(node),
-                })
+                functions.append(
+                    {
+                        "name": node.name,
+                        "args": [a.arg for a in node.args.args],
+                        "defaults": len(node.args.defaults),
+                        "decorators": [self._decorator_name(d) for d in node.decorator_list],
+                        "line": node.lineno,
+                        "is_async": isinstance(node, ast.AsyncFunctionDef),
+                        "docstring": ast.get_docstring(node),
+                    }
+                )
         return functions
 
     # ------------------------------------------------------------------
     # Evidence 构建
     # ------------------------------------------------------------------
-    def _build_evidence(self, target: str, imports: list, classes: list,
-                        functions: list) -> list[Evidence]:
+    def _build_evidence(
+        self, target: str, imports: list, classes: list, functions: list
+    ) -> list[Evidence]:
         evidence = []
-        evidence.append(Evidence(
-            result=f"检测到 {len(imports)} 个导入",
-            provenance={"file": target, "analysis": "imports"},
-            confidence=1.0,
-            known_gaps=["动态导入 (importlib/__import__) 无法静态解析"],
-            level="observation",
-        ))
-        evidence.append(Evidence(
-            result=f"检测到 {len(classes)} 个类",
-            provenance={"file": target, "analysis": "classes"},
-            confidence=1.0,
-            known_gaps=["元类动态生成的类无法静态解析"],
-            level="observation",
-        ))
-        evidence.append(Evidence(
-            result=f"检测到 {len(functions)} 个顶层函数",
-            provenance={"file": target, "analysis": "functions"},
-            confidence=1.0,
-            known_gaps=["动态函数定义/装饰器修改的函数签名可能不准确",
-                        "运行时动态调用无法静态追踪"],
-            level="observation",
-        ))
+        evidence.append(
+            Evidence(
+                result=f"检测到 {len(imports)} 个导入",
+                provenance={"file": target, "analysis": "imports"},
+                confidence=1.0,
+                known_gaps=["动态导入 (importlib/__import__) 无法静态解析"],
+                level="observation",
+            )
+        )
+        evidence.append(
+            Evidence(
+                result=f"检测到 {len(classes)} 个类",
+                provenance={"file": target, "analysis": "classes"},
+                confidence=1.0,
+                known_gaps=["元类动态生成的类无法静态解析"],
+                level="observation",
+            )
+        )
+        evidence.append(
+            Evidence(
+                result=f"检测到 {len(functions)} 个顶层函数",
+                provenance={"file": target, "analysis": "functions"},
+                confidence=1.0,
+                known_gaps=[
+                    "动态函数定义/装饰器修改的函数签名可能不准确",
+                    "运行时动态调用无法静态追踪",
+                ],
+                level="observation",
+            )
+        )
         return evidence
 
     # ------------------------------------------------------------------

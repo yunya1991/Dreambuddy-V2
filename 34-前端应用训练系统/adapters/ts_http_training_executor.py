@@ -9,11 +9,12 @@
   - 转换 TrainingCase → 层专属 TrainingData
   - FAIL-OPEN：HTTP 超时/失败 → 降级返回，不阻塞编排器
 """
+
 import json
 import os
 import sys
-import urllib.request
 import urllib.error
+import urllib.request
 from typing import Any, List, Optional
 
 # sys.path 注入
@@ -24,10 +25,14 @@ for _p in [_THIS_DIR, _34_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_executor import TrainingExecutor, TrainingLayer, TrainingResult
-from interfaces.training_data_provider import TrainingCase
-from core.decision_deriver import derive_expected_decision_with_cdrive
-from core.debate_integration import enrich_case_with_debate
+from core.debate_integration import enrich_case_with_debate  # noqa: E402, I001
+from core.decision_deriver import derive_expected_decision_with_cdrive  # noqa: E402
+from interfaces.training_data_provider import TrainingCase  # noqa: E402
+from interfaces.training_executor import (  # noqa: E402
+    TrainingExecutor,
+    TrainingLayer,
+    TrainingResult,
+)  # noqa: E402
 
 # 前端服务地址
 _DEFAULT_BASE_URL = "http://localhost:3001"
@@ -200,9 +205,7 @@ class TSHTTPTrainingExecutor(TrainingExecutor):
         GET /api/training/[layer]/model → getModelSnapshot
         """
         try:
-            resp = self._http_get(
-                f"/api/training/{self._layer.value.lower()}/model"
-            )
+            resp = self._http_get(f"/api/training/{self._layer.value.lower()}/model")
             if resp.get("success"):
                 return resp.get("data", {})
             return {"degraded": True, "step": 0}
@@ -221,6 +224,7 @@ class TSHTTPTrainingExecutor(TrainingExecutor):
         layer = self._layer.value
         # P1 修复: 从 quality/confidence 派生 outcome + 归一化 prompt_pattern
         from core.outcome_pattern_deriver import derive_outcome, normalize_prompt_pattern
+
         outcome = derive_outcome(case)
         prompt_pattern = normalize_prompt_pattern(case)
 
@@ -272,7 +276,9 @@ class TSHTTPTrainingExecutor(TrainingExecutor):
         url = f"{self._base_url}{path}"
         data = json.dumps(body).encode("utf-8")
         req = urllib.request.Request(
-            url, data=data, method="POST",
+            url,
+            data=data,
+            method="POST",
             headers={"Content-Type": "application/json"},
         )
         with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:

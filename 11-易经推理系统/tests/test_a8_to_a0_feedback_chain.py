@@ -14,11 +14,13 @@ TDD RED: A8→A0 反向反馈链路测试。
      - A8 校验引擎输入 {doc_only, code_only, consistency_score}
      → 转为 A8GapDimension 注入到 A0
 """
-import sys
+
+import sys  # noqa: I001
 from pathlib import Path
 from dataclasses import is_dataclass
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+
 
 # ---------------------------------------------------------------------------
 # Test 1: A8GapDimension 数据类存在，字段正确
@@ -30,7 +32,7 @@ def test_a8_gap_dimension_exists():
     assert is_dataclass(A8GapDimension), "A8GapDimension 应是 dataclass"
 
     d = A8GapDimension(
-        source="trading_a8",     # 交易A8 / code_a8
+        source="trading_a8",  # 交易A8 / code_a8
         gap_score=0.45,
         hypothesis_score=0.80,
         practice_score=0.35,
@@ -56,16 +58,20 @@ def test_a8_gap_dimension_exists():
 def test_inject_external_contradiction_exists():
     """A0ContradictionEngine 应有 inject_external_contradiction() 接受 A8 偏差。"""
     from memory_l4.a0_contradiction_engine import (
-        A0ContradictionEngine, A8GapDimension,
+        A0ContradictionEngine,
+        A8GapDimension,
     )
 
     engine = A0ContradictionEngine()
-    assert hasattr(engine, "inject_external_contradiction"), \
-        "A0ContradictionEngine 缺少 inject_external_contradiction 方法"
+    assert hasattr(
+        engine, "inject_external_contradiction"
+    ), "A0ContradictionEngine 缺少 inject_external_contradiction 方法"
 
     gap = A8GapDimension(
-        source="trading_a8", gap_score=0.50,
-        hypothesis_score=0.70, practice_score=0.20,
+        source="trading_a8",
+        gap_score=0.50,
+        hypothesis_score=0.70,
+        practice_score=0.20,
         details={},
     )
     result = engine.inject_external_contradiction(gap)
@@ -74,8 +80,9 @@ def test_inject_external_contradiction_exists():
     assert result["dim_id"] == "a8_gap", "dim_id 应为 a8_gap"
     assert 0.0 <= result["tension"] <= 1.0, "张力应在 0-1 之间"
     # gap_score=0.50 → 张力=0.50
-    assert abs(result["tension"] - 0.50) < 1e-4, \
-        f"tension 应等于 gap_score 0.50，实际 {result['tension']}"
+    assert (
+        abs(result["tension"] - 0.50) < 1e-4
+    ), f"tension 应等于 gap_score 0.50，实际 {result['tension']}"
 
     print("✅ test_inject_external_contradiction_exists 通过")
     return True
@@ -86,10 +93,11 @@ def test_inject_external_contradiction_exists():
 # ---------------------------------------------------------------------------
 def test_analyze_includes_injected_a8_gap():
     """inject_external_contradiction 调用后，analyze() 结果应包含 a8_gap。"""
-    import pandas as pd
+    import pandas as pd  # noqa: I001
     import numpy as np
     from memory_l4.a0_contradiction_engine import (
-        A0ContradictionEngine, A8GapDimension,
+        A0ContradictionEngine,
+        A8GapDimension,
     )
 
     engine = A0ContradictionEngine()
@@ -97,18 +105,22 @@ def test_analyze_includes_injected_a8_gap():
     # 构造最小 df（50 根假 K 线）
     n = 60
     closes = 100 + np.cumsum(np.random.RandomState(42).randn(n) * 0.5)
-    df = pd.DataFrame({
-        "open": closes - 0.3,
-        "high": closes + 0.4,
-        "low": closes - 0.5,
-        "close": closes,
-        "volume": np.random.RandomState(43).rand(n) * 1000 + 100,
-    })
+    df = pd.DataFrame(
+        {
+            "open": closes - 0.3,
+            "high": closes + 0.4,
+            "low": closes - 0.5,
+            "close": closes,
+            "volume": np.random.RandomState(43).rand(n) * 1000 + 100,
+        }
+    )
 
     # 注入 A8 偏差（高张力大 gap）
     gap = A8GapDimension(
-        source="code_a8", gap_score=0.75,
-        hypothesis_score=0.90, practice_score=0.15,
+        source="code_a8",
+        gap_score=0.75,
+        hypothesis_score=0.90,
+        practice_score=0.15,
         details={"doc_only": ["fetch_x"], "code_only": [], "consistency_score": 25.0},
     )
     engine.inject_external_contradiction(gap)
@@ -118,16 +130,15 @@ def test_analyze_includes_injected_a8_gap():
 
     assert "a8_gap" in dim_ids, f"a8_gap 应出现在 contradictions 中，实际 dim_ids={dim_ids}"
     # 总共应 8 维（7 市场 + 1 a8_gap）
-    assert len(result.contradictions) == 8, \
-        f"矛盾维度应为 8，实际 {len(result.contradictions)}"
+    assert len(result.contradictions) == 8, f"矛盾维度应为 8，实际 {len(result.contradictions)}"
 
     # to_dict 可序列化
     d = result.to_dict()
     a8d = [c for c in d["contradictions"] if c["dim_id"] == "a8_gap"][0]
     assert a8d["tension"] == 0.75, "a8_gap tension 应等于 gap_score=0.75"
-    assert "代码A8: 理论0.90 vs 实践0.15" in a8d["evidence"] or \
-           "A8" in a8d["evidence"], \
-           f"evidence 应体现 A8 偏差内容: {a8d['evidence']}"
+    assert (
+        "代码A8: 理论0.90 vs 实践0.15" in a8d["evidence"] or "A8" in a8d["evidence"]
+    ), f"evidence 应体现 A8 偏差内容: {a8d['evidence']}"
 
     print("✅ test_analyze_includes_injected_a8_gap 通过")
     return True
@@ -138,7 +149,7 @@ def test_analyze_includes_injected_a8_gap():
 # ---------------------------------------------------------------------------
 def test_a8_to_a0_feedback_trading_a8():
     """桥接函数从交易 A8 Dict 构造并注入 A8 偏差。"""
-    import pandas as pd
+    import pandas as pd  # noqa: I001
     import numpy as np
     from memory_l4.a8_a0_feedback import a8_to_a0_feedback, FeedbackResult
     from memory_l4.a0_contradiction_engine import A0ContradictionEngine
@@ -167,11 +178,15 @@ def test_a8_to_a0_feedback_trading_a8():
     # 确认已注入 analyze
     n = 60
     closes = 100 + np.cumsum(np.random.RandomState(44).randn(n) * 0.5)
-    df = pd.DataFrame({
-        "open": closes - 0.3, "high": closes + 0.4,
-        "low": closes - 0.5, "close": closes,
-        "volume": np.random.RandomState(45).rand(n) * 1000 + 100,
-    })
+    df = pd.DataFrame(
+        {
+            "open": closes - 0.3,
+            "high": closes + 0.4,
+            "low": closes - 0.5,
+            "close": closes,
+            "volume": np.random.RandomState(45).rand(n) * 1000 + 100,
+        }
+    )
     r = engine.analyze(df, inst_id="ETH-USDT")
     dim_ids = [c.dim_id for c in r.contradictions]
     assert "a8_gap" in dim_ids, "bridge 注入后 analyze 应有 a8_gap"
@@ -185,7 +200,7 @@ def test_a8_to_a0_feedback_trading_a8():
 # ---------------------------------------------------------------------------
 def test_a8_to_a0_feedback_code_a8():
     """桥接函数从代码 A8Report dict 构造 A8 偏差。"""
-    from memory_l4.a8_a0_feedback import a8_to_a0_feedback, FeedbackResult
+    from memory_l4.a8_a0_feedback import a8_to_a0_feedback, FeedbackResult  # noqa: I001
     from memory_l4.a0_contradiction_engine import A0ContradictionEngine
 
     engine = A0ContradictionEngine()
@@ -214,8 +229,9 @@ def test_a8_to_a0_feedback_code_a8():
     assert fb.dim_id == "a8_gap"
     # 张力 = 1 - consistency_score/100 = 1 - 0.6842 = 0.3158
     expected_tension = round(1 - 68.42 / 100.0, 4)
-    assert abs(fb.tension - expected_tension) < 1e-4, \
-        f"tension={fb.tension} vs expected={expected_tension}"
+    assert (
+        abs(fb.tension - expected_tension) < 1e-4
+    ), f"tension={fb.tension} vs expected={expected_tension}"
     assert fb.gap_source == "code_a8"
 
     # evidence 应包含 doc_only / code_only 详情
@@ -229,7 +245,7 @@ def test_a8_to_a0_feedback_code_a8():
 # ---------------------------------------------------------------------------
 def test_a8_no_gap_skipped():
     """gap=0 或无有效字段时，feedback 不注入，injected=False。"""
-    from memory_l4.a8_a0_feedback import a8_to_a0_feedback, FeedbackResult
+    from memory_l4.a8_a0_feedback import a8_to_a0_feedback, FeedbackResult  # noqa: I001
     from memory_l4.a0_contradiction_engine import A0ContradictionEngine
 
     engine = A0ContradictionEngine()
@@ -260,9 +276,9 @@ def test_a8_no_gap_skipped():
 # ---------------------------------------------------------------------------
 def test_duplicate_trace_dedup():
     """同 trace_id 的 A8 偏差多次调用 feedback，a8_gap 维度只保留最新一条。"""
-    from memory_l4.a8_a0_feedback import a8_to_a0_feedback
+    from memory_l4.a8_a0_feedback import a8_to_a0_feedback  # noqa: I001
     from memory_l4.a0_contradiction_engine import (
-        A0ContradictionEngine, A8GapDimension,
+        A0ContradictionEngine,
     )
 
     engine = A0ContradictionEngine()
@@ -277,8 +293,9 @@ def test_duplicate_trace_dedup():
     # 按实现可能 dedup 或覆盖，最新值应为 0.9
     latest = max(a8_list, key=lambda x: x.get("_ts", 0)) if a8_list else None
     assert latest is not None
-    assert abs(latest["tension"] - 0.90) < 1e-4, \
-        f"去重后最新 tension 应为 0.90，实际 {latest['tension']}"
+    assert (
+        abs(latest["tension"] - 0.90) < 1e-4
+    ), f"去重后最新 tension 应为 0.90，实际 {latest['tension']}"
 
     print("✅ test_duplicate_trace_dedup 通过")
     return True
@@ -304,6 +321,7 @@ if __name__ == "__main__":
                 passed += 1
         except Exception as e:
             import traceback
+
             print(f"❌ {t.__name__} 失败: {e}")
             traceback.print_exc()
     print(f"\n总计: {passed}/{len(tests)} 通过")

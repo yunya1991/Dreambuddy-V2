@@ -10,15 +10,16 @@ CBR → BCRM 2.0 适配层
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from scripts.memory_l4.cbr_engine import CBRCase, CBREngine, CBRQuery, CBRCycleResult
+from scripts.memory_l4.cbr_engine import CBRCycleResult, CBREngine, CBRQuery
 
 
 @dataclass
 class BCRMSignal:
     """BCRM 2.0 原始信号。"""
+
     inst_id: str
-    direction: str              # long / short / flat
-    confidence: float           # 0-1
+    direction: str  # long / short / flat
+    confidence: float  # 0-1
     regime: Optional[str] = None
     volatility: float = 0.0
     current_price: float = 0.0
@@ -34,6 +35,7 @@ class BCRMSignal:
 @dataclass
 class EnhancedSignal:
     """CBR 增强后的信号。"""
+
     inst_id: str
     direction: str
     confidence: float
@@ -138,7 +140,9 @@ class CBRSignalEnhancer:
         return {
             "confidence": round(signal.confidence * (1 - w) + r.final_confidence * w, 4),
             "leverage": round(signal.suggested_leverage * (1 - w) + r.final_leverage * w, 1),
-            "position_pct": round(signal.suggested_position_pct * (1 - w) + r.final_position_pct * w, 4),
+            "position_pct": round(
+                signal.suggested_position_pct * (1 - w) + r.final_position_pct * w, 4
+            ),
             "sl_atr": round(signal.sl_atr * (1 - w) + r.final_sl_atr * w, 2),
             "tp_atr": round(signal.tp_atr * (1 - w) + r.final_tp_atr * w, 2),
             "max_hold_bars": int(signal.max_hold_bars * (1 - w) + r.final_hold_bars * w),

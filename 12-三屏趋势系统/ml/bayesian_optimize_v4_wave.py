@@ -14,11 +14,13 @@
 
 策略线归属：[MAIN] 主线代码
 """
+
+import argparse
+import json
 import os
 import sys
-import json
 import time
-import argparse
+
 import numpy as np
 import pandas as pd
 
@@ -41,18 +43,22 @@ def load_data(symbol="BTC"):
 
 def compute_v4_position(prices, symbol="BTC"):
     from ml.halving_top_exit_strategy import HalvingTopExitStrategy
+
     strategy = HalvingTopExitStrategy(
         symbol=symbol,
         is_btc=(symbol == "BTC"),
         btc_prices=prices if symbol == "BTC" else None,
     )
     position_series = strategy.generate_signals(prices)
-    position_arr = position_series.values if hasattr(position_series, 'values') else np.array(position_series)
+    position_arr = (
+        position_series.values if hasattr(position_series, "values") else np.array(position_series)
+    )
     return np.abs(position_arr), np.sign(position_arr)
 
 
 def generate_wave_signals(prices, zigzag_threshold=0.05):
     from ml.ewave_recognizer import ElliottWaveRecognizer
+
     recognizer = ElliottWaveRecognizer(zigzag_threshold=zigzag_threshold)
     n = len(prices)
     signals = []
@@ -75,8 +81,13 @@ def generate_wave_signals(prices, zigzag_threshold=0.05):
 
 
 def compute_v4_wave_mutex_fusion(
-    v4_pos, v4_dir, wave_signals, wave_confs,
-    wave_weight=0.3, confirm_threshold=0.6, bottom_position_cap=0.3,
+    v4_pos,
+    v4_dir,
+    wave_signals,
+    wave_confs,
+    wave_weight=0.3,
+    confirm_threshold=0.6,
+    bottom_position_cap=0.3,
 ):
     """V4+波浪互斥融合（与 comprehensive_strategy_comparison.py 一致）"""
     n = len(v4_pos)
@@ -92,7 +103,7 @@ def compute_v4_wave_mutex_fusion(
         sig = wave_signals[i]
         wave_conf = float(wave_confs[i])
         is_wave_long = sig in wave_long
-        is_wave_short = sig in wave_short
+        is_wave_short = sig in wave_short  # noqa: F841
 
         if v4_d > 0:
             if is_wave_long and wave_conf >= confirm_threshold:
@@ -141,8 +152,14 @@ def backtest_position(position, direction, prices, cost_pct=0.001, valid_start=7
         return None
     years = eff_n / 365
     cum_ret_arr = np.cumprod(1 + strategy_ret_net) - 1
-    total_return_valid = cum_ret_arr[-1] - cum_ret_arr[valid_start] if valid_start > 0 else cum_ret_arr[-1]
-    ann_ret = (1 + total_return_valid) ** (1 / years) - 1 if years > 0 and total_return_valid > -1 else -1.0
+    total_return_valid = (
+        cum_ret_arr[-1] - cum_ret_arr[valid_start] if valid_start > 0 else cum_ret_arr[-1]
+    )
+    ann_ret = (
+        (1 + total_return_valid) ** (1 / years) - 1
+        if years > 0 and total_return_valid > -1
+        else -1.0
+    )
 
     eff_ret = strategy_ret_net[valid_start:]
     daily_nonzero = eff_ret[eff_ret != 0]
@@ -169,7 +186,9 @@ def backtest_position(position, direction, prices, cost_pct=0.001, valid_start=7
     }
 
 
-def objective(trial, prices, v4_pos, v4_dir, wave_signals_cache, wave_confs_cache, baseline_metrics):
+def objective(
+    trial, prices, v4_pos, v4_dir, wave_signals_cache, wave_confs_cache, baseline_metrics
+):
     """Optuna 目标函数：最大化 Calmar 比率"""
     wave_weight = trial.suggest_float("wave_weight", 0.1, 0.6, step=0.05)
     confirm_threshold = trial.suggest_float("confirm_threshold", 0.4, 0.8, step=0.05)
@@ -188,7 +207,10 @@ def objective(trial, prices, v4_pos, v4_dir, wave_signals_cache, wave_confs_cach
         wave_confs_cache[zigzag_key] = wave_confs
 
     fusion_pos, fusion_dir = compute_v4_wave_mutex_fusion(
-        v4_pos, v4_dir, wave_signals, wave_confs,
+        v4_pos,
+        v4_dir,
+        wave_signals,
+        wave_confs,
         wave_weight=wave_weight,
         confirm_threshold=confirm_threshold,
         bottom_position_cap=bottom_position_cap,
@@ -206,6 +228,7 @@ def objective(trial, prices, v4_pos, v4_dir, wave_signals_cache, wave_confs_cach
 
 def run_optimization(symbol="BTC", n_trials=50, output_path=None):
     import optuna
+
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 
     print(f"\n{'='*80}")
@@ -222,7 +245,7 @@ def run_optimization(symbol="BTC", n_trials=50, output_path=None):
     print(f"  耗时: {time.time()-t0:.1f}s, 平均仓位: {np.mean(v4_pos):.3f}")
 
     baseline_metrics = backtest_position(v4_pos, v4_dir, prices, valid_start=730)
-    print(f"\n纯V4基线 (valid_start=730):")
+    print("\n纯V4基线 (valid_start=730):")
     print(f"  年化: {baseline_metrics['ann_return']*100:.2f}%")
     print(f"  夏普: {baseline_metrics['sharpe']:.3f}")
     print(f"  回撤: {baseline_metrics['max_drawdown']*100:.2f}%")
@@ -245,12 +268,16 @@ def run_optimization(symbol="BTC", n_trials=50, output_path=None):
         "zigzag_threshold_idx": 1,
     }
     default_fusion_pos, default_fusion_dir = compute_v4_wave_mutex_fusion(
-        v4_pos, v4_dir,
-        wave_signals_cache["zz_0.05"], wave_confs_cache["zz_0.05"],
+        v4_pos,
+        v4_dir,
+        wave_signals_cache["zz_0.05"],
+        wave_confs_cache["zz_0.05"],
         **{k: v for k, v in default_params.items() if k != "zigzag_threshold_idx"},
     )
-    default_metrics = backtest_position(default_fusion_pos, default_fusion_dir, prices, valid_start=730)
-    print(f"\n默认参数融合基线:")
+    default_metrics = backtest_position(
+        default_fusion_pos, default_fusion_dir, prices, valid_start=730
+    )
+    print("\n默认参数融合基线:")
     print(f"  年化: {default_metrics['ann_return']*100:.2f}%")
     print(f"  夏普: {default_metrics['sharpe']:.3f}")
     print(f"  回撤: {default_metrics['max_drawdown']*100:.2f}%")
@@ -264,8 +291,13 @@ def run_optimization(symbol="BTC", n_trials=50, output_path=None):
     t0 = time.time()
     study.optimize(
         lambda trial: objective(
-            trial, prices, v4_pos, v4_dir,
-            wave_signals_cache_opt, wave_confs_cache_opt, baseline_metrics,
+            trial,
+            prices,
+            v4_pos,
+            v4_dir,
+            wave_signals_cache_opt,
+            wave_confs_cache_opt,
+            baseline_metrics,
         ),
         n_trials=n_trials,
         show_progress_bar=False,
@@ -277,14 +309,15 @@ def run_optimization(symbol="BTC", n_trials=50, output_path=None):
     best["zigzag_threshold"] = zigzag_thresholds[best.pop("zigzag_threshold_idx")]
 
     print(f"\n{'='*80}")
-    print(f"  优化结果")
+    print("  优化结果")
     print(f"{'='*80}")
-    print(f"\n最佳参数:")
+    print("\n最佳参数:")
     for k, v in best.items():
         print(f"  {k}: {v}")
 
     best_fusion_pos, best_fusion_dir = compute_v4_wave_mutex_fusion(
-        v4_pos, v4_dir,
+        v4_pos,
+        v4_dir,
         wave_signals_cache[f"zz_{best['zigzag_threshold']}"],
         wave_confs_cache[f"zz_{best['zigzag_threshold']}"],
         wave_weight=best["wave_weight"],
@@ -293,24 +326,31 @@ def run_optimization(symbol="BTC", n_trials=50, output_path=None):
     )
     best_metrics = backtest_position(best_fusion_pos, best_fusion_dir, prices, valid_start=730)
 
-    print(f"\n最佳参数回测:")
+    print("\n最佳参数回测:")
     print(f"  年化: {best_metrics['ann_return']*100:.2f}%")
     print(f"  夏普: {best_metrics['sharpe']:.3f}")
     print(f"  回撤: {best_metrics['max_drawdown']*100:.2f}%")
     print(f"  Calmar: {best_metrics['calmar']:.3f}")
 
     print(f"\n{'='*80}")
-    print(f"  对比总结")
+    print("  对比总结")
     print(f"{'='*80}")
     print(f"\n{'指标':<12} {'纯V4':>10} {'默认融合':>10} {'优化融合':>10} {'优化-默认':>10}")
     print(f"{'-'*52}")
-    for key, label in [("ann_return", "年化"), ("sharpe", "夏普"), ("max_drawdown", "回撤"), ("calmar", "Calmar")]:
+    for key, label in [
+        ("ann_return", "年化"),
+        ("sharpe", "夏普"),
+        ("max_drawdown", "回撤"),
+        ("calmar", "Calmar"),
+    ]:
         v4_v = baseline_metrics[key]
         def_v = default_metrics[key]
         opt_v = best_metrics[key]
         diff = opt_v - def_v
         if key == "max_drawdown":
-            print(f"{label:<12} {v4_v*100:>9.2f}% {def_v*100:>9.2f}% {opt_v*100:>9.2f}% {diff*100:>+9.2f}%")
+            print(
+                f"{label:<12} {v4_v*100:>9.2f}% {def_v*100:>9.2f}% {opt_v*100:>9.2f}% {diff*100:>+9.2f}%"
+            )
         else:
             print(f"{label:<12} {v4_v:>10.4f} {def_v:>10.4f} {opt_v:>10.4f} {diff:>+10.4f}")
 
@@ -319,9 +359,9 @@ def run_optimization(symbol="BTC", n_trials=50, output_path=None):
         and best_metrics["calmar"] > default_metrics["calmar"]
     )
     if is_better:
-        print(f"\n✅ 优化参数优于默认参数")
+        print("\n✅ 优化参数优于默认参数")
     else:
-        print(f"\n❌ 优化参数未明显优于默认参数，建议回退")
+        print("\n❌ 优化参数未明显优于默认参数，建议回退")
 
     if output_path is None:
         output_path = os.path.join(

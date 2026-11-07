@@ -7,20 +7,20 @@ A. EventDrivenTrader 独立子交易系统 (10)
 B. 5 维评分修订: surprise_score + priced_in 量化 + real_rate 变化率 + cross_asset 标准化 (8)
 C. 单点脉冲算法 + 阶段动态阈值 (6)
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import math
-
-import pytest
-
 
 # ================================================================
 # A. EventDrivenTrader 独立子交易系统
 # ================================================================
 
+
 def _make_signal(**overrides):
     from event_driven.event_driven_strategy import EventSignal
-    base = dict(
+
+    base = dict(  # noqa: C408
         signal="long",
         strength=0.80,
         elasticity=1.0,
@@ -36,6 +36,7 @@ class TestEventDrivenTrader:
     def test_trader_open_position_long(self):
         """signal=long + strength≥事件阈值0.55 + confidence≥0.5 → _should_open=True"""
         from event_driven.event_driven_strategy import EventDrivenTrader
+
         trader = EventDrivenTrader(strategy=None, config={})
         sig = _make_signal(signal="long", strength=0.80, event_phase="event", confidence=0.90)
         assert trader._should_open(sig) is True
@@ -43,6 +44,7 @@ class TestEventDrivenTrader:
     def test_trader_open_position_short(self):
         """signal=short + strength≥(1-0.40)=0.60 → _should_open=True"""
         from event_driven.event_driven_strategy import EventDrivenTrader
+
         trader = EventDrivenTrader(strategy=None, config={})
         sig = _make_signal(signal="short", strength=0.70, event_phase="event", confidence=0.90)
         assert trader._should_open(sig) is True
@@ -50,6 +52,7 @@ class TestEventDrivenTrader:
     def test_trader_no_open_neutral(self):
         """signal=neutral → _should_open=False"""
         from event_driven.event_driven_strategy import EventDrivenTrader
+
         trader = EventDrivenTrader(strategy=None, config={})
         sig = _make_signal(signal="neutral")
         assert trader._should_open(sig) is False
@@ -57,13 +60,15 @@ class TestEventDrivenTrader:
     def test_trader_no_open_below_threshold(self):
         """signal=long + strength=0.40 < 事件阈值0.55 → _should_open=False"""
         from event_driven.event_driven_strategy import EventDrivenTrader
+
         trader = EventDrivenTrader(strategy=None, config={})
         sig = _make_signal(signal="long", strength=0.40, event_phase="event", confidence=0.90)
         assert trader._should_open(sig) is False
 
     def test_trader_position_size(self):
         """仓位 = base(250) × strength(0.8) × phase_mult × elasticity_mult"""
-        from event_driven.event_driven_strategy import EventDrivenTrader, PHASE_POSITION_MULT
+        from event_driven.event_driven_strategy import PHASE_POSITION_MULT, EventDrivenTrader
+
         trader = EventDrivenTrader(strategy=None, config={"base_position": 250.0})
         sig = _make_signal(strength=0.8, event_phase="event", elasticity=1.0)
         size = trader._compute_position_size(sig)
@@ -75,6 +80,7 @@ class TestEventDrivenTrader:
     def test_trader_sl_tp_atr(self):
         """atr=100, close=50000 → sl_pct=max(0.04, 5*100/50000)=0.04, tp=3*sl"""
         from event_driven.event_driven_strategy import EventDrivenTrader
+
         trader = EventDrivenTrader(strategy=None, config={})
         sl, tp = trader._compute_sl_tp(_make_signal(), {"atr": 100.0, "close": [50000.0]})
         assert abs(sl - 0.04) < 1e-6  # max(0.04, 5*100/50000=0.01)
@@ -83,6 +89,7 @@ class TestEventDrivenTrader:
     def test_trader_exit_pulse_decay(self):
         """days_since > 3τ → _should_exit=True"""
         from event_driven.event_driven_strategy import EventDrivenTrader
+
         trader = EventDrivenTrader(strategy=None, config={})
         trader._position = {"direction": "long", "entry_price": 100.0}
         # mock _days_since_event 返回 > 3τ (fomc τ=3, 3τ=9)
@@ -93,6 +100,7 @@ class TestEventDrivenTrader:
     def test_trader_exit_signal_reversal(self):
         """signal 从 long 反转为 short → _should_exit=True"""
         from event_driven.event_driven_strategy import EventDrivenTrader
+
         trader = EventDrivenTrader(strategy=None, config={})
         trader._position = {"direction": "long", "entry_price": 100.0}
         trader._days_since_event = lambda sig: 1.0  # 未超 3τ
@@ -102,6 +110,7 @@ class TestEventDrivenTrader:
     def test_trader_no_exit_within_window(self):
         """days_since < 3τ 且 signal 同向 → _should_exit=False"""
         from event_driven.event_driven_strategy import EventDrivenTrader
+
         trader = EventDrivenTrader(strategy=None, config={})
         trader._position = {"direction": "long", "entry_price": 100.0}
         trader._days_since_event = lambda sig: 1.0  # < 9 (3τ for fomc)
@@ -111,6 +120,7 @@ class TestEventDrivenTrader:
     def test_trader_fail_open_no_atr(self):
         """atr=0 → sl/tp 返回硬编码下限 0.04/0.12"""
         from event_driven.event_driven_strategy import EventDrivenTrader
+
         trader = EventDrivenTrader(strategy=None, config={})
         sl, tp = trader._compute_sl_tp(_make_signal(), {"atr": 0.0, "close": [100.0]})
         assert sl == 0.04
@@ -121,10 +131,12 @@ class TestEventDrivenTrader:
 # B. 5 维评分修订
 # ================================================================
 
+
 class TestSurpriseScore:
     def test_surprise_score_positive(self):
         """CPI actual<expected（低于预期=利好黄金）→ score > 0.5"""
         from event_driven.event_driven_strategy import EventDrivenStrategy
+
         strat = EventDrivenStrategy()
         kd = {
             "event_context": {
@@ -143,6 +155,7 @@ class TestSurpriseScore:
     def test_surprise_score_negative(self):
         """CPI actual>expected（高于预期=利空）→ score < 0.5"""
         from event_driven.event_driven_strategy import EventDrivenStrategy
+
         strat = EventDrivenStrategy()
         kd = {
             "event_context": {
@@ -161,6 +174,7 @@ class TestSurpriseScore:
     def test_surprise_score_fail_open(self):
         """actual=None → score=0.5（中性兜底）"""
         from event_driven.event_driven_strategy import EventDrivenStrategy
+
         strat = EventDrivenStrategy()
         kd = {
             "event_context": {"event_type": "cpi", "in_fomc_cycle": True, "actual": None},
@@ -174,6 +188,7 @@ class TestPricedInQuantified:
     def test_priced_in_overpriced(self):
         """ratio=预期累计涨跌/历史平均反应 > 1 → base 向上修正（反向预期）"""
         from event_driven.event_driven_strategy import EventDrivenStrategy
+
         strat = EventDrivenStrategy()
         kd = {
             "event_context": {
@@ -195,6 +210,7 @@ class TestRealRateDelta:
     def test_real_rate_with_delta(self):
         """real_rate_history 下行 → delta_score > 0.5"""
         from event_driven.event_driven_strategy import EventDrivenStrategy
+
         strat = EventDrivenStrategy()
         kd = {
             "event_context": {"event_type": "fomc", "in_fomc_cycle": True, "cycle_phase": "event"},
@@ -210,6 +226,7 @@ class TestCrossAssetStandardized:
     def test_cross_asset_standardized(self):
         """gold_surprise 正 → score += 0.25*tanh(surprise/2)"""
         from event_driven.event_driven_strategy import EventDrivenStrategy
+
         strat = EventDrivenStrategy()
         kd = {
             "gold_surprise": 1.0,
@@ -224,6 +241,7 @@ class TestResilienceGeneralized:
     def test_resilience_generalized(self):
         """expected_drop<0 且 ret_3d/expected_drop<1（抗跌）→ 0.85"""
         from event_driven.event_driven_strategy import EventDrivenStrategy
+
         strat = EventDrivenStrategy()
         kd = {
             "event_context": {"event_type": "cpi", "in_fomc_cycle": True},
@@ -238,6 +256,7 @@ class TestCompositeIncludesSurprise:
     def test_composite_includes_surprise(self):
         """5 维加权中 surprise_score 权重 25%"""
         from event_driven.event_driven_strategy import EventDrivenStrategy
+
         strat = EventDrivenStrategy()
         kd = {
             "event_context": {
@@ -262,10 +281,12 @@ class TestCompositeIncludesSurprise:
 # C. 单点脉冲算法 + 阶段动态阈值
 # ================================================================
 
+
 class TestImpulsePulse:
     def test_impulse_decay(self):
         """t=τ → impulse = strength × exp(-1)"""
         from event_driven.event_driven_strategy import compute_impulse
+
         result = compute_impulse("fomc", days_since=3.0, strength=1.0)
         expected = math.exp(-1.0)
         assert abs(result - expected) < 1e-6
@@ -273,12 +294,14 @@ class TestImpulsePulse:
     def test_impulse_zero_after_3tau(self):
         """t > 3τ → impulse ≈ 0"""
         from event_driven.event_driven_strategy import compute_impulse
+
         result = compute_impulse("fomc", days_since=20.0, strength=1.0)
         assert result < 0.01
 
     def test_impulse_fail_open(self):
         """event_type=none → 0.0"""
         from event_driven.event_driven_strategy import compute_impulse
+
         assert compute_impulse("none", days_since=0.0, strength=1.0) == 0.0
 
 
@@ -286,11 +309,13 @@ class TestPhaseThresholds:
     def test_phase_thresholds_event(self):
         """event 阶段 long 阈值 = 0.55"""
         from event_driven.event_driven_strategy import PHASE_THRESHOLDS
+
         assert PHASE_THRESHOLDS["event"]["long"] == 0.55
 
     def test_phase_thresholds_pre(self):
         """pre_event 阶段 long 阈值 = 0.70"""
         from event_driven.event_driven_strategy import PHASE_THRESHOLDS
+
         assert PHASE_THRESHOLDS["pre_event"]["long"] == 0.70
 
 
@@ -298,8 +323,10 @@ class TestPulseElasticity:
     def test_pulse_elasticity_trend_follow(self):
         """elasticity>0 + signal=long → composite += pulse × 0.15"""
         from event_driven.event_driven_strategy import EventDrivenTrader
+
         trader = EventDrivenTrader(strategy=None, config={})
         from event_driven.event_driven_strategy import EventSignal
+
         sig = EventSignal(
             signal="long",
             strength=0.8,

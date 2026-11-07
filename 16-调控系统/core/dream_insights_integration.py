@@ -17,13 +17,13 @@
   - 生成 dream_insights 结构化输出
 """
 
-import re
-import os
 import glob
-from pathlib import Path
-from typing import Dict, Any, List, Optional
-from datetime import datetime, timezone, timedelta
+import os
+import re
 from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List
 
 BASE_DIR = Path(__file__).parent.parent.parent
 
@@ -41,6 +41,7 @@ SEARCH_PATHS = [
 @dataclass
 class DreamProduct:
     """做梦产物"""
+
     path: Path
     product_type: str
     title: str
@@ -157,14 +158,16 @@ def _find_latest_products(max_age_days: int = 7) -> List[DreamProduct]:
                         else:
                             date_str = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d")
 
-                    products.append(DreamProduct(
-                        path=fp,
-                        product_type=ptype,
-                        title=title,
-                        date=date_str,
-                        content=content,
-                        frontmatter=fm,
-                    ))
+                    products.append(
+                        DreamProduct(
+                            path=fp,
+                            product_type=ptype,
+                            title=title,
+                            date=date_str,
+                            content=content,
+                            frontmatter=fm,
+                        )
+                    )
                 except Exception:
                     pass
 
@@ -215,8 +218,14 @@ def _extract_insights_from_product(product: DreamProduct) -> Dict[str, List[str]
 
     all_text = product.content
     patterns = {
-        "suppressed_signals": [r"被压制[的之]信号[:：]?\s*(.+?)(?:\n|$)", r"suppressed signal[:：]?\s*(.+?)(?:\n|$)"],
-        "nightmare_scenarios": [r"噩梦场景[:：]?\s*(.+?)(?:\n|$)", r"nightmare scenario[:：]?\s*(.+?)(?:\n|$)"],
+        "suppressed_signals": [
+            r"被压制[的之]信号[:：]?\s*(.+?)(?:\n|$)",
+            r"suppressed signal[:：]?\s*(.+?)(?:\n|$)",
+        ],
+        "nightmare_scenarios": [
+            r"噩梦场景[:：]?\s*(.+?)(?:\n|$)",
+            r"nightmare scenario[:：]?\s*(.+?)(?:\n|$)",
+        ],
         "counter_intuitive_signals": [r"反直觉[的之]?信号?[:：]?\s*(.+?)(?:\n|$)"],
     }
     for key, pat_list in patterns.items():
@@ -229,8 +238,7 @@ def _extract_insights_from_product(product: DreamProduct) -> Dict[str, List[str]
     return insights
 
 
-def load_dream_insights(max_age_days: int = 7,
-                        max_products: int = 3) -> Dict[str, Any]:
+def load_dream_insights(max_age_days: int = 7, max_products: int = 3) -> Dict[str, Any]:
     """
     加载并整合做梦产物洞察
 
@@ -278,12 +286,14 @@ def load_dream_insights(max_age_days: int = 7,
             for item in insights.get(key, []):
                 if item and item not in all_insights[key]:
                     all_insights[key].append(item)
-        product_infos.append({
-            "type": p.product_type,
-            "title": p.title,
-            "date": p.date,
-            "path": str(p.path),
-        })
+        product_infos.append(
+            {
+                "type": p.product_type,
+                "title": p.title,
+                "date": p.date,
+                "path": str(p.path),
+            }
+        )
 
     latest_date = products[0].date if products else ""
 
@@ -304,8 +314,9 @@ def load_dream_insights(max_age_days: int = 7,
     }
 
 
-def cross_validate_with_research(dream_insights: Dict[str, Any],
-                                 a1_report: Dict[str, Any]) -> Dict[str, Any]:
+def cross_validate_with_research(
+    dream_insights: Dict[str, Any], a1_report: Dict[str, Any]
+) -> Dict[str, Any]:
     """
     做梦洞察与 A1 调研结果交叉验证
 
@@ -348,7 +359,11 @@ def cross_validate_with_research(dream_insights: Dict[str, Any],
         else:
             dream_neutral += 1
 
-    dream_net = "UP" if dream_bullish > dream_bearish else ("DOWN" if dream_bearish > dream_bullish else "MIXED")
+    dream_net = (
+        "UP"
+        if dream_bullish > dream_bearish
+        else ("DOWN" if dream_bearish > dream_bullish else "MIXED")
+    )
 
     a1_is_up = a1_net == "UP" or a1_direction in ("BULL", "NEUTRAL_UP")
     a1_is_down = a1_net == "DOWN" or a1_direction in ("BEAR", "NEUTRAL_DOWN")
@@ -359,19 +374,23 @@ def cross_validate_with_research(dream_insights: Dict[str, Any],
     confirmations = []
 
     if a1_is_up and dream_is_down:
-        contradictions.append({
-            "type": "梦境矛盾",
-            "description": "A1调研看多 vs 做梦洞察看空",
-            "severity": "HIGH",
-            "impact": "降低A1调研置信度，警惕反向走势",
-        })
+        contradictions.append(
+            {
+                "type": "梦境矛盾",
+                "description": "A1调研看多 vs 做梦洞察看空",
+                "severity": "HIGH",
+                "impact": "降低A1调研置信度，警惕反向走势",
+            }
+        )
     elif a1_is_down and dream_is_up:
-        contradictions.append({
-            "type": "梦境矛盾",
-            "description": "A1调研看空 vs 做梦洞察看多",
-            "severity": "HIGH",
-            "impact": "降低A1调研置信度，警惕反向走势",
-        })
+        contradictions.append(
+            {
+                "type": "梦境矛盾",
+                "description": "A1调研看空 vs 做梦洞察看多",
+                "severity": "HIGH",
+                "impact": "降低A1调研置信度，警惕反向走势",
+            }
+        )
     elif a1_is_up and dream_is_up:
         confirmations.append("A1调研与做梦洞察方向一致（看多），信号可信度提升")
     elif a1_is_down and dream_is_down:

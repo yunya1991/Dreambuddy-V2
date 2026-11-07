@@ -15,7 +15,8 @@ D方案: JSONL 持久化 (persist + load_from_disk)
   - _build_l3_state 所有值在 [0,1] 范围
   - inject_backtest_samples reward=tanh(pnl/0.02)
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import json
 import math
@@ -23,7 +24,6 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
 from dreambuddy_evolution.core.shadow_rl_trainer import ShadowRLTrainer
@@ -82,7 +82,7 @@ class TestEffectiveSampleCount:
             # 灌入 2 占位 + 2 有效（effective_count=2 触发激活）
             tracker.record("BTC", {}, "long", 0.0, {})
             tracker.record("BTC", {}, "long", 0.0, {})
-            tracker.record("BTC", {}, "long", 0.5, {})   # effective=1
+            tracker.record("BTC", {}, "long", 0.5, {})  # effective=1
             tracker.record("BTC", {}, "long", -0.3, {})  # effective=2 → 触发激活
 
         # train_policy 被调用一次
@@ -128,11 +128,18 @@ class TestPersistence:
         path = tmp_path / "samples.jsonl"
         for i in range(5):
             with open(path, "a", encoding="utf-8") as f:
-                f.write(json.dumps({
-                    "symbol": "BTC", "state": {"R_up": i * 0.1},
-                    "action": "long", "reward": 0.1 * (i + 1),
-                    "next_state": {},
-                }) + "\n")
+                f.write(
+                    json.dumps(
+                        {
+                            "symbol": "BTC",
+                            "state": {"R_up": i * 0.1},
+                            "action": "long",
+                            "reward": 0.1 * (i + 1),
+                            "next_state": {},
+                        }
+                    )
+                    + "\n"
+                )
 
         tracker = ShadowRLTracker(persist_path=path)
         tracker.load_from_disk()
@@ -144,11 +151,18 @@ class TestPersistence:
         path = tmp_path / "big.jsonl"
         for i in range(10005):
             with open(path, "a", encoding="utf-8") as f:
-                f.write(json.dumps({
-                    "symbol": "BTC", "state": {"i": i},
-                    "action": "long", "reward": 0.1,
-                    "next_state": {},
-                }) + "\n")
+                f.write(
+                    json.dumps(
+                        {
+                            "symbol": "BTC",
+                            "state": {"i": i},
+                            "action": "long",
+                            "reward": 0.1,
+                            "next_state": {},
+                        }
+                    )
+                    + "\n"
+                )
 
         tracker = ShadowRLTracker(max_samples=10000, persist_path=path)
         tracker.load_from_disk()
@@ -179,6 +193,7 @@ class TestBacktestInject:
         if str(scripts_dir) not in sys.path:
             sys.path.insert(0, str(scripts_dir))
         import shadow_backtest
+
         return shadow_backtest
 
     def test_build_l3_state_range_clamped(self):
@@ -186,11 +201,11 @@ class TestBacktestInject:
         mod = self._get_shadow_backtest_module()
         # 极端值
         bar_extreme = {
-            "rsi_2": 200,      # 超出 100
-            "adx_14": 999,     # 超出 50
-            "vol_ratio": 10,   # 超出 3
-            "zscore_vwap": 10, # 超出 3
-            "vol_quantile": 2, # 超出 1
+            "rsi_2": 200,  # 超出 100
+            "adx_14": 999,  # 超出 50
+            "vol_ratio": 10,  # 超出 3
+            "zscore_vwap": 10,  # 超出 3
+            "vol_quantile": 2,  # 超出 1
         }
         state = mod._build_l3_state(bar_extreme, [], 0)
         for key, val in state.items():
@@ -211,8 +226,7 @@ class TestBacktestInject:
     def test_build_l3_state_fields_present(self):
         """state 包含所有 6 个必需字段"""
         mod = self._get_shadow_backtest_module()
-        bar = {"rsi_2": 50, "adx_14": 25, "vol_ratio": 1.5,
-               "zscore_vwap": 0, "vol_quantile": 0.5}
+        bar = {"rsi_2": 50, "adx_14": 25, "vol_ratio": 1.5, "zscore_vwap": 0, "vol_quantile": 0.5}
         state = mod._build_l3_state(bar, [], 0)
         required = {"R_up", "R_down", "R_smooth", "R_flow", "R_reflexivity", "quality_score"}
         assert required.issubset(set(state.keys()))
@@ -225,19 +239,31 @@ class TestBacktestInject:
         # 构造最小 K 线数据（LOOKBACK=20, HOLD_BARS=12）
         klines = []
         for i in range(40):
-            klines.append({
-                "timestamp": str(i),
-                "open": 100.0 + i, "high": 101.0 + i,
-                "low": 99.0 + i, "close": 100.5 + i,
-                "volume": 1000.0,
-            })
+            klines.append(
+                {
+                    "timestamp": str(i),
+                    "open": 100.0 + i,
+                    "high": 101.0 + i,
+                    "low": 99.0 + i,
+                    "close": 100.5 + i,
+                    "volume": 1000.0,
+                }
+            )
 
         # mock calc_indicators 返回带指标的 bar
         with patch.object(mod, "eval_gene_with_direction", return_value=(True, "long")):
-            with patch.object(mod, "simulate_trade", return_value={
-                "pnl_pct": 0.05, "entry_price": 100, "exit_price": 105,
-            }):
-                result = mod.inject_backtest_samples(tracker, klines, gene_ids=["TEST-GENE"])
+            with patch.object(
+                mod,
+                "simulate_trade",
+                return_value={
+                    "pnl_pct": 0.05,
+                    "entry_price": 100,
+                    "exit_price": 105,
+                },
+            ):
+                result = mod.inject_backtest_samples(  # noqa: F841
+                    tracker, klines, gene_ids=["TEST-GENE"]
+                )  # noqa: F841
 
         # record 被调用
         assert tracker.record.call_count > 0

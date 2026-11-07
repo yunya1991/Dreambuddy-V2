@@ -10,7 +10,7 @@
 来源: SPEC v0.3 七补.1 F-01
 """
 
-import json
+import json  # noqa: I001
 import sys
 import os
 import pytest
@@ -18,7 +18,7 @@ import pytest
 # 添加 sdk 路径
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "packages", "python-server"))
 
-from sdk.protocol_server import (
+from sdk.protocol_server import (  # noqa: I001
     create_protocol_server,
     ProtocolHandshakeError,
     CURRENT_SCHEMA_VERSION,
@@ -44,6 +44,7 @@ class TestF01SchemaVersion:
         server = create_protocol_server()
         resp = server.build_response(ok=True, result="test")
         import re
+
         assert re.match(r"^\d+\.\d+\.\d+$", resp["schema_version"])
 
     def test_response_contains_message_type(self):
@@ -91,22 +92,26 @@ class TestF01Handshake:
 
     def test_handshake_compatible(self):
         server = create_protocol_server("1.0.0")
-        handshake_req = json.dumps({
-            "schema_version": "1.0.0",
-            "message_type": "handshake_request",
-            "id": "test-id",
-        })
+        handshake_req = json.dumps(
+            {
+                "schema_version": "1.0.0",
+                "message_type": "handshake_request",
+                "id": "test-id",
+            }
+        )
         resp = server.handle_handshake(handshake_req)
         assert resp["ok"] is True
         assert resp["compatible"] is True
 
     def test_handshake_incompatible_major(self):
         server = create_protocol_server("1.0.0")
-        handshake_req = json.dumps({
-            "schema_version": "2.0.0",
-            "message_type": "handshake_request",
-            "id": "test-id",
-        })
+        handshake_req = json.dumps(
+            {
+                "schema_version": "2.0.0",
+                "message_type": "handshake_request",
+                "id": "test-id",
+            }
+        )
         resp = server.handle_handshake(handshake_req)
         assert resp["ok"] is False
         assert resp["compatible"] is False
@@ -118,25 +123,29 @@ class TestF01ParseRequest:
 
     def test_parse_valid_request(self):
         server = create_protocol_server()
-        raw = json.dumps({
-            "schema_version": "1.0.0",
-            "message_type": "request",
-            "method": "execute_node",
-            "params": {"node_id": "C1"},
-            "id": "test-id",
-        })
+        raw = json.dumps(
+            {
+                "schema_version": "1.0.0",
+                "message_type": "request",
+                "method": "execute_node",
+                "params": {"node_id": "C1"},
+                "id": "test-id",
+            }
+        )
         req = server.parse_request(raw)
         assert req["schema_version"] == "1.0.0"
         assert req["method"] == "execute_node"
 
     def test_parse_missing_schema_version_raises(self):
         server = create_protocol_server()
-        raw = json.dumps({
-            "message_type": "request",
-            "method": "execute_node",
-            "params": {},
-            "id": "test-id",
-        })
+        raw = json.dumps(
+            {
+                "message_type": "request",
+                "method": "execute_node",
+                "params": {},
+                "id": "test-id",
+            }
+        )
         with pytest.raises(ProtocolHandshakeError) as exc_info:
             server.parse_request(raw)
         assert exc_info.value.code == "MISSING_SCHEMA_VERSION"

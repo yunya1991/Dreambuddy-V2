@@ -3,6 +3,7 @@
 纯 numpy 实现，不依赖 filterpy。所有方法 FAIL-OPEN（异常返回中性默认值）。
 对应 Spec §三 五维统计 / §四 Kalman 平滑。
 """
+
 from __future__ import annotations
 
 import os as _os
@@ -12,17 +13,17 @@ import sys as _sys
 # 注入「9-基本面分析」到 sys.path（engines.* 导入前置）
 # ============================================================
 try:  # noqa: E402
-    _HERE = _os.path.dirname(_os.path.abspath(__file__))          # force_vector
-    _SCRIPTS = _os.path.dirname(_HERE)                            # scripts
-    _YIJING = _os.path.dirname(_SCRIPTS)                         # 11-易经推理系统
-    _ROOT = _os.path.dirname(_YIJING)                             # dreambuddy-v2
+    _HERE = _os.path.dirname(_os.path.abspath(__file__))  # force_vector
+    _SCRIPTS = _os.path.dirname(_HERE)  # scripts
+    _YIJING = _os.path.dirname(_SCRIPTS)  # 11-易经推理系统
+    _ROOT = _os.path.dirname(_YIJING)  # dreambuddy-v2
     _9_FUND_PATH = _os.path.join(_ROOT, "9-基本面分析")
     if _os.path.isdir(_9_FUND_PATH) and _9_FUND_PATH not in _sys.path:
         _sys.path.insert(0, _9_FUND_PATH)
 except Exception:
     pass
 
-import numpy as np
+import numpy as np  # noqa: I001
 
 from force_vector.models import ForceVector
 from force_vector.adapters import LeastResistanceAdapter, SignalEngineAdapter
@@ -221,7 +222,7 @@ class ForceVectorCalculator:
             Q = np.diag([0.001, 0.0001])
             # 观测噪声 R = σ²_raw（样本不足时给一个合理下限，避免除零/无平滑）
             sigma = float(np.std(arr)) if n > 1 else 0.1
-            R = np.array([[max(sigma ** 2, 1e-4)]])
+            R = np.array([[max(sigma**2, 1e-4)]])
             # 初始状态与协方差
             # 速度维度初始协方差设小（无先验理由假定存在显著速度）：
             # 否则 velocity 不确定度会经由 F 注入 P_pred[0,0]，导致增益偏高、
@@ -257,7 +258,7 @@ class ForceVectorCalculator:
             if n == 0:
                 return []
             sigma = float(np.std(arr)) if n > 1 else 0.1
-            R = np.array([[max(sigma ** 2, 1e-4)]])
+            R = np.array([[max(sigma**2, 1e-4)]])
             Q = np.array([[0.001]])
             x = np.array([[0.0]])
             P = np.array([[1.0]])
@@ -280,8 +281,9 @@ class ForceVectorCalculator:
     # ============================================================
     # 聚合：计算全部五维力向量
     # ============================================================
-    def compute_all(self, dao_data=None, tian_data=None, di_data=None,
-                    jiang_data=None, fa_data=None) -> dict:
+    def compute_all(
+        self, dao_data=None, tian_data=None, di_data=None, jiang_data=None, fa_data=None
+    ) -> dict:
         """计算全部五维力向量。
 
         FAIL-OPEN: 样本不足（<7天）→ return None。
@@ -289,8 +291,11 @@ class ForceVectorCalculator:
         """
         try:
             data_map = {
-                "dao": dao_data, "tian": tian_data, "di": di_data,
-                "jiang": jiang_data, "fa": fa_data,
+                "dao": dao_data,
+                "tian": tian_data,
+                "di": di_data,
+                "jiang": jiang_data,
+                "fa": fa_data,
             }
             # FAIL-OPEN: 任一维度样本不足 (<7天) → return None
             for data in data_map.values():
@@ -309,8 +314,8 @@ class ForceVectorCalculator:
             dirs_list = [raw_dirs[d] for d in dims_order]
             mags_list = [raw_mags[d] for d in dims_order]
             kalman_dirs, kalman_mags = self.kalman_smooth(dirs_list, mags_list)
-            kalman_dir_map = dict(zip(dims_order, kalman_dirs))
-            kalman_mag_map = dict(zip(dims_order, kalman_mags)) if kalman_mags else {}
+            kalman_dir_map = dict(zip(dims_order, kalman_dirs))  # noqa: B905
+            kalman_mag_map = dict(zip(dims_order, kalman_mags)) if kalman_mags else {}  # noqa: B905
             # 自适应权重：按 |magnitude| 分配；dominant：最大 magnitude 维度
             total_mag = sum(abs(raw_mags[d]) for d in dims_order)
             max_dim = max(dims_order, key=lambda d: abs(raw_mags[d]))

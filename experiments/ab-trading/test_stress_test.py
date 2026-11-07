@@ -19,29 +19,29 @@ Dreambuddy OS 全链路压力测试
 - 压缩效率对比
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import time
 import threading
 import random
 import unittest
-from typing import Dict, Any, List, Callable
+from typing import Dict, Any, List
 from dataclasses import dataclass, field
-from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from core.nodes.node_registry import get_node_registry
+from core.nodes.node_registry import get_node_registry  # noqa: I001
 from core.c_execution_layer.unified_executor import UnifiedNodeExecutor
-
 
 # ============================================================
 # 性能测试工具
 # ============================================================
 
+
 @dataclass
 class BenchmarkResult:
     """基准测试结果"""
+
     name: str
     total_calls: int = 0
     success_count: int = 0
@@ -148,6 +148,7 @@ def create_test_mkt() -> Dict[str, Any]:
 # 1. 单节点性能基准测试
 # ============================================================
 
+
 def benchmark_single_node(node_id: str, iterations: int = 100) -> BenchmarkResult:
     """单节点性能基准测试"""
     result = BenchmarkResult(name=f"单节点基准: {node_id}")
@@ -179,6 +180,7 @@ def benchmark_single_node(node_id: str, iterations: int = 100) -> BenchmarkResul
 # ============================================================
 # 2. 并发执行压测
 # ============================================================
+
 
 def benchmark_concurrent(
     node_ids: List[str],
@@ -234,9 +236,10 @@ def benchmark_concurrent(
 # 3. 端到端全链路压测
 # ============================================================
 
+
 def benchmark_end_to_end(iterations: int = 20) -> BenchmarkResult:
     """端到端全链路压测：S→A→C"""
-    from core.intent_engine.engine import IntentRecognitionEngine
+    from core.intent_engine.engine import IntentRecognitionEngine  # noqa: I001
     from core.a_graph_orchestrator.graph_orchestrator import GraphOrchestrator
 
     result = BenchmarkResult(name="端到端全链路: S→A→C")
@@ -268,7 +271,7 @@ def benchmark_end_to_end(iterations: int = 20) -> BenchmarkResult:
                     context={
                         "session_id": f"e2e-{i}",
                         "mkt": create_test_mkt(),
-                    }
+                    },
                 )
 
                 latency = (time.time() - start) * 1000
@@ -306,12 +309,15 @@ def benchmark_end_to_end(iterations: int = 20) -> BenchmarkResult:
 # 4. G层压缩效率压测
 # ============================================================
 
+
 def benchmark_graph_compression() -> BenchmarkResult:
     """G层压缩效率压测"""
-    from core.g_graph_storage import (
-        ChronicleGraph, CNode, CEdge,
-        GraphCompressor, CompressionStrategy,
-        ValueScorer,
+    from core.g_graph_storage import (  # noqa: I001
+        ChronicleGraph,
+        CNode,
+        CEdge,
+        GraphCompressor,
+        CompressionStrategy,
     )
 
     result = BenchmarkResult(name="G层压缩效率测试")
@@ -369,7 +375,11 @@ def benchmark_graph_compression() -> BenchmarkResult:
             compress_time = (time.time() - start) * 1000
 
             node_count_before = len(graph.nodes)
-            node_count_after = len(compression_result.compressed_chronicle.nodes) if compression_result.compressed_chronicle else node_count_before
+            node_count_after = (
+                len(compression_result.compressed_chronicle.nodes)
+                if compression_result.compressed_chronicle
+                else node_count_before
+            )
             compression_ratio = node_count_after / node_count_before if node_count_before > 0 else 0
 
             size_results[strat_name] = {
@@ -394,6 +404,7 @@ def benchmark_graph_compression() -> BenchmarkResult:
 # ============================================================
 # 5. 长时间运行稳定性测试
 # ============================================================
+
 
 def benchmark_long_running(duration_seconds: int = 10) -> BenchmarkResult:
     """长时间运行稳定性测试"""
@@ -453,6 +464,7 @@ def benchmark_long_running(duration_seconds: int = 10) -> BenchmarkResult:
 # ============================================================
 # 主测试类
 # ============================================================
+
 
 class TestStressTests(unittest.TestCase):
     """压力测试"""
@@ -527,8 +539,10 @@ class TestStressTests(unittest.TestCase):
             for size, strats in result.extra["压缩策略对比"].items():
                 print(f"\n    图规模: {size} 节点")
                 for strat_name, data in strats.items():
-                    print(f"      {strat_name:8}: {data['before']:>4} → {data['after']:>4} "
-                          f"(压缩率 {data['ratio']:>7}), 耗时 {data['time_ms']:>8}ms")
+                    print(
+                        f"      {strat_name:8}: {data['before']:>4} → {data['after']:>4} "
+                        f"(压缩率 {data['ratio']:>7}), 耗时 {data['time_ms']:>8}ms"
+                    )
 
         self.assertTrue(result.success_count > 0)
 
@@ -590,5 +604,5 @@ class TestStressTests(unittest.TestCase):
 # 运行测试
 # ============================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

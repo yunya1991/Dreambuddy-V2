@@ -21,6 +21,7 @@ P2 增强：集成 C-Drive Agent 反思逻辑（阈值对齐 c_drive_agent.py CO
   - C-Drive Agent: 1-ARCHITECTURE/dream-harness-bridge/packages/python-server/c_drive_agent.py
   - 辩论引擎: 1-ARCHITECTURE/dream-harness-bridge/packages/python-server/debate_engine.py
 """
+
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -36,12 +37,12 @@ JUMP_TO = "JUMP_TO"
 EARLY_TERMINATE = "EARLY_TERMINATE"
 
 # confidence 阈值（对齐 C-Drive Agent 的 CONF_REDO/CONF_SUPPLEMENT 语义）
-CONF_REDO_THRESHOLD = 0.3       # < 0.3 → 极低置信度 → REDO
+CONF_REDO_THRESHOLD = 0.3  # < 0.3 → 极低置信度 → REDO
 CONF_SUPPLEMENT_THRESHOLD = 0.6  # < 0.6 → 中低置信度 → INSERT_BEFORE
 
 # P2: C-Drive Agent 反思阈值（严格对齐 c_drive_agent.py L206-207）
-CDRIVE_CONF_REDO = 0.20          # 置信度 < 0.20 → REDO
-CDRIVE_CONF_SUPPLEMENT = 0.30    # max(bull, bear) < 0.30 → SUPPLEMENT→INSERT_BEFORE
+CDRIVE_CONF_REDO = 0.20  # 置信度 < 0.20 → REDO
+CDRIVE_CONF_SUPPLEMENT = 0.30  # max(bull, bear) < 0.30 → SUPPLEMENT→INSERT_BEFORE
 
 # C-Drive Action → 前端 ReflectionDecision 映射
 CDRIVE_ACTION_MAP = {
@@ -72,6 +73,7 @@ _LEARNED_KEYWORD_MAP: List[Tuple[str, str]] = [
 # ============================================================
 # 核心推导函数
 # ============================================================
+
 
 def derive_expected_decision(
     intent: str,
@@ -167,6 +169,7 @@ def derive_expected_decision_from_case(case: Any) -> str:
 # P2: C-Drive Agent 反思逻辑集成
 # ============================================================
 
+
 def derive_with_cdrive_reflection(
     confidence: float,
     bull_confidence: Optional[float] = None,
@@ -257,6 +260,7 @@ def derive_expected_decision_with_cdrive(
 # 内部辅助函数
 # ============================================================
 
+
 def _derive_correction_from_semantics(
     actions: List[str],
     learned: List[str],
@@ -290,6 +294,7 @@ def _derive_correction_from_semantics(
 # ============================================================
 # 统计辅助（用于调试/验证决策分布）
 # ============================================================
+
 
 def derive_decision_distribution(cases: List[Any]) -> Dict[str, int]:
     """批量推导决策分布（用于验证多样性）。

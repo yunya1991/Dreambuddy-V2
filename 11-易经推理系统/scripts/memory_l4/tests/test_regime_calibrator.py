@@ -11,16 +11,18 @@ adjustment_factor = E[r|event,regime_current] / E[r|event,all_regimes]
 
 CBR背离：当前事件收益与历史同类事件收益方向相反（且历史均值|mean|>0.01，样本>=3）
 """
-import pytest
+
 import sys
 from pathlib import Path
+
+import pytest
 
 # 将 memory_l4 注入 sys.path，使 force_vector.* 可导入
 _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.regime_conditional_calibrator import RegimeConditionalCalibrator
+from force_vector.regime_conditional_calibrator import RegimeConditionalCalibrator  # noqa: E402
 
 
 class TestComputeAdjustment:

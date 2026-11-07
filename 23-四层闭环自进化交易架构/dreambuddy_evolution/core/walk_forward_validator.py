@@ -12,6 +12,7 @@ P1-4: 对 promote 的基因做 walk-forward 验证
 防过拟合: 训练集优化的基因必须在未见样本上保持统计显著才算通过。
 参考: dream-science-hypothesis-verification SKILL（样本外验证章节）
 """
+
 from __future__ import annotations
 
 import logging
@@ -19,20 +20,29 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+
 # 延迟导入避免循环依赖
 def _import_check():
     from dreambuddy_evolution.core.gene_promotion_stats import (
+        MIN_PROMOTION_SAMPLES,
+        binomial_test_pvalue,
+        check_promotion_with_stats,
+        cohens_d,
+        win_rate_ci,
+    )
+
+    return (
         check_promotion_with_stats,
         binomial_test_pvalue,
         cohens_d,
         win_rate_ci,
         MIN_PROMOTION_SAMPLES,
     )
-    return check_promotion_with_stats, binomial_test_pvalue, cohens_d, win_rate_ci, MIN_PROMOTION_SAMPLES
 
 
 class WalkForwardResult(dict):
     """walk-forward 验证结果（dict 子类方便字段访问）."""
+
     pass
 
 
@@ -52,15 +62,13 @@ class WalkForwardValidator:
 
     def __init__(self) -> None:
         try:
-            (self._check, self._pval, self._d, self._ci,
-             self._min_n) = _import_check()
+            self._check, self._pval, self._d, self._ci, self._min_n = _import_check()
         except Exception as exc:  # noqa: BLE001
             logger.error(f"[P1-4] 导入 gene_promotion_stats 失败: {exc}")
             self._check = None
             self._min_n = 30
 
-    def validate(self, samples: list[dict[str, Any]],
-                 train_ratio: float = 0.7) -> dict[str, Any]:
+    def validate(self, samples: list[dict[str, Any]], train_ratio: float = 0.7) -> dict[str, Any]:
         """执行 walk-forward 样本外验证.
 
         Args:
@@ -80,14 +88,17 @@ class WalkForwardValidator:
         """
         # FAIL-OPEN: 空样本
         if not samples:
-            return WalkForwardResult({
-                "train_ratio": train_ratio,
-                "n_train": 0, "n_test": 0,
-                "train_decision": {"promote": False},
-                "test_stats": {},
-                "oos_pass": False,
-                "reason": "insufficient samples (empty)",
-            })
+            return WalkForwardResult(
+                {
+                    "train_ratio": train_ratio,
+                    "n_train": 0,
+                    "n_test": 0,
+                    "train_decision": {"promote": False},
+                    "test_stats": {},
+                    "oos_pass": False,
+                    "reason": "insufficient samples (empty)",
+                }
+            )
 
         # clamp train_ratio 到合理范围
         train_ratio = max(0.5, min(0.9, float(train_ratio)))
@@ -99,41 +110,53 @@ class WalkForwardValidator:
         # 样本不足：需要训练集和测试集都满足统计检验最低要求
         min_required = self._min_n * 2  # 训练+测试各需 ≥30
         if n < min_required or n_train < self._min_n or n_test < 5:
-            return WalkForwardResult({
-                "train_ratio": train_ratio,
-                "n_train": n_train, "n_test": n_test,
-                "train_decision": {"promote": False, "reason": f"N={n} < {min_required}"},
-                "test_stats": {},
-                "oos_pass": False,
-                "reason": f"insufficient samples (need {min_required}, got {n})",
-            })
+            return WalkForwardResult(
+                {
+                    "train_ratio": train_ratio,
+                    "n_train": n_train,
+                    "n_test": n_test,
+                    "train_decision": {"promote": False, "reason": f"N={n} < {min_required}"},
+                    "test_stats": {},
+                    "oos_pass": False,
+                    "reason": f"insufficient samples (need {min_required}, got {n})",
+                }
+            )
 
         train_samples = samples[:n_train]
         test_samples = samples[n_train:]
 
         # 训练集决策
         if self._check is None:
-            return WalkForwardResult({
-                "train_ratio": train_ratio,
-                "n_train": n_train, "n_test": n_test,
-                "train_decision": {"promote": False, "reason": "check_promotion_with_stats unavailable"},
-                "test_stats": {},
-                "oos_pass": False,
-                "reason": "FAIL-OPEN: stats module unavailable",
-            })
+            return WalkForwardResult(
+                {
+                    "train_ratio": train_ratio,
+                    "n_train": n_train,
+                    "n_test": n_test,
+                    "train_decision": {
+                        "promote": False,
+                        "reason": "check_promotion_with_stats unavailable",
+                    },
+                    "test_stats": {},
+                    "oos_pass": False,
+                    "reason": "FAIL-OPEN: stats module unavailable",
+                }
+            )
 
         train_decision = self._check(train_samples)
 
         # 训练集未 promote → 直接不通过
         if not train_decision.get("promote"):
-            return WalkForwardResult({
-                "train_ratio": train_ratio,
-                "n_train": n_train, "n_test": n_test,
-                "train_decision": train_decision,
-                "test_stats": {},
-                "oos_pass": False,
-                "reason": f"train not promoted: {train_decision.get('reason')}",
-            })
+            return WalkForwardResult(
+                {
+                    "train_ratio": train_ratio,
+                    "n_train": n_train,
+                    "n_test": n_test,
+                    "train_decision": train_decision,
+                    "test_stats": {},
+                    "oos_pass": False,
+                    "reason": f"train not promoted: {train_decision.get('reason')}",
+                }
+            )
 
         # 测试集统计
         test_stats = self._compute_test_stats(test_samples)
@@ -151,14 +174,17 @@ class WalkForwardValidator:
             f"CI=[{test_stats['ci_lower']:.2f},{test_stats['ci_upper']:.2f}]"
         )
 
-        return WalkForwardResult({
-            "train_ratio": train_ratio,
-            "n_train": n_train, "n_test": n_test,
-            "train_decision": train_decision,
-            "test_stats": test_stats,
-            "oos_pass": oos_pass,
-            "reason": reason,
-        })
+        return WalkForwardResult(
+            {
+                "train_ratio": train_ratio,
+                "n_train": n_train,
+                "n_test": n_test,
+                "train_decision": train_decision,
+                "test_stats": test_stats,
+                "oos_pass": oos_pass,
+                "reason": reason,
+            }
+        )
 
     def _compute_test_stats(self, test_samples: list[dict[str, Any]]) -> dict[str, Any]:
         """计算测试集统计（复用 gene_promotion_stats 原语）."""

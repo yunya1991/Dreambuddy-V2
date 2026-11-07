@@ -21,11 +21,11 @@ Everything else is implementation detail.
 Clock mocking: the manager uses ``time.time()`` for event timestamps,
 which tests patch via ``patch("tee_core.core.failopen.time")``.
 """
+
 from __future__ import annotations
 
 import json
 import os
-import sys
 import time
 import traceback
 from collections import deque
@@ -40,9 +40,15 @@ class FailOpenManager:
 
     # Sentinel meta: keys used when caller doesn't provide parent dict fields
     _PARENT_DEFAULTS: Dict[str, Any] = {
-        "inst_id": "UNKNOWN", "side": "UNKNOWN", "sz": 0.0,
-        "pos_side": "UNKNOWN", "td_mode": "UNKNOWN", "leverage": 0,
-        "decision_px": 0.0, "source": "UNKNOWN", "parent_id": None,
+        "inst_id": "UNKNOWN",
+        "side": "UNKNOWN",
+        "sz": 0.0,
+        "pos_side": "UNKNOWN",
+        "td_mode": "UNKNOWN",
+        "leverage": 0,
+        "decision_px": 0.0,
+        "source": "UNKNOWN",
+        "parent_id": None,
     }
 
     def __init__(
@@ -52,9 +58,7 @@ class FailOpenManager:
         alert_window_sec: int = _cfg.FAILOPEN_ALERT_WINDOW_SEC,
         alert_count: int = _cfg.FAILOPEN_ALERT_COUNT,
     ) -> None:
-        self.log_path: Path = (
-            Path(log_path) if log_path else Path(_cfg.FAILOPEN_LOG_PATH)
-        )
+        self.log_path: Path = Path(log_path) if log_path else Path(_cfg.FAILOPEN_LOG_PATH)
         self._ensure_log_parent_exists()
         self.lark_bridge = lark_bridge  # None allowed → no alerts ever sent.
         self.alert_window_sec: int = int(max(1, alert_window_sec))
@@ -92,10 +96,12 @@ class FailOpenManager:
 
             # 2) Update sliding count → maybe trigger an alert.
             self._record_and_alert_if_threshold(
-                ts=ts, exc=e, parent_req=parent_req,
-                lark_bridge=(lark_bridge_override
-                             if lark_bridge_override is not None
-                             else self.lark_bridge),
+                ts=ts,
+                exc=e,
+                parent_req=parent_req,
+                lark_bridge=(
+                    lark_bridge_override if lark_bridge_override is not None else self.lark_bridge
+                ),
             )
 
             # 3) Call the fallback and return whatever it produced. If
@@ -113,7 +119,9 @@ class FailOpenManager:
                 }
                 try:
                     self._append_log_entry(
-                        ts=time.time(), exc=fb_exc, parent_req=parent_req,
+                        ts=time.time(),
+                        exc=fb_exc,
+                        parent_req=parent_req,
                         extra_tag="FALLBACK_RUNNER_FAILED",
                     )
                 except BaseException:  # noqa: BLE001
@@ -139,12 +147,14 @@ class FailOpenManager:
         frame_list: list[dict] = []
         for f in tb_frames:
             try:
-                frame_list.append({
-                    "file": f.filename,
-                    "line": f.lineno,
-                    "func": f.name,
-                    "code": f.line or "",
-                })
+                frame_list.append(
+                    {
+                        "file": f.filename,
+                        "line": f.lineno,
+                        "func": f.name,
+                        "code": f.line or "",
+                    }
+                )
             except Exception:  # noqa: BLE001
                 frame_list.append({"raw": repr(f)})
 
@@ -175,20 +185,21 @@ class FailOpenManager:
                 if sf.name in skip_names:
                     continue
                 try:
-                    supplemental.append({
-                        "file": sf.filename,
-                        "line": sf.lineno,
-                        "func": sf.name,
-                        "code": sf.line or "",
-                        "supplemental": True,
-                    })
+                    supplemental.append(
+                        {
+                            "file": sf.filename,
+                            "line": sf.lineno,
+                            "func": sf.name,
+                            "code": sf.line or "",
+                            "supplemental": True,
+                        }
+                    )
                 except Exception:  # noqa: BLE001
                     pass
             while len(frame_list) < 6 and supplemental:
                 frame_list.append(supplemental.pop())  # newest (closest) first
 
-        tb_text_lines = traceback.format_exception(type(exc), exc,
-                                                   exc.__traceback__)
+        tb_text_lines = traceback.format_exception(type(exc), exc, exc.__traceback__)
 
         tb_text = "".join(tb_text_lines)
         record: Dict[str, Any] = {
@@ -201,8 +212,7 @@ class FailOpenManager:
             "traceback_frames_count": len(frame_list),
             "traceback_frames": frame_list,
             "parent": {
-                k: parent_req.get(k, self._PARENT_DEFAULTS[k])
-                for k in self._PARENT_DEFAULTS
+                k: parent_req.get(k, self._PARENT_DEFAULTS[k]) for k in self._PARENT_DEFAULTS
             },
         }
         if extra_tag:
@@ -245,8 +255,7 @@ class FailOpenManager:
         #    have passed whichever). For safety: a minimum interval of
         #    alert_window_sec between two alerts.
         now = ts
-        if (self._last_alert_ts is not None
-                and now - self._last_alert_ts < self.alert_window_sec):
+        if self._last_alert_ts is not None and now - self._last_alert_ts < self.alert_window_sec:
             return
 
         # 4) Actually try to alert. On any bridge problem, just log it.
@@ -255,13 +264,17 @@ class FailOpenManager:
             if lark_bridge is None:
                 return
             md_body = self._build_alert_md_body(
-                now=now, exc=exc, parent_req=parent_req,
+                now=now,
+                exc=exc,
+                parent_req=parent_req,
                 event_count=len(self._fail_events),
             )
             lark_bridge.send_alert(
-                title=("TEE FAIL-OPEN: "
-                       f"{self.alert_count}× events in last "
-                       f"{self.alert_window_sec}s"),
+                title=(
+                    "TEE FAIL-OPEN: "
+                    f"{self.alert_count}× events in last "
+                    f"{self.alert_window_sec}s"
+                ),
                 level="critical",
                 message=(f"{type(exc).__name__}: {exc}"[:200]),
                 details={
@@ -276,7 +289,9 @@ class FailOpenManager:
         except BaseException as alert_exc:  # noqa: BLE001 (TR-8.3 fail-safe)
             try:
                 self._append_log_entry(
-                    ts=time.time(), exc=alert_exc, parent_req=parent_req,
+                    ts=time.time(),
+                    exc=alert_exc,
+                    parent_req=parent_req,
                     extra_tag="LARK_ALERT_FAILED",
                 )
             except BaseException:  # noqa: BLE001
@@ -285,7 +300,9 @@ class FailOpenManager:
     @staticmethod
     def _build_alert_md_body(
         *,
-        now: float, exc: BaseException, parent_req: Dict[str, Any],
+        now: float,
+        exc: BaseException,
+        parent_req: Dict[str, Any],
         event_count: int,
     ) -> str:
         inst = str(parent_req.get("inst_id") or "?")

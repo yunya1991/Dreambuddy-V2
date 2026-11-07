@@ -14,15 +14,33 @@ def test_governance_changeset_apply_emits_restart_after_apply_audit(monkeypatch)
     monkeypatch.setattr(
         svc,
         "_governance_policy_eval",
-        lambda policy, changeset: {"ok": True, "decision": "pass", "allowed_actions": ["config.apply"], "policy_ref": str((policy or {}).get("ref") or "")},
+        lambda policy, changeset: {
+            "ok": True,
+            "decision": "pass",
+            "allowed_actions": ["config.apply"],
+            "policy_ref": str((policy or {}).get("ref") or ""),
+        },
     )
-    monkeypatch.setattr(svc, "_agent_config_patch_validate", lambda patch, **_: {"ok": True, "patch": (patch if isinstance(patch, dict) else {})})
-    monkeypatch.setattr(svc, "_config_set_impl", lambda patch, confirm_live, action: ({"ok": True}, 200))
+    monkeypatch.setattr(
+        svc,
+        "_agent_config_patch_validate",
+        lambda patch, **_: {"ok": True, "patch": (patch if isinstance(patch, dict) else {})},
+    )
+    monkeypatch.setattr(
+        svc, "_config_set_impl", lambda patch, confirm_live, action: ({"ok": True}, 200)
+    )
 
     monkeypatch.setattr(
         svc,
         "_self_restart_schedule",
-        lambda *, now_ms, reason, delay_sec, exit_code: {"ok": True, "scheduled": True, "ts": int(now_ms), "reason": str(reason), "delay_sec": float(delay_sec), "exit_code": int(exit_code)},
+        lambda *, now_ms, reason, delay_sec, exit_code: {
+            "ok": True,
+            "scheduled": True,
+            "ts": int(now_ms),
+            "reason": str(reason),
+            "delay_sec": float(delay_sec),
+            "exit_code": int(exit_code),
+        },
     )
 
     outbox = []
@@ -49,7 +67,12 @@ def test_governance_changeset_apply_emits_restart_after_apply_audit(monkeypatch)
     )
     assert r.status_code == 200
 
-    audit_hits = [x for x in outbox if x["name"] == "audit_actions.jsonl" and x["item"].get("name") == "sys_monitor.restart_after_apply"]
+    audit_hits = [
+        x
+        for x in outbox
+        if x["name"] == "audit_actions.jsonl"
+        and x["item"].get("name") == "sys_monitor.restart_after_apply"
+    ]
     assert len(audit_hits) == 1
     payload = audit_hits[0]["item"].get("payload") or {}
     assert payload.get("trace_id")

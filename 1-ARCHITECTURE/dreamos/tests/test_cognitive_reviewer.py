@@ -1,12 +1,12 @@
 """CognitiveReviewer test suite."""
-import pytest
+
+import sys  # noqa: I001
 from pathlib import Path
-import sys
 
 BASE = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE))
 
-from dreamos.capabilities.trading.cognitive_reviewer import CognitiveReviewer
+from dreamos.capabilities.trading.cognitive_reviewer import CognitiveReviewer  # noqa: E402
 
 
 def test_cognitive_reviewer_initialization():
@@ -70,11 +70,12 @@ def test_cognitive_reviewer_review_losing_trade():
     assert review["score"] < 0.5
     assert len(review["lessons"]) > 0
     # Should extract lesson about timeout exit with max addons
-    lesson_texts = [str(l) for l in review["lessons"]]
+    lesson_texts = [str(l) for l in review["lessons"]]  # noqa: E741
     assert any("timeout" in t.lower() or "addon" in t.lower() for t in lesson_texts)
 
 
 # ---- Task 2: persist_lessons ----
+
 
 def test_cognitive_reviewer_persist_lessons(tmp_path):
     """Test persist_lessons saves lessons to JSON file."""
@@ -82,10 +83,18 @@ def test_cognitive_reviewer_persist_lessons(tmp_path):
 
     reviewer = CognitiveReviewer()
     trade = {
-        "symbol": "BTC", "direction": "LONG", "entry_price": 100000.0,
-        "exit_price": 105000.0, "position_size": 0.01, "confidence": 0.75,
-        "hexagram": {}, "addon_count": 0, "hold_hours": 5.0,
-        "exit_reason": "ATR trailing TP hit", "pnl_usdt": 50.0, "pnl_pct": 0.05,
+        "symbol": "BTC",
+        "direction": "LONG",
+        "entry_price": 100000.0,
+        "exit_price": 105000.0,
+        "position_size": 0.01,
+        "confidence": 0.75,
+        "hexagram": {},
+        "addon_count": 0,
+        "hold_hours": 5.0,
+        "exit_reason": "ATR trailing TP hit",
+        "pnl_usdt": 50.0,
+        "pnl_pct": 0.05,
     }
     reviewer.review(trade)
 
@@ -103,10 +112,11 @@ def test_cognitive_reviewer_persist_lessons(tmp_path):
 
 # ---- Task 3: CognitiveReviewerNode ----
 
+
 def test_cognitive_reviewer_node():
     """Test CognitiveReviewerNode node wrapper."""
     from dreamos.capabilities.trading.cognitive_reviewer import CognitiveReviewerNode
-    from dreamos.shared.state import State, NodeResult, new_state
+    from dreamos.shared.state import NodeResult, new_state
 
     node = CognitiveReviewerNode()
     assert node.node_id == "COGNITIVE_REVIEW"
@@ -141,10 +151,14 @@ def test_cognitive_reviewer_node():
 
 # ---- Task 4: Phase 5 integration test ----
 
+
 def test_phase5_integration():
     """Phase 5 end-to-end: review -> lessons -> context -> persist -> node."""
-    import json
-    from dreamos.capabilities.trading.cognitive_reviewer import CognitiveReviewer, CognitiveReviewerNode
+
+    from dreamos.capabilities.trading.cognitive_reviewer import (
+        CognitiveReviewer,
+        CognitiveReviewerNode,
+    )
     from dreamos.shared.state import new_state
 
     # Step 1: Initialize reviewer
@@ -153,11 +167,18 @@ def test_phase5_integration():
 
     # Step 2: Review winning trade
     win_trade = {
-        "symbol": "BTC", "direction": "LONG", "entry_price": 100000.0,
-        "exit_price": 105000.0, "position_size": 0.01, "confidence": 0.75,
-        "hexagram": {"original_gua": "Qian_1"}, "addon_count": 0,
-        "hold_hours": 5.0, "exit_reason": "ATR trailing TP hit",
-        "pnl_usdt": 50.0, "pnl_pct": 0.05,
+        "symbol": "BTC",
+        "direction": "LONG",
+        "entry_price": 100000.0,
+        "exit_price": 105000.0,
+        "position_size": 0.01,
+        "confidence": 0.75,
+        "hexagram": {"original_gua": "Qian_1"},
+        "addon_count": 0,
+        "hold_hours": 5.0,
+        "exit_reason": "ATR trailing TP hit",
+        "pnl_usdt": 50.0,
+        "pnl_pct": 0.05,
     }
     win_review = reviewer.review(win_trade)
     assert win_review["assessment"] == "GOOD"
@@ -165,10 +186,18 @@ def test_phase5_integration():
 
     # Step 3: Review losing trade
     loss_trade = {
-        "symbol": "DOGE", "direction": "SHORT", "entry_price": 0.12,
-        "exit_price": 0.15, "position_size": 1000.0, "confidence": 0.40,
-        "hexagram": {}, "addon_count": 3, "hold_hours": 38.0,
-        "exit_reason": "Timeout exit", "pnl_usdt": -30.0, "pnl_pct": -0.25,
+        "symbol": "DOGE",
+        "direction": "SHORT",
+        "entry_price": 0.12,
+        "exit_price": 0.15,
+        "position_size": 1000.0,
+        "confidence": 0.40,
+        "hexagram": {},
+        "addon_count": 3,
+        "hold_hours": 38.0,
+        "exit_reason": "Timeout exit",
+        "pnl_usdt": -30.0,
+        "pnl_pct": -0.25,
     }
     loss_review = reviewer.review(loss_trade)
     assert loss_review["assessment"] == "BAD"

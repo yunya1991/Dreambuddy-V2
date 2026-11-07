@@ -5,17 +5,21 @@ CBR 分片检索器 — 借鉴 Grok Build 的「子 Agent 窄 context 并行探�
 将大案例库先按 inst_id/regime/quality 分片，各分片独立检索，再聚合排序。
 支持 5 级降级检索，确保极端情况下也能返回结果。
 """
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple
-from pathlib import Path
+
 import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.cbr_engine import CBRCase, CBRQuery, RetrievedCase
-from scripts.memory_l4.cbr_similarity import SimilarityAggregator, build_default_case_retriever
+from scripts.memory_l4.cbr_engine import CBRCase, CBRQuery, RetrievedCase  # noqa: E402, I001
+from scripts.memory_l4.cbr_similarity import (  # noqa: E402
+    SimilarityAggregator,
+    build_default_case_retriever,
+)  # noqa: E402
 
 
 @dataclass
@@ -64,7 +68,9 @@ class ShardedCaseBase:
     def get_shard(self, spec: ShardSpec) -> List[CBRCase]:
         inst_key = spec.inst_id if spec.inst_id else "ALL"
         regime_key = spec.regime if spec.regime else "ALL"
-        quality_key = "HIGH" if spec.quality == "high" else ("LOW" if spec.quality == "low" else "ALL")
+        quality_key = (
+            "HIGH" if spec.quality == "high" else ("LOW" if spec.quality == "low" else "ALL")
+        )
 
         key = f"{inst_key}__{regime_key}__{quality_key}"
         return self._shards.get(key, [])
@@ -74,9 +80,7 @@ class ShardedCaseBase:
             "total_cases": sum(len(cases) for cases in self._shards.values()) // 4,
             "total_shards": len(self._shards),
         }
-        top_shards = sorted(
-            self._shards.items(), key=lambda x: len(x[1]), reverse=True
-        )[:10]
+        top_shards = sorted(self._shards.items(), key=lambda x: len(x[1]), reverse=True)[:10]
         for key, cases in top_shards:
             stats[f"shard_{key[:30]}"] = len(cases)
         return stats
@@ -90,8 +94,8 @@ class ShardedRetriever:
         "ranging_down": ["trend_down", "sideways"],
         "sideways": ["trend_up", "trend_down", "ranging_up", "ranging_down"],
         "recovery|sprout": ["trend_up", "ranging_up"],
-        "ranging_down": ["trend_down", "sideways"],
-        "ranging_up": ["trend_up", "sideways"],
+        "ranging_down": ["trend_down", "sideways"],  # noqa: F601
+        "ranging_up": ["trend_up", "sideways"],  # noqa: F601
         "bull": ["trend_up", "ranging_up"],
         "bear": ["trend_down", "ranging_down"],
     }
@@ -168,9 +172,7 @@ class ShardedRetriever:
         cases = self.sharded_base.get_shard(spec)
         return self._score_cases(qdict, cases)
 
-    def _score_cases(
-        self, qdict: Dict, cases: List[CBRCase]
-    ) -> List[Tuple[CBRCase, float]]:
+    def _score_cases(self, qdict: Dict, cases: List[CBRCase]) -> List[Tuple[CBRCase, float]]:
         scored = []
         for case in cases:
             cdict = case.to_feature_dict()

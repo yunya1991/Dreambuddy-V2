@@ -13,12 +13,13 @@
 - wdh 使用 _wdh_sub_key_splitter，拆分 4 组（weekly_accum/daily_confirm/
   hourly_timing/qual_trigger）。
 """
+
 from __future__ import annotations
 
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -102,8 +103,12 @@ def compute(
         enabled = ["bagua", "cycle"]
     try:
         features, gua_map = _compute_via_fr(
-            df=df, ref_df=ref_df, macro_df=macro_df,
-            symbol=symbol, enabled=enabled, config=config,
+            df=df,
+            ref_df=ref_df,
+            macro_df=macro_df,
+            symbol=symbol,
+            enabled=enabled,
+            config=config,
         )
     except Exception as exc:
         logger.warning("[yijing_cycle] compute_all failed (%s) — returning empty frame", exc)

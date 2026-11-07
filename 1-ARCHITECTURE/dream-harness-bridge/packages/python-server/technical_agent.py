@@ -5,6 +5,7 @@
 输出: SubagentOutput (summary + signals + charts)
 图表: K线+指标叠加 (candlestick)
 """
+
 from __future__ import annotations
 
 import traceback
@@ -18,7 +19,7 @@ class TechnicalAgent:
 
     def __init__(self, llm_fn: Optional[Callable[[str], str]] = None):
         """Args:
-            llm_fn: LLM 提炼函数 (prompt) -> str. None 时规则生成 (FAIL-OPEN).
+        llm_fn: LLM 提炼函数 (prompt) -> str. None 时规则生成 (FAIL-OPEN).
         """
         self._llm_fn = llm_fn
 
@@ -44,7 +45,9 @@ class TechnicalAgent:
         # D3: 填充 reasoning_chain + evidence_refs + artifact_uri
         reasoning_chain = " | ".join(rationale) if rationale else ""
         evidence_refs = [f"indicator:{k}" for k in indicators.keys()]
-        artifact_uri = f"artifact://technical/{hash(str(indicators)) % 100000:05d}" if indicators else None
+        artifact_uri = (
+            f"artifact://technical/{hash(str(indicators)) % 100000:05d}" if indicators else None
+        )
 
         return SubagentOutput(
             module="technical",
@@ -69,11 +72,9 @@ class TechnicalAgent:
 
         # EMA 趋势信号
         if price > ema20 > ema50:
-            signals.append(Signal("EMA排列", f"{price:.2f}>EMA20>EMA50",
-                                  "long", 0.7))
+            signals.append(Signal("EMA排列", f"{price:.2f}>EMA20>EMA50", "long", 0.7))
         elif price < ema20 < ema50:
-            signals.append(Signal("EMA排列", f"{price:.2f}<EMA20<EMA50",
-                                  "short", 0.7))
+            signals.append(Signal("EMA排列", f"{price:.2f}<EMA20<EMA50", "short", 0.7))
 
         # RSI 信号
         if rsi14 < 30:
@@ -91,23 +92,24 @@ class TechnicalAgent:
 
         return signals
 
-    def _generate_summary(self, signals: List[Signal], rationale: List[str],
-                          direction: str, confidence: float) -> str:
+    def _generate_summary(
+        self, signals: List[Signal], rationale: List[str], direction: str, confidence: float
+    ) -> str:
         """生成人读摘要 (LLM 或规则, HC-1: 只提炼不生成)"""
         if self._llm_fn is not None:
             try:
                 prompt = (
                     f"技术分析摘要: 方向={direction}, 置信度={confidence:.2f}, "
                     f"信号={[s.to_dict() for s in signals]}, "
-                    f"理由={rationale[:3]}")
+                    f"理由={rationale[:3]}"
+                )
                 return self._llm_fn(prompt)[:300]
             except Exception:  # noqa: BLE001 FAIL-OPEN
                 pass
         # 规则生成
         long_count = sum(1 for s in signals if s.direction == "long")
         short_count = sum(1 for s in signals if s.direction == "short")
-        return (f"技术面{direction}({confidence:.0%}), "
-                f"多信号{long_count}/空信号{short_count}")
+        return f"技术面{direction}({confidence:.0%}), " f"多信号{long_count}/空信号{short_count}"
 
     def _generate_charts(self, indicators: Dict[str, Any]) -> List[ChartSpec]:
         """生成图表配置 (HC-6: ECharts option 格式)"""
@@ -126,15 +128,19 @@ class TechnicalAgent:
                 "ema50": ema50,
                 "rsi14": rsi14,
             }
-            charts.append(ChartSpec(
-                type="line",
-                title="技术指标概览",
-                data=chart_data,
-                config={
-                    "yAxis": [{"type": "value", "name": "价格"},
-                              {"type": "value", "name": "RSI"}],
-                },
-            ))
+            charts.append(
+                ChartSpec(
+                    type="line",
+                    title="技术指标概览",
+                    data=chart_data,
+                    config={
+                        "yAxis": [
+                            {"type": "value", "name": "价格"},
+                            {"type": "value", "name": "RSI"},
+                        ],
+                    },
+                )
+            )
 
         return charts
 
@@ -143,6 +149,7 @@ def handle_technical_agent(params: dict) -> dict:
     """IPC handler: technical-agent"""
     try:
         from subagent_registry import get_handler_llm_fn
+
         agent = TechnicalAgent(llm_fn=get_handler_llm_fn())
         output = agent.execute(params.get("node_output", {}))
         return {"ok": True, "output": output.to_dict()}

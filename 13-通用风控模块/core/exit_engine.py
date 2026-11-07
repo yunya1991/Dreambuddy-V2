@@ -72,7 +72,7 @@ class ExitEngine:
         extra = extra or {}
         best_result = ExitResult(action=ExitAction.HOLD, reason="")
 
-        priority_order = [
+        priority_order = [  # noqa: F841
             ExitPriority.P0_L0_HARD,
             ExitPriority.P1_VALUE_RISK,
             ExitPriority.P2_TRIPLE_BARRIER,

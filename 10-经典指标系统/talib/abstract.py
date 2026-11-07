@@ -52,7 +52,9 @@ def RSI(v: Any, timeperiod: int = 14) -> pd.Series:
 def TRANGE(v: Any) -> pd.Series:
     high, low, close, _ = _ohlcv(v)
     prev_close = close.shift(1)
-    tr = pd.concat([(high - low).abs(), (high - prev_close).abs(), (low - prev_close).abs()], axis=1).max(axis=1)
+    tr = pd.concat(
+        [(high - low).abs(), (high - prev_close).abs(), (low - prev_close).abs()], axis=1
+    ).max(axis=1)
     return tr.fillna(0.0)
 
 
@@ -61,7 +63,10 @@ def ATR(*args: Any, timeperiod: int = 14) -> pd.Series:
         high = pd.to_numeric(args[0], errors="coerce")
         low = pd.to_numeric(args[1], errors="coerce")
         close = pd.to_numeric(args[2], errors="coerce")
-        tr = pd.concat([(high - low).abs(), (high - close.shift(1)).abs(), (low - close.shift(1)).abs()], axis=1).max(axis=1)
+        tr = pd.concat(
+            [(high - low).abs(), (high - close.shift(1)).abs(), (low - close.shift(1)).abs()],
+            axis=1,
+        ).max(axis=1)
         return tr.ewm(alpha=1 / max(1, int(timeperiod)), adjust=False).mean().fillna(0.0)
     tr = TRANGE(args[0] if args else pd.Series(dtype=float))
     return tr.ewm(alpha=1 / max(1, int(timeperiod)), adjust=False).mean().fillna(0.0)
@@ -176,7 +181,9 @@ def CCI(*args: Any, timeperiod: int = 14) -> pd.Series:
     return ((tp - tp_sma) / (0.015 * tp_mad.replace(0, np.nan))).fillna(0.0)
 
 
-def BBANDS(v: Any, timeperiod: int = 5, nbdevup: float = 2.0, nbdevdn: float = 2.0, matype: int = 0):
+def BBANDS(
+    v: Any, timeperiod: int = 5, nbdevup: float = 2.0, nbdevdn: float = 2.0, matype: int = 0
+):
     s = _as_series(v if not isinstance(v, pd.DataFrame) else v.get("close"))
     mid = s.rolling(max(1, int(timeperiod)), min_periods=1).mean()
     std = s.rolling(max(1, int(timeperiod)), min_periods=1).std(ddof=0).fillna(0.0)
@@ -187,7 +194,13 @@ def BBANDS(v: Any, timeperiod: int = 5, nbdevup: float = 2.0, nbdevdn: float = 2
     return up, mid, dn
 
 
-def STOCHRSI(v: Any, timeperiod: int = 14, fastk_period: int = 5, fastd_period: int = 3, fastd_matype: int = 0) -> Dict[str, pd.Series]:
+def STOCHRSI(
+    v: Any,
+    timeperiod: int = 14,
+    fastk_period: int = 5,
+    fastd_period: int = 3,
+    fastd_matype: int = 0,
+) -> Dict[str, pd.Series]:
     rsi = RSI(v, timeperiod=timeperiod)
     lo = rsi.rolling(max(1, int(fastk_period)), min_periods=1).min()
     hi = rsi.rolling(max(1, int(fastk_period)), min_periods=1).max()
@@ -212,7 +225,11 @@ def SUPERTREND(v: Any, period: int = 10, multiplier: float = 3.0):
     high, low, close, _ = _ohlcv(v)
     n = len(close)
     if n == 0:
-        return {"upperband": pd.Series(dtype=float), "lowerband": pd.Series(dtype=float), "direction": pd.Series(dtype=float)}
+        return {
+            "upperband": pd.Series(dtype=float),
+            "lowerband": pd.Series(dtype=float),
+            "direction": pd.Series(dtype=float),
+        }
     atr = ATR(v, timeperiod=period)
     hl2 = (high + low) / 2.0
     basic_ub = hl2 + float(multiplier) * atr
@@ -226,8 +243,12 @@ def SUPERTREND(v: Any, period: int = 10, multiplier: float = 3.0):
     final_ub[0] = ub[0]
     final_lb[0] = lb[0]
     for i in range(1, n):
-        final_ub[i] = ub[i] if (ub[i] < final_ub[i - 1] or c[i - 1] > final_ub[i - 1]) else final_ub[i - 1]
-        final_lb[i] = lb[i] if (lb[i] > final_lb[i - 1] or c[i - 1] < final_lb[i - 1]) else final_lb[i - 1]
+        final_ub[i] = (
+            ub[i] if (ub[i] < final_ub[i - 1] or c[i - 1] > final_ub[i - 1]) else final_ub[i - 1]
+        )
+        final_lb[i] = (
+            lb[i] if (lb[i] > final_lb[i - 1] or c[i - 1] < final_lb[i - 1]) else final_lb[i - 1]
+        )
         if trend[i - 1] == 1:
             trend[i] = -1 if c[i] <= final_lb[i] else 1
         else:
@@ -247,9 +268,14 @@ def ICHIMOKU(v: Any, tenkan: int = 9, kijun: int = 26, senkou_b: int = 52, displ
     high, low, close, _ = _ohlcv(v)
     n = len(close)
     if n == 0:
-        return {"tenkan_sen": pd.Series(dtype=float), "kijun_sen": pd.Series(dtype=float),
-                "span_a": pd.Series(dtype=float), "span_b": pd.Series(dtype=float),
-                "cloud_top": pd.Series(dtype=float), "cloud_bottom": pd.Series(dtype=float)}
+        return {
+            "tenkan_sen": pd.Series(dtype=float),
+            "kijun_sen": pd.Series(dtype=float),
+            "span_a": pd.Series(dtype=float),
+            "span_b": pd.Series(dtype=float),
+            "cloud_top": pd.Series(dtype=float),
+            "cloud_bottom": pd.Series(dtype=float),
+        }
     t = max(1, int(tenkan))
     k = max(1, int(kijun))
     sb = max(1, int(senkou_b))
@@ -270,12 +296,15 @@ def ICHIMOKU(v: Any, tenkan: int = 9, kijun: int = 26, senkou_b: int = 52, displ
 
 
 def KELTNER(v: Any, ema_period: int = 20, atr_period: int = 10, mult: float = 2.0):
-    """Keltner通道。返回 dict: {"upper", "middle", "lower"}
-    """
+    """Keltner通道。返回 dict: {"upper", "middle", "lower"}"""
     high, low, close, _ = _ohlcv(v)
     n = len(close)
     if n == 0:
-        return {"upper": pd.Series(dtype=float), "middle": pd.Series(dtype=float), "lower": pd.Series(dtype=float)}
+        return {
+            "upper": pd.Series(dtype=float),
+            "middle": pd.Series(dtype=float),
+            "lower": pd.Series(dtype=float),
+        }
     middle = EMA(v, timeperiod=ema_period)
     atr = ATR(v, timeperiod=atr_period)
     upper = middle + float(mult) * atr
@@ -284,12 +313,15 @@ def KELTNER(v: Any, ema_period: int = 20, atr_period: int = 10, mult: float = 2.
 
 
 def DONCHIAN(v: Any, period: int = 20):
-    """Donchian通道。返回 dict: {"upper", "middle", "lower"}
-    """
+    """Donchian通道。返回 dict: {"upper", "middle", "lower"}"""
     high, low, close, _ = _ohlcv(v)
     n = len(close)
     if n == 0:
-        return {"upper": pd.Series(dtype=float), "middle": pd.Series(dtype=float), "lower": pd.Series(dtype=float)}
+        return {
+            "upper": pd.Series(dtype=float),
+            "middle": pd.Series(dtype=float),
+            "lower": pd.Series(dtype=float),
+        }
     p = max(1, int(period))
     upper = high.rolling(p, min_periods=1).max()
     lower = low.rolling(p, min_periods=1).min()
@@ -314,8 +346,16 @@ def AROON(v: Any, period: int = 25):
     if n == 0:
         return {"aroondown": pd.Series(dtype=float), "aroonup": pd.Series(dtype=float)}
     p = max(1, int(period))
-    aroon_up = high.rolling(p, min_periods=1).apply(lambda x: (x.argmax()) / (len(x) - 1) * 100, raw=False).fillna(0.0)
-    aroon_down = low.rolling(p, min_periods=1).apply(lambda x: (x.argmin()) / (len(x) - 1) * 100, raw=False).fillna(0.0)
+    aroon_up = (
+        high.rolling(p, min_periods=1)
+        .apply(lambda x: (x.argmax()) / (len(x) - 1) * 100, raw=False)
+        .fillna(0.0)
+    )
+    aroon_down = (
+        low.rolling(p, min_periods=1)
+        .apply(lambda x: (x.argmin()) / (len(x) - 1) * 100, raw=False)
+        .fillna(0.0)
+    )
     return {"aroondown": aroon_down, "aroonup": aroon_up}
 
 
@@ -352,12 +392,12 @@ def ELDER_RAY(v: Any, period: int = 13):
     """
     Elder-ray 指标（埃尔德原创指标）
     用于判断趋势力度的衰竭和逆转
-    
+
     Bull Power = High - EMA(13)
     Bear Power = Low - EMA(13)
-    
+
     返回 dict: {"bull_power", "bear_power", "ema"}
-    
+
     解读：
     - Bull Power > 0 且上升：多头力量增强
     - Bull Power > 0 但下降：多头力量衰竭

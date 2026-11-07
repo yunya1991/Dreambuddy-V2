@@ -2,7 +2,7 @@
 
 import statistics
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from .backtest import BacktestResult
 
@@ -59,12 +59,8 @@ class OverfittingDetector:
 
         details = {
             "gap_check": "FAIL" if gap > self.gap_threshold else "PASS",
-            "fold_var_check": (
-                "FAIL" if fold_var > self.fold_var_threshold else "PASS"
-            ),
-            "regime_check": (
-                "FAIL" if regime_max_gap > self.regime_gap_threshold else "PASS"
-            ),
+            "fold_var_check": ("FAIL" if fold_var > self.fold_var_threshold else "PASS"),
+            "regime_check": ("FAIL" if regime_max_gap > self.regime_gap_threshold else "PASS"),
         }
 
         return OverfitReport(
@@ -82,7 +78,7 @@ class OverfittingDetector:
             return 0.0
 
         accuracies = []
-        for reg, accs in by_regime.items():
+        for reg, accs in by_regime.items():  # noqa: B007
             if accs:
                 accuracies.append(accs[0])
 

@@ -27,17 +27,24 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, Optional
 
-from .base import BaseAdapter
+from dreamos.shared.state import NodeResult, NodeStatus, State
+
 from ..registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from .base import BaseAdapter
 
 
 class FunctionNode(BaseNode):
     """将函数包装为节点"""
 
-    def __init__(self, handler: Callable[[State], Any],
-                 node_id: str, name: str = "", chain: str = "",
-                 tags: Optional[list] = None, **kwargs):
+    def __init__(
+        self,
+        handler: Callable[[State], Any],
+        node_id: str,
+        name: str = "",
+        chain: str = "",
+        tags: Optional[list] = None,
+        **kwargs,
+    ):
         super().__init__(config=kwargs)
         self._handler = handler
         self.node_id = node_id
@@ -83,8 +90,7 @@ class FunctionAdapter(BaseAdapter):
             name=kwargs.get("name", ""),
             chain=kwargs.get("chain", ""),
             tags=kwargs.get("tags"),
-            **{k: v for k, v in kwargs.items()
-               if k not in ("node_id", "name", "chain", "tags")}
+            **{k: v for k, v in kwargs.items() if k not in ("node_id", "name", "chain", "tags")},
         )
 
     def to_node(self, config: Dict[str, Any]) -> FunctionNode:
@@ -97,6 +103,9 @@ class FunctionAdapter(BaseAdapter):
             name=config.get("name", ""),
             chain=config.get("chain", ""),
             tags=config.get("tags"),
-            **{k: v for k, v in config.items()
-               if k not in ("type", "handler", "node_id", "name", "chain", "tags")}
+            **{
+                k: v
+                for k, v in config.items()
+                if k not in ("type", "handler", "node_id", "name", "chain", "tags")
+            },
         )

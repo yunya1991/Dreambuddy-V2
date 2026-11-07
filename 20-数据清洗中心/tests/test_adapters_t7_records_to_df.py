@@ -8,6 +8,7 @@
   T7-4  timeseries records 多资产拼接 → asset 列完整
   T7-5  空 record → 空 DataFrame 仍返回（不抛）
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
@@ -23,16 +24,21 @@ def _iso(ts: datetime) -> str:
 def _ohlcv_record(asset: str) -> DataRecord:
     ts = datetime.now(timezone.utc) - timedelta(minutes=5)
     rows = pd.date_range(ts - timedelta(hours=3), periods=4, freq="1h")
-    df = pd.DataFrame({
-        "timestamp": [_iso(t) for t in rows],
-        "close": [100.0, 101.0, 102.0, 103.0],
-        "volume": [10, 20, 30, 40],
-    })
+    df = pd.DataFrame(
+        {
+            "timestamp": [_iso(t) for t in rows],
+            "close": [100.0, 101.0, 102.0, 103.0],
+            "volume": [10, 20, 30, 40],
+        }
+    )
     return DataRecord(
-        source="yfinance", category="finance", sub_category="ohlcv",
+        source="yfinance",
+        category="finance",
+        sub_category="ohlcv",
         timestamp=_iso(ts),
         metrics={"asset": asset, "pair": f"{asset}-USD"},
-        events=[], timeseries=df.to_dict(orient="records"),
+        events=[],
+        timeseries=df.to_dict(orient="records"),
         raw={},
     )
 
@@ -40,10 +46,14 @@ def _ohlcv_record(asset: str) -> DataRecord:
 def _macro_record() -> DataRecord:
     ts = datetime.now(timezone.utc) - timedelta(hours=24)
     return DataRecord(
-        source="fred", category="macro", sub_category="m2",
+        source="fred",
+        category="macro",
+        sub_category="m2",
         timestamp=_iso(ts),
         metrics={"asset": "USA", "M2NS": 21.5, "M2SL": 21.4},
-        events=[], timeseries=[], raw={},
+        events=[],
+        timeseries=[],
+        raw={},
     )
 
 
@@ -51,13 +61,21 @@ def _news_record() -> DataRecord:
     ts = datetime.now(timezone.utc) - timedelta(minutes=30)
     events = [
         {"timestamp": _iso(ts - timedelta(minutes=2)), "title": "美联储加息25bp", "importance": 5},
-        {"timestamp": _iso(ts - timedelta(minutes=1)), "title": "BTC现货ETF净流入", "importance": 3},
+        {
+            "timestamp": _iso(ts - timedelta(minutes=1)),
+            "title": "BTC现货ETF净流入",
+            "importance": 3,
+        },
     ]
     return DataRecord(
-        source="rsshub", category="news", sub_category="economy",
+        source="rsshub",
+        category="news",
+        sub_category="economy",
         timestamp=_iso(ts),
         metrics={"asset": "MKT"},
-        events=events, timeseries=[], raw={},
+        events=events,
+        timeseries=[],
+        raw={},
     )
 
 

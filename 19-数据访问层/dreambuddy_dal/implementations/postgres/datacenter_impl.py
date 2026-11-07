@@ -17,6 +17,7 @@ DSN 发现（优先级由高到低）：
   1. DAL_DC_PG_URL 环境变量（完整 DSN）
   2. DATA_CENTER_PG_HOST/PORT/USER/PASSWORD/DB 组装（密码 fallback：18 中心 .env 提取，与原 dc_pg 一致）
 """
+
 from __future__ import annotations
 
 import json
@@ -25,9 +26,14 @@ import re
 from typing import Any, Dict, List, Optional
 
 _18_ENV = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__)))))),
-    "7-产物中台", "系统研究索引体系", ".env",
+    os.path.dirname(
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        )
+    ),
+    "7-产物中台",
+    "系统研究索引体系",
+    ".env",
 )
 
 
@@ -57,6 +63,7 @@ def _discover_password() -> str:
 
 def _connect():
     import psycopg2
+
     url = os.environ.get("DAL_DC_PG_URL", "")
     if url:
         return psycopg2.connect(url, connect_timeout=10)
@@ -86,8 +93,9 @@ def _iso(ts: Any) -> str:
 class DataCenterQueries:
     """data_center 库 records 表只读查询（FAIL-OPEN）。"""
 
-    def fetch_records(self, sub_category_like: str, limit: int = 500,
-                      order_desc: bool = True) -> List[Dict[str, Any]]:
+    def fetch_records(
+        self, sub_category_like: str, limit: int = 500, order_desc: bool = True
+    ) -> List[Dict[str, Any]]:
         try:
             conn = _connect()
             cur = conn.cursor()
@@ -100,8 +108,12 @@ class DataCenterQueries:
             rows = cur.fetchall()
             conn.close()
             return [
-                {"id": rid, "sub_category": sub_cat, "timestamp": _iso(ts),
-                 "metrics": _parse_metrics(metrics)}
+                {
+                    "id": rid,
+                    "sub_category": sub_cat,
+                    "timestamp": _iso(ts),
+                    "metrics": _parse_metrics(metrics),
+                }
                 for rid, sub_cat, ts, metrics in rows
             ]
         except Exception:
@@ -122,8 +134,9 @@ class DataCenterQueries:
         except Exception:
             return 0
 
-    def fetch_latest_by_source(self, source: str,
-                              sub_category: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def fetch_latest_by_source(
+        self, source: str, sub_category: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
         try:
             conn = _connect()
             cur = conn.cursor()
@@ -144,8 +157,11 @@ class DataCenterQueries:
             if not row:
                 return None
             return {
-                "source": row[0], "category": row[1], "sub_category": row[2],
-                "timestamp": _iso(row[3]), "metrics": _parse_metrics(row[4]),
+                "source": row[0],
+                "category": row[1],
+                "sub_category": row[2],
+                "timestamp": _iso(row[3]),
+                "metrics": _parse_metrics(row[4]),
             }
         except Exception:
             return None
@@ -168,8 +184,9 @@ class DataCenterQueries:
         except Exception:
             return []
 
-    def fetch_records_since(self, sub_category_like: str, since_id: int,
-                           limit: int = 5000) -> List[Dict[str, Any]]:
+    def fetch_records_since(
+        self, sub_category_like: str, since_id: int, limit: int = 5000
+    ) -> List[Dict[str, Any]]:
         try:
             conn = _connect()
             cur = conn.cursor()
@@ -181,8 +198,12 @@ class DataCenterQueries:
             rows = cur.fetchall()
             conn.close()
             return [
-                {"id": rid, "sub_category": sub_cat, "timestamp": _iso(ts),
-                 "metrics": _parse_metrics(metrics)}
+                {
+                    "id": rid,
+                    "sub_category": sub_cat,
+                    "timestamp": _iso(ts),
+                    "metrics": _parse_metrics(metrics),
+                }
                 for rid, sub_cat, ts, metrics in rows
             ]
         except Exception:

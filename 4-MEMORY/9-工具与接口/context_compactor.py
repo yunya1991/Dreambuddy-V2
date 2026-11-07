@@ -5,9 +5,9 @@
 
 工程约束：HC-1a（独立模块，不修改认知核心）/ FAIL-OPEN
 """
+
 from __future__ import annotations
 
-import json
 import re
 from typing import Any
 
@@ -161,6 +161,7 @@ def get_compaction_summary(result: dict[str, Any]) -> str:
 
 # ── FR-C2: self 触发模式 ─────────────────────────────────────────
 
+
 def compact_context_self(
     messages: list[dict[str, Any]],
     max_tokens: int,
@@ -192,6 +193,7 @@ def compact_context_self(
 
 # ── FR-C3: 重试更激进压缩 ───────────────────────────────────────
 
+
 def compact_with_retry(
     messages: list[dict[str, Any]],
     max_tokens: int,
@@ -215,9 +217,7 @@ def compact_with_retry(
     Returns:
         最终压缩结果（含 retry_count 字段）
     """
-    result = compact_context(
-        messages, max_tokens, recent_turns, threshold_pct, system_prompt
-    )
+    result = compact_context(messages, max_tokens, recent_turns, threshold_pct, system_prompt)
 
     retries = 0
     while retries < max_retries and result.get("compacted"):
@@ -230,9 +230,7 @@ def compact_with_retry(
             break  # 无法再减少
         recent_turns = new_recent
         retries += 1
-        result = compact_context(
-            messages, max_tokens, recent_turns, threshold_pct, system_prompt
-        )
+        result = compact_context(messages, max_tokens, recent_turns, threshold_pct, system_prompt)
 
     result["retry_count"] = retries
     return result

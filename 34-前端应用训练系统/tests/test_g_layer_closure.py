@@ -16,6 +16,7 @@
   流程分流: red_flags 非空 → {type:"skill", red_flags}
   文档分流: 存在 degraded 节点 → {type:"doc", pending:[node_ids]}
 """
+
 import os
 import sys
 
@@ -23,19 +24,29 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from core.sacg_orchestrator import SACGOrchestrator  # noqa: E402
 
-
 # ------------------------------------------------------------
 # 构造工具
 # ------------------------------------------------------------
 
+
 def _node(node_id="N1"):
-    return {"node_id": node_id, "objective": "obj", "criteria": "crit",
-            "source": "plan_item", "verify": "c_action"}
+    return {
+        "node_id": node_id,
+        "objective": "obj",
+        "criteria": "crit",
+        "source": "plan_item",
+        "verify": "c_action",
+    }
 
 
 def _result(node_id="N1", action="CONTINUE", **kw):
-    r = {"node_id": node_id, "action": action, "tier": "Tier1",
-         "effort_level": "light", "detail": {}}
+    r = {
+        "node_id": node_id,
+        "action": action,
+        "tier": "Tier1",
+        "effort_level": "light",
+        "detail": {},
+    }
     r.update(kw)
     return r
 
@@ -58,8 +69,7 @@ class _FakeCognitive:
         self.verifies = []
 
     def record(self, content, quality_level="B", tags=""):
-        self.records.append({"content": content, "quality_level": quality_level,
-                             "tags": tags})
+        self.records.append({"content": content, "quality_level": quality_level, "tags": tags})
         return {"memory_id": "VM-fake-001"}
 
     def verify(self, memory_id, success):
@@ -68,16 +78,22 @@ class _FakeCognitive:
 
 
 def _make_orchestrator(fake, **kw):
-    return SACGOrchestrator(
-        record_fn=fake.record, verify_fn=fake.verify, **kw)
+    return SACGOrchestrator(record_fn=fake.record, verify_fn=fake.verify, **kw)
 
 
 def _pass_acceptance(node_ids=("N1",)):
     return _acceptance(
         "pass",
-        node_verdicts=[{"node_id": nid, "verify": "c_action",
-                        "action": "CONTINUE", "verdict": "pass",
-                        "reason": "action_ok"} for nid in node_ids],
+        node_verdicts=[
+            {
+                "node_id": nid,
+                "verify": "c_action",
+                "action": "CONTINUE",
+                "verdict": "pass",
+                "reason": "action_ok",
+            }
+            for nid in node_ids
+        ],
     )
 
 
@@ -89,14 +105,14 @@ def _call_default_closer(orch, plan, results, acceptance):
 # 四分流路由（单元级：直接调 _default_g_closer）
 # ------------------------------------------------------------
 
+
 class TestCognitiveSedimentAlways:
     """认知分流必走：无论 verdict 如何都调 close_loop（record+verify）。"""
 
     def test_pass_outcome_success(self):
         fake = _FakeCognitive()
         orch = _make_orchestrator(fake)
-        closure = _call_default_closer(
-            orch, {"plan_items": ["x"]}, [_result()], _pass_acceptance())
+        closure = _call_default_closer(orch, {"plan_items": ["x"]}, [_result()], _pass_acceptance())
         cog = closure["cognitive"]
         assert cog["memory_id"] == "VM-fake-001"
         assert fake.records, "认知分流必须 record"
@@ -107,9 +123,16 @@ class TestCognitiveSedimentAlways:
         orch = _make_orchestrator(fake)
         acc = _acceptance(
             "degraded",
-            node_verdicts=[{"node_id": "N1", "verify": "c_action",
-                            "action": "REDO", "verdict": "degraded",
-                            "reason": "action_redo"}])
+            node_verdicts=[
+                {
+                    "node_id": "N1",
+                    "verify": "c_action",
+                    "action": "REDO",
+                    "verdict": "degraded",
+                    "reason": "action_redo",
+                }
+            ],
+        )
         closure = _call_default_closer(orch, {}, [_result(action="REDO")], acc)
         # partial → verify(success=False)
         assert fake.verifies == [{"memory_id": "VM-fake-001", "success": False}]
@@ -120,11 +143,18 @@ class TestCognitiveSedimentAlways:
         orch = _make_orchestrator(fake)
         acc = _acceptance(
             "fail",
-            node_verdicts=[{"node_id": "N1", "verify": "c_action",
-                            "action": "FAILED", "verdict": "fail",
-                            "reason": "action_rejected"}],
-            red_flags=["N1"])
-        closure = _call_default_closer(orch, {}, [_result(action="FAILED")], acc)
+            node_verdicts=[
+                {
+                    "node_id": "N1",
+                    "verify": "c_action",
+                    "action": "FAILED",
+                    "verdict": "fail",
+                    "reason": "action_rejected",
+                }
+            ],
+            red_flags=["N1"],
+        )
+        closure = _call_default_closer(orch, {}, [_result(action="FAILED")], acc)  # noqa: F841
         assert fake.verifies == [{"memory_id": "VM-fake-001", "success": False}]
 
 
@@ -135,8 +165,7 @@ class TestCaseSediment:
         fake = _FakeCognitive()
         orch = _make_orchestrator(fake)
         results = [_result("N1"), _result("N2")]
-        closure = _call_default_closer(
-            orch, {}, results, _pass_acceptance(("N1", "N2")))
+        closure = _call_default_closer(orch, {}, results, _pass_acceptance(("N1", "N2")))
         cases = [s for s in closure["sediments"] if s["type"] == "case"]
         assert len(cases) == 1
         assert cases[0]["nodes"] == ["N1", "N2"]
@@ -147,9 +176,16 @@ class TestCaseSediment:
         orch = _make_orchestrator(fake)
         acc = _acceptance(
             "degraded",
-            node_verdicts=[{"node_id": "N1", "verify": "c_action",
-                            "action": "REDO", "verdict": "degraded",
-                            "reason": "action_redo"}])
+            node_verdicts=[
+                {
+                    "node_id": "N1",
+                    "verify": "c_action",
+                    "action": "REDO",
+                    "verdict": "degraded",
+                    "reason": "action_redo",
+                }
+            ],
+        )
         closure = _call_default_closer(orch, {}, [_result(action="REDO")], acc)
         assert not [s for s in closure["sediments"] if s["type"] == "case"]
 
@@ -162,10 +198,17 @@ class TestSkillSediment:
         orch = _make_orchestrator(fake)
         acc = _acceptance(
             "fail",
-            node_verdicts=[{"node_id": "N1", "verify": "c_action",
-                            "action": "FAILED", "verdict": "fail",
-                            "reason": "action_rejected"}],
-            red_flags=["N1"])
+            node_verdicts=[
+                {
+                    "node_id": "N1",
+                    "verify": "c_action",
+                    "action": "FAILED",
+                    "verdict": "fail",
+                    "reason": "action_rejected",
+                }
+            ],
+            red_flags=["N1"],
+        )
         closure = _call_default_closer(orch, {}, [_result(action="FAILED")], acc)
         skills = [s for s in closure["sediments"] if s["type"] == "skill"]
         assert len(skills) == 1
@@ -175,8 +218,7 @@ class TestSkillSediment:
     def test_no_red_flags_no_skill(self):
         fake = _FakeCognitive()
         orch = _make_orchestrator(fake)
-        closure = _call_default_closer(
-            orch, {}, [_result()], _pass_acceptance())
+        closure = _call_default_closer(orch, {}, [_result()], _pass_acceptance())
         assert not [s for s in closure["sediments"] if s["type"] == "skill"]
 
 
@@ -189,12 +231,22 @@ class TestDocSediment:
         acc = _acceptance(
             "degraded",
             node_verdicts=[
-                {"node_id": "N1", "verify": "c_action", "action": "CONTINUE",
-                 "verdict": "pass", "reason": "action_ok"},
-                {"node_id": "N2", "verify": "evidence_backed",
-                 "action": "CONTINUE", "verdict": "degraded",
-                 "reason": "evidence_pending"},
-            ])
+                {
+                    "node_id": "N1",
+                    "verify": "c_action",
+                    "action": "CONTINUE",
+                    "verdict": "pass",
+                    "reason": "action_ok",
+                },
+                {
+                    "node_id": "N2",
+                    "verify": "evidence_backed",
+                    "action": "CONTINUE",
+                    "verdict": "degraded",
+                    "reason": "evidence_pending",
+                },
+            ],
+        )
         results = [_result("N1"), _result("N2")]
         closure = _call_default_closer(orch, {}, results, acc)
         docs = [s for s in closure["sediments"] if s["type"] == "doc"]
@@ -205,8 +257,7 @@ class TestDocSediment:
     def test_all_pass_no_doc(self):
         fake = _FakeCognitive()
         orch = _make_orchestrator(fake)
-        closure = _call_default_closer(
-            orch, {}, [_result()], _pass_acceptance())
+        closure = _call_default_closer(orch, {}, [_result()], _pass_acceptance())
         assert not [s for s in closure["sediments"] if s["type"] == "doc"]
 
 
@@ -234,6 +285,7 @@ class TestFailOpen:
 # ------------------------------------------------------------
 # 编排集成：handle() 输出 closure 含 sediments + cognitive
 # ------------------------------------------------------------
+
 
 class TestOrchestratorIntegration:
     """端到端：C 层结果 → A 层验收 → G 层四分流。"""
@@ -269,6 +321,7 @@ class TestOrchestratorIntegration:
         orch = _make_orchestrator(fake)
         # 高置信+高密度记忆 → L1_DIRECT 不编排
         from types import SimpleNamespace
+
         mems = [SimpleNamespace(score=0.95, content="x") for _ in range(5)]
         out = orch.handle("test", memories=mems)
         assert out["route"] == "L1_DIRECT"

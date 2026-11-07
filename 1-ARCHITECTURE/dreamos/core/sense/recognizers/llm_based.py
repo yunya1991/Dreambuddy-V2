@@ -13,15 +13,17 @@ DreamOS S层 — LLM 识别器
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
-from .base import BaseRecognizer
-from ..types import IntentInput, RecognizerResult, IntentType, get_intent_definition
 from dreamos.shared.llm_client import (
-    LLMClient, LLMMessage, get_default_client, make_messages,
+    LLMClient,
+    get_default_client,
+    make_messages,
 )
 from dreamos.shared.utils import Timer
 
+from ..types import IntentInput, IntentType, RecognizerResult, get_intent_definition
+from .base import BaseRecognizer
 
 SYSTEM_PROMPT = """你是 Dreambuddy OS 的意图识别引擎。
 你的任务是根据用户输入和市场数据，识别用户的意图。
@@ -95,12 +97,15 @@ class LLMBasedRecognizer(BaseRecognizer):
     level = "llm"
     estimated_tokens = 500
 
-    def __init__(self, llm: Optional[LLMClient] = None,
-                 model: Optional[str] = None,
-                 system_prompt: str = SYSTEM_PROMPT,
-                 temperature: float = 0.3,
-                 working_memory: Optional[Any] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        llm: Optional[LLMClient] = None,
+        model: Optional[str] = None,
+        system_prompt: str = SYSTEM_PROMPT,
+        temperature: float = 0.3,
+        working_memory: Optional[Any] = None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self._llm = llm
         self._model = model
@@ -124,10 +129,10 @@ class LLMBasedRecognizer(BaseRecognizer):
         try:
             with timer:
                 user_msg = self._build_user_prompt(_input)
-                
+
                 # 注入工作记忆上下文到 System Prompt
                 system_prompt = self._inject_working_memory()
-                
+
                 messages = make_messages(system=system_prompt, user=user_msg)
 
                 resp = self.llm.chat(
@@ -155,20 +160,20 @@ class LLMBasedRecognizer(BaseRecognizer):
 
     def _inject_working_memory(self) -> str:
         """将工作记忆上下文注入到 System Prompt
-        
+
         Returns:
             增强后的 System Prompt
         """
         if self._working_memory is None:
             return self._system_prompt
-        
+
         try:
             # 获取工作记忆的上下文字符串
             wm_context = self._working_memory.get_prompt_context()
-            
+
             # 组合：原始 System Prompt + 工作记忆上下文
             enhanced_prompt = f"{self._system_prompt}\n\n---\n\n{wm_context}"
-            
+
             return enhanced_prompt
         except Exception:
             # 静默失败，返回原始 prompt
@@ -192,7 +197,7 @@ class LLMBasedRecognizer(BaseRecognizer):
                 f"ADX: {mkt.get('adx', 'N/A')}",
                 f"市场状态: {mkt.get('regime', 'UNKNOWN')}",
             ]
-            parts.append("市场数据:\n" + "\n".join(f"  - {l}" for l in mkt_lines))
+            parts.append("市场数据:\n" + "\n".join(f"  - {l}" for l in mkt_lines))  # noqa: E741
 
         if _input.signals:
             parts.append(f"外部信号: {len(_input.signals)} 条")

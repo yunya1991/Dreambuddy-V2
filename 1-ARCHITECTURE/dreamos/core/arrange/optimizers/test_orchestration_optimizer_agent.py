@@ -13,18 +13,20 @@ GREEN 阶段实现 orchestration_optimizer_agent.py 后全部通过。
   6. 认知闭环 recall + record 调用
   7. 低置信度触发优化 + 高置信度不触发
 """
-import pytest
-import sys
+
+import sys  # noqa: I001
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
 
 def test_module_import():
     """测试 1: 模块可导入"""
     from dreamos.core.arrange.optimizers.orchestration_optimizer_agent import (
-        OrchestrationOptimizerAgent, PlanOptimization
+        OrchestrationOptimizerAgent,
+        PlanOptimization,
     )
+
     assert OrchestrationOptimizerAgent is not None
     assert PlanOptimization is not None
 
@@ -32,7 +34,8 @@ def test_module_import():
 def test_fail_open_no_llm_fn():
     """测试 2: 无 llm_fn → 规则降级, 保持原 plan"""
     from dreamos.core.arrange.optimizers.orchestration_optimizer_agent import (
-        OrchestrationOptimizerAgent, PlanOptimization
+        OrchestrationOptimizerAgent,
+        PlanOptimization,
     )
     from dreamos.core.arrange.types import ExecutionPlan
 
@@ -46,7 +49,8 @@ def test_fail_open_no_llm_fn():
 def test_fail_open_exception():
     """测试 3: LLM 异常 → FAIL-OPEN 返回安全默认"""
     from dreamos.core.arrange.optimizers.orchestration_optimizer_agent import (
-        OrchestrationOptimizerAgent, PlanOptimization
+        OrchestrationOptimizerAgent,
+        PlanOptimization,
     )
     from dreamos.core.arrange.types import ExecutionPlan
 
@@ -63,7 +67,8 @@ def test_fail_open_exception():
 def test_empty_plan():
     """测试 4: 空 plan → 返回安全默认"""
     from dreamos.core.arrange.optimizers.orchestration_optimizer_agent import (
-        OrchestrationOptimizerAgent, PlanOptimization
+        OrchestrationOptimizerAgent,
+        PlanOptimization,
     )
     from dreamos.core.arrange.types import ExecutionPlan
 
@@ -77,19 +82,23 @@ def test_empty_plan():
 def test_llm_optimization_normal_path():
     """测试 5: LLM 正常优化路径"""
     from dreamos.core.arrange.optimizers.orchestration_optimizer_agent import (
-        OrchestrationOptimizerAgent, PlanOptimization
+        OrchestrationOptimizerAgent,
+        PlanOptimization,
     )
     from dreamos.core.arrange.types import ExecutionPlan
 
     def mock_llm(prompt: str) -> str:
         import json
-        return json.dumps({
-            "add_nodes": ["A6", "A7"],
-            "remove_nodes": ["A8"],
-            "reorder": {"A1": 1, "A2": 2, "A3": 3},
-            "budget_adjustment": {"A6": 500},
-            "reasoning": "低置信度, 增加情报和验证节点"
-        })
+
+        return json.dumps(
+            {
+                "add_nodes": ["A6", "A7"],
+                "remove_nodes": ["A8"],
+                "reorder": {"A1": 1, "A2": 2, "A3": 3},
+                "budget_adjustment": {"A6": 500},
+                "reasoning": "低置信度, 增加情报和验证节点",
+            }
+        )
 
     agent = OrchestrationOptimizerAgent(llm_fn=mock_llm)
     plan = ExecutionPlan(planned_chain="A", rationale="默认编排")
@@ -110,7 +119,7 @@ def test_llm_optimization_normal_path():
 def test_cognitive_recall_record():
     """测试 6: 认知闭环 recall + record 调用"""
     from dreamos.core.arrange.optimizers.orchestration_optimizer_agent import (
-        OrchestrationOptimizerAgent, PlanOptimization
+        OrchestrationOptimizerAgent,
     )
     from dreamos.core.arrange.types import ExecutionPlan
 
@@ -130,13 +139,16 @@ def test_cognitive_recall_record():
 
     def mock_llm(prompt: str) -> str:
         import json
-        return json.dumps({
-            "add_nodes": [],
-            "remove_nodes": [],
-            "reorder": None,
-            "budget_adjustment": None,
-            "reasoning": "无需调整"
-        })
+
+        return json.dumps(
+            {
+                "add_nodes": [],
+                "remove_nodes": [],
+                "reorder": None,
+                "budget_adjustment": None,
+                "reasoning": "无需调整",
+            }
+        )
 
     agent = OrchestrationOptimizerAgent(llm_fn=mock_llm, cognitive_adapter=cog)
     plan = ExecutionPlan(planned_chain="A", rationale="默认编排")
@@ -154,7 +166,7 @@ def test_cognitive_recall_record():
 def test_low_confidence_triggers_optimization():
     """测试 7: 低置信度触发优化, 高置信度不触发"""
     from dreamos.core.arrange.optimizers.orchestration_optimizer_agent import (
-        OrchestrationOptimizerAgent
+        OrchestrationOptimizerAgent,
     )
     from dreamos.core.arrange.types import ExecutionPlan
 
@@ -163,6 +175,7 @@ def test_low_confidence_triggers_optimization():
     def mock_llm(prompt: str) -> str:
         call_count["llm"] += 1
         import json
+
         return json.dumps({"add_nodes": [], "remove_nodes": [], "reasoning": "noop"})
 
     agent = OrchestrationOptimizerAgent(llm_fn=mock_llm)

@@ -6,6 +6,7 @@ test_polling_mode_switch.py — Phase A TDD 测试集
 RED 失败原因：对应工具函数/分支/属性尚未实现。
 GREEN 最小实现：严格按 Spec §3.1~§3.3 写最小可通过代码，不扩展。
 """
+
 import sys
 import unittest
 from pathlib import Path
@@ -33,9 +34,9 @@ def _make_trader(coins=None, max_positions=3, enable_mode_switch=True):
     # ── 4 个 Feature Flag（Phase A 先只挂 S1，其他 Flag Phase B/C 再加时补 None）──
     t.enable_mode_switch = enable_mode_switch
     # Phase B/C 的开关占位（None 未启用，确保开关关闭时分支走旧路径语义）
-    t.enable_ev_radar = None       # Phase B 再设
+    t.enable_ev_radar = None  # Phase B 再设
     t.enable_multi_horizon = None  # Phase C
-    t.enable_ranked_tp = None      # Phase C
+    t.enable_ranked_tp = None  # Phase C
 
     # ── 持仓跟踪 + OKX（默认返回空，让 monkeypatch 覆盖更方便）──
     t.position_tracker = MagicMock(spec=["all_open_positions", "all_closed_positions"])
@@ -53,7 +54,7 @@ def _make_trader(coins=None, max_positions=3, enable_mode_switch=True):
 
     # ── MODE 阈值常量（对齐 Spec §3.2）──
     t.MODE_OCCUPANCY_MODE3 = 1.00
-    t.MODE_OCCUPANCY_MODE2 = 2 / 3    # 2/3 ≈ 0.6667，保证 2of3 场景严格命中 MODE2
+    t.MODE_OCCUPANCY_MODE2 = 2 / 3  # 2/3 ≈ 0.6667，保证 2of3 场景严格命中 MODE2
     t.MODE3_COARSE_CANDIDATE_TOPN = 3
 
     # ── 缓存 TTL 常量（对齐 Spec §3.3）──
@@ -77,8 +78,9 @@ class TestSwitchOffMode(unittest.TestCase):
 
     def test_switch_off_mode_tag_is_MODE_OFF_and_full_sets_all_coins(self):
         """RED 失败原因: _decide_mode_coins 方法不存在"""
-        t = _make_trader(coins=["A", "B", "C", "D", "E", "F"], max_positions=3,
-                         enable_mode_switch=False)
+        t = _make_trader(
+            coins=["A", "B", "C", "D", "E", "F"], max_positions=3, enable_mode_switch=False
+        )
 
         mode, anom, infer_full, infer_coarse = t._decide_mode_coins()
 
@@ -144,17 +146,23 @@ class TestMODE2Half(unittest.TestCase):
         # MODE2_HALF: infer_coarse_candidate_n = 0
         self.assertEqual(len(infer_coarse), 0)
         # 候选 anom Top4、infer_full Top5
-        candidate_pool = [c for c in t.coins if c not in held]
+        candidate_pool = [c for c in t.coins if c not in held]  # noqa: F841
         # anom 候选 = Top4
         expected_anom_cand_n = 4
         actual_anom_cand = [c for c in anom if c not in held]
-        self.assertEqual(len(actual_anom_cand), expected_anom_cand_n,
-                         "MODE2 anom_coins should include Top4 candidates")
+        self.assertEqual(
+            len(actual_anom_cand),
+            expected_anom_cand_n,
+            "MODE2 anom_coins should include Top4 candidates",
+        )
         # infer_full 候选 = Top5
         expected_full_cand_n = 5
         actual_full_cand = [c for c in infer_full if c not in held]
-        self.assertEqual(len(actual_full_cand), expected_full_cand_n,
-                         "MODE2 infer_full should include Top5 candidates")
+        self.assertEqual(
+            len(actual_full_cand),
+            expected_full_cand_n,
+            "MODE2 infer_full should include Top5 candidates",
+        )
         # 保证 held ∩ infer_full = 2 全部存在
         self.assertEqual(sum(1 for c in held if c in infer_full), 2)
 
@@ -188,8 +196,11 @@ class TestMODE3Full(unittest.TestCase):
             self.assertIn(c, infer_full)
         # infer_full 中候选 = 0（只含 held）
         infer_full_candidates = [c for c in infer_full if c not in held]
-        self.assertEqual(len(infer_full_candidates), 0,
-                         "MODE3 infer_full should not include candidate coins (0 full)")
+        self.assertEqual(
+            len(infer_full_candidates),
+            0,
+            "MODE3 infer_full should not include candidate coins (0 full)",
+        )
         # infer_coarse = Top3 candidates
         self.assertEqual(len(infer_coarse), 3, "MODE3 infer_coarse should be Top3 cand")
 
@@ -217,8 +228,11 @@ class TestMODE3Full(unittest.TestCase):
         # 运行 _pick_topup_from_coarse（如果 RED 阶段不存在则 AttributeError = 正确失败）
         topup_list = t._pick_topup_from_coarse(infer_coarse, coarse_inferences)
         self.assertEqual(len(topup_list), 1)
-        self.assertEqual(topup_list[0], expected_topup_top1,
-                         f"Top1 补全推理应是粗置信度最高的 {expected_topup_top1}")
+        self.assertEqual(
+            topup_list[0],
+            expected_topup_top1,
+            f"Top1 补全推理应是粗置信度最高的 {expected_topup_top1}",
+        )
 
 
 class TestCycleCacheTTL(unittest.TestCase):
@@ -287,27 +301,31 @@ class TestMODE3CoarseMarkAndTopup(unittest.TestCase):
         coarse_coins = ["C1", "C2", "C3"]
         for i, c in enumerate(coarse_coins):
             # 调用工具函数 _mark_coarse_inference（RED 阶段不存在 → AttributeError）
-            inf = {"confidence": 0.75 + 0.05 * i, "direction": 1,
-                   "next_state": {"confidence": 0.75 + 0.05 * i}}
+            inf = {
+                "confidence": 0.75 + 0.05 * i,
+                "direction": 1,
+                "next_state": {"confidence": 0.75 + 0.05 * i},
+            }
             t._mark_coarse_inference(inf)
             all_inferences[c] = inf
 
         # 断言粗结果全部有 _coarse=True
         for c in coarse_coins:
-            self.assertTrue(all_inferences[c].get("_coarse") is True,
-                            f"粗推理结果 {c} 必须标记 _coarse=True")
+            self.assertTrue(
+                all_inferences[c].get("_coarse") is True, f"粗推理结果 {c} 必须标记 _coarse=True"
+            )
 
         # --- 模拟 Top1 补全推理覆盖 ---
         # 粗 Top1 = C3 (置信度最高 0.85)
         topup_coin = "C3"
         # 调用工具函数 _apply_topup_full（RED 阶段不存在 → AttributeError）
-        full_inf = {"confidence": 0.88, "direction": 1,
-                    "next_state": {"confidence": 0.88}}
+        full_inf = {"confidence": 0.88, "direction": 1, "next_state": {"confidence": 0.88}}
         t._apply_topup_full(all_inferences, topup_coin, full_inf, coarse_confidence=0.85)
 
         # 补全后 _coarse 标记必须被清除
-        self.assertNotIn("_coarse", all_inferences[topup_coin],
-                         "补全推理后，_coarse 标记必须被覆盖/清除")
+        self.assertNotIn(
+            "_coarse", all_inferences[topup_coin], "补全推理后，_coarse 标记必须被覆盖/清除"
+        )
         # 必须存在 "[MODE3][补全推理]" 日志
         self.assertTrue(
             any("[补全推理]" in msg for _, msg in log_calls),
@@ -355,7 +373,9 @@ class TestMODE3CoarseOpenGate(unittest.TestCase):
         # 调用门禁工具函数 _guard_coarse_not_toppedup（RED 阶段不存在 → AttributeError）
         toppedup_history = set()  # C1 从未补全
         coarse_inf = {
-            "confidence": 0.86, "direction": 1, "_coarse": True,
+            "confidence": 0.86,
+            "direction": 1,
+            "_coarse": True,
             "next_state": {"confidence": 0.86, "direction": 1, "derivation": "x"},
             "hexagram": {"name": "乾为天"},
         }
@@ -370,8 +390,7 @@ class TestMODE3CoarseOpenGate(unittest.TestCase):
             "门禁未通过时必须打 WARN 日志\n实际 logs: " + str(all_logs),
         )
         # _open_position 从未被调用
-        self.assertEqual(len(open_position_calls), 0,
-                         "_open_position 绝对不能在门禁未通过时被调用")
+        self.assertEqual(len(open_position_calls), 0, "_open_position 绝对不能在门禁未通过时被调用")
 
 
 # =====================================================================
@@ -431,6 +450,7 @@ class TestDynamicBlacklistFiltering(unittest.TestCase):
             if coin == "BAD":
                 return True
             return False
+
         t._check_dynamic_blacklist = MagicMock(side_effect=_fake_blacklist)
 
         mode, anom, infer_full, infer_coarse = t._decide_mode_coins()
@@ -490,8 +510,7 @@ class TestAdvanceCycleIdxIntegration(unittest.TestCase):
         # 模拟外部回退（日期 rollover / 状态恢复错误）
         t._cycle_idx = 0
         t._advance_cycle_idx()  # 检测到 0 < last_seen=2 → 清缓存
-        self.assertEqual(len(t._mode_cache), 0,
-                         "回退后缓存应被清空")
+        self.assertEqual(len(t._mode_cache), 0, "回退后缓存应被清空")
 
 
 class TestOccupancyBoundaryValues(unittest.TestCase):
@@ -503,11 +522,12 @@ class TestOccupancyBoundaryValues(unittest.TestCase):
             coins=["BTC", "SOL", "XAU", "A", "B", "C"],
             max_positions=3,
         )
-        held = ["BTC"]
+        held = ["BTC"]  # noqa: F841
         t._count_total_positions.return_value = 1
         t.position_tracker.all_open_positions.return_value = [MagicMock(coin="BTC")]
         t.okx_client.get_positions.return_value = {
-            "ok": True, "positions": [{"instId": "BTC-USDT-SWAP"}],
+            "ok": True,
+            "positions": [{"instId": "BTC-USDT-SWAP"}],
         }
         t._check_dynamic_blacklist.return_value = False
 
@@ -528,7 +548,8 @@ class TestOccupancyBoundaryValues(unittest.TestCase):
         t._count_total_positions.return_value = 2
         t.position_tracker.all_open_positions.return_value = [MagicMock(coin=c) for c in held]
         t.okx_client.get_positions.return_value = {
-            "ok": True, "positions": [{"instId": f"{c}-USDT-SWAP"} for c in held],
+            "ok": True,
+            "positions": [{"instId": f"{c}-USDT-SWAP"} for c in held],
         }
         t._check_dynamic_blacklist.return_value = False
 
@@ -550,7 +571,8 @@ class TestMODE3CandidateShortfall(unittest.TestCase):
         t._count_total_positions.return_value = 3
         t.position_tracker.all_open_positions.return_value = [MagicMock(coin=c) for c in held]
         t.okx_client.get_positions.return_value = {
-            "ok": True, "positions": [{"instId": f"{c}-USDT-SWAP"} for c in held],
+            "ok": True,
+            "positions": [{"instId": f"{c}-USDT-SWAP"} for c in held],
         }
         t._check_dynamic_blacklist.return_value = False
 
@@ -561,8 +583,7 @@ class TestMODE3CandidateShortfall(unittest.TestCase):
         # infer_full = held3 only (0 candidates)
         self.assertEqual(len(infer_full), 3)
         # infer_coarse = 2 (不是 3，因为只有 2 个可用)
-        self.assertEqual(len(infer_coarse), 2,
-                         "候选不足 TopN 时应取实际可用数量")
+        self.assertEqual(len(infer_coarse), 2, "候选不足 TopN 时应取实际可用数量")
 
     def test_MODE3_with_zero_candidates(self):
         """满仓且无候选（所有币都在持仓中）→ infer_coarse 为空。"""
@@ -571,7 +592,8 @@ class TestMODE3CandidateShortfall(unittest.TestCase):
         t._count_total_positions.return_value = 3
         t.position_tracker.all_open_positions.return_value = [MagicMock(coin=c) for c in held]
         t.okx_client.get_positions.return_value = {
-            "ok": True, "positions": [{"instId": f"{c}-USDT-SWAP"} for c in held],
+            "ok": True,
+            "positions": [{"instId": f"{c}-USDT-SWAP"} for c in held],
         }
         t._check_dynamic_blacklist.return_value = False
 

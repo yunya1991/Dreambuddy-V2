@@ -13,6 +13,7 @@ H1: p <= p1（一致率不可接受，切换完全中性）
   A = (1-β)/α   → 接受 H1
   B = β/(1-α)   → 接受 H0
 """
+
 from __future__ import annotations
 
 import math

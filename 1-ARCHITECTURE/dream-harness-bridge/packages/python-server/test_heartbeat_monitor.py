@@ -3,22 +3,19 @@ L2 自检测: DSH HeartbeatMonitor 单测
 覆盖: subagent 心跳记录 / 心跳状态判定 / SubagentOutput 字段非空率 / 整体汇总
 """
 
-import sys
-from pathlib import Path
+import sys  # noqa: I001
 from datetime import datetime, timedelta
+from pathlib import Path
 from unittest.mock import MagicMock
-
-import pytest
 
 PYTHON_SERVER = Path(__file__).resolve().parent
 sys.path.insert(0, str(PYTHON_SERVER))
 
-from heartbeat_monitor import (
+from heartbeat_monitor import (  # noqa: E402
+    DSH_SUBAGENT_TYPES,
     DSHHeartbeatMonitor,
     SubagentHeartbeat,
     SubagentOutputStats,
-    HeartbeatStatus,
-    DSH_SUBAGENT_TYPES,
     record_dsh_anomaly_to_cognitive,
 )
 
@@ -60,12 +57,14 @@ class TestSubagentOutputStats:
     def test_record_full_output(self):
         """完整 output 4 字段都非空"""
         stats = SubagentOutputStats()
-        stats.record_output({
-            "module": "technical",
-            "summary": "test",
-            "signals": [{"name": "RSI"}],
-            "charts": [{"type": "line"}],
-        })
+        stats.record_output(
+            {
+                "module": "technical",
+                "summary": "test",
+                "signals": [{"name": "RSI"}],
+                "charts": [{"type": "line"}],
+            }
+        )
         assert stats.total_outputs == 1
         assert stats.module_rate == 1.0
         assert stats.summary_rate == 1.0
@@ -148,12 +147,14 @@ class TestDSHHeartbeatMonitorOutputFields:
         """所有字段非空率达标"""
         monitor = DSHHeartbeatMonitor(min_field_non_empty_rate=0.9)
         for _ in range(10):
-            monitor.record_output({
-                "module": "m",
-                "summary": "s",
-                "signals": [{"name": "x"}],
-                "charts": [{"type": "line"}],
-            })
+            monitor.record_output(
+                {
+                    "module": "m",
+                    "summary": "s",
+                    "signals": [{"name": "x"}],
+                    "charts": [{"type": "line"}],
+                }
+            )
         result = monitor.check_output_field_non_empty_rate()
         assert result["all_above_threshold"] is True
 
@@ -161,12 +162,14 @@ class TestDSHHeartbeatMonitorOutputFields:
         """部分字段非空率不达标"""
         monitor = DSHHeartbeatMonitor(min_field_non_empty_rate=0.9)
         for _ in range(10):
-            monitor.record_output({
-                "module": "m",
-                "summary": "",   # summary 全空
-                "signals": [{"name": "x"}],
-                "charts": [{"type": "line"}],
-            })
+            monitor.record_output(
+                {
+                    "module": "m",
+                    "summary": "",  # summary 全空
+                    "signals": [{"name": "x"}],
+                    "charts": [{"type": "line"}],
+                }
+            )
         result = monitor.check_output_field_non_empty_rate()
         assert result["all_above_threshold"] is False
         assert result["field_rates"]["summary"] == 0.0
@@ -188,10 +191,14 @@ class TestDSHHealthCheckSummary:
         for subagent in DSH_SUBAGENT_TYPES:
             monitor.record_call(subagent, 100.0, "ok")
         for _ in range(5):
-            monitor.record_output({
-                "module": "m", "summary": "s",
-                "signals": [{"name": "x"}], "charts": [{"type": "line"}],
-            })
+            monitor.record_output(
+                {
+                    "module": "m",
+                    "summary": "s",
+                    "signals": [{"name": "x"}],
+                    "charts": [{"type": "line"}],
+                }
+            )
         report = monitor.run_health_check()
         assert report["overall_status"] == "healthy"
 

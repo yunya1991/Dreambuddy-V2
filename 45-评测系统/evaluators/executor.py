@@ -12,6 +12,7 @@ executor.py — 45-评测系统 生产执行器 v2（专项评测器接入）
 - 输入缺失 → 该专项产出 SKIPPED 项（可审计，不静默跳过）
 - 产出 EvalRunRecord + EvalItemRecord，走 Reporter.finalize 报告归档
 """
+
 from __future__ import annotations
 
 import json
@@ -21,8 +22,9 @@ from pathlib import Path
 from typing import Any, Callable
 
 from core.reporter import Reporter
-from evaluators.common.e3 import E3Validator
 from storage.repo import EvalItemRecord, EvalRepo, EvalRunRecord
+
+from evaluators.common.e3 import E3Validator
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +109,9 @@ class E3Executor:
             ]
             items.extend(AvailabilityEvaluator().evaluate(observations, run_id))
         else:
-            items.append(_skipped_item(run_id, "F-H2-availability", "F-H2_input_missing:observations"))
+            items.append(
+                _skipped_item(run_id, "F-H2-availability", "F-H2_input_missing:observations")
+            )
 
         stats = inputs.get("backtest") or {}
         if stats.get("sharpe") is not None:
@@ -124,7 +128,9 @@ class E3Executor:
             )
             items.extend(BacktestStatisticsEvaluator().evaluate(backtest, run_id))
         else:
-            items.append(_skipped_item(run_id, "F-H6-backtest", "F-H6_input_missing:backtest_stats"))
+            items.append(
+                _skipped_item(run_id, "F-H6-backtest", "F-H6_input_missing:backtest_stats")
+            )
         return items
 
     def _ai_items(self, run_id: str, inputs: dict[str, Any]) -> list[EvalItemRecord]:
@@ -213,8 +219,12 @@ class E3Executor:
                 coverage=CoverageReport(
                     base_sha=coverage.get("base_sha", ""),
                     job_signature=coverage.get("job_signature", ""),
-                    added_lines={k: tuple(v) for k, v in (coverage.get("added_lines") or {}).items()},
-                    covered_lines={k: tuple(v) for k, v in (coverage.get("covered_lines") or {}).items()},
+                    added_lines={
+                        k: tuple(v) for k, v in (coverage.get("added_lines") or {}).items()
+                    },
+                    covered_lines={
+                        k: tuple(v) for k, v in (coverage.get("covered_lines") or {}).items()
+                    },
                 ),
                 benchmark=BenchmarkReport(
                     expected_edges=tuple(tuple(e) for e in benchmark.get("expected_edges", ())),

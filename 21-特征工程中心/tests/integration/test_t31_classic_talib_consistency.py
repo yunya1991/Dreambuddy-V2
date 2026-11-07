@@ -13,6 +13,7 @@ Bot2 核心依赖列（populate_indicators 写入 + populate_entry_trend 读取�
   rsi, ema_fast, ema_slow, ema_trend, bb_upper, bb_mid, bb_lower,
   adx, atr, volume_mean
 """
+
 from __future__ import annotations
 
 import sys
@@ -39,9 +40,16 @@ _ensure_sys_path()
 
 # Bot2StrategyTrend 使用的核心指标列（populate_entry_trend + custom_stoploss 读取）
 BOT2_CORE_COLS = {
-    "rsi", "ema_fast", "ema_slow", "ema_trend",
-    "bb_upper", "bb_mid", "bb_lower",
-    "adx", "atr", "volume_mean",
+    "rsi",
+    "ema_fast",
+    "ema_slow",
+    "ema_trend",
+    "bb_upper",
+    "bb_mid",
+    "bb_lower",
+    "adx",
+    "atr",
+    "volume_mean",
 }
 
 # Bot2 额外可能用到的列（macd 等）
@@ -52,19 +60,23 @@ def _make_ohlcv(n: int = 400, seed: int = 42) -> pd.DataFrame:
     """生成 5m 频率的 OHLCV 样本（Bot2 timeframe=5m，startup=200）"""
     rng = np.random.default_rng(seed)
     close = 40000 * np.exp(np.cumsum(rng.normal(0, 0.005, n)))
-    return pd.DataFrame({
-        "open": close * (1 + rng.normal(0, 0.001, n)),
-        "high": close * (1 + np.abs(rng.normal(0, 0.003, n))),
-        "low": close * (1 - np.abs(rng.normal(0, 0.003, n))),
-        "close": close,
-        "volume": 1e6 * (1 + rng.uniform(-0.5, 1.5, n)),
-    }, index=pd.date_range("2024-01-01", periods=n, freq="5min"))
+    return pd.DataFrame(
+        {
+            "open": close * (1 + rng.normal(0, 0.001, n)),
+            "high": close * (1 + np.abs(rng.normal(0, 0.003, n))),
+            "low": close * (1 - np.abs(rng.normal(0, 0.003, n))),
+            "close": close,
+            "volume": 1e6 * (1 + rng.uniform(-0.5, 1.5, n)),
+        },
+        index=pd.date_range("2024-01-01", periods=n, freq="5min"),
+    )
 
 
 def _bot2_original_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """调用 Bot2StrategyTrend.populate_indicators 原始实现。"""
     _ensure_sys_path()
     from user_data.strategies.Bot2StrategyTrend import Bot2StrategyTrend
+
     strat = Bot2StrategyTrend(config={})
     meta = {"pair": "BTC/USDT"}
     dataframe = df.copy()
@@ -75,6 +87,7 @@ def _bot2_original_signals(df: pd.DataFrame) -> pd.DataFrame:
     """调用 populate_entry_trend 得到 enter_long/enter_short"""
     _ensure_sys_path()
     from user_data.strategies.Bot2StrategyTrend import Bot2StrategyTrend
+
     strat = Bot2StrategyTrend(config={})
     meta = {"pair": "BTC/USDT"}
     dataframe = strat.populate_indicators(df.copy(), meta)
@@ -84,8 +97,9 @@ def _bot2_original_signals(df: pd.DataFrame) -> pd.DataFrame:
 def _featurehub_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """FeatureHub classic_talib_only + strip_prefix=True。"""
     _ensure_sys_path()
-    from feature_hub.pipeline.feature_pipeline import FeaturePipeline
     from feature_hub.modules.loader import load_default_sets
+    from feature_hub.pipeline.feature_pipeline import FeaturePipeline
+
     pipe = FeaturePipeline()
     load_default_sets(pipe)
     fv = pipe.run(set_name="classic_talib_only", df=df, symbol="BTC")
@@ -94,7 +108,7 @@ def _featurehub_indicators(df: pd.DataFrame) -> pd.DataFrame:
         new_cols = {}
         for col in out.columns:
             sep = col.find("__")
-            new_cols[col] = col[sep + 2:] if sep >= 0 else col
+            new_cols[col] = col[sep + 2 :] if sep >= 0 else col
         out = out.rename(columns=new_cols)
     return out
 
@@ -115,6 +129,7 @@ def _bot2_signal_from_prefilled(df: pd.DataFrame, ind_df: pd.DataFrame) -> pd.Da
     """
     _ensure_sys_path()
     from user_data.strategies.Bot2StrategyTrend import Bot2StrategyTrend
+
     strat = Bot2StrategyTrend(config={})
     meta = {"pair": "BTC/USDT"}
     # 先跑完整 populate_indicators 生成 regime_trend / mr_score 等衍生列
@@ -195,9 +210,7 @@ def test_t31_2_intersection_value_correlation():
     if low_corr:
         print(f"[T31-2] 低相关列(<0.97): {low_corr}")
 
-    assert avg_corr >= 0.97, (
-        f"Bot2 核心列平均 Pearson {avg_corr:.6f} < 0.97"
-    )
+    assert avg_corr >= 0.97, f"Bot2 核心列平均 Pearson {avg_corr:.6f} < 0.97"
 
 
 # ============================================================
@@ -224,9 +237,9 @@ def test_t31_3_signal_direction_consistency():
             if orig_last is None:
                 continue
             orig_dir = (
-                "short" if int(orig_last.get("enter_short", 0) or 0) == 1
-                else "long" if int(orig_last.get("enter_long", 0) or 0) == 1
-                else "none"
+                "short"
+                if int(orig_last.get("enter_short", 0) or 0) == 1
+                else "long" if int(orig_last.get("enter_long", 0) or 0) == 1 else "none"
             )
 
             # FH：FH 指标 → merge → populate_entry_trend
@@ -238,16 +251,15 @@ def test_t31_3_signal_direction_consistency():
                 total += 1
                 continue
             fh_dir = (
-                "short" if int(fh_last.get("enter_short", 0) or 0) == 1
-                else "long" if int(fh_last.get("enter_long", 0) or 0) == 1
-                else "none"
+                "short"
+                if int(fh_last.get("enter_short", 0) or 0) == 1
+                else "long" if int(fh_last.get("enter_long", 0) or 0) == 1 else "none"
             )
 
             if fh_dir == orig_dir:
                 consistent += 1
             else:
-                error_cases.append(
-                    f"seed{seed}:orig={orig_dir} vs fh={fh_dir}")
+                error_cases.append(f"seed{seed}:orig={orig_dir} vs fh={fh_dir}")
             total += 1
         except Exception as exc:
             error_cases.append(f"seed{seed}:{type(exc).__name__}:{exc}")
@@ -259,9 +271,7 @@ def test_t31_3_signal_direction_consistency():
     if error_cases:
         print(f"[T31-3] 不一致/异常详情: {error_cases}")
 
-    assert consistency_rate >= 0.95, (
-        f"信号方向一致率 {consistency_rate:.2%} < 95%"
-    )
+    assert consistency_rate >= 0.95, f"信号方向一致率 {consistency_rate:.2%} < 95%"
 
 
 # ============================================================

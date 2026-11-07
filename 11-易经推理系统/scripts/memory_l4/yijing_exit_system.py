@@ -26,45 +26,47 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, Any, Optional, List
-import time
+from typing import Any, Dict, List, Optional
 
 
 class YijingExitAction(Enum):
     """易经离场决策动作"""
+
     NO_INTERVENE = "no_intervene"  # 不干预，保持 classic 决策
-    VETO_CLOSE = "veto_close"      # 否决 close，保持持仓
-    VETO_REDUCE = "veto_reduce"    # 否决 reduce
-    RAISE_TP = "raise_tp"          # 提高止盈位（价值高时）
-    LOWER_SL = "lower_sl"          # 降低止损（风险低时，放宽止损空间）
-    LOWER_TP = "lower_tp"          # 降低止盈（风险升高时，提前锁定利润）
+    VETO_CLOSE = "veto_close"  # 否决 close，保持持仓
+    VETO_REDUCE = "veto_reduce"  # 否决 reduce
+    RAISE_TP = "raise_tp"  # 提高止盈位（价值高时）
+    LOWER_SL = "lower_sl"  # 降低止损（风险低时，放宽止损空间）
+    LOWER_TP = "lower_tp"  # 降低止盈（风险升高时，提前锁定利润）
     ADJUST_SL_TP = "adjust_sl_tp"  # 同时调整止损止盈
-    FORCE_CLOSE = "force_close"    # 强制离场（卦象极度危险）
-    TIGHTEN_SL = "tighten_sl"      # 收紧止损（风险升高时缩小止损空间保本）
+    FORCE_CLOSE = "force_close"  # 强制离场（卦象极度危险）
+    TIGHTEN_SL = "tighten_sl"  # 收紧止损（风险升高时缩小止损空间保本）
 
 
 @dataclass
 class YijingExitDecision:
     """易经离场决策"""
+
     action: YijingExitAction = YijingExitAction.NO_INTERVENE
     reason: str = ""
     # 易经风险评估
-    yijing_risk_score: float = 0.5     # 0-1，越高越危险
-    yijing_value_score: float = 0.5    # 0-1，越高越有价值
+    yijing_risk_score: float = 0.5  # 0-1，越高越危险
+    yijing_value_score: float = 0.5  # 0-1，越高越有价值
     # 卦象信息
     hexagram_name: str = ""
-    risk_level: str = ""               # 高/中/低
-    current_phase: str = ""            # 潜龙勿用/见龙在田/.../亢龙有悔
-    development_stage: str = ""         # 萌芽期/成长期/成熟期/衰退期
+    risk_level: str = ""  # 高/中/低
+    current_phase: str = ""  # 潜龙勿用/见龙在田/.../亢龙有悔
+    development_stage: str = ""  # 萌芽期/成长期/成熟期/衰退期
     direction_consistent: bool = True  # 卦象方向与持仓方向是否一致
     # TP/SL 调整
-    tp_adjust_pct: float = 0.0         # RAISE_TP/LOWER_TP 时的调整比例
-    sl_adjust_pct: float = 0.0         # LOWER_SL 时的调整比例（正数表示放宽）
+    tp_adjust_pct: float = 0.0  # RAISE_TP/LOWER_TP 时的调整比例
+    sl_adjust_pct: float = 0.0  # LOWER_SL 时的调整比例（正数表示放宽）
     # 决策元信息
     confidence: float = 0.5
-    should_log: bool = True            # 是否记录日志
+    should_log: bool = True  # 是否记录日志
 
 
 @dataclass
@@ -76,42 +78,43 @@ class YijingExitConfig:
     - 持仓未满1h：完全不干预，只用开仓时设置的静态止盈止损
     - 持仓≥1h后：每隔1h评估一次；两次评估之间的1h窗口内，易经不调整SL/TP
     """
+
     # ── 1h评估节奏控制（v3.0核心）──
     # 评估间隔=3600s=1h；同时规定持仓未满1h彻底不评估
-    eval_interval_sec: float = 3600.0          # 两次易经评估的最小间隔（1h）
+    eval_interval_sec: float = 3600.0  # 两次易经评估的最小间隔（1h）
     min_position_age_for_eval_sec: float = 3600.0  # 持仓至少满1h才允许首次易经评估
 
     # ── 风险评分权重 ──
     # v2.1优化：降低phase/stage的权重（基于kline计算，非稳定信号），提高risk_level和direction（卦象固有属性更可靠）
-    weight_risk_level: float = 0.40        # risk_level 高/中/低（卦象固有风险）
-    weight_phase: float = 0.18            # current_phase 六阶段（权重降低，kline噪音）
-    weight_development: float = 0.18      # development_stage 四阶段（权重降低）
+    weight_risk_level: float = 0.40  # risk_level 高/中/低（卦象固有风险）
+    weight_phase: float = 0.18  # current_phase 六阶段（权重降低，kline噪音）
+    weight_development: float = 0.18  # development_stage 四阶段（权重降低）
     weight_direction_consistency: float = 0.24  # 卦象方向与持仓方向（提高，最核心的风险信号）
 
     # ── 否决阈值 ──
     # 否决 classic CLOSE/REDUCE 的条件：风险低 + 价值高 + 持仓未破关键位
-    veto_risk_threshold: float = 0.35     # yijing_risk_score < 此值才允许否决
-    veto_value_threshold: float = 0.60    # yijing_value_score > 此值才允许否议
-    veto_max_loss_pct: float = -0.03       # 亏损超过 -3% 不否决（让 classic 止损生效）
-    veto_max_hold_sec: float = 104400      # 持仓超过 29h 不否决（回测最佳持仓时间）
+    veto_risk_threshold: float = 0.35  # yijing_risk_score < 此值才允许否决
+    veto_value_threshold: float = 0.60  # yijing_value_score > 此值才允许否议
+    veto_max_loss_pct: float = -0.03  # 亏损超过 -3% 不否决（让 classic 止损生效）
+    veto_max_hold_sec: float = 104400  # 持仓超过 29h 不否决（回测最佳持仓时间）
 
     # ── 提高止盈阈值 ──
     raise_tp_min_profit_pct: float = 0.02  # 至少盈利 2% 才考虑提高 TP
-    raise_tp_adjust_pct: float = 0.30      # TP 上浮 30%（叠加在原 TP 之上）
-    raise_tp_value_threshold: float = 0.58 # 价值分 > 0.58 才提高 TP
+    raise_tp_adjust_pct: float = 0.30  # TP 上浮 30%（叠加在原 TP 之上）
+    raise_tp_value_threshold: float = 0.58  # 价值分 > 0.58 才提高 TP
     # P1修复：从0.70下调到0.58，使成长期/成熟期的高价值卦象能触发RAISE_TP
 
     # ── 降低止损阈值（放宽止损空间）──
-    lower_sl_max_loss_pct: float = -0.02   # 亏损不超过 -2% 才考虑放宽止损
+    lower_sl_max_loss_pct: float = -0.02  # 亏损不超过 -2% 才考虑放宽止损
     lower_sl_min_risk_score: float = 0.30  # 风险分 < 0.30 才放宽止损
-    lower_sl_adjust_pct: float = 0.50      # SL 放宽 50%（从 1.5×ATR → 2.25×ATR）
+    lower_sl_adjust_pct: float = 0.50  # SL 放宽 50%（从 1.5×ATR → 2.25×ATR）
 
     # ── 降低止盈阈值（提前锁定利润）──
     # v5.0：风险阈值 0.60→0.72，min_profit 3%→6%
     # 仅在真正风险高+利润够厚时才锁定利润，避免过早把"正在奔跑的利润"吓出去
     lower_tp_min_profit_pct: float = 0.06  # 至少盈利 6% 才考虑降低 TP
     lower_tp_max_risk_score: float = 0.72  # 风险分 > 0.72 才降低 TP
-    lower_tp_adjust_pct: float = 0.30     # TP 下调 30%
+    lower_tp_adjust_pct: float = 0.30  # TP 下调 30%
 
     # ── 收紧止损阈值（风险升高时缩小止损空间保本）──
     # v5.0：min_risk 0.35→0.55，max_profit 1%→-2%（亏损时才考虑收紧）
@@ -119,7 +122,7 @@ class YijingExitConfig:
     # 新逻辑：只有风险高(≥0.55)且持仓已亏损(≤-2%)时才收紧，也就是"确实出问题了才收缩防线"
     tighten_sl_min_risk_score: float = 0.55  # 风险分 >= 此值才考虑收紧
     tighten_sl_max_profit_pct: float = -0.02  # 亏损超过-2%才收紧（盈利/微亏不收紧）
-    tighten_sl_adjust_pct: float = 0.30      # SL 收紧 30%（止损空间缩小 30%）
+    tighten_sl_adjust_pct: float = 0.30  # SL 收紧 30%（止损空间缩小 30%）
 
     # ── 强制离场阈值 ──
     # v2.1优化：从0.65提高到0.75，避免risk=66%（中高风险）就仓促平仓
@@ -129,74 +132,89 @@ class YijingExitConfig:
     force_close_risk_threshold: float = 0.85
     # 软强制阈值：风险>0.80但<0.85时，若满足冷静期/盈亏条件仍可force_close
     force_close_soft_risk_threshold: float = 0.80
-    force_close_min_loss_pct: float = -0.05   # 软强制时盈亏须超过-5%（跌破更深才开）
-    force_close_min_age_sec: float = 3600      # 软强制时持仓至少60分钟才开（原15min）
+    force_close_min_loss_pct: float = -0.05  # 软强制时盈亏须超过-5%（跌破更深才开）
+    force_close_min_age_sec: float = 3600  # 软强制时持仓至少60分钟才开（原15min）
 
     # ── 持仓冷静期 ──
     # v2.1新增：开仓后短时间内卦象波动很正常（kline还没走出来），给一定保护
     # v5.0延长：30min→60min，-2%→-4%
     # 原因：前30min正是ATR消化期，此时卦象基于刚入场K线计算极不稳定；
     #       延长到60min可有效减少"开仓→易经立刻给TIGHTEN_SL→扫损"的死循环
-    cooldown_age_sec: float = 3600          # 持仓60分钟内不触发普通FORCE_CLOSE（硬止损除外）
-    cooldown_max_loss_pct: float = -0.04    # 冷静期内亏损超过-4%，冷静期保护失效（允许止损）
+    cooldown_age_sec: float = 3600  # 持仓60分钟内不触发普通FORCE_CLOSE（硬止损除外）
+    cooldown_max_loss_pct: float = -0.04  # 冷静期内亏损超过-4%，冷静期保护失效（允许止损）
     cooldown_protect_force_close: bool = True  # 冷静期内FORCE_CLOSE降级为TIGHTEN_SL
 
     # ── TRANSITIONING 特殊处理 ──
     # v2.1新增：TRANSITIONING=转折中，不是明确反转，不应直接当方向冲突触发FORCE_CLOSE
     # 降级为"风险偏高"处理：收紧止损，而非强制平仓
     transitioning_not_direction_conflict: bool = True
-    transitioning_dir_risk: float = 0.50   # TRANSITIONING 方向风险（原为0.60，降为中性0.50）
+    transitioning_dir_risk: float = 0.50  # TRANSITIONING 方向风险（原为0.60，降为中性0.50）
 
     # ── 卦象阶段映射 ──
     # current_phase 六阶段的风险/价值（易经六爻）
-    phase_risk_map: Dict[str, float] = field(default_factory=lambda: {
-        "初九": 0.65,  # 潜龙勿用：低位潜伏，风险偏高（方向未明）
-        "九二": 0.40,  # 见龙在田：初露锋芒，风险降低
-        "九三": 0.55,  # 终日乾乾：警惕反复，风险中等
-        "九四": 0.45,  # 或跃在渊：进退关键，风险中等偏低
-        "九五": 0.25,  # 飞龙在天：主升浪，风险最低
-        "上九": 0.85,  # 亢龙有悔：顶部反转，风险最高
-    })
-    phase_value_map: Dict[str, float] = field(default_factory=lambda: {
-        "初九": 0.35,  # 潜龙勿用：价值未显现
-        "九二": 0.65,  # 见龙在田：价值初现
-        "九三": 0.55,  # 终日乾乾：价值待验证
-        "九四": 0.70,  # 或跃在渊：价值较高
-        "九五": 0.90,  # 飞龙在天：价值最高
-        "上九": 0.20,  # 亢龙有悔：价值已尽
-    })
+    phase_risk_map: Dict[str, float] = field(
+        default_factory=lambda: {
+            "初九": 0.65,  # 潜龙勿用：低位潜伏，风险偏高（方向未明）
+            "九二": 0.40,  # 见龙在田：初露锋芒，风险降低
+            "九三": 0.55,  # 终日乾乾：警惕反复，风险中等
+            "九四": 0.45,  # 或跃在渊：进退关键，风险中等偏低
+            "九五": 0.25,  # 飞龙在天：主升浪，风险最低
+            "上九": 0.85,  # 亢龙有悔：顶部反转，风险最高
+        }
+    )
+    phase_value_map: Dict[str, float] = field(
+        default_factory=lambda: {
+            "初九": 0.35,  # 潜龙勿用：价值未显现
+            "九二": 0.65,  # 见龙在田：价值初现
+            "九三": 0.55,  # 终日乾乾：价值待验证
+            "九四": 0.70,  # 或跃在渊：价值较高
+            "九五": 0.90,  # 飞龙在天：价值最高
+            "上九": 0.20,  # 亢龙有悔：价值已尽
+        }
+    )
 
     # development_stage 四阶段的风险/价值
-    stage_risk_map: Dict[str, float] = field(default_factory=lambda: {
-        "萌芽期": 0.65,   # 萌芽期风险高（方向未明）
-        "成长期": 0.30,   # 成长期风险低（趋势已立）
-        "成熟期": 0.45,   # 成熟期风险中等（接近顶部）
-        "衰退期": 0.80,  # 衰退期风险高（趋势反转）
-    })
-    stage_value_map: Dict[str, float] = field(default_factory=lambda: {
-        "萌芽期": 0.40,  # 萌芽期价值低
-        "成长期": 0.85,  # 成长期价值最高
-        "成熟期": 0.65,  # 成熟期价值中等
-        "衰退期": 0.25,  # 衰退期价值最低
-    })
+    stage_risk_map: Dict[str, float] = field(
+        default_factory=lambda: {
+            "萌芽期": 0.65,  # 萌芽期风险高（方向未明）
+            "成长期": 0.30,  # 成长期风险低（趋势已立）
+            "成熟期": 0.45,  # 成熟期风险中等（接近顶部）
+            "衰退期": 0.80,  # 衰退期风险高（趋势反转）
+        }
+    )
+    stage_value_map: Dict[str, float] = field(
+        default_factory=lambda: {
+            "萌芽期": 0.40,  # 萌芽期价值低
+            "成长期": 0.85,  # 成长期价值最高
+            "成熟期": 0.65,  # 成熟期价值中等
+            "衰退期": 0.25,  # 衰退期价值最低
+        }
+    )
 
     # risk_level 映射
-    risk_level_map: Dict[str, float] = field(default_factory=lambda: {
-        "高": 0.80, "high": 0.80,
-        "中": 0.50, "medium": 0.50,
-        "低": 0.25, "low": 0.25,
-    })
+    risk_level_map: Dict[str, float] = field(
+        default_factory=lambda: {
+            "高": 0.80,
+            "high": 0.80,
+            "中": 0.50,
+            "medium": 0.50,
+            "低": 0.25,
+            "low": 0.25,
+        }
+    )
 
     # 卦象方向 → 与持仓方向是否一致
     # direction_hint: UP/DOWN/FLAT/TRANSITIONING/UNKNOWN
-    direction_consistency_map: Dict[str, Dict[str, float]] = field(default_factory=lambda: {
-        "UP": {"long": 0.20, "short": 0.85},    # UP 卦做多：风险低；做空：风险高
-        "DOWN": {"long": 0.85, "short": 0.20},  # DOWN 卦做空：风险低；做多：风险高
-        "FLAT": {"long": 0.50, "short": 0.50},  # FLAT 中性
-        # v2.1优化：TRANSITIONING=转折中，不是明确反转，降为中性0.50，不再触发"方向冲突FORCE_CLOSE"
-        "TRANSITIONING": {"long": 0.50, "short": 0.50},
-        "UNKNOWN": {"long": 0.50, "short": 0.50},
-    })
+    direction_consistency_map: Dict[str, Dict[str, float]] = field(
+        default_factory=lambda: {
+            "UP": {"long": 0.20, "short": 0.85},  # UP 卦做多：风险低；做空：风险高
+            "DOWN": {"long": 0.85, "short": 0.20},  # DOWN 卦做空：风险低；做多：风险高
+            "FLAT": {"long": 0.50, "short": 0.50},  # FLAT 中性
+            # v2.1优化：TRANSITIONING=转折中，不是明确反转，降为中性0.50，不再触发"方向冲突FORCE_CLOSE"
+            "TRANSITIONING": {"long": 0.50, "short": 0.50},
+            "UNKNOWN": {"long": 0.50, "short": 0.50},
+        }
+    )
 
 
 class YijingExitSystem:
@@ -252,8 +270,7 @@ class YijingExitSystem:
         return max(0.5, min(2.0, 0.5 + 1.5 * value_score))
 
     @staticmethod
-    def apply_atr_floor(modulated_roi: float, base_roi: float,
-                        floor_ratio: float = 0.7) -> float:
+    def apply_atr_floor(modulated_roi: float, base_roi: float, floor_ratio: float = 0.7) -> float:
         """ATR 基线下限保护：调整后 ROI 不得低于基线的 floor_ratio 倍"""
         return max(modulated_roi, base_roi * floor_ratio)
 
@@ -306,11 +323,9 @@ class YijingExitSystem:
         else:
             self._eval_cache.clear()
 
-    def should_evaluate_now(self,
-                            position_age_sec: float,
-                            coin: str,
-                            pos_side: str,
-                            open_time_sec: float = 0.0) -> bool:
+    def should_evaluate_now(
+        self, position_age_sec: float, coin: str, pos_side: str, open_time_sec: float = 0.0
+    ) -> bool:
         """v3.0核心：判断当前时刻是否应该执行易经评估
 
         规则：
@@ -349,9 +364,9 @@ class YijingExitSystem:
         unrealized_pnl_pct: float,
         classic_decision: Any = None,
         mfe_pnl_pct: float = 0.0,
-        coin: str = "",            # v3.0新增：缓存key
-        open_time_sec: float = 0.0, # v3.0新增：开仓时间戳
-        mode: str = "main",         # 评估模式：main=主离场(守1h门禁+写缓存) / veto=否决评估(绕门禁+不写缓存)
+        coin: str = "",  # v3.0新增：缓存key
+        open_time_sec: float = 0.0,  # v3.0新增：开仓时间戳
+        mode: str = "main",  # 评估模式：main=主离场(守1h门禁+写缓存) / veto=否决评估(绕门禁+不写缓存)
     ) -> YijingExitDecision:
         """评估离场决策
 
@@ -375,7 +390,9 @@ class YijingExitSystem:
             YijingExitDecision
         """
         # 记录当前模式，供 _save_eval_cache 判断是否写缓存
-        self._current_eval_mode = mode if mode in (self.MODE_MAIN, self.MODE_VETO) else self.MODE_MAIN
+        self._current_eval_mode = (
+            mode if mode in (self.MODE_MAIN, self.MODE_VETO) else self.MODE_MAIN
+        )
 
         now_ts = time.time()
         decision = YijingExitDecision(
@@ -385,7 +402,9 @@ class YijingExitSystem:
 
         # ── v3.0：1h节奏门禁（仅 main 模式生效；veto 模式绕过，否则二次否决评估会被缓存吞掉）──
         cfg = self.config
-        if self._current_eval_mode == self.MODE_MAIN and not self.should_evaluate_now(position_age_sec, coin, pos_side, open_time_sec):
+        if self._current_eval_mode == self.MODE_MAIN and not self.should_evaluate_now(
+            position_age_sec, coin, pos_side, open_time_sec
+        ):
             # 不评估：分两种日志
             cache_key = self._cache_key(coin, pos_side)
             cache = self._eval_cache.get(cache_key)
@@ -431,7 +450,9 @@ class YijingExitSystem:
             decision.should_log = False
             return decision
 
-        decision.hexagram_name = hex_data.get("hexagram_name_cn", "") or hex_data.get("hexagram_name", "")
+        decision.hexagram_name = hex_data.get("hexagram_name_cn", "") or hex_data.get(
+            "hexagram_name", ""
+        )
         decision.risk_level = str(hex_data.get("risk_level", "")).lower()
         decision.current_phase = str(hex_data.get("current_phase", ""))
         decision.development_stage = str(hex_data.get("development_stage", ""))
@@ -460,7 +481,7 @@ class YijingExitSystem:
         direction_risk = direction_consistency.get(pos_side, 0.50)
         # v2.1优化：TRANSITIONING=转折中，不是明确反向，视为方向不冲突
         # 不再因TRANSITIONING而提升risk和判定dir_consistent=False
-        is_transitioning = (direction_hint == "TRANSITIONING")
+        is_transitioning = direction_hint == "TRANSITIONING"
         if is_transitioning and self.config.transitioning_not_direction_conflict:
             # 视为中性：既不冲突也不一致，避免"方向冲突FORCE_CLOSE"
             decision.direction_consistent = True
@@ -468,10 +489,10 @@ class YijingExitSystem:
             decision.direction_consistent = direction_risk < 0.50
 
         # 方向不一致（不含TRANSITIONING）时风险分加权提升
-        if not decision.direction_consistent and not (is_transitioning and self.config.transitioning_not_direction_conflict):
-            decision.yijing_risk_score = (
-                decision.yijing_risk_score * 0.7 + direction_risk * 0.3
-            )
+        if not decision.direction_consistent and not (
+            is_transitioning and self.config.transitioning_not_direction_conflict
+        ):
+            decision.yijing_risk_score = decision.yijing_risk_score * 0.7 + direction_risk * 0.3
 
         decision.confidence = float(hex_data.get("confidence", 0.5) or 0.5)
 
@@ -488,9 +509,8 @@ class YijingExitSystem:
         #   - 硬强制门槛从0.65→0.75，留给TRANSITIONING真正的极端风险才触发
         #   - 软强制（0.70~0.75）：持仓够久或亏损够深才触发
         #   - 冷静期内：force_close降级为tighten_sl
-        direction_hard_conflict = (
-            not decision.direction_consistent
-            and not (is_transitioning and self.config.transitioning_not_direction_conflict)
+        direction_hard_conflict = not decision.direction_consistent and not (
+            is_transitioning and self.config.transitioning_not_direction_conflict
         )
         risk = decision.yijing_risk_score
         hard_force = risk >= cfg.force_close_risk_threshold and direction_hard_conflict
@@ -498,8 +518,10 @@ class YijingExitSystem:
             risk >= cfg.force_close_soft_risk_threshold
             and risk < cfg.force_close_risk_threshold
             and direction_hard_conflict
-            and (position_age_sec >= cfg.force_close_min_age_sec
-                 or unrealized_pnl_pct <= cfg.force_close_min_loss_pct)
+            and (
+                position_age_sec >= cfg.force_close_min_age_sec
+                or unrealized_pnl_pct <= cfg.force_close_min_loss_pct
+            )
         )
 
         if hard_force or soft_force:
@@ -535,9 +557,11 @@ class YijingExitSystem:
             return decision
 
         # ── 2. 提高止盈判定：卦象价值高 + 当前盈利 ──
-        if (unrealized_pnl_pct >= self.config.raise_tp_min_profit_pct
-                and decision.yijing_value_score >= self.config.raise_tp_value_threshold
-                and decision.direction_consistent):
+        if (
+            unrealized_pnl_pct >= self.config.raise_tp_min_profit_pct
+            and decision.yijing_value_score >= self.config.raise_tp_value_threshold
+            and decision.direction_consistent
+        ):
             # 仅在成长期/成熟期 + 飞龙在天/或跃在渊时提高 TP
             valuable_phase = decision.current_phase in ("九二", "九四", "九五")
             valuable_stage = decision.development_stage in ("成长期", "成熟期")
@@ -558,9 +582,11 @@ class YijingExitSystem:
 
         # ── 3. 降低止损判定：卦象风险低 + 亏损可控 → 放宽止损空间 ──
         # 场景：趋势刚刚启动，暂时回撤但卦象显示风险低，不应该被止损洗出去
-        if (unrealized_pnl_pct > self.config.lower_sl_max_loss_pct
-                and decision.yijing_risk_score < self.config.lower_sl_min_risk_score
-                and decision.direction_consistent):
+        if (
+            unrealized_pnl_pct > self.config.lower_sl_max_loss_pct
+            and decision.yijing_risk_score < self.config.lower_sl_min_risk_score
+            and decision.direction_consistent
+        ):
             # 仅在萌芽期/成长期放宽止损（趋势刚刚启动）
             early_stage = decision.development_stage in ("萌芽期", "成长期")
             if early_stage:
@@ -580,8 +606,10 @@ class YijingExitSystem:
 
         # ── 4. 降低止盈判定：卦象风险升高 + 已有利润 → 提前锁定 ──
         # 场景：卦象显示接近顶部（风险升高），但还没到强制平仓的程度，提前锁定部分利润
-        if (unrealized_pnl_pct >= self.config.lower_tp_min_profit_pct
-                and decision.yijing_risk_score >= self.config.lower_tp_max_risk_score):
+        if (
+            unrealized_pnl_pct >= self.config.lower_tp_min_profit_pct
+            and decision.yijing_risk_score >= self.config.lower_tp_max_risk_score
+        ):
             # 仅在成熟期/衰退期降低止盈（接近顶部）
             late_stage = decision.development_stage in ("成熟期", "衰退期")
             high_risk_phase = decision.current_phase in ("九三", "上九")
@@ -603,9 +631,11 @@ class YijingExitSystem:
         # ── 4.5. 收紧止损判定：卦象风险升高 + 未盈利/微利 → 收紧止损保本 ──
         # 场景：卦象显示风险正在升高，但还没到强制平仓的程度，且持仓未盈利或微利，
         #       此时应收紧止损，减少潜在亏损
-        if (unrealized_pnl_pct < self.config.tighten_sl_max_profit_pct
-                and decision.yijing_risk_score >= self.config.tighten_sl_min_risk_score
-                and decision.yijing_risk_score < self.config.force_close_risk_threshold):
+        if (
+            unrealized_pnl_pct < self.config.tighten_sl_max_profit_pct
+            and decision.yijing_risk_score >= self.config.tighten_sl_min_risk_score
+            and decision.yijing_risk_score < self.config.force_close_risk_threshold
+        ):
             # 风险升高阶段：衰退期/成熟期，或警示阶段：九三/上九
             warning_stage = decision.development_stage in ("成熟期", "衰退期")
             warning_phase = decision.current_phase in ("九三", "上九")
@@ -656,7 +686,13 @@ class YijingExitSystem:
             if should_veto:
                 # 进一步过滤：仅否决噪音类止损（TB_STOP_LOSS、trailing_stop、risk_gate）
                 # 不否决 L0 硬止损、信号反转、TSTP 衰减
-                noise_reasons = ("tb_stop_loss", "trailing_stop", "risk_gate", "l2_reduce", "l2_close")
+                noise_reasons = (
+                    "tb_stop_loss",
+                    "trailing_stop",
+                    "risk_gate",
+                    "l2_reduce",
+                    "l2_close",
+                )
                 is_noise_stop = any(nr in classic_reason.lower() for nr in noise_reasons)
 
                 if is_noise_stop:
@@ -764,8 +800,12 @@ class YijingExitSystem:
                 return val
         # 中文描述反向匹配（飞龙在天→九五，亢龙有悔→上九 等）
         desc_to_key = {
-            "潜龙勿用": "初九", "见龙在田": "九二", "终日乾乾": "九三",
-            "或跃在渊": "九四", "飞龙在天": "九五", "亢龙有悔": "上九",
+            "潜龙勿用": "初九",
+            "见龙在田": "九二",
+            "终日乾乾": "九三",
+            "或跃在渊": "九四",
+            "飞龙在天": "九五",
+            "亢龙有悔": "上九",
         }
         for desc, key in desc_to_key.items():
             if desc in phase and key in mapping:
@@ -791,10 +831,18 @@ class YijingExitSystem:
                 return val
         # 同义词前缀匹配（YijingEngine 用词 vs 配置用词）
         synonym_map = {
-            "萌芽": "萌芽期", "启动": "萌芽期", "初期": "萌芽期",
-            "成长": "成长期", "上升": "成长期",
-            "成熟": "成熟期", "鼎盛": "成熟期", "顶部": "成熟期",
-            "衰退": "衰退期", "崩溃": "衰退期", "下跌": "衰退期", "衰竭": "衰退期",
+            "萌芽": "萌芽期",
+            "启动": "萌芽期",
+            "初期": "萌芽期",
+            "成长": "成长期",
+            "上升": "成长期",
+            "成熟": "成熟期",
+            "鼎盛": "成熟期",
+            "顶部": "成熟期",
+            "衰退": "衰退期",
+            "崩溃": "衰退期",
+            "下跌": "衰退期",
+            "衰竭": "衰退期",
         }
         for syn, key in synonym_map.items():
             if syn in stage and key in mapping:
@@ -867,14 +915,16 @@ class YijingExitSystem:
             else:
                 continue
             if hex_name:
-                trade_data.append({
-                    "hexagram_name": hex_name,
-                    "pnl_pct": pnl,
-                    "current_phase": phase,
-                    "development_stage": stage,
-                    "risk_level": risk,
-                    "is_win": pnl > 0,
-                })
+                trade_data.append(
+                    {
+                        "hexagram_name": hex_name,
+                        "pnl_pct": pnl,
+                        "current_phase": phase,
+                        "development_stage": stage,
+                        "risk_level": risk,
+                        "is_win": pnl > 0,
+                    }
+                )
 
         if not trade_data:
             return {"status": "no_hexagram_data", "suggestions": []}
@@ -897,23 +947,25 @@ class YijingExitSystem:
         # Phase 校准建议
         for phase, stats in phase_stats.items():
             prior_risk = cfg.phase_risk_map.get(phase, 0.5)
-            prior_value = cfg.phase_value_map.get(phase, 0.5)
+            prior_value = cfg.phase_value_map.get(phase, 0.5)  # noqa: F841
             actual_win = stats["win_rate"]
             actual_pnl = stats["avg_pnl"]
             # 偏差方向：实际胜率远低于先验风险预期 → 风险被低估
             risk_alignment = self._assess_risk_alignment(prior_risk, actual_win, total_win_rate)
             if risk_alignment != "aligned" and stats["count"] >= min_samples:
-                suggestions.append({
-                    "dimension": "phase",
-                    "key": phase,
-                    "type": risk_alignment,
-                    "prior_risk": prior_risk,
-                    "actual_win_rate": actual_win,
-                    "actual_avg_pnl": actual_pnl,
-                    "sample_count": stats["count"],
-                    "suggestion": f"{phase} 先验风险={prior_risk:.2f}，实际胜率={actual_win:.0%}，"
-                                  f"建议{'上调' if risk_alignment == 'underestimated' else '下调'}风险分",
-                })
+                suggestions.append(
+                    {
+                        "dimension": "phase",
+                        "key": phase,
+                        "type": risk_alignment,
+                        "prior_risk": prior_risk,
+                        "actual_win_rate": actual_win,
+                        "actual_avg_pnl": actual_pnl,
+                        "sample_count": stats["count"],
+                        "suggestion": f"{phase} 先验风险={prior_risk:.2f}，实际胜率={actual_win:.0%}，"
+                        f"建议{'上调' if risk_alignment == 'underestimated' else '下调'}风险分",
+                    }
+                )
 
         # Stage 校准建议
         for stage, stats in stage_stats.items():
@@ -921,17 +973,19 @@ class YijingExitSystem:
             actual_win = stats["win_rate"]
             risk_alignment = self._assess_risk_alignment(prior_risk, actual_win, total_win_rate)
             if risk_alignment != "aligned" and stats["count"] >= min_samples:
-                suggestions.append({
-                    "dimension": "stage",
-                    "key": stage,
-                    "type": risk_alignment,
-                    "prior_risk": prior_risk,
-                    "actual_win_rate": actual_win,
-                    "actual_avg_pnl": stats["avg_pnl"],
-                    "sample_count": stats["count"],
-                    "suggestion": f"{stage} 先验风险={prior_risk:.2f}，实际胜率={actual_win:.0%}，"
-                                  f"建议{'上调' if risk_alignment == 'underestimated' else '下调'}风险分",
-                })
+                suggestions.append(
+                    {
+                        "dimension": "stage",
+                        "key": stage,
+                        "type": risk_alignment,
+                        "prior_risk": prior_risk,
+                        "actual_win_rate": actual_win,
+                        "actual_avg_pnl": stats["avg_pnl"],
+                        "sample_count": stats["count"],
+                        "suggestion": f"{stage} 先验风险={prior_risk:.2f}，实际胜率={actual_win:.0%}，"
+                        f"建议{'上调' if risk_alignment == 'underestimated' else '下调'}风险分",
+                    }
+                )
 
         return {
             "status": "ok",
@@ -972,7 +1026,9 @@ class YijingExitSystem:
         return result
 
     @staticmethod
-    def _assess_risk_alignment(prior_risk: float, actual_win_rate: float, baseline_win_rate: float) -> str:
+    def _assess_risk_alignment(
+        prior_risk: float, actual_win_rate: float, baseline_win_rate: float
+    ) -> str:
         """
         评估先验风险与实际表现的一致性
         - underestimated: 先验风险太低（实际表现远差于预期）
@@ -987,7 +1043,7 @@ class YijingExitSystem:
         if diff < -0.25:
             return "underestimated"  # 实际更差 → 风险被低估
         elif diff > 0.25:
-            return "overestimated"   # 实际更好 → 风险被高估
+            return "overestimated"  # 实际更好 → 风险被高估
         return "aligned"
 
     # ── 参数版本管理（P2-2: 回滚机制）──
@@ -996,30 +1052,35 @@ class YijingExitSystem:
         """创建当前配置的快照（用于回滚）"""
         import copy
         import time
+
         return {
             "version": "1.0",
             "timestamp": time.time(),
             "label": label,
-            "config": copy.deepcopy({
-                "weight_risk_level": self.config.weight_risk_level,
-                "weight_phase": self.config.weight_phase,
-                "weight_development": self.config.weight_development,
-                "weight_direction_consistency": self.config.weight_direction_consistency,
-                "veto_risk_threshold": self.config.veto_risk_threshold,
-                "veto_value_threshold": self.config.veto_value_threshold,
-                "veto_max_loss_pct": self.config.veto_max_loss_pct,
-                "veto_max_hold_sec": self.config.veto_max_hold_sec,
-                "raise_tp_min_profit_pct": self.config.raise_tp_min_profit_pct,
-                "raise_tp_adjust_pct": self.config.raise_tp_adjust_pct,
-                "raise_tp_value_threshold": self.config.raise_tp_value_threshold,
-                "force_close_risk_threshold": self.config.force_close_risk_threshold,
-                "phase_risk_map": dict(self.config.phase_risk_map),
-                "phase_value_map": dict(self.config.phase_value_map),
-                "stage_risk_map": dict(self.config.stage_risk_map),
-                "stage_value_map": dict(self.config.stage_value_map),
-                "risk_level_map": dict(self.config.risk_level_map),
-                "direction_consistency_map": {k: dict(v) for k, v in self.config.direction_consistency_map.items()},
-            }),
+            "config": copy.deepcopy(
+                {
+                    "weight_risk_level": self.config.weight_risk_level,
+                    "weight_phase": self.config.weight_phase,
+                    "weight_development": self.config.weight_development,
+                    "weight_direction_consistency": self.config.weight_direction_consistency,
+                    "veto_risk_threshold": self.config.veto_risk_threshold,
+                    "veto_value_threshold": self.config.veto_value_threshold,
+                    "veto_max_loss_pct": self.config.veto_max_loss_pct,
+                    "veto_max_hold_sec": self.config.veto_max_hold_sec,
+                    "raise_tp_min_profit_pct": self.config.raise_tp_min_profit_pct,
+                    "raise_tp_adjust_pct": self.config.raise_tp_adjust_pct,
+                    "raise_tp_value_threshold": self.config.raise_tp_value_threshold,
+                    "force_close_risk_threshold": self.config.force_close_risk_threshold,
+                    "phase_risk_map": dict(self.config.phase_risk_map),
+                    "phase_value_map": dict(self.config.phase_value_map),
+                    "stage_risk_map": dict(self.config.stage_risk_map),
+                    "stage_value_map": dict(self.config.stage_value_map),
+                    "risk_level_map": dict(self.config.risk_level_map),
+                    "direction_consistency_map": {
+                        k: dict(v) for k, v in self.config.direction_consistency_map.items()
+                    },
+                }
+            ),
         }
 
     def restore_config(self, snapshot: Dict[str, Any]) -> bool:

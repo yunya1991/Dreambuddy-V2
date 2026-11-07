@@ -8,10 +8,10 @@ TradeSettlementBridge 职责:
 - _reconstruct_snapshot_from_trade(trade_rec) — 降级重建
 - on_trade_settled(trade_rec) — 平仓回调: 检索snapshot→ReflectionEngine measure→reflect→learn→feedback
 """
-import json
-import pytest
+
 from types import SimpleNamespace
-from pathlib import Path
+
+import pytest
 
 
 class TestTradeSettlementBridgeSnapshot:
@@ -20,10 +20,19 @@ class TestTradeSettlementBridgeSnapshot:
     def test_store_and_retrieve_snapshot(self, tmp_path):
         """存储后能检索到 snapshot"""
         from dreambuddy_evolution.engines.trade_settlement_bridge import TradeSettlementBridge
+
         bridge = TradeSettlementBridge(snapshot_dir=str(tmp_path))
-        snap = {"symbol": "BTC", "action": "long", "level0_dstar": "long", "ess_dir": "long",
-                "cbr_top1_outcome": "TP", "cluster_id": "c1", "ess_id": "e1", "cbr_sim": 0.8,
-                "u_open": 0.1}
+        snap = {
+            "symbol": "BTC",
+            "action": "long",
+            "level0_dstar": "long",
+            "ess_dir": "long",
+            "cbr_top1_outcome": "TP",
+            "cluster_id": "c1",
+            "ess_id": "e1",
+            "cbr_sim": 0.8,
+            "u_open": 0.1,
+        }
         bridge.store_snapshot("BTC", snap)
         retrieved = bridge.retrieve_snapshot("BTC")
         assert retrieved is not None
@@ -33,6 +42,7 @@ class TestTradeSettlementBridgeSnapshot:
     def test_retrieve_consumes_snapshot(self, tmp_path):
         """检索后 snapshot 被删除（防重复反思）"""
         from dreambuddy_evolution.engines.trade_settlement_bridge import TradeSettlementBridge
+
         bridge = TradeSettlementBridge(snapshot_dir=str(tmp_path))
         snap = {"symbol": "ETH", "action": "short", "level0_dstar": "short"}
         bridge.store_snapshot("ETH", snap)
@@ -47,8 +57,15 @@ class TestTradeSettlementBridgeSnapshot:
 class TestTradeSettlementBridgeOnTradeSettled:
     """平仓回调 → ReflectionEngine 反思回路"""
 
-    def _make_trade_rec(self, direction="long", entry=50000.0, exit_p=51000.0, pnl=10.0,
-                        pnl_pct=0.02, exit_reason="take_profit"):
+    def _make_trade_rec(
+        self,
+        direction="long",
+        entry=50000.0,
+        exit_p=51000.0,
+        pnl=10.0,
+        pnl_pct=0.02,
+        exit_reason="take_profit",
+    ):
         """构造 mock trade_rec"""
         return SimpleNamespace(
             inst_id="BTC-USDT-SWAP",
@@ -67,11 +84,20 @@ class TestTradeSettlementBridgeOnTradeSettled:
     def test_on_trade_settled_tp(self, tmp_path):
         """盈利平仓 + 方向对 → CS=1.0≥0.9 & TP → ESS +0.05（Phase1.2动态步长）"""
         from dreambuddy_evolution.engines.trade_settlement_bridge import TradeSettlementBridge
+
         bridge = TradeSettlementBridge(snapshot_dir=str(tmp_path))
         # 存储 snapshot: d*=long, ess_dir=long, cbr=TP
-        snap = {"symbol": "BTC", "action": "long", "level0_dstar": "long", "ess_dir": "long",
-                "cbr_top1_outcome": "TP", "cluster_id": "c1", "ess_id": "e1", "cbr_sim": 0.8,
-                "u_open": 0.1}
+        snap = {
+            "symbol": "BTC",
+            "action": "long",
+            "level0_dstar": "long",
+            "ess_dir": "long",
+            "cbr_top1_outcome": "TP",
+            "cluster_id": "c1",
+            "ess_id": "e1",
+            "cbr_sim": 0.8,
+            "u_open": 0.1,
+        }
         bridge.store_snapshot("BTC", snap)
         # trade_rec: direction=long, pnl>0 → real_direction=long, real_outcome=TP
         trade_rec = self._make_trade_rec(direction="long", exit_p=51000.0, pnl=10.0)
@@ -82,15 +108,30 @@ class TestTradeSettlementBridgeOnTradeSettled:
     def test_on_trade_settled_sl(self, tmp_path):
         """亏损平仓 + 方向反 → CS≤-0.2 & SL → ESS -0.05"""
         from dreambuddy_evolution.engines.trade_settlement_bridge import TradeSettlementBridge
+
         bridge = TradeSettlementBridge(snapshot_dir=str(tmp_path))
         # snapshot: d*=long, ess_dir=long, cbr=TP (预测做多)
-        snap = {"symbol": "BTC", "action": "long", "level0_dstar": "long", "ess_dir": "long",
-                "cbr_top1_outcome": "TP", "cluster_id": "c1", "ess_id": "e1", "cbr_sim": 0.8,
-                "u_open": 0.1}
+        snap = {
+            "symbol": "BTC",
+            "action": "long",
+            "level0_dstar": "long",
+            "ess_dir": "long",
+            "cbr_top1_outcome": "TP",
+            "cluster_id": "c1",
+            "ess_id": "e1",
+            "cbr_sim": 0.8,
+            "u_open": 0.1,
+        }
         bridge.store_snapshot("BTC", snap)
         # trade_rec: direction=long 但 exit < entry → real_direction=short, SL
-        trade_rec = self._make_trade_rec(direction="long", entry=50000.0, exit_p=49000.0,
-                                         pnl=-10.0, pnl_pct=-0.02, exit_reason="stop_loss")
+        trade_rec = self._make_trade_rec(
+            direction="long",
+            entry=50000.0,
+            exit_p=49000.0,
+            pnl=-10.0,
+            pnl_pct=-0.02,
+            exit_reason="stop_loss",
+        )
         result = bridge.on_trade_settled(trade_rec)
         assert result["ess_delta"] == pytest.approx(-0.05, abs=0.001)
         assert result["cs"] <= -0.2
@@ -98,12 +139,21 @@ class TestTradeSettlementBridgeOnTradeSettled:
     def test_on_trade_settled_returns_factor_adjustments(self, tmp_path):
         """RED: snapshot含dimension_predictions时，on_trade_settled返回factor_adjustments。"""
         from dreambuddy_evolution.engines.trade_settlement_bridge import TradeSettlementBridge
+
         bridge = TradeSettlementBridge(snapshot_dir=str(tmp_path))
-        snap = {"symbol": "BTC", "action": "long", "level0_dstar": "long", "ess_dir": "long",
-                "cbr_top1_outcome": "TP", "cluster_id": "c1", "ess_id": "e1", "cbr_sim": 0.8,
-                "u_open": 0.1,
-                "dimension_predictions": {"C1": "long", "C2": "short"},
-                "dimension_factors": {"C1": {"资金流入": 0.5}, "C2": {"多空比": 0.4}}}
+        snap = {
+            "symbol": "BTC",
+            "action": "long",
+            "level0_dstar": "long",
+            "ess_dir": "long",
+            "cbr_top1_outcome": "TP",
+            "cluster_id": "c1",
+            "ess_id": "e1",
+            "cbr_sim": 0.8,
+            "u_open": 0.1,
+            "dimension_predictions": {"C1": "long", "C2": "short"},
+            "dimension_factors": {"C1": {"资金流入": 0.5}, "C2": {"多空比": 0.4}},
+        }
         bridge.store_snapshot("BTC", snap)
         trade_rec = self._make_trade_rec(direction="long", exit_p=51000.0, pnl=10.0)
         result = bridge.on_trade_settled(trade_rec)
@@ -113,6 +163,7 @@ class TestTradeSettlementBridgeOnTradeSettled:
     def test_on_trade_settled_no_snapshot_reconstruct(self, tmp_path):
         """无持久化 snapshot 时从 trade_rec 降级重建，不崩溃"""
         from dreambuddy_evolution.engines.trade_settlement_bridge import TradeSettlementBridge
+
         bridge = TradeSettlementBridge(snapshot_dir=str(tmp_path))
         trade_rec = self._make_trade_rec(direction="long", exit_p=51000.0, pnl=10.0)
         # 无 snapshot → 降级重建
@@ -125,6 +176,7 @@ class TestTradeSettlementBridgeOnTradeSettled:
     def test_on_trade_settled_no_snapshot_fail_open(self, tmp_path):
         """trade_rec 无效（无 direction/pnl）时 FAIL-OPEN 返回空 ESS delta"""
         from dreambuddy_evolution.engines.trade_settlement_bridge import TradeSettlementBridge
+
         bridge = TradeSettlementBridge(snapshot_dir=str(tmp_path))
         # 构造无效 trade_rec（缺关键字段）
         bad_trade_rec = SimpleNamespace(inst_id="X")
@@ -135,6 +187,7 @@ class TestTradeSettlementBridgeOnTradeSettled:
     def test_crash_fail_open(self, tmp_path):
         """内部异常时不崩溃，返回空 ESS delta"""
         from dreambuddy_evolution.engines.trade_settlement_bridge import TradeSettlementBridge
+
         bridge = TradeSettlementBridge(snapshot_dir=str(tmp_path))
         # 传入 None 触发异常
         result = bridge.on_trade_settled(None)

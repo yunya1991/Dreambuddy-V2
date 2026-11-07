@@ -4,10 +4,9 @@
 RED 阶段：assert ModuleNotFoundError / ImportError
 GREEN 阶段：实现 jev_gate.py 使测试通过
 """
-import os
-import sys
 
-import pytest
+import os  # noqa: I001
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -16,29 +15,34 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 # 1. 模块导入测试 (RED: ModuleNotFoundError)
 # ============================================================
 
+
 class TestModuleImport:
     """验证 jev_gate 模块可导入"""
 
     def test_import_jev_gate(self):
         from core.jev_gate import jev_gate
+
         assert callable(jev_gate)
 
     def test_import_jev_anti_oscillation(self):
         from core.jev_gate import JevAntiOscillation
+
         assert JevAntiOscillation is not None
 
     def test_module_constants(self):
-        from core.jev_gate import (
+        from core.jev_gate import (  # noqa: I001
             MAX_CONSECUTIVE_OVERRIDE,
             DEGRADATION_THRESHOLD,
             RECOVERY_COUNT,
         )
+
         assert MAX_CONSECUTIVE_OVERRIDE == 2
         assert DEGRADATION_THRESHOLD == 3
         assert RECOVERY_COUNT == 5
 
     def test_fast_path_constants(self):
-        from core.jev_gate import FAST_PATH_MATCH, FAST_PATH_DENSITY
+        from core.jev_gate import FAST_PATH_MATCH, FAST_PATH_DENSITY  # noqa: I001
+
         assert FAST_PATH_MATCH == 0.8
         assert FAST_PATH_DENSITY == 5
 
@@ -47,12 +51,14 @@ class TestModuleImport:
 # 2. jev_gate — Fast-path 跳过
 # ============================================================
 
+
 class TestJevGateFastPath:
     """高可信度场景跳过 jev 裁决"""
 
     def test_fast_path_skip_high_match_high_density(self):
         """match_score >= 0.8 且 case_density >= 5 → 返回原始决策"""
-        from core.jev_gate import jev_gate, CONTINUE
+        from core.jev_gate import jev_gate, CONTINUE  # noqa: I001
+
         result = jev_gate(
             decision=CONTINUE,
             match_score=0.85,
@@ -64,7 +70,8 @@ class TestJevGateFastPath:
 
     def test_fast_path_boundary_match(self):
         """match_score == 0.8 边界值 → 跳过"""
-        from core.jev_gate import jev_gate, CONTINUE
+        from core.jev_gate import jev_gate, CONTINUE  # noqa: I001
+
         result = jev_gate(
             decision=CONTINUE,
             match_score=0.8,
@@ -76,7 +83,8 @@ class TestJevGateFastPath:
 
     def test_fast_path_not_triggered_low_density(self):
         """match_score 高但 density < 5 → 不跳过，进入裁决"""
-        from core.jev_gate import jev_gate, CONTINUE, REDO
+        from core.jev_gate import jev_gate, CONTINUE, REDO  # noqa: I001
+
         # match_score=0.85, density=3 → 不跳过
         # rea_confidence=0.1 → prediction_error=0.75 > 0.3 → REDO
         result = jev_gate(
@@ -90,7 +98,8 @@ class TestJevGateFastPath:
 
     def test_fast_path_not_triggered_low_match(self):
         """match_score < 0.8 → 不跳过"""
-        from core.jev_gate import jev_gate, CONTINUE
+        from core.jev_gate import jev_gate, CONTINUE  # noqa: I001
+
         # match_score=0.7, density=10 → 不跳过
         # rea_confidence=0.7 → prediction_error=0 → CONTINUE
         result = jev_gate(
@@ -107,11 +116,13 @@ class TestJevGateFastPath:
 # 3. jev_gate — 预测误差门控
 # ============================================================
 
+
 class TestJevGatePredictionError:
     """预测误差 > 0.3 且 CONTINUE → REDO"""
 
     def test_high_prediction_error_continue_to_redo(self):
-        from core.jev_gate import jev_gate, CONTINUE, REDO
+        from core.jev_gate import jev_gate, CONTINUE, REDO  # noqa: I001
+
         result = jev_gate(
             decision=CONTINUE,
             match_score=0.8,
@@ -123,7 +134,8 @@ class TestJevGatePredictionError:
 
     def test_prediction_error_boundary(self):
         """prediction_error == 0.3 边界 → 不降级（> 0.3 才降级）"""
-        from core.jev_gate import jev_gate, CONTINUE
+        from core.jev_gate import jev_gate, CONTINUE  # noqa: I001
+
         result = jev_gate(
             decision=CONTINUE,
             match_score=0.6,
@@ -135,7 +147,8 @@ class TestJevGatePredictionError:
 
     def test_prediction_error_uses_debate_fallback(self):
         """rea_confidence=0 时使用 debate_result 的 bull_confidence"""
-        from core.jev_gate import jev_gate, CONTINUE, REDO
+        from core.jev_gate import jev_gate, CONTINUE, REDO  # noqa: I001
+
         result = jev_gate(
             decision=CONTINUE,
             match_score=0.8,
@@ -147,7 +160,8 @@ class TestJevGatePredictionError:
 
     def test_prediction_error_no_debate_no_rea(self):
         """rea_confidence=0 且无 debate → actual=0.5"""
-        from core.jev_gate import jev_gate, CONTINUE, REDO
+        from core.jev_gate import jev_gate, CONTINUE, REDO  # noqa: I001
+
         # match_score=0.85, actual=0.5 → error=0.35 > 0.3 → REDO
         result = jev_gate(
             decision=CONTINUE,
@@ -163,11 +177,13 @@ class TestJevGatePredictionError:
 # 4. jev_gate — Believability-weighted
 # ============================================================
 
+
 class TestJevGateBelievability:
     """believability = case_density * match_score < 0.5 且 CONTINUE → INSERT_BEFORE"""
 
     def test_low_believability_continue_to_insert_before(self):
-        from core.jev_gate import jev_gate, CONTINUE, INSERT_BEFORE
+        from core.jev_gate import jev_gate, CONTINUE, INSERT_BEFORE  # noqa: I001
+
         # match_score=0.4, density=1 → believability=0.4 < 0.5
         # rea_confidence=0.4 → prediction_error=0 → not > 0.3
         # → believability check: 0.4 < 0.5 → INSERT_BEFORE
@@ -182,7 +198,8 @@ class TestJevGateBelievability:
 
     def test_believability_boundary(self):
         """believability == 0.5 边界 → 不降级（< 0.5 才降级）"""
-        from core.jev_gate import jev_gate, CONTINUE
+        from core.jev_gate import jev_gate, CONTINUE  # noqa: I001
+
         # match_score=0.5, density=1 → believability=0.5, not < 0.5
         # rea_confidence=0.5 → error=0 → CONTINUE
         result = jev_gate(
@@ -199,11 +216,13 @@ class TestJevGateBelievability:
 # 5. jev_gate — HOT Self-Model
 # ============================================================
 
+
 class TestJevGateHOT:
     """REDO/EARLY_TERMINATE + 有足够案例支撑 → CONTINUE"""
 
     def test_hot_redo_to_continue(self):
-        from core.jev_gate import jev_gate, CONTINUE, REDO
+        from core.jev_gate import jev_gate, CONTINUE, REDO  # noqa: I001
+
         # decision=REDO, density=3, match=0.6 → HOT → CONTINUE
         result = jev_gate(
             decision=REDO,
@@ -215,7 +234,8 @@ class TestJevGateHOT:
         assert result == CONTINUE
 
     def test_hot_early_terminate_to_continue(self):
-        from core.jev_gate import jev_gate, CONTINUE, EARLY_TERMINATE
+        from core.jev_gate import jev_gate, CONTINUE, EARLY_TERMINATE  # noqa: I001
+
         result = jev_gate(
             decision=EARLY_TERMINATE,
             match_score=0.7,
@@ -227,7 +247,8 @@ class TestJevGateHOT:
 
     def test_hot_not_triggered_low_density(self):
         """density < 3 → HOT 不触发"""
-        from core.jev_gate import jev_gate, REDO
+        from core.jev_gate import jev_gate, REDO  # noqa: I001
+
         result = jev_gate(
             decision=REDO,
             match_score=0.8,
@@ -239,7 +260,8 @@ class TestJevGateHOT:
 
     def test_hot_not_triggered_low_match(self):
         """match_score < 0.6 → HOT 不触发"""
-        from core.jev_gate import jev_gate, REDO
+        from core.jev_gate import jev_gate, REDO  # noqa: I001
+
         result = jev_gate(
             decision=REDO,
             match_score=0.5,
@@ -251,7 +273,8 @@ class TestJevGateHOT:
 
     def test_hot_not_triggered_for_continue(self):
         """HOT 仅对 REDO/EARLY_TERMINATE 生效，不对 CONTINUE"""
-        from core.jev_gate import jev_gate, CONTINUE
+        from core.jev_gate import jev_gate, CONTINUE  # noqa: I001
+
         # CONTINUE + density=3 + match=0.6 → HOT 不适用
         # rea_confidence=0.6 → error=0 → CONTINUE
         result = jev_gate(
@@ -268,11 +291,13 @@ class TestJevGateHOT:
 # 6. jev_gate — 无信号返回原始
 # ============================================================
 
+
 class TestJevGateNoSignal:
     """无触发条件 → 返回原始决策"""
 
     def test_no_signal_returns_original(self):
-        from core.jev_gate import jev_gate, CONTINUE
+        from core.jev_gate import jev_gate, CONTINUE  # noqa: I001
+
         # match=0.6, density=3, rea_conf=0.6
         # error=0 → not > 0.3
         # believability=1.8 → not < 0.5
@@ -287,7 +312,8 @@ class TestJevGateNoSignal:
         assert result == CONTINUE
 
     def test_jumo_to_unchanged(self):
-        from core.jev_gate import jev_gate, JUMP_TO
+        from core.jev_gate import jev_gate, JUMP_TO  # noqa: I001
+
         result = jev_gate(
             decision=JUMP_TO,
             match_score=0.5,
@@ -302,12 +328,14 @@ class TestJevGateNoSignal:
 # 7. JevAntiOscillation — 防震荡机制
 # ============================================================
 
+
 class TestJevAntiOscillation:
     """防震荡三重机制测试"""
 
     def test_no_override_returns_jev_decision(self):
         """未改写 → 返回 jev_decision，重置计数"""
         from core.jev_gate import JevAntiOscillation
+
         ao = JevAntiOscillation()
         result = ao.check_oscillation("CONTINUE", "CONTINUE")
         assert result == "CONTINUE"
@@ -316,6 +344,7 @@ class TestJevAntiOscillation:
     def test_first_override_returns_jev(self):
         """第 1 次改写 → 返回 jev_decision"""
         from core.jev_gate import JevAntiOscillation
+
         ao = JevAntiOscillation()
         result = ao.check_oscillation("CONTINUE", "REDO")
         assert result == "REDO"
@@ -324,6 +353,7 @@ class TestJevAntiOscillation:
     def test_second_override_returns_jev(self):
         """第 2 次改写 → 返回 jev_decision（未超上限）"""
         from core.jev_gate import JevAntiOscillation
+
         ao = JevAntiOscillation()
         ao.check_oscillation("CONTINUE", "REDO")  # 1st
         result = ao.check_oscillation("CONTINUE", "REDO")  # 2nd
@@ -333,6 +363,7 @@ class TestJevAntiOscillation:
     def test_third_override_returns_original_and_degrades(self):
         """第 3 次改写 → 返回 original_decision + jev 降级"""
         from core.jev_gate import JevAntiOscillation
+
         ao = JevAntiOscillation()
         ao.check_oscillation("CONTINUE", "REDO")  # 1st
         ao.check_oscillation("CONTINUE", "REDO")  # 2nd
@@ -344,6 +375,7 @@ class TestJevAntiOscillation:
     def test_degraded_always_returns_original(self):
         """降级期间始终返回原始决策"""
         from core.jev_gate import JevAntiOscillation
+
         ao = JevAntiOscillation()
         # 触发降级
         for _ in range(3):
@@ -355,7 +387,8 @@ class TestJevAntiOscillation:
 
     def test_recovery_after_non_overrides(self):
         """降级后需 RECOVERY_COUNT 次未改写才能恢复"""
-        from core.jev_gate import JevAntiOscillation, RECOVERY_COUNT
+        from core.jev_gate import JevAntiOscillation, RECOVERY_COUNT  # noqa: I001
+
         ao = JevAntiOscillation()
         # 触发降级
         for _ in range(3):
@@ -375,6 +408,7 @@ class TestJevAntiOscillation:
     def test_non_override_resets_consecutive_count(self):
         """未改写 → 重置连续改写计数"""
         from core.jev_gate import JevAntiOscillation
+
         ao = JevAntiOscillation()
         ao.check_oscillation("CONTINUE", "REDO")  # 1
         ao.check_oscillation("CONTINUE", "REDO")  # 2
@@ -386,6 +420,7 @@ class TestJevAntiOscillation:
     def test_override_history_tracked(self):
         """改写历史被追踪"""
         from core.jev_gate import JevAntiOscillation
+
         ao = JevAntiOscillation()
         ao.check_oscillation("CONTINUE", "REDO")
         assert len(ao._override_history) == 1
@@ -393,7 +428,8 @@ class TestJevAntiOscillation:
 
     def test_recovery_then_override_works(self):
         """恢复后改写重新计数"""
-        from core.jev_gate import JevAntiOscillation, RECOVERY_COUNT
+        from core.jev_gate import JevAntiOscillation, RECOVERY_COUNT  # noqa: I001
+
         ao = JevAntiOscillation()
         # 触发降级
         for _ in range(3):
@@ -412,12 +448,14 @@ class TestJevAntiOscillation:
 # 8. 集成 — jev_gate + JevAntiOscillation
 # ============================================================
 
+
 class TestIntegration:
     """jev_gate + JevAntiOscillation 集成测试"""
 
     def test_gate_then_anti_oscillation(self):
         """先 jev_gate 裁决，再防震荡"""
-        from core.jev_gate import jev_gate, JevAntiOscillation, CONTINUE, REDO
+        from core.jev_gate import jev_gate, JevAntiOscillation, CONTINUE, REDO  # noqa: I001
+
         ao = JevAntiOscillation()
         # jev 改写 CONTINUE → REDO
         jev_decision = jev_gate(
@@ -434,7 +472,8 @@ class TestIntegration:
 
     def test_repeated_gate_overrides_trigger_anti_oscillation(self):
         """重复 jev 改写触发防震荡 → 信任原始"""
-        from core.jev_gate import jev_gate, JevAntiOscillation, CONTINUE, REDO
+        from core.jev_gate import jev_gate, JevAntiOscillation, CONTINUE  # noqa: I001
+
         ao = JevAntiOscillation()
         # 连续 3 次 jev 改写 CONTINUE → REDO
         for _ in range(3):

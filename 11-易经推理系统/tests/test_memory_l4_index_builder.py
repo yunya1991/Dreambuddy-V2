@@ -10,8 +10,19 @@ def test_build_index_from_case_and_distill(tmp_path: Path):
             "inst_id": "BTC-USDT-SWAP",
             "tags": ["t1"],
             "environment_snapshot": {"regime": "RANGE_BOUND"},
-            "execution": {"episode_refs": [{"trace_id": "trace_x", "path": ".workbuddy/episodes/episode_20260420_125149.json"}]},
-            "review": {"summary": "s", "theory_practice_consistency": "consistent", "lessons": ["L1", "L2", "L3", "L4"]}
+            "execution": {
+                "episode_refs": [
+                    {
+                        "trace_id": "trace_x",
+                        "path": ".workbuddy/episodes/episode_20260420_125149.json",
+                    }
+                ]
+            },
+            "review": {
+                "summary": "s",
+                "theory_practice_consistency": "consistent",
+                "lessons": ["L1", "L2", "L3", "L4"],
+            },
         }
     ]
     distills = [
@@ -21,11 +32,22 @@ def test_build_index_from_case_and_distill(tmp_path: Path):
             "claim": "claim",
             "actionable_rules": ["R1", "R2", "R3", "R4"],
             "supporting_case_ids": ["TC_1"],
-            "quadrant": {"x": 0.0, "y": 0.0, "evidence": {"weights": {"perf": 0.4, "consistency": 0.4, "human": 0.2}, "y_perf": 0, "y_consistency": 0, "y_human": 0}}
+            "quadrant": {
+                "x": 0.0,
+                "y": 0.0,
+                "evidence": {
+                    "weights": {"perf": 0.4, "consistency": 0.4, "human": 0.2},
+                    "y_perf": 0,
+                    "y_consistency": 0,
+                    "y_human": 0,
+                },
+            },
         }
     ]
 
-    idx = build_index_data(snapshot_ts="2026-01-01T00:00:00+08:00", cases=cases, distills=distills, episodes_by_path={})
+    idx = build_index_data(
+        snapshot_ts="2026-01-01T00:00:00+08:00", cases=cases, distills=distills, episodes_by_path={}
+    )
 
     assert idx["metadata"]["weights"] == {"struct": 0.4, "num": 0.4, "strategy": 0.2}
     assert "TC_1" in idx["case_features"]

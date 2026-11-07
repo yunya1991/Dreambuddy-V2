@@ -12,16 +12,16 @@ v0.2 深度实现 — Phase 3 (P2)
 """
 
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
-import sys
 from typing import Any, Dict, List, Optional
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import memory_l4_distills_dir, memory_l4_cases_dir
+from scripts.memory_l4.paths import memory_l4_cases_dir, memory_l4_distills_dir  # noqa: E402
 
 
 def now_iso_local() -> str:
@@ -35,21 +35,22 @@ def _load_json(path: Path) -> Dict[str, Any]:
 # ── 蒸馏流程定义 ──
 
 DISTILL_STEPS = [
-    "intent",       # 意图: 明确问题
-    "investigation", # 调研: 现状调查与矛盾分析
-    "theory",        # 理论: 调用知识库、历史事件、联网搜索
-    "hypothesis",    # 假设: 基于矛盾分析、现状、理论
-    "test",          # 测试与观测: 验证假设，搜集数据
-    "conclusion",    # 结论: 根据假设与实际表现推导
-    "implementation",# 落地: 实施方案
-    "monitoring",    # 监控: 监控结果
-    "review",        # 复盘: 理论与实践一致性检验
-    "reflection",    # 做梦: 外部反思
+    "intent",  # 意图: 明确问题
+    "investigation",  # 调研: 现状调查与矛盾分析
+    "theory",  # 理论: 调用知识库、历史事件、联网搜索
+    "hypothesis",  # 假设: 基于矛盾分析、现状、理论
+    "test",  # 测试与观测: 验证假设，搜集数据
+    "conclusion",  # 结论: 根据假设与实际表现推导
+    "implementation",  # 落地: 实施方案
+    "monitoring",  # 监控: 监控结果
+    "review",  # 复盘: 理论与实践一致性检验
+    "reflection",  # 做梦: 外部反思
     "optimization",  # 更新优化: 最终优化方案
 ]
 
 
 # ── 初始化 ──
+
 
 def init_distill(
     review_record: Dict[str, Any],
@@ -69,7 +70,7 @@ def init_distill(
     if distill_id:
         did = distill_id
     else:
-        ts = now_iso_local()[:19].replace(':', '').replace('-', '')
+        ts = now_iso_local()[:19].replace(":", "").replace("-", "")
         cid = review_record.get("case_id", "")[-12:] or "unknown"
         did = f"D_{ts}_{cid}"
 
@@ -179,6 +180,7 @@ def _load_case_review(case: Dict[str, Any]) -> Dict[str, Any]:
 
 # ── 11 步蒸馏流程 ──
 
+
 def step_intent(distill: Dict[str, Any], review_record: Dict[str, Any]) -> Dict[str, Any]:
     """Step 1: 意图 — 明确问题。
 
@@ -266,7 +268,9 @@ def step_investigation(distill: Dict[str, Any]) -> Dict[str, Any]:
     return distill
 
 
-def step_theory(distill: Dict[str, Any], knowledge_refs: Optional[List[Dict]] = None) -> Dict[str, Any]:
+def step_theory(
+    distill: Dict[str, Any], knowledge_refs: Optional[List[Dict]] = None
+) -> Dict[str, Any]:
     """Step 3: 理论 — 调用知识库、历史事件、联网搜索。
 
     从 case 的 theory_refs + evidence_chain 中提取理论引用，
@@ -366,7 +370,9 @@ def step_test(distill: Dict[str, Any]) -> Dict[str, Any]:
     parts = []
     if test_evidence:
         for te in test_evidence:
-            parts.append(f"[{te['stage']}] result={te.get('test_result', te.get('decision', 'N/A'))}")
+            parts.append(
+                f"[{te['stage']}] result={te.get('test_result', te.get('decision', 'N/A'))}"
+            )
     if pnl is not None:
         parts.append(f"pnl={pnl}%")
     if drawdown is not None:
@@ -394,7 +400,7 @@ def step_conclusion(distill: Dict[str, Any]) -> Dict[str, Any]:
         case = _load_case_by_id(case_id)
         if case:
             review = _load_case_review(case)
-            for l in review.get("successes", []):
+            for l in review.get("successes", []):  # noqa: E741
                 if l.get("what"):
                     lessons.append(f"Success: {l['what']}")
             for m in review.get("mistakes", []):
@@ -597,6 +603,7 @@ def step_optimization(distill: Dict[str, Any]) -> Dict[str, Any]:
 
 # ── 三问逻辑 ──
 
+
 def answer_what_is_it(distill: Dict[str, Any]) -> Dict[str, Any]:
     """回答"是什么" — 基于 process_trace 生成定义。
 
@@ -636,7 +643,7 @@ def answer_why_it_works(distill: Dict[str, Any]) -> Dict[str, Any]:
     d = dict(distill)
     ww = d.get("why_it_works") or {}
     pt = d.get("process_trace") or {}
-    case_id = d["supporting_case_ids"][0] if d.get("supporting_case_ids") else None
+    case_id = d["supporting_case_ids"][0] if d.get("supporting_case_ids") else None  # noqa: F841
 
     # 因果分析: hypothesis + test_results → conclusion
     hypothesis = pt.get("hypothesis") or ""
@@ -658,11 +665,13 @@ def answer_why_it_works(distill: Dict[str, Any]) -> Dict[str, Any]:
     # 证据链: supporting_case_ids + quadrant
     evidence_links = []
     for cid in d.get("supporting_case_ids") or []:
-        evidence_links.append({
-            "case_id": cid,
-            "relevance": "direct_support",
-            "weight": 1.0,
-        })
+        evidence_links.append(
+            {
+                "case_id": cid,
+                "relevance": "direct_support",
+                "weight": 1.0,
+            }
+        )
     ww["evidence_chain"] = evidence_links
 
     # 解决的矛盾: 从 investigation 提取
@@ -692,20 +701,24 @@ def answer_how_to_apply(distill: Dict[str, Any]) -> Dict[str, Any]:
         if case:
             regime = (case.get("environment_snapshot") or {}).get("regime")
             if regime:
-                trigger_conditions.append({
-                    "condition": f"regime matches '{regime}'",
-                    "regime": regime,
-                    "severity": None,
-                })
+                trigger_conditions.append(
+                    {
+                        "condition": f"regime matches '{regime}'",
+                        "regime": regime,
+                        "severity": None,
+                    }
+                )
             # 从 pnl 提取阈值
             do = case.get("decision_outcome") or {}
             pnl = do.get("pnl_pct")
             if pnl is not None:
-                trigger_conditions.append({
-                    "condition": f"pnl threshold at {pnl}%",
-                    "regime": regime,
-                    "severity": min(1.0, abs(pnl) / 10.0),
-                })
+                trigger_conditions.append(
+                    {
+                        "condition": f"pnl threshold at {pnl}%",
+                        "regime": regime,
+                        "severity": min(1.0, abs(pnl) / 10.0),
+                    }
+                )
     ha["trigger_conditions"] = trigger_conditions
 
     # 逐步操作指南: 从 implementation 提取
@@ -734,7 +747,9 @@ def answer_how_to_apply(distill: Dict[str, Any]) -> Dict[str, Any]:
     return d
 
 
-def compute_distill_quadrant(distill: Dict[str, Any], case_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def compute_distill_quadrant(
+    distill: Dict[str, Any], case_data: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """计算蒸馏象限坐标 (x, y)。
 
     y_perf: 基于 case pnl 和 review lessons 数量
@@ -774,9 +789,9 @@ def compute_distill_quadrant(distill: Dict[str, Any], case_data: Optional[Dict[s
     review = _load_case_review(case_data)
     consistency = review.get("consistency", "partially_consistent")
     y_consistency = (
-        0.9 if consistency == "consistent"
-        else 0.5 if consistency == "partially_consistent"
-        else 0.1
+        0.9
+        if consistency == "consistent"
+        else 0.5 if consistency == "partially_consistent" else 0.1
     )
 
     # y_human: 有 review_record_id → 人工干预 → 高置信
@@ -798,7 +813,10 @@ def compute_distill_quadrant(distill: Dict[str, Any], case_data: Optional[Dict[s
 
 # ── 完整流程 ──
 
-def complete_distill(distill: Dict[str, Any], case_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+
+def complete_distill(
+    distill: Dict[str, Any], case_data: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """完成蒸馏 — 触发 11 步 + 三问 + 象限计算。
 
     这是完整流程的统一入口，按顺序执行所有阶段。

@@ -3,6 +3,7 @@
 调用 PrimaryContradictionDetector 的 force 模式，绕过生产开关但保持 FAIL-OPEN；
 结果作为独立字段返回，不改变 production `primary_contradiction` 或任何裁决。
 """
+
 from __future__ import annotations
 
 import logging

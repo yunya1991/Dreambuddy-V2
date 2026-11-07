@@ -4,6 +4,7 @@ SPEC §2.1
 
 FAIL-OPEN: 每个 API 调用独立 try/except，失败字段不包含在返回 dict 中
 """
+
 from __future__ import annotations
 
 import logging
@@ -94,8 +95,9 @@ class OKXMarketAdapter:
             try:
                 resp = self._client.get_kline(inst_id, bar="1H", limit=limit)
             except Exception as e:
-                logger.warning("[FO] kline fetch error (attempt %d/%d): %s",
-                               _attempt + 1, self._max_retries, e)
+                logger.warning(
+                    "[FO] kline fetch error (attempt %d/%d): %s", _attempt + 1, self._max_retries, e
+                )
                 continue
 
             if not resp or not resp.get("ok"):
@@ -104,9 +106,12 @@ class OKXMarketAdapter:
                 if err_code is not None and 400 <= err_code < 500:
                     logger.warning("[FO] kline 4xx (%s), no retry", err_code)
                     return {}
-                logger.warning("[FO] kline fetch fail (attempt %d/%d): %s",
-                               _attempt + 1, self._max_retries,
-                               resp.get("error", "") if resp else "no resp")
+                logger.warning(
+                    "[FO] kline fetch fail (attempt %d/%d): %s",
+                    _attempt + 1,
+                    self._max_retries,
+                    resp.get("error", "") if resp else "no resp",
+                )
                 continue
 
             candles = resp.get("candles", [])
@@ -123,8 +128,9 @@ class OKXMarketAdapter:
                 low_arr = np.array([float(c["l"]) for c in candles_asc], dtype=float)
                 vol_arr = np.array([float(c["vol"]) for c in candles_asc], dtype=float)
             except Exception as e:
-                logger.warning("[FO] kline parse error (attempt %d/%d): %s",
-                               _attempt + 1, self._max_retries, e)
+                logger.warning(
+                    "[FO] kline parse error (attempt %d/%d): %s", _attempt + 1, self._max_retries, e
+                )
                 continue
 
             out["close"] = close_arr
@@ -166,8 +172,7 @@ class OKXMarketAdapter:
         if cache_key in self._last_good:
             ts, stale = self._last_good[cache_key]
             age = time.time() - ts
-            logger.warning("[FO-raw-stale] returning stale kline for %s, age=%.0fs",
-                           inst_id, age)
+            logger.warning("[FO-raw-stale] returning stale kline for %s, age=%.0fs", inst_id, age)
             return stale
 
         return {}
@@ -252,16 +257,24 @@ class OKXMarketAdapter:
             # 50011 限频退避重试（最多 2 次，间隔 1.5s）
             r = None
             for _attempt in range(2):
-                r = _get("/api/v5/rubik/stat/contracts/long-short-account-ratio",
-                         {"ccy": ccy, "period": "1H"}, auth=False)
+                r = _get(
+                    "/api/v5/rubik/stat/contracts/long-short-account-ratio",
+                    {"ccy": ccy, "period": "1H"},
+                    auth=False,
+                )
                 if r and r.get("code") == "50011" and _attempt == 0:
-                    logger.warning("[FO] long-short-ratio rate-limited (50011) ccy=%s, backoff 1.5s", ccy)
+                    logger.warning(
+                        "[FO] long-short-ratio rate-limited (50011) ccy=%s, backoff 1.5s", ccy
+                    )
                     time.sleep(1.5)
                     continue
                 break
             if not r or r.get("code") != "0" or not r.get("data"):
-                logger.warning("[FO] long-short-ratio fetch fail ccy=%s: %s",
-                               ccy, (r or {}).get("msg", "no resp"))
+                logger.warning(
+                    "[FO] long-short-ratio fetch fail ccy=%s: %s",
+                    ccy,
+                    (r or {}).get("msg", "no resp"),
+                )
                 return self._lsr_stale(inst_id)
 
             d = r["data"][0]  # [ts, longShortRatio]
@@ -280,8 +293,11 @@ class OKXMarketAdapter:
         """stale 降级：限频/失败时返回 6h 内最近成功多空比（优于 0.5 中性兜底）"""
         _entry = self._lsr_last_good.get(inst_id)
         if _entry is not None and time.time() - _entry[0] < self._lsr_stale_ttl:
-            logger.warning("[FO] long-short-ratio stale fallback: %s (age %.0fs)",
-                           inst_id, time.time() - _entry[0])
+            logger.warning(
+                "[FO] long-short-ratio stale fallback: %s (age %.0fs)",
+                inst_id,
+                time.time() - _entry[0],
+            )
             return _entry[1]
         return None
 
@@ -312,8 +328,7 @@ class OKXMarketAdapter:
                 if _get is None:
                     return out
 
-                r = _get("/api/v5/public/open-interest",
-                         {"instId": inst_id}, auth=False)
+                r = _get("/api/v5/public/open-interest", {"instId": inst_id}, auth=False)
                 if not r or r.get("code") != "0" or not r.get("data"):
                     return out
 

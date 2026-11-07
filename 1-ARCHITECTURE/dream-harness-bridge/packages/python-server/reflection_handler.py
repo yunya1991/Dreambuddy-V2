@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import json
 import sys
-from typing import Any, Dict, List, Tuple
+from typing import List, Tuple
 
 # 合法决策枚举（与 TS 侧 VALID_DECISIONS 保持一致）
 VALID_DECISIONS: List[str] = [
@@ -77,9 +77,7 @@ def handle_reflection(decision: str, params: dict) -> dict:
     }
 
 
-def handle_reflection_safe(
-    decision: str, params: dict
-) -> Tuple[bool, dict]:
+def handle_reflection_safe(decision: str, params: dict) -> Tuple[bool, dict]:
     """安全版反思维决策处理（不抛异常）
 
     Returns:
@@ -103,7 +101,17 @@ def _cli_main() -> int:
         python3 reflection_handler.py '{"decision": "INVALID", "params": {}}'
     """
     if len(sys.argv) < 2:
-        print(json.dumps({"ok": False, "error": {"code": "MISSING_ARG", "message": "用法: python3 reflection_handler.py '<json>'"}}))
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "error": {
+                        "code": "MISSING_ARG",
+                        "message": "用法: python3 reflection_handler.py '<json>'",
+                    },
+                }
+            )
+        )
         return 1
 
     try:

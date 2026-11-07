@@ -10,14 +10,20 @@ Dreambuddy OS — Adapters 适配器层
     - get_default_adapter_registry: 获取默认适配器注册表
 """
 
-from .base import BaseAdapter, AdapterRegistry, get_default_adapter_registry
+from .api_adapter import APIAdapter, APINode
+from .base import AdapterRegistry, BaseAdapter, get_default_adapter_registry
 from .function_adapter import FunctionAdapter, FunctionNode
 from .skill_adapter import SkillAdapter, SkillNode, parse_skill_metadata
-from .api_adapter import APIAdapter, APINode
 
 __all__ = [
-    "BaseAdapter", "AdapterRegistry", "get_default_adapter_registry",
-    "FunctionAdapter", "FunctionNode",
-    "SkillAdapter", "SkillNode", "parse_skill_metadata",
-    "APIAdapter", "APINode",
+    "BaseAdapter",
+    "AdapterRegistry",
+    "get_default_adapter_registry",
+    "FunctionAdapter",
+    "FunctionNode",
+    "SkillAdapter",
+    "SkillNode",
+    "parse_skill_metadata",
+    "APIAdapter",
+    "APINode",
 ]

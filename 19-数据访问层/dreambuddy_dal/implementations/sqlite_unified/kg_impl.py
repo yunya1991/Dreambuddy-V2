@@ -13,6 +13,7 @@ Protocol ↔ schema_init 差异处理：
 | fts_search_entities: 只搜实体（名称/别名） | kg_terms_fts (需手动同步 insert) | _sync_entity_to_fts |
 | query_subgraph_by_entity: N 跳递归        | SQL 自连接 1/2 hop            | 循环展开 UNION ALL   |
 """
+
 from __future__ import annotations
 
 import json
@@ -47,9 +48,7 @@ class SqliteKnowledgeGraphRepository(KnowledgeGraphRepository):
         with get_sqlite_connection(self.db_path) as conn:
             cols = {c[1] for c in conn.execute("PRAGMA table_info(kg_entity_aliases)").fetchall()}
             if "confidence" not in cols:
-                conn.execute(
-                    "ALTER TABLE kg_entity_aliases ADD COLUMN confidence REAL DEFAULT 1.0"
-                )
+                conn.execute("ALTER TABLE kg_entity_aliases ADD COLUMN confidence REAL DEFAULT 1.0")
 
     # ================================================================ 实体 upsert
     def upsert_entity(
@@ -67,7 +66,11 @@ class SqliteKnowledgeGraphRepository(KnowledgeGraphRepository):
             meta["description"] = description
         if attributes_json:
             try:
-                attr = json.loads(attributes_json) if isinstance(attributes_json, str) else attributes_json
+                attr = (
+                    json.loads(attributes_json)
+                    if isinstance(attributes_json, str)
+                    else attributes_json
+                )
                 if isinstance(attr, dict):
                     meta["attributes"] = attr
             except Exception:
@@ -118,7 +121,11 @@ class SqliteKnowledgeGraphRepository(KnowledgeGraphRepository):
 
     # ================================================================ 别名
     def add_alias(
-        self, entity_id: str, alias: str, *, confidence: float = 1.0,
+        self,
+        entity_id: str,
+        alias: str,
+        *,
+        confidence: float = 1.0,
     ) -> bool:
         try:
             with get_sqlite_connection(self.db_path) as conn:
@@ -178,8 +185,12 @@ class SqliteKnowledgeGraphRepository(KnowledgeGraphRepository):
                 VALUES (?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))
                 """,
                 (
-                    subject_id, predicate, object_id,
-                    float(confidence), sources_s, vf_s,
+                    subject_id,
+                    predicate,
+                    object_id,
+                    float(confidence),
+                    sources_s,
+                    vf_s,
                 ),
             )
             triple_id = cur.lastrowid
@@ -199,7 +210,10 @@ class SqliteKnowledgeGraphRepository(KnowledgeGraphRepository):
 
     # ================================================================ FTS 搜索
     def fts_search_entities(
-        self, query: str, *, limit: int = 20,
+        self,
+        query: str,
+        *,
+        limit: int = 20,
     ) -> List[Tuple[str, str, str, float]]:
         # FTS5 MATCH：直接 term 关键词模糊
         safe_q = " ".join(str(query).split())  # 去空，简化用 LIKE 方案兜底

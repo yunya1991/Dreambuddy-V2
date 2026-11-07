@@ -35,15 +35,14 @@ Freqtrade 策略信号适配器 — 将 Freqtrade 量化策略接入 Dream OS
 
 from __future__ import annotations
 
-import os
-import sys
-import json
-import time
-import logging
 import importlib
 import importlib.util
+import json
+import logging
+import sys
+import time
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +91,7 @@ def _ensure_freqtrade_shims():
     try:
         import freqtrade  # noqa
         from freqtrade.strategy import IStrategy  # noqa
+
         return True
     except ImportError:
         pass
@@ -143,10 +143,13 @@ def _ensure_freqtrade_shims():
         def _load_pair_history(pair, timeframe, datadir, **kwargs):
             """空实现 — 返回空 DataFrame"""
             import pandas as pd
+
             return pd.DataFrame()
 
         history_mod.load_pair_history = _load_pair_history
-        history_mod.HistoryHandler = type("HistoryHandler", (), {"load_pair_history": staticmethod(_load_pair_history)})
+        history_mod.HistoryHandler = type(
+            "HistoryHandler", (), {"load_pair_history": staticmethod(_load_pair_history)}
+        )
 
     return True
 
@@ -332,7 +335,7 @@ class FreqtradeSignalAdapter:
         best_entry = None
         best_score = -1e18
 
-        for key, entry in registry.get("entries", {}).items():
+        for key, entry in registry.get("entries", {}).items():  # noqa: B007
             if entry.get("strategy_id") != strategy_id:
                 continue
             gate = entry.get("gate_result", {})
@@ -394,7 +397,9 @@ class FreqtradeSignalAdapter:
                             with open(json_path, "r") as f:
                                 raw = json.load(f)
                             if isinstance(raw, list) and raw:
-                                df = pd.DataFrame(raw, columns=["date", "open", "high", "low", "close", "volume"])
+                                df = pd.DataFrame(
+                                    raw, columns=["date", "open", "high", "low", "close", "volume"]
+                                )
                                 df["date"] = pd.to_datetime(df["date"], unit="ms")
                                 return df.tail(limit)
                         except Exception:
@@ -413,7 +418,9 @@ class FreqtradeSignalAdapter:
                             with open(p, "r") as f:
                                 raw = json.load(f)
                             if isinstance(raw, list) and raw:
-                                df = pd.DataFrame(raw, columns=["date", "open", "high", "low", "close", "volume"])
+                                df = pd.DataFrame(
+                                    raw, columns=["date", "open", "high", "low", "close", "volume"]
+                                )
                                 df["date"] = pd.to_datetime(df["date"], unit="ms")
                                 return df.tail(limit)
                     except Exception:
@@ -421,7 +428,9 @@ class FreqtradeSignalAdapter:
 
         return None
 
-    def _generate_strategy_signal(self, strategy_name: str, symbol: str, timeframe: str = "1h") -> Optional[Dict]:
+    def _generate_strategy_signal(
+        self, strategy_name: str, symbol: str, timeframe: str = "1h"
+    ) -> Optional[Dict]:
         """运行单个策略，生成信号"""
         instance = self._get_strategy(strategy_name)
         if instance is None:
@@ -436,8 +445,16 @@ class FreqtradeSignalAdapter:
 
             # 运行策略三步
             df = instance.populate_indicators(df, metadata)
-            df = instance.populate_entry_trend(df, metadata) if hasattr(instance, "populate_entry_trend") else df
-            df = instance.populate_exit_trend(df, metadata) if hasattr(instance, "populate_exit_trend") else df
+            df = (
+                instance.populate_entry_trend(df, metadata)
+                if hasattr(instance, "populate_entry_trend")
+                else df
+            )
+            df = (
+                instance.populate_exit_trend(df, metadata)
+                if hasattr(instance, "populate_exit_trend")
+                else df
+            )
 
             # 旧版兼容
             if hasattr(instance, "populate_buy_trend"):
@@ -536,19 +553,21 @@ class FreqtradeSignalAdapter:
 
         # 加载 V15 回测结果作为参考
         v15_results = self._load_v15_results()
-        for key, v15 in v15_results.items():
+        for key, v15 in v15_results.items():  # noqa: B007
             if v15.get("symbol") == symbol.upper():
-                all_signals.append({
-                    "source": "v15_backtest",
-                    "strategy": v15["strategy"],
-                    "symbol": symbol,
-                    "direction": "LONG" if v15.get("total_return_pct", 0) > 0 else "SHORT",
-                    "confidence": min(0.6, abs(v15.get("sharpe_ratio", 0)) * 0.2 + 0.3),
-                    "tag": "v15_historical",
-                    "timeframe": "4h",
-                    "metrics": v15,
-                    "timestamp": time.time(),
-                })
+                all_signals.append(
+                    {
+                        "source": "v15_backtest",
+                        "strategy": v15["strategy"],
+                        "symbol": symbol,
+                        "direction": "LONG" if v15.get("total_return_pct", 0) > 0 else "SHORT",
+                        "confidence": min(0.6, abs(v15.get("sharpe_ratio", 0)) * 0.2 + 0.3),
+                        "tag": "v15_historical",
+                        "timeframe": "4h",
+                        "metrics": v15,
+                        "timestamp": time.time(),
+                    }
+                )
 
         # 综合投票
         if not all_signals:
@@ -574,10 +593,18 @@ class FreqtradeSignalAdapter:
 
             if long_weight > short_weight:
                 direction = "LONG"
-                confidence = long_weight / (long_weight + short_weight) if (long_weight + short_weight) > 0 else 0.5
+                confidence = (
+                    long_weight / (long_weight + short_weight)
+                    if (long_weight + short_weight) > 0
+                    else 0.5
+                )
             elif short_weight > long_weight:
                 direction = "SHORT"
-                confidence = short_weight / (long_weight + short_weight) if (long_weight + short_weight) > 0 else 0.5
+                confidence = (
+                    short_weight / (long_weight + short_weight)
+                    if (long_weight + short_weight) > 0
+                    else 0.5
+                )
             else:
                 direction = "HOLD"
                 confidence = 0.3
@@ -621,22 +648,26 @@ class FreqtradeSignalAdapter:
         # Freqtrade 策略
         for name in sorted(self._strategy_files.keys()):
             metrics = self.get_strategy_metrics(name)
-            report["strategies"].append({
-                "name": name,
-                "source": "freqtrade",
-                "file": str(self._strategy_files[name]),
-                "tier": metrics.get("tier", "unrated") if metrics else "unrated",
-                "metrics": metrics,
-            })
+            report["strategies"].append(
+                {
+                    "name": name,
+                    "source": "freqtrade",
+                    "file": str(self._strategy_files[name]),
+                    "tier": metrics.get("tier", "unrated") if metrics else "unrated",
+                    "metrics": metrics,
+                }
+            )
 
         # V15 策略
         for key, v15_data in v15.items():
-            report["strategies"].append({
-                "name": key,
-                "source": "v15",
-                "tier": "pass" if v15_data.get("total_return_pct", 0) > 0 else "unrated",
-                "metrics": v15_data,
-            })
+            report["strategies"].append(
+                {
+                    "name": key,
+                    "source": "v15",
+                    "tier": "pass" if v15_data.get("total_return_pct", 0) > 0 else "unrated",
+                    "metrics": v15_data,
+                }
+            )
 
         return report
 

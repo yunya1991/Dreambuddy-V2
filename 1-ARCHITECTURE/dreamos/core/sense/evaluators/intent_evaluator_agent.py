@@ -14,17 +14,18 @@
     - 不替换 IntentEngine 原有澄清逻辑, 仅增强
     - jev 优先, laya 备用: jev degraded 时 fallback 到 laya
 """
+
 from __future__ import annotations
 
 import json
 import traceback
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
-
 
 # ============================================================
 # 数据结构
 # ============================================================
+
 
 @dataclass
 class EvalResult:
@@ -41,6 +42,7 @@ class EvalResult:
         justification: 放行/升级理由 (escalation_required=True 时非空)
         reasoning: 评估推理过程 (用于 record)
     """
+
     adjusted_confidence: float
     clarified_intent: Optional[str] = None
     route_suggestion: Optional[str] = None
@@ -64,6 +66,7 @@ class EvalResult:
 # ============================================================
 # IntentEvaluatorAgent
 # ============================================================
+
 
 class IntentEvaluatorAgent:
     """S 层意图评估 subagent
@@ -172,9 +175,7 @@ class IntentEvaluatorAgent:
         if intent_type in self.TRADE_INTENT_TYPES:
             result.escalation_required = True
             if not result.justification:
-                result.justification = (
-                    f"交易操作({intent_type})需用户确认，已触发 escalation 守卫"
-                )
+                result.justification = f"交易操作({intent_type})需用户确认，已触发 escalation 守卫"
         return result
 
     # ── jev/laya 评估路径 ──────────────────────────────
@@ -320,8 +321,7 @@ class IntentEvaluatorAgent:
         resp = self._llm_fn(prompt)  # type: ignore[misc]
         parsed = self._parse_llm_response(resp)
 
-        adjusted = parsed.get("adjusted_confidence",
-                             getattr(intent_result, "confidence", 0.0))
+        adjusted = parsed.get("adjusted_confidence", getattr(intent_result, "confidence", 0.0))
         # 确保在 [0, 1] 范围内
         adjusted = max(0.0, min(1.0, adjusted))
 
@@ -352,9 +352,7 @@ class IntentEvaluatorAgent:
 
         recalled_str = ""
         if recalled:
-            recalled_str = "\n".join(
-                f"- {r.get('content', '')[:120]}" for r in recalled[:3]
-            )
+            recalled_str = "\n".join(f"- {r.get('content', '')[:120]}" for r in recalled[:3])
 
         return f"""你是 DreamOS 意图评估器。请评估以下意图识别结果的准确性。
 

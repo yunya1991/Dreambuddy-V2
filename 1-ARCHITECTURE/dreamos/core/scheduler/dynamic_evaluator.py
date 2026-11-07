@@ -33,17 +33,18 @@ import json
 import logging
 import threading
 import time
-from typing import Dict, List, Optional, Any, Callable
-from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict, field
-from enum import Enum
 from collections import deque
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class EventType(Enum):
     """事件类型"""
+
     LOSS_EVENT = "loss"
     DRAWDOWN_EVENT = "drawdown"
     MARKET_EVENT = "market"
@@ -54,6 +55,7 @@ class EventType(Enum):
 
 class Priority(Enum):
     """任务优先级"""
+
     HIGH = 1
     MEDIUM = 2
     LOW = 3
@@ -62,6 +64,7 @@ class Priority(Enum):
 @dataclass
 class EvaluationEvent:
     """评估事件"""
+
     event_type: EventType
     priority: Priority
     timestamp: str
@@ -79,6 +82,7 @@ class EvaluationEvent:
 @dataclass
 class EvaluationTask:
     """评估任务"""
+
     task_id: str
     event: EvaluationEvent
     status: str = "pending"
@@ -198,7 +202,9 @@ class MarketEventTrigger(EventTrigger):
         self.last_price = {}
         self.last_volatility = {}
 
-    def on_market_update(self, symbol: str, price: float, volatility: float = 0) -> Optional[EvaluationEvent]:
+    def on_market_update(
+        self, symbol: str, price: float, volatility: float = 0
+    ) -> Optional[EvaluationEvent]:
         """收到市场更新时检查"""
         if symbol in self.last_price:
             price_change = abs(price - self.last_price[symbol]) / self.last_price[symbol] * 100
@@ -218,7 +224,9 @@ class MarketEventTrigger(EventTrigger):
                 )
 
         if symbol in self.last_volatility and volatility > 0:
-            vol_change = abs(volatility - self.last_volatility[symbol]) / self.last_volatility[symbol]
+            vol_change = (
+                abs(volatility - self.last_volatility[symbol]) / self.last_volatility[symbol]
+            )
             if vol_change > self.volatility_threshold:
                 return EvaluationEvent(
                     event_type=EventType.MARKET_EVENT,
@@ -322,15 +330,11 @@ class DynamicEvaluationScheduler:
         """初始化事件触发器"""
         trigger_config = self.config.get("triggers", {})
 
-        self._event_triggers["loss"] = LossEventTrigger(
-            self, trigger_config.get("loss", {})
-        )
+        self._event_triggers["loss"] = LossEventTrigger(self, trigger_config.get("loss", {}))
         self._event_triggers["drawdown"] = DrawdownEventTrigger(
             self, trigger_config.get("drawdown", {})
         )
-        self._event_triggers["market"] = MarketEventTrigger(
-            self, trigger_config.get("market", {})
-        )
+        self._event_triggers["market"] = MarketEventTrigger(self, trigger_config.get("market", {}))
         self._event_triggers["threshold"] = ThresholdEventTrigger(
             self, trigger_config.get("threshold", {})
         )
@@ -339,6 +343,7 @@ class DynamicEvaluationScheduler:
         """获取进化引擎（延迟初始化）"""
         if self._evolution_engine is None:
             from dreamos.evolution.engine import EvolutionEngine
+
             self._evolution_engine = EvolutionEngine()
         return self._evolution_engine
 
@@ -346,9 +351,11 @@ class DynamicEvaluationScheduler:
         """获取交易评估器（延迟初始化）"""
         if self._trading_evaluator is None:
             from dreamos.capabilities.trading.evaluator import TradingAnalysisEvaluator
+
             self._trading_evaluator = TradingAnalysisEvaluator()
 
             from dreamos.core.memory.orchestration_memory import OrchestrationMemory
+
             memory = OrchestrationMemory()
             memory.load()
             self._trading_evaluator.set_orchestration_memory(memory._data)
@@ -359,6 +366,7 @@ class DynamicEvaluationScheduler:
         """获取评估记忆系统（延迟初始化）"""
         if self._evaluation_memory is None:
             from dreamos.core.memory.evaluation_memory import EvaluationMemory
+
             self._evaluation_memory = EvaluationMemory()
             self._evaluation_memory.load()
         return self._evaluation_memory
@@ -443,10 +451,12 @@ class DynamicEvaluationScheduler:
         # 记录到短期记忆
         try:
             eval_memory = self._get_evaluation_memory()
-            eval_memory.record_trade({
-                "pnl_percent": pnl_percent,
-                "timestamp": datetime.now().isoformat(),
-            })
+            eval_memory.record_trade(
+                {
+                    "pnl_percent": pnl_percent,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
         except Exception as e:
             logger.debug(f"记录交易到短期记忆失败: {e}")
 
@@ -496,9 +506,7 @@ class DynamicEvaluationScheduler:
             )
             self._task_queue.append((event.priority, task))
 
-            self._task_queue = deque(
-                sorted(self._task_queue, key=lambda x: x[0].value)
-            )
+            self._task_queue = deque(sorted(self._task_queue, key=lambda x: x[0].value))
 
             logger.debug(f"任务入队: {task.task_id} ({event.event_type.value})")
 
@@ -581,30 +589,32 @@ class DynamicEvaluationScheduler:
                 else:
                     pnl_percent = trade.get("result", 0) * 100
 
-                trades.append({
-                    "trade_id": f"trade_{trade_id:06d}",
-                    "symbol": trade.get("symbol", ""),
-                    "direction": trade.get("direction", ""),
-                    "entry_price": entry_price,
-                    "exit_price": exit_price,
-                    "pnl_percent": pnl_percent,
-                    "holding_period": 1,
-                    "scenario": scenario,
-                    "chain_used": trade.get("pattern", ""),
-                    "nodes_used": nodes,
-                    "entry_confidence": 0.65 if trade.get("direction") else 0,
-                    "exit_reason": "normal" if exit_price > 0 else "open",
-                    "stop_loss_hit": pnl_percent < -3,
-                    "take_profit_hit": 0 < pnl_percent < 2,
-                    "signal_strength": 0.6,
-                    "scenario_mismatch": False,
-                    "actual_volatility": 0.02,
-                    "estimated_volatility": 0.02,
-                    "momentum_confidence": 0.5,
-                    "correlation_conflict": False,
-                    "expected_direction": trade.get("expected_direction", ""),
-                    "timestamp": trade.get("timestamp", ""),
-                })
+                trades.append(
+                    {
+                        "trade_id": f"trade_{trade_id:06d}",
+                        "symbol": trade.get("symbol", ""),
+                        "direction": trade.get("direction", ""),
+                        "entry_price": entry_price,
+                        "exit_price": exit_price,
+                        "pnl_percent": pnl_percent,
+                        "holding_period": 1,
+                        "scenario": scenario,
+                        "chain_used": trade.get("pattern", ""),
+                        "nodes_used": nodes,
+                        "entry_confidence": 0.65 if trade.get("direction") else 0,
+                        "exit_reason": "normal" if exit_price > 0 else "open",
+                        "stop_loss_hit": pnl_percent < -3,
+                        "take_profit_hit": 0 < pnl_percent < 2,
+                        "signal_strength": 0.6,
+                        "scenario_mismatch": False,
+                        "actual_volatility": 0.02,
+                        "estimated_volatility": 0.02,
+                        "momentum_confidence": 0.5,
+                        "correlation_conflict": False,
+                        "expected_direction": trade.get("expected_direction", ""),
+                        "timestamp": trade.get("timestamp", ""),
+                    }
+                )
 
         scenarios = list(memory._data.get("scenarios", {}).keys())
         report = evaluator.generate_report(trades, scenarios=scenarios)
@@ -614,7 +624,11 @@ class DynamicEvaluationScheduler:
 
         report_dir = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "..", "..", "capabilities", "trading", "reports"
+            "..",
+            "..",
+            "capabilities",
+            "trading",
+            "reports",
         )
         os.makedirs(report_dir, exist_ok=True)
 
@@ -629,6 +643,7 @@ class DynamicEvaluationScheduler:
         recommendations = result.get("orchestration_recommendations", {})
 
         from dreamos.core.memory.orchestration_memory import OrchestrationMemory
+
         memory = OrchestrationMemory()
         memory.load()
 
@@ -712,4 +727,4 @@ class DynamicEvaluationScheduler:
         return f"<DynamicEvaluationScheduler running={self._running} pending={len(self._task_queue)} active={len(self._active_tasks)}>"
 
 
-import os
+import os  # noqa: E402

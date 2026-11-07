@@ -13,6 +13,7 @@
   2. FeatureHub：FeaturePipeline.run(set_name="alt_trend_ensemble", df=df) → 仅特征列
   3. 取列名交集，对比数值
 """
+
 from __future__ import annotations
 
 import sys
@@ -38,19 +39,23 @@ def _make_ohlcv(n: int = 300, seed: int = 42) -> pd.DataFrame:
     """生成 OHLCV 样本（含 talib 需要的 open/high/low/close/volume）"""
     rng = np.random.default_rng(seed)
     close = 100 * np.exp(np.cumsum(rng.normal(0, 0.02, n)))
-    return pd.DataFrame({
-        "open": close * (1 + rng.normal(0, 0.004, n)),
-        "high": close * (1 + np.abs(rng.normal(0, 0.01, n))),
-        "low": close * (1 - np.abs(rng.normal(0, 0.01, n))),
-        "close": close,
-        "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
-    }, index=pd.date_range("2024-01-01", periods=n, freq="D"))
+    return pd.DataFrame(
+        {
+            "open": close * (1 + rng.normal(0, 0.004, n)),
+            "high": close * (1 + np.abs(rng.normal(0, 0.01, n))),
+            "low": close * (1 - np.abs(rng.normal(0, 0.01, n))),
+            "close": close,
+            "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
+        },
+        index=pd.date_range("2024-01-01", periods=n, freq="D"),
+    )
 
 
 def _build_pipeline():
     """构建 FeaturePipeline + 加载默认集合"""
-    from feature_hub.pipeline.feature_pipeline import FeaturePipeline
     from feature_hub.modules.loader import load_default_sets
+    from feature_hub.pipeline.feature_pipeline import FeaturePipeline
+
     pipe = FeaturePipeline()
     load_default_sets(pipe)
     return pipe
@@ -59,6 +64,7 @@ def _build_pipeline():
 def _original_fe(df: pd.DataFrame) -> pd.DataFrame:
     """原始 TrendFeatureEngineer.create_features"""
     from ml.feature_engineer import TrendFeatureEngineer
+
     fe = TrendFeatureEngineer()
     return fe.create_features(df, label_lookahead=7)
 
@@ -77,7 +83,7 @@ def _featurehub_fe(df: pd.DataFrame) -> pd.DataFrame:
         new_cols = {}
         for col in out.columns:
             sep = col.find("__")
-            new_cols[col] = col[sep + 2:] if sep >= 0 else col
+            new_cols[col] = col[sep + 2 :] if sep >= 0 else col
         out = out.rename(columns=new_cols)
     return out
 
@@ -165,8 +171,7 @@ def test_t29_2_intersection_value_correlation():
         print(f"[T29-2] 低相关列(<0.95, 前10): {low_corr_cols[:10]}")
 
     assert avg_corr >= 0.95, (
-        f"交集列平均 Pearson 相关 {avg_corr:.4f} < 0.95，"
-        f"FeatureHub 与原始 FE 数值偏差过大"
+        f"交集列平均 Pearson 相关 {avg_corr:.4f} < 0.95，" f"FeatureHub 与原始 FE 数值偏差过大"
     )
 
 
@@ -211,9 +216,7 @@ def test_t29_3_signal_direction_consistency():
     print(f"\n[T29-3] 一致/总数: {consistent}/{total}")
     print(f"[T29-3] 方向一致率: {consistency_rate:.2%}")
 
-    assert consistency_rate >= 0.95, (
-        f"信号方向一致率 {consistency_rate:.2%} < 95%"
-    )
+    assert consistency_rate >= 0.95, f"信号方向一致率 {consistency_rate:.2%} < 95%"
 
 
 # ============================================================
@@ -237,6 +240,5 @@ def test_t29_4_featurehub_output_quality():
     print(f"[T29-4] 全 NaN 占比: {all_nan_ratio:.2%}")
 
     assert all_nan_ratio < 0.10, (
-        f"全 NaN 列占比 {all_nan_ratio:.2%} ≥ 10%，"
-        f"FeatureHub 模块产出质量差"
+        f"全 NaN 列占比 {all_nan_ratio:.2%} ≥ 10%，" f"FeatureHub 模块产出质量差"
     )

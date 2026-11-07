@@ -19,9 +19,10 @@ P4 优先级最高，有信号时直接返回，无信号时降级到 P3。
   - decision_deriver: 34-前端应用训练系统/core/decision_deriver.py
   - SPEC: 35-广义认知系统协作模块/SPEC-CDrive-CognitiveSystem-Integration.md §2.1
 """
+
 import os
 import re
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 # ============================================================
 # 常量
@@ -63,6 +64,7 @@ _DEFAULT_KEYWORD_MAP: Dict[str, Any] = {
 # 配置加载
 # ============================================================
 
+
 def _load_keyword_map(config_path: Optional[str] = None) -> Dict[str, Any]:
     """加载关键词映射配置（YAML），失败时 fallback 到默认映射。
 
@@ -78,12 +80,15 @@ def _load_keyword_map(config_path: Optional[str] = None) -> Dict[str, Any]:
 
     try:
         import yaml
+
         with open(path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
         if data and isinstance(data, dict):
             # 确保必要字段存在
             data.setdefault("known_gaps_map", _DEFAULT_KEYWORD_MAP["known_gaps_map"])
-            data.setdefault("call_chain_break_markers", _DEFAULT_KEYWORD_MAP["call_chain_break_markers"])
+            data.setdefault(
+                "call_chain_break_markers", _DEFAULT_KEYWORD_MAP["call_chain_break_markers"]
+            )
             data.setdefault("evidence_level_map", _DEFAULT_KEYWORD_MAP["evidence_level_map"])
             return data
     except Exception:
@@ -96,6 +101,7 @@ def _load_keyword_map(config_path: Optional[str] = None) -> Dict[str, Any]:
 # ============================================================
 # 辅助函数
 # ============================================================
+
 
 def _detect_cycle(dependency_graph: Dict[str, Any]) -> bool:
     """检测 dependency_graph 中是否有环（DFS）。
@@ -121,7 +127,7 @@ def _detect_cycle(dependency_graph: Dict[str, Any]) -> bool:
             graph[str(k)] = [str(x) for x in v.keys()]
 
     WHITE, GRAY, BLACK = 0, 1, 2
-    color: Dict[str, int] = {node: WHITE for node in graph}
+    color: Dict[str, int] = dict.fromkeys(graph, WHITE)
 
     def dfs(node: str) -> bool:
         color[node] = GRAY
@@ -166,6 +172,7 @@ def _check_call_chain_break(call_chain: List[str], break_markers: List[str]) -> 
 # ============================================================
 # 主函数
 # ============================================================
+
 
 def derive_decision_from_rea(rea_result) -> Optional[str]:
     """33-REA 零 token 驱动 C-Drive 反思。

@@ -25,7 +25,9 @@ def _dig(d: Dict[str, Any], *keys: str) -> Any:
     return cur
 
 
-def _check_api(base_url: str, timeout: float, signal_window_h: int, shape_n: int) -> Tuple[List[str], List[str], Dict[str, Any]]:
+def _check_api(
+    base_url: str, timeout: float, signal_window_h: int, shape_n: int
+) -> Tuple[List[str], List[str], Dict[str, Any]]:
     errors: List[str] = []
     warns: List[str] = []
     qs = urllib.parse.urlencode({"shape_n": int(shape_n), "signal_window_h": int(signal_window_h)})
@@ -48,9 +50,20 @@ def _check_api(base_url: str, timeout: float, signal_window_h: int, shape_n: int
     tri_net_bias = _dig(data, "position_budget", "tri_layer_target", "target_net_bias")
     if tri_net_bias is not None and target_source != "tri_layer":
         errors.append("tri_layer_target.target_net_bias 非空但 target_source 不是 tri_layer")
-    if tri_allow_open is False and tri_reason_match is False and isinstance(tri_observed_macro_blocks, int) and tri_observed_macro_blocks > 0:
-        errors.append("tri-layer 禁开且窗口内存在宏观拦截样本，但 tri_layer.trace.reason_match=false")
-    if tri_allow_open is False and tri_reason_match is False and (not isinstance(tri_observed_macro_blocks, int) or tri_observed_macro_blocks <= 0):
+    if (
+        tri_allow_open is False
+        and tri_reason_match is False
+        and isinstance(tri_observed_macro_blocks, int)
+        and tri_observed_macro_blocks > 0
+    ):
+        errors.append(
+            "tri-layer 禁开且窗口内存在宏观拦截样本，但 tri_layer.trace.reason_match=false"
+        )
+    if (
+        tri_allow_open is False
+        and tri_reason_match is False
+        and (not isinstance(tri_observed_macro_blocks, int) or tri_observed_macro_blocks <= 0)
+    ):
         warns.append("tri-layer 禁开但窗口内无宏观拦截样本，建议扩大 signal_window_h 再复核")
     if tri_allow_open is False and not tri_warning:
         warns.append("tri-layer 禁开但 tri_layer.trace.warning 为空，建议补充提示")
@@ -98,7 +111,10 @@ def _check_frontend(repo_root: Path) -> Tuple[List[str], List[str]]:
     text = p.read_text(encoding="utf-8", errors="replace")
     if "强提醒：当前图2主target来源来自 Shape12H 基线，不是三维目标。" not in text:
         errors.append("图2缺少 Shape12H 回退强提醒文案")
-    if "口径提示：Shape12H 的 dir 与 tri-layer 的 DirW/DirD 不一致，请以三维主口径解释交易动作。" not in text:
+    if (
+        "口径提示：Shape12H 的 dir 与 tri-layer 的 DirW/DirD 不一致，请以三维主口径解释交易动作。"
+        not in text
+    ):
         errors.append("图1缺少 Shape12H vs tri-layer 口径冲突提示文案")
     if "tri-trace" not in text:
         warns.append("图3未检测到 tri-trace 标识文案")
@@ -126,7 +142,9 @@ def main() -> int:
         warns: List[str] = []
         snap: Dict[str, Any] = {"signal_window_h": int(wh), "shape_n": int(shape_n)}
         try:
-            e, w, s = _check_api(args.base_url, args.timeout, signal_window_h=int(wh), shape_n=int(shape_n))
+            e, w, s = _check_api(
+                args.base_url, args.timeout, signal_window_h=int(wh), shape_n=int(shape_n)
+            )
             errs.extend(e)
             warns.extend(w)
             snap = s

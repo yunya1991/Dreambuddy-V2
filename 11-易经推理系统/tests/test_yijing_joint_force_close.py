@@ -4,6 +4,7 @@
 背景：原 FORCE_CLOSE 阈值 risk≥0.80 过高，试错仓 risk 多在 0.4-0.6，
 导致浮亏 -10% 仍不干预。新增联合条件填补 0.7<risk<0.8 且实际亏损的盲区。
 """
+
 import sys
 from pathlib import Path
 

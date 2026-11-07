@@ -1,17 +1,14 @@
 """Phase 7 closed-loop integration test suite."""
-import pytest
-from pathlib import Path
+
 import sys
+from pathlib import Path
+
+import pytest
 
 BASE = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE))
 
-from dreamos.capabilities.trading.orchestrator_v2 import OrchestratorV2
-from dreamos.capabilities.trading.coin_selector import CoinSelector
-from dreamos.capabilities.trading.yijing_signal_generator import YijingSignalGenerator
-from dreamos.capabilities.trading.v15_executor import V15Executor
-from dreamos.capabilities.trading.signal_router import SignalRouter
-from dreamos.capabilities.trading.cognitive_reviewer import CognitiveReviewer
+from dreamos.capabilities.trading.orchestrator_v2 import OrchestratorV2  # noqa: E402
 
 
 def test_phase7_full_closed_loop():
@@ -90,10 +87,17 @@ def test_phase7_cognitive_injection():
 
     # Step 1: 真实盈利单回填 → 产生 lesson 并落盘
     win_trade = {
-        "symbol": "BTC", "direction": "LONG", "entry_price": 100000.0,
-        "exit_price": 105000.0, "position_size": 0.01,
-        "confidence": 0.75, "addon_count": 0, "hold_hours": 5.0,
-        "exit_reason": "TP hit|real", "pnl_usdt": 50.0, "pnl_pct": 0.05,
+        "symbol": "BTC",
+        "direction": "LONG",
+        "entry_price": 100000.0,
+        "exit_price": 105000.0,
+        "position_size": 0.01,
+        "confidence": 0.75,
+        "addon_count": 0,
+        "hold_hours": 5.0,
+        "exit_reason": "TP hit|real",
+        "pnl_usdt": 50.0,
+        "pnl_pct": 0.05,
     }
     review = record_real_exit(win_trade)
     assert review["status"] == "OK"
@@ -112,13 +116,20 @@ def test_phase7_cognitive_injection():
     # Step 3: run_cycle → P1-1 注入生效
     market_data = {
         "symbol": "BTC",
-        "supply_demand_score": 0.65, "technical_score": 0.60,
-        "capital_flow_score": 0.55, "sentiment_score": 0.50,
-        "trend_strength": 0.70, "volatility": 0.30,
-        "volume_ratio": 1.2, "price_position": 0.45,
-        "ma5": 100.0, "ma10": 98.0, "ma20": 95.0,
+        "supply_demand_score": 0.65,
+        "technical_score": 0.60,
+        "capital_flow_score": 0.55,
+        "sentiment_score": 0.50,
+        "trend_strength": 0.70,
+        "volatility": 0.30,
+        "volume_ratio": 1.2,
+        "price_position": 0.45,
+        "ma5": 100.0,
+        "ma10": 98.0,
+        "ma20": 95.0,
         "momentum_direction": "UP",
-        "close_price": 100000.0, "entry_price": 100000.0,
+        "close_price": 100000.0,
+        "entry_price": 100000.0,
     }
     result = orch.run_cycle(market_data)
 
@@ -182,27 +193,39 @@ def test_phase7_multi_cycle_evolution():
     }
 
     # Run 3 cycles
-    for i in range(3):
+    for i in range(3):  # noqa: B007
         result = orch.run_cycle(market_data)
         assert result["status"] in ("COMPLETED", "PARTIAL")
 
     # Record mixed results with actual trade reviews for lesson extraction
     win_trade = {
-        "symbol": "BTC", "direction": "LONG", "entry_price": 100000.0,
-        "exit_price": 105000.0, "confidence": 0.75, "hexagram": {},
-        "addon_count": 0, "hold_hours": 5.0,
+        "symbol": "BTC",
+        "direction": "LONG",
+        "entry_price": 100000.0,
+        "exit_price": 105000.0,
+        "confidence": 0.75,
+        "hexagram": {},
+        "addon_count": 0,
+        "hold_hours": 5.0,
         "exit_reason": "ATR trailing TP hit",
-        "pnl_usdt": 50.0, "pnl_pct": 0.05,
+        "pnl_usdt": 50.0,
+        "pnl_pct": 0.05,
     }
     loss_trade = {
-        "symbol": "BTC", "direction": "LONG", "entry_price": 100000.0,
-        "exit_price": 97000.0, "confidence": 0.40, "hexagram": {},
-        "addon_count": 3, "hold_hours": 35.0,
+        "symbol": "BTC",
+        "direction": "LONG",
+        "entry_price": 100000.0,
+        "exit_price": 97000.0,
+        "confidence": 0.40,
+        "hexagram": {},
+        "addon_count": 3,
+        "hold_hours": 35.0,
         "exit_reason": "Timeout exit",
-        "pnl_usdt": -30.0, "pnl_pct": -0.03,
+        "pnl_usdt": -30.0,
+        "pnl_pct": -0.03,
     }
     orch.reviewer.review(win_trade)
-    orch.record_trade_result(50.0)   # Win
+    orch.record_trade_result(50.0)  # Win
     orch.reviewer.review(loss_trade)
     orch.record_trade_result(-30.0)  # Loss
     orch.record_trade_result(-20.0)  # Loss

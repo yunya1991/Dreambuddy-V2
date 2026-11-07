@@ -19,6 +19,7 @@
 fail-open：除 429 抛 RateLimitError 外，所有 HTTP/解析异常 → 静默降级（部分 route 返回空 Record 或跳过），
 确保交易热路径不被阻塞（对应 H1 FAIL-OPEN 铁律）。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -49,24 +50,30 @@ _DEFAULT_HEADERS = {
 
 # 8 大板块 → 抓取路由
 _VALID_ROUTES = {
-    "overview", "cycle", "etf", "stable_rwa",
-    "derivatives", "exchanges", "holdings", "macro_us",
+    "overview",
+    "cycle",
+    "etf",
+    "stable_rwa",
+    "derivatives",
+    "exchanges",
+    "holdings",
+    "macro_us",
     "all",
 }
 
 # 美股与宏观固定 series id（data.panewslab.com 首页 data-series）
 _MACRO_SERIES = [
-    ("market-close", "SP500",      "标普500"),
-    ("market-close", "NASDAQCOM",  "纳斯达克综合"),
-    ("fred",         "VIXCLS",     "VIX 波动率"),
-    ("fred",         "DGS10",      "美国10年期国债收益率"),
-    ("fred",         "DTWEXBGS",   "广义贸易加权美元指数"),
-    ("fred",         "DFF",        "有效联邦基金利率"),
+    ("market-close", "SP500", "标普500"),
+    ("market-close", "NASDAQCOM", "纳斯达克综合"),
+    ("fred", "VIXCLS", "VIX 波动率"),
+    ("fred", "DGS10", "美国10年期国债收益率"),
+    ("fred", "DTWEXBGS", "广义贸易加权美元指数"),
+    ("fred", "DFF", "有效联邦基金利率"),
 ]
 
 # 扩散广度/链上特征（omnitools 直连）
 _OMNITOOLS_FEATURES = [
-    ("defi-fundamental-breadth",   "DeFi 基本面扩散广度"),
+    ("defi-fundamental-breadth", "DeFi 基本面扩散广度"),
     ("stablecoin-liquidity-pulse", "稳定币流动性脉冲"),
     ("public-chain-activity-breadth", "公链活跃扩散广度"),
 ]
@@ -102,8 +109,16 @@ class PanewslabCollector(BaseCollector):
         try:
             if route == "all":
                 recs: list[DataRecord] = []
-                for r in ("overview", "cycle", "etf", "stable_rwa",
-                          "derivatives", "exchanges", "holdings", "macro_us"):
+                for r in (
+                    "overview",
+                    "cycle",
+                    "etf",
+                    "stable_rwa",
+                    "derivatives",
+                    "exchanges",
+                    "holdings",
+                    "macro_us",
+                ):
                     try:
                         recs.extend(self._dispatch_one(r))
                     except RateLimitError:
@@ -123,14 +138,22 @@ class PanewslabCollector(BaseCollector):
     # 路由分发
     # ------------------------------------------------------------------
     def _dispatch_one(self, route: str) -> list[DataRecord]:
-        if route == "overview":       return [self._fetch_overview()]
-        if route == "cycle":          return [self._fetch_cycle()]
-        if route == "etf":            return [self._fetch_etf()]
-        if route == "stable_rwa":     return [self._fetch_stable_rwa()]
-        if route == "derivatives":    return [self._fetch_derivatives()]
-        if route == "exchanges":      return [self._fetch_exchanges()]
-        if route == "holdings":       return [self._fetch_holdings()]
-        if route == "macro_us":       return [self._fetch_macro_us()]
+        if route == "overview":
+            return [self._fetch_overview()]
+        if route == "cycle":
+            return [self._fetch_cycle()]
+        if route == "etf":
+            return [self._fetch_etf()]
+        if route == "stable_rwa":
+            return [self._fetch_stable_rwa()]
+        if route == "derivatives":
+            return [self._fetch_derivatives()]
+        if route == "exchanges":
+            return [self._fetch_exchanges()]
+        if route == "holdings":
+            return [self._fetch_holdings()]
+        if route == "macro_us":
+            return [self._fetch_macro_us()]
         return []
 
     # ------------------------------------------------------------------
@@ -148,7 +171,8 @@ class PanewslabCollector(BaseCollector):
             return resp.json()
         except (ValueError, TypeError) as e:
             from data_center.core.errors import ParseError
-            raise ParseError(f"Panewslab 非 JSON: {url[:80]} → {e}")
+
+            raise ParseError(f"Panewslab 非 JSON: {url[:80]} → {e}")  # noqa: B904
 
     # ==================================================================
     # 板块实现
@@ -168,36 +192,41 @@ class PanewslabCollector(BaseCollector):
         # Top 10 币种
         top10 = []
         for c in coins_src[:10]:
-            top10.append({
-                "symbol": c.get("symbol"),
-                "price": c.get("price"),
-                "change24_pct": c.get("change24"),
-                "market_cap_usd": c.get("marketCap"),
-                "volume_24h_usd": c.get("volume"),
-            })
+            top10.append(
+                {
+                    "symbol": c.get("symbol"),
+                    "price": c.get("price"),
+                    "change24_pct": c.get("change24"),
+                    "market_cap_usd": c.get("marketCap"),
+                    "volume_24h_usd": c.get("volume"),
+                }
+            )
 
         # 30 日趋势（缩略时序列：取 btc + global_cap 前 3 个点 + 后 3 个点）
         btc_series = series.get("btc", []) or []
         global_series = series.get("global", []) or []
 
         metrics: dict = {
-            "global_market_cap_usd":    global_.get("marketCap"),
-            "global_change24_pct":      global_.get("change24"),
-            "btc_dominance_pct":        global_.get("btcDominance"),
-            "as_of":                    trends.get("asOf"),
-            "source_name":              trends.get("source"),
-            "trend_stale":              bool(trends.get("stale")),
-            "quotes_stale":             bool(quotes.get("stale")),
-            "quotes_as_of":             quotes.get("asOf"),
-            "coins_count":              len(coins_src),
+            "global_market_cap_usd": global_.get("marketCap"),
+            "global_change24_pct": global_.get("change24"),
+            "btc_dominance_pct": global_.get("btcDominance"),
+            "as_of": trends.get("asOf"),
+            "source_name": trends.get("source"),
+            "trend_stale": bool(trends.get("stale")),
+            "quotes_stale": bool(quotes.get("stale")),
+            "quotes_as_of": quotes.get("asOf"),
+            "coins_count": len(coins_src),
         }
         # Top10 扁平到 metrics（符合 contract 仅 number/string）
         for i, c in enumerate(top10):
             if c.get("symbol"):
                 metrics[f"top{i+1}_symbol"] = c["symbol"] or ""
-                if c.get("price") is not None:       metrics[f"top{i+1}_price"] = float(c["price"])
-                if c.get("change24_pct") is not None: metrics[f"top{i+1}_chg24pct"] = float(c["change24_pct"])
-                if c.get("market_cap_usd") is not None: metrics[f"top{i+1}_mcap"] = float(c["market_cap_usd"])
+                if c.get("price") is not None:
+                    metrics[f"top{i+1}_price"] = float(c["price"])
+                if c.get("change24_pct") is not None:
+                    metrics[f"top{i+1}_chg24pct"] = float(c["change24_pct"])
+                if c.get("market_cap_usd") is not None:
+                    metrics[f"top{i+1}_mcap"] = float(c["market_cap_usd"])
 
         rec = DataRecord(
             source="panewslab",
@@ -207,14 +236,16 @@ class PanewslabCollector(BaseCollector):
             metrics=metrics,
             events=[],
             timeseries=[
-                {"name": "btc_price", "series": [
-                    {"ts": p.get("timestamp"), "v": p.get("value")}
-                    for p in btc_series
-                ]},
-                {"name": "global_cap", "series": [
-                    {"ts": p.get("timestamp"), "v": p.get("value")}
-                    for p in global_series
-                ]},
+                {
+                    "name": "btc_price",
+                    "series": [{"ts": p.get("timestamp"), "v": p.get("value")} for p in btc_series],
+                },
+                {
+                    "name": "global_cap",
+                    "series": [
+                        {"ts": p.get("timestamp"), "v": p.get("value")} for p in global_series
+                    ],
+                },
                 {"name": "coins_top10", "items": top10},
             ],
             raw={
@@ -251,11 +282,11 @@ class PanewslabCollector(BaseCollector):
             pass
 
         metrics: dict = {
-            "bottom_hit_count":      hit_count,
-            "bottom_total_count":    total_count,
-            "bottom_hit_ratio_pct":  round(100 * hit_count / total_count, 2) if total_count else 0.0,
-            "as_of":                 bottom.get("asOf"),
-            "source":                bottom.get("source"),
+            "bottom_hit_count": hit_count,
+            "bottom_total_count": total_count,
+            "bottom_hit_ratio_pct": round(100 * hit_count / total_count, 2) if total_count else 0.0,
+            "as_of": bottom.get("asOf"),
+            "source": bottom.get("source"),
         }
         # 逐个抄底指标：slug → (value, hit) 扁平
         for it in items:
@@ -292,30 +323,59 @@ class PanewslabCollector(BaseCollector):
             metrics=metrics,
             events=[],
             timeseries=[
-                {"name": "bottom_signals", "items": [
-                    {"slug": i.get("slug"), "name": i.get("name"),
-                     "value": i.get("value"), "hit": i.get("hit"),
-                     "threshold": i.get("thresholdValue"),
-                     "explanation": i.get("explanation"),
-                     "source": i.get("source")}
-                    for i in items
-                ]},
-                {"name": "omnitools_features", "items": [
-                    {"slug": s, "name": f.get("name"),
-                     "current_range": f.get("currentRange"),
-                     "range_status": f.get("rangeStatus"),
-                     "hit": f.get("hit")}
-                    for s, f in breadth.items() if isinstance(f, dict)
-                ]},
+                {
+                    "name": "bottom_signals",
+                    "items": [
+                        {
+                            "slug": i.get("slug"),
+                            "name": i.get("name"),
+                            "value": i.get("value"),
+                            "hit": i.get("hit"),
+                            "threshold": i.get("thresholdValue"),
+                            "explanation": i.get("explanation"),
+                            "source": i.get("source"),
+                        }
+                        for i in items
+                    ],
+                },
+                {
+                    "name": "omnitools_features",
+                    "items": [
+                        {
+                            "slug": s,
+                            "name": f.get("name"),
+                            "current_range": f.get("currentRange"),
+                            "range_status": f.get("rangeStatus"),
+                            "hit": f.get("hit"),
+                        }
+                        for s, f in breadth.items()
+                        if isinstance(f, dict)
+                    ],
+                },
             ],
             raw={
                 "bottom_signals_summary": summary,
                 "bottom_signals_items_count": len(items),
                 "omnitools_features": list(breadth.keys()),
                 "raw_items": items[:30],
-                "raw_breadth": {k: {kk: vv for kk, vv in v.items() if kk in
-                                   ("slug","name","explanation","thresholdValue","hit","currentRange","rangeStatus")}
-                                for k, v in breadth.items() if isinstance(v, dict)},
+                "raw_breadth": {
+                    k: {
+                        kk: vv
+                        for kk, vv in v.items()
+                        if kk
+                        in (
+                            "slug",
+                            "name",
+                            "explanation",
+                            "thresholdValue",
+                            "hit",
+                            "currentRange",
+                            "rangeStatus",
+                        )
+                    }
+                    for k, v in breadth.items()
+                    if isinstance(v, dict)
+                },
             },
         )
         validate_record(rec)
@@ -333,21 +393,21 @@ class PanewslabCollector(BaseCollector):
         companies = treasury.get("companies", []) or []
 
         # Top10 机构持仓
-        top10_cos = sorted(
-            companies, key=lambda c: float(c.get("holdings") or 0), reverse=True
-        )[:10]
+        top10_cos = sorted(companies, key=lambda c: float(c.get("holdings") or 0), reverse=True)[
+            :10
+        ]
 
         metrics: dict = {
-            "btc_etf_total_aum_usd":       btc.get("totalNetAssetsUsd"),
-            "btc_etf_daily_flow_usd":      btc.get("dailyFlowUsd"),
-            "btc_etf_as_of":               btc.get("asOf"),
-            "eth_etf_total_aum_usd":       eth.get("totalNetAssetsUsd"),
-            "eth_etf_daily_flow_usd":      eth.get("dailyFlowUsd"),
-            "eth_etf_as_of":               eth.get("asOf"),
-            "etf_stale":                   bool(etf.get("stale")),
-            "treasury_companies_count":    len(companies),
-            "treasury_stale":              bool(treasury.get("stale")),
-            "treasury_as_of":              treasury.get("asOf"),
+            "btc_etf_total_aum_usd": btc.get("totalNetAssetsUsd"),
+            "btc_etf_daily_flow_usd": btc.get("dailyFlowUsd"),
+            "btc_etf_as_of": btc.get("asOf"),
+            "eth_etf_total_aum_usd": eth.get("totalNetAssetsUsd"),
+            "eth_etf_daily_flow_usd": eth.get("dailyFlowUsd"),
+            "eth_etf_as_of": eth.get("asOf"),
+            "etf_stale": bool(etf.get("stale")),
+            "treasury_companies_count": len(companies),
+            "treasury_stale": bool(treasury.get("stale")),
+            "treasury_as_of": treasury.get("asOf"),
         }
         total_holdings = sum(float(c.get("holdings") or 0) for c in companies)
         metrics["treasury_total_btc_holdings"] = round(total_holdings, 4)
@@ -366,23 +426,41 @@ class PanewslabCollector(BaseCollector):
             metrics=metrics,
             events=[],
             timeseries=[
-                {"name": "btc_etf_series", "series": [
-                    {"ts": p.get("date") or p.get("asOf"), "aum_usd": p.get("netAssetsUsd"),
-                     "flow_usd": p.get("flowUsd")}
-                    for p in (btc.get("series") or [])[:90]
-                ]},
-                {"name": "eth_etf_series", "series": [
-                    {"ts": p.get("date") or p.get("asOf"), "aum_usd": p.get("netAssetsUsd"),
-                     "flow_usd": p.get("flowUsd")}
-                    for p in (eth.get("series") or [])[:90]
-                ]},
-                {"name": "top10_treasury", "items": [
-                    {"name": c.get("name"), "symbol": c.get("symbol"),
-                     "holdings_btc": c.get("holdings"),
-                     "current_value_usd": c.get("currentValueUsd"),
-                     "supply_share_pct": c.get("supplySharePercent")}
-                    for c in top10_cos
-                ]},
+                {
+                    "name": "btc_etf_series",
+                    "series": [
+                        {
+                            "ts": p.get("date") or p.get("asOf"),
+                            "aum_usd": p.get("netAssetsUsd"),
+                            "flow_usd": p.get("flowUsd"),
+                        }
+                        for p in (btc.get("series") or [])[:90]
+                    ],
+                },
+                {
+                    "name": "eth_etf_series",
+                    "series": [
+                        {
+                            "ts": p.get("date") or p.get("asOf"),
+                            "aum_usd": p.get("netAssetsUsd"),
+                            "flow_usd": p.get("flowUsd"),
+                        }
+                        for p in (eth.get("series") or [])[:90]
+                    ],
+                },
+                {
+                    "name": "top10_treasury",
+                    "items": [
+                        {
+                            "name": c.get("name"),
+                            "symbol": c.get("symbol"),
+                            "holdings_btc": c.get("holdings"),
+                            "current_value_usd": c.get("currentValueUsd"),
+                            "supply_share_pct": c.get("supplySharePercent"),
+                        }
+                        for c in top10_cos
+                    ],
+                },
             ],
             raw={
                 "etf_markets_keys": list(mk.keys()),
@@ -401,9 +479,7 @@ class PanewslabCollector(BaseCollector):
         # 稳定币脉冲（omnitools，失败降级）
         stable_pulse: dict = {}
         try:
-            stable_pulse = self._get(
-                f"{_OMNITOOLS_BASE}/api/features/stablecoin-liquidity-pulse"
-            )
+            stable_pulse = self._get(f"{_OMNITOOLS_BASE}/api/features/stablecoin-liquidity-pulse")
         except Exception:
             pass
         ts = _now_iso()
@@ -413,13 +489,13 @@ class PanewslabCollector(BaseCollector):
         top_prot = rwa.get("topProtocols", []) or []
 
         metrics: dict = {
-            "rwa_tvl_usd":           totals.get("tvl"),
-            "rwa_protocols":         totals.get("protocols"),
-            "rwa_change1d_pct":      totals.get("change1dPct"),
-            "rwa_change7d_pct":      totals.get("change7dPct"),
-            "rwa_stale":             bool(rwa.get("stale")),
-            "rwa_fetched_at":        rwa.get("fetchedAt"),
-            "rwa_categories_count":  len(cats),
+            "rwa_tvl_usd": totals.get("tvl"),
+            "rwa_protocols": totals.get("protocols"),
+            "rwa_change1d_pct": totals.get("change1dPct"),
+            "rwa_change7d_pct": totals.get("change7dPct"),
+            "rwa_stale": bool(rwa.get("stale")),
+            "rwa_fetched_at": rwa.get("fetchedAt"),
+            "rwa_categories_count": len(cats),
         }
         # top 5 RWA 分类
         cats_sorted = sorted(cats, key=lambda c: float(c.get("tvl") or 0), reverse=True)[:5]
@@ -444,26 +520,46 @@ class PanewslabCollector(BaseCollector):
             metrics=metrics,
             events=[],
             timeseries=[
-                {"name": "rwa_categories", "items": [
-                    {"name": c.get("name"), "tvl_usd": c.get("tvl"),
-                     "protocols": c.get("protocols"),
-                     "change7d_pct": c.get("change7dPct")}
-                    for c in cats_sorted
-                ]},
-                {"name": "rwa_top_protocols", "items": [
-                    {"name": p.get("name"), "tvl_usd": p.get("tvl"),
-                     "category": p.get("category"),
-                     "change7d_pct": p.get("change7dPct")}
-                    for p in top_prot[:15]
-                ]},
+                {
+                    "name": "rwa_categories",
+                    "items": [
+                        {
+                            "name": c.get("name"),
+                            "tvl_usd": c.get("tvl"),
+                            "protocols": c.get("protocols"),
+                            "change7d_pct": c.get("change7dPct"),
+                        }
+                        for c in cats_sorted
+                    ],
+                },
+                {
+                    "name": "rwa_top_protocols",
+                    "items": [
+                        {
+                            "name": p.get("name"),
+                            "tvl_usd": p.get("tvl"),
+                            "category": p.get("category"),
+                            "change7d_pct": p.get("change7dPct"),
+                        }
+                        for p in top_prot[:15]
+                    ],
+                },
             ],
             raw={
                 "rwa_source": rwa.get("source"),
                 "rwa_source_url": rwa.get("sourceUrl"),
                 "rwa_coverage": rwa.get("coverage"),
                 "stablecoin_pulse": {
-                    k: stable_pulse.get(k) for k in
-                    ("slug","name","explanation","thresholdValue","currentRange","rangeStatus","hit")
+                    k: stable_pulse.get(k)
+                    for k in (
+                        "slug",
+                        "name",
+                        "explanation",
+                        "thresholdValue",
+                        "currentRange",
+                        "rangeStatus",
+                        "hit",
+                    )
                     if isinstance(stable_pulse, dict)
                 },
             },
@@ -482,38 +578,45 @@ class PanewslabCollector(BaseCollector):
         totals = fut.get("totals", {}) or {}
 
         metrics: dict = {
-            "fut_volume_24h_usd":        totals.get("volumeUsd24h"),
-            "fut_open_interest_usd":     totals.get("openInterestUsd"),
-            "fut_liq_total_24h_usd":     totals.get("liquidationUsd24h"),
-            "fut_liq_long_24h_usd":      totals.get("longLiquidationUsd24h"),
-            "fut_liq_short_24h_usd":     totals.get("shortLiquidationUsd24h"),
-            "fut_coins_count":           len(fut_coins),
-            "spot_coins_count":          len(spot_coins),
-            "spot_stale":                bool(spot.get("stale")),
-            "fut_as_of":                 fut.get("asOf"),
-            "spot_as_of":                spot.get("asOf"),
+            "fut_volume_24h_usd": totals.get("volumeUsd24h"),
+            "fut_open_interest_usd": totals.get("openInterestUsd"),
+            "fut_liq_total_24h_usd": totals.get("liquidationUsd24h"),
+            "fut_liq_long_24h_usd": totals.get("longLiquidationUsd24h"),
+            "fut_liq_short_24h_usd": totals.get("shortLiquidationUsd24h"),
+            "fut_coins_count": len(fut_coins),
+            "spot_coins_count": len(spot_coins),
+            "spot_stale": bool(spot.get("stale")),
+            "fut_as_of": fut.get("asOf"),
+            "spot_as_of": spot.get("asOf"),
         }
         # Top 10 现货
         for i, c in enumerate(spot_coins[:10]):
             sym = c.get("symbol") or f"s{i}"
             price = c.get("priceUsd")
             mcap = c.get("marketCapUsd")
-            if price is not None: metrics[f"spot{i+1}_{sym}_price"] = float(price)
-            if mcap is not None:  metrics[f"spot{i+1}_{sym}_mcap"]  = float(mcap)
+            if price is not None:
+                metrics[f"spot{i+1}_{sym}_price"] = float(price)
+            if mcap is not None:
+                metrics[f"spot{i+1}_{sym}_mcap"] = float(mcap)
             chg24 = c.get("priceChangePercent24h")
-            if chg24 is not None: metrics[f"spot{i+1}_{sym}_chg24"] = float(chg24)
+            if chg24 is not None:
+                metrics[f"spot{i+1}_{sym}_chg24"] = float(chg24)
             netflow = c.get("netFlowUsd24h")
-            if netflow is not None: metrics[f"spot{i+1}_{sym}_nf24"] = float(netflow)
+            if netflow is not None:
+                metrics[f"spot{i+1}_{sym}_nf24"] = float(netflow)
 
         # Top 10 合约
         for i, c in enumerate(fut_coins[:10]):
             sym = c.get("symbol") or f"f{i}"
             vol24 = c.get("volumeUsd24h")
             oi = c.get("openInterestUsd")
-            if vol24 is not None: metrics[f"fut{i+1}_{sym}_vol24"] = float(vol24)
-            if oi is not None:    metrics[f"fut{i+1}_{sym}_oi"]    = float(oi)
+            if vol24 is not None:
+                metrics[f"fut{i+1}_{sym}_vol24"] = float(vol24)
+            if oi is not None:
+                metrics[f"fut{i+1}_{sym}_oi"] = float(oi)
             liq = c.get("liquidationUsd24h")
-            if liq is not None:   metrics[f"fut{i+1}_{sym}_liq24"] = float(liq)
+            if liq is not None:
+                metrics[f"fut{i+1}_{sym}_liq24"] = float(liq)
 
         rec = DataRecord(
             source="panewslab",
@@ -523,24 +626,36 @@ class PanewslabCollector(BaseCollector):
             metrics=metrics,
             events=[],
             timeseries=[
-                {"name": "spot_markets", "items": [
-                    {"symbol": c.get("symbol"), "price_usd": c.get("priceUsd"),
-                     "market_cap_usd": c.get("marketCapUsd"),
-                     "chg24_pct": c.get("priceChangePercent24h"),
-                     "chg7d_pct": c.get("priceChangePercent7d"),
-                     "volume_usd_24h": c.get("volumeUsd24h"),
-                     "netflow_usd_24h": c.get("netFlowUsd24h")}
-                    for c in spot_coins[:50]
-                ]},
-                {"name": "futures_markets", "items": [
-                    {"symbol": c.get("symbol"), "price_usd": c.get("priceUsd"),
-                     "volume_usd_24h": c.get("volumeUsd24h"),
-                     "open_interest_usd": c.get("openInterestUsd"),
-                     "liquidation_usd_24h": c.get("liquidationUsd24h"),
-                     "long_liq_usd_24h": c.get("longLiquidationUsd24h"),
-                     "short_liq_usd_24h": c.get("shortLiquidationUsd24h")}
-                    for c in fut_coins[:50]
-                ]},
+                {
+                    "name": "spot_markets",
+                    "items": [
+                        {
+                            "symbol": c.get("symbol"),
+                            "price_usd": c.get("priceUsd"),
+                            "market_cap_usd": c.get("marketCapUsd"),
+                            "chg24_pct": c.get("priceChangePercent24h"),
+                            "chg7d_pct": c.get("priceChangePercent7d"),
+                            "volume_usd_24h": c.get("volumeUsd24h"),
+                            "netflow_usd_24h": c.get("netFlowUsd24h"),
+                        }
+                        for c in spot_coins[:50]
+                    ],
+                },
+                {
+                    "name": "futures_markets",
+                    "items": [
+                        {
+                            "symbol": c.get("symbol"),
+                            "price_usd": c.get("priceUsd"),
+                            "volume_usd_24h": c.get("volumeUsd24h"),
+                            "open_interest_usd": c.get("openInterestUsd"),
+                            "liquidation_usd_24h": c.get("liquidationUsd24h"),
+                            "long_liq_usd_24h": c.get("longLiquidationUsd24h"),
+                            "short_liq_usd_24h": c.get("shortLiquidationUsd24h"),
+                        }
+                        for c in fut_coins[:50]
+                    ],
+                },
             ],
             raw={
                 "spot_source": spot.get("source"),
@@ -564,10 +679,10 @@ class PanewslabCollector(BaseCollector):
         transfers = whales.get("transfers", []) or []
 
         metrics: dict = {
-            "exchanges_as_of":       exchanges.get("asOf"),
-            "whales_as_of":          whales.get("asOf"),
+            "exchanges_as_of": exchanges.get("asOf"),
+            "whales_as_of": whales.get("asOf"),
             "whales_transfer_count": len(transfers),
-            "transparency_count":    len(transparency),
+            "transparency_count": len(transparency),
         }
         # 总览 summary（扁平 number/string）
         for k, v in summary.items():
@@ -589,13 +704,15 @@ class PanewslabCollector(BaseCollector):
         whale_from_ex_usd = 0.0
         for t in transfers:
             amt = float(t.get("amountUsd") or 0)
-            sym = (t.get("symbol") or "UNK")
+            sym = t.get("symbol") or "UNK"
             whale_by_symbol[sym] = whale_by_symbol.get(sym, 0.0) + amt
             to_ = str(t.get("to") or "")
             from_ = str(t.get("from") or "")
             if any(ex in to_ for ex in ("Binance", "Coinbase", "Kraken", "OKX", "Huobi", "Bybit")):
                 whale_to_ex_usd += amt
-            if any(ex in from_ for ex in ("Binance", "Coinbase", "Kraken", "OKX", "Huobi", "Bybit")):
+            if any(
+                ex in from_ for ex in ("Binance", "Coinbase", "Kraken", "OKX", "Huobi", "Bybit")
+            ):
                 whale_from_ex_usd += amt
         metrics["whale_24h_to_ex_usd"] = round(whale_to_ex_usd, 2)
         metrics["whale_24h_from_ex_usd"] = round(whale_from_ex_usd, 2)
@@ -612,23 +729,45 @@ class PanewslabCollector(BaseCollector):
             metrics=metrics,
             events=[],
             timeseries=[
-                {"name": "exchange_balance_series", "items": [
-                    {"symbol": b.get("symbol"), "total": b.get("total"),
-                     "change30d_pct": b.get("changePercent30d"),
-                     "series_len": len(b.get("series") or [])}
-                    for b in balances
-                ]},
-                {"name": "transparency_scores", "items": [
-                    {"exchange": t.get("name"), "score": t.get("score"),
-                     "grade": t.get("grade"), "rank": t.get("rank")}
-                    for t in transparency[:20]
-                ]},
-                {"name": "whale_transfers_latest", "items": [
-                    {"symbol": t.get("symbol"), "amount_usd": t.get("amountUsd"),
-                     "quantity": t.get("quantity"), "from": t.get("from"),
-                     "to": t.get("to"), "chain": t.get("chain"), "as_of": t.get("asOf")}
-                    for t in transfers[:30]
-                ]},
+                {
+                    "name": "exchange_balance_series",
+                    "items": [
+                        {
+                            "symbol": b.get("symbol"),
+                            "total": b.get("total"),
+                            "change30d_pct": b.get("changePercent30d"),
+                            "series_len": len(b.get("series") or []),
+                        }
+                        for b in balances
+                    ],
+                },
+                {
+                    "name": "transparency_scores",
+                    "items": [
+                        {
+                            "exchange": t.get("name"),
+                            "score": t.get("score"),
+                            "grade": t.get("grade"),
+                            "rank": t.get("rank"),
+                        }
+                        for t in transparency[:20]
+                    ],
+                },
+                {
+                    "name": "whale_transfers_latest",
+                    "items": [
+                        {
+                            "symbol": t.get("symbol"),
+                            "amount_usd": t.get("amountUsd"),
+                            "quantity": t.get("quantity"),
+                            "from": t.get("from"),
+                            "to": t.get("to"),
+                            "chain": t.get("chain"),
+                            "as_of": t.get("asOf"),
+                        }
+                        for t in transfers[:30]
+                    ],
+                },
             ],
             raw={
                 "exchanges_source": exchanges.get("source"),
@@ -662,19 +801,23 @@ class PanewslabCollector(BaseCollector):
 
         # omnitools 两个广度指标（proxy 链上基本面 & 活跃度）
         breadth_raw: dict = {}
-        for slug, _ in (("defi-fundamental-breadth", "DeFi"),
-                        ("public-chain-activity-breadth", "公链")):
+        for slug, _ in (
+            ("defi-fundamental-breadth", "DeFi"),
+            ("public-chain-activity-breadth", "公链"),
+        ):
             try:
                 breadth_raw[slug] = self._get(f"{_OMNITOOLS_BASE}/api/features/{slug}")
             except Exception:
                 continue
 
         metrics: dict = {
-            "holdings_treasury_count":    len(companies),
-            "holdings_treasury_btc_sum":  round(sum(float(c.get("holdings") or 0) for c in companies), 4),
-            "holdings_transfers_count":   len(transfers),
-            "holdings_as_of_treasury":    treasury.get("asOf"),
-            "holdings_as_of_whales":      whales.get("asOf"),
+            "holdings_treasury_count": len(companies),
+            "holdings_treasury_btc_sum": round(
+                sum(float(c.get("holdings") or 0) for c in companies), 4
+            ),
+            "holdings_transfers_count": len(transfers),
+            "holdings_as_of_treasury": treasury.get("asOf"),
+            "holdings_as_of_whales": whales.get("asOf"),
         }
         # Top5 国家持仓
         top_countries = sorted(by_country.items(), key=lambda kv: kv[1], reverse=True)[:5]
@@ -702,21 +845,47 @@ class PanewslabCollector(BaseCollector):
             metrics=metrics,
             events=[],
             timeseries=[
-                {"name": "treasury_by_country", "items": [
-                    {"country": c, "holdings_btc": round(a, 4)}
-                    for c, a in top_countries
-                ]},
-                {"name": "top20_whale_transfers", "items": [
-                    {"symbol": t.get("symbol"), "amount_usd": t.get("amountUsd"),
-                     "from": t.get("from"), "to": t.get("to"),
-                     "chain": t.get("chain"), "as_of": t.get("asOf")}
-                    for t in transfers[:20]
-                ]},
-                {"name": "breadth_features", "items": [
-                    {"slug": s, **{k: f.get(k) for k in
-                     ("name","currentRange","rangeStatus","coverageStatus","hit") if isinstance(f, dict)}}
-                    for s, f in breadth_raw.items() if isinstance(f, dict)
-                ]},
+                {
+                    "name": "treasury_by_country",
+                    "items": [
+                        {"country": c, "holdings_btc": round(a, 4)} for c, a in top_countries
+                    ],
+                },
+                {
+                    "name": "top20_whale_transfers",
+                    "items": [
+                        {
+                            "symbol": t.get("symbol"),
+                            "amount_usd": t.get("amountUsd"),
+                            "from": t.get("from"),
+                            "to": t.get("to"),
+                            "chain": t.get("chain"),
+                            "as_of": t.get("asOf"),
+                        }
+                        for t in transfers[:20]
+                    ],
+                },
+                {
+                    "name": "breadth_features",
+                    "items": [
+                        {
+                            "slug": s,
+                            **{
+                                k: f.get(k)
+                                for k in (
+                                    "name",
+                                    "currentRange",
+                                    "rangeStatus",
+                                    "coverageStatus",
+                                    "hit",
+                                )
+                                if isinstance(f, dict)
+                            },
+                        }
+                        for s, f in breadth_raw.items()
+                        if isinstance(f, dict)
+                    ],
+                },
             ],
             raw={
                 "treasury_source": treasury.get("source"),
@@ -745,7 +914,9 @@ class PanewslabCollector(BaseCollector):
                 continue
             value = data.get("value")
             obs = data.get("observations") or []
-            metrics[f"us_{sid}_value"] = value if isinstance(value, (int, float, str)) else str(value)
+            metrics[f"us_{sid}_value"] = (
+                value if isinstance(value, (int, float, str)) else str(value)
+            )
             chg = data.get("change")
             if isinstance(chg, (int, float)):
                 metrics[f"us_{sid}_chg"] = float(chg)
@@ -755,15 +926,24 @@ class PanewslabCollector(BaseCollector):
             metrics[f"us_{sid}_as_of"] = data.get("asOf")
             metrics[f"us_{sid}_name"] = str(data.get("name") or label)
             metrics[f"us_{sid}_obs_count"] = len(obs) if isinstance(obs, list) else 0
-            series_results.append({
-                "id": sid, "label": label,
-                "name": data.get("name"), "source": data.get("source"),
-                "value": value, "change": data.get("change"),
-                "change_pct": data.get("changePct"), "as_of": data.get("asOf"),
-                "obs_count": len(obs) if isinstance(obs, list) else 0,
-                "observations_tail": (obs[-10:] if isinstance(obs, list) and len(obs) > 10 else obs)
-                                     if isinstance(obs, list) else [],
-            })
+            series_results.append(
+                {
+                    "id": sid,
+                    "label": label,
+                    "name": data.get("name"),
+                    "source": data.get("source"),
+                    "value": value,
+                    "change": data.get("change"),
+                    "change_pct": data.get("changePct"),
+                    "as_of": data.get("asOf"),
+                    "obs_count": len(obs) if isinstance(obs, list) else 0,
+                    "observations_tail": (
+                        (obs[-10:] if isinstance(obs, list) and len(obs) > 10 else obs)
+                        if isinstance(obs, list)
+                        else []
+                    ),
+                }
+            )
 
         metrics["us_series_live_count"] = len(series_results)
 

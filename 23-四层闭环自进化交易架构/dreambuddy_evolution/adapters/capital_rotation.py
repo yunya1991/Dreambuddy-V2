@@ -14,11 +14,12 @@ CapitalRotationAdapter — 资金轮动检测器
 输出: capital_rotation ∈ [-1, +1]，可直接增强 R_flow 维度
 FAIL-OPEN: 任何异常 → 返回中性值 0.0
 """
+
 from __future__ import annotations
 
+import logging
 import math
 import time
-import logging
 from typing import Any
 
 logger = logging.getLogger(__name__)

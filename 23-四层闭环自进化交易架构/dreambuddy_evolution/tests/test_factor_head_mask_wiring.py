@@ -7,6 +7,7 @@ attention bias 语义（core/cross_attention.py L152: scores = scores + mask）:
   0.0 = 无影响, 负值 = 抑制, -inf = 屏蔽。
   降权 multiplier m → 该 head 允许值 0.0 → log(m)（m=0.8 → -0.223 抑制）。
 """
+
 import json
 import math
 from types import SimpleNamespace
@@ -40,9 +41,8 @@ class TestBridgeUpdatesOverride:
         from dreambuddy_evolution.engines.reverse_cognitive_bridge import (
             ReverseCognitiveBridge,
         )
-        return ReverseCognitiveBridge(
-            mask_override_path=str(tmp_path / "override.json"), **kwargs
-        )
+
+        return ReverseCognitiveBridge(mask_override_path=str(tmp_path / "override.json"), **kwargs)
 
     def test_wrong_dims_creates_override(self, tmp_path):
         bridge = self._bridge(tmp_path)
@@ -96,6 +96,7 @@ class TestBuildMaskAppliesOverride:
         from dreambuddy_evolution.core.exogenous_data_bridge import (
             build_factor_head_mask,
         )
+
         return build_factor_head_mask(override_path=override_path)
 
     def test_no_override_keeps_zero_allow(self, tmp_path):
@@ -110,6 +111,7 @@ class TestBuildMaskAppliesOverride:
         from dreambuddy_evolution.core.exogenous_data_bridge import (
             get_factor_dimensions,
         )
+
         dims = get_factor_dimensions()
         c1_idx = dims.index("C1")
         # C1 head 行: 允许值 = log(0.8)

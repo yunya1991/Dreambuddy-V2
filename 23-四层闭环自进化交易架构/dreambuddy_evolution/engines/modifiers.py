@@ -10,6 +10,7 @@ R_sentiment 非线性 80/20 + R_capital 资金流方向 + R_narrative 叙事驱�
 - R_sentiment 必须非线性 80/20 分段
 - 三角验证①必跑：R_narrative 增强前必须检查 R_capital
 """
+
 import logging
 from typing import Any
 
@@ -30,7 +31,9 @@ def apply_sentiment_modifier(
     - sentiment None/crash → 返回原值（不修饰）
     """
     try:
-        if sentiment is None or isinstance(sentiment, float) and (sentiment != sentiment):  # NaN check
+        if (
+            sentiment is None or isinstance(sentiment, float) and (sentiment != sentiment)
+        ):  # NaN check
             return float(r_reflexivity)
 
         s = float(sentiment)

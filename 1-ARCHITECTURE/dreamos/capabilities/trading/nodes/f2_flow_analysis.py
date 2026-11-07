@@ -15,17 +15,15 @@ F2 资金流分析节点
 
 from __future__ import annotations
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
-from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
 from dreamos.capabilities.trading.stats_utils import (
-    normalize_tanh,
-    normalize_signed,
     aggregate_signals,
-    z_score,
-    percentile_rank,
+    normalize_signed,
+    normalize_tanh,
 )
+from dreamos.registry.base import BaseNode
+from dreamos.shared.state import NodeResult, State
 
 
 class F2FlowAnalysisNode(BaseNode):
@@ -69,9 +67,21 @@ class F2FlowAnalysisNode(BaseNode):
         # 统计标准化：tanh 归一化，scale=100（单位百万）
         enf_norm = normalize_tanh(exchange_net_flow, scale=100)
         if enf_norm < -0.5:
-            scores.append(("LONG", 0.25, f"交易所净流出({exchange_net_flow:.0f}M, z={enf_norm:.2f})，场外积累"))
+            scores.append(
+                (
+                    "LONG",
+                    0.25,
+                    f"交易所净流出({exchange_net_flow:.0f}M, z={enf_norm:.2f})，场外积累",
+                )
+            )
         elif enf_norm > 0.5:
-            scores.append(("SHORT", 0.20, f"交易所净流入({exchange_net_flow:.0f}M, z={enf_norm:.2f})，抛压增加"))
+            scores.append(
+                (
+                    "SHORT",
+                    0.20,
+                    f"交易所净流入({exchange_net_flow:.0f}M, z={enf_norm:.2f})，抛压增加",
+                )
+            )
 
         # ── 4. 聪明钱方向 ────────────────────────────────
         smart_money_direction = mkt.get("smart_money_direction", 0)
@@ -86,9 +96,13 @@ class F2FlowAnalysisNode(BaseNode):
         # 统计标准化：tanh 归一化，scale=0.0003（正常日利率约0.01-0.03%）
         fr_norm = normalize_tanh(funding_rate, scale=0.0003)
         if fr_norm > 0.5:
-            scores.append(("SHORT", 0.15, f"资金费率偏高({funding_rate*100:.4f}%, z={fr_norm:.2f})，多头拥挤"))
+            scores.append(
+                ("SHORT", 0.15, f"资金费率偏高({funding_rate*100:.4f}%, z={fr_norm:.2f})，多头拥挤")
+            )
         elif fr_norm < -0.5:
-            scores.append(("LONG", 0.15, f"资金费率偏低({funding_rate*100:.4f}%, z={fr_norm:.2f})，空头拥挤"))
+            scores.append(
+                ("LONG", 0.15, f"资金费率偏低({funding_rate*100:.4f}%, z={fr_norm:.2f})，空头拥挤")
+            )
 
         # ── 6. 清算压力 ──────────────────────────────────
         liquidation_pressure = mkt.get("liquidation_pressure", 0)
@@ -97,7 +111,13 @@ class F2FlowAnalysisNode(BaseNode):
         # 统计标准化：线性归一化到 [-1, 1]，区间 [0, 100]
         liq_norm = normalize_signed(liquidation_pressure, 0, 100)
         if liq_norm > 0.5:
-            scores.append(("LONG", 0.20, f"高清算压力({liquidation_pressure:.0f}, z={liq_norm:.2f})，反向机会"))
+            scores.append(
+                (
+                    "LONG",
+                    0.20,
+                    f"高清算压力({liquidation_pressure:.0f}, z={liq_norm:.2f})，反向机会",
+                )
+            )
 
         # ── 综合计算（统计化聚合） ────────────────────────
         stats = aggregate_signals(scores)

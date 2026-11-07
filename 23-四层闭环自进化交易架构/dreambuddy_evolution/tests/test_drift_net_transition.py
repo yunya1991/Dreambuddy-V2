@@ -21,12 +21,12 @@ TDD 覆盖:
   P0.2-T3.4 transition=None 时 pad zeros (不报错)
   P0.2-T3.5 NeuralSDEModel use_transition=True 时 drift_net 有 transition 输入
 """
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
-import numpy as np
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
@@ -37,7 +37,7 @@ if str(REPO) not in sys.path:
 def test_drift_net_n_transition_zero_backward_compat():
     """P0.2-T3.1: n_transition=0 时 in_dim 不变 (向后兼容旧模型)."""
     try:
-        import torch
+        import torch  # noqa: F401
     except ImportError:
         pytest.skip("torch not available")
 
@@ -54,7 +54,7 @@ def test_drift_net_n_transition_zero_backward_compat():
 def test_drift_net_n_transition_positive_increases_dim():
     """P0.2-T3.2: n_transition>0 时 in_dim 增加 n_transition."""
     try:
-        import torch
+        import torch  # noqa: F401
     except ImportError:
         pytest.skip("torch not available")
 
@@ -113,7 +113,7 @@ def test_drift_net_forward_transition_none_pad_zeros():
 def test_model_use_transition_true_has_transition_input():
     """P0.2-T3.5: NeuralSDEModel use_transition=True 时 drift_net 有 transition 输入维度."""
     try:
-        import torch
+        import torch  # noqa: F401
     except ImportError:
         pytest.skip("torch not available")
 
@@ -130,7 +130,7 @@ def test_model_use_transition_true_has_transition_input():
 def test_model_use_transition_false_backward_compat():
     """P0.2-T3.6: use_transition=False (默认) 时 drift_net in_dim 不变."""
     try:
-        import torch
+        import torch  # noqa: F401
     except ImportError:
         pytest.skip("torch not available")
 

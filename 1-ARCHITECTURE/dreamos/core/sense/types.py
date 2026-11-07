@@ -15,15 +15,15 @@ DreamOS S层 — 类型定义
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
-from dataclasses import dataclass, field, asdict
-from datetime import datetime
-
 
 # ============================================================
 # 意图类型
 # ============================================================
+
 
 class IntentType(str, Enum):
     """标准意图类型
@@ -34,20 +34,21 @@ class IntentType(str, Enum):
 
     通用意图由 L1 规则/L4 LLM 直接识别；策略意图由市场数据打分或通用意图的子分类得出。
     """
+
     # ── 通用用户意图 ──
-    MARKET_QUERY = "MARKET_QUERY"               # 行情查询（价格/仓位/余额等数据点）
-    EXECUTE_TRADE = "EXECUTE_TRADE"             # 执行交易（开仓/平仓/加减仓）
-    STRATEGY_VERIFY = "STRATEGY_VERIFY"         # 策略验证（回测/有效性评估）
-    SCENARIO_SIM = "SCENARIO_SIM"               # 情景推演（假设/压力测试）
-    SIMPLE_QA = "SIMPLE_QA"                     # 简单问答（闲聊/概念解释）
+    MARKET_QUERY = "MARKET_QUERY"  # 行情查询（价格/仓位/余额等数据点）
+    EXECUTE_TRADE = "EXECUTE_TRADE"  # 执行交易（开仓/平仓/加减仓）
+    STRATEGY_VERIFY = "STRATEGY_VERIFY"  # 策略验证（回测/有效性评估）
+    SCENARIO_SIM = "SCENARIO_SIM"  # 情景推演（假设/压力测试）
+    SIMPLE_QA = "SIMPLE_QA"  # 简单问答（闲聊/概念解释）
     # ── 交易策略意图 ──
-    TREND_FOLLOWING = "TREND_FOLLOWING"         # 趋势跟随
-    MEAN_REVERSION = "MEAN_REVERSION"           # 均值回归
-    FUNDAMENTAL_PLAY = "FUNDAMENTAL_PLAY"       # 基本面驱动
-    BREAKOUT = "BREAKOUT"                       # 突破
-    KNOWLEDGE_MATCH = "KNOWLEDGE_MATCH"         # 知识库匹配
-    DEEP_ANALYSIS = "DEEP_ANALYSIS"             # A系列深度分析
-    UNCERTAIN = "UNCERTAIN"                     # 不确定/需要澄清
+    TREND_FOLLOWING = "TREND_FOLLOWING"  # 趋势跟随
+    MEAN_REVERSION = "MEAN_REVERSION"  # 均值回归
+    FUNDAMENTAL_PLAY = "FUNDAMENTAL_PLAY"  # 基本面驱动
+    BREAKOUT = "BREAKOUT"  # 突破
+    KNOWLEDGE_MATCH = "KNOWLEDGE_MATCH"  # 知识库匹配
+    DEEP_ANALYSIS = "DEEP_ANALYSIS"  # A系列深度分析
+    UNCERTAIN = "UNCERTAIN"  # 不确定/需要澄清
 
     @classmethod
     def all_types(cls) -> List[str]:
@@ -84,35 +85,122 @@ def get_intent_definition(intent_type: str) -> Dict[str, Any]:
             "description": "查询价格/仓位/余额等数据点，零编排直答",
             "chain": "S0",
             "priority": 1,
-            "keywords": ["价格", "多少钱", "现价", "报价", "行情", "多少", "查询", "查一下", "看看", "现在", "当前", "实时", "最新", "仓位", "持仓", "余额", "保证金", "资金费率", "费率", "爆仓价", "强平价", "market", "price", "quote", "ticker"],
+            "keywords": [
+                "价格",
+                "多少钱",
+                "现价",
+                "报价",
+                "行情",
+                "多少",
+                "查询",
+                "查一下",
+                "看看",
+                "现在",
+                "当前",
+                "实时",
+                "最新",
+                "仓位",
+                "持仓",
+                "余额",
+                "保证金",
+                "资金费率",
+                "费率",
+                "爆仓价",
+                "强平价",
+                "market",
+                "price",
+                "quote",
+                "ticker",
+            ],
         },
         "EXECUTE_TRADE": {
             "name": "执行交易",
             "description": "开仓/平仓/加减仓等交易操作",
             "chain": "S",
             "priority": 1,
-            "keywords": ["开仓", "下单", "买入", "卖出", "做多", "做空", "加仓", "减仓", "平仓", "执行交易", "立即交易", "入场", "出场", "建仓", "补仓", "抄底", "逃顶", "buy", "sell", "execute", "place order"],
+            "keywords": [
+                "开仓",
+                "下单",
+                "买入",
+                "卖出",
+                "做多",
+                "做空",
+                "加仓",
+                "减仓",
+                "平仓",
+                "执行交易",
+                "立即交易",
+                "入场",
+                "出场",
+                "建仓",
+                "补仓",
+                "抄底",
+                "逃顶",
+                "buy",
+                "sell",
+                "execute",
+                "place order",
+            ],
         },
         "STRATEGY_VERIFY": {
             "name": "策略验证",
             "description": "回测/策略有效性评估/信号质量检验",
             "chain": "S",
             "priority": 2,
-            "keywords": ["回测", "策略验证", "验证策略", "测试策略", "检验策略", "策略有效性", "策略质量", "信号质量", "信号验证", "策略评估", "评估策略", "backtest", "validate strategy", "strategy validation"],
+            "keywords": [
+                "回测",
+                "策略验证",
+                "验证策略",
+                "测试策略",
+                "检验策略",
+                "策略有效性",
+                "策略质量",
+                "信号质量",
+                "信号验证",
+                "策略评估",
+                "评估策略",
+                "backtest",
+                "validate strategy",
+                "strategy validation",
+            ],
         },
         "SCENARIO_SIM": {
             "name": "情景推演",
             "description": "假设情景/压力测试/极端行情推演",
             "chain": "S",
             "priority": 2,
-            "keywords": ["情景", "假设", "如果", "推演", "模拟", "极端行情", "压力测试", "最坏情况", "最好情况", "敏感性分析", "scenario", "hypothetical", "simulation"],
+            "keywords": [
+                "情景",
+                "假设",
+                "如果",
+                "推演",
+                "模拟",
+                "极端行情",
+                "压力测试",
+                "最坏情况",
+                "最好情况",
+                "敏感性分析",
+                "scenario",
+                "hypothetical",
+                "simulation",
+            ],
         },
         "SIMPLE_QA": {
             "name": "简单问答",
             "description": "闲聊/概念解释/通用问答",
             "chain": "S0",
             "priority": 9,
-            "keywords": ["是什么", "什么是", "怎么理解", "解释一下", "介绍", "聊聊", "你好", "谢谢", "help"],
+            "keywords": [
+                "是什么",
+                "什么是",
+                "怎么理解",
+                "解释一下",
+                "介绍",
+                "聊聊",
+                "你好",
+                "谢谢",
+                "help",
+            ],
         },
         # ── 交易策略意图 ──
         "TREND_FOLLOWING": {
@@ -120,14 +208,39 @@ def get_intent_definition(intent_type: str) -> Dict[str, Any]:
             "description": "识别趋势行情，顺势操作",
             "chain": "A",
             "priority": 1,
-            "keywords": ["趋势", "trend", "均线", "ma", "ema", "突破趋势", "顺势", "做多", "趋势跟随", "多头", "空头"],
+            "keywords": [
+                "趋势",
+                "trend",
+                "均线",
+                "ma",
+                "ema",
+                "突破趋势",
+                "顺势",
+                "做多",
+                "趋势跟随",
+                "多头",
+                "空头",
+            ],
         },
         "MEAN_REVERSION": {
             "name": "均值回归",
             "description": "识别超买超卖，逆向操作",
             "chain": "A",
             "priority": 2,
-            "keywords": ["均值回归", "超买超卖", "超买", "超卖", "回调", "反弹", "rsi", "布林", "boll", "逆向", "做空", "抄底"],
+            "keywords": [
+                "均值回归",
+                "超买超卖",
+                "超买",
+                "超卖",
+                "回调",
+                "反弹",
+                "rsi",
+                "布林",
+                "boll",
+                "逆向",
+                "做空",
+                "抄底",
+            ],
         },
         "FUNDAMENTAL_PLAY": {
             "name": "基本面驱动",
@@ -156,9 +269,23 @@ def get_intent_definition(intent_type: str) -> Dict[str, Any]:
             "chain": "A",
             "priority": 1,
             "keywords": [
-                "深度分析", "深度调研", "深度报告", "调研报告", "战略分析", "战略研究",
-                "a系列", "a链", "a0", "a1", "a2", "a3",
-                "矛盾论", "矛盾分析", "主要矛盾", "第一性原理", "六因子",
+                "深度分析",
+                "深度调研",
+                "深度报告",
+                "调研报告",
+                "战略分析",
+                "战略研究",
+                "a系列",
+                "a链",
+                "a0",
+                "a1",
+                "a2",
+                "a3",
+                "矛盾论",
+                "矛盾分析",
+                "主要矛盾",
+                "第一性原理",
+                "六因子",
             ],
         },
         "UNCERTAIN": {
@@ -181,12 +308,14 @@ def get_intent_definition(intent_type: str) -> Dict[str, Any]:
 # 意图识别输入
 # ============================================================
 
+
 @dataclass
 class IntentInput:
     """意图识别输入 — 多源数据的统一封装
 
     所有识别器都接收 IntentInput，按需读取自己关心的字段。
     """
+
     # 自然语言输入（可选）
     user_message: Optional[str] = None
 
@@ -226,27 +355,30 @@ class IntentInput:
 # 单个识别器的结果
 # ============================================================
 
+
 @dataclass
 class RecognizerResult:
     """单个识别器的识别结果
 
     多个识别器的结果会被融合为最终 IntentResult。
     """
-    recognizer: str                          # 识别器名称
-    intent_type: str                         # 识别出的意图类型
-    confidence: float = 0.0                  # 0-1
-    rationale: str = ""                      # 理由
-    base_chain: List[str] = field(default_factory=list)     # 推荐主链
-    extend_nodes: List[str] = field(default_factory=list)   # 扩展节点
-    context: Dict[str, Any] = field(default_factory=dict)    # 额外上下文
+
+    recognizer: str  # 识别器名称
+    intent_type: str  # 识别出的意图类型
+    confidence: float = 0.0  # 0-1
+    rationale: str = ""  # 理由
+    base_chain: List[str] = field(default_factory=list)  # 推荐主链
+    extend_nodes: List[str] = field(default_factory=list)  # 扩展节点
+    context: Dict[str, Any] = field(default_factory=dict)  # 额外上下文
     latency_ms: float = 0.0
     tokens_used: int = 0
-    level: str = "local"                     # local / llm / hybrid
+    level: str = "local"  # local / llm / hybrid
 
 
 # ============================================================
 # 最终意图结果（S 层输出）
 # ============================================================
+
 
 @dataclass
 class IntentResult:
@@ -254,11 +386,12 @@ class IntentResult:
 
     这是 S 层传给 A 层的核心数据结构。
     """
+
     intent_type: str = IntentType.UNCERTAIN.value
     confidence: float = 0.0
 
     # 链路建议
-    recommended_chain: str = ""              # 推荐主链 (A/C/F)
+    recommended_chain: str = ""  # 推荐主链 (A/C/F)
     base_chain: List[str] = field(default_factory=list)
     extend_nodes: List[str] = field(default_factory=list)
 
@@ -272,7 +405,7 @@ class IntentResult:
     # 统计
     total_tokens: int = 0
     total_latency_ms: float = 0.0
-    level: str = "local"                     # local / llm / hybrid / fallback
+    level: str = "local"  # local / llm / hybrid / fallback
 
     # 澄清相关
     clarify_needed: bool = False

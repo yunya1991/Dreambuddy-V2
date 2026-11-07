@@ -12,16 +12,18 @@
 
 注意：缩小止损止盈范围以适应波浪策略的短周期特征
 """
+
+import json
 import os
 import sys
-import json
 import time
+
 import numpy as np
 import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
-sys.path.insert(0, '.')
+sys.path.insert(0, ".")
 
 
 def load_coin_data(symbol: str) -> pd.DataFrame:
@@ -39,6 +41,7 @@ def load_coin_data(symbol: str) -> pd.DataFrame:
 
 def generate_wave_signals(prices, zigzag_threshold=0.03):
     from ml.ewave_recognizer import ElliottWaveRecognizer
+
     recognizer = ElliottWaveRecognizer(zigzag_threshold=zigzag_threshold)
     n = len(prices)
     signals = []
@@ -61,15 +64,18 @@ def generate_wave_signals(prices, zigzag_threshold=0.03):
 
 
 def compute_physics_features(prices):
-    from ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
-    from ml.pitd_kinematics_engineer import KinematicsEngineer
+    from ml.pitd_confidence_scorer import ConfidenceWeights, PhysicsConfidenceScorer
     from ml.pitd_dynamics_engineer import DynamicsEngineer
+    from ml.pitd_kinematics_engineer import KinematicsEngineer
 
     n = len(prices)
     weights = ConfidenceWeights(
-        w_eta=0.211, w_reversal=0.368,
-        w_support=0.211, w_kinetic=0.211,
-        position_lower=0.6, position_scale=1.0,
+        w_eta=0.211,
+        w_reversal=0.368,
+        w_support=0.211,
+        w_kinetic=0.211,
+        position_lower=0.6,
+        position_scale=1.0,
     )
     scorer = PhysicsConfidenceScorer(weights)
     kin_fe = KinematicsEngineer()
@@ -91,7 +97,10 @@ def compute_physics_features(prices):
 
 
 def compute_wave_position_trailing_stop(
-    prices, wave_signals, wave_confs, physics_feats,
+    prices,
+    wave_signals,
+    wave_confs,
+    physics_feats,
     base_position=0.3,
     wave_conf_threshold=0.7,
     phys_conf_threshold=0.5,
@@ -119,7 +128,7 @@ def compute_wave_position_trailing_stop(
     highs = prices["high"].values
     lows = prices["low"].values
 
-    eta_series = physics_feats["eta"]
+    eta_series = physics_feats["eta"]  # noqa: F841
     phys_conf = physics_feats["phys_conf"]
     trend_score = physics_feats["trend_score"]
     reversal_score = physics_feats["reversal_score"]
@@ -141,11 +150,16 @@ def compute_wave_position_trailing_stop(
     wave_short_signals = ("ENTER_SHORT_W3", "ENTER_SHORT_W5", "HOLD_SHORT_W3")
 
     stats = {
-        "total_enter": 0, "total_exit_by_trailing": 0,
-        "total_exit_by_tp": 0, "total_exit_by_signal": 0,
-        "trailing_pcts": [], "tp_pcts": [],
-        "trail_min": 1.0, "trail_max": 0.0,
-        "tp_min": 1.0, "tp_max": 0.0,
+        "total_enter": 0,
+        "total_exit_by_trailing": 0,
+        "total_exit_by_tp": 0,
+        "total_exit_by_signal": 0,
+        "trailing_pcts": [],
+        "tp_pcts": [],
+        "trail_min": 1.0,
+        "trail_max": 0.0,
+        "tp_min": 1.0,
+        "tp_max": 0.0,
     }
 
     for i in range(n):
@@ -290,12 +304,18 @@ def compute_wave_position_trailing_stop(
                 continue
 
             # 检查止盈
-            current_tp = current_entry * (1 + tp_pct) if take_profit_mode != "fixed" else current_entry * (1 + base_take_profit_pct)
+            current_tp = (
+                current_entry * (1 + tp_pct)
+                if take_profit_mode != "fixed"
+                else current_entry * (1 + base_take_profit_pct)
+            )
             if highs[i] >= current_tp:
                 current_pos = 0.0
                 current_dir = 0
                 stats["total_exit_by_tp"] += 1
-                stats["tp_pcts"].append(tp_pct if take_profit_mode != "fixed" else base_take_profit_pct)
+                stats["tp_pcts"].append(
+                    tp_pct if take_profit_mode != "fixed" else base_take_profit_pct
+                )
                 continue
 
         elif current_dir == -1 and current_entry > 0:
@@ -321,12 +341,18 @@ def compute_wave_position_trailing_stop(
                 continue
 
             # 检查止盈
-            current_tp = current_entry * (1 - tp_pct) if take_profit_mode != "fixed" else current_entry * (1 - base_take_profit_pct)
+            current_tp = (
+                current_entry * (1 - tp_pct)
+                if take_profit_mode != "fixed"
+                else current_entry * (1 - base_take_profit_pct)
+            )
             if lows[i] <= current_tp:
                 current_pos = 0.0
                 current_dir = 0
                 stats["total_exit_by_tp"] += 1
-                stats["tp_pcts"].append(tp_pct if take_profit_mode != "fixed" else base_take_profit_pct)
+                stats["tp_pcts"].append(
+                    tp_pct if take_profit_mode != "fixed" else base_take_profit_pct
+                )
                 continue
 
         position[i] = current_pos * current_dir if current_dir != 0 else 0
@@ -341,8 +367,9 @@ def compute_wave_position_trailing_stop(
     return abs_position, direction_arr, stats
 
 
-def compute_smart_fusion(v4_pos, v4_dir, wave_pos, wave_dir,
-                         add_ratio=0.5, bottom_ratio=0.25, max_position=1.0):
+def compute_smart_fusion(
+    v4_pos, v4_dir, wave_pos, wave_dir, add_ratio=0.5, bottom_ratio=0.25, max_position=1.0
+):
     n = len(v4_pos)
     fusion_pos = np.zeros(n)
     fusion_dir = np.zeros(n)
@@ -439,8 +466,11 @@ def run_trailing_stop_experiment(symbol="BTC"):
 
     print("[3/5] 计算V4仓位...")
     from ml.halving_top_exit_strategy import HalvingTopExitStrategy
-    is_btc = (symbol == "BTC")
-    strategy = HalvingTopExitStrategy(symbol=symbol, is_btc=is_btc, btc_prices=prices if is_btc else None)
+
+    is_btc = symbol == "BTC"
+    strategy = HalvingTopExitStrategy(
+        symbol=symbol, is_btc=is_btc, btc_prices=prices if is_btc else None
+    )
     v4_series = strategy.generate_signals(prices)
     v4_pos = np.abs(v4_series.values)
     v4_dir = np.sign(v4_series.values)
@@ -461,15 +491,20 @@ def run_trailing_stop_experiment(symbol="BTC"):
 
     print(f"\n[4/5] 测试 {len(configs)} 种追踪止损配置...")
     print(f"\n{'='*110}")
-    print(f"  纯波浪策略 - 不同追踪止损对比")
+    print("  纯波浪策略 - 不同追踪止损对比")
     print(f"{'='*110}")
-    print(f"{'配置':<25} {'年化':>8} {'总收益':>9} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'胜率':>7} {'均仓':>6} {'追踪':>5} {'止盈':>5} {'信号出':>5}")
+    print(
+        f"{'配置':<25} {'年化':>8} {'总收益':>9} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'胜率':>7} {'均仓':>6} {'追踪':>5} {'止盈':>5} {'信号出':>5}"
+    )
     print(f"{'-'*105}")
 
     wave_results = {}
     for name, trail_mode, tp_mode, base_trail, base_tp in configs:
         wave_pos, wave_dir, stats = compute_wave_position_trailing_stop(
-            prices, wave_signals, wave_confs, physics_feats,
+            prices,
+            wave_signals,
+            wave_confs,
+            physics_feats,
             base_position=0.3,
             wave_conf_threshold=0.7,
             phys_conf_threshold=0.5,
@@ -478,30 +513,43 @@ def run_trailing_stop_experiment(symbol="BTC"):
             take_profit_mode=tp_mode,
             base_take_profit_pct=base_tp,
         )
-        m = backtest_position(wave_pos[valid_start:], wave_dir[valid_start:], prices.iloc[valid_start:])
+        m = backtest_position(
+            wave_pos[valid_start:], wave_dir[valid_start:], prices.iloc[valid_start:]
+        )
         wave_results[name] = {"metrics": m, "stats": stats}
-        trail_avg = stats["avg_trailing"] * 100 if stats["avg_trailing"] > 0 else base_trail * 100
-        tp_avg = stats["avg_tp"] * 100 if stats["avg_tp"] > 0 else base_tp * 100
-        print(f"{name:<25} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>8.1f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>6.2f}% {m['avg_position']:>6.3f} {stats['total_exit_by_trailing']:>5} {stats['total_exit_by_tp']:>5} {stats['total_exit_by_signal']:>5}")
+        trail_avg = (  # noqa: F841
+            stats["avg_trailing"] * 100 if stats["avg_trailing"] > 0 else base_trail * 100
+        )  # noqa: F841
+        tp_avg = stats["avg_tp"] * 100 if stats["avg_tp"] > 0 else base_tp * 100  # noqa: F841
+        print(
+            f"{name:<25} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>8.1f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>6.2f}% {m['avg_position']:>6.3f} {stats['total_exit_by_trailing']:>5} {stats['total_exit_by_tp']:>5} {stats['total_exit_by_signal']:>5}"
+        )
 
     # 追踪止损范围统计
-    print(f"\n  追踪止损范围（Top3配置）:")
+    print("\n  追踪止损范围（Top3配置）:")
     sorted_wave = sorted(wave_results.items(), key=lambda x: -x[1]["metrics"]["sharpe"])[:3]
     for name, res in sorted_wave:
         s = res["stats"]
-        print(f"    {name}: 追踪 {s['trail_min']*100:.1f}%~{s['trail_max']*100:.1f}% (均{s['avg_trailing']*100:.1f}%), 止盈 {s['tp_min']*100:.1f}%~{s['tp_max']*100:.1f}% (均{s['avg_tp']*100:.1f}%)")
+        print(
+            f"    {name}: 追踪 {s['trail_min']*100:.1f}%~{s['trail_max']*100:.1f}% (均{s['avg_trailing']*100:.1f}%), 止盈 {s['tp_min']*100:.1f}%~{s['tp_max']*100:.1f}% (均{s['avg_tp']*100:.1f}%)"
+        )
 
     # 融合策略对比
     print(f"\n{'='*110}")
-    print(f"  智能融合策略 - 不同追踪止损对比（加仓50%/抄底25%）")
+    print("  智能融合策略 - 不同追踪止损对比（加仓50%/抄底25%）")
     print(f"{'='*110}")
-    print(f"{'配置':<25} {'年化':>8} {'总收益':>9} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'均仓':>6}")
+    print(
+        f"{'配置':<25} {'年化':>8} {'总收益':>9} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'均仓':>6}"
+    )
     print(f"{'-'*85}")
 
     fusion_results = {}
     for name, trail_mode, tp_mode, base_trail, base_tp in configs:
         wave_pos, wave_dir, stats = compute_wave_position_trailing_stop(
-            prices, wave_signals, wave_confs, physics_feats,
+            prices,
+            wave_signals,
+            wave_confs,
+            physics_feats,
             base_position=0.3,
             wave_conf_threshold=0.7,
             phys_conf_threshold=0.5,
@@ -511,16 +559,22 @@ def run_trailing_stop_experiment(symbol="BTC"):
             base_take_profit_pct=base_tp,
         )
         smart_pos, smart_dir = compute_smart_fusion(v4_pos, v4_dir, wave_pos, wave_dir)
-        m = backtest_position(smart_pos[valid_start:], smart_dir[valid_start:], prices.iloc[valid_start:])
+        m = backtest_position(
+            smart_pos[valid_start:], smart_dir[valid_start:], prices.iloc[valid_start:]
+        )
         fusion_results[name] = m
-        print(f"{name:<25} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>8.1f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}% {m['calmar']:>8.4f} {m['avg_position']:>6.3f}")
+        print(
+            f"{name:<25} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>8.1f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}% {m['calmar']:>8.4f} {m['avg_position']:>6.3f}"
+        )
 
     m_v4 = backtest_position(v4_pos[valid_start:], v4_dir[valid_start:], prices.iloc[valid_start:])
-    print(f"{'纯V4 (参考)':<25} {m_v4['ann_return']*100:>7.2f}% {m_v4['total_return']*100:>8.1f}% {m_v4['sharpe']:>8.4f} {m_v4['max_drawdown']*100:>7.2f}% {m_v4['calmar']:>8.4f} {m_v4['avg_position']:>6.3f}")
+    print(
+        f"{'纯V4 (参考)':<25} {m_v4['ann_return']*100:>7.2f}% {m_v4['total_return']*100:>8.1f}% {m_v4['sharpe']:>8.4f} {m_v4['max_drawdown']*100:>7.2f}% {m_v4['calmar']:>8.4f} {m_v4['avg_position']:>6.3f}"
+    )
 
     # 增量分析
     print(f"\n{'='*110}")
-    print(f"  相对基线的增量（融合策略）")
+    print("  相对基线的增量（融合策略）")
     print(f"{'='*110}")
     print(f"{'配置':<25} {'年化增量':>10} {'夏普增量':>10} {'回撤改善':>10} {'综合评分':>10}")
     print(f"{'-'*75}")
@@ -529,15 +583,17 @@ def run_trailing_stop_experiment(symbol="BTC"):
     best_score = -999
     best_name = ""
     for name, m in fusion_results.items():
-        ann_delta = (m['ann_return'] - base_m['ann_return']) * 100
-        sharpe_delta = m['sharpe'] - base_m['sharpe']
-        mdd_delta = (m['max_drawdown'] - base_m['max_drawdown']) * 100
+        ann_delta = (m["ann_return"] - base_m["ann_return"]) * 100
+        sharpe_delta = m["sharpe"] - base_m["sharpe"]
+        mdd_delta = (m["max_drawdown"] - base_m["max_drawdown"]) * 100
         score = sharpe_delta * 0.4 + ann_delta * 0.01 * 0.3 + (-mdd_delta) * 0.01 * 0.3
         mark = " ✅" if score > 0 else ""
         if score > best_score:
             best_score = score
             best_name = name
-        print(f"{name:<25} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {score:>10.4f}{mark}")
+        print(
+            f"{name:<25} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {score:>10.4f}{mark}"
+        )
 
     print(f"\n最优配置: {best_name} (综合评分: {best_score:.4f})")
 
@@ -545,7 +601,13 @@ def run_trailing_stop_experiment(symbol="BTC"):
     os.makedirs("ml/backtest_results", exist_ok=True)
     save_data = {
         "symbol": symbol,
-        "wave_results": {k: {"metrics": v["metrics"], "stats": {kk: vv for kk, vv in v["stats"].items() if isinstance(vv, (int, float))}} for k, v in wave_results.items()},
+        "wave_results": {
+            k: {
+                "metrics": v["metrics"],
+                "stats": {kk: vv for kk, vv in v["stats"].items() if isinstance(vv, (int, float))},
+            }
+            for k, v in wave_results.items()
+        },
         "fusion_results": fusion_results,
         "v4_baseline": m_v4,
         "best_config": best_name,
@@ -559,6 +621,7 @@ def run_trailing_stop_experiment(symbol="BTC"):
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="物理驱动动态追踪止损实验")
     parser.add_argument("--symbol", type=str, default="BTC")
     args = parser.parse_args()

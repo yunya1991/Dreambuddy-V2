@@ -8,9 +8,9 @@ Phase 3: Bellman 完整 + 摩擦力建模
 Phase 3.3: 状态空间扩展 (symbol, regime) 二维 V 值
 D2: 持久化（save/load + persist_path 自动恢复 + 每 N 次更新自动保存）
 """
+
 import json
 from pathlib import Path
-from typing import Any
 
 
 class BellmanVTracker:
@@ -21,10 +21,15 @@ class BellmanVTracker:
     D2: 持久化（save/load + persist_path 自动恢复）.
     """
 
-    def __init__(self, alpha: float = 0.1, gamma: float = 0.95,
-                 ess_max: float = 0.02, ess_min: float = -0.02,
-                 persist_path: str | Path | None = None,
-                 save_every: int = 100):
+    def __init__(
+        self,
+        alpha: float = 0.1,
+        gamma: float = 0.95,
+        ess_max: float = 0.02,
+        ess_min: float = -0.02,
+        persist_path: str | Path | None = None,
+        save_every: int = 100,
+    ):
         # 一维: per-symbol V 值（向后兼容）
         self._v: dict[str, float] = {}
         # 二维: per-symbol×regime V 值
@@ -47,10 +52,14 @@ class BellmanVTracker:
             return self._v.get(symbol, 0.0)
         return self._v_regime.get((symbol, regime), self._v.get(symbol, 0.0))
 
-    def td_update(self, symbol: str, reward: float,
-                  next_symbol: str = "",
-                  regime: str | None = None,
-                  next_regime: str | None = None) -> float:
+    def td_update(
+        self,
+        symbol: str,
+        reward: float,
+        next_symbol: str = "",
+        regime: str | None = None,
+        next_regime: str | None = None,
+    ) -> float:
         """
         V(s) ← V(s) + α·(R + γ·V(s') - V(s))
         regime=None 时退化为一维 TD 更新（向后兼容）.

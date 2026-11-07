@@ -12,10 +12,10 @@
 与 polling_trader.py L7851 融合逻辑严格解耦：纯函数版 cbr_blend_shadow 镜像实现，
 保证未来 shadow→生效阶段的语义等价性。
 """
+
 from __future__ import annotations
 
 import json
-import math
 import sys
 import tempfile
 from dataclasses import dataclass, field
@@ -25,7 +25,7 @@ from typing import Any, Dict, List, Optional
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[3]   # = 11-易经推理系统/
+ROOT = Path(__file__).resolve().parents[3]  # = 11-易经推理系统/
 sys.path.insert(0, str(ROOT))
 
 
@@ -38,6 +38,7 @@ class _MiniCBRCase:
     leverage: float = 1.0
     confidence: float = 0.0
     raw: Dict[str, Any] = field(default_factory=dict)
+
 
 @dataclass
 class _MiniRetrieved:
@@ -150,7 +151,9 @@ def cbr_blend_shadow(
         "long_conf_threshold": float(a * b_long_thr + (1 - a) * baseline["long_conf_threshold"]),
         "short_conf_threshold": float(baseline["short_conf_threshold"]),
         "leverage": float(a * b_lev + (1 - a) * baseline["leverage"]),
-        "best_holding_hours": int(round(a * b_hold + (1 - a) * float(baseline["best_holding_hours"]))),
+        "best_holding_hours": int(
+            round(a * b_hold + (1 - a) * float(baseline["best_holding_hours"]))
+        ),
         "_raw_blend_pos_mult": round(b_pos, 4),
         "_raw_blend_leverage": round(b_lev, 2),
         "_raw_blend_hold_h": round(b_hold, 1),
@@ -180,8 +183,14 @@ def _default_baseline() -> Dict[str, float]:
     }
 
 
-def _make_case(cid: str, lev: float, pct: float, conf: float,
-               ent_ts: Optional[float] = None, ext_ts: Optional[float] = None) -> _MiniCBRCase:
+def _make_case(
+    cid: str,
+    lev: float,
+    pct: float,
+    conf: float,
+    ent_ts: Optional[float] = None,
+    ext_ts: Optional[float] = None,
+) -> _MiniCBRCase:
     raw: Dict[str, Any] = {
         "position_pct": pct,
         "execution": {
@@ -236,12 +245,12 @@ def test_group1_top3_above_theta():
     raw_pos = ww[0] * (0.05 / 0.05) + ww[1] * (0.10 / 0.05) + ww[2] * (0.075 / 0.05)
     alpha = out["alpha"]
     expected_pos = alpha * raw_pos + (1 - alpha) * baseline["position_mult"]
-    assert abs(blended["position_mult"] - expected_pos) < 1e-9, (
-        f"blended pos_mult 与软融合公式不符，实际={blended['position_mult']} 期望={expected_pos}"
-    )
-    assert blended["position_mult"] != baseline["position_mult"], (
-        "命中 top-3 时 blended 必须偏离 baseline（即使很小）"
-    )
+    assert (
+        abs(blended["position_mult"] - expected_pos) < 1e-9
+    ), f"blended pos_mult 与软融合公式不符，实际={blended['position_mult']} 期望={expected_pos}"
+    assert (
+        blended["position_mult"] != baseline["position_mult"]
+    ), "命中 top-3 时 blended 必须偏离 baseline（即使很小）"
     # holding_hours：72 / 48 / 60 → raw = 加权后 α 混合
     raw_hold = ww[0] * 72 + ww[1] * 48 + ww[2] * 60
     expected_hold = int(round(alpha * raw_hold + (1 - alpha) * baseline["best_holding_hours"]))
@@ -294,9 +303,9 @@ def test_group2_all_below_theta():
     assert out["applied"] is False
     assert out["weights"] == []
     assert out["fail_open_reason"] is not None
-    assert "all_below_theta" in out["fail_open_reason"], (
-        f"全低于阈值时 fail_open_reason 应含 all_below_theta，实际={out['fail_open_reason']}"
-    )
+    assert (
+        "all_below_theta" in out["fail_open_reason"]
+    ), f"全低于阈值时 fail_open_reason 应含 all_below_theta，实际={out['fail_open_reason']}"
     # blended_values_before_shadow 为基线 copy（不偏离）
     blended = out["blended_values_before_shadow"]
     for k in ("position_mult", "leverage", "long_conf_threshold"):
@@ -310,20 +319,23 @@ def test_group2_all_below_theta():
     # 断言 2c: JSONL 结构化写入 applied=false + reason
     with tempfile.TemporaryDirectory() as td:
         path = Path(td) / "cbr_records.jsonl"
-        _write_jsonl(path, {
-            "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "symbol": "BTC-USDT-SWAP",
-            "query_features": {"inst_id": "BTC-USDT-SWAP"},
-            "top3": out["top3_meta"],
-            "baseline_values": baseline,
-            "blended_values": blended,
-            "blend_config": {
-                "theta_match_star": 0.71,
-                "soft_cap_alpha": out["alpha"],
-                "applied": False,
-                "fail_open_reason": out["fail_open_reason"],
+        _write_jsonl(
+            path,
+            {
+                "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "symbol": "BTC-USDT-SWAP",
+                "query_features": {"inst_id": "BTC-USDT-SWAP"},
+                "top3": out["top3_meta"],
+                "baseline_values": baseline,
+                "blended_values": blended,
+                "blend_config": {
+                    "theta_match_star": 0.71,
+                    "soft_cap_alpha": out["alpha"],
+                    "applied": False,
+                    "fail_open_reason": out["fail_open_reason"],
+                },
             },
-        })
+        )
         parsed = json.loads(path.read_text(encoding="utf-8").strip())
         assert parsed["blend_config"]["applied"] is False
         assert "all_below_theta" in str(parsed["blend_config"]["fail_open_reason"])
@@ -352,13 +364,16 @@ def test_group3_engine_exception():
         except Exception as _e:
             reason = f"exception::{type(_e).__name__}:{_e}"
             cbr_shadow = {
-                "applied": False, "fail_open_reason": reason,
-                "theta_match_star": 0.71, "alpha": 0.0,
+                "applied": False,
+                "fail_open_reason": reason,
+                "theta_match_star": 0.71,
+                "alpha": 0.0,
             }
             jsonl_rec = {
                 "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "symbol": "BTC-USDT-SWAP",
-                "query_features": {}, "top3": [],
+                "query_features": {},
+                "top3": [],
                 "baseline_values": dict(baseline),
                 "blended_values": dict(baseline),
                 "blend_config": {
@@ -375,19 +390,26 @@ def test_group3_engine_exception():
     # 断言 3a: fail_open_reason 前缀 = "exception::RuntimeError"
     assert jsonl_rec is not None
     reason = str(jsonl_rec["blend_config"]["fail_open_reason"])
-    assert reason.startswith("exception::RuntimeError"), (
-        f"异常前缀应包含 exception::RuntimeError，实际={reason}"
-    )
+    assert reason.startswith(
+        "exception::RuntimeError"
+    ), f"异常前缀应包含 exception::RuntimeError，实际={reason}"
     assert "boom: case_base corrupt" in reason
 
     # 断言 3b: applied=false 且 blended 与 baseline 全等价（字节不变影子）
     assert jsonl_rec["blend_config"]["applied"] is False
-    for k in ("position_mult", "tp_mult", "sl_mult", "threshold_mult",
-              "long_conf_threshold", "short_conf_threshold", "leverage",
-              "best_holding_hours"):
-        assert jsonl_rec["blended_values"][k] == baseline[k], (
-            f"异常 fail-open 时 blended.{k} 必须等于基线"
-        )
+    for k in (
+        "position_mult",
+        "tp_mult",
+        "sl_mult",
+        "threshold_mult",
+        "long_conf_threshold",
+        "short_conf_threshold",
+        "leverage",
+        "best_holding_hours",
+    ):
+        assert (
+            jsonl_rec["blended_values"][k] == baseline[k]
+        ), f"异常 fail-open 时 blended.{k} 必须等于基线"
 
     # 断言 3c: 真参数字节不变（position_mult_final_effective == baseline）
     assert position_mult_final_effective == baseline["position_mult"]
@@ -401,8 +423,15 @@ def test_group3_engine_exception():
         parsed = json.loads(lines[0])
         assert "symbol" in parsed and "ts" in parsed
         # 结构完整 6 大键
-        for k in ("ts", "symbol", "query_features", "top3",
-                  "baseline_values", "blended_values", "blend_config"):
+        for k in (
+            "ts",
+            "symbol",
+            "query_features",
+            "top3",
+            "baseline_values",
+            "blended_values",
+            "blend_config",
+        ):
             assert k in parsed, f"JSONL 结构缺键 {k}"
 
 

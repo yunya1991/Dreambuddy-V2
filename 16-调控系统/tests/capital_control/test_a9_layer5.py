@@ -25,14 +25,12 @@ for _p in (_CORE,):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-import pytest
-
-from a9_exit_decision import _evaluate_single_position
-
+from a9_exit_decision import _evaluate_single_position  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # 构造测试数据
 # ---------------------------------------------------------------------------
+
 
 def _make_a1(market_state=None):
     """构造 A1 结果，使其产出 RAISE_TP。"""
@@ -103,8 +101,14 @@ def _make_position_long(system="v15_martin", upnl=5.0):
     }
 
 
-def _make_advice(pressure="HIGH", phase2=True, conf_mult=0.8,
-                 blocked=("RAISE_TP",), used_pct=85.0, total_eq=260.0):
+def _make_advice(
+    pressure="HIGH",
+    phase2=True,
+    conf_mult=0.8,
+    blocked=("RAISE_TP",),
+    used_pct=85.0,
+    total_eq=260.0,
+):
     """构造资金建议字典。"""
     return {
         "allowed": not (phase2 and pressure == "HIGH" and "RAISE_TP" in (blocked or [])),
@@ -140,7 +144,12 @@ class TestLayer5NoAdvice:
     def test_empty_advice(self):
         pos = _make_position_long()
         ev = _evaluate_single_position(
-            pos, _make_a1(), _make_a2_raised(), _make_a3_long(), {}, {},
+            pos,
+            _make_a1(),
+            _make_a2_raised(),
+            _make_a3_long(),
+            {},
+            {},
         )
         l5 = ev["layers"]["layer5_capital_adjustment"]
         assert l5["capital_advice_present"] is False
@@ -151,7 +160,12 @@ class TestLayer5NoAdvice:
         pos = _make_position_long(system="v15_martin")
         advice = {"other_system": _make_advice()}
         ev = _evaluate_single_position(
-            pos, _make_a1(), _make_a2_raised(), _make_a3_long(), {}, advice,
+            pos,
+            _make_a1(),
+            _make_a2_raised(),
+            _make_a3_long(),
+            {},
+            advice,
         )
         l5 = ev["layers"]["layer5_capital_adjustment"]
         assert l5["capital_advice_present"] is False
@@ -166,7 +180,12 @@ class TestLayer5Phase2Disabled:
         pos = _make_position_long()
         advice = {"v15_martin": _make_advice(pressure="HIGH", phase2=False)}
         ev = _evaluate_single_position(
-            pos, _make_a1(), _make_a2_raised(), _make_a3_long(), {}, advice,
+            pos,
+            _make_a1(),
+            _make_a2_raised(),
+            _make_a3_long(),
+            {},
+            advice,
         )
         l5 = ev["layers"]["layer5_capital_adjustment"]
         assert l5["capital_advice_present"] is True
@@ -188,7 +207,12 @@ class TestLayer5HighPressureRaiseTP:
         pos = _make_position_long()
         advice = {"v15_martin": _make_advice(pressure="HIGH", phase2=True, conf_mult=0.8)}
         ev = _evaluate_single_position(
-            pos, _make_a1(), _make_a2_raised(), _make_a3_long(), {}, advice,
+            pos,
+            _make_a1(),
+            _make_a2_raised(),
+            _make_a3_long(),
+            {},
+            advice,
         )
         # action 转为 HOLD
         assert ev["recommended_action"] == "HOLD"
@@ -202,7 +226,12 @@ class TestLayer5HighPressureRaiseTP:
         pos = _make_position_long()
         advice = {"v15_martin": _make_advice(pressure="HIGH", phase2=True)}
         ev = _evaluate_single_position(
-            pos, _make_a1(), _make_a2_raised(), _make_a3_long(), {}, advice,
+            pos,
+            _make_a1(),
+            _make_a2_raised(),
+            _make_a3_long(),
+            {},
+            advice,
         )
         l5 = ev["layers"]["layer5_capital_adjustment"]
         assert l5["capital_advice_present"] is True
@@ -219,7 +248,12 @@ class TestLayer5HighPressureRaiseTP:
         pos = _make_position_long()
         advice = {"v15_martin": _make_advice(pressure="HIGH", phase2=True)}
         ev = _evaluate_single_position(
-            pos, _make_a1(), _make_a2_raised(), _make_a3_long(), {}, advice,
+            pos,
+            _make_a1(),
+            _make_a2_raised(),
+            _make_a3_long(),
+            {},
+            advice,
         )
         l4 = ev["layers"]["layer4_synthesis"]
         assert l4["action"] == "RAISE_TP"  # 原始动作
@@ -228,7 +262,12 @@ class TestLayer5HighPressureRaiseTP:
         pos = _make_position_long()
         advice = {"v15_martin": _make_advice(pressure="HIGH", phase2=True)}
         ev = _evaluate_single_position(
-            pos, _make_a1(), _make_a2_raised(), _make_a3_long(), {}, advice,
+            pos,
+            _make_a1(),
+            _make_a2_raised(),
+            _make_a3_long(),
+            {},
+            advice,
         )
         assert "Layer5 资金压力调整生效" in ev["reason"]
 
@@ -237,18 +276,32 @@ class TestLayer5HighPressureRaiseTP:
         pos = _make_position_long()
         advice = {"v15_martin": _make_advice(pressure="HIGH", phase2=True, conf_mult=0.5)}
         ev = _evaluate_single_position(
-            pos, _make_a1(), _make_a2_raised(), _make_a3_long(), {}, advice,
+            pos,
+            _make_a1(),
+            _make_a2_raised(),
+            _make_a3_long(),
+            {},
+            advice,
         )
         assert ev["confidence"] == round(0.8 * 0.5, 2)  # 0.4
 
     def test_raise_tp_not_in_blocked(self):
         """RAISE_TP 不在 blocked_actions 中时不转换（仅 confidence 衰减）。"""
         pos = _make_position_long()
-        advice = {"v15_martin": _make_advice(
-            pressure="HIGH", phase2=True, blocked=(),
-        )}
+        advice = {
+            "v15_martin": _make_advice(
+                pressure="HIGH",
+                phase2=True,
+                blocked=(),
+            )
+        }
         ev = _evaluate_single_position(
-            pos, _make_a1(), _make_a2_raised(), _make_a3_long(), {}, advice,
+            pos,
+            _make_a1(),
+            _make_a2_raised(),
+            _make_a3_long(),
+            {},
+            advice,
         )
         # action 保持 RAISE_TP
         assert ev["recommended_action"] == "RAISE_TP"
@@ -268,7 +321,12 @@ class TestLayer5HighPressureNonRaiseTP:
         # 使用中性 A2/A3 使 action=HOLD
         advice = {"v15_martin": _make_advice(pressure="HIGH", phase2=True)}
         ev = _evaluate_single_position(
-            pos, _make_a1(), _make_a2_hold(), _make_a3_neutral(), {}, advice,
+            pos,
+            _make_a1(),
+            _make_a2_hold(),
+            _make_a3_neutral(),
+            {},
+            advice,
         )
         assert ev["recommended_action"] == "HOLD"
         # confidence 衰减
@@ -285,7 +343,12 @@ class TestLayer5LowPressure:
         pos = _make_position_long()
         advice = {"v15_martin": _make_advice(pressure="LOW", phase2=True)}
         ev = _evaluate_single_position(
-            pos, _make_a1(), _make_a2_raised(), _make_a3_long(), {}, advice,
+            pos,
+            _make_a1(),
+            _make_a2_raised(),
+            _make_a3_long(),
+            {},
+            advice,
         )
         assert ev["recommended_action"] == "RAISE_TP"
         assert ev["confidence"] == 0.8  # 不衰减
@@ -297,7 +360,12 @@ class TestLayer5LowPressure:
         pos = _make_position_long()
         advice = {"v15_martin": _make_advice(pressure="MEDIUM", phase2=True)}
         ev = _evaluate_single_position(
-            pos, _make_a1(), _make_a2_raised(), _make_a3_long(), {}, advice,
+            pos,
+            _make_a1(),
+            _make_a2_raised(),
+            _make_a3_long(),
+            {},
+            advice,
         )
         assert ev["recommended_action"] == "RAISE_TP"
         assert ev["confidence"] == 0.8
@@ -312,13 +380,25 @@ class TestLayer5Structure:
         pos = _make_position_long()
         advice = {"v15_martin": _make_advice(pressure="HIGH", phase2=True)}
         ev = _evaluate_single_position(
-            pos, _make_a1(), _make_a2_raised(), _make_a3_long(), {}, advice,
+            pos,
+            _make_a1(),
+            _make_a2_raised(),
+            _make_a3_long(),
+            {},
+            advice,
         )
         l5 = ev["layers"]["layer5_capital_adjustment"]
         for key in (
-            "capital_advice_present", "margin_pressure", "phase2_enabled",
-            "used_pct", "total_eq", "adjusted", "final_confidence",
-            "confidence_multiplier", "original_confidence", "action_adjustment",
+            "capital_advice_present",
+            "margin_pressure",
+            "phase2_enabled",
+            "used_pct",
+            "total_eq",
+            "adjusted",
+            "final_confidence",
+            "confidence_multiplier",
+            "original_confidence",
+            "action_adjustment",
         ):
             assert key in l5, f"missing key: {key}"
 

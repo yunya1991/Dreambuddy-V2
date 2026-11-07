@@ -16,7 +16,6 @@ Phase D 模型定义（PyTorch）
 
 from __future__ import annotations
 
-import math
 from typing import Tuple
 
 import torch
@@ -36,7 +35,7 @@ class AdditiveAttention(nn.Module):
     def forward(self, h: Tensor) -> Tuple[Tensor, Tensor]:
         """h: (B, T, H) → 输出 (B, H) 加权和, (B, T, 1) 注意力权重"""
         e = self.v(torch.tanh(self.W(h)))  # (B,T,1)
-        a = F.softmax(e, dim=1)            # (B,T,1)
+        a = F.softmax(e, dim=1)  # (B,T,1)
         return (a * h).sum(dim=1), a
 
 
@@ -82,7 +81,7 @@ class BiLSTMAttentionBust(nn.Module):
         Returns: (B, 1)
         """
         h, _ = self.lstm(ohlcv)  # (B, T, H*2)
-        ctx, _ = self.attn(h)    # (B, H*2)
+        ctx, _ = self.attn(h)  # (B, H*2)
         z = torch.cat([ctx, scalar], dim=-1)
         return self.head(z)
 
@@ -105,8 +104,8 @@ class PatchEmbedding(nn.Module):
         else:
             # 兼容 (B, T, C) 当作单个 patch：仅防御性 fallback
             B, T, C = x.shape
-            P = T
-            N = 1
+            P = T  # noqa: F841
+            N = 1  # noqa: F841
             x = x.flatten(start_dim=1).unsqueeze(1)
         return self.proj(x)
 
@@ -172,9 +171,9 @@ class PatchTSTForDrawdown(nn.Module):
         self.patch_embed = PatchEmbedding(c_in=c_in, patch_len=patch_len, d_model=d_model)
         self.pos_embed = nn.Parameter(torch.randn(1, self.num_patches, d_model) * 0.02)
         self.cls = nn.Parameter(torch.zeros(1, 1, d_model))
-        self.layers = nn.ModuleList([
-            TransformerEncoderLayer(d_model, n_heads, d_ff, dropout) for _ in range(n_layers)
-        ])
+        self.layers = nn.ModuleList(
+            [TransformerEncoderLayer(d_model, n_heads, d_ff, dropout) for _ in range(n_layers)]
+        )
         self.norm = nn.LayerNorm(d_model)
         self.head = nn.Sequential(
             nn.Linear(d_model, d_model // 2),

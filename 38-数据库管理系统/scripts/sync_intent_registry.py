@@ -13,7 +13,8 @@
 
 FAIL-OPEN：同步失败不阻断主链路，输出告警并以非零码退出供告警系统消费。
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 import json
 import os
 import re
@@ -26,7 +27,12 @@ _18_ENV = "/home/luke/dreambuddy/7-产物中台/系统研究索引体系/.env"
 
 # 规则层独有意图（不在描述库，来自 fallback-engine.ts 类型联合）
 EXTRA_INTENTS = {
-    "developer": {"name": "开发者请求", "keywords": ["写", "函数", "脚本", "代码", "调试"], "examples": ["帮我写个函数计算移动平均线"], "layer": "L0"},
+    "developer": {
+        "name": "开发者请求",
+        "keywords": ["写", "函数", "脚本", "代码", "调试"],
+        "examples": ["帮我写个函数计算移动平均线"],
+        "layer": "L0",
+    },
     "clarification_result": {"name": "澄清结果", "keywords": [], "examples": [], "layer": "L0"},
 }
 
@@ -52,11 +58,17 @@ def parse_authority() -> list[dict]:
         src = f.read()
     intents = []
     # 逐意图块解析：id → name → keywords → examples
-    for block in re.finditer(r"\{\s*id:\s*'([a-z_]+)',\s*name:\s*'([^']+)',.*?keywords:\s*\[([^\]]*)\].*?examples:\s*\[([^\]]*)\]", src, re.S):
+    for block in re.finditer(
+        r"\{\s*id:\s*'([a-z_]+)',\s*name:\s*'([^']+)',.*?keywords:\s*\[([^\]]*)\].*?examples:\s*\[([^\]]*)\]",
+        src,
+        re.S,
+    ):
         iid, name, kw_raw, ex_raw = block.groups()
         keywords = re.findall(r"'([^']+)'", kw_raw)
         examples = re.findall(r"'([^']+)'", ex_raw)
-        intents.append({"id": iid, "name": name, "keywords": keywords, "examples": examples, "layer": "L0"})
+        intents.append(
+            {"id": iid, "name": name, "keywords": keywords, "examples": examples, "layer": "L0"}
+        )
     for iid, meta in EXTRA_INTENTS.items():
         intents.append({"id": iid, **meta})
     return intents
@@ -64,6 +76,7 @@ def parse_authority() -> list[dict]:
 
 def upsert_registry(intents: list[dict]) -> None:
     import psycopg2
+
     conn = psycopg2.connect(
         host=os.environ.get("DATA_CENTER_PG_HOST", "127.0.0.1"),
         port=int(os.environ.get("DATA_CENTER_PG_PORT", "5432")),
@@ -82,10 +95,14 @@ def upsert_registry(intents: list[dict]) -> None:
                          name = EXCLUDED.name, layer = EXCLUDED.layer,
                          keywords = EXCLUDED.keywords, examples = EXCLUDED.examples,
                          rule_id = EXCLUDED.rule_id, updated_at = now()""",
-                    (it["id"], it["name"], it["layer"],
-                     json.dumps(it["keywords"], ensure_ascii=False),
-                     json.dumps(it["examples"], ensure_ascii=False),
-                     "hc_" + it["id"]),
+                    (
+                        it["id"],
+                        it["name"],
+                        it["layer"],
+                        json.dumps(it["keywords"], ensure_ascii=False),
+                        json.dumps(it["examples"], ensure_ascii=False),
+                        "hc_" + it["id"],
+                    ),
                 )
         conn.commit()
     finally:
@@ -95,6 +112,7 @@ def upsert_registry(intents: list[dict]) -> None:
 def verify_consistency(intents: list[dict]) -> list[str]:
     """一致性校验：registry 与权威源导出 diff，返回差异列表（空 = 通过）。"""
     import psycopg2
+
     conn = psycopg2.connect(
         host=os.environ.get("DATA_CENTER_PG_HOST", "127.0.0.1"),
         port=int(os.environ.get("DATA_CENTER_PG_PORT", "5432")),
@@ -106,7 +124,9 @@ def verify_consistency(intents: list[dict]) -> list[str]:
     diffs = []
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT intent_id, name, keywords, examples FROM intent_registry WHERE status = 'active'")
+            cur.execute(
+                "SELECT intent_id, name, keywords, examples FROM intent_registry WHERE status = 'active'"
+            )
             rows = {r[0]: r for r in cur.fetchall()}
         auth = {it["id"]: it for it in intents}
         for iid in set(rows) | set(auth):
@@ -117,7 +137,9 @@ def verify_consistency(intents: list[dict]) -> list[str]:
             else:
                 _, name, kw, ex = rows[iid]
                 if name != auth[iid]["name"]:
-                    diffs.append(f"{iid} name 不一致: registry={name} vs 权威源={auth[iid]['name']}")
+                    diffs.append(
+                        f"{iid} name 不一致: registry={name} vs 权威源={auth[iid]['name']}"
+                    )
                 if list(kw) != auth[iid]["keywords"]:
                     diffs.append(f"{iid} keywords 不一致")
                 if list(ex) != auth[iid]["examples"]:
@@ -159,7 +181,9 @@ def main() -> int:
     try:
         intents = parse_authority()
         if len(intents) < 10:
-            print(json.dumps({"success": False, "error": f"权威源解析异常：仅 {len(intents)} 种意图"}))
+            print(
+                json.dumps({"success": False, "error": f"权威源解析异常：仅 {len(intents)} 种意图"})
+            )
             return 1
         upsert_registry(intents)
         diffs = verify_consistency(intents)

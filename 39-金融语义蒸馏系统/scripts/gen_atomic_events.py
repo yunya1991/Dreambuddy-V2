@@ -18,6 +18,7 @@
   - social_volume: 社交量较前值变动 >30%
   - 其他类别: 数值型指标较前值变动 >5%（通用规则）
 """
+
 import argparse
 import json
 import os
@@ -26,7 +27,8 @@ import sys
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _SYS_DIR = os.path.dirname(_THIS_DIR)
 sys.path.insert(0, _THIS_DIR)
-import dc_pg  # PostgreSQL 辅助模块（38 方案4 迁移后替代 SQLite）
+import dc_pg  # PostgreSQL 辅助模块（38 方案4 迁移后替代 SQLite）  # noqa: E402
+
 OUT_PATH = os.path.join(_SYS_DIR, "atomic_events.jsonl")
 STATE_PATH = os.path.join(_SYS_DIR, ".atomic_events_state.json")
 
@@ -113,7 +115,7 @@ def scan(start_id=0):
             continue
         cat_state = prev_state.setdefault(sub_cat, {})
         for key, value in vals.items():
-            pk = f"{sub_cat}.{key}"
+            pk = f"{sub_cat}.{key}"  # noqa: F841
             old = cat_state.get(key)
             reasons = []
             # 1) 越线检测
@@ -143,7 +145,11 @@ def scan(start_id=0):
             if sub_cat in VOLUME_CATEGORIES and old is not None and old != 0:
                 vol_move = (value - old) / abs(old)
                 if abs(vol_move) >= VOLUME_MOVE:
-                    reasons.append(f"volume_surge:+{vol_move:.1%}" if vol_move > 0 else f"volume_shrink:{vol_move:.1%}")
+                    reasons.append(
+                        f"volume_surge:+{vol_move:.1%}"
+                        if vol_move > 0
+                        else f"volume_shrink:{vol_move:.1%}"
+                    )
             # 6) 情维：恐惧贪婪极值区间持续检测（SPEC §9.8 第一批）
             if sub_cat in THRESHOLDS and 0 <= value <= 100:
                 ek = f"{sub_cat}.{key}"
@@ -167,16 +173,18 @@ def scan(start_id=0):
                     _extreme_state.pop(ek, None)
             cat_state[key] = value
             if reasons:
-                events.append({
-                    "layer": "atomic",
-                    "category": sub_cat,
-                    "metric": key,
-                    "timestamp": ts,
-                    "value": value,
-                    "prev_value": old,
-                    "reasons": reasons,
-                    "source": "data_center_pg",
-                })
+                events.append(
+                    {
+                        "layer": "atomic",
+                        "category": sub_cat,
+                        "metric": key,
+                        "timestamp": ts,
+                        "value": value,
+                        "prev_value": old,
+                        "reasons": reasons,
+                        "source": "data_center_pg",
+                    }
+                )
     return events, last_id
 
 
@@ -200,8 +208,10 @@ def main():
                 f.write(json.dumps(e, ensure_ascii=False) + "\n")
     _save_state({"last_record_id": last_id})
 
-    print(f"[OK] 模式={'backfill' if args.backfill else 'live'} "
-          f"扫描至 id={last_id}, 产出 {len(events)} 条原子事件 → {OUT_PATH}")
+    print(
+        f"[OK] 模式={'backfill' if args.backfill else 'live'} "
+        f"扫描至 id={last_id}, 产出 {len(events)} 条原子事件 → {OUT_PATH}"
+    )
     if events:
         by_cat = {}
         for e in events:

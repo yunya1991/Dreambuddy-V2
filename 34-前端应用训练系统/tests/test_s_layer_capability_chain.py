@@ -8,11 +8,10 @@
   3. 前两步不足才开工调研；kickoff_trigger 标注 post_research_rea=True（调研确认后 REA 再拆解）
   4. REA 不可用/异常 → FAIL-OPEN 不影响主流程
 """
-import os
+
+import os  # noqa: I001
 import sys
 from types import SimpleNamespace
-
-import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -42,9 +41,10 @@ class TestCognitiveExperienceInjection:
     def test_plan_carries_top_experience(self):
         """广义认知系统经验注入 plan：top3 记忆要点（避免踩坑省去调研）"""
         planner = SLayerPlanner()
-        mems = _mems([0.9, 0.8, 0.7, 0.6, 0.5],
-                     contents=["坑1:勿直接改阈值", "坑2:先跑回归", "流程:TDD",
-                               "知识:阈值唯一", "经验5"])
+        mems = _mems(
+            [0.9, 0.8, 0.7, 0.6, 0.5],
+            contents=["坑1:勿直接改阈值", "坑2:先跑回归", "流程:TDD", "知识:阈值唯一", "经验5"],
+        )
         out = planner("这次FOMC怎么看", "event_analysis", mems)
         exp = out["plan"].get("cognitive_experience")
         assert exp is not None, "plan 应携带认知经验"
@@ -69,25 +69,22 @@ class TestReaEngineeringOkr:
 
     def test_a_decomposer_prefers_engineering_okr(self):
         """默认 A 分解器优先消费 engineering_okr → 更具体的 OKR 节点"""
-        orch = SACGOrchestrator(router=None,
-                                s_planner=SLayerPlanner(rea_fn=_fake_rea))
+        orch = SACGOrchestrator(router=None, s_planner=SLayerPlanner(rea_fn=_fake_rea))
+
         # router=None 会构造真实 CDriveV3Router；改用 fake
         class FakeRouter:
-            def run_v3(self, node_id, result, state, signals=None,
-                       l1_intent_hint=None):
-                return {"action": "CONTINUE", "tier": "Tier1",
-                        "effort_level": "light"}
+            def run_v3(self, node_id, result, state, signals=None, l1_intent_hint=None):
+                return {"action": "CONTINUE", "tier": "Tier1", "effort_level": "light"}
 
-        orch = SACGOrchestrator(router=FakeRouter(),
-                                s_planner=SLayerPlanner(rea_fn=_fake_rea))
-        out = orch.handle("这次FOMC怎么看", l1_intent_hint="event_analysis",
-                          memories=[])
+        orch = SACGOrchestrator(router=FakeRouter(), s_planner=SLayerPlanner(rea_fn=_fake_rea))
+        out = orch.handle("这次FOMC怎么看", l1_intent_hint="event_analysis", memories=[])
         assert out["plan"].get("engineering_okr")
         node_ids = [n["node_id"] for n in out["nodes"]]
         assert len(node_ids) == len(out["plan"]["engineering_okr"])
 
     def test_rea_exception_fail_open(self):
         """REA 异常 → FAIL-OPEN：流程继续，无 engineering_okr，记录降级原因"""
+
         def boom(target, feature=None, entry=None):
             raise RuntimeError("REA down")
 
@@ -109,8 +106,7 @@ class TestKickoffPostResearchRea:
     def test_kickoff_trigger_marks_post_research_rea(self):
         """开工调研确认后应 REA 再拆解：kickoff_trigger 标注 post_research_rea=True"""
         planner = SLayerPlanner(rea_fn=_fake_rea)
-        out = planner("这次FOMC怎么看", "event_analysis",
-                      _mems([0.2]))
+        out = planner("这次FOMC怎么看", "event_analysis", _mems([0.2]))
         trigger = out["kickoff_trigger"]
         assert trigger is not None
         assert trigger["post_research_rea"] is True

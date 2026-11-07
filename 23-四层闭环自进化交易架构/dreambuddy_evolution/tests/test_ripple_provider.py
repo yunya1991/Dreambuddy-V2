@@ -2,7 +2,6 @@
 RippleDataProvider 测试 — R2 关联币 + R3 板块扩散
 覆盖: MA20 趋势 / 强度过滤 / 量比确认 / R2-R3 差异化 / FAIL-OPEN
 """
-import pytest
 
 from dreambuddy_evolution.adapters.ripple_provider import RippleDataProvider
 
@@ -33,12 +32,16 @@ def _make_candles(direction: str, strength: float = 0.02, vol_ratio: float = 1.5
 
     candles = []
     for i in range(n):
-        candles.append({
-            "ts": (n - i) * 4 * 3600 * 1000,
-            "o": closes[i], "h": closes[i] * 1.01,
-            "l": closes[i] * 0.99, "c": closes[i],
-            "vol": vols[i],
-        })
+        candles.append(
+            {
+                "ts": (n - i) * 4 * 3600 * 1000,
+                "o": closes[i],
+                "h": closes[i] * 1.01,
+                "l": closes[i] * 0.99,
+                "c": closes[i],
+                "vol": vols[i],
+            }
+        )
     return candles
 
 
@@ -70,10 +73,12 @@ class MockOKXClient:
 class TestRippleDataProvider:
     def test_r2_all_match_long_with_volume(self):
         """BTC R2: ETH+SOL 全部 long, 强度达标, 放量 → hits=2, candidates=2"""
-        client = MockOKXClient({
-            "ETH": {"direction": "long", "strength": 0.02, "vol_ratio": 1.5},
-            "SOL": {"direction": "long", "strength": 0.03, "vol_ratio": 2.0},
-        })
+        client = MockOKXClient(
+            {
+                "ETH": {"direction": "long", "strength": 0.02, "vol_ratio": 1.5},
+                "SOL": {"direction": "long", "strength": 0.03, "vol_ratio": 2.0},
+            }
+        )
         provider = RippleDataProvider(client)
         result = provider.get_ripple_hits("BTC", "long")
         assert result["R2"]["hits"] == 2
@@ -81,10 +86,12 @@ class TestRippleDataProvider:
 
     def test_r2_no_volume_filtered_out(self):
         """BTC R2: ETH+SOL long 但无放量 → 全部被过滤, candidates=0→1"""
-        client = MockOKXClient({
-            "ETH": {"direction": "long", "strength": 0.02, "vol_ratio": 0.8},
-            "SOL": {"direction": "long", "strength": 0.03, "vol_ratio": 0.5},
-        })
+        client = MockOKXClient(
+            {
+                "ETH": {"direction": "long", "strength": 0.02, "vol_ratio": 0.8},
+                "SOL": {"direction": "long", "strength": 0.03, "vol_ratio": 0.5},
+            }
+        )
         provider = RippleDataProvider(client)
         result = provider.get_ripple_hits("BTC", "long")
         # R2 要求放量，无量 → candidates=0（max to 1）
@@ -93,10 +100,12 @@ class TestRippleDataProvider:
 
     def test_r2_weak_strength_filtered(self):
         """BTC R2: 强度 < 1% 被过滤"""
-        client = MockOKXClient({
-            "ETH": {"direction": "long", "strength": 0.003, "vol_ratio": 1.5},
-            "SOL": {"direction": "long", "strength": 0.004, "vol_ratio": 2.0},
-        })
+        client = MockOKXClient(
+            {
+                "ETH": {"direction": "long", "strength": 0.003, "vol_ratio": 1.5},
+                "SOL": {"direction": "long", "strength": 0.004, "vol_ratio": 2.0},
+            }
+        )
         provider = RippleDataProvider(client)
         result = provider.get_ripple_hits("BTC", "long")
         assert result["R2"]["hits"] == 0
@@ -104,10 +113,12 @@ class TestRippleDataProvider:
 
     def test_r3_no_volume_required(self):
         """BTC R3: 不强制放量，无量也计入候选"""
-        client = MockOKXClient({
-            c: {"direction": "long", "strength": 0.01, "vol_ratio": 0.5}
-            for c in ["ETH", "SOL", "BNB", "XRP", "ADA", "DOGE"]
-        })
+        client = MockOKXClient(
+            {
+                c: {"direction": "long", "strength": 0.01, "vol_ratio": 0.5}
+                for c in ["ETH", "SOL", "BNB", "XRP", "ADA", "DOGE"]
+            }
+        )
         provider = RippleDataProvider(client)
         result = provider.get_ripple_hits("BTC", "long")
         # R3 不要求放量 → 6 个全部计入
@@ -116,10 +127,12 @@ class TestRippleDataProvider:
 
     def test_r3_weaker_strength_allowed(self):
         """BTC R3: 强度 0.6% > 0.5% 阈值 → 计入"""
-        client = MockOKXClient({
-            c: {"direction": "short", "strength": 0.006, "vol_ratio": 0.5}
-            for c in ["ETH", "SOL", "BNB", "XRP", "ADA", "DOGE"]
-        })
+        client = MockOKXClient(
+            {
+                c: {"direction": "short", "strength": 0.006, "vol_ratio": 0.5}
+                for c in ["ETH", "SOL", "BNB", "XRP", "ADA", "DOGE"]
+            }
+        )
         provider = RippleDataProvider(client)
         result = provider.get_ripple_hits("BTC", "short")
         assert result["R3"]["hits"] == 6
@@ -127,14 +140,16 @@ class TestRippleDataProvider:
 
     def test_r2_stricter_than_r3(self):
         """R2 比 R3 严格: 强度 0.7% + 无量 → R2 过滤, R3 通过"""
-        client = MockOKXClient({
-            "ETH": {"direction": "long", "strength": 0.007, "vol_ratio": 0.5},
-            "SOL": {"direction": "long", "strength": 0.007, "vol_ratio": 0.5},
-            "BNB": {"direction": "long", "strength": 0.007, "vol_ratio": 0.5},
-            "XRP": {"direction": "long", "strength": 0.007, "vol_ratio": 0.5},
-            "ADA": {"direction": "long", "strength": 0.007, "vol_ratio": 0.5},
-            "DOGE": {"direction": "long", "strength": 0.007, "vol_ratio": 0.5},
-        })
+        client = MockOKXClient(
+            {
+                "ETH": {"direction": "long", "strength": 0.007, "vol_ratio": 0.5},
+                "SOL": {"direction": "long", "strength": 0.007, "vol_ratio": 0.5},
+                "BNB": {"direction": "long", "strength": 0.007, "vol_ratio": 0.5},
+                "XRP": {"direction": "long", "strength": 0.007, "vol_ratio": 0.5},
+                "ADA": {"direction": "long", "strength": 0.007, "vol_ratio": 0.5},
+                "DOGE": {"direction": "long", "strength": 0.007, "vol_ratio": 0.5},
+            }
+        )
         provider = RippleDataProvider(client)
         result = provider.get_ripple_hits("BTC", "long")
         # R2: 无量 + 强度0.7%<1% → 0 candidates

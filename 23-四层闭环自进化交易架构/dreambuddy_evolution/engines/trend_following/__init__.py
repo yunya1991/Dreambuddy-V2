@@ -3,6 +3,7 @@
 归属：dreambuddy_evolution/engines/trend_following/（独立包，HC-TF-08）
 参考：SPEC-趋势跟踪正金字塔与网格策略落地.md Phase B
 """
+
 from dreambuddy_evolution.engines.trend_following.trend_following_engine import (
     ATRStopCalculator,
     DonchianChannel,

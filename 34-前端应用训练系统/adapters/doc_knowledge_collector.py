@@ -18,21 +18,19 @@
   - quality = "B"
   - source = "doc"
 """
+
 import os
 import re
-import sys
 from typing import List, Optional
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
 _PROJECT_ROOT = os.path.dirname(_34_DIR)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 # 默认 INDEX.md 路径
-_DEFAULT_INDEX_PATH = os.path.join(
-    _PROJECT_ROOT, "0-系统文档管理", "INDEX.md"
-)
+_DEFAULT_INDEX_PATH = os.path.join(_PROJECT_ROOT, "0-系统文档管理", "INDEX.md")
 
 
 class DocKnowledgeCollector(TrainingDataProvider):
@@ -52,9 +50,7 @@ class DocKnowledgeCollector(TrainingDataProvider):
     def get_quality_threshold(self) -> str:
         return self._quality_threshold
 
-    def fetch_cases(
-        self, limit: int = 100, since: Optional[str] = None
-    ) -> List[TrainingCase]:
+    def fetch_cases(self, limit: int = 100, since: Optional[str] = None) -> List[TrainingCase]:
         """从 INDEX.md 批量获取文档知识条目。
 
         Args:

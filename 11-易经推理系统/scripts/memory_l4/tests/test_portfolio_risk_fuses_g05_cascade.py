@@ -33,7 +33,6 @@ SPEC: 非线性多阶段最优路径理论调研框架 §十六
 from __future__ import annotations
 
 import sys
-import time
 from pathlib import Path
 
 import pytest
@@ -50,6 +49,7 @@ sys.path.insert(0, str(_PROJECT_ROOT))
 def fuse_enabled():
     """启用熔断，重置所有冷却状态."""
     from scripts.memory_l4.portfolio_risk_fuses import PortfolioRiskFuses
+
     f = PortfolioRiskFuses(enable=True)
     f._g02_block_until_ts = 0.0
     f._g02_last_trigger_at = 0.0
@@ -97,7 +97,9 @@ def test_t8_13_g05_all_four_criteria_triggered(fuse_enabled, g05_full_hit_ctx):
     """① AND ② AND (③ OR ④) 全满足 → emergency_shutdown=True."""
     act = fuse_enabled.tick_and_check(g05_full_hit_ctx)
     # 红灯：G-05 尚未实现，reason 应不是 g05_*
-    assert act.emergency_shutdown is True, f"G-05 应触发 emergency_shutdown，got reason={act.reason}"
+    assert (
+        act.emergency_shutdown is True
+    ), f"G-05 应触发 emergency_shutdown，got reason={act.reason}"
     assert act.reason.startswith("g05_"), f"reason 应以 g05_ 开头，got={act.reason}"
     assert act.block_new_open is True
 
@@ -138,7 +140,7 @@ def test_t8_16_g05_missing_both_3_and_4_no_trigger(fuse_enabled, g05_full_hit_ct
     """
     ctx = dict(g05_full_hit_ctx)
     ctx["no_bounce_at_key"] = False  # 有关键位反弹
-    ctx["no_intervener"] = False    # 有外部干预者
+    ctx["no_intervener"] = False  # 有外部干预者
     act = fuse_enabled.tick_and_check(ctx)
     assert act.reason != "g05_cascade_imminent", "缺③和④ 不应触发 G-05"
 
@@ -149,7 +151,7 @@ def test_t8_16_g05_missing_both_3_and_4_no_trigger(fuse_enabled, g05_full_hit_ct
 def test_t8_17_g05_c1_c2_c3_without_c4_triggered(fuse_enabled, g05_full_hit_ctx):
     """①+②+③ 但 ④=False → ①AND②AND(③OR④)=①AND②AND③=True → 触发."""
     ctx = dict(g05_full_hit_ctx)
-    ctx["no_intervener"] = False    # 有干预者，但③满足
+    ctx["no_intervener"] = False  # 有干预者，但③满足
     act = fuse_enabled.tick_and_check(ctx)
     assert act.emergency_shutdown is True, "①+②+③ 满足应触发 G-05（③使OR成立）"
     assert act.reason.startswith("g05_"), f"reason 应以 g05_ 开头，got={act.reason}"
@@ -175,8 +177,9 @@ def test_t8_19_g05_priority_over_g02(fuse_enabled, g05_full_hit_ctx):
     act = fuse_enabled.tick_and_check(g05_full_hit_ctx)
     # G-05 和 G-02 的 ctx 字段都满足
     # 应走 G-05 而非 G-02
-    assert act.reason.startswith("g05_"), \
-        f"G-05 应优先于 G-02，reason 应以 g05_ 开头，got={act.reason}"
+    assert act.reason.startswith(
+        "g05_"
+    ), f"G-05 应优先于 G-02，reason 应以 g05_ 开头，got={act.reason}"
     # G-05 是 emergency_shutdown，G-02 只是 block_new_open
     assert act.emergency_shutdown is True, "G-05 应触发 emergency_shutdown"
 
@@ -192,8 +195,9 @@ def test_t8_20_g04_priority_over_g05(fuse_enabled, g05_full_hit_ctx):
     ctx["daily_equity_now"] = 1900.0  # dd=5% ≥ 3%
     act = fuse_enabled.tick_and_check(ctx)
     # G-04 优先于 G-05
-    assert act.reason.startswith("g04_"), \
-        f"G-04 应优先于 G-05，reason 应以 g04_ 开头，got={act.reason}"
+    assert act.reason.startswith(
+        "g04_"
+    ), f"G-04 应优先于 G-05，reason 应以 g04_ 开头，got={act.reason}"
     assert act.emergency_shutdown is True
 
 
@@ -241,8 +245,9 @@ def test_t8_23_g05_cooldown_still_active(fuse_enabled, g05_full_hit_ctx):
 
     # 再次检查 → 应仍处于 G-05 冷却
     act2 = fuse_enabled.tick_and_check(g05_full_hit_ctx)
-    assert act2.reason == "g05_cascade_active", \
-        f"冷却期内应返回 g05_cascade_active，got={act2.reason}"
+    assert (
+        act2.reason == "g05_cascade_active"
+    ), f"冷却期内应返回 g05_cascade_active，got={act2.reason}"
     assert act2.emergency_shutdown is True
     assert act2.block_new_open is True
 
@@ -264,8 +269,7 @@ def test_t8_24_g05_cooldown_expired_restored(fuse_enabled, g05_full_hit_ctx):
 
     # 4判据仍满足 → 应重新触发 G-05
     act2 = fuse_enabled.tick_and_check(g05_full_hit_ctx)
-    assert act2.reason.startswith("g05_"), \
-        f"冷却过期+4判据满足应重新触发，got={act2.reason}"
+    assert act2.reason.startswith("g05_"), f"冷却过期+4判据满足应重新触发，got={act2.reason}"
 
 
 # ============================================================
@@ -287,6 +291,5 @@ def test_t8_25_g05_missing_signal_keys_defaults_false(fuse_enabled):
     act = fuse_enabled.tick_and_check(ctx)
     # G-05 信号缺失 → 4判据全False → G-05 不触发
     # G-02 三条件满足 → 走 G-02
-    assert act.reason.startswith("g02_"), \
-        f"无G-05信号+G-02满足应走G-02，got={act.reason}"
+    assert act.reason.startswith("g02_"), f"无G-05信号+G-02满足应走G-02，got={act.reason}"
     assert act.emergency_shutdown is False, "G-02 不应触发 emergency_shutdown"

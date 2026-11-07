@@ -5,9 +5,19 @@
 """
 
 try:
-    from .market_data import fetch_candles, fetch_historical_candles, resample_candles, candles_to_dataframe
+    from .market_data import (
+        candles_to_dataframe,
+        fetch_candles,
+        fetch_historical_candles,
+        resample_candles,
+    )
 except ImportError:
-    from market_data import fetch_candles, fetch_historical_candles, resample_candles, candles_to_dataframe
+    from market_data import (
+        candles_to_dataframe,
+        fetch_candles,
+        fetch_historical_candles,
+        resample_candles,
+    )
 
 __all__ = [
     "fetch_candles",

@@ -12,16 +12,14 @@
 - 同时综合 rsi/momentum 做置信度调整
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
-import math
 from typing import Any, Dict, List
 
-import pytest
 
 from dreamos.capabilities.trading.nodes.c2_signal_detect import C2SignalDetectNode
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 
 # ── 测试夹具 ────────────────────────────────────────────────

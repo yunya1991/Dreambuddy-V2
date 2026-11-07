@@ -7,6 +7,7 @@
 
 Scrapling stealthy mode 绕过反爬。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -43,6 +44,7 @@ class SoSoValueCollector(BaseCollector):
         url = params.get("url", SOSO_URL)
         try:
             from data_center.crawler.scrapling_engine import ScraplingEngine
+
             engine = ScraplingEngine()
             html = engine.fetch_html(url, mode="stealthy")
             if not html:
@@ -62,7 +64,12 @@ class SoSoValueCollector(BaseCollector):
             for k, v in item.items():
                 metrics_key = f"item_{i}_{k}"
                 try:
-                    metrics[metrics_key] = float(v) if isinstance(v, (int, float, str)) and str(v).replace(".", "").replace("-", "").isdigit() else str(v)[:100]
+                    metrics[metrics_key] = (
+                        float(v)
+                        if isinstance(v, (int, float, str))
+                        and str(v).replace(".", "").replace("-", "").isdigit()
+                        else str(v)[:100]
+                    )
                 except (ValueError, TypeError):
                     metrics[metrics_key] = str(v)[:100]
 

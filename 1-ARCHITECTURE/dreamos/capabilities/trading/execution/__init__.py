@@ -8,7 +8,9 @@ Dream OS 交易能力域 — 执行层
 
 from __future__ import annotations
 
+
 # 延迟导入避免循环依赖
 def _get_auto_trader():
     from .auto_trader import AutoTrader
+
     return AutoTrader

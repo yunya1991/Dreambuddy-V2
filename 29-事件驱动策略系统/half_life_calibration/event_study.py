@@ -11,6 +11,7 @@
   - τ 太大：持有期太长，事件行情已结束，被噪声稀释
   - 最优 τ 使 CAR 最大化
 """
+
 from __future__ import annotations
 
 from datetime import datetime

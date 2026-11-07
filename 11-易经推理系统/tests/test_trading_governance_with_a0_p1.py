@@ -1,7 +1,6 @@
 import importlib.util
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -17,6 +16,7 @@ def _load_module(rel_path: str):
 # ---------------------------------------------------------------------------
 # 1. Governance loop A7→A8→A1/A2/A3 full chain
 # ---------------------------------------------------------------------------
+
 
 def test_governance_loop_runs_a7_then_a8_then_a1(tmp_path: Path):
     """Per spec: governance loop starts with A7(practice), then A8(verification), then routes based on gap_score."""
@@ -40,6 +40,7 @@ def test_governance_loop_runs_a7_then_a8_then_a1(tmp_path: Path):
 # ---------------------------------------------------------------------------
 # 2. Knowledge-synthesis routing: gap_score → A1/A2/A3
 # ---------------------------------------------------------------------------
+
 
 def test_gap_score_055_routes_to_a2(tmp_path: Path):
     """gap_score 0.5-0.7 should route to A2 (重新分析)."""
@@ -95,6 +96,7 @@ def test_gap_score_030_routes_to_a1(tmp_path: Path):
 # ---------------------------------------------------------------------------
 # 3. ReputationLedger cumulative penalty
 # ---------------------------------------------------------------------------
+
 
 def test_reputation_cumulative_penalty(tmp_path: Path):
     """Consecutive failures should continuously decrease reputation score."""

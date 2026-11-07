@@ -4,6 +4,7 @@ SPEC §2.2
 
 FAIL-OPEN: 查询失败/表不存在/无数据 → 返回空 dict
 """
+
 from __future__ import annotations
 
 import json
@@ -140,8 +141,9 @@ class DataCenterAdapter:
                 for item in items:
                     if not isinstance(item, dict):
                         continue
-                    if (item.get("symbol", "").upper() == sym_upper
-                            or sym_upper in (item.get("symbol", "").upper())):
+                    if item.get("symbol", "").upper() == sym_upper or sym_upper in (
+                        item.get("symbol", "").upper()
+                    ):
                         return {
                             "long_liq": float(item.get("long_liq_usd_24h", 0) or 0),
                             "short_liq": float(item.get("short_liq_usd_24h", 0) or 0),
@@ -182,7 +184,14 @@ class DataCenterAdapter:
         rec = self._query_latest_record_by_source("bgeometrics", "chain")
         if rec:
             m = rec.get("metrics", {}) if isinstance(rec, dict) else {}
-            for k in ("mvrv", "sopr", "nupl", "active_addresses", "exchange_netflow", "puell_multiple"):
+            for k in (
+                "mvrv",
+                "sopr",
+                "nupl",
+                "active_addresses",
+                "exchange_netflow",
+                "puell_multiple",
+            ):
                 if k in m:
                     try:
                         out[k] = float(m[k])
@@ -249,9 +258,7 @@ class DataCenterAdapter:
         """
         out: dict[str, Any] = {}
         for indicator in ("cpi", "nfp", "ppi"):
-            rec = self._query_latest_record_by_source(
-                "econ_calendar", "macro", indicator
-            )
+            rec = self._query_latest_record_by_source("econ_calendar", "macro", indicator)
             if not rec:
                 continue
             m = rec.get("metrics", {}) if isinstance(rec, dict) else {}

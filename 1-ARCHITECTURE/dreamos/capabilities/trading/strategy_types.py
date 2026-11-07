@@ -26,14 +26,15 @@ class StrategyIntent(str, Enum):
     7 种预定义策略意图，决定 A/C/F 编排链的选择。
     注意：这是交易领域概念，不属于操作系统内核。
     """
-    TREND_FOLLOWING = "TREND_FOLLOWING"        # 趋势跟随
-    MEAN_REVERSION = "MEAN_REVERSION"          # 均值回归
-    FUNDAMENTAL_PLAY = "FUNDAMENTAL_PLAY"      # 基本面驱动
-    BREAKOUT = "BREAKOUT"                       # 突破
-    KNOWLEDGE_MATCH = "KNOWLEDGE_MATCH"         # 知识库匹配
-    DEEP_ANALYSIS = "DEEP_ANALYSIS"             # A系列深度分析
-    CLASSIC_PIPELINE = "CLASSIC_PIPELINE"       # 经典交易流水线 C0-C8
-    UNCERTAIN = "UNCERTAIN"                     # 不确定/需要澄清
+
+    TREND_FOLLOWING = "TREND_FOLLOWING"  # 趋势跟随
+    MEAN_REVERSION = "MEAN_REVERSION"  # 均值回归
+    FUNDAMENTAL_PLAY = "FUNDAMENTAL_PLAY"  # 基本面驱动
+    BREAKOUT = "BREAKOUT"  # 突破
+    KNOWLEDGE_MATCH = "KNOWLEDGE_MATCH"  # 知识库匹配
+    DEEP_ANALYSIS = "DEEP_ANALYSIS"  # A系列深度分析
+    CLASSIC_PIPELINE = "CLASSIC_PIPELINE"  # 经典交易流水线 C0-C8
+    UNCERTAIN = "UNCERTAIN"  # 不确定/需要澄清
 
     @classmethod
     def all_types(cls) -> List[str]:
@@ -68,14 +69,39 @@ def get_strategy_definition(intent_type: str) -> Dict[str, Any]:
             "description": "识别趋势行情，顺势操作",
             "chain": "A",
             "priority": 1,
-            "keywords": ["趋势", "trend", "均线", "ma", "ema", "突破趋势", "顺势", "做多", "趋势跟随", "多头", "空头"],
+            "keywords": [
+                "趋势",
+                "trend",
+                "均线",
+                "ma",
+                "ema",
+                "突破趋势",
+                "顺势",
+                "做多",
+                "趋势跟随",
+                "多头",
+                "空头",
+            ],
         },
         "MEAN_REVERSION": {
             "name": "均值回归",
             "description": "识别超买超卖，逆向操作",
             "chain": "A",
             "priority": 2,
-            "keywords": ["均值回归", "超买超卖", "超买", "超卖", "回调", "反弹", "rsi", "布林", "boll", "逆向", "做空", "抄底"],
+            "keywords": [
+                "均值回归",
+                "超买超卖",
+                "超买",
+                "超卖",
+                "回调",
+                "反弹",
+                "rsi",
+                "布林",
+                "boll",
+                "逆向",
+                "做空",
+                "抄底",
+            ],
         },
         "FUNDAMENTAL_PLAY": {
             "name": "基本面驱动",
@@ -104,9 +130,23 @@ def get_strategy_definition(intent_type: str) -> Dict[str, Any]:
             "chain": "A",
             "priority": 1,
             "keywords": [
-                "深度分析", "深度调研", "深度报告", "调研报告", "战略分析", "战略研究",
-                "a系列", "a链", "a0", "a1", "a2", "a3",
-                "矛盾论", "矛盾分析", "主要矛盾", "第一性原理", "六因子",
+                "深度分析",
+                "深度调研",
+                "深度报告",
+                "调研报告",
+                "战略分析",
+                "战略研究",
+                "a系列",
+                "a链",
+                "a0",
+                "a1",
+                "a2",
+                "a3",
+                "矛盾论",
+                "矛盾分析",
+                "主要矛盾",
+                "第一性原理",
+                "六因子",
             ],
         },
         "CLASSIC_PIPELINE": {
@@ -115,8 +155,13 @@ def get_strategy_definition(intent_type: str) -> Dict[str, Any]:
             "chain": "C_CLASSIC",
             "priority": 1,
             "keywords": [
-                "经典流水线", "classic pipeline", "c0-c8", "c0c8",
-                "八阶段", "经典交易", "经典管线",
+                "经典流水线",
+                "classic pipeline",
+                "c0-c8",
+                "c0c8",
+                "八阶段",
+                "经典交易",
+                "经典管线",
             ],
         },
         "UNCERTAIN": {

@@ -3,12 +3,13 @@
 监控适配器模块
 为每个系统提供监控适配接口
 """
+
 import json
-import os
-import subprocess
-from datetime import datetime, timezone, timedelta
+import os  # noqa: F401
+import subprocess  # noqa: F401
+from datetime import datetime, timedelta, timezone  # noqa: F401
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional  # noqa: F401
 
 from monitor_core import MonitorResult, MonitorStatus, load_json
 
@@ -263,7 +264,9 @@ class V15Adapter:
         detail = {
             "total_trades": state.get("total_trades", 0),
             "total_wins": state.get("total_wins", 0),
-            "win_rate": round(state.get("total_wins", 0) / max(state.get("total_trades", 1), 1) * 100, 1),
+            "win_rate": round(
+                state.get("total_wins", 0) / max(state.get("total_trades", 1), 1) * 100, 1
+            ),
             "consecutive_losses": state.get("consecutive_losses", 0),
             "positions": len(state.get("positions", {})),
             "idle_minutes": round(idle_minutes, 1),
@@ -349,7 +352,7 @@ class ScreenAdapter:
 
         now = datetime.now(timezone.utc).timestamp()
         last_check = state.get("last_check_ts", 0)
-        last_action = state.get("last_action_ts", 0)
+        last_action = state.get("last_action_ts", 0)  # noqa: F841
 
         idle_minutes = (now - last_check) / 60 if last_check > 0 else float("inf")
 

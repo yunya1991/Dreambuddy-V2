@@ -10,6 +10,7 @@
   TR-5.7  FAIL-OPEN: 目录不存在返回空列表
   TR-5.8  FAIL-OPEN: 损坏的 jsonl 行跳过
 """
+
 import json
 import os
 import sys
@@ -35,69 +36,103 @@ class ShadowValidationCollectorTest(unittest.TestCase):
 
         # 样本1: 有 win/loss 的样本
         with open(os.path.join(cls._samples_dir, "CD-TEST-001_samples.jsonl"), "w") as f:
-            f.write(json.dumps({
-                "entry_time": "2026-01-12 00:00:00", "exit_time": "2026-01-14 00:00:00",
-                "entry_price": 91778.6, "exit_price": 95671.0,
-                "pnl_pct": 0.0424, "win": True, "hold_bars": 12,
-                "gene_id": "CD-TEST-001", "direction": "long"
-            }) + "\n")
-            f.write(json.dumps({
-                "entry_time": "2026-01-13 12:00:00", "exit_time": "2026-01-15 12:00:00",
-                "entry_price": 93412.2, "exit_price": 92000.0,
-                "pnl_pct": -0.0151, "win": False, "hold_bars": 12,
-                "gene_id": "CD-TEST-001", "direction": "long"
-            }) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "entry_time": "2026-01-12 00:00:00",
+                        "exit_time": "2026-01-14 00:00:00",
+                        "entry_price": 91778.6,
+                        "exit_price": 95671.0,
+                        "pnl_pct": 0.0424,
+                        "win": True,
+                        "hold_bars": 12,
+                        "gene_id": "CD-TEST-001",
+                        "direction": "long",
+                    }
+                )
+                + "\n"
+            )
+            f.write(
+                json.dumps(
+                    {
+                        "entry_time": "2026-01-13 12:00:00",
+                        "exit_time": "2026-01-15 12:00:00",
+                        "entry_price": 93412.2,
+                        "exit_price": 92000.0,
+                        "pnl_pct": -0.0151,
+                        "win": False,
+                        "hold_bars": 12,
+                        "gene_id": "CD-TEST-001",
+                        "direction": "long",
+                    }
+                )
+                + "\n"
+            )
             # 损坏的行
             f.write("{invalid json}\n")
 
     @classmethod
     def tearDownClass(cls):
         import shutil
+
         shutil.rmtree(cls._tmpdir, ignore_errors=True)
 
     def test_class_exists_and_implements_interface(self):
-        from shadow_validation_collector import ShadowValidationCollector
         from interfaces.training_data_provider import TrainingDataProvider
+        from shadow_validation_collector import ShadowValidationCollector
+
         self.assertIsInstance(ShadowValidationCollector(), TrainingDataProvider)
 
     def test_get_source_name(self):
         from shadow_validation_collector import ShadowValidationCollector
+
         self.assertEqual(ShadowValidationCollector().get_source_name(), "shadow_validation")
 
     def test_get_quality_threshold(self):
         from shadow_validation_collector import ShadowValidationCollector
+
         self.assertEqual(ShadowValidationCollector().get_quality_threshold(), "B")
 
     def test_fetch_cases_returns_training_cases(self):
         from shadow_validation_collector import ShadowValidationCollector
+
         c = ShadowValidationCollector(samples_dir=self._samples_dir)
         cases = c.fetch_cases(limit=100)
         self.assertGreater(len(cases), 0)
 
     def test_node_sequence_has_entry_exit_outcome(self):
         from shadow_validation_collector import ShadowValidationCollector
+
         c = ShadowValidationCollector(samples_dir=self._samples_dir)
         cases = c.fetch_cases(limit=100)
         all_actions = ",".join(a for case in cases for a in case.actions)
         self.assertIn("entry", all_actions.lower())
         self.assertIn("exit", all_actions.lower())
-        self.assertTrue(any("win" in a.lower() or "loss" in a.lower() or "outcome" in a.lower()
-                           for case in cases for a in case.actions))
+        self.assertTrue(
+            any(
+                "win" in a.lower() or "loss" in a.lower() or "outcome" in a.lower()
+                for case in cases
+                for a in case.actions
+            )
+        )
 
     def test_layer_tags_contains_dsh(self):
         from shadow_validation_collector import ShadowValidationCollector
+
         c = ShadowValidationCollector(samples_dir=self._samples_dir)
         for case in c.fetch_cases(limit=10):
             self.assertIn("DSH", case.layer_tags)
 
     def test_fail_open_dir_missing(self):
         from shadow_validation_collector import ShadowValidationCollector
+
         c = ShadowValidationCollector(samples_dir="/nonexistent/dir")
         self.assertEqual(c.fetch_cases(limit=10), [])
 
     def test_fail_open_corrupt_json(self):
         """损坏的 JSON 行应跳过不崩溃。"""
         from shadow_validation_collector import ShadowValidationCollector
+
         c = ShadowValidationCollector(samples_dir=self._samples_dir)
         cases = c.fetch_cases(limit=100)
         # 应采集到2条 (跳过损坏行)

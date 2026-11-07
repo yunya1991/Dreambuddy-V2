@@ -9,10 +9,9 @@
 4. 生成可视化图表数据（JSON 格式）
 """
 
-import json
+import json  # noqa: I001
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 # 导入回测引擎
 from flow_backtester import FlowBacktestResult, FlowBacktestConfig
@@ -22,7 +21,7 @@ def generate_backtest_report(
     result: FlowBacktestResult,
     config: FlowBacktestConfig,
     benchmark_data: dict = None,
-    extra_notes: str = None
+    extra_notes: str = None,
 ) -> str:
     """
     生成回测报告
@@ -95,7 +94,7 @@ def generate_backtest_report(
         report += f"| {month} | {monthly[month]*100:+.2f}% |\n"
 
     if len(monthly) > 12:
-        report += f"| ... | ... |\n"
+        report += "| ... | ... |\n"
 
     report += f"""
 ---
@@ -147,11 +146,18 @@ def generate_backtest_report(
         step = max(1, len(result.daily_equity) // 50)
         for i, record in enumerate(result.daily_equity):
             if i % step == 0:
-                equity_data.append({
-                    "date": record["date"],
-                    "equity": round(record["equity"], 2),
-                    "return": round((record["equity"] - config.initial_capital) / config.initial_capital * 100, 2)
-                })
+                equity_data.append(
+                    {
+                        "date": record["date"],
+                        "equity": round(record["equity"], 2),
+                        "return": round(
+                            (record["equity"] - config.initial_capital)
+                            / config.initial_capital
+                            * 100,
+                            2,
+                        ),
+                    }
+                )
         report += json.dumps(equity_data, indent=2)
         report += "\n```\n"
 
@@ -323,10 +329,7 @@ def generate_evaluation(result: FlowBacktestResult, benchmark_data: dict = None)
     else:
         title = "❌ 不推荐 - 策略需要重大调整"
 
-    return {
-        "title": title,
-        "details": "\n".join(details)
-    }
+    return {"title": title, "details": "\n".join(details)}
 
 
 def save_backtest_report(
@@ -334,7 +337,7 @@ def save_backtest_report(
     config: FlowBacktestConfig,
     output_dir: str = None,
     benchmark_data: dict = None,
-    extra_notes: str = None
+    extra_notes: str = None,
 ) -> str:
     """
     保存回测报告到文件
@@ -376,7 +379,7 @@ def save_backtest_report(
             "signal_threshold": config.signal_threshold,
             "position_size": config.position_size,
             "stop_loss": config.stop_loss,
-            "take_profit": config.take_profit
+            "take_profit": config.take_profit,
         },
         "result": {
             "total_return": result.total_return,
@@ -394,7 +397,7 @@ def save_backtest_report(
             "winning_trades": result.winning_trades,
             "losing_trades": result.losing_trades,
             "prediction_accuracy": result.prediction_accuracy,
-            "monthly_returns": result.monthly_returns
+            "monthly_returns": result.monthly_returns,
         },
         "daily_equity": result.daily_equity,
         "trades": [
@@ -407,10 +410,10 @@ def save_backtest_report(
                 "exit_price": t.exit_price,
                 "exit_reason": t.exit_reason,
                 "pnl": t.pnl,
-                "pnl_pct": t.pnl_pct
+                "pnl_pct": t.pnl_pct,
             }
             for t in result.trades
-        ]
+        ],
     }
 
     json_path = output_path / f"flow_backtest_result_{ts}.json"
@@ -428,7 +431,7 @@ def save_backtest_report(
 # =============================================================================
 
 if __name__ == "__main__":
-    import sys
+    import sys  # noqa: I001
 
     # 延迟导入避免循环引用
     from flow_backtester import run_flow_backtest, FlowBacktestConfig
@@ -442,15 +445,12 @@ if __name__ == "__main__":
 
     # 创建配置（用于报告）
     config = FlowBacktestConfig(
-        start_date=start or (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d"),
-        end_date=end or datetime.now().strftime("%Y-%m-%d")
+        start_date=start
+        or (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d"),  # noqa: F821
+        end_date=end or datetime.now().strftime("%Y-%m-%d"),
     )
 
-    benchmark = {
-        "return": -0.2526,
-        "max_drawdown": 0.2856,
-        "sharpe": 0
-    }
+    benchmark = {"return": -0.2526, "max_drawdown": 0.2856, "sharpe": 0}
 
     report_path = save_backtest_report(result, config, benchmark_data=benchmark)
     print(f"\n[INFO] 报告生成完成：{report_path}")

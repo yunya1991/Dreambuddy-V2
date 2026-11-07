@@ -15,8 +15,9 @@
   - 离场反思周期 ≥ 6h（G_close 稳定性保证）
   - ESS_delta ±0.02（回路增益 < 1 核心保证）
 """
-from dreambuddy_evolution.engines.exit_engine.exit_engine import EvolutionExitEngine
+
 from dreambuddy_evolution.engines.exit_engine.exit_decision import ExitDecision
+from dreambuddy_evolution.engines.exit_engine.exit_engine import EvolutionExitEngine
 from dreambuddy_evolution.engines.exit_engine.exit_strategy_params import (
     ExitStrategyParams,
 )

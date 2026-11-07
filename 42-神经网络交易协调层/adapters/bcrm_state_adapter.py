@@ -16,10 +16,11 @@
 
 用法：python3 bcrm_state_adapter.py（独立运行时打印发布结果）
 """
+
 import json
 import os
-import sys
 import re
+import sys
 from datetime import datetime, timedelta, timezone
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
@@ -29,8 +30,11 @@ _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
 
 # 11 层 BCRM2.0 战略层产出物路径（polling_trader 日级缓存）
 _11_STATE_PATH = os.path.join(
-    os.path.join(_DREAMBUDDY_ROOT, "11-易经推理系统"), "scripts", "memory_l4",
-    "runtime", "five_domain_state.json",
+    os.path.join(_DREAMBUDDY_ROOT, "11-易经推理系统"),
+    "scripts",
+    "memory_l4",
+    "runtime",
+    "five_domain_state.json",
 )
 
 # 42 层 SignalBus 模块路径
@@ -106,27 +110,29 @@ def build_signals(state: dict):
             exposure = max(0.0, min(1.0, float(cap))) if cap is not None else 0.5
         except (TypeError, ValueError):
             exposure = 0.5
-        signals.append({
-            # P1-01：确定性 signal_id（同 source+资产类别当日重跑幂等替换）
-            "signal_id": "sig_11-bcrm_{}_{}".format(
-                re.sub(r"[^A-Za-z0-9]+", "_", str(asset_class)),
-                now.strftime("%Y%m%d")),
-            "source": "11-bcrm",
-            "ts": now.isoformat(),
-            "symbol": str(asset_class),
-            "direction": direction,
-            "confidence": round(confidence, 4),
-            "horizon": "days",
-            "risk_exposure_hint": exposure,
-            "expires_at": (now + timedelta(hours=24)).isoformat(),
-            "payload": {
-                "direction_state": raw_dir,
-                "direction_bias": bias,
-                "five_scores": five_scores.get(asset_class),
-                "btc_regime": (state.get("btc_regime") or {}).get(asset_class),
-                "state_updated_date": (state.get("_meta") or {}).get("updated_date"),
-            },
-        })
+        signals.append(
+            {
+                # P1-01：确定性 signal_id（同 source+资产类别当日重跑幂等替换）
+                "signal_id": "sig_11-bcrm_{}_{}".format(
+                    re.sub(r"[^A-Za-z0-9]+", "_", str(asset_class)), now.strftime("%Y%m%d")
+                ),
+                "source": "11-bcrm",
+                "ts": now.isoformat(),
+                "symbol": str(asset_class),
+                "direction": direction,
+                "confidence": round(confidence, 4),
+                "horizon": "days",
+                "risk_exposure_hint": exposure,
+                "expires_at": (now + timedelta(hours=24)).isoformat(),
+                "payload": {
+                    "direction_state": raw_dir,
+                    "direction_bias": bias,
+                    "five_scores": five_scores.get(asset_class),
+                    "btc_regime": (state.get("btc_regime") or {}).get(asset_class),
+                    "state_updated_date": (state.get("_meta") or {}).get("updated_date"),
+                },
+            }
+        )
     return signals
 
 
@@ -142,37 +148,55 @@ def main() -> int:
 
     fresh, age_hours = _check_freshness(state)
     if not fresh:
-        print(json.dumps({
-            "status": "stale",
-            "reason": "战略层状态超过 48h 或日期非法，不发布",
-            "age_hours": round(age_hours, 1) if age_hours >= 0 else None,
-        }, ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "status": "stale",
+                    "reason": "战略层状态超过 48h 或日期非法，不发布",
+                    "age_hours": round(age_hours, 1) if age_hours >= 0 else None,
+                },
+                ensure_ascii=False,
+            )
+        )
         return 1
 
     signals = build_signals(state)
     if not signals:
-        print(json.dumps({"status": "unavailable", "reason": "无可发布资产类别信号（fail-open）"}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {"status": "unavailable", "reason": "无可发布资产类别信号（fail-open）"},
+                ensure_ascii=False,
+            )
+        )
         return 1
 
     bus = SignalBus()
     results = []
     for signal in signals:
         result = bus.publish(signal)
-        results.append({
-            "symbol": signal["symbol"],
-            "direction": signal["direction"],
-            "confidence": signal["confidence"],
-            "risk_exposure_hint": signal["risk_exposure_hint"],
-            "publish_result": result.get("status"),
-            "reason": result.get("reason"),
-        })
+        results.append(
+            {
+                "symbol": signal["symbol"],
+                "direction": signal["direction"],
+                "confidence": signal["confidence"],
+                "risk_exposure_hint": signal["risk_exposure_hint"],
+                "publish_result": result.get("status"),
+                "reason": result.get("reason"),
+            }
+        )
     bus.flush()
-    print(json.dumps({
-        "published": len(results),
-        "results": results,
-        "bus_signal_count": bus.snapshot()["signal_count"],
-        "bus_sources": bus.snapshot()["sources"],
-    }, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "published": len(results),
+                "results": results,
+                "bus_signal_count": bus.snapshot()["signal_count"],
+                "bus_sources": bus.snapshot()["sources"],
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 0 if all(r["publish_result"] == "accepted" for r in results) else 1
 
 

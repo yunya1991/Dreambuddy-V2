@@ -10,14 +10,15 @@ ftc_evolution_bridge — FTC 进化闭环桥接器
 
 这是 FTC 系统与现有进化闭环的集成层，不修改 core/engines/ 代码。
 """
+
 from __future__ import annotations
 
 import logging
 from typing import Any, Optional
 
-from .ftc_schema import FTC, FTCStep, gen_ftc_id, gen_step_id
-from .ftc_orchestrator import FTCOrchestrator
 from .ftc_gene_innovation import GeneInnovationEngine
+from .ftc_orchestrator import FTCOrchestrator
+from .ftc_schema import FTC, FTCStep, gen_ftc_id, gen_step_id
 
 logger = logging.getLogger(__name__)
 
@@ -146,24 +147,28 @@ class FTCEvolutionBridge:
                 # 根据信号特征构建 condition
                 conditions = []
                 if vol_ratio >= 1.3:
-                    conditions.append(FTCStep(
-                        step_id=gen_step_id(),
-                        type="condition",
-                        description=f"放量 vol_ratio={vol_ratio:.2f}",
-                        gene_ref="CD-VOL-SURGE",
-                        data_required=["vol_5", "vol_20", "vol_ratio"],
-                        threshold=1.3,
-                    ))
+                    conditions.append(
+                        FTCStep(
+                            step_id=gen_step_id(),
+                            type="condition",
+                            description=f"放量 vol_ratio={vol_ratio:.2f}",
+                            gene_ref="CD-VOL-SURGE",
+                            data_required=["vol_5", "vol_20", "vol_ratio"],
+                            threshold=1.3,
+                        )
+                    )
                 if strength >= 0.5:
-                    conditions.append(FTCStep(
-                        step_id=gen_step_id(),
-                        type="condition",
-                        description=f"信号强度={strength:.2f}",
-                        gene_ref="CD-CAPITAL-INFLOW",
-                        data_required=["capital_flow"],
-                        threshold=0.5,
-                        depends_on=[conditions[-1].step_id] if conditions else [],
-                    ))
+                    conditions.append(
+                        FTCStep(
+                            step_id=gen_step_id(),
+                            type="condition",
+                            description=f"信号强度={strength:.2f}",
+                            gene_ref="CD-CAPITAL-INFLOW",
+                            data_required=["capital_flow"],
+                            threshold=0.5,
+                            depends_on=[conditions[-1].step_id] if conditions else [],
+                        )
+                    )
 
                 if not conditions:
                     continue
@@ -200,6 +205,7 @@ class FTCEvolutionBridge:
         # 注册到 orchestrator
         for ftc in new_ftcs:
             from .ftc_similarity import align_to_anchors, get_track_by_similarity
+
             ftc.knowledge_alignment = align_to_anchors(ftc, top_k=3)
             ftc.track = get_track_by_similarity(ftc.max_similarity)
             self._orch._ftcs[ftc.ftc_id] = ftc
@@ -260,6 +266,7 @@ class FTCEvolutionBridge:
 
         for ftc in new_ftcs:
             from .ftc_similarity import align_to_anchors, get_track_by_similarity
+
             ftc.knowledge_alignment = align_to_anchors(ftc, top_k=3)
             ftc.track = get_track_by_similarity(ftc.max_similarity)
             self._orch._ftcs[ftc.ftc_id] = ftc
@@ -324,7 +331,9 @@ class FTCEvolutionBridge:
                     validated.append(cand.gene_id)
                     # 3. 写入基因组（传入回测指标供审核门禁使用）
                     if self._gene_innovation.write_gene_to_library(
-                        cand, n_samples=n_samples, ess=ess,
+                        cand,
+                        n_samples=n_samples,
+                        ess=ess,
                     ):
                         written.append(cand.gene_id)
 

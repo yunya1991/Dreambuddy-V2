@@ -21,6 +21,7 @@ class Bot2StrategyTrend(IStrategy):
     Dual-mode strategy: Range (mean-reversion) + Trend following
     Based on BTC volatility regime
     """
+
     INTERFACE_VERSION = 3
 
     timeframe = "5m"
@@ -104,11 +105,16 @@ class Bot2StrategyTrend(IStrategy):
             return df
 
         if str(os.environ.get("EN_FEATUREHUB_EQUITY_CLASSIC", "")).lower() not in (
-            "1", "true", "yes", "on"):
+            "1",
+            "true",
+            "yes",
+            "on",
+        ):
             return _original_talib_block(dataframe)
 
         try:
             from feature_hub.h3_wrapper import wrap_featurehub
+
             fh_df = wrap_featurehub(
                 strategy_name="equity_classic",
                 ohlcv_df=dataframe,
@@ -146,28 +152,26 @@ class Bot2StrategyTrend(IStrategy):
                 btc_df = btc_df[["date", "btc_volatility_4h"]].copy()
 
                 dataframe = merge_informative_pair(
-                    dataframe,
-                    btc_df,
-                    self.timeframe,
-                    "4h",
-                    ffill=True
+                    dataframe, btc_df, self.timeframe, "4h", ffill=True
                 )
 
-                if 'btc_volatility_4h_4h' in dataframe.columns:
-                    dataframe.rename(columns={'btc_volatility_4h_4h': 'btc_volatility_4h'}, inplace=True)
-                elif 'btc_volatility_4h' not in dataframe.columns:
-                    dataframe['btc_volatility_4h'] = 0.0
+                if "btc_volatility_4h_4h" in dataframe.columns:
+                    dataframe.rename(
+                        columns={"btc_volatility_4h_4h": "btc_volatility_4h"}, inplace=True
+                    )
+                elif "btc_volatility_4h" not in dataframe.columns:
+                    dataframe["btc_volatility_4h"] = 0.0
             else:
-                dataframe['btc_volatility_4h'] = 0.0
+                dataframe["btc_volatility_4h"] = 0.0
         except Exception as e:
-            if hasattr(self, 'logger'):
+            if hasattr(self, "logger"):
                 self.logger.warning(f"BTC volatility calculation failed: {e}")
-            dataframe['btc_volatility_4h'] = 0.0
+            dataframe["btc_volatility_4h"] = 0.0
 
-        if 'btc_volatility_4h' not in dataframe.columns:
-            dataframe['btc_volatility_4h'] = 0.0
+        if "btc_volatility_4h" not in dataframe.columns:
+            dataframe["btc_volatility_4h"] = 0.0
 
-        dataframe['btc_volatility_4h'] = dataframe['btc_volatility_4h'].fillna(0.0)
+        dataframe["btc_volatility_4h"] = dataframe["btc_volatility_4h"].fillna(0.0)
 
         # Regime classification
         vol_threshold = self.buy_vol_threshold.value
@@ -176,11 +180,15 @@ class Bot2StrategyTrend(IStrategy):
         # === 追涨过滤模块所需指标 ===
         dataframe["adx_slope"] = dataframe["adx"].diff(3)
 
-        dataframe["bb_percent"] = (dataframe["close"] - dataframe["bb_lower"]) / (dataframe["bb_upper"] - dataframe["bb_lower"])
+        dataframe["bb_percent"] = (dataframe["close"] - dataframe["bb_lower"]) / (
+            dataframe["bb_upper"] - dataframe["bb_lower"]
+        )
 
         lookback = self.anti_chase_lookback.value
         dataframe["max_high_lookback"] = dataframe["high"].rolling(lookback).max()
-        dataframe["recent_pump"] = (dataframe["close"] / dataframe["max_high_lookback"].shift(1)) - 1
+        dataframe["recent_pump"] = (
+            dataframe["close"] / dataframe["max_high_lookback"].shift(1)
+        ) - 1
 
         # 安全处理 NaN
         dataframe["adx_slope"] = dataframe["adx_slope"].fillna(0)
@@ -200,16 +208,26 @@ class Bot2StrategyTrend(IStrategy):
 
         # Trend following conditions
         trend_cond1 = (
-            (dataframe["close"] > dataframe["ema_fast"]) &
-            (dataframe["ema_fast"] > dataframe["ema_slow"]) &
-            (dataframe["ema_slow"] > dataframe["ema_trend"])
+            (dataframe["close"] > dataframe["ema_fast"])
+            & (dataframe["ema_fast"] > dataframe["ema_slow"])
+            & (dataframe["ema_slow"] > dataframe["ema_trend"])
         )
         trend_cond2 = dataframe["adx"] > self.buy_adx_trend.value
         trend_cond3 = dataframe["volume"] > dataframe["volume_mean"] * self.buy_volume_factor.value
-        dataframe["trend_score"] = trend_cond1.astype(int) + trend_cond2.astype(int) + trend_cond3.astype(int)
+        dataframe["trend_score"] = (
+            trend_cond1.astype(int) + trend_cond2.astype(int) + trend_cond3.astype(int)
+        )
 
-        range_entry = (dataframe["regime_trend"] == 0) & (dataframe["mr_score"] >= 2) & (dataframe["volume"] > 0)
-        trend_entry = (dataframe["regime_trend"] == 1) & (dataframe["trend_score"] >= 2) & (dataframe["volume"] > 0)
+        range_entry = (
+            (dataframe["regime_trend"] == 0)
+            & (dataframe["mr_score"] >= 2)
+            & (dataframe["volume"] > 0)
+        )
+        trend_entry = (
+            (dataframe["regime_trend"] == 1)
+            & (dataframe["trend_score"] >= 2)
+            & (dataframe["volume"] > 0)
+        )
 
         initial_entry = range_entry | trend_entry
 
@@ -225,7 +243,7 @@ class Bot2StrategyTrend(IStrategy):
             chase_risk = pd.concat(anti_chase_conditions, axis=1).any(axis=1)
             chase_risk = chase_risk.fillna(False)
         except Exception as e:
-            if hasattr(self, 'logger'):
+            if hasattr(self, "logger"):
                 self.logger.warning(f"Anti-chase calculation error for {metadata['pair']}: {e}")
             chase_risk = pd.Series(False, index=dataframe.index)
 
@@ -240,16 +258,32 @@ class Bot2StrategyTrend(IStrategy):
         range_exit_cond1 = dataframe["rsi"] > self.sell_rsi_range.value
         range_exit_cond2 = dataframe["close"] > dataframe["bb_mid"]
         range_exit_cond3 = dataframe["close"] > dataframe["ema_fast"]
-        dataframe["range_exit_score"] = range_exit_cond1.astype(int) + range_exit_cond2.astype(int) + range_exit_cond3.astype(int)
+        dataframe["range_exit_score"] = (
+            range_exit_cond1.astype(int)
+            + range_exit_cond2.astype(int)
+            + range_exit_cond3.astype(int)
+        )
 
         # Trend exit
         trend_exit_cond1 = dataframe["rsi"] > self.sell_rsi_trend.value
         trend_exit_cond2 = dataframe["close"] < dataframe["ema_fast"]
         trend_exit_cond3 = dataframe["volume"] < dataframe["volume_mean"]
-        dataframe["trend_exit_score"] = trend_exit_cond1.astype(int) + trend_exit_cond2.astype(int) + trend_exit_cond3.astype(int)
+        dataframe["trend_exit_score"] = (
+            trend_exit_cond1.astype(int)
+            + trend_exit_cond2.astype(int)
+            + trend_exit_cond3.astype(int)
+        )
 
-        range_exit = (dataframe["regime_trend"] == 0) & (dataframe["range_exit_score"] >= 2) & (dataframe["volume"] > 0)
-        trend_exit = (dataframe["regime_trend"] == 1) & (dataframe["trend_exit_score"] >= 2) & (dataframe["volume"] > 0)
+        range_exit = (
+            (dataframe["regime_trend"] == 0)
+            & (dataframe["range_exit_score"] >= 2)
+            & (dataframe["volume"] > 0)
+        )
+        trend_exit = (
+            (dataframe["regime_trend"] == 1)
+            & (dataframe["trend_exit_score"] >= 2)
+            & (dataframe["volume"] > 0)
+        )
 
         dataframe.loc[range_exit | trend_exit, "exit_long"] = 1
 
@@ -300,7 +334,7 @@ class Bot2StrategyTrend(IStrategy):
             return sl
 
         except Exception as e:
-            if hasattr(self, 'logger'):
+            if hasattr(self, "logger"):
                 self.logger.error(f"Custom stoploss error for {pair}: {str(e)}")
             return self.stoploss
 
@@ -320,11 +354,14 @@ class Bot2StrategyTrend(IStrategy):
             "subplots": {
                 "RSI": {"rsi": {"color": "#ff7f0e"}},
                 "ADX": {"adx": {"color": "#9467bd"}},
-                "Volume": {"volume": {"color": "gray", "type": "bar"}, "volume_mean": {"color": "#1f77b4"}},
+                "Volume": {
+                    "volume": {"color": "gray", "type": "bar"},
+                    "volume_mean": {"color": "#1f77b4"},
+                },
                 "Regime": {"regime_trend": {"color": "#2ca02c", "type": "bar"}},
                 "Scores": {
                     "mr_score": {"color": "#2ca02c", "type": "bar"},
                     "trend_score": {"color": "#d62728", "type": "bar"},
                 },
-            }
+            },
         }

@@ -17,9 +17,9 @@ Spec: .trae/documents/strengthen-evolution-exploration.md 阶段1
   - 成熟 (30-100):              threshold = 0.50
   - 稳定 (>100):                threshold = 0.55 (硬约束值)
 """
+
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
@@ -37,7 +37,7 @@ for _p in (_BCRM2_SCRIPTS_ROOT, _ARCH_ROOT):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-from dreamos.evolution.exploration_policy import ExplorationPolicy
+from dreamos.evolution.exploration_policy import ExplorationPolicy  # noqa: E402
 
 
 class TestExplorationPolicyThreshold:

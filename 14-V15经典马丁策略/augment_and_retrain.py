@@ -9,6 +9,7 @@ Fixes:
 Usage:
     python3 augment_and_retrain.py --data-dir data/ai_datasets --out-dir data/phase_d_models_v1
 """
+
 from __future__ import annotations
 
 import argparse
@@ -16,7 +17,6 @@ import json
 import os
 import sys
 import time
-import copy
 from pathlib import Path
 from typing import Dict, Tuple
 
@@ -32,17 +32,17 @@ from phase_d_models import BiLSTMAttentionBust, PatchTSTForDrawdown
 # ── Config ────────────────────────────────────────────────────────────────────
 
 BUST_THRESHOLD = -0.10  # P1: lowered -15% → -10% for more positive samples
-NOISE_STD = 0.01        # Gaussian noise std for augmentation
-AUGMENT_FACTOR = 2      # 2x noise augmentation
-SMOTE_RATIO = 0.5       # P1: SMOTE target ratio (pos:neg = 1:1 after SMOTE)
-BILSTM_EPOCHS = 100     # P1: more epochs for SMOTE-enriched data
+NOISE_STD = 0.01  # Gaussian noise std for augmentation
+AUGMENT_FACTOR = 2  # 2x noise augmentation
+SMOTE_RATIO = 0.5  # P1: SMOTE target ratio (pos:neg = 1:1 after SMOTE)
+BILSTM_EPOCHS = 100  # P1: more epochs for SMOTE-enriched data
 PATCHTST_EPOCHS = 80
 BATCH_SIZE = 32
 LR = 1e-3
 WEIGHT_DECAY = 1e-5
 EARLY_STOP_PATIENCE = 15
-FOCAL_ALPHA = 0.50      # P1: increased 0.25 → 0.50 for more positive weight
-FOCAL_GAMMA = 2.0       # Focal loss gamma (focusing parameter)
+FOCAL_ALPHA = 0.50  # P1: increased 0.25 → 0.50 for more positive weight
+FOCAL_GAMMA = 2.0  # Focal loss gamma (focusing parameter)
 
 
 class FocalLoss(nn.Module):
@@ -105,7 +105,7 @@ def augment_data(
     all_bust = [label_bust]
     all_maxdd = [label_maxdd]
 
-    for i in range(factor - 1):
+    for i in range(factor - 1):  # noqa: B007
         noise_ohlcv = torch.randn_like(bilstm_ohlcv) * NOISE_STD
         noise_scalar = torch.randn_like(bilstm_scalar) * NOISE_STD * 0.5
         noise_patchtst = torch.randn_like(patchtst_in) * NOISE_STD
@@ -166,7 +166,9 @@ def smote_oversample(
     n_pos_target = max(n_pos_target, n_pos + 1)
     sampling_strategy = {0: n_neg, 1: n_pos_target}
 
-    smote = SMOTE(sampling_strategy=sampling_strategy, k_neighbors=min(5, n_pos - 1), random_state=42)
+    smote = SMOTE(
+        sampling_strategy=sampling_strategy, k_neighbors=min(5, n_pos - 1), random_state=42
+    )
     features_resampled, labels_resampled = smote.fit_resample(features, labels_np)
 
     n_new = len(labels_resampled)
@@ -177,12 +179,17 @@ def smote_oversample(
     scalar_dim = bilstm_scalar.shape[1:]
     patchtst_dim = patchtst_in.shape[1:]
 
-    ohlcv_new = torch.tensor(features_resampled[:, :np.prod(ohlcv_dim)].reshape(-1, *ohlcv_dim), dtype=torch.float32)
-    scalar_new = torch.tensor(features_resampled[:, np.prod(ohlcv_dim):].reshape(-1, *scalar_dim), dtype=torch.float32)
+    ohlcv_new = torch.tensor(
+        features_resampled[:, : np.prod(ohlcv_dim)].reshape(-1, *ohlcv_dim), dtype=torch.float32
+    )
+    scalar_new = torch.tensor(
+        features_resampled[:, np.prod(ohlcv_dim) :].reshape(-1, *scalar_dim), dtype=torch.float32
+    )
 
     # For PatchTST and maxdd: duplicate existing values for synthesized samples
     # (SMOTE only operates on BiLSTM features; PatchTST uses nearest neighbor)
     from sklearn.neighbors import NearestNeighbors
+
     patchtst_resampled = np.zeros((n_new, np.prod(patchtst_dim)))
     maxdd_resampled = np.zeros(n_new)
     patchtst_resampled[:n] = patchtst_flat
@@ -204,7 +211,9 @@ def smote_oversample(
     maxdd_new = torch.tensor(maxdd_resampled, dtype=torch.float32).unsqueeze(-1)
 
     n_pos_new = int(labels_resampled.sum())
-    print(f"  SMOTE: {n} → {n_new} samples (synthesized {n_synthesized} positive, pos: {n_pos} → {n_pos_new})")
+    print(
+        f"  SMOTE: {n} → {n_new} samples (synthesized {n_synthesized} positive, pos: {n_pos} → {n_pos_new})"
+    )
     return ohlcv_new, scalar_new, patchtst_new, bust_new, maxdd_new
 
 
@@ -219,12 +228,18 @@ def train_bilstm_focal(
     model = model.to(device)
     criterion = FocalLoss(alpha=FOCAL_ALPHA, gamma=FOCAL_GAMMA)
     optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=7)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=7)
 
-    best_val_loss = float('inf')
+    best_val_loss = float("inf")
     best_state = None
     patience_counter = 0
-    history = {"train_loss": [], "val_loss": [], "val_acc": [], "val_precision": [], "val_recall": []}
+    history = {
+        "train_loss": [],
+        "val_loss": [],
+        "val_acc": [],
+        "val_precision": [],
+        "val_recall": [],
+    }
 
     for epoch in range(epochs):
         model.train()
@@ -276,16 +291,23 @@ def train_bilstm_focal(
             patience_counter += 1
 
         if (epoch + 1) % 10 == 0 or epoch == 0:
-            print(f"  BiLSTM Epoch {epoch+1:3d}/{epochs} | loss={train_loss:.4f}/{val_loss:.4f} acc={val_acc:.3f} P={precision:.3f} R={recall:.3f}")
+            print(
+                f"  BiLSTM Epoch {epoch+1:3d}/{epochs} | loss={train_loss:.4f}/{val_loss:.4f} acc={val_acc:.3f} P={precision:.3f} R={recall:.3f}"
+            )
 
         if patience_counter >= EARLY_STOP_PATIENCE:
             print(f"  BiLSTM early stop at epoch {epoch+1}")
             break
 
     model.load_state_dict(best_state)
-    return {"best_val_loss": round(best_val_loss, 6), "best_val_acc": round(val_acc, 4),
-            "best_precision": round(precision, 4), "best_recall": round(recall, 4),
-            "epochs_trained": epoch + 1 - patience_counter, "history": history}
+    return {
+        "best_val_loss": round(best_val_loss, 6),
+        "best_val_acc": round(val_acc, 4),
+        "best_precision": round(precision, 4),
+        "best_recall": round(recall, 4),
+        "epochs_trained": epoch + 1 - patience_counter,
+        "history": history,
+    }
 
 
 def train_patchtst(
@@ -299,9 +321,9 @@ def train_patchtst(
     model = model.to(device)
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=7)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=7)
 
-    best_val_loss = float('inf')
+    best_val_loss = float("inf")
     best_state = None
     patience_counter = 0
 
@@ -342,15 +364,20 @@ def train_patchtst(
             patience_counter += 1
 
         if (epoch + 1) % 10 == 0 or epoch == 0:
-            print(f"  PatchTST Epoch {epoch+1:3d}/{epochs} | loss={train_loss:.6f}/{val_loss:.6f} mae={val_mae:.4f}")
+            print(
+                f"  PatchTST Epoch {epoch+1:3d}/{epochs} | loss={train_loss:.6f}/{val_loss:.6f} mae={val_mae:.4f}"
+            )
 
         if patience_counter >= EARLY_STOP_PATIENCE:
             print(f"  PatchTST early stop at epoch {epoch+1}")
             break
 
     model.load_state_dict(best_state)
-    return {"best_val_loss": round(best_val_loss, 6), "best_val_mae": round(val_mae, 6),
-            "epochs_trained": epoch + 1 - patience_counter}
+    return {
+        "best_val_loss": round(best_val_loss, 6),
+        "best_val_mae": round(val_mae, 6),
+        "epochs_trained": epoch + 1 - patience_counter,
+    }
 
 
 def save_model(model: nn.Module, meta: Dict, path: str) -> None:
@@ -373,16 +400,20 @@ def main(argv=None):
     # Load and balance data
     data_dir = Path(args.data_dir)
     print(f"Loading and balancing data from {data_dir}...")
-    bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd = load_and_balance_data(str(data_dir / "phase_d_train_all.npz"))
-    test_ohlcv, test_scalar, test_patchtst, test_bust, test_maxdd = load_and_balance_data(str(data_dir / "phase_d_test_all.npz"))
+    bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd = load_and_balance_data(
+        str(data_dir / "phase_d_train_all.npz")
+    )
+    test_ohlcv, test_scalar, test_patchtst, test_bust, test_maxdd = load_and_balance_data(
+        str(data_dir / "phase_d_test_all.npz")
+    )
 
     # P1: SMOTE oversampling first, then noise augmentation
-    print(f"\nP1: SMOTE oversampling...")
+    print("\nP1: SMOTE oversampling...")
     bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd = smote_oversample(
         bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd, SMOTE_RATIO
     )
 
-    print(f"\nAugmenting training data...")
+    print("\nAugmenting training data...")
     bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd = augment_data(
         bilstm_ohlcv, bilstm_scalar, patchtst_in, label_bust, label_maxdd, AUGMENT_FACTOR
     )
@@ -397,14 +428,20 @@ def main(argv=None):
     print("Training BiLSTMAttentionBust (Focal Loss + Balanced Labels)")
     print("=" * 60)
 
-    bilstm_model = BiLSTMAttentionBust(ohlcv_len=60, n_channels=5, n_scalar=7, hidden=48, n_layers=2)
+    bilstm_model = BiLSTMAttentionBust(
+        ohlcv_len=60, n_channels=5, n_scalar=7, hidden=48, n_layers=2
+    )
     train_ds = TensorDataset(bilstm_ohlcv, bilstm_scalar, label_bust)
     val_ds = TensorDataset(test_ohlcv, test_scalar, test_bust)
     train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False)
 
-    bilstm_result = train_bilstm_focal(bilstm_model, train_loader, val_loader, BILSTM_EPOCHS, device)
-    print(f"  Best: val_loss={bilstm_result['best_val_loss']} acc={bilstm_result['best_val_acc']} P={bilstm_result['best_precision']} R={bilstm_result['best_recall']}")
+    bilstm_result = train_bilstm_focal(
+        bilstm_model, train_loader, val_loader, BILSTM_EPOCHS, device
+    )
+    print(
+        f"  Best: val_loss={bilstm_result['best_val_loss']} acc={bilstm_result['best_val_acc']} P={bilstm_result['best_precision']} R={bilstm_result['best_recall']}"
+    )
     print()
 
     # Train PatchTST
@@ -412,7 +449,9 @@ def main(argv=None):
     print("Training PatchTSTForDrawdown (Augmented Data)")
     print("=" * 60)
 
-    patchtst_model = PatchTSTForDrawdown(c_in=5, seq_len=120, patch_len=12, stride=6, d_model=32, n_layers=2, n_heads=4, d_ff=64)
+    patchtst_model = PatchTSTForDrawdown(
+        c_in=5, seq_len=120, patch_len=12, stride=6, d_model=32, n_layers=2, n_heads=4, d_ff=64
+    )
     patchtst_in_t = patchtst_in.transpose(1, 2)
     test_patchtst_t = test_patchtst.transpose(1, 2)
     train_ds2 = TensorDataset(patchtst_in_t, label_maxdd)
@@ -420,8 +459,12 @@ def main(argv=None):
     train_loader2 = DataLoader(train_ds2, batch_size=BATCH_SIZE, shuffle=True)
     val_loader2 = DataLoader(val_ds2, batch_size=BATCH_SIZE, shuffle=False)
 
-    patchtst_result = train_patchtst(patchtst_model, train_loader2, val_loader2, PATCHTST_EPOCHS, device)
-    print(f"  Best: val_loss={patchtst_result['best_val_loss']} mae={patchtst_result['best_val_mae']}")
+    patchtst_result = train_patchtst(
+        patchtst_model, train_loader2, val_loader2, PATCHTST_EPOCHS, device
+    )
+    print(
+        f"  Best: val_loss={patchtst_result['best_val_loss']} mae={patchtst_result['best_val_mae']}"
+    )
     print()
 
     # Save models
@@ -429,30 +472,54 @@ def main(argv=None):
     out_dir.mkdir(parents=True, exist_ok=True)
 
     bilstm_meta = {
-        "model": "BiLSTMAttentionBust", "ohlcv_len": 60, "n_channels": 5, "n_scalar": 7,
-        "hidden": 48, "n_layers": 2,
-        "bust_threshold": BUST_THRESHOLD, "focal_alpha": FOCAL_ALPHA, "focal_gamma": FOCAL_GAMMA,
-        "augment_factor": AUGMENT_FACTOR, "noise_std": NOISE_STD,
-        "n_train": n_samples, "n_test": n_test,
+        "model": "BiLSTMAttentionBust",
+        "ohlcv_len": 60,
+        "n_channels": 5,
+        "n_scalar": 7,
+        "hidden": 48,
+        "n_layers": 2,
+        "bust_threshold": BUST_THRESHOLD,
+        "focal_alpha": FOCAL_ALPHA,
+        "focal_gamma": FOCAL_GAMMA,
+        "augment_factor": AUGMENT_FACTOR,
+        "noise_std": NOISE_STD,
+        "n_train": n_samples,
+        "n_test": n_test,
         "training": bilstm_result,
         "trained_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     save_model(bilstm_model, bilstm_meta, str(out_dir / "bilstm.pt"))
 
     patchtst_meta = {
-        "model": "PatchTSTForDrawdown", "c_in": 5, "seq_len": 120, "patch_len": 12,
-        "stride": 6, "d_model": 32, "n_layers": 2, "n_heads": 4, "d_ff": 64,
-        "augment_factor": AUGMENT_FACTOR, "noise_std": NOISE_STD,
-        "n_train": n_samples, "n_test": n_test,
+        "model": "PatchTSTForDrawdown",
+        "c_in": 5,
+        "seq_len": 120,
+        "patch_len": 12,
+        "stride": 6,
+        "d_model": 32,
+        "n_layers": 2,
+        "n_heads": 4,
+        "d_ff": 64,
+        "augment_factor": AUGMENT_FACTOR,
+        "noise_std": NOISE_STD,
+        "n_train": n_samples,
+        "n_test": n_test,
         "training": patchtst_result,
         "trained_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     save_model(patchtst_model, patchtst_meta, str(out_dir / "patchtst.pt"))
 
     # Save report
-    report = {"bilstm": bilstm_meta, "patchtst": patchtst_meta,
-              "augmentation": {"bust_threshold": BUST_THRESHOLD, "noise_std": NOISE_STD, "factor": AUGMENT_FACTOR},
-              "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    report = {
+        "bilstm": bilstm_meta,
+        "patchtst": patchtst_meta,
+        "augmentation": {
+            "bust_threshold": BUST_THRESHOLD,
+            "noise_std": NOISE_STD,
+            "factor": AUGMENT_FACTOR,
+        },
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
     with open(out_dir / "training_report.json", "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
 

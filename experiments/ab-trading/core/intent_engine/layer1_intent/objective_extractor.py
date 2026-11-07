@@ -8,11 +8,10 @@ Layer 1: 收敛 —— 从混沌到单点
 从用户自然语言、市场数据、信号等多源输入中，收敛出一个清晰的单点目标。
 """
 
-import re
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 
 from ..types import Objective
-from .objective_types import OBJECTIVE_TYPES, search_objective_types
+from .objective_types import OBJECTIVE_TYPES
 
 
 class ObjectiveExtractor:
@@ -84,29 +83,29 @@ class ObjectiveExtractor:
         objective.confidence = min(best_score, 1.0)
 
         obj_def = self.objective_types.get(best_type, {})
-        objective.title = obj_def.get('name', best_type)
-        objective.domain = obj_def.get('domain', '')
-        objective.complexity = obj_def.get('complexity', 'standard')
-        objective.priority = obj_def.get('priority', 5)
-        objective.description = obj_def.get('description', '')
+        objective.title = obj_def.get("name", best_type)
+        objective.domain = obj_def.get("domain", "")
+        objective.complexity = obj_def.get("complexity", "standard")
+        objective.priority = obj_def.get("priority", 5)
+        objective.description = obj_def.get("description", "")
 
         if best_score < 0.25:
             objective.clarify_needed = True
             objective.clarify_question = f"您是想进行「{objective.title}」吗？"
             objective.clarify_options = [
-                {'label': '是的', 'value': 'confirm'},
-                {'label': '不是', 'value': 'reject'},
+                {"label": "是的", "value": "confirm"},
+                {"label": "不是", "value": "reject"},
             ]
         elif score_gap < 0.03 and len(sorted_scores) > 1:
             top_types = [t for t, s in sorted_scores[:3]]
             objective.clarify_needed = True
             objective.clarify_question = "请问您的需求更接近以下哪个？"
             objective.clarify_options = [
-                {'label': self.objective_types.get(t, {}).get('name', t), 'value': t}
+                {"label": self.objective_types.get(t, {}).get("name", t), "value": t}
                 for t in top_types
             ]
 
-        if obj_def.get('default_clarify_needed', False) and not objective.clarify_needed:
+        if obj_def.get("default_clarify_needed", False) and not objective.clarify_needed:
             objective.clarify_needed = True
             objective.clarify_question = "请问有什么具体要求吗？"
 
@@ -119,12 +118,12 @@ class ObjectiveExtractor:
         signals: Optional[List[Dict]],
     ) -> str:
         if user_message:
-            return 'nl'
+            return "nl"
         elif signals:
-            return 'signal'
+            return "signal"
         elif mkt_data:
-            return 'market'
-        return 'context'
+            return "market"
+        return "context"
 
     def _score_by_nlp(self, text: str) -> tuple:
         """
@@ -148,7 +147,7 @@ class ObjectiveExtractor:
         # 第一轮：找出所有匹配的关键词，统计每个关键词被多少个类型匹配
         all_matches = {}
         for obj_type, obj_def in self.objective_types.items():
-            keywords = obj_def.get('keywords', [])
+            keywords = obj_def.get("keywords", [])
             obj_matches = []
             for kw in keywords:
                 kw_lower = kw.lower()
@@ -202,16 +201,16 @@ class ObjectiveExtractor:
         """
         scores = {}
 
-        price_change = mkt_data.get('price_change_pct', 0)
-        volume_change = mkt_data.get('volume_change_pct', 0)
+        price_change = mkt_data.get("price_change_pct", 0)
+        volume_change = mkt_data.get("volume_change_pct", 0)
 
         if abs(price_change) > 5:
-            scores['trend_analysis'] = 0.6
+            scores["trend_analysis"] = 0.6
             if abs(price_change) > 10:
-                scores['deep_analysis'] = 0.5
+                scores["deep_analysis"] = 0.5
 
         if abs(volume_change) > 50:
-            scores['deep_analysis'] = scores.get('deep_analysis', 0) + 0.3
+            scores["deep_analysis"] = scores.get("deep_analysis", 0) + 0.3
 
         return scores
 
@@ -222,15 +221,15 @@ class ObjectiveExtractor:
         scores = {}
 
         for sig in signals:
-            sig_type = sig.get('type', '')
-            sig_strength = sig.get('strength', 0.5)
+            sig_type = sig.get("type", "")
+            sig_strength = sig.get("strength", 0.5)
 
-            if sig_type in ['technical_breakout', 'trend_change']:
-                scores['trend_analysis'] = scores.get('trend_analysis', 0) + sig_strength * 0.3
-            elif sig_type in ['rsi_oversold', 'rsi_overbought', 'macd_cross']:
-                scores['trading_decision'] = scores.get('trading_decision', 0) + sig_strength * 0.4
-            elif sig_type in ['risk_alert', 'stop_loss_trigger']:
-                scores['risk_assessment'] = scores.get('risk_assessment', 0) + sig_strength * 0.5
-                scores['exit_evaluation'] = scores.get('exit_evaluation', 0) + sig_strength * 0.4
+            if sig_type in ["technical_breakout", "trend_change"]:
+                scores["trend_analysis"] = scores.get("trend_analysis", 0) + sig_strength * 0.3
+            elif sig_type in ["rsi_oversold", "rsi_overbought", "macd_cross"]:
+                scores["trading_decision"] = scores.get("trading_decision", 0) + sig_strength * 0.4
+            elif sig_type in ["risk_alert", "stop_loss_trigger"]:
+                scores["risk_assessment"] = scores.get("risk_assessment", 0) + sig_strength * 0.5
+                scores["exit_evaluation"] = scores.get("exit_evaluation", 0) + sig_strength * 0.4
 
         return scores

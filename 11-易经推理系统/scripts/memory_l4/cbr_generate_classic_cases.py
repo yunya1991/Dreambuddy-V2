@@ -26,9 +26,7 @@ CBR v3.0 §2.4：经典战例库生成脚本（200 条 + 2 条 MANUAL_CLASSIC = 
 
 import argparse
 import json
-import math
 import sys
-from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -39,20 +37,24 @@ if str(_THIS_DIR) not in sys.path:
 
 # 8 大类 × (HIGH_WIN 25 + HIGH_LOSS 25) = 400 候选 → 全局各 100 条
 CATEGORIES: List[Tuple[str, str]] = [
-    ("CRYPTO", "LONG"), ("CRYPTO", "SHORT"),
-    ("US_STOCK", "LONG"), ("US_STOCK", "SHORT"),
-    ("GOLD", "LONG"), ("GOLD", "SHORT"),
-    ("FOREX", "LONG"), ("FOREX", "SHORT"),
+    ("CRYPTO", "LONG"),
+    ("CRYPTO", "SHORT"),
+    ("US_STOCK", "LONG"),
+    ("US_STOCK", "SHORT"),
+    ("GOLD", "LONG"),
+    ("GOLD", "SHORT"),
+    ("FOREX", "LONG"),
+    ("FOREX", "SHORT"),
 ]
-PER_CATEGORY_PER_TAG = 25   # 每类每 tag 25 条 → 8×2×25=400 候选
+PER_CATEGORY_PER_TAG = 25  # 每类每 tag 25 条 → 8×2×25=400 候选
 GLOBAL_HIGH_WIN = 100
 GLOBAL_HIGH_LOSS = 100
-MANUAL_CLASSIC_COUNT = 2   # BTC+COIN 今早种子案例
+MANUAL_CLASSIC_COUNT = 2  # BTC+COIN 今早种子案例
 EXPECTED_TOTAL = GLOBAL_HIGH_WIN + GLOBAL_HIGH_LOSS + MANUAL_CLASSIC_COUNT
 
 # ── 网格对齐 T6.23 测试镜像 ──
-THETA_GRID = [round(0.65 + i * 0.03, 2) for i in range(11)]   # 0.65, 0.68, ..., 0.95
-GAMMA_GRID = [round(0.05 + i * 0.03, 2) for i in range(8)]   # 0.05, 0.08, ..., 0.26
+THETA_GRID = [round(0.65 + i * 0.03, 2) for i in range(11)]  # 0.65, 0.68, ..., 0.95
+GAMMA_GRID = [round(0.05 + i * 0.03, 2) for i in range(8)]  # 0.05, 0.08, ..., 0.26
 
 
 # ============================================================
@@ -83,9 +85,12 @@ def _csv_symbol_to_okx(sym: str) -> str:
 
 
 def _confidence_to_bucket(conf: float) -> str:
-    if conf >= 0.90: return "EXTREME"
-    if conf >= 0.80: return "HIGH"
-    if conf >= 0.70: return "MEDIUM"
+    if conf >= 0.90:
+        return "EXTREME"
+    if conf >= 0.80:
+        return "HIGH"
+    if conf >= 0.70:
+        return "MEDIUM"
     return "LOW"
 
 
@@ -104,6 +109,7 @@ def _load_trade_records(from_date: str, to_date: str) -> List[Dict[str, Any]]:
     import csv as _csv
     import glob as _glob
     import re as _re
+
     records: List[Dict[str, Any]] = []
 
     def _append(r: Dict[str, Any]) -> None:
@@ -121,10 +127,16 @@ def _load_trade_records(from_date: str, to_date: str) -> List[Dict[str, Any]]:
                 reader = _csv.DictReader(fh)
                 for row in reader:
                     try:
-                        entry_ts_s = int(datetime.strptime(
-                            row.get("entry_time", ""), "%Y-%m-%d %H:%M:%S").timestamp())
-                        exit_ts_s = int(datetime.strptime(
-                            row.get("exit_time", ""), "%Y-%m-%d %H:%M:%S").timestamp())
+                        entry_ts_s = int(
+                            datetime.strptime(
+                                row.get("entry_time", ""), "%Y-%m-%d %H:%M:%S"
+                            ).timestamp()
+                        )
+                        exit_ts_s = int(
+                            datetime.strptime(
+                                row.get("exit_time", ""), "%Y-%m-%d %H:%M:%S"
+                            ).timestamp()
+                        )
                     except Exception:
                         continue
                     pnl_pct_pct = float(row.get("pnl_pct", 0))  # CSV: % 表示
@@ -151,8 +163,9 @@ def _load_trade_records(from_date: str, to_date: str) -> List[Dict[str, Any]]:
                         "dist_sma50_pct": round(pnl_pct_dec * 1.5, 6),
                         "dist_sma200_pct": round(pnl_pct_dec * 2.5, 6),
                         "ma20_50_gap_pct": round(abs(pnl_pct_dec) * 1.2 + 0.01, 6),
-                        "triple_ma_order": ("BULL_ALIGNMENT" if direction == "LONG"
-                                            else "BEAR_ALIGNMENT"),
+                        "triple_ma_order": (
+                            "BULL_ALIGNMENT" if direction == "LONG" else "BEAR_ALIGNMENT"
+                        ),
                         "atr14_norm_pct": 0.02 + abs(pnl_pct_dec) * 0.6,
                         "bollinger_width_pct": 0.04 + abs(pnl_pct_dec) * 1.2,
                         "vol_20d_quantile": min(0.95, 0.4 + confidence * 0.5),
@@ -165,20 +178,22 @@ def _load_trade_records(from_date: str, to_date: str) -> List[Dict[str, Any]]:
                         "upper_gua": row.get("upper_gua", ""),
                         "lower_gua": row.get("lower_gua", ""),
                     }
-                    _append({
-                        "symbol": sym_okx,
-                        "asset_class": asset_class,
-                        "direction": direction,
-                        "entry_ts": entry_ts_s * 1000,
-                        "close_ts": exit_ts_s * 1000,
-                        "pnl_pct": pnl_pct_dec,
-                        "pnl_usdt": pnl_usdt,
-                        "is_profit": pnl_pct_dec > 0,
-                        "confidence": confidence,
-                        "hexagram": hexagram,
-                        "entry_snapshot": entry_snapshot,
-                        "exit_snapshot": exit_snapshot,
-                    })
+                    _append(
+                        {
+                            "symbol": sym_okx,
+                            "asset_class": asset_class,
+                            "direction": direction,
+                            "entry_ts": entry_ts_s * 1000,
+                            "close_ts": exit_ts_s * 1000,
+                            "pnl_pct": pnl_pct_dec,
+                            "pnl_usdt": pnl_usdt,
+                            "is_profit": pnl_pct_dec > 0,
+                            "confidence": confidence,
+                            "hexagram": hexagram,
+                            "entry_snapshot": entry_snapshot,
+                            "exit_snapshot": exit_snapshot,
+                        }
+                    )
 
     # ── ② episodes JSON（少量高质量人工总结样本）──
     eps_dir = _THIS_DIR.parent.parent / ".workbuddy" / "episodes"
@@ -203,31 +218,40 @@ def _load_trade_records(from_date: str, to_date: str) -> List[Dict[str, Any]]:
                 sym, asset_cls = "BTC-USDT-SWAP", "CRYPTO"
             ts_ms = int(datetime.now().timestamp() * 1000)
             try:
-                ts_ms = int(datetime.fromisoformat(
-                    str(ep.get("ts", "")).replace("Z", "+00:00")).timestamp() * 1000)
+                ts_ms = int(
+                    datetime.fromisoformat(str(ep.get("ts", "")).replace("Z", "+00:00")).timestamp()
+                    * 1000
+                )
             except Exception:
                 pass
-            confidence = float(ep.get("total_score", 0.5) or 0.5) / 100.0 if ep.get("total_score", 0) >= 1 else float(ep.get("total_score", 0.5) or 0.5)
-            _append({
-                "symbol": sym,
-                "asset_class": asset_cls,
-                "direction": direction,
-                "entry_ts": ts_ms,
-                "close_ts": ts_ms + 3600_000,
-                "pnl_pct": pnl_pct_dec,
-                "pnl_usdt": pnl_usdt,
-                "is_profit": pnl_pct_dec > 0,
-                "confidence": min(0.95, max(0.5, confidence)),
-                "hexagram": "",
-                "entry_snapshot": {
-                    "symbol": sym, "direction": direction,
-                    "hexagram_name": "",
-                    "bcrm_confidence": confidence,
-                    "bcrm_confidence_bucket": _confidence_to_bucket(confidence),
-                    "p1_output_label": "STANDARD",
-                },
-                "exit_snapshot": {"exit_reason": str(ep.get("exit_reason", ""))},
-            })
+            confidence = (
+                float(ep.get("total_score", 0.5) or 0.5) / 100.0
+                if ep.get("total_score", 0) >= 1
+                else float(ep.get("total_score", 0.5) or 0.5)
+            )
+            _append(
+                {
+                    "symbol": sym,
+                    "asset_class": asset_cls,
+                    "direction": direction,
+                    "entry_ts": ts_ms,
+                    "close_ts": ts_ms + 3600_000,
+                    "pnl_pct": pnl_pct_dec,
+                    "pnl_usdt": pnl_usdt,
+                    "is_profit": pnl_pct_dec > 0,
+                    "confidence": min(0.95, max(0.5, confidence)),
+                    "hexagram": "",
+                    "entry_snapshot": {
+                        "symbol": sym,
+                        "direction": direction,
+                        "hexagram_name": "",
+                        "bcrm_confidence": confidence,
+                        "bcrm_confidence_bucket": _confidence_to_bucket(confidence),
+                        "p1_output_label": "STANDARD",
+                    },
+                    "exit_snapshot": {"exit_reason": str(ep.get("exit_reason", ""))},
+                }
+            )
 
     # ── ③ polling_trader 日志（实盘平仓正则提取）──
     polling_dir = _THIS_DIR.parent.parent / "data" / "polling_trader"
@@ -257,31 +281,34 @@ def _load_trade_records(from_date: str, to_date: str) -> List[Dict[str, Any]]:
                         pnl_pct_dec = pnl_pct_pct / 100.0
                         ts = str(j.get("ts", ""))
                         try:
-                            ts_ms = int(datetime.strptime(
-                                ts, "%Y-%m-%d %H:%M:%S").timestamp() * 1000)
+                            ts_ms = int(
+                                datetime.strptime(ts, "%Y-%m-%d %H:%M:%S").timestamp() * 1000
+                            )
                         except Exception:
                             ts_ms = int(datetime.now().timestamp() * 1000)
-                        _append({
-                            "symbol": sym,
-                            "asset_class": "CRYPTO",
-                            "direction": "LONG" if pnl_pct_dec > 0 else "SHORT",
-                            "entry_ts": ts_ms - 4 * 3600_000,
-                            "close_ts": ts_ms,
-                            "pnl_pct": pnl_pct_dec,
-                            "pnl_usdt": pnl_usdt,
-                            "is_profit": pnl_pct_dec > 0,
-                            "confidence": 0.70,
-                            "hexagram": "",
-                            "entry_snapshot": {
+                        _append(
+                            {
                                 "symbol": sym,
+                                "asset_class": "CRYPTO",
                                 "direction": "LONG" if pnl_pct_dec > 0 else "SHORT",
-                                "hexagram_name": "",
-                                "bcrm_confidence": 0.70,
-                                "bcrm_confidence_bucket": "MEDIUM",
-                                "p1_output_label": "STANDARD",
-                            },
-                            "exit_snapshot": {"exit_reason": "polling_trader"},
-                        })
+                                "entry_ts": ts_ms - 4 * 3600_000,
+                                "close_ts": ts_ms,
+                                "pnl_pct": pnl_pct_dec,
+                                "pnl_usdt": pnl_usdt,
+                                "is_profit": pnl_pct_dec > 0,
+                                "confidence": 0.70,
+                                "hexagram": "",
+                                "entry_snapshot": {
+                                    "symbol": sym,
+                                    "direction": "LONG" if pnl_pct_dec > 0 else "SHORT",
+                                    "hexagram_name": "",
+                                    "bcrm_confidence": 0.70,
+                                    "bcrm_confidence_bucket": "MEDIUM",
+                                    "p1_output_label": "STANDARD",
+                                },
+                                "exit_snapshot": {"exit_reason": "polling_trader"},
+                            }
+                        )
             except Exception:
                 continue
 
@@ -314,12 +341,17 @@ def _build_manual_classic_cases(now: datetime) -> List[Dict[str, Any]]:
         "bcrm_confidence": 0.79,
         "bcrm_confidence_bucket": "HIGH",
         "p1_output_label": "WEAK",
-        "rsi_14": 55.2, "macd_hist": -0.0008,
-        "roc_5d": -0.012, "roc_20d": +0.005,
-        "dist_sma20_pct": -0.005, "dist_sma50_pct": +0.008, "dist_sma200_pct": +0.032,
+        "rsi_14": 55.2,
+        "macd_hist": -0.0008,
+        "roc_5d": -0.012,
+        "roc_20d": +0.005,
+        "dist_sma20_pct": -0.005,
+        "dist_sma50_pct": +0.008,
+        "dist_sma200_pct": +0.032,
         "ma20_50_gap_pct": 0.044,  # BTC 真实 4.4%（弱共振收敛）
         "triple_ma_order": "BULL_CONVERGING",
-        "atr14_norm_pct": 0.028, "bollinger_width_pct": 0.055,
+        "atr14_norm_pct": 0.028,
+        "bollinger_width_pct": 0.055,
         "vol_20d_quantile": 0.58,
     }
     entry_snapshot_coin = {
@@ -329,12 +361,17 @@ def _build_manual_classic_cases(now: datetime) -> List[Dict[str, Any]]:
         "bcrm_confidence": 0.95,
         "bcrm_confidence_bucket": "EXTREME",
         "p1_output_label": "STANDARD",
-        "rsi_14": 61.5, "macd_hist": -0.012,
-        "roc_5d": -0.028, "roc_20d": +0.015,
-        "dist_sma20_pct": -0.018, "dist_sma50_pct": +0.002, "dist_sma200_pct": +0.055,
+        "rsi_14": 61.5,
+        "macd_hist": -0.012,
+        "roc_5d": -0.028,
+        "roc_20d": +0.015,
+        "dist_sma20_pct": -0.018,
+        "dist_sma50_pct": +0.002,
+        "dist_sma200_pct": +0.055,
         "ma20_50_gap_pct": 0.020,
         "triple_ma_order": "BEAR_ALIGNMENT",
-        "atr14_norm_pct": 0.042, "bollinger_width_pct": 0.075,
+        "atr14_norm_pct": 0.042,
+        "bollinger_width_pct": 0.075,
         "vol_20d_quantile": 0.72,
     }
     return [
@@ -346,9 +383,12 @@ def _build_manual_classic_cases(now: datetime) -> List[Dict[str, Any]]:
             "direction": "SHORT",
             "tag": "MANUAL_CLASSIC",
             "entry_snapshot": entry_snapshot_btc,
-            "exit_snapshot": None,   # 占位：真实 PnL 由实盘后续回填
-            "pnl_pct": None, "pnl_usdt": None, "is_profit": None,
-            "entry_ts": ts_ms, "close_ts": None,
+            "exit_snapshot": None,  # 占位：真实 PnL 由实盘后续回填
+            "pnl_pct": None,
+            "pnl_usdt": None,
+            "is_profit": None,
+            "entry_ts": ts_ms,
+            "close_ts": None,
             "create_ts": ts_ms,
         },
         {
@@ -360,8 +400,11 @@ def _build_manual_classic_cases(now: datetime) -> List[Dict[str, Any]]:
             "tag": "MANUAL_CLASSIC",
             "entry_snapshot": entry_snapshot_coin,
             "exit_snapshot": None,
-            "pnl_pct": None, "pnl_usdt": None, "is_profit": None,
-            "entry_ts": ts_ms, "close_ts": None,
+            "pnl_pct": None,
+            "pnl_usdt": None,
+            "is_profit": None,
+            "entry_ts": ts_ms,
+            "close_ts": None,
             "create_ts": ts_ms,
         },
     ]
@@ -370,8 +413,9 @@ def _build_manual_classic_cases(now: datetime) -> List[Dict[str, Any]]:
 # ============================================================
 # §4：分类提取 HIGH_WIN / HIGH_LOSS（无历史时合成占位）
 # ============================================================
-def _extract_tagged_candidates(records: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]],
-                                                                       List[Dict[str, Any]]]:
+def _extract_tagged_candidates(
+    records: List[Dict[str, Any]],
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     """按 8 大类各取 top-25 win / bottom-25 loss → 全局各 top-100。
 
     若 records 为空（当前骨架），生成 200 条占位合成样本；
@@ -383,62 +427,83 @@ def _extract_tagged_candidates(records: List[Dict[str, Any]]) -> Tuple[List[Dict
 
     if not records:
         # ── 骨架：200 条占位（100 HIGH_WIN + 100 HIGH_LOSS），schema 与真实一致 ──
-        symbols = ["BTC-USDT-SWAP", "ETH-USDT-SWAP", "COIN-USDT-SWAP",
-                   "MSTR-USDT-SWAP", "XAU-USDT-SWAP", "EURUSD"]
+        symbols = [
+            "BTC-USDT-SWAP",
+            "ETH-USDT-SWAP",
+            "COIN-USDT-SWAP",
+            "MSTR-USDT-SWAP",
+            "XAU-USDT-SWAP",
+            "EURUSD",
+        ]
         for i in range(GLOBAL_HIGH_WIN):
             cat_idx = i % len(CATEGORIES)
             asset_cls, direction = CATEGORIES[cat_idx]
-            sym = symbols[i % len(symbols)] if asset_cls == "CRYPTO" else (
-                "XAU-USDT-SWAP" if asset_cls == "GOLD" else
-                "EURUSD" if asset_cls == "FOREX" else "COIN-USDT-SWAP"
+            sym = (
+                symbols[i % len(symbols)]
+                if asset_cls == "CRYPTO"
+                else (
+                    "XAU-USDT-SWAP"
+                    if asset_cls == "GOLD"
+                    else "EURUSD" if asset_cls == "FOREX" else "COIN-USDT-SWAP"
+                )
             )
             case_id = f"synth_hw_{i:03d}_{asset_cls.lower()}_{direction.lower()}"
             ts_ms = int((now - timedelta(days=(i % 85) + 1)).timestamp() * 1000)
-            high_win.append({
-                "schema": "v0.3",
-                "case_id": case_id,
-                "symbol": sym,
-                "asset_class": asset_cls,
-                "direction": direction,
-                "tag": "HIGH_WIN",
-                "entry_snapshot": {"placeholder": True, "seq": i},
-                "exit_snapshot": {"placeholder": True, "seq": i},
-                "pnl_pct": round(+0.03 + i * 0.0025, 6),   # +3% ~ +28%
-                "pnl_usdt": round(30.0 + i * 2.5, 4),
-                "is_profit": True,
-                "entry_ts": ts_ms,
-                "close_ts": ts_ms + 3600 * 1000 * (1 + (i % 48)),
-                "create_ts": ts_ms,
-            })
+            high_win.append(
+                {
+                    "schema": "v0.3",
+                    "case_id": case_id,
+                    "symbol": sym,
+                    "asset_class": asset_cls,
+                    "direction": direction,
+                    "tag": "HIGH_WIN",
+                    "entry_snapshot": {"placeholder": True, "seq": i},
+                    "exit_snapshot": {"placeholder": True, "seq": i},
+                    "pnl_pct": round(+0.03 + i * 0.0025, 6),  # +3% ~ +28%
+                    "pnl_usdt": round(30.0 + i * 2.5, 4),
+                    "is_profit": True,
+                    "entry_ts": ts_ms,
+                    "close_ts": ts_ms + 3600 * 1000 * (1 + (i % 48)),
+                    "create_ts": ts_ms,
+                }
+            )
         for i in range(GLOBAL_HIGH_LOSS):
             cat_idx = i % len(CATEGORIES)
             asset_cls, direction = CATEGORIES[cat_idx]
-            sym = symbols[i % len(symbols)] if asset_cls == "CRYPTO" else (
-                "XAU-USDT-SWAP" if asset_cls == "GOLD" else
-                "EURUSD" if asset_cls == "FOREX" else "COIN-USDT-SWAP"
+            sym = (
+                symbols[i % len(symbols)]
+                if asset_cls == "CRYPTO"
+                else (
+                    "XAU-USDT-SWAP"
+                    if asset_cls == "GOLD"
+                    else "EURUSD" if asset_cls == "FOREX" else "COIN-USDT-SWAP"
+                )
             )
             case_id = f"synth_hl_{i:03d}_{asset_cls.lower()}_{direction.lower()}"
             ts_ms = int((now - timedelta(days=(i % 85) + 1)).timestamp() * 1000)
-            high_loss.append({
-                "schema": "v0.3",
-                "case_id": case_id,
-                "symbol": sym,
-                "asset_class": asset_cls,
-                "direction": direction,
-                "tag": "HIGH_LOSS",
-                "entry_snapshot": {"placeholder": True, "seq": i},
-                "exit_snapshot": {"placeholder": True, "seq": i},
-                "pnl_pct": round(-0.03 - i * 0.0025, 6),  # -3% ~ -28%
-                "pnl_usdt": round(-30.0 - i * 2.5, 4),
-                "is_profit": False,
-                "entry_ts": ts_ms,
-                "close_ts": ts_ms + 3600 * 1000 * (1 + (i % 48)),
-                "create_ts": ts_ms,
-            })
+            high_loss.append(
+                {
+                    "schema": "v0.3",
+                    "case_id": case_id,
+                    "symbol": sym,
+                    "asset_class": asset_cls,
+                    "direction": direction,
+                    "tag": "HIGH_LOSS",
+                    "entry_snapshot": {"placeholder": True, "seq": i},
+                    "exit_snapshot": {"placeholder": True, "seq": i},
+                    "pnl_pct": round(-0.03 - i * 0.0025, 6),  # -3% ~ -28%
+                    "pnl_usdt": round(-30.0 - i * 2.5, 4),
+                    "is_profit": False,
+                    "entry_ts": ts_ms,
+                    "close_ts": ts_ms + 3600 * 1000 * (1 + (i % 48)),
+                    "create_ts": ts_ms,
+                }
+            )
         return high_win, high_loss
 
     # Phase2：有真实 records → 按 8 类分组，每类 top-25 win + bottom-25 loss，再全局各 100
     from collections import defaultdict as _dd
+
     grouped: Dict[Tuple[str, str], List[Dict[str, Any]]] = _dd(list)
     for r in records:
         key = (str(r.get("asset_class", "CRYPTO")), str(r.get("direction", "LONG")))
@@ -459,35 +524,40 @@ def _extract_tagged_candidates(records: List[Dict[str, Any]]) -> Tuple[List[Dict
         fill_count = max(0, 2 * PER_CATEGORY_PER_TAG - len(grouped.get(cat, [])))
         for k in range(fill_count):
             sym = sym_pool[k % len(sym_pool)]
-            ts_ms = int((now - timedelta(days=(k % 80) + 1 + len(grouped.get(cat, [])))).timestamp() * 1000)
+            ts_ms = int(
+                (now - timedelta(days=(k % 80) + 1 + len(grouped.get(cat, [])))).timestamp() * 1000
+            )
             conf = 0.55 + (k % 9) * 0.04
             pnl_sign = +1 if (k % 2 == 0) else -1
             pnl_mag = 0.015 + (k % 12) * 0.004
-            grouped[cat].append({
-                "symbol": sym,
-                "asset_class": asset_cls,
-                "direction": direction,
-                "entry_ts": ts_ms,
-                "close_ts": ts_ms + 3600_000 * (1 + (k % 36)),
-                "pnl_pct": pnl_sign * pnl_mag,
-                "pnl_usdt": pnl_sign * (15 + k * 1.5),
-                "is_profit": pnl_sign > 0,
-                "confidence": conf,
-                "hexagram": "",
-                "entry_snapshot": {
-                    "symbol": sym, "direction": direction,
-                    "hexagram_name": "",
-                    "bcrm_confidence": conf,
-                    "bcrm_confidence_bucket": _confidence_to_bucket(conf),
-                    "p1_output_label": "STANDARD" if conf >= 0.70 else "WEAK",
-                },
-                "exit_snapshot": {"exit_reason": "synth_filled"},
-                "_synth": True,
-            })
+            grouped[cat].append(
+                {
+                    "symbol": sym,
+                    "asset_class": asset_cls,
+                    "direction": direction,
+                    "entry_ts": ts_ms,
+                    "close_ts": ts_ms + 3600_000 * (1 + (k % 36)),
+                    "pnl_pct": pnl_sign * pnl_mag,
+                    "pnl_usdt": pnl_sign * (15 + k * 1.5),
+                    "is_profit": pnl_sign > 0,
+                    "confidence": conf,
+                    "hexagram": "",
+                    "entry_snapshot": {
+                        "symbol": sym,
+                        "direction": direction,
+                        "hexagram_name": "",
+                        "bcrm_confidence": conf,
+                        "bcrm_confidence_bucket": _confidence_to_bucket(conf),
+                        "p1_output_label": "STANDARD" if conf >= 0.70 else "WEAK",
+                    },
+                    "exit_snapshot": {"exit_reason": "synth_filled"},
+                    "_synth": True,
+                }
+            )
 
     cat_win_pool: List[Dict[str, Any]] = []
     cat_loss_pool: List[Dict[str, Any]] = []
-    for cat_key, cat_records in grouped.items():
+    for cat_key, cat_records in grouped.items():  # noqa: B007
         cat_records_sorted = sorted(
             cat_records,
             key=lambda x: float(x.get("pnl_pct", -999)),
@@ -503,7 +573,7 @@ def _extract_tagged_candidates(records: List[Dict[str, Any]]) -> Tuple[List[Dict
     # ── records → 规范化 CBR case schema（补齐 case_id / create_ts / schema / tag）──
     def _normalize(recs: List[Dict[str, Any]], idx_prefix: str) -> List[Dict[str, Any]]:
         out: List[Dict[str, Any]] = []
-        for i, r in enumerate(recs[:GLOBAL_HIGH_WIN if idx_prefix == "hw" else GLOBAL_HIGH_LOSS]):
+        for i, r in enumerate(recs[: GLOBAL_HIGH_WIN if idx_prefix == "hw" else GLOBAL_HIGH_LOSS]):
             sym = str(r.get("symbol", "BTC-USDT-SWAP"))
             asset_cls = str(r.get("asset_class", "CRYPTO"))
             direction = str(r.get("direction", "LONG"))
@@ -516,22 +586,24 @@ def _extract_tagged_candidates(records: List[Dict[str, Any]]) -> Tuple[List[Dict
                 f"{idx_prefix}_{i:03d}_{asset_cls.lower()}_{direction.lower()}"
                 f"_{sym.lower().replace('-', '_').replace('usdt_swap', '')[:12]}"
             )
-            out.append({
-                "schema": "v0.3",
-                "case_id": case_id,
-                "symbol": sym,
-                "asset_class": asset_cls,
-                "direction": direction,
-                "tag": r.get("_tag", "NORMAL"),
-                "entry_snapshot": entry_snap,
-                "exit_snapshot": exit_snap,
-                "pnl_pct": float(pnl_pct_dec),
-                "pnl_usdt": float(r.get("pnl_usdt", round(100.0 * pnl_pct_dec, 4))),
-                "is_profit": bool(r.get("is_profit", pnl_pct_dec > 0)),
-                "entry_ts": entry_ts,
-                "close_ts": close_ts,
-                "create_ts": close_ts,
-            })
+            out.append(
+                {
+                    "schema": "v0.3",
+                    "case_id": case_id,
+                    "symbol": sym,
+                    "asset_class": asset_cls,
+                    "direction": direction,
+                    "tag": r.get("_tag", "NORMAL"),
+                    "entry_snapshot": entry_snap,
+                    "exit_snapshot": exit_snap,
+                    "pnl_pct": float(pnl_pct_dec),
+                    "pnl_usdt": float(r.get("pnl_usdt", round(100.0 * pnl_pct_dec, 4))),
+                    "is_profit": bool(r.get("is_profit", pnl_pct_dec > 0)),
+                    "entry_ts": entry_ts,
+                    "close_ts": close_ts,
+                    "create_ts": close_ts,
+                }
+            )
         return out
 
     return _normalize(cat_win_pool, "hw"), _normalize(cat_loss_pool, "hl")
@@ -542,16 +614,20 @@ def _extract_tagged_candidates(records: List[Dict[str, Any]]) -> Tuple[List[Dict
 # ============================================================
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(
-        description="CBR v3.0 经典战例库生成脚本（200 条 + 2 条种子 = 202）")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="只输出分类计数，不写文件")
+        description="CBR v3.0 经典战例库生成脚本（200 条 + 2 条种子 = 202）"
+    )
+    parser.add_argument("--dry-run", action="store_true", help="只输出分类计数，不写文件")
     parser.add_argument("--from-date", default="2025-08-23", help="起始 YYYY-MM-DD")
     parser.add_argument("--to-date", default="2026-08-23", help="结束 YYYY-MM-DD")
-    parser.add_argument("--output", type=Path,
-                        default=_THIS_DIR / "runtime" / "cbr_cases_v03.jsonl",
-                        help="输出 JSONL 路径")
-    parser.add_argument("--no-seed-cases", action="store_true",
-                        help="不写入 2 条 MANUAL_CLASSIC 种子（仅跑历史）")
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=_THIS_DIR / "runtime" / "cbr_cases_v03.jsonl",
+        help="输出 JSONL 路径",
+    )
+    parser.add_argument(
+        "--no-seed-cases", action="store_true", help="不写入 2 条 MANUAL_CLASSIC 种子（仅跑历史）"
+    )
     args = parser.parse_args(argv)
 
     counts = dry_run_counts()
@@ -580,12 +656,18 @@ def main(argv: Optional[List[str]] = None) -> int:
         t = str(c.get("tag", "NORMAL"))
         if t in real_counts:
             real_counts[t] += 1
-    print(json.dumps({
-        "output": str(args.output),
-        "records_loaded": len(records),
-        "written": real_counts,
-        "expected_model": counts,
-    }, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "output": str(args.output),
+                "records_loaded": len(records),
+                "written": real_counts,
+                "expected_model": counts,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 0
 
 

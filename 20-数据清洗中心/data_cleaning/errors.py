@@ -3,6 +3,7 @@
 - CleaningError：热路径用「带6层栈」+ fail-open 兜底，不抛到交易端（§七.1 L1铁则）
 - QualityGateFailed：携带 IssueCode（便于监控告警聚合）
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -24,13 +25,14 @@ class CleaningError(Exception):
     ) -> None:
         super().__init__(message)
         self.message = message
-        self.traceback_str = traceback_str            # L1 必带：traceback.format_exc(limit=6)
-        self.extra = extra or {}                       # 自由字段（模块名/行号/资产等）
+        self.traceback_str = traceback_str  # L1 必带：traceback.format_exc(limit=6)
+        self.extra = extra or {}  # 自由字段（模块名/行号/资产等）
 
 
 @dataclass
 class QualityGateFailed(CleaningError):
     """QualityGate 硬拦截失败：携带 4 类 IssueCode + 完整 issues 列表（用于告警）。"""
+
     code: "QualityIssueCode | None" = None
     issues: list[Any] = field(default_factory=list)
 

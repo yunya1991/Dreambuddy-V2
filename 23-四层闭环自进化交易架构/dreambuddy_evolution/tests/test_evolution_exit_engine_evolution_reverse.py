@@ -14,6 +14,7 @@
 - 根因：规则2b 只评估 BCRM2.0 反向信号，不评估 evolution 反向信号
 - 规则3b 需要 29h 超时才评估 has_stronger_signal，PONS 9.6h 远未达到
 """
+
 from __future__ import annotations
 
 import sys
@@ -32,6 +33,7 @@ if str(REPO) not in sys.path:
 # 规则 2d：evolution 反向信号 → partial_close 减仓
 # ============================================================================
 
+
 class TestEvolutionReverseReduce:
     """evolution 反向信号触发分批减仓测试
 
@@ -46,6 +48,7 @@ class TestEvolutionReverseReduce:
     def engine(self):
         """构造 EvolutionExitEngine 实例（mock 依赖）"""
         from dreambuddy_evolution.engines.exit_engine import EvolutionExitEngine
+
         return EvolutionExitEngine(
             okx_client=None,
             ess_provider=None,
@@ -62,14 +65,22 @@ class TestEvolutionReverseReduce:
         + 亏损 -4% + 持仓 9.6h → 应触发 30% 减仓
         """
         return {
-            "symbol": "PONS", "inst_id": "PONS-USDT-SWAP", "pos_side": "long",
-            "entry_price": 100.0, "current_price": 96.0,
-            "upl": -4.0, "upl_ratio": -0.04,  # 亏损 4%
+            "symbol": "PONS",
+            "inst_id": "PONS-USDT-SWAP",
+            "pos_side": "long",
+            "entry_price": 100.0,
+            "current_price": 96.0,
+            "upl": -4.0,
+            "upl_ratio": -0.04,  # 亏损 4%
             "position_age_sec": 9.6 * 3600,  # 9.6h（超过保护期 1h，远未达 29h 超时）
             "r_vector": {"R_up": 0.5, "R_down": 0.5, "R_smooth": 0.5},
-            "ess": 0.6, "ftc_track": "exploit", "regime": "ranging",
-            "atr_pct": 0.02, "tier": "standard",
-            "current_sl_px": 92.0, "current_tp_px": 108.0,
+            "ess": 0.6,
+            "ftc_track": "exploit",
+            "regime": "ranging",
+            "atr_pct": 0.02,
+            "tier": "standard",
+            "current_sl_px": 92.0,
+            "current_tp_px": 108.0,
             "okx_algo_triggered": False,
             # evolution 反向信号字段
             "has_stronger_signal": True,
@@ -87,7 +98,9 @@ class TestEvolutionReverseReduce:
             "bdsm_direction_constraint": "",
         }
 
-    def test_evolution_reverse_triggers_partial_close_30pct(self, engine, evolution_reverse_context):
+    def test_evolution_reverse_triggers_partial_close_30pct(
+        self, engine, evolution_reverse_context
+    ):
         """亏损 -4%（-3%~-5% 档）→ partial_close 30%"""
         decision = engine.decide(evolution_reverse_context)
         assert decision.action == "partial_close"
@@ -183,6 +196,7 @@ class TestEvolutionReverseReduce:
 # outcome 标签提取：evolution_reverse_reduce → PARTIAL_REDUCE
 # ============================================================================
 
+
 class TestOutcomeExtractionEvolutionReduce:
     """从 reason 提取 PARTIAL_REDUCE outcome 标签（evolution_reverse_reduce 源）"""
 
@@ -191,9 +205,13 @@ class TestOutcomeExtractionEvolutionReduce:
         from dreambuddy_evolution.engines.trade_settlement_bridge import (
             TradeSettlementBridge,
         )
+
         reason = "evolution_exit:partial_close:evolution_reverse_reduce_conf1.00_loss-4%"
         outcome = TradeSettlementBridge._extract_outcome_from_reason(
-            reason=reason, okx_algo_triggered=False, pnl=-4.0, pos_side="long",
+            reason=reason,
+            okx_algo_triggered=False,
+            pnl=-4.0,
+            pos_side="long",
         )
         assert outcome == "PARTIAL_REDUCE"
 
@@ -202,9 +220,13 @@ class TestOutcomeExtractionEvolutionReduce:
         from dreambuddy_evolution.engines.trade_settlement_bridge import (
             TradeSettlementBridge,
         )
+
         reason = "evolution_exit:force_close:evolution_reverse_reduce_conf1.00_loss-8.5%"
         outcome = TradeSettlementBridge._extract_outcome_from_reason(
-            reason=reason, okx_algo_triggered=False, pnl=-8.5, pos_side="long",
+            reason=reason,
+            okx_algo_triggered=False,
+            pnl=-8.5,
+            pos_side="long",
         )
         assert outcome == "PARTIAL_REDUCE"
 
@@ -212,6 +234,7 @@ class TestOutcomeExtractionEvolutionReduce:
 # ============================================================================
 # 规则 2d 冷却期：evolution 反向信号减仓 4H 冷却
 # ============================================================================
+
 
 class TestEvolutionReverseReduceCooldown:
     """evolution 反向信号减仓 4H 冷却期测试
@@ -227,6 +250,7 @@ class TestEvolutionReverseReduceCooldown:
     def engine(self):
         """构造 EvolutionExitEngine 实例（mock 依赖）"""
         from dreambuddy_evolution.engines.exit_engine import EvolutionExitEngine
+
         return EvolutionExitEngine(
             okx_client=None,
             ess_provider=None,
@@ -239,14 +263,22 @@ class TestEvolutionReverseReduceCooldown:
     def evolution_reverse_context(self):
         """evolution 反向信号 context 基础模板"""
         return {
-            "symbol": "PONS", "inst_id": "PONS-USDT-SWAP", "pos_side": "long",
-            "entry_price": 100.0, "current_price": 96.0,
-            "upl": -4.0, "upl_ratio": -0.04,
+            "symbol": "PONS",
+            "inst_id": "PONS-USDT-SWAP",
+            "pos_side": "long",
+            "entry_price": 100.0,
+            "current_price": 96.0,
+            "upl": -4.0,
+            "upl_ratio": -0.04,
             "position_age_sec": 9.6 * 3600,
             "r_vector": {"R_up": 0.5, "R_down": 0.5, "R_smooth": 0.5},
-            "ess": 0.6, "ftc_track": "exploit", "regime": "ranging",
-            "atr_pct": 0.02, "tier": "standard",
-            "current_sl_px": 92.0, "current_tp_px": 108.0,
+            "ess": 0.6,
+            "ftc_track": "exploit",
+            "regime": "ranging",
+            "atr_pct": 0.02,
+            "tier": "standard",
+            "current_sl_px": 92.0,
+            "current_tp_px": 108.0,
             "okx_algo_triggered": False,
             "has_stronger_signal": True,
             "stronger_signal_info": {
@@ -264,11 +296,14 @@ class TestEvolutionReverseReduceCooldown:
 
     def test_engine_has_evolution_reduce_cooldown_dict(self, engine):
         """engine 必须有 _last_evolution_reduce_ts 字典字段（独立于 _last_bcrm_reduce_ts）"""
-        assert hasattr(engine, "_last_evolution_reduce_ts"), \
-            "engine 必须有 _last_evolution_reduce_ts 字典字段"
-        assert engine._last_evolution_reduce_ts != engine._last_bcrm_reduce_ts or \
-            id(engine._last_evolution_reduce_ts) != id(engine._last_bcrm_reduce_ts), \
+        assert hasattr(
+            engine, "_last_evolution_reduce_ts"
+        ), "engine 必须有 _last_evolution_reduce_ts 字典字段"
+        assert engine._last_evolution_reduce_ts != engine._last_bcrm_reduce_ts or id(
+            engine._last_evolution_reduce_ts
+        ) != id(engine._last_bcrm_reduce_ts), (
             "_last_evolution_reduce_ts 必须独立于 _last_bcrm_reduce_ts"
+        )
 
     def test_first_trigger_no_cooldown(self, engine, evolution_reverse_context):
         """首次触发 → 应正常 partial_close（无冷却期阻挡）"""
@@ -313,7 +348,9 @@ class TestEvolutionReverseReduceCooldown:
         assert second.action == "partial_close"
         assert "evolution_reverse_reduce" in second.reason
 
-    def test_evolution_cooldown_independent_from_bcrm_cooldown(self, engine, evolution_reverse_context):
+    def test_evolution_cooldown_independent_from_bcrm_cooldown(
+        self, engine, evolution_reverse_context
+    ):
         """evolution 冷却期独立于 BCRM 冷却期：BCRM 减仓后不阻挡 evolution 减仓"""
         # 先设置 BCRM 冷却期（模拟规则 2b 刚减仓过）
         _now = time.time()

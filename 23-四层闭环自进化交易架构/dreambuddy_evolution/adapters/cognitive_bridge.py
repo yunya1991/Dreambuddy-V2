@@ -11,6 +11,7 @@ Phase 3 预留接口（≥2000 交易样本后解冻 L3/L4）。
   §1.6.3 反思后验证     → verify_prediction()  (平仓后 CS 计算)
   §1.10 自动标注        → record_trade()      (交易结算)
 """
+
 from __future__ import annotations
 
 import logging
@@ -53,9 +54,7 @@ class CognitiveBridge:
 
             r_up = r_vector.get("R_up", 0.5)
             r_down = r_vector.get("R_down", 0.5)
-            context = (
-                f"R_up={r_up}, R_down={r_down}, action={action}"
-            )
+            context = f"R_up={r_up}, R_down={r_down}, action={action}"
             results = entry.recall(context, top_k=3, min_quality="C")
 
             if not results:

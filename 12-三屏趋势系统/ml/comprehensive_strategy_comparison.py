@@ -7,11 +7,13 @@
 1. V5.5 ML + 波浪互斥融合：波浪信号与ML信号同向时增强，反向时以ML为主（波浪作为辅助确认）
 2. V4主策略 + 波浪互斥融合：V4定方向，波浪信号冲突时以V4为准，同向时叠加仓位
 """
+
+import argparse
+import json
 import os
 import sys
-import json
 import time
-import argparse
+
 import numpy as np
 import pandas as pd
 
@@ -40,7 +42,7 @@ def compute_v4_position(prices, symbol="BTC"):
 
     from ml.halving_top_exit_strategy import HalvingTopExitStrategy
 
-    is_btc = (symbol == "BTC")
+    is_btc = symbol == "BTC"
     strategy = HalvingTopExitStrategy(
         symbol=symbol,
         is_btc=is_btc,
@@ -48,7 +50,9 @@ def compute_v4_position(prices, symbol="BTC"):
     )
 
     position_series = strategy.generate_signals(prices)
-    position_arr = position_series.values if hasattr(position_series, 'values') else np.array(position_series)
+    position_arr = (
+        position_series.values if hasattr(position_series, "values") else np.array(position_series)
+    )
 
     abs_position = np.abs(position_arr)
     direction_arr = np.sign(position_arr)
@@ -62,9 +66,9 @@ def compute_v55_position(prices, symbol="BTC"):
     print(f"  [V5.5] 计算 {symbol} V5.5 ML基线...")
     t0 = time.time()
 
-    from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
-    from ml.feature_engineer import TrendFeatureEngineer
     import lightgbm as lgb
+    from ml.feature_engineer import TrendFeatureEngineer
+    from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
 
     closes = prices["close"].values
 
@@ -76,7 +80,11 @@ def compute_v55_position(prices, symbol="BTC"):
     phil_fe = PhilosophyFeatureEngineer()
     phil_features = phil_fe.extract_series(prices, symbol=symbol)
 
-    v55_base = pd.concat([trend_features, phil_features], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    v55_base = (
+        pd.concat([trend_features, phil_features], axis=1)
+        .fillna(0.0)
+        .replace([np.inf, -np.inf], 0.0)
+    )
     v55_names = list(v55_base.columns)
 
     def generate_labels(prices, lookahead, threshold, direction="drop"):
@@ -100,7 +108,10 @@ def compute_v55_position(prices, symbol="BTC"):
         while start + test_days <= n:
             train_end, test_end = start, min(start + test_days, n)
             X_train, y_train = X.iloc[:train_end][feature_names].values, y[:train_end]
-            X_test, y_test = X.iloc[train_end:test_end][feature_names].values, y[train_end:test_end]
+            X_test, y_test = (  # noqa: F841
+                X.iloc[train_end:test_end][feature_names].values,
+                y[train_end:test_end],
+            )  # noqa: F841
             valid_mask = ~np.isnan(y_train) & (y_train >= 0)
             X_train_valid, y_train_valid = X_train[valid_mask], y_train[valid_mask].astype(int)
             if len(np.unique(y_train_valid)) < 2:
@@ -108,9 +119,14 @@ def compute_v55_position(prices, symbol="BTC"):
                 continue
             try:
                 model = lgb.LGBMClassifier(
-                    n_estimators=200, learning_rate=0.05, max_depth=5,
-                    num_leaves=20, subsample=0.8, colsample_bytree=0.8,
-                    random_state=42, verbose=-1,
+                    n_estimators=200,
+                    learning_rate=0.05,
+                    max_depth=5,
+                    num_leaves=20,
+                    subsample=0.8,
+                    colsample_bytree=0.8,
+                    random_state=42,
+                    verbose=-1,
                 )
                 model.fit(X_train_valid, y_train_valid)
                 preds[train_end:test_end] = model.predict_proba(X_test)[:, 1]
@@ -168,7 +184,7 @@ def generate_wave_signals(prices, zigzag_threshold=0.05):
 
 def compute_wave_position(prices, wave_signals, wave_confs, use_physics=True, base_position=0.3):
     """根据波浪信号计算仓位"""
-    from ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
+    from ml.pitd_confidence_scorer import ConfidenceWeights, PhysicsConfidenceScorer
 
     print(f"  [Wave] 计算波浪仓位 (base_pos={base_position}, physics={use_physics})...")
     t0 = time.time()
@@ -181,13 +197,17 @@ def compute_wave_position(prices, wave_signals, wave_confs, use_physics=True, ba
 
     if use_physics:
         weights = ConfidenceWeights(
-            w_eta=0.211, w_reversal=0.368,
-            w_support=0.211, w_kinetic=0.211,
-            position_lower=0.6, position_scale=1.0,
+            w_eta=0.211,
+            w_reversal=0.368,
+            w_support=0.211,
+            w_kinetic=0.211,
+            position_lower=0.6,
+            position_scale=1.0,
         )
         scorer = PhysicsConfidenceScorer(weights)
-        from ml.pitd_kinematics_engineer import KinematicsEngineer
         from ml.pitd_dynamics_engineer import DynamicsEngineer
+        from ml.pitd_kinematics_engineer import KinematicsEngineer
+
         kin_fe = KinematicsEngineer()
         dyn_fe = DynamicsEngineer()
         kin_feats = kin_fe.extract_series(prices)
@@ -262,8 +282,16 @@ def compute_wave_position(prices, wave_signals, wave_confs, use_physics=True, ba
     return abs_position, direction_arr, phys_conf, eta_series
 
 
-def compute_v55_wave_mutex_fusion(v55_pos, v55_dir, wave_signals, wave_confs, phys_conf, eta_series,
-                                   wave_weight=0.3, confirm_threshold=0.6):
+def compute_v55_wave_mutex_fusion(
+    v55_pos,
+    v55_dir,
+    wave_signals,
+    wave_confs,
+    phys_conf,
+    eta_series,
+    wave_weight=0.3,
+    confirm_threshold=0.6,
+):
     """V5.5 ML + 波浪互斥融合
     规则：
     1. ML看多 + 波浪看多 → ML仓位 + 波浪增强（同向确认）
@@ -322,8 +350,16 @@ def compute_v55_wave_mutex_fusion(v55_pos, v55_dir, wave_signals, wave_confs, ph
     return fusion_pos, fusion_dir
 
 
-def compute_v4_wave_mutex_fusion(v4_pos, v4_dir, wave_signals, wave_confs, phys_conf, eta_series,
-                                  wave_weight=0.3, confirm_threshold=0.6):
+def compute_v4_wave_mutex_fusion(
+    v4_pos,
+    v4_dir,
+    wave_signals,
+    wave_confs,
+    phys_conf,
+    eta_series,
+    wave_weight=0.3,
+    confirm_threshold=0.6,
+):
     """V4主策略 + 波浪互斥融合
     规则：
     1. V4多头 + 波浪看多 → V4仓位 + 波浪加仓（同向叠加）
@@ -347,7 +383,7 @@ def compute_v4_wave_mutex_fusion(v4_pos, v4_dir, wave_signals, wave_confs, phys_
         wave_conf = float(wave_confs[i])
 
         is_wave_long = sig in wave_long
-        is_wave_short = sig in wave_short
+        is_wave_short = sig in wave_short  # noqa: F841
 
         if v4_d > 0:
             if is_wave_long and wave_conf >= confirm_threshold:
@@ -444,7 +480,7 @@ def run_comparison(symbol="BTC", zigzag_threshold=0.05, wave_base_position=0.3):
     """运行综合策略对比回测"""
     print(f"\n{'='*90}")
     print(f"  综合策略对比回测 - {symbol}")
-    print(f"  V5.5 ML+波浪互斥融合 vs V4+波浪互斥融合")
+    print("  V5.5 ML+波浪互斥融合 vs V4+波浪互斥融合")
     print(f"{'='*90}")
 
     prices = load_coin_data(symbol)
@@ -455,8 +491,11 @@ def run_comparison(symbol="BTC", zigzag_threshold=0.05, wave_base_position=0.3):
     v55_pos, v55_dir = compute_v55_position(prices, symbol=symbol)
     wave_signals, wave_confs = generate_wave_signals(prices, zigzag_threshold=zigzag_threshold)
     wave_pos, wave_dir, phys_conf, eta_series = compute_wave_position(
-        prices, wave_signals, wave_confs,
-        use_physics=True, base_position=wave_base_position,
+        prices,
+        wave_signals,
+        wave_confs,
+        use_physics=True,
+        base_position=wave_base_position,
     )
 
     v55_valid_start = 730
@@ -466,55 +505,85 @@ def run_comparison(symbol="BTC", zigzag_threshold=0.05, wave_base_position=0.3):
     print(f"\n{'='*90}")
     print(f"  回测结果对比（有效天数: {n-valid_start}天）")
     print(f"{'='*90}")
-    print(f"{'策略':<35} {'年化':>8} {'总收益':>12} {'夏普':>8} {'回撤':>10} {'Calmar':>8} {'胜率':>8} {'均仓':>7}")
+    print(
+        f"{'策略':<35} {'年化':>8} {'总收益':>12} {'夏普':>8} {'回撤':>10} {'Calmar':>8} {'胜率':>8} {'均仓':>7}"
+    )
     print(f"{'-'*110}")
 
     results = {}
 
     m = backtest_position(v4_pos[valid_start:], v4_dir[valid_start:], prices.iloc[valid_start:])
     results["纯V4"] = m
-    print(f"{'纯V4':<35} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>11.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'纯V4':<35} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>11.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     m = backtest_position(v55_pos[valid_start:], v55_dir[valid_start:], prices.iloc[valid_start:])
     results["纯V5.5 ML"] = m
-    print(f"{'纯V5.5 ML':<35} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>11.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'纯V5.5 ML':<35} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>11.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     m = backtest_position(wave_pos[valid_start:], wave_dir[valid_start:], prices.iloc[valid_start:])
     results["纯波浪+物理"] = m
-    print(f"{'纯波浪+物理':<35} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>11.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'纯波浪+物理':<35} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>11.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     v55_fusion_pos, v55_fusion_dir = compute_v55_wave_mutex_fusion(
-        v55_pos, v55_dir, wave_signals, wave_confs, phys_conf, eta_series,
-        wave_weight=0.3, confirm_threshold=0.6,
+        v55_pos,
+        v55_dir,
+        wave_signals,
+        wave_confs,
+        phys_conf,
+        eta_series,
+        wave_weight=0.3,
+        confirm_threshold=0.6,
     )
-    m = backtest_position(v55_fusion_pos[valid_start:], v55_fusion_dir[valid_start:], prices.iloc[valid_start:])
+    m = backtest_position(
+        v55_fusion_pos[valid_start:], v55_fusion_dir[valid_start:], prices.iloc[valid_start:]
+    )
     results["V5.5 ML+波浪互斥融合"] = m
-    print(f"{'V5.5 ML+波浪互斥融合':<35} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>11.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'V5.5 ML+波浪互斥融合':<35} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>11.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     v4_fusion_pos, v4_fusion_dir = compute_v4_wave_mutex_fusion(
-        v4_pos, v4_dir, wave_signals, wave_confs, phys_conf, eta_series,
-        wave_weight=0.3, confirm_threshold=0.6,
+        v4_pos,
+        v4_dir,
+        wave_signals,
+        wave_confs,
+        phys_conf,
+        eta_series,
+        wave_weight=0.3,
+        confirm_threshold=0.6,
     )
-    m = backtest_position(v4_fusion_pos[valid_start:], v4_fusion_dir[valid_start:], prices.iloc[valid_start:])
+    m = backtest_position(
+        v4_fusion_pos[valid_start:], v4_fusion_dir[valid_start:], prices.iloc[valid_start:]
+    )
     results["V4+波浪互斥融合"] = m
-    print(f"{'V4+波浪互斥融合':<35} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>11.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'V4+波浪互斥融合':<35} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>11.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     bh_pos = np.ones(n)
     bh_dir = np.ones(n)
     m = backtest_position(bh_pos[valid_start:], bh_dir[valid_start:], prices.iloc[valid_start:])
     results["买入持有"] = m
-    print(f"{'买入持有':<35} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>11.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}")
+    print(
+        f"{'买入持有':<35} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>11.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>9.2f}% {m['calmar']:>8.4f} {m['win_rate']*100:>7.2f}% {m['avg_position']:>7.3f}"
+    )
 
     print(f"\n{'='*90}")
-    print(f"  增量价值分析（相对纯V4）")
+    print("  增量价值分析（相对纯V4）")
     print(f"{'='*90}")
     print(f"{'策略':<35} {'年化增量':>12} {'夏普增量':>10} {'回撤改善':>12} {'综合评分':>10}")
     print(f"{'-'*90}")
 
     v4_base = results["纯V4"]
-    v4_ann = v4_base['ann_return']
-    v4_sharpe = v4_base['sharpe']
-    v4_mdd = v4_base['max_drawdown']
+    v4_ann = v4_base["ann_return"]
+    v4_sharpe = v4_base["sharpe"]
+    v4_mdd = v4_base["max_drawdown"]
 
     best_score = -999
     best_name = ""
@@ -522,9 +591,9 @@ def run_comparison(symbol="BTC", zigzag_threshold=0.05, wave_base_position=0.3):
     for name, metrics in results.items():
         if name == "买入持有":
             continue
-        ann_delta = (metrics['ann_return'] - v4_ann) * 100
-        sharpe_delta = metrics['sharpe'] - v4_sharpe
-        mdd_delta = (metrics['max_drawdown'] - v4_mdd) * 100
+        ann_delta = (metrics["ann_return"] - v4_ann) * 100
+        sharpe_delta = metrics["sharpe"] - v4_sharpe
+        mdd_delta = (metrics["max_drawdown"] - v4_mdd) * 100
 
         score = sharpe_delta * 0.4 + ann_delta * 0.01 * 0.3 + (-mdd_delta) * 0.01 * 0.3
 
@@ -536,29 +605,35 @@ def run_comparison(symbol="BTC", zigzag_threshold=0.05, wave_base_position=0.3):
             best_name = name
             mark = " ★" if score > 0 else mark
 
-        print(f"{name:<35} {ann_delta:>+11.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+11.2f}pp {score:>10.4f}{mark}")
+        print(
+            f"{name:<35} {ann_delta:>+11.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+11.2f}pp {score:>10.4f}{mark}"
+        )
 
     print(f"\n最优策略: {best_name} (综合评分: {best_score:.4f})")
 
     print(f"\n{'='*90}")
-    print(f"  核心结论")
+    print("  核心结论")
     print(f"{'='*90}")
 
     v4_fusion = results["V4+波浪互斥融合"]
     v55_fusion = results["V5.5 ML+波浪互斥融合"]
 
-    print(f"\n1. V4+波浪互斥融合 vs 纯V4:")
-    print(f"   年化: {v4_fusion['ann_return']*100:.2f}% vs {v4_base['ann_return']*100:.2f}% ({'提升' if v4_fusion['ann_return'] > v4_base['ann_return'] else '下降'} {abs(v4_fusion['ann_return']-v4_base['ann_return'])*100:.2f}pp)")
+    print("\n1. V4+波浪互斥融合 vs 纯V4:")
+    print(
+        f"   年化: {v4_fusion['ann_return']*100:.2f}% vs {v4_base['ann_return']*100:.2f}% ({'提升' if v4_fusion['ann_return'] > v4_base['ann_return'] else '下降'} {abs(v4_fusion['ann_return']-v4_base['ann_return'])*100:.2f}pp)"
+    )
     print(f"   夏普: {v4_fusion['sharpe']:.4f} vs {v4_base['sharpe']:.4f}")
     print(f"   回撤: {v4_fusion['max_drawdown']*100:.2f}% vs {v4_base['max_drawdown']*100:.2f}%")
 
-    print(f"\n2. V5.5 ML+波浪互斥融合 vs 纯V5.5 ML:")
+    print("\n2. V5.5 ML+波浪互斥融合 vs 纯V5.5 ML:")
     v55_base = results["纯V5.5 ML"]
-    print(f"   年化: {v55_fusion['ann_return']*100:.2f}% vs {v55_base['ann_return']*100:.2f}% ({'提升' if v55_fusion['ann_return'] > v55_base['ann_return'] else '下降'} {abs(v55_fusion['ann_return']-v55_base['ann_return'])*100:.2f}pp)")
+    print(
+        f"   年化: {v55_fusion['ann_return']*100:.2f}% vs {v55_base['ann_return']*100:.2f}% ({'提升' if v55_fusion['ann_return'] > v55_base['ann_return'] else '下降'} {abs(v55_fusion['ann_return']-v55_base['ann_return'])*100:.2f}pp)"
+    )
     print(f"   夏普: {v55_fusion['sharpe']:.4f} vs {v55_base['sharpe']:.4f}")
     print(f"   回撤: {v55_fusion['max_drawdown']*100:.2f}% vs {v55_base['max_drawdown']*100:.2f}%")
 
-    print(f"\n3. V4+波浪互斥融合 vs V5.5 ML+波浪互斥融合:")
+    print("\n3. V4+波浪互斥融合 vs V5.5 ML+波浪互斥融合:")
     print(f"   年化: {v4_fusion['ann_return']*100:.2f}% vs {v55_fusion['ann_return']*100:.2f}%")
     print(f"   夏普: {v4_fusion['sharpe']:.4f} vs {v55_fusion['sharpe']:.4f}")
     print(f"   回撤: {v4_fusion['max_drawdown']*100:.2f}% vs {v55_fusion['max_drawdown']*100:.2f}%")

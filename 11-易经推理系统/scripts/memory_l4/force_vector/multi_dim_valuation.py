@@ -26,28 +26,27 @@
     （coin_fundamental_crypto，不修改 E8）
   - _calc_growth_rate（coin_fundamental_crypto，计算 fees 增长率用于 PEG）
 """
+
 from __future__ import annotations
 
 import os
 import sys
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
 
 from force_vector.coin_fundamental_crypto import (  # noqa: E402
-    SECTOR_MAP,
     _SECTOR_COIN_META,
+    DEFAULT_DB_PATH,
+    SECTOR_MAP,
+    _calc_growth_rate,
     _fetch_coin_info,
     _fetch_protocol_fees,
     _fetch_protocol_tvl,
     _fetch_sector_valuation_ratios,
-    _calc_growth_rate,
-    DEFAULT_DB_PATH,
 )
-from force_vector.coin_fundamental_ranker import get_protocol_mapping  # noqa: E402
-
 
 # ---------------------------------------------------------------------------
 # 常量（SPEC §4.4）
@@ -73,6 +72,7 @@ _OVERVALUED_SCORE_THRESHOLD = -0.3
 # ---------------------------------------------------------------------------
 # 纯函数：从各维度百分位合成分数
 # ---------------------------------------------------------------------------
+
 
 def compute_multi_dim_score_from_percentiles(
     pcts: Dict[str, float],
@@ -145,8 +145,7 @@ def compute_multi_dim_score_from_percentiles(
     # R3 多维交叉验证：≥2 维度 < 40 才确认低估
     low_dim_count = sum(1 for pct in valid_dims.values() if pct < _LOW_DIM_THRESHOLD)
     confirmed_low = (
-        low_dim_count >= _MIN_LOW_DIMS_FOR_CONFIRM
-        and score > _UNDervalued_SCORE_THRESHOLD
+        low_dim_count >= _MIN_LOW_DIMS_FOR_CONFIRM and score > _UNDervalued_SCORE_THRESHOLD
     )
 
     result["multi_dim_score"] = score
@@ -158,9 +157,8 @@ def compute_multi_dim_score_from_percentiles(
 # 数据获取：各维度横向百分位
 # ---------------------------------------------------------------------------
 
-def _compute_percentile_in_sector(
-    target_coin: str, ratios: Dict[str, float]
-) -> Optional[float]:
+
+def _compute_percentile_in_sector(target_coin: str, ratios: Dict[str, float]) -> Optional[float]:
     """计算 target coin 的比率在赛道内的横向百分位 [0, 100]。
 
     复用 E8 的百分位计算逻辑：pct = (比 target 便宜的占比) * 100
@@ -330,9 +328,8 @@ def _fetch_dimension_percentiles(coin: str, db_path: str) -> Dict[str, float]:
 # 主函数：compute_multi_dim_valuation
 # ---------------------------------------------------------------------------
 
-def compute_multi_dim_valuation(
-    coin: str, db_path: Optional[str] = None
-) -> Dict[str, float]:
+
+def compute_multi_dim_valuation(coin: str, db_path: Optional[str] = None) -> Dict[str, float]:
     """计算 target coin 的多维度相对估值（SPEC §4.4）。
 
     流程：

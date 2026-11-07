@@ -7,31 +7,33 @@
 - get_protocol_mapping 返回 DeFiLlama protocol slug
 - 未知 coin 返回 None
 """
-import pytest
+
 import sys
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
+
+import pytest
 
 # 将 force_vector 加入 sys.path
 _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.coin_fundamental_ranker import (
-    CoinFundamentalSignal,
+from force_vector.coin_fundamental_ranker import (  # noqa: E402
     CRYPTO_MAP,
-    STOCK_MAP,
     METAL_MAP,
+    STOCK_MAP,
+    CoinFundamentalSignal,
     classify_asset_class,
-    get_protocol_mapping,
     get_coingecko_id,
+    get_protocol_mapping,
     get_yfinance_symbol,
 )
-
 
 # ---------------------------------------------------------------------------
 # CoinFundamentalSignal dataclass
 # ---------------------------------------------------------------------------
+
 
 class TestCoinFundamentalSignalDataclass:
     """验证 CoinFundamentalSignal 字段完整。"""
@@ -82,56 +84,77 @@ class TestCoinFundamentalSignalDataclass:
 # E4: CoinFundamentalSignal 阶段字段扩展（Phase E 闭环）
 # ---------------------------------------------------------------------------
 
+
 class TestCoinFundamentalSignalPhaseFields:
     """验证 CoinFundamentalSignal 新增 4 个阶段字段（E4）。"""
 
     def test_signal_has_current_phase_field_default_p2(self):
         """current_phase 默认 P2_REVENUE_EXPANSION（中性）。"""
         sig = CoinFundamentalSignal(
-            coin="UNI", asset_class="crypto_usdt",
-            fundamental_score=0.35, rank="A",
-            sub_signals={}, data_quality="sufficient",
-            confidence=0.72, timestamp="",
+            coin="UNI",
+            asset_class="crypto_usdt",
+            fundamental_score=0.35,
+            rank="A",
+            sub_signals={},
+            data_quality="sufficient",
+            confidence=0.72,
+            timestamp="",
         )
         assert sig.current_phase == "P2_REVENUE_EXPANSION"
 
     def test_signal_has_phase_confidence_default_zero(self):
         """phase_confidence 默认 0.0。"""
         sig = CoinFundamentalSignal(
-            coin="UNI", asset_class="crypto_usdt",
-            fundamental_score=0.35, rank="A",
-            sub_signals={}, data_quality="sufficient",
-            confidence=0.72, timestamp="",
+            coin="UNI",
+            asset_class="crypto_usdt",
+            fundamental_score=0.35,
+            rank="A",
+            sub_signals={},
+            data_quality="sufficient",
+            confidence=0.72,
+            timestamp="",
         )
         assert sig.phase_confidence == 0.0
 
     def test_signal_has_phase_switch_triggers_default_empty(self):
         """phase_switch_triggers 默认空 list。"""
         sig = CoinFundamentalSignal(
-            coin="UNI", asset_class="crypto_usdt",
-            fundamental_score=0.35, rank="A",
-            sub_signals={}, data_quality="sufficient",
-            confidence=0.72, timestamp="",
+            coin="UNI",
+            asset_class="crypto_usdt",
+            fundamental_score=0.35,
+            rank="A",
+            sub_signals={},
+            data_quality="sufficient",
+            confidence=0.72,
+            timestamp="",
         )
         assert sig.phase_switch_triggers == []
 
     def test_signal_has_phase_strategy_hint_default_empty(self):
         """phase_strategy_hint 默认空 dict。"""
         sig = CoinFundamentalSignal(
-            coin="UNI", asset_class="crypto_usdt",
-            fundamental_score=0.35, rank="A",
-            sub_signals={}, data_quality="sufficient",
-            confidence=0.72, timestamp="",
+            coin="UNI",
+            asset_class="crypto_usdt",
+            fundamental_score=0.35,
+            rank="A",
+            sub_signals={},
+            data_quality="sufficient",
+            confidence=0.72,
+            timestamp="",
         )
         assert sig.phase_strategy_hint == {}
 
     def test_signal_phase_fields_can_be_set(self):
         """phase 字段可以被显式赋值。"""
         sig = CoinFundamentalSignal(
-            coin="CRCL", asset_class="crypto_usdt",
-            fundamental_score=0.5, rank="S",
-            sub_signals={}, data_quality="sufficient",
-            confidence=0.8, timestamp="",
+            coin="CRCL",
+            asset_class="crypto_usdt",
+            fundamental_score=0.5,
+            rank="S",
+            sub_signals={},
+            data_quality="sufficient",
+            confidence=0.8,
+            timestamp="",
             current_phase="P1_EXPECTATION",
             phase_confidence=0.85,
             phase_switch_triggers=["e6_high_val_low"],
@@ -146,6 +169,7 @@ class TestCoinFundamentalSignalPhaseFields:
 # ---------------------------------------------------------------------------
 # classify_asset_class
 # ---------------------------------------------------------------------------
+
 
 class TestClassifyAssetClass:
     """验证 classify_asset_class 正确分类。"""
@@ -175,6 +199,7 @@ class TestClassifyAssetClass:
 # ---------------------------------------------------------------------------
 # 映射表
 # ---------------------------------------------------------------------------
+
 
 class TestCryptoMap:
     """验证 CRYPTO_MAP 映射。"""
@@ -253,6 +278,7 @@ class TestMetalMap:
 # 辅助函数
 # ---------------------------------------------------------------------------
 
+
 class TestGetProtocolMapping:
     """验证 get_protocol_mapping。"""
 
@@ -315,6 +341,7 @@ class TestGetYfinanceSymbol:
 # E4: compute_signal 阶段集成（Phase E 闭环）
 # ---------------------------------------------------------------------------
 
+
 class TestComputeSignalPhaseIntegration:
     """验证 compute_signal 在合成后调用 classify_phase + get_strategy_hint。
 
@@ -325,6 +352,7 @@ class TestComputeSignalPhaseIntegration:
     def test_compute_signal_populates_phase_fields_on_success(self):
         """compute_signal 成功后必须填充 4 个 phase 字段（非默认空值）。"""
         from unittest.mock import patch
+
         from force_vector.coin_fundamental_ranker import compute_signal
 
         # 模拟 crypto compute_all 返回 P2 强信号（E5 高、E6 正）
@@ -334,7 +362,7 @@ class TestComputeSignalPhaseIntegration:
             "tvl_growth_momentum": 0.4,
             "revenue_quality": 0.5,
             "supply_shrinkage_intensity": 0.7,  # E5 高
-            "value_capture_delta": 0.5,         # E6 正
+            "value_capture_delta": 0.5,  # E6 正
         }
         with patch("force_vector.coin_fundamental_ranker._get_crypto_compute_all") as mock:
             mock.return_value = lambda coin, db: fake_signals
@@ -351,6 +379,7 @@ class TestComputeSignalPhaseIntegration:
     def test_compute_signal_phase_default_p2_on_neutral(self):
         """中性信号（全 0）→ phase 默认 P2 + 低 confidence。"""
         from unittest.mock import patch
+
         from force_vector.coin_fundamental_ranker import compute_signal
 
         fake_signals = {
@@ -371,6 +400,7 @@ class TestComputeSignalPhaseIntegration:
     def test_compute_signal_phase_failopen_keeps_default_p2(self):
         """子模块抛异常 → FAIL-OPEN，phase 保持默认 P2 + confidence=0。"""
         from unittest.mock import patch
+
         from force_vector.coin_fundamental_ranker import compute_signal
 
         def raise_fn(coin, db):
@@ -388,37 +418,53 @@ class TestComputeSignalPhaseIntegration:
     def test_compute_signal_phase_strategy_hint_has_required_keys(self):
         """phase_strategy_hint 必须含映射表全部核心字段。"""
         from unittest.mock import patch
+
         from force_vector.coin_fundamental_ranker import compute_signal
 
         fake_signals = {
-            "revenue_stability": 0.5, "mc_fees_mean_reversion": 0.5,
-            "tvl_growth_momentum": 0.5, "revenue_quality": 0.5,
-            "supply_shrinkage_intensity": 0.7, "value_capture_delta": 0.5,
+            "revenue_stability": 0.5,
+            "mc_fees_mean_reversion": 0.5,
+            "tvl_growth_momentum": 0.5,
+            "revenue_quality": 0.5,
+            "supply_shrinkage_intensity": 0.7,
+            "value_capture_delta": 0.5,
         }
         with patch("force_vector.coin_fundamental_ranker._get_crypto_compute_all") as mock:
             mock.return_value = lambda coin, db: fake_signals
             sig = compute_signal("UNI", db_path="/fake/db.db")
 
         required = {
-            "signal_weight_bias", "sl_space_hint", "tp_space_hint",
-            "holding_period_hint", "case_anchor", "priority_weight",
+            "signal_weight_bias",
+            "sl_space_hint",
+            "tp_space_hint",
+            "holding_period_hint",
+            "case_anchor",
+            "priority_weight",
         }
         assert required.issubset(set(sig.phase_strategy_hint.keys()))
 
     def test_compute_signal_uses_real_valuation_query(self):
         """F1 集成：compute_signal 调用 query_valuation_percentile 获取真实分位。"""
         from unittest.mock import patch
+
         from force_vector.coin_fundamental_ranker import compute_signal
 
         fake_signals = {
-            "revenue_stability": 0.5, "mc_fees_mean_reversion": 0.5,
-            "tvl_growth_momentum": 0.5, "revenue_quality": 0.5,
-            "supply_shrinkage_intensity": 0.7, "value_capture_delta": 0.5,
+            "revenue_stability": 0.5,
+            "mc_fees_mean_reversion": 0.5,
+            "tvl_growth_momentum": 0.5,
+            "revenue_quality": 0.5,
+            "supply_shrinkage_intensity": 0.7,
+            "value_capture_delta": 0.5,
         }
         # mock valuation 查询返回 85.0（高位）→ 应触发 P3 倾向
-        with patch("force_vector.coin_fundamental_ranker._get_crypto_compute_all") as mock_crypto, \
-             patch("force_vector.coin_fundamental_valuation_query.query_valuation_percentile",
-                   return_value=85.0) as mock_val:
+        with (
+            patch("force_vector.coin_fundamental_ranker._get_crypto_compute_all") as mock_crypto,
+            patch(
+                "force_vector.coin_fundamental_valuation_query.query_valuation_percentile",
+                return_value=85.0,
+            ) as mock_val,
+        ):
             mock_crypto.return_value = lambda coin, db: fake_signals
             sig = compute_signal("UNI", db_path="/fake/db.db")
             # 验证 query_valuation_percentile 被调用
@@ -429,16 +475,24 @@ class TestComputeSignalPhaseIntegration:
     def test_compute_signal_valuation_query_failopen_neutral(self):
         """F1 FAIL-OPEN：valuation 查询异常 → 返回 50（中性）→ 阶段默认 P2。"""
         from unittest.mock import patch
+
         from force_vector.coin_fundamental_ranker import compute_signal
 
         fake_signals = {
-            "revenue_stability": 0.3, "mc_fees_mean_reversion": 0.3,
-            "tvl_growth_momentum": 0.3, "revenue_quality": 0.3,
-            "supply_shrinkage_intensity": 0.2, "value_capture_delta": 0.2,
+            "revenue_stability": 0.3,
+            "mc_fees_mean_reversion": 0.3,
+            "tvl_growth_momentum": 0.3,
+            "revenue_quality": 0.3,
+            "supply_shrinkage_intensity": 0.2,
+            "value_capture_delta": 0.2,
         }
-        with patch("force_vector.coin_fundamental_ranker._get_crypto_compute_all") as mock_crypto, \
-             patch("force_vector.coin_fundamental_valuation_query.query_valuation_percentile",
-                   side_effect=RuntimeError("db error")):
+        with (
+            patch("force_vector.coin_fundamental_ranker._get_crypto_compute_all") as mock_crypto,
+            patch(
+                "force_vector.coin_fundamental_valuation_query.query_valuation_percentile",
+                side_effect=RuntimeError("db error"),
+            ),
+        ):
             mock_crypto.return_value = lambda coin, db: fake_signals
             # 查询异常被 compute_signal 的 try-except 捕获 → phase_classification=None
             # → current_phase 保持默认 P2

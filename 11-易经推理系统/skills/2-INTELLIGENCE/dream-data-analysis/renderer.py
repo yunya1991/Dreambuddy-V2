@@ -5,9 +5,8 @@ Version: 1.0.0
 """
 
 import json
-from typing import Dict, List, Optional, Union
 from pathlib import Path
-from datetime import datetime
+from typing import Dict, List, Optional
 
 # ============== 配置 ==============
 
@@ -15,6 +14,7 @@ CHART_TEMPLATE_DIR = Path(__file__).parent / "templates" if __file__ else Path("
 DEFAULT_CHART_SIZE = "1024x768"
 
 # ============== 数据准备辅助函数 ==============
+
 
 def calculate_ma(data: List[Optional[float]], window: int) -> List[Optional[float]]:
     """
@@ -32,7 +32,7 @@ def calculate_ma(data: List[Optional[float]], window: int) -> List[Optional[floa
         if i < window - 1 or data[i] is None:
             result.append(None)
         else:
-            window_data = data[i-window+1:i+1]
+            window_data = data[i - window + 1 : i + 1]
             valid = [x for x in window_data if x is not None]
             result.append(sum(valid) / len(valid) if valid else None)
     return result
@@ -66,7 +66,7 @@ def calculate_ema(data: List[Optional[float]], window: int) -> List[Optional[flo
     if first_valid_idx is not None:
         for i in range(first_valid_idx + 1, len(data)):
             if data[i] is not None:
-                prev_ema = result[i-1] if result[i-1] is not None else data[i]
+                prev_ema = result[i - 1] if result[i - 1] is not None else data[i]
                 result[i] = data[i] * k + prev_ema * (1 - k)
 
     return result
@@ -88,8 +88,8 @@ def calculate_velocity(price_series: List[float], dt: float = 1.0) -> List[Optio
 
     velocity = [None]
     for i in range(1, len(price_series)):
-        if price_series[i] is not None and price_series[i-1] is not None:
-            velocity.append((price_series[i] - price_series[i-1]) / dt)
+        if price_series[i] is not None and price_series[i - 1] is not None:
+            velocity.append((price_series[i] - price_series[i - 1]) / dt)
         else:
             velocity.append(None)
     return velocity
@@ -102,8 +102,8 @@ def calculate_acceleration(velocity_series: List[float], dt: float = 1.0) -> Lis
 
     acceleration = [None]
     for i in range(1, len(velocity_series)):
-        if velocity_series[i] is not None and velocity_series[i-1] is not None:
-            acceleration.append((velocity_series[i] - velocity_series[i-1]) / dt)
+        if velocity_series[i] is not None and velocity_series[i - 1] is not None:
+            acceleration.append((velocity_series[i] - velocity_series[i - 1]) / dt)
         else:
             acceleration.append(None)
     return acceleration
@@ -111,9 +111,10 @@ def calculate_acceleration(velocity_series: List[float], dt: float = 1.0) -> Lis
 
 # ============== Chart.js 渲染 ==============
 
-def render_trend_chart(episode_series: List[Dict],
-                       ma_windows: Dict[str, int] = None,
-                       output_path: str = None) -> str:
+
+def render_trend_chart(
+    episode_series: List[Dict], ma_windows: Dict[str, int] = None, output_path: str = None
+) -> str:
     """
     生成趋势分析图表 (Chart.js)
 
@@ -131,8 +132,7 @@ def render_trend_chart(episode_series: List[Dict],
         HTML 字符串
     """
     if ma_windows is None:
-        ma_windows = {"ma_short": 5, "ma_medium": 20, "ma_long": 60,
-                      "ema_fast": 8, "ema_slow": 21}
+        ma_windows = {"ma_short": 5, "ma_medium": 20, "ma_long": 60, "ema_fast": 8, "ema_slow": 21}
 
     # 提取数据
     timestamps = [e.get("ts", "") for e in episode_series]
@@ -350,13 +350,12 @@ def render_trend_chart(episode_series: List[Dict],
 </html>"""
 
     if output_path:
-        Path(output_path).write_text(html, encoding='utf-8')
+        Path(output_path).write_text(html, encoding="utf-8")
 
     return html
 
 
-def render_radar_snapshot(scores: Dict, resistance: Dict,
-                          output_path: str = None) -> str:
+def render_radar_snapshot(scores: Dict, resistance: Dict, output_path: str = None) -> str:
     """
     生成雷达图快照
 
@@ -545,13 +544,12 @@ def render_radar_snapshot(scores: Dict, resistance: Dict,
 </html>"""
 
     if output_path:
-        Path(output_path).write_text(html, encoding='utf-8')
+        Path(output_path).write_text(html, encoding="utf-8")
 
     return html
 
 
-def render_calibration_dashboard(analysis_result: Dict,
-                                  output_path: str = None) -> str:
+def render_calibration_dashboard(analysis_result: Dict, output_path: str = None) -> str:
     """
     生成校准仪表盘
 
@@ -568,13 +566,19 @@ def render_calibration_dashboard(analysis_result: Dict,
     Returns:
         HTML 字符串
     """
-    calibration = analysis_result.get("calibration_suggestions", {}) if isinstance(analysis_result, dict) else {}
+    calibration = (
+        analysis_result.get("calibration_suggestions", {})
+        if isinstance(analysis_result, dict)
+        else {}
+    )
 
     er_mapping = calibration.get("expected_return_mapping", {})
     er_status = er_mapping.get("status", "unknown") if isinstance(er_mapping, dict) else "unknown"
 
     lambda_risk = calibration.get("lambda_risk", {})
-    lambda_status = lambda_risk.get("status", "unknown") if isinstance(lambda_risk, dict) else "unknown"
+    lambda_status = (
+        lambda_risk.get("status", "unknown") if isinstance(lambda_risk, dict) else "unknown"
+    )
 
     thresholds = calibration.get("thresholds", {}) if isinstance(calibration, dict) else {}
 
@@ -586,7 +590,7 @@ def render_calibration_dashboard(analysis_result: Dict,
         "rebuild": "#F44336",
         "up": "#FF9800",
         "down": "#9C27B0",
-        "unknown": "#9E9E9E"
+        "unknown": "#9E9E9E",
     }
 
     status_labels = {
@@ -596,7 +600,7 @@ def render_calibration_dashboard(analysis_result: Dict,
         "rebuild": "重建",
         "up": "提高",
         "down": "降低",
-        "unknown": "待定"
+        "unknown": "待定",
     }
 
     overall_needs_calibration = er_status != "keep" or lambda_status != "keep"
@@ -604,8 +608,12 @@ def render_calibration_dashboard(analysis_result: Dict,
     overall_text = "⚠️ 需要校准" if overall_needs_calibration else "✅ 稳定运行"
 
     # 获取证据
-    evidence_refs = analysis_result.get("evidence_refs", []) if isinstance(analysis_result, dict) else []
-    reason_codes = analysis_result.get("reason_codes", []) if isinstance(analysis_result, dict) else []
+    evidence_refs = (
+        analysis_result.get("evidence_refs", []) if isinstance(analysis_result, dict) else []
+    )
+    reason_codes = (
+        analysis_result.get("reason_codes", []) if isinstance(analysis_result, dict) else []
+    )
     all_evidence = evidence_refs + reason_codes
 
     evidence_html = ""
@@ -774,13 +782,14 @@ def render_calibration_dashboard(analysis_result: Dict,
 </html>"""
 
     if output_path:
-        Path(output_path).write_text(html, encoding='utf-8')
+        Path(output_path).write_text(html, encoding="utf-8")
 
     return html
 
 
-def render_trend_vs_resistance(trend_data: Dict, resistance_data: Dict,
-                               output_path: str = None) -> str:
+def render_trend_vs_resistance(
+    trend_data: Dict, resistance_data: Dict, output_path: str = None
+) -> str:
     """
     生成趋势 vs 阻力对比图
 
@@ -945,15 +954,15 @@ def render_trend_vs_resistance(trend_data: Dict, resistance_data: Dict,
 </html>"""
 
     if output_path:
-        Path(output_path).write_text(html, encoding='utf-8')
+        Path(output_path).write_text(html, encoding="utf-8")
 
     return html
 
 
 # ============== Plotly 交互图表 ==============
 
-def render_interactive_trend(episode_series: List[Dict],
-                             output_path: str = None) -> str:
+
+def render_interactive_trend(episode_series: List[Dict], output_path: str = None) -> str:
     """
     生成 Plotly 交互式图表
 
@@ -1085,16 +1094,17 @@ def render_interactive_trend(episode_series: List[Dict],
 </html>"""
 
     if output_path:
-        Path(output_path).write_text(html, encoding='utf-8')
+        Path(output_path).write_text(html, encoding="utf-8")
 
     return html
 
 
 # ============== 导出接口 ==============
 
-def render_all_charts(episode_series: List[Dict],
-                      analysis_result: Dict,
-                      output_dir: str = "./charts") -> Dict[str, str]:
+
+def render_all_charts(
+    episode_series: List[Dict], analysis_result: Dict, output_dir: str = "./charts"
+) -> Dict[str, str]:
     """
     生成所有图表
 
@@ -1143,19 +1153,23 @@ def render_all_charts(episode_series: List[Dict],
 
 if __name__ == "__main__":
     import argparse
-    import sys
 
     parser = argparse.ArgumentParser(description="Dream-Data-Analysis Renderer")
     parser.add_argument("--input", "-i", help="Input JSON file path")
     parser.add_argument("--output", "-o", default="./charts", help="Output directory")
-    parser.add_argument("--type", "-t", choices=["all", "trend", "radar", "dashboard", "interactive"],
-                        default="all", help="Chart type to generate")
+    parser.add_argument(
+        "--type",
+        "-t",
+        choices=["all", "trend", "radar", "dashboard", "interactive"],
+        default="all",
+        help="Chart type to generate",
+    )
 
     args = parser.parse_args()
 
     # 加载输入数据
     if args.input:
-        input_data = json.loads(Path(args.input).read_text(encoding='utf-8'))
+        input_data = json.loads(Path(args.input).read_text(encoding="utf-8"))
         episode_series = input_data.get("episode_series", [])
         analysis_result = input_data.get("analysis_result", {})
     else:

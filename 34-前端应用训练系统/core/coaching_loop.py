@@ -15,6 +15,7 @@ v0.1 → v0.2 变更:
   - v0.1 手动 API 保留（get_monitoring_checklist/record_monitoring_result/record_correction）
   - v0.2 自动 API（run_coaching_cycle 自动评估+纠正+计算）
 """
+
 from typing import Any, Dict, List, Optional, Tuple
 
 
@@ -60,19 +61,23 @@ class CoachingSession:
         checklist = []
         for i, check in enumerate(raw_checks):
             if isinstance(check, str):
-                checklist.append({
-                    "check_id": f"check_{i+1}",
-                    "check_name": check,
-                    "description": check,
-                    "status": "pending",
-                })
+                checklist.append(
+                    {
+                        "check_id": f"check_{i+1}",
+                        "check_name": check,
+                        "description": check,
+                        "status": "pending",
+                    }
+                )
             elif isinstance(check, dict):
-                checklist.append({
-                    "check_id": check.get("check_id", f"check_{i+1}"),
-                    "check_name": check.get("check_name", str(check)),
-                    "description": check.get("description", str(check)),
-                    "status": "pending",
-                })
+                checklist.append(
+                    {
+                        "check_id": check.get("check_id", f"check_{i+1}"),
+                        "check_name": check.get("check_name", str(check)),
+                        "description": check.get("description", str(check)),
+                        "status": "pending",
+                    }
+                )
         return checklist
 
     def record_monitoring_result(
@@ -88,11 +93,13 @@ class CoachingSession:
             passed: 是否通过
             detail: 检查详情（差异描述等）
         """
-        self._monitoring_log.append({
-            "check_name": check_name,
-            "passed": passed,
-            "detail": detail,
-        })
+        self._monitoring_log.append(
+            {
+                "check_name": check_name,
+                "passed": passed,
+                "detail": detail,
+            }
+        )
 
     def record_correction(
         self,
@@ -107,11 +114,13 @@ class CoachingSession:
             issue: 发现的问题
             correction: 纠正方向
         """
-        self._corrections.append({
-            "layer": layer,
-            "issue": issue,
-            "correction": correction,
-        })
+        self._corrections.append(
+            {
+                "layer": layer,
+                "issue": issue,
+                "correction": correction,
+            }
+        )
 
     def calculate_quality_score(self) -> int:
         """计算辅导质量分（0-100）。
@@ -188,27 +197,19 @@ class CoachingSession:
 
         # 监控1: 各层训练是否符合算法模式
         if "算法模式" in check_name:
-            return self._check_algorithm_patterns(
-                pre_models, post_models, algorithm_patterns
-            )
+            return self._check_algorithm_patterns(pre_models, post_models, algorithm_patterns)
 
         # 监控2: DSH 执行路径是否与调用链一致
         if "DSH" in check_name or "执行路径" in check_name or "调用链" in check_name:
-            return self._check_dsh_path(
-                pre_models, post_models, call_chain
-            )
+            return self._check_dsh_path(pre_models, post_models, call_chain)
 
         # 监控3: C 层反思是否覆盖 known_gaps
         if "C层" in check_name or "反思" in check_name or "known_gaps" in check_name:
-            return self._check_c_layer_reflection(
-                pre_models, post_models, known_gaps
-            )
+            return self._check_c_layer_reflection(pre_models, post_models, known_gaps)
 
         # 监控4: G 层图结构是否与依赖图匹配
         if "G层" in check_name or "图结构" in check_name or "依赖图" in check_name:
-            return self._check_g_layer_graph(
-                pre_models, post_models, dependency_graph
-            )
+            return self._check_g_layer_graph(pre_models, post_models, dependency_graph)
 
         # 默认: 检查是否有任意层的模型变化
         return self._check_any_model_change(pre_models, post_models)
@@ -247,7 +248,8 @@ class CoachingSession:
         # 检查 call_chain 中的节点是否在 post_weights 中有权重提升
         if call_chain and post_weights:
             chain_in_weights = sum(
-                1 for node in call_chain
+                1
+                for node in call_chain
                 if node in post_weights and post_weights[node] > pre_weights.get(node, 0)
             )
             if chain_in_weights > 0:
@@ -305,9 +307,7 @@ class CoachingSession:
 
         return False, "G 层权重无变化，图结构训练未生效"
 
-    def _check_any_model_change(
-        self, pre_models: dict, post_models: dict
-    ) -> Tuple[bool, str]:
+    def _check_any_model_change(self, pre_models: dict, post_models: dict) -> Tuple[bool, str]:
         """默认检查: 是否有任意层模型变化（权重或 step）。"""
         for layer in pre_models:
             pre = pre_models.get(layer, {})

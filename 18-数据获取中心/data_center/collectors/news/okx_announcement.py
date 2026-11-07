@@ -6,6 +6,7 @@
 
 产出 DataRecord(category=news, source=okx_announcement)。
 """
+
 from __future__ import annotations
 
 import logging
@@ -75,14 +76,16 @@ class OkxAnnouncementCollector(BaseCollector):
                 continue
             if link and not link.startswith("http"):
                 link = "https://www.okx.com" + link
-            recs.append(DataRecord(
-                source=self.source,
-                category="news",
-                sub_category="announcement",
-                timestamp=ts,
-                metrics={"title": title, "link": link},
-                events=[],
-                timeseries=[],
-                raw={"title": title, "link": link},
-            ))
+            recs.append(
+                DataRecord(
+                    source=self.source,
+                    category="news",
+                    sub_category="announcement",
+                    timestamp=ts,
+                    metrics={"title": title, "link": link},
+                    events=[],
+                    timeseries=[],
+                    raw={"title": title, "link": link},
+                )
+            )
         return recs

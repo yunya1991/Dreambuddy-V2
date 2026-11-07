@@ -28,24 +28,24 @@ Screen2 评分保留基线可用维度（趋势一致性/RSI），MACD/量能维
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 # ── 基线常量（逐字摘自 v15-six-trading-20260601/backtest_strategy.py）────
-_V9_ADDON_GAP_PCT = 8.0      # V9: BTC 加仓间隔基准 8%（×vol_mult）
-_V9_TP_PCT = 4.0             # V9: BTC 止盈基准 4%（×vol_mult）
-_V9_MAX_ADDONS = 3           # V9: 最多 3 次等额加仓
-_V9_NO_STOP_LOSS = None      # V9: 无固定止损
+_V9_ADDON_GAP_PCT = 8.0  # V9: BTC 加仓间隔基准 8%（×vol_mult）
+_V9_TP_PCT = 4.0  # V9: BTC 止盈基准 4%（×vol_mult）
+_V9_MAX_ADDONS = 3  # V9: 最多 3 次等额加仓
+_V9_NO_STOP_LOSS = None  # V9: 无固定止损
 
-_STATIC_REGIME_VOL_MULT: Dict[str, float] = {   # 基线 L254-258
+_STATIC_REGIME_VOL_MULT: Dict[str, float] = {  # 基线 L254-258
     "BTC-USDT-SWAP": 1.00,
     "ETH-USDT-SWAP": 1.50,
     "SOL-USDT-SWAP": 1.75,
 }
 
-_ADDON_SUPPRESS_THRESHOLDS: Dict[str, Dict[str, float]] = {   # 基线 L262-266
+_ADDON_SUPPRESS_THRESHOLDS: Dict[str, Dict[str, float]] = {  # 基线 L262-266
     "BTC-USDT-SWAP": {"rsi_long": 70, "rsi_short": 30},
     "ETH-USDT-SWAP": {"rsi_long": 72, "rsi_short": 28},
     "SOL-USDT-SWAP": {"rsi_long": 76, "rsi_short": 24},
@@ -55,7 +55,7 @@ _STRENGTH_MULT = {"STRONG": 1.0, "MEDIUM": 0.7, "WEAK": 0.4, "NONE": 0.2}  # 基
 _TOTAL_POSITION_LIMIT = 0.60  # 基线规范: 60%/40%/20% 总仓位上限（强信号档）
 
 
-def _classify_signal(score: float) -> str:   # 基线 L717-724
+def _classify_signal(score: float) -> str:  # 基线 L717-724
     if score >= 70:
         return "STRONG"
     elif score >= 50:
@@ -70,8 +70,10 @@ class CMartinV15Node(BaseNode):
 
     node_id = "C_MARTIN_V15"
     name = "V15经典马丁"
-    description = ("v15 经典马丁策略：8%×vol_mult 复利加仓（≤3次）+ "
-                   "4%×vol_mult 全仓止盈 + 无固定止损（V9 基线）")
+    description = (
+        "v15 经典马丁策略：8%×vol_mult 复利加仓（≤3次）+ "
+        "4%×vol_mult 全仓止盈 + 无固定止损（V9 基线）"
+    )
     chain = "C"
     tags = ["martingale", "v15", "baseline", "classic"]
     estimated_tokens = 0
@@ -88,7 +90,7 @@ class CMartinV15Node(BaseNode):
             rationale.append("[C_MARTIN_V15] 无有效价格数据，输出 HOLD")
             return NodeResult(
                 node_id=self.node_id,
-                confidence=0.3,          # P0-5: 纯代码节点下限，防 REDO
+                confidence=0.3,  # P0-5: 纯代码节点下限，防 REDO
                 direction="HOLD",
                 outputs={"martin_plan": {}, "rationale": rationale},
             )
@@ -171,7 +173,8 @@ class CMartinV15Node(BaseNode):
         # 加仓抑制（基线 L900-912 的 RSI 分量；ATR 扩张分量在节点上下文
         # 无 20d ATR 基线，按保守不抑制处理）
         sup_cfg = _ADDON_SUPPRESS_THRESHOLDS.get(
-            inst_id, _ADDON_SUPPRESS_THRESHOLDS["ETH-USDT-SWAP"])
+            inst_id, _ADDON_SUPPRESS_THRESHOLDS["ETH-USDT-SWAP"]
+        )
         addon_suppressed = False
         if rsi is not None:
             if direction == "LONG" and rsi > sup_cfg["rsi_long"]:
@@ -183,15 +186,19 @@ class CMartinV15Node(BaseNode):
 
         # 仓位（基线 L859-869: total_limit × strength_mult / 4 层）
         strength_mult = _STRENGTH_MULT.get(strength, 0.2)
-        single_layer_pct = round(
-            _TOTAL_POSITION_LIMIT * strength_mult * 1.0 / 4.0, 4)
+        single_layer_pct = round(_TOTAL_POSITION_LIMIT * strength_mult * 1.0 / 4.0, 4)
 
         # ── 5. 置信度（P0-5: clamp [0.3, 0.95] 防 REDO）────
         confidence = round(max(min(0.3 + (score / 100.0) * 0.45, 0.95), 0.3), 3)
 
         out_direction = direction if direction != "WAIT" else "HOLD"
-        rationale.insert(0, (f"[C_MARTIN_V15] {symbol} ${price:.2f} | "
-                             f"vol_mult={vol_mult} | score={score:.1f}({strength})"))
+        rationale.insert(
+            0,
+            (
+                f"[C_MARTIN_V15] {symbol} ${price:.2f} | "
+                f"vol_mult={vol_mult} | score={score:.1f}({strength})"
+            ),
+        )
         rationale.append(f"  方向: {out_direction} | 置信度: {confidence:.1%}")
 
         martin_plan = {
@@ -199,8 +206,8 @@ class CMartinV15Node(BaseNode):
             "direction": out_direction,
             "add_on_levels": add_on_levels,
             "tp_target": tp_target,
-            "stop_loss": _V9_NO_STOP_LOSS,        # V9: 无固定止损
-            "max_addons": _V9_MAX_ADDONS,          # V9: ≤3 次
+            "stop_loss": _V9_NO_STOP_LOSS,  # V9: 无固定止损
+            "max_addons": _V9_MAX_ADDONS,  # V9: ≤3 次
             "addon_gap_pct": _V9_ADDON_GAP_PCT * vol_mult,
             "tp_pct": _V9_TP_PCT * vol_mult,
             "vol_mult": vol_mult,

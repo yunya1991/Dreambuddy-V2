@@ -9,8 +9,7 @@
 - risk_action_proposal: 模拟行动执行
 """
 
-import json
-import sys
+import json  # noqa: I001
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -22,6 +21,7 @@ import argparse
 @dataclass
 class BacktestConfig:
     """回测配置"""
+
     start_date: str
     end_date: str
     initial_capital: float = 100000.0
@@ -33,6 +33,7 @@ class BacktestConfig:
 @dataclass
 class Trade:
     """交易记录"""
+
     entry_date: str
     entry_price: float
     exit_date: Optional[str] = None
@@ -47,6 +48,7 @@ class Trade:
 @dataclass
 class BacktestResult:
     """回测结果"""
+
     trades: List[Trade]
     total_return: float
     annualized_return: float
@@ -83,7 +85,7 @@ class EventLedgerBacktester:
             return []
 
         entries = []
-        with open(ledger_path, 'r', encoding='utf-8') as f:
+        with open(ledger_path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if line:
@@ -100,10 +102,10 @@ class EventLedgerBacktester:
         """加载价格数据"""
         price_file = data_dir / "btc_daily_prices.json"
         if not price_file.exists():
-            print(f"[WARN] 价格数据文件不存在")
+            print("[WARN] 价格数据文件不存在")
             return {}
 
-        with open(price_file, 'r', encoding='utf-8') as f:
+        with open(price_file, "r", encoding="utf-8") as f:
             return json.load(f)
 
     def filter_events_by_date(self, entries: List[Dict], start: str, end: str) -> List[Dict]:
@@ -127,7 +129,7 @@ class EventLedgerBacktester:
         # 筛选时间窗口内的事件
         relevant = []
         for e in entries:
-            pub_date = e.get("published_at", "")[:10]
+            pub_date = e.get("published_at", "")[:10]  # noqa: F841
             try:
                 pub_dt = datetime.fromisoformat(e.get("published_at", ""))
                 if lookback_start <= pub_dt <= date_dt.replace(hour=23, minute=59, second=59):
@@ -150,20 +152,15 @@ class EventLedgerBacktester:
             "kol_view": 0.3,
             "security": 0.8,
             # V9.4 新增
-            "jin10_news": 1.0,          # V9.5: 金十数据权重降低 (1.2→1.0)
-            "tech_leader": 1.8,         # V9.5: 技术派大 V 权重提升 (1.5→1.8)
-            "vc_view": 1.5,             # V9.5: 投资机构权重提升 (1.3→1.5)
-            "onchain_analyst": 1.5,     # V9.5: 链上分析师权重提升 (1.3→1.5)
-            "trader_view": 1.3,         # V9.5: 交易员权重提升 (1.2→1.3)
+            "jin10_news": 1.0,  # V9.5: 金十数据权重降低 (1.2→1.0)
+            "tech_leader": 1.8,  # V9.5: 技术派大 V 权重提升 (1.5→1.8)
+            "vc_view": 1.5,  # V9.5: 投资机构权重提升 (1.3→1.5)
+            "onchain_analyst": 1.5,  # V9.5: 链上分析师权重提升 (1.3→1.5)
+            "trader_view": 1.3,  # V9.5: 交易员权重提升 (1.2→1.3)
         }
 
         # 9.2: 按时间窗口加权
-        window_weights = {
-            "T0": 1.0,
-            "T1": 0.7,
-            "T2": 0.4,
-            "T3": 0.2
-        }
+        window_weights = {"T0": 1.0, "T1": 0.7, "T2": 0.4, "T3": 0.2}
 
         # 9.3: 按意外程度加权
         surprise_weights = {
@@ -171,7 +168,7 @@ class EventLedgerBacktester:
             "major": 1.2,
             "moderate": 1.0,
             "mild": 0.8,
-            "expected": 0.6
+            "expected": 0.6,
         }
 
         # V9.3: 计算加权信号（连乘）
@@ -221,7 +218,7 @@ class EventLedgerBacktester:
             "action": dominant_action,
             "event_count": len(relevant),
             "max_signal": max_signal,
-            "min_signal": min_signal
+            "min_signal": min_signal,
         }
 
     def action_to_position(self, action: str) -> float:
@@ -232,7 +229,7 @@ class EventLedgerBacktester:
             "increase": 0.8,
             "hedge": 0.3,
             "stop_loss": 0.0,
-            "take_profit": 0.5
+            "take_profit": 0.5,
         }
         return mapping.get(action, 0.5)
 
@@ -261,10 +258,9 @@ class EventLedgerBacktester:
             return self._empty_result()
 
         # 筛选回测期间
-        dates = sorted([
-            d for d in prices.keys()
-            if self.config.start_date <= d <= self.config.end_date
-        ])
+        dates = sorted(
+            [d for d in prices.keys() if self.config.start_date <= d <= self.config.end_date]
+        )
 
         if len(dates) < 2:
             return self._empty_result()
@@ -284,7 +280,7 @@ class EventLedgerBacktester:
             "by_action": {},
             "by_type": {},
             "by_community_effective_bucket": {"high": 0, "mid": 0, "low": 0},
-            "triggered_trades": 0
+            "triggered_trades": 0,
         }
         for e in entries:
             score = float(e.get("community_effective_score", 0.0) or 0.0)
@@ -333,17 +329,19 @@ class EventLedgerBacktester:
                         if entry_date and entry_price > 0:
                             pnl_pct = (close_price - entry_price) / entry_price
                             pnl = equity * prev_position * pnl_pct
-                            trades.append(Trade(
-                                entry_date=entry_date,
-                                entry_price=entry_price,
-                                exit_date=date,
-                                exit_price=close_price,
-                                position=prev_position,
-                                event_driven=action,
-                                action=current_action,
-                                pnl=pnl,
-                                pnl_pct=pnl_pct
-                            ))
+                            trades.append(
+                                Trade(
+                                    entry_date=entry_date,
+                                    entry_price=entry_price,
+                                    exit_date=date,
+                                    exit_price=close_price,
+                                    position=prev_position,
+                                    event_driven=action,
+                                    action=current_action,
+                                    pnl=pnl,
+                                    pnl_pct=pnl_pct,
+                                )
+                            )
                             equity += pnl
                         entry_date = None
                         current_action = "hold"
@@ -354,23 +352,27 @@ class EventLedgerBacktester:
             # 计算当日权益
             if position > 0 and close_price > 0 and entry_price > 0:
                 unrealized_pnl = (close_price - entry_price) / entry_price
-                daily_equity.append({
-                    "date": date,
-                    "equity": equity * (1 + position * unrealized_pnl),
-                    "price": close_price,
-                    "signal": signal,
-                    "position": position,
-                    "action": action
-                })
+                daily_equity.append(
+                    {
+                        "date": date,
+                        "equity": equity * (1 + position * unrealized_pnl),
+                        "price": close_price,
+                        "signal": signal,
+                        "position": position,
+                        "action": action,
+                    }
+                )
             else:
-                daily_equity.append({
-                    "date": date,
-                    "equity": equity,
-                    "price": close_price,
-                    "signal": signal,
-                    "position": position,
-                    "action": action
-                })
+                daily_equity.append(
+                    {
+                        "date": date,
+                        "equity": equity,
+                        "price": close_price,
+                        "signal": signal,
+                        "position": position,
+                        "action": action,
+                    }
+                )
 
         if entry_date and entry_price > 0:
             last_date = dates[-1]
@@ -416,10 +418,12 @@ class EventLedgerBacktester:
         # 夏普比率
         daily_returns = []
         for i in range(1, len(equities)):
-            daily_returns.append((equities[i] - equities[i-1]) / equities[i-1])
+            daily_returns.append((equities[i] - equities[i - 1]) / equities[i - 1])
 
         if daily_returns and len(daily_returns) > 1 and statistics.stdev(daily_returns) > 0:
-            sharpe_ratio = (statistics.mean(daily_returns) / statistics.stdev(daily_returns)) * (252 ** 0.5)
+            sharpe_ratio = (statistics.mean(daily_returns) / statistics.stdev(daily_returns)) * (
+                252**0.5
+            )
         else:
             sharpe_ratio = 0
 
@@ -439,7 +443,7 @@ class EventLedgerBacktester:
         # 盈亏比
         gross_profit = sum(t.pnl for t in trades if t.pnl > 0)
         gross_loss = abs(sum(t.pnl for t in trades if t.pnl < 0))
-        profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
+        profit_factor = gross_profit / gross_loss if gross_loss > 0 else float("inf")
 
         # 平均盈亏
         avg_trade_pnl = statistics.mean([t.pnl for t in trades]) if trades else 0
@@ -455,7 +459,7 @@ class EventLedgerBacktester:
             avg_trade_pnl=avg_trade_pnl,
             total_trades=len(trades),
             daily_equity=daily_equity,
-            event_stats=self.event_stats
+            event_stats=self.event_stats,
         )
 
     def _empty_result(self) -> BacktestResult:
@@ -471,7 +475,7 @@ class EventLedgerBacktester:
             avg_trade_pnl=0,
             total_trades=0,
             daily_equity=[],
-            event_stats={}
+            event_stats={},
         )
 
     def generate_report(self, result: BacktestResult) -> str:
@@ -539,7 +543,9 @@ class EventLedgerBacktester:
         else:
             report += "⚠️ 回撤较大：需要考虑风险管理\n"
 
-        report += "\n================================================================================\n"
+        report += (
+            "\n================================================================================\n"
+        )
 
         return report
 
@@ -568,9 +574,7 @@ class EventLedgerBacktester:
 
         def resolve_asset_bucket(row: Dict) -> str:
             value = str(
-                row.get("window_policy_asset_bucket")
-                or row.get("asset_bucket")
-                or ""
+                row.get("window_policy_asset_bucket") or row.get("asset_bucket") or ""
             ).strip()
             if value:
                 return value
@@ -733,7 +737,7 @@ def run_backtest_example(ledger_path: Optional[Path] = None, result_file: Option
         end_date="2026-03-08",
         initial_capital=100000,
         transaction_cost=0.001,
-        lookback_days=7
+        lookback_days=7,
     )
 
     backtester = EventLedgerBacktester(config)
@@ -751,16 +755,16 @@ def run_backtest_example(ledger_path: Optional[Path] = None, result_file: Option
             "max_drawdown": result.max_drawdown,
             "win_rate": result.win_rate,
             "profit_factor": result.profit_factor,
-            "total_trades": result.total_trades
+            "total_trades": result.total_trades,
         },
-        "event_stats": result.event_stats
+        "event_stats": result.event_stats,
     }
 
     if result_file is None:
         stem = ledger_path.stem
         safe = stem.replace("event_ledger_", "").replace("event_ledger_backtest_", "backtest_")
         result_file = data_dir / f"backtest_result_{safe}.json"
-    with open(result_file, 'w', encoding='utf-8') as f:
+    with open(result_file, "w", encoding="utf-8") as f:
         json.dump(result_summary, f, indent=2, ensure_ascii=False)
 
     print(f"\n[✓] 回测结果已保存：{result_file}")
@@ -815,7 +819,9 @@ def run_window_calibration_example(ledger_path: Optional[Path] = None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="事件账本回测/窗口校准工具")
-    parser.add_argument("--calibrate-window", action="store_true", help="执行窗口校准并输出窗口画像")
+    parser.add_argument(
+        "--calibrate-window", action="store_true", help="执行窗口校准并输出窗口画像"
+    )
     parser.add_argument("--ledger-path", type=str, default="", help="指定账本文件路径")
     parser.add_argument("--result-file", type=str, default="", help="指定回测结果输出 JSON 路径")
     args = parser.parse_args()

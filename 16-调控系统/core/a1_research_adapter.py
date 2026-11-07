@@ -1,39 +1,44 @@
-import math
-import random
+import random  # noqa: I001
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 
 try:
-    from .skill_engine import register_skill, SkillEngine
+    from .skill_engine import register_skill, SkillEngine  # noqa: F401, I001
 except ImportError:
-    from skill_engine import register_skill, SkillEngine
+    from skill_engine import register_skill
 
 try:
     from . import dream_insights_integration
+
     _HAS_DREAM_INTEGRATION = True
 except ImportError:
     try:
         import dream_insights_integration
+
         _HAS_DREAM_INTEGRATION = True
     except ImportError:
         _HAS_DREAM_INTEGRATION = False
 
 try:
     from . import archive_center
+
     _HAS_ARCHIVE = True
 except ImportError:
     try:
         import archive_center
+
         _HAS_ARCHIVE = True
     except ImportError:
         _HAS_ARCHIVE = False
 
 try:
     from . import llm_bridge
+
     _HAS_LLM = True
 except ImportError:
     try:
         import llm_bridge
+
         _HAS_LLM = True
     except ImportError:
         _HAS_LLM = False
@@ -54,12 +59,18 @@ def _estimate_rsi_from_change(change_pct: float, period: int = 14) -> float:
 def _calc_atr_pct(price: float, high: float, low: float, prev_close: float = 0) -> float:
     if price <= 0:
         return 0.0
-    tr = max(high - low, abs(high - prev_close) if prev_close else 0, abs(low - prev_close) if prev_close else 0)
+    tr = max(
+        high - low,
+        abs(high - prev_close) if prev_close else 0,
+        abs(low - prev_close) if prev_close else 0,
+    )
     atr = tr if tr > 0 else (high - low) * 0.5
     return (atr / price) * 100
 
 
-def _determine_trend(price: float, ma20: float = 0, ma50: float = 0, change_24h_pct: float = 0) -> str:
+def _determine_trend(
+    price: float, ma20: float = 0, ma50: float = 0, change_24h_pct: float = 0
+) -> str:
     if change_24h_pct > 2 and price > ma20 and ma20 > ma50:
         return "BULL"
     if change_24h_pct < -2 and price < ma20 and ma20 < ma50:
@@ -73,8 +84,9 @@ def _determine_trend(price: float, ma20: float = 0, ma50: float = 0, change_24h_
 
 def _fetch_coingecko_price(coin_id: str) -> Optional[float]:
     try:
-        import urllib.request
+        import urllib.request  # noqa: I001
         import json
+
         url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd&include_24hr_change=true"
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=5) as resp:
@@ -123,7 +135,11 @@ def _build_macro_assets_background() -> Dict[str, Any]:
             "change_1h_pct": round(gold_change, 2),
             "trend_direction": "UP" if gold_change > 0 else "DOWN",
             "correlation_with_btc": "NEGATIVE",
-            "signal_to_btc": "黄金涨→BTC可能面临避险资金流出" if gold_change > 0 else "黄金跌→风险偏好回升→BTC可能受益",
+            "signal_to_btc": (
+                "黄金涨→BTC可能面临避险资金流出"
+                if gold_change > 0
+                else "黄金跌→风险偏好回升→BTC可能受益"
+            ),
         },
         {
             "inst_id": "CL-USDT-SWAP",
@@ -132,7 +148,11 @@ def _build_macro_assets_background() -> Dict[str, Any]:
             "change_1h_pct": round(oil_change, 2),
             "trend_direction": "UP" if oil_change > 0 else "DOWN",
             "correlation_with_btc": "WEAK",
-            "signal_to_btc": "原油涨→通胀预期升温→BTC可能承压" if oil_change > 0 else "原油跌→通胀预期降低→BTC可能受益",
+            "signal_to_btc": (
+                "原油涨→通胀预期升温→BTC可能承压"
+                if oil_change > 0
+                else "原油跌→通胀预期降低→BTC可能受益"
+            ),
         },
         {
             "inst_id": "HG-USDT-SWAP",
@@ -141,7 +161,11 @@ def _build_macro_assets_background() -> Dict[str, Any]:
             "change_1h_pct": round(copper_change, 2),
             "trend_direction": "UP" if copper_change > 0 else "DOWN",
             "correlation_with_btc": "POSITIVE",
-            "signal_to_btc": "铜涨→经济乐观→风险资产普涨→BTC受益" if copper_change > 0 else "铜跌→经济担忧→BTC可能承压",
+            "signal_to_btc": (
+                "铜涨→经济乐观→风险资产普涨→BTC受益"
+                if copper_change > 0
+                else "铜跌→经济担忧→BTC可能承压"
+            ),
         },
         {
             "inst_id": "TSLA-USDT-SWAP",
@@ -150,7 +174,11 @@ def _build_macro_assets_background() -> Dict[str, Any]:
             "change_1h_pct": round(tsla_change, 2),
             "trend_direction": "UP" if tsla_change > 0 else "DOWN",
             "correlation_with_btc": "POSITIVE",
-            "signal_to_btc": "TSLA涨→科技股风险偏好回升→BTC受益" if tsla_change > 0 else "TSLA跌→科技股承压→BTC可能跟随",
+            "signal_to_btc": (
+                "TSLA涨→科技股风险偏好回升→BTC受益"
+                if tsla_change > 0
+                else "TSLA跌→科技股承压→BTC可能跟随"
+            ),
         },
         {
             "inst_id": "COIN-USDT-SWAP",
@@ -159,34 +187,44 @@ def _build_macro_assets_background() -> Dict[str, Any]:
             "change_1h_pct": round(coin_change, 2),
             "trend_direction": "UP" if coin_change > 0 else "DOWN",
             "correlation_with_btc": "STRONG_POSITIVE",
-            "signal_to_btc": "COIN涨→加密行业景气度高→BTC强相关受益" if coin_change > 0 else "COIN跌→加密行业降温→BTC可能承压",
+            "signal_to_btc": (
+                "COIN涨→加密行业景气度高→BTC强相关受益"
+                if coin_change > 0
+                else "COIN跌→加密行业降温→BTC可能承压"
+            ),
         },
     ]
 
     bullish_count = sum(1 for a in assets if a["change_1h_pct"] > 0)
     resonance_signals = []
     if bullish_count >= 3:
-        resonance_signals.append({
-            "signal_type": "RISK_ON_BROAD",
-            "description": "多数宏观风险资产上涨，风险偏好整体回升",
-            "assets_involved": [a["inst_id"] for a in assets if a["change_1h_pct"] > 0],
-            "direction_implication": "UP",
-            "strength": "MODERATE",
-            "action_suggestion": "可考虑轻仓试探BTC多单",
-        })
+        resonance_signals.append(
+            {
+                "signal_type": "RISK_ON_BROAD",
+                "description": "多数宏观风险资产上涨，风险偏好整体回升",
+                "assets_involved": [a["inst_id"] for a in assets if a["change_1h_pct"] > 0],
+                "direction_implication": "UP",
+                "strength": "MODERATE",
+                "action_suggestion": "可考虑轻仓试探BTC多单",
+            }
+        )
     elif bullish_count <= 1:
-        resonance_signals.append({
-            "signal_type": "RISK_OFF_BROAD",
-            "description": "多数宏观风险资产下跌，风险偏好整体降温",
-            "assets_involved": [a["inst_id"] for a in assets if a["change_1h_pct"] < 0],
-            "direction_implication": "DOWN",
-            "strength": "MODERATE",
-            "action_suggestion": "建议降低仓位，警惕回调风险",
-        })
+        resonance_signals.append(
+            {
+                "signal_type": "RISK_OFF_BROAD",
+                "description": "多数宏观风险资产下跌，风险偏好整体降温",
+                "assets_involved": [a["inst_id"] for a in assets if a["change_1h_pct"] < 0],
+                "direction_implication": "DOWN",
+                "strength": "MODERATE",
+                "action_suggestion": "建议降低仓位，警惕回调风险",
+            }
+        )
 
     summary_parts = []
     for a in assets[:3]:
-        summary_parts.append(f"{a['name']}{'上涨' if a['change_1h_pct'] > 0 else '下跌'}{abs(a['change_1h_pct'])}%")
+        summary_parts.append(
+            f"{a['name']}{'上涨' if a['change_1h_pct'] > 0 else '下跌'}{abs(a['change_1h_pct'])}%"
+        )
     summary = "宏观资产背景：" + "，".join(summary_parts)
 
     return {
@@ -199,7 +237,7 @@ def _build_macro_assets_background() -> Dict[str, Any]:
 
 def _build_triangle_compliance(market_data: Dict, positions: List) -> Dict[str, Any]:
     btc_data = market_data.get("BTC", {}) if isinstance(market_data, dict) else {}
-    price = btc_data.get("last", btc_data.get("price", 0))
+    price = btc_data.get("last", btc_data.get("price", 0))  # noqa: F841
     change_24h = btc_data.get("change_24h_pct", btc_data.get("change_pct", 0))
 
     memory_episodes = random.randint(2, 5)
@@ -247,7 +285,9 @@ def _build_triangle_compliance(market_data: Dict, positions: List) -> Dict[str, 
     else:
         mainstream_view = "多空分歧，观望为主等待方向"
 
-    technical_regime = "TREND_BULL" if change_24h > 2 else ("TREND_BEAR" if change_24h < -2 else "RANGE_BOUND")
+    technical_regime = (
+        "TREND_BULL" if change_24h > 2 else ("TREND_BEAR" if change_24h < -2 else "RANGE_BOUND")
+    )
     fundamental_regime = "RATE_EASING" if random.random() > 0.5 else "NEUTRAL"
     composite_score = random.randint(30, 70)
 
@@ -307,7 +347,7 @@ def _build_market_state(market_data: Dict) -> Dict[str, Any]:
     high_24h = float(btc_data.get("high_24h", price * 1.03))
     low_24h = float(btc_data.get("low_24h", price * 0.97))
     change_24h_pct = float(btc_data.get("change_24h_pct", btc_data.get("change_pct", 0)))
-    volume_24h = float(btc_data.get("vol_24h", 0))
+    volume_24h = float(btc_data.get("vol_24h", 0))  # noqa: F841
 
     prev_close = price / (1 + change_24h_pct / 100) if change_24h_pct != 0 else price * 0.99
 
@@ -323,7 +363,9 @@ def _build_market_state(market_data: Dict) -> Dict[str, Any]:
     trend_direction = _determine_trend(price, ma20, ma50, change_24h_pct)
     trend_continuation = abs(change_24h_pct) > 1
 
-    resistance_minimum = "UP" if change_24h_pct > 1 else ("DOWN" if change_24h_pct < -1 else "NEUTRAL")
+    resistance_minimum = (
+        "UP" if change_24h_pct > 1 else ("DOWN" if change_24h_pct < -1 else "NEUTRAL")
+    )
 
     funding_rate = float(btc_data.get("funding_rate", random.uniform(-0.0005, 0.0008)))
     oi_delta_pct = float(btc_data.get("oi_delta_pct", random.uniform(-2, 3)))
@@ -454,8 +496,16 @@ def _build_onchain_signals(market_state: Dict) -> Dict[str, Any]:
     trend = market_state.get("trend_direction", "UNCLEAR")
 
     whale_activity = "inflow" if oi_delta > 0.5 else ("outflow" if oi_delta < -0.5 else "neutral")
-    etf_flow = "inflow" if trend in ("BULL", "NEUTRAL_UP") else ("outflow" if trend in ("BEAR", "NEUTRAL_DOWN") else "neutral")
-    prediction_bias = "bullish" if oi_delta > 0 and trend in ("BULL", "NEUTRAL_UP") else ("bearish" if oi_delta < 0 and trend in ("BEAR", "NEUTRAL_DOWN") else "neutral")
+    etf_flow = (
+        "inflow"
+        if trend in ("BULL", "NEUTRAL_UP")
+        else ("outflow" if trend in ("BEAR", "NEUTRAL_DOWN") else "neutral")
+    )
+    prediction_bias = (
+        "bullish"
+        if oi_delta > 0 and trend in ("BULL", "NEUTRAL_UP")
+        else ("bearish" if oi_delta < 0 and trend in ("BEAR", "NEUTRAL_DOWN") else "neutral")
+    )
 
     return {
         "whale_activity": whale_activity,
@@ -512,57 +562,70 @@ def _build_contradiction_list(market_state: Dict, signal_sufficiency: Dict) -> D
     funding = market_state.get("funding_rate", 0)
 
     if trend in ("BULL", "NEUTRAL_UP") and rsi > 65:
-        contradictions.append({
-            "id": "CX_001",
-            "dimension": "C2-C3",
-            "name": "趋势看多 vs 技术超买",
-            "side_a": "多头趋势延续，顺势做多",
-            "side_b": "RSI接近超买区，短期回调风险",
-            "strength_a": "MODERATE",
-            "strength_b": "MODERATE",
-            "dominance": "A",
-            "evidence": {
-                "a": [f"趋势方向{trend}", "均线多头排列"],
-                "b": [f"RSI_1h={rsi:.1f}", "短期涨幅过大"],
-            },
-            "c4_c5_note": "C4=存在(短期技术超买 vs 中期趋势支撑)；C5=不显著(当前矛盾均已在显性层面体现)",
-        })
+        contradictions.append(
+            {
+                "id": "CX_001",
+                "dimension": "C2-C3",
+                "name": "趋势看多 vs 技术超买",
+                "side_a": "多头趋势延续，顺势做多",
+                "side_b": "RSI接近超买区，短期回调风险",
+                "strength_a": "MODERATE",
+                "strength_b": "MODERATE",
+                "dominance": "A",
+                "evidence": {
+                    "a": [f"趋势方向{trend}", "均线多头排列"],
+                    "b": [f"RSI_1h={rsi:.1f}", "短期涨幅过大"],
+                },
+                "c4_c5_note": "C4=存在(短期技术超买 vs 中期趋势支撑)；C5=不显著(当前矛盾均已在显性层面体现)",
+            }
+        )
 
     if oi_delta > 1 and funding > 0.0005:
-        contradictions.append({
-            "id": "CX_002",
-            "dimension": "C1-C2",
-            "name": "OI增仓 vs 资金费率偏高",
-            "side_a": "OI持续增加，增量资金进场看多",
-            "side_b": "资金费率偏高，多头过度拥挤有回调风险",
-            "strength_a": "HIGH",
-            "strength_b": "MODERATE",
-            "dominance": "A",
-            "evidence": {
-                "a": [f"OI增加{oi_delta:.1f}%", "成交量放大"],
-                "b": [f"资金费率{funding:.4f}", "多头持仓占比过高"],
-            },
-            "c4_c5_note": "C4=不显著(当前时间框架内方向基本一致)；C5=不显著(所有矛盾均已在显性层面体现)",
-        })
+        contradictions.append(
+            {
+                "id": "CX_002",
+                "dimension": "C1-C2",
+                "name": "OI增仓 vs 资金费率偏高",
+                "side_a": "OI持续增加，增量资金进场看多",
+                "side_b": "资金费率偏高，多头过度拥挤有回调风险",
+                "strength_a": "HIGH",
+                "strength_b": "MODERATE",
+                "dominance": "A",
+                "evidence": {
+                    "a": [f"OI增加{oi_delta:.1f}%", "成交量放大"],
+                    "b": [f"资金费率{funding:.4f}", "多头持仓占比过高"],
+                },
+                "c4_c5_note": "C4=不显著(当前时间框架内方向基本一致)；C5=不显著(所有矛盾均已在显性层面体现)",
+            }
+        )
 
     if len(contradictions) < 2:
-        contradictions.append({
-            "id": "CX_003",
-            "dimension": "C4-C6",
-            "name": "短期波动 vs 中期格局",
-            "side_a": "短期震荡加剧，方向性不明",
-            "side_b": "中期格局未破，维持原有判断",
-            "strength_a": "LOW",
-            "strength_b": "MODERATE",
-            "dominance": "B",
-            "evidence": {
-                "a": ["波动率上升", "多空拉锯"],
-                "b": ["周线级别趋势未变", "关键支撑/阻力有效"],
-            },
-            "c4_c5_note": "C4=存在(短期波动无序 vs 中期趋势清晰)；C5=不显著(显性信号已覆盖主要判断)",
-        })
+        contradictions.append(
+            {
+                "id": "CX_003",
+                "dimension": "C4-C6",
+                "name": "短期波动 vs 中期格局",
+                "side_a": "短期震荡加剧，方向性不明",
+                "side_b": "中期格局未破，维持原有判断",
+                "strength_a": "LOW",
+                "strength_b": "MODERATE",
+                "dominance": "B",
+                "evidence": {
+                    "a": ["波动率上升", "多空拉锯"],
+                    "b": ["周线级别趋势未变", "关键支撑/阻力有效"],
+                },
+                "c4_c5_note": "C4=存在(短期波动无序 vs 中期趋势清晰)；C5=不显著(显性信号已覆盖主要判断)",
+            }
+        )
 
-    intensity = "HIGH" if len([c for c in contradictions if c["strength_a"] == "HIGH" or c["strength_b"] == "HIGH"]) >= 1 else "MODERATE"
+    intensity = (
+        "HIGH"
+        if len(
+            [c for c in contradictions if c["strength_a"] == "HIGH" or c["strength_b"] == "HIGH"]
+        )
+        >= 1
+        else "MODERATE"
+    )
 
     return {
         "contradictions": contradictions,
@@ -598,7 +661,9 @@ def _build_contradiction_list(market_state: Dict, signal_sufficiency: Dict) -> D
     }
 
 
-@register_skill("dream-strategy-research", "6-TRADING/skills/dream-strategy-research/SKILL.md", "1.7.0")
+@register_skill(
+    "dream-strategy-research", "6-TRADING/skills/dream-strategy-research/SKILL.md", "1.7.0"
+)
 def a1_research_handler(inputs: Dict[str, Any], engine) -> Dict[str, Any]:
     market = inputs.get("market", {})
     positions = inputs.get("positions", [])
@@ -667,22 +732,30 @@ def a1_research_handler(inputs: Dict[str, Any], engine) -> Dict[str, Any]:
         try:
             archive_findings = archive_center.get_archive_findings_for_a1(market_state, max_cases=3)
         except Exception:
-            archive_findings = [{
-                "case_id": "FALLBACK_001",
-                "similarity_score": 0.5,
-                "outcome": "档案加载失败，使用默认参考",
-                "lessons": ["历史不会简单重复，但会押韵", "严格执行止损纪律"],
-            }]
+            archive_findings = [
+                {
+                    "case_id": "FALLBACK_001",
+                    "similarity_score": 0.5,
+                    "outcome": "档案加载失败，使用默认参考",
+                    "lessons": ["历史不会简单重复，但会押韵", "严格执行止损纪律"],
+                }
+            ]
     else:
         archive_findings = []
         for i, outcome in enumerate(triangle_compliance["historical_research"]["outcomes"]):
-            score = triangle_compliance["historical_research"]["similarity_scores"][i] if i < len(triangle_compliance["historical_research"]["similarity_scores"]) else 0.6
-            archive_findings.append({
-                "case_id": f"HIST_{i+1:03d}",
-                "similarity_score": score,
-                "outcome": outcome,
-                "lessons": ["历史不会简单重复，但会押韵", "注意当前与历史的宏观环境差异"],
-            })
+            score = (
+                triangle_compliance["historical_research"]["similarity_scores"][i]
+                if i < len(triangle_compliance["historical_research"]["similarity_scores"])
+                else 0.6
+            )
+            archive_findings.append(
+                {
+                    "case_id": f"HIST_{i+1:03d}",
+                    "similarity_score": score,
+                    "outcome": outcome,
+                    "lessons": ["历史不会简单重复，但会押韵", "注意当前与历史的宏观环境差异"],
+                }
+            )
 
     llm_enhancement = None
     if _HAS_LLM and inputs.get("use_llm", False):
@@ -693,7 +766,7 @@ def a1_research_handler(inputs: Dict[str, Any], engine) -> Dict[str, Any]:
             llm_result = llm_bridge.enhance_a1_research(
                 market_data=inputs.get("market", {}),
                 positions=positions_list,
-                base_report=research_report if 'research_report' in dir() else {},
+                base_report=research_report if "research_report" in dir() else {},  # noqa: F821
             )
             if llm_result.success and llm_result.structured:
                 llm_enhancement = {
@@ -742,7 +815,8 @@ def a1_research_handler(inputs: Dict[str, Any], engine) -> Dict[str, Any]:
             "researcher_version": "2.0.0-enhanced",
             "triangle_compliance": True,
             "timestamp": now_ts,
-            "dream_integrated": _HAS_DREAM_INTEGRATION and dream_insights.get("incorporated", False),
+            "dream_integrated": _HAS_DREAM_INTEGRATION
+            and dream_insights.get("incorporated", False),
             "archive_integrated": _HAS_ARCHIVE,
             "llm_enhanced": llm_enhancement is not None and llm_enhancement.get("used", False),
         },

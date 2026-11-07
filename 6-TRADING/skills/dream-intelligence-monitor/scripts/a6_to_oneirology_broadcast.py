@@ -16,18 +16,20 @@ A6情报自动复制脚本 v1.0
     - 做梦部情报输入目录为空
 """
 
-import os
-import sys
-import glob
-import shutil
 import argparse
+import glob
+import os
+import shutil
+import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
 # 配置路径
 WORKSPACE = Path("/Users/zhangjiangtao/WorkBuddy/20260415144304")
 REPORTS_DIR = WORKSPACE / "reports"
-ONEIROLOGY_INPUT = Path("/Users/zhangjiangtao/.workbuddy/skills/dream-oneirology/intelligence_input")
+ONEIROLOGY_INPUT = Path(
+    "/Users/zhangjiangtao/.workbuddy/skills/dream-oneirology/intelligence_input"
+)
 SECRETARY_REPORTS = Path("/Users/zhangjiangtao/.workbuddy/skills/boss-secretary/reports/trading")
 
 # 确保目标目录存在
@@ -125,7 +127,7 @@ def broadcast_to_oneirology():
 
     if success1 and success2:
         print("\n✅ A6→做梦部 传导链路已打通!")
-        print(f"   做梦部将在下次运行时读取此情报")
+        print("   做梦部将在下次运行时读取此情报")
         return True
     else:
         print("\n⚠️ 部分复制失败，请检查权限")

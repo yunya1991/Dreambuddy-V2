@@ -32,8 +32,7 @@ import math
 from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
-
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 _DEFAULT_BASELINE = 0.50
 _DEFAULT_MAX_ITER = 10
@@ -182,14 +181,16 @@ class C5ParamOptimizeNode(BaseNode):
             params = self._optimize_for_signal(sig, baseline, max_iter)
             optimized[symbol] = params
             win_rates.append(params["win_rate_input"])
-            log.append({
-                "symbol": symbol,
-                "iteration": 1,
-                "win_rate": params["win_rate_input"],
-                "trend_threshold": params["trend_threshold"],
-                "risk_per_trade": params["risk_per_trade"],
-                "improvement_delta": float(params["win_rate_input"] - baseline),
-            })
+            log.append(
+                {
+                    "symbol": symbol,
+                    "iteration": 1,
+                    "win_rate": params["win_rate_input"],
+                    "trend_threshold": params["trend_threshold"],
+                    "risk_per_trade": params["risk_per_trade"],
+                    "improvement_delta": float(params["win_rate_input"] - baseline),
+                }
+            )
 
         # 2. improvement_pct = (avg_win_rate - baseline) / baseline
         if win_rates and baseline > 0:
@@ -198,7 +199,9 @@ class C5ParamOptimizeNode(BaseNode):
         else:
             improvement = 0.0
 
-        node_confidence = _clip(max(0.0, improvement) * 0.5 + (len(optimized) / max(1, len(verified))) * 0.5, 0.0, 0.95)
+        node_confidence = _clip(
+            max(0.0, improvement) * 0.5 + (len(optimized) / max(1, len(verified))) * 0.5, 0.0, 0.95
+        )
 
         return NodeResult(
             node_id="C5",

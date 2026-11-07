@@ -5,6 +5,7 @@ T5-2  百分数字段 /100（如 2.5% → 0.025）
 T5-3  换手率 % → ratio（同%→/100，但列名可识别）
 T5-4  单位已统一（USD / ratio 格式）→ 不改原值
 """
+
 from __future__ import annotations
 
 import pandas as pd
@@ -17,12 +18,14 @@ class TestUnitNormalizer:
         from data_cleaning.contract import CleaningTrace
 
         fx = {"EUR": 1.10, "JPY": 0.0067, "GBP": 1.27}  # 1 EUR = 1.10 USD etc
-        df = pd.DataFrame({
-            "timestamp": pd.date_range("2026-08-01", periods=3, freq="1h"),
-            "price_eur": [100.0, 101.0, 102.0],
-            "price_jpy": [15000.0, 15100.0, 15200.0],
-            "price_gbp": [80.0, 81.0, 82.0],
-        })
+        df = pd.DataFrame(
+            {
+                "timestamp": pd.date_range("2026-08-01", periods=3, freq="1h"),
+                "price_eur": [100.0, 101.0, 102.0],
+                "price_jpy": [15000.0, 15100.0, 15200.0],
+                "price_gbp": [80.0, 81.0, 82.0],
+            }
+        )
         norm = UnitNormalizer(fx_rates=fx, price_columns=["price_eur", "price_jpy", "price_gbp"])
         out, action = norm.clean(df, CleaningTrace())
         # EUR: 100 * 1.10 = 110
@@ -37,11 +40,13 @@ class TestUnitNormalizer:
         from data_cleaning.cleaners.unit_normalizer import UnitNormalizer
         from data_cleaning.contract import CleaningTrace
 
-        df = pd.DataFrame({
-            "timestamp": pd.date_range("2026-08-01", periods=3, freq="1h"),
-            "gdp_growth_pct": [2.5, 3.1, -0.8],
-            "unemployment_rate": [4.2, 4.1, 4.3],
-        })
+        df = pd.DataFrame(
+            {
+                "timestamp": pd.date_range("2026-08-01", periods=3, freq="1h"),
+                "gdp_growth_pct": [2.5, 3.1, -0.8],
+                "unemployment_rate": [4.2, 4.1, 4.3],
+            }
+        )
         norm = UnitNormalizer(percent_columns=["gdp_growth_pct", "unemployment_rate"])
         out, _ = norm.clean(df, CleaningTrace())
         assert abs(out["gdp_growth_pct"].iloc[0] - 0.025) < 1e-9
@@ -52,10 +57,12 @@ class TestUnitNormalizer:
         from data_cleaning.cleaners.unit_normalizer import UnitNormalizer
         from data_cleaning.contract import CleaningTrace
 
-        df = pd.DataFrame({
-            "timestamp": pd.date_range("2026-08-01", periods=3, freq="1h"),
-            "turnover_pct": [1.5, 2.7, 0.9],
-        })
+        df = pd.DataFrame(
+            {
+                "timestamp": pd.date_range("2026-08-01", periods=3, freq="1h"),
+                "turnover_pct": [1.5, 2.7, 0.9],
+            }
+        )
         norm = UnitNormalizer(turnover_columns=["turnover_pct"])
         out, _ = norm.clean(df, CleaningTrace())
         assert abs(out["turnover_pct"].iloc[1] - 0.027) < 1e-9
@@ -65,11 +72,13 @@ class TestUnitNormalizer:
         from data_cleaning.cleaners.unit_normalizer import UnitNormalizer
         from data_cleaning.contract import CleaningTrace
 
-        df = pd.DataFrame({
-            "timestamp": pd.date_range("2026-08-01", periods=2, freq="1h"),
-            "price_usd": [100.0, 101.0],
-            "volume_ratio": [0.015, 0.017],
-        })
+        df = pd.DataFrame(
+            {
+                "timestamp": pd.date_range("2026-08-01", periods=2, freq="1h"),
+                "price_usd": [100.0, 101.0],
+                "volume_ratio": [0.015, 0.017],
+            }
+        )
         norm = UnitNormalizer()  # 空配置
         out, action = norm.clean(df, CleaningTrace())
         # 没匹配任何列 → 值不变，clip/impute计数=0

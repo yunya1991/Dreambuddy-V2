@@ -8,16 +8,15 @@
 5. 融合后最终信号
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import numpy as np
-import pandas as pd
+import pandas as pd  # noqa: I001
 from data.market_data import fetch_candles
 from ml.lr_ml_strategy_v2 import LeastResistanceAIStrategyV2, _resample_to_weekly
 from ml.lr_feature_engineer import LeastResistanceFeatureEngineer
-from backtest.engine import BacktestEngine
 
 
 def fetch_real_data(inst_id, bar="1D", limit=600):
@@ -34,16 +33,24 @@ def fetch_real_data(inst_id, bar="1D", limit=600):
 def get_fundamental_data():
     return {
         "screen1": {
-            "composite_score": 65.0, "momentum_score": 70.0,
-            "value_score": 60.0, "growth_score": 65.0,
-            "quality_score": 68.0, "sentiment_score": 55.0,
+            "composite_score": 65.0,
+            "momentum_score": 70.0,
+            "value_score": 60.0,
+            "growth_score": 65.0,
+            "quality_score": 68.0,
+            "sentiment_score": 55.0,
         },
         "fundamental_9": {
-            "pe_ttm": 15.0, "pb": 2.0, "roe": 12.0,
-            "revenue_growth": 20.0, "profit_growth": 18.0,
-            "debt_ratio": 45.0, "cash_ratio": 30.0,
-            "gross_margin": 35.0, "net_margin": 15.0,
-        }
+            "pe_ttm": 15.0,
+            "pb": 2.0,
+            "roe": 12.0,
+            "revenue_growth": 20.0,
+            "profit_growth": 18.0,
+            "debt_ratio": 45.0,
+            "cash_ratio": 30.0,
+            "gross_margin": 35.0,
+            "net_margin": 15.0,
+        },
     }
 
 
@@ -59,13 +66,14 @@ def deep_diagnose(inst_id="BTC-USDT", name="BTC"):
     print(f"  数据: {n} 天")
 
     # 步骤1: 检查特征提取
-    print(f"\n  [步骤1] 特征提取")
+    print("\n  [步骤1] 特征提取")
     weekly_df = _resample_to_weekly(prices)
     print(f"    周线数据: {len(weekly_df)} 根")
 
     fe = LeastResistanceFeatureEngineer(enable_fundamental=True)
     features_df = fe.create_features(
-        weekly_df, prices,
+        weekly_df,
+        prices,
         fundamental_data=get_fundamental_data(),
         label_lookahead=7,
     )
@@ -81,7 +89,7 @@ def deep_diagnose(inst_id="BTC-USDT", name="BTC"):
     print(f"    可交易天数: {n - start_idx} 天")
 
     # 步骤2: 检查规则引擎信号分布
-    print(f"\n  [步骤2] 规则引擎信号分布")
+    print("\n  [步骤2] 规则引擎信号分布")
     weekly_res = features_df.iloc[start_idx:]["weekly_res_diff"].fillna(0)
     daily_res = features_df.iloc[start_idx:]["daily_res_diff"].fillna(0)
 
@@ -94,15 +102,19 @@ def deep_diagnose(inst_id="BTC-USDT", name="BTC"):
     print(f"    规则多: {rule_long}, 规则空: {rule_short}, 中性: {rule_neutral}")
 
     # 步骤3: 检查不同阈值下的信号
-    print(f"\n  [步骤3] 不同阈值下的规则信号")
+    print("\n  [步骤3] 不同阈值下的规则信号")
     for threshold in [0.05, 0.03, 0.02, 0.01, 0.005]:
-        r_long = ((weekly_res > threshold) | ((weekly_res.abs() <= threshold) & (daily_res > threshold))).sum()
-        r_short = ((weekly_res < -threshold) | ((weekly_res.abs() <= threshold) & (daily_res < -threshold))).sum()
+        r_long = (
+            (weekly_res > threshold) | ((weekly_res.abs() <= threshold) & (daily_res > threshold))
+        ).sum()
+        r_short = (
+            (weekly_res < -threshold) | ((weekly_res.abs() <= threshold) & (daily_res < -threshold))
+        ).sum()
         r_neutral = len(weekly_res) - r_long - r_short
         print(f"    阈值={threshold:.3f}: 多={r_long}, 空={r_short}, 中性={r_neutral}")
 
     # 步骤4: 检查模型训练条件
-    print(f"\n  [步骤4] 模型训练条件")
+    print("\n  [步骤4] 模型训练条件")
     train_window = 200
     label_lookahead = 7
     min_train_i = train_window + label_lookahead + 10  # 217
@@ -120,7 +132,7 @@ def deep_diagnose(inst_id="BTC-USDT", name="BTC"):
     print(f"    有效训练样本: {len(train_data)} (需>=40)")
 
     # 步骤5: 如果用train_window=100
-    print(f"\n  [步骤4b] train_window=100时")
+    print("\n  [步骤4b] train_window=100时")
     min_train_i_100 = 100 + label_lookahead + 10  # 117
     train_end_100 = min_train_i_100 - label_lookahead - 1
     train_start_100 = max(start_idx, train_end_100 - 100)
@@ -133,12 +145,17 @@ def deep_diagnose(inst_id="BTC-USDT", name="BTC"):
     print(f"    可交易天数: {n - max(start_idx, min_train_i_100)} 天")
 
     # 步骤6: 实际运行策略看信号分布
-    print(f"\n  [步骤5] 实际策略信号分布")
+    print("\n  [步骤5] 实际策略信号分布")
     strategy = LeastResistanceAIStrategyV2(
-        label_lookahead=7, train_window=100, retrain_interval=20,
-        min_ml_confidence=0.01, enable_fundamental=True,
-        enable_multitask=True, enable_dynamic_weight=True,
-        enable_feature_selection=False, base_rule_weight=0.3,
+        label_lookahead=7,
+        train_window=100,
+        retrain_interval=20,
+        min_ml_confidence=0.01,
+        enable_fundamental=True,
+        enable_multitask=True,
+        enable_dynamic_weight=True,
+        enable_feature_selection=False,
+        base_rule_weight=0.3,
         fundamental_data=get_fundamental_data(),
     )
     signals = strategy.generate_signals(prices)
@@ -152,7 +169,7 @@ def deep_diagnose(inst_id="BTC-USDT", name="BTC"):
     if n_long + n_short > 0:
         sig_dates = signals[signals != 0]
         print(f"    信号时间范围: {sig_dates.index[0].date()} ~ {sig_dates.index[-1].date()}")
-        print(f"    信号详情(前10):")
+        print("    信号详情(前10):")
         for date, val in sig_dates.head(10).items():
             direction = "多" if val > 0 else "空"
             print(f"      {date.date()}: {direction} {abs(val):.3f}")

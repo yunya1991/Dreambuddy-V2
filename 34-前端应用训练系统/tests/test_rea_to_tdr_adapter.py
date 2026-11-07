@@ -7,10 +7,11 @@
   4. trigger_passive_training 全链路（mock HTTP）
   5. run_active_training 全链路（mock TDR + HTTP）
 """
+
 import os
 import sys
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 
 # sys.path 注入
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -22,10 +23,9 @@ for _p in [_THIS_DIR, _ADAPTERS_DIR, _CORE_DIR, _34_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from rea_to_tdr_adapter import rea_to_training_cases
-from interfaces.rea_parser import REAParseResult
-from interfaces.case_evaluator import IngestDecision
-from interfaces.training_executor import TrainingLayer
+from interfaces.rea_parser import REAParseResult  # noqa: E402
+from interfaces.training_executor import TrainingLayer  # noqa: E402
+from rea_to_tdr_adapter import rea_to_training_cases  # noqa: E402
 
 
 class ReaToTdrConversionTest(unittest.TestCase):
@@ -151,6 +151,7 @@ class OrchestratorFactoryTest(unittest.TestCase):
     def test_factory_creates_orchestrator(self):
         """工厂应创建配置好的编排器。"""
         from orchestrator_factory import create_orchestrator
+
         orchestrator = create_orchestrator(enable_rea=False)
 
         self.assertIsNotNone(orchestrator)
@@ -162,6 +163,7 @@ class OrchestratorFactoryTest(unittest.TestCase):
     def test_factory_with_rea(self):
         """启用 REA 时应创建 REA 解析器。"""
         from orchestrator_factory import create_orchestrator
+
         orchestrator = create_orchestrator(enable_rea=True)
 
         self.assertIsNotNone(orchestrator._rea_parser)
@@ -263,12 +265,20 @@ class ActiveTrainingE2ETest(unittest.TestCase):
         provider = MagicMock()
         provider.fetch_cases.return_value = [
             TrainingCase(
-                intent="case1", actions=["a1"], outcome_text="o1",
-                learned=["l1"], layer_tags=["S"], quality="B",
+                intent="case1",
+                actions=["a1"],
+                outcome_text="o1",
+                learned=["l1"],
+                layer_tags=["S"],
+                quality="B",
             ),
             TrainingCase(
-                intent="case2", actions=["a2"], outcome_text="o2",
-                learned=["l2"], layer_tags=["DSH"], quality="A",
+                intent="case2",
+                actions=["a2"],
+                outcome_text="o2",
+                learned=["l2"],
+                layer_tags=["DSH"],
+                quality="A",
             ),
         ]
 

@@ -6,10 +6,11 @@
   3. FAIL-OPEN：import 失败/分析异常 → 空 REAParseResult
   4. evidence_level 映射（observation→L1, derivation→L2, ...）
 """
+
 import os
 import sys
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 # sys.path 注入
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -27,6 +28,7 @@ class REANativeParserConvertTest(unittest.TestCase):
     def _make_parser(self):
         """创建一个 REANativeParser，跳过 import。"""
         from rea_native_parser import REANativeParser
+
         parser = REANativeParser()
         parser._rea_module = None  # 不触发 import
         return parser
@@ -151,12 +153,22 @@ class REANativeParserConvertTest(unittest.TestCase):
             mock_output = {
                 "ok": True,
                 "result": {
-                    "evidence": [{"level": rea_level, "confidence": 0.5, "known_gaps": [], "observations": []}],
+                    "evidence": [
+                        {
+                            "level": rea_level,
+                            "confidence": 0.5,
+                            "known_gaps": [],
+                            "observations": [],
+                        }
+                    ],
                 },
             }
             result = parser._convert_output(mock_output, is_trace=False)
-            self.assertEqual(result.evidence_level, expected_tdr_level,
-                             f"{rea_level} should map to {expected_tdr_level}")
+            self.assertEqual(
+                result.evidence_level,
+                expected_tdr_level,
+                f"{rea_level} should map to {expected_tdr_level}",
+            )
 
     def test_fail_open_rea_unavailable(self):
         """33-REA import 失败时，analyze/trace 应返回空 REAParseResult。"""

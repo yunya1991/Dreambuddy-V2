@@ -14,8 +14,9 @@
 3. 结合做空优化（L1=0, L2=0.6）
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import numpy as np
@@ -99,14 +100,16 @@ class DoubleBottomDipStrategy(EnhancedMA200Strategy):
         self.db_confirm_days = db_confirm_days
         self.db_boost_pct = db_boost_pct
 
-        self.stats.update({
-            "bb_lower_add_days": 0,
-            "bb_lower_deep_add_days": 0,
-            "bb_rebound_add_days": 0,
-            "double_bottom_detected_days": 0,
-            "double_bottom_confirmed_days": 0,
-            "double_bottom_failed_days": 0,
-        })
+        self.stats.update(
+            {
+                "bb_lower_add_days": 0,
+                "bb_lower_deep_add_days": 0,
+                "bb_rebound_add_days": 0,
+                "double_bottom_detected_days": 0,
+                "double_bottom_confirmed_days": 0,
+                "double_bottom_failed_days": 0,
+            }
+        )
 
     def _compute_bollinger_bands(self, close: np.ndarray) -> tuple:
         n = len(close)
@@ -114,7 +117,7 @@ class DoubleBottomDipStrategy(EnhancedMA200Strategy):
         mid = np.full(n, np.nan)
         lower = np.full(n, np.nan)
         for i in range(self.bb_period - 1, n):
-            window = close[i - self.bb_period + 1:i + 1]
+            window = close[i - self.bb_period + 1 : i + 1]
             m = np.mean(window)
             s = np.std(window)
             mid[i] = m
@@ -131,8 +134,8 @@ class DoubleBottomDipStrategy(EnhancedMA200Strategy):
         w = self.db_swing_window
         swing_lows = []
         for i in range(start + w, end - w + 1):
-            left = low[i - w:i]
-            right = low[i + 1:i + w + 1]
+            left = low[i - w : i]
+            right = low[i + 1 : i + w + 1]
             if low[i] < left.min() and low[i] <= right.min():
                 swing_lows.append((i, low[i]))
         return swing_lows
@@ -175,13 +178,15 @@ class DoubleBottomDipStrategy(EnhancedMA200Strategy):
         # 找第二底：必须在第一底之后，且与第一底间隔至少20天
         # 取第一底之后、距离最远的那个swing low作为候选第二底
         candidates = [
-            (idx, p) for idx, p in swing_lows
+            (idx, p)
+            for idx, p in swing_lows
             if idx > idx1 + 20 and abs(p - price1) / price1 < self.db_max_low_diff_pct * 3
         ]
         if not candidates:
             # 也尝试在第一底之前找
             candidates = [
-                (idx, p) for idx, p in swing_lows
+                (idx, p)
+                for idx, p in swing_lows
                 if idx < idx1 - 20 and abs(p - price1) / price1 < self.db_max_low_diff_pct * 3
             ]
             if candidates:
@@ -221,7 +226,7 @@ class DoubleBottomDipStrategy(EnhancedMA200Strategy):
         right_higher = price2 >= price1 * (1 - self.db_max_low_diff_pct * 0.5)
 
         # 颈线 = 两低点之间的最高点
-        mid_segment = low[idx1 + 1:idx2]
+        mid_segment = low[idx1 + 1 : idx2]
         if len(mid_segment) < 2:
             return False, False
         neckline = mid_segment.max()
@@ -243,7 +248,9 @@ class DoubleBottomDipStrategy(EnhancedMA200Strategy):
             if i - last_db_breakout_idx >= self.db_confirm_days:
                 # 检查是否站稳
                 hold_above = True
-                for j in range(last_db_breakout_idx, min(last_db_breakout_idx + self.db_confirm_days, i + 1)):
+                for j in range(
+                    last_db_breakout_idx, min(last_db_breakout_idx + self.db_confirm_days, i + 1)
+                ):
                     if close[j] < neckline:
                         hold_above = False
                         break
@@ -259,7 +266,9 @@ class DoubleBottomDipStrategy(EnhancedMA200Strategy):
         if self.db_confirm_days <= 1:
             confirmed = right_higher
         # 如果已经过了确认期，检查是否站稳
-        elif i - last_db_breakout_idx >= self.db_confirm_days if last_db_breakout_idx >= 0 else False:
+        elif (
+            i - last_db_breakout_idx >= self.db_confirm_days if last_db_breakout_idx >= 0 else False
+        ):
             hold_above = True
             for j in range(i - self.db_confirm_days + 1, i + 1):
                 if close[j] < neckline:
@@ -276,7 +285,9 @@ class DoubleBottomDipStrategy(EnhancedMA200Strategy):
         close = prices["close"].values
         low = prices["low"].values
 
-        ma_series = pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        ma_series = (
+            pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        )
         ma = ma_series.values
 
         ma_slope = np.zeros(n)
@@ -284,10 +295,18 @@ class DoubleBottomDipStrategy(EnhancedMA200Strategy):
             if not np.isnan(ma[i]) and not np.isnan(ma[i - self.slope_period]):
                 ma_slope[i] = (ma[i] / ma[i - self.slope_period] - 1) * 100
 
-        weekly_ma200 = self._compute_weekly_ma200(prices) if (self.is_btc and self.weekly_ma200_dip_buy) else None
-        btc_regime = self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        weekly_ma200 = (
+            self._compute_weekly_ma200(prices)
+            if (self.is_btc and self.weekly_ma200_dip_buy)
+            else None
+        )
+        btc_regime = (
+            self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        )
 
-        bb_upper, bb_mid, bb_lower = self._compute_bollinger_bands(close) if self.use_bb_add else (None, None, None)
+        bb_upper, bb_mid, bb_lower = (
+            self._compute_bollinger_bands(close) if self.use_bb_add else (None, None, None)
+        )
 
         last_state = "init"
         short_entry_price = None
@@ -316,15 +335,20 @@ class DoubleBottomDipStrategy(EnhancedMA200Strategy):
             if self.is_btc:
                 # 计算基础抄底仓位
                 base_dip_pos = 0.0
-                if self.weekly_ma200_dip_buy and not np.isnan(weekly_ma200[i]) and weekly_ma200[i] > 0:
+                if (
+                    self.weekly_ma200_dip_buy
+                    and not np.isnan(weekly_ma200[i])
+                    and weekly_ma200[i] > 0
+                ):
                     weekly_below_pct = (weekly_ma200[i] - close[i]) / weekly_ma200[i] * 100
                     if weekly_below_pct > 0:
                         levels_filled = min(
-                            int(weekly_below_pct / self.dip_buy_step_pct),
-                            self.dip_buy_levels
+                            int(weekly_below_pct / self.dip_buy_step_pct), self.dip_buy_levels
                         )
                         if levels_filled > 0:
-                            base_dip_pos = (levels_filled / self.dip_buy_levels) * self.dip_buy_max_position
+                            base_dip_pos = (
+                                levels_filled / self.dip_buy_levels
+                            ) * self.dip_buy_max_position
 
                 if price_above and slope_pos:
                     # 牛市满仓
@@ -345,16 +369,32 @@ class DoubleBottomDipStrategy(EnhancedMA200Strategy):
 
                         # 布林带反弹加仓（只加不减）
                         # 逻辑：昨天触及/跌破下轨，今天从下轨反弹 → 确认短期底部 → 加仓
-                        if self.use_bb_add and bb_lower is not None and not np.isnan(bb_lower[i]) and i > 0:
-                            yesterday_at_or_below = close[i-1] <= bb_lower[i-1] if not np.isnan(bb_lower[i-1]) else False
+                        if (
+                            self.use_bb_add
+                            and bb_lower is not None
+                            and not np.isnan(bb_lower[i])
+                            and i > 0
+                        ):
+                            yesterday_at_or_below = (
+                                close[i - 1] <= bb_lower[i - 1]
+                                if not np.isnan(bb_lower[i - 1])
+                                else False
+                            )
                             today_rebounded = close[i] > bb_lower[i]
-                            if yesterday_at_or_below and today_rebounded and (i - last_bb_add_idx) >= bb_min_gap:
+                            if (
+                                yesterday_at_or_below
+                                and today_rebounded
+                                and (i - last_bb_add_idx) >= bb_min_gap
+                            ):
                                 extra_pos += self.bb_lower_add_pct
                                 self.stats["bb_rebound_add_days"] += 1
                                 last_bb_add_idx = i
 
                             # 深跌后反弹 → 更大加仓
-                            if not np.isnan(bb_lower[i-1]) and close[i-1] <= bb_lower[i-1] * 0.98:
+                            if (
+                                not np.isnan(bb_lower[i - 1])
+                                and close[i - 1] <= bb_lower[i - 1] * 0.98
+                            ):
                                 if today_rebounded and (i - last_bb_add_idx) >= bb_min_gap:
                                     extra_pos += self.bb_lower_deep_add_pct
                                     self.stats["bb_lower_deep_add_days"] += 1
@@ -362,7 +402,9 @@ class DoubleBottomDipStrategy(EnhancedMA200Strategy):
 
                         # 双底检测
                         if self.use_double_bottom and not db_confirmed:
-                            detected, confirmed = self._detect_double_bottom(low, close, i, db_confirmed_idx)
+                            detected, confirmed = self._detect_double_bottom(
+                                low, close, i, db_confirmed_idx
+                            )
                             if detected:
                                 self.stats["double_bottom_detected_days"] += 1
                                 db_confirmed_idx = i  # 记录突破日
@@ -372,13 +414,19 @@ class DoubleBottomDipStrategy(EnhancedMA200Strategy):
                                 if len(swing_lows) >= 2:
                                     sorted_by_price = sorted(swing_lows, key=lambda x: x[1])
                                     fl_idx, fl_price = sorted_by_price[0]
-                                    cands = [(idx, p) for idx, p in swing_lows if abs(idx - fl_idx) >= 20 and abs(p - fl_price) / fl_price < self.db_max_low_diff_pct * 3]
+                                    cands = [
+                                        (idx, p)
+                                        for idx, p in swing_lows
+                                        if abs(idx - fl_idx) >= 20
+                                        and abs(p - fl_price) / fl_price
+                                        < self.db_max_low_diff_pct * 3
+                                    ]
                                     if cands:
                                         sl_idx, sl_price = min(cands, key=lambda x: x[1])
                                         if fl_idx < sl_idx:
-                                            db_neckline_price = low[fl_idx+1:sl_idx].max()
+                                            db_neckline_price = low[fl_idx + 1 : sl_idx].max()
                                         else:
-                                            db_neckline_price = low[sl_idx+1:fl_idx].max()
+                                            db_neckline_price = low[sl_idx + 1 : fl_idx].max()
                             if confirmed:
                                 db_confirmed = True
                                 self.stats["double_bottom_confirmed_days"] += 1
@@ -389,7 +437,9 @@ class DoubleBottomDipStrategy(EnhancedMA200Strategy):
                                 # 跌回颈线下方，撤销双底确认
                                 db_confirmed = False
                                 db_neckline_price = 0.0
-                                self.stats["double_bottom_failed_days"] = self.stats.get("double_bottom_failed_days", 0) + 1
+                                self.stats["double_bottom_failed_days"] = (
+                                    self.stats.get("double_bottom_failed_days", 0) + 1
+                                )
                             else:
                                 extra_pos += self.db_boost_pct
 
@@ -421,7 +471,11 @@ class DoubleBottomDipStrategy(EnhancedMA200Strategy):
                         if base_short > 0 and short_entry_price is None:
                             short_entry_price = close[i]
 
-                        if base_short > 0 and short_entry_price is not None and self.fib_take_profit:
+                        if (
+                            base_short > 0
+                            and short_entry_price is not None
+                            and self.fib_take_profit
+                        ):
                             fib_pos = self._calc_fib_tp_position(
                                 close[i], short_entry_price, True, base_short
                             )
@@ -441,10 +495,14 @@ class DoubleBottomDipStrategy(EnhancedMA200Strategy):
                             if close[i] < db_neckline_price * 0.98:
                                 db_confirmed = False
                                 db_neckline_price = 0.0
-                                self.stats["double_bottom_failed_days"] = self.stats.get("double_bottom_failed_days", 0) + 1
+                                self.stats["double_bottom_failed_days"] = (
+                                    self.stats.get("double_bottom_failed_days", 0) + 1
+                                )
                             else:
                                 extra_pos += self.db_boost_pct
-                        target_pos = min(base_dip_pos + extra_pos, self.dip_buy_max_position + self.db_boost_pct)
+                        target_pos = min(
+                            base_dip_pos + extra_pos, self.dip_buy_max_position + self.db_boost_pct
+                        )
                         self.stats["dip_buy_days"] += 1
                     else:
                         current_state = "sideways"
@@ -491,7 +549,7 @@ class DoubleBottomDipStrategy(EnhancedMA200Strategy):
 
 
 if __name__ == "__main__":
-    import json
+    import json  # noqa: I001
     from ml.scenario_backtest_engine import ScenarioBacktestEngine
 
     with open("data/historical/BTC_1D_730d.json") as f:
@@ -508,19 +566,29 @@ if __name__ == "__main__":
     print("v2 基线...")
     v2 = EnhancedMA200Strategy(is_btc=True)
     v2_r = engine.run_scenario_backtest(prices, v2, "v2", symbol="BTC", experiment_name="v37_v2")
-    print(f"  夏普 {v2_r.overall_sharpe:.3f} | 收益 {v2_r.overall_total_return:.1%} | 评分 {v2_r.composite_score:.3f}")
+    print(
+        f"  夏普 {v2_r.overall_sharpe:.3f} | 收益 {v2_r.overall_total_return:.1%} | 评分 {v2_r.composite_score:.3f}"
+    )
 
     print()
     print("做空优化版（L1=0, L2=0.6）...")
     so = EnhancedMA200Strategy(is_btc=True, bear_short_level1_pct=0.0, bear_short_level2_pct=0.6)
-    so_r = engine.run_scenario_backtest(prices, so, "short_opt", symbol="BTC", experiment_name="v37_short_opt")
-    print(f"  夏普 {so_r.overall_sharpe:.3f} | 收益 {so_r.overall_total_return:.1%} | 评分 {so_r.composite_score:.3f}")
+    so_r = engine.run_scenario_backtest(
+        prices, so, "short_opt", symbol="BTC", experiment_name="v37_short_opt"
+    )
+    print(
+        f"  夏普 {so_r.overall_sharpe:.3f} | 收益 {so_r.overall_total_return:.1%} | 评分 {so_r.composite_score:.3f}"
+    )
 
     print()
     print("v3.7 双底检测 + 布林带只加仓...")
     v37 = DoubleBottomDipStrategy(is_btc=True)
-    v37_r = engine.run_scenario_backtest(prices, v37, "v37", symbol="BTC", experiment_name="v37_double_bottom")
-    print(f"  夏普 {v37_r.overall_sharpe:.3f} | 收益 {v37_r.overall_total_return:.1%} | 评分 {v37_r.composite_score:.3f}")
+    v37_r = engine.run_scenario_backtest(
+        prices, v37, "v37", symbol="BTC", experiment_name="v37_double_bottom"
+    )
+    print(
+        f"  夏普 {v37_r.overall_sharpe:.3f} | 收益 {v37_r.overall_total_return:.1%} | 评分 {v37_r.composite_score:.3f}"
+    )
 
     print()
     print("状态统计:")
@@ -534,10 +602,22 @@ if __name__ == "__main__":
     print(f"{'指标':<18} {'v2':>12} {'做空优化':>12} {'v3.7':>12}")
     print("-" * 70)
     metrics = [
-        ("总收益", v2_r.overall_total_return, so_r.overall_total_return, v37_r.overall_total_return, ".1%"),
+        (
+            "总收益",
+            v2_r.overall_total_return,
+            so_r.overall_total_return,
+            v37_r.overall_total_return,
+            ".1%",
+        ),
         ("夏普比率", v2_r.overall_sharpe, so_r.overall_sharpe, v37_r.overall_sharpe, ".3f"),
         ("卡玛比率", v2_r.overall_calmar, so_r.overall_calmar, v37_r.overall_calmar, ".3f"),
-        ("最大回撤", v2_r.overall_max_drawdown, so_r.overall_max_drawdown, v37_r.overall_max_drawdown, ".1%"),
+        (
+            "最大回撤",
+            v2_r.overall_max_drawdown,
+            so_r.overall_max_drawdown,
+            v37_r.overall_max_drawdown,
+            ".1%",
+        ),
         ("胜率", v2_r.overall_win_rate, so_r.overall_win_rate, v37_r.overall_win_rate, ".2%"),
         ("综合评分", v2_r.composite_score, so_r.composite_score, v37_r.composite_score, ".3f"),
     ]

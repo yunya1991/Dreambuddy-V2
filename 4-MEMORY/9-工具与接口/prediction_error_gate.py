@@ -30,11 +30,11 @@
   - Friston 自由能原理 / 预测编码
   - 记忆再巩固边界 (Memory Reconsolidation Boundary)
 """
+
 from __future__ import annotations
 
 import math
 from typing import Any, Dict, Optional
-
 
 # ============================================================
 # 常量

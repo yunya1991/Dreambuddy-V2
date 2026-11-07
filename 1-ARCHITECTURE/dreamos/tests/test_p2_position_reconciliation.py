@@ -7,6 +7,7 @@
   2. 确认成功 → _feed_cognitive_loop(px_source=real_fill) 回填认知
   3. 确认不到成交 → 只记日志,绝不喂认知 (E层数据完整性门禁)
 """
+
 import json
 import sys
 import time
@@ -15,7 +16,7 @@ from pathlib import Path
 BASE = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE))
 
-from dreamos.cli.auto_trader import AutoTrader
+from dreamos.cli.auto_trader import AutoTrader  # noqa: E402
 
 
 class _FakeHLClient:
@@ -40,19 +41,32 @@ def _make_trader(monkeypatch, fills=None):
 def _seed_snapshot(trader, symbol="SOL", entry=85.0, size=2.0, direction="SHORT", ago_s=3600):
     trader._snapshot_path.parent.mkdir(parents=True, exist_ok=True)
     with open(trader._snapshot_path, "w") as f:
-        json.dump({symbol: {
-            "entry_price": entry, "size": size, "direction": direction,
-            "ts": time.time() - ago_s,
-        }}, f)
+        json.dump(
+            {
+                symbol: {
+                    "entry_price": entry,
+                    "size": size,
+                    "direction": direction,
+                    "ts": time.time() - ago_s,
+                }
+            },
+            f,
+        )
 
 
 def test_reconcile_confirmed_close_feeds_cognition(monkeypatch):
     """持仓消失 + fills 确认平仓 → 真实 pnl 回填认知层。"""
     now_ms = int(time.time() * 1000)
-    fills = [{
-        "coin": "SOL", "px": "80.0", "sz": "2.0",
-        "closedPnl": "10.0", "time": now_ms, "dir": "Close Short",
-    }]
+    fills = [
+        {
+            "coin": "SOL",
+            "px": "80.0",
+            "sz": "2.0",
+            "closedPnl": "10.0",
+            "time": now_ms,
+            "dir": "Close Short",
+        }
+    ]
     trader = _make_trader(monkeypatch, fills)
     _seed_snapshot(trader)
 
@@ -136,7 +150,9 @@ def test_snapshot_roundtrip_preserves_first_seen_ts(monkeypatch):
     assert snap2["SOL"]["ts"] == ts1, "持续持仓 ts 必须保持首次观察时间"
 
     # 新 symbol 获得新 ts
-    trader._save_position_snapshot(pos + [{"symbol": "BTC-USDT", "position_amt": 0.1, "entry_price": 100.0}])
+    trader._save_position_snapshot(
+        pos + [{"symbol": "BTC-USDT", "position_amt": 0.1, "entry_price": 100.0}]
+    )
     snap3 = trader._load_position_snapshot()
     assert "BTC" in snap3, "USDT 后缀应被归一化"
     assert snap3["BTC"]["direction"] == "LONG"

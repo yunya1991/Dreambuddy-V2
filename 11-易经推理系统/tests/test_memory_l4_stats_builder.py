@@ -2,7 +2,9 @@ from pathlib import Path
 
 
 def test_build_stats_snapshot(tmp_path: Path):
-    from scripts.memory_l4.stats_engine import compute_full_stats, compute_pnl_stats, compute_event_library
+    from scripts.memory_l4.stats_engine import (
+        compute_full_stats,
+    )
 
     # compute_full_stats reads from disk; verify it returns a valid v0.2 snapshot.
     stats = compute_full_stats(snapshot_ts="2026-01-01T00:00:00+08:00")
@@ -31,9 +33,24 @@ def test_build_stats_snapshot_performance_metrics():
     }
 
     cases = [
-        {"case_id": "TC_1", "ts_start": "2026-01-01T00:00:00+08:00", "environment_snapshot": {}, "quadrant": {}},
-        {"case_id": "TC_2", "ts_start": "2026-01-02T00:00:00+08:00", "environment_snapshot": {}, "quadrant": {}},
-        {"case_id": "TC_3", "ts_start": "2026-01-03T00:00:00+08:00", "environment_snapshot": {}, "quadrant": {}},
+        {
+            "case_id": "TC_1",
+            "ts_start": "2026-01-01T00:00:00+08:00",
+            "environment_snapshot": {},
+            "quadrant": {},
+        },
+        {
+            "case_id": "TC_2",
+            "ts_start": "2026-01-02T00:00:00+08:00",
+            "environment_snapshot": {},
+            "quadrant": {},
+        },
+        {
+            "case_id": "TC_3",
+            "ts_start": "2026-01-03T00:00:00+08:00",
+            "environment_snapshot": {},
+            "quadrant": {},
+        },
     ]
 
     perf = compute_performance(cases=cases, episodes_by_case_id=episodes_by_case_id)

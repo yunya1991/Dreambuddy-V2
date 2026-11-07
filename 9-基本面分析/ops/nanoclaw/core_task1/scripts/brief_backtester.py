@@ -4,14 +4,14 @@
 基于已生成的 brief_v2_*.json 数据进行回测分析
 """
 
-import json
+import json  # noqa: I001
 import os
 import glob
 from datetime import datetime
-from pathlib import Path
 
 OUTPUT_DIR = "/workspace/ops/nanoclaw/core_task1/outputs"
 HISTORICAL_DATA_DIR = "/workspace/ops/nanoclaw/core_task1/historical_data"
+
 
 def load_brief_files():
     """加载所有 brief_v2_*.json 文件"""
@@ -20,13 +20,10 @@ def load_brief_files():
 
     for filepath in brief_files:
         try:
-            with open(filepath, 'r', encoding='utf-8') as f:
+            with open(filepath, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 if "timestamp" in data:
-                    briefs.append({
-                        "file": filepath,
-                        "data": data
-                    })
+                    briefs.append({"file": filepath, "data": data})
         except Exception as e:
             print(f"[WARN] Failed to load {filepath}: {e}")
 
@@ -34,13 +31,15 @@ def load_brief_files():
     briefs.sort(key=lambda x: x["data"].get("timestamp", ""))
     return briefs
 
+
 def load_price_data():
     """加载 BTC 历史价格数据"""
     price_file = os.path.join(HISTORICAL_DATA_DIR, "btc_daily_prices.json")
     if os.path.exists(price_file):
-        with open(price_file, 'r', encoding='utf-8') as f:
+        with open(price_file, "r", encoding="utf-8") as f:
             return json.load(f)
     return {}
+
 
 def calculate_signal_quality(briefs, prices):
     """
@@ -50,7 +49,7 @@ def calculate_signal_quality(briefs, prices):
     """
     results = []
 
-    for i, brief in enumerate(briefs):
+    for i, brief in enumerate(briefs):  # noqa: B007
         data = brief["data"]
         timestamp = data.get("timestamp", "")
         signal_analysis = data.get("signal_analysis", {})
@@ -75,32 +74,45 @@ def calculate_signal_quality(briefs, prices):
                 if date_idx + 1 < len(prices):
                     future_date_1d = list(prices.keys())[date_idx + 1]
                     price_1d = prices[future_date_1d].get("close", current_price)
-                    future_return_1d = (price_1d - current_price) / current_price if current_price else None
+                    future_return_1d = (
+                        (price_1d - current_price) / current_price if current_price else None
+                    )
 
                 if date_idx + 3 < len(prices):
                     future_date_3d = list(prices.keys())[date_idx + 3]
                     price_3d = prices[future_date_3d].get("close", current_price)
-                    future_return_3d = (price_3d - current_price) / current_price if current_price else None
+                    future_return_3d = (
+                        (price_3d - current_price) / current_price if current_price else None
+                    )
 
                 if date_idx + 5 < len(prices):
                     future_date_5d = list(prices.keys())[date_idx + 5]
                     price_5d = prices[future_date_5d].get("close", current_price)
-                    future_return_5d = (price_5d - current_price) / current_price if current_price else None
+                    future_return_5d = (
+                        (price_5d - current_price) / current_price if current_price else None
+                    )
 
-            results.append({
-                "date": date_str,
-                "composite_signal": composite_signal,
-                "recommendation": recommendation,
-                "current_price": current_price,
-                "return_1d": future_return_1d,
-                "return_3d": future_return_3d,
-                "return_5d": future_return_5d,
-                "signal_direction": "bullish" if composite_signal > 0.2 else "bearish" if composite_signal < -0.2 else "neutral"
-            })
+            results.append(
+                {
+                    "date": date_str,
+                    "composite_signal": composite_signal,
+                    "recommendation": recommendation,
+                    "current_price": current_price,
+                    "return_1d": future_return_1d,
+                    "return_3d": future_return_3d,
+                    "return_5d": future_return_5d,
+                    "signal_direction": (
+                        "bullish"
+                        if composite_signal > 0.2
+                        else "bearish" if composite_signal < -0.2 else "neutral"
+                    ),
+                }
+            )
         except Exception as e:
             print(f"[WARN] Failed to process brief {timestamp}: {e}")
 
     return results
+
 
 def evaluate_signal_accuracy(signal_data):
     """
@@ -123,21 +135,33 @@ def evaluate_signal_accuracy(signal_data):
         # 1 天收益评估
         if item["return_1d"] is not None:
             total_1d += 1
-            actual_direction = "bullish" if item["return_1d"] > 0.01 else "bearish" if item["return_1d"] < -0.01 else "neutral"
+            actual_direction = (
+                "bullish"
+                if item["return_1d"] > 0.01
+                else "bearish" if item["return_1d"] < -0.01 else "neutral"
+            )
             if signal == actual_direction:
                 correct_1d += 1
 
         # 3 天收益评估
         if item["return_3d"] is not None:
             total_3d += 1
-            actual_direction = "bullish" if item["return_3d"] > 0.03 else "bearish" if item["return_3d"] < -0.03 else "neutral"
+            actual_direction = (
+                "bullish"
+                if item["return_3d"] > 0.03
+                else "bearish" if item["return_3d"] < -0.03 else "neutral"
+            )
             if signal == actual_direction:
                 correct_3d += 1
 
         # 5 天收益评估
         if item["return_5d"] is not None:
             total_5d += 1
-            actual_direction = "bullish" if item["return_5d"] > 0.05 else "bearish" if item["return_5d"] < -0.05 else "neutral"
+            actual_direction = (
+                "bullish"
+                if item["return_5d"] > 0.05
+                else "bearish" if item["return_5d"] < -0.05 else "neutral"
+            )
             if signal == actual_direction:
                 correct_5d += 1
 
@@ -166,9 +190,10 @@ def evaluate_signal_accuracy(signal_data):
             "5d": total_5d,
             "bullish": len(profits_bullish),
             "bearish": len(profits_bearish),
-            "neutral": len(profits_neutral)
-        }
+            "neutral": len(profits_neutral),
+        },
     }
+
 
 def run_backtest():
     """运行回测"""
@@ -212,19 +237,19 @@ def run_backtest():
 """)
 
     # 评估
-    if accuracy['accuracy_1d'] > 0.6:
+    if accuracy["accuracy_1d"] > 0.6:
         print("  ✅ 优秀：1 天预测准确率 > 60%")
-    elif accuracy['accuracy_1d'] > 0.5:
+    elif accuracy["accuracy_1d"] > 0.5:
         print("  ⚠️  一般：1 天预测准确率 50-60%")
     else:
         print("  ❌ 需改进：1 天预测准确率 < 50%")
 
-    if accuracy['avg_profit_bullish'] > 0.01:
+    if accuracy["avg_profit_bullish"] > 0.01:
         print("  ✅ Bullish 信号有效：平均收益 > 1%")
     else:
         print("  ⚠️  Bullish 信号需改进：平均收益 <= 1%")
 
-    if accuracy['avg_profit_bearish'] < -0.01:
+    if accuracy["avg_profit_bearish"] < -0.01:
         print("  ✅ Bearish 信号有效：平均收益 < -1%")
     else:
         print("  ⚠️  Bearish 信号需改进：平均收益 >= -1%")
@@ -237,17 +262,18 @@ def run_backtest():
         "price_days": len(prices),
         "signal_samples": len(signal_data),
         "accuracy": accuracy,
-        "detailed_results": signal_data
+        "detailed_results": signal_data,
     }
 
-    with open(output_file, 'w', encoding='utf-8') as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         json.dump(result_data, f, indent=2, ensure_ascii=False)
 
-    print(f"\n【详细结果已保存】")
+    print("\n【详细结果已保存】")
     print(f"  {output_file}")
     print("=" * 70)
 
     return result_data
+
 
 if __name__ == "__main__":
     run_backtest()

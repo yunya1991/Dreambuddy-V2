@@ -8,12 +8,12 @@
 数据量：730天（约2年）
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import numpy as np
-import pandas as pd
+import pandas as pd  # noqa: I001
 
 from data.market_data import fetch_historical_candles
 from backtest.engine import BacktestEngine
@@ -34,13 +34,25 @@ def fetch_real_data(inst_id, days=730):
 
 def get_fundamental_data():
     return {
-        "screen1": {"composite_score": 65.0, "momentum_score": 70.0,
-                    "value_score": 60.0, "growth_score": 65.0,
-                    "quality_score": 68.0, "sentiment_score": 55.0},
-        "fundamental_9": {"pe_ttm": 15.0, "pb": 2.0, "roe": 12.0,
-                          "revenue_growth": 20.0, "profit_growth": 18.0,
-                          "debt_ratio": 45.0, "cash_ratio": 30.0,
-                          "gross_margin": 35.0, "net_margin": 15.0}
+        "screen1": {
+            "composite_score": 65.0,
+            "momentum_score": 70.0,
+            "value_score": 60.0,
+            "growth_score": 65.0,
+            "quality_score": 68.0,
+            "sentiment_score": 55.0,
+        },
+        "fundamental_9": {
+            "pe_ttm": 15.0,
+            "pb": 2.0,
+            "roe": 12.0,
+            "revenue_growth": 20.0,
+            "profit_growth": 18.0,
+            "debt_ratio": 45.0,
+            "cash_ratio": 30.0,
+            "gross_margin": 35.0,
+            "net_margin": 15.0,
+        },
     }
 
 
@@ -83,20 +95,34 @@ def main():
 
         strategies = [
             ("双均线(20/200)", MovingAverageStrategy(20, 200)),
-            ("最小阻力策略", LeastResistanceStrategy(warmup_periods=min(80, n-10), update_step=1)),
-            ("AI V2策略", LeastResistanceAIStrategyV2(
-                label_lookahead=7, train_window=min(200, n//3), retrain_interval=30,
-                min_ml_confidence=0.05, enable_fundamental=True, enable_multitask=True,
-                enable_dynamic_weight=True, enable_feature_selection=False,
-                base_rule_weight=0.3, fundamental_data=get_fundamental_data()
-            )),
+            (
+                "最小阻力策略",
+                LeastResistanceStrategy(warmup_periods=min(80, n - 10), update_step=1),
+            ),
+            (
+                "AI V2策略",
+                LeastResistanceAIStrategyV2(
+                    label_lookahead=7,
+                    train_window=min(200, n // 3),
+                    retrain_interval=30,
+                    min_ml_confidence=0.05,
+                    enable_fundamental=True,
+                    enable_multitask=True,
+                    enable_dynamic_weight=True,
+                    enable_feature_selection=False,
+                    base_rule_weight=0.3,
+                    fundamental_data=get_fundamental_data(),
+                ),
+            ),
         ]
 
         for sname, strategy in strategies:
             r = run_backtest(prices, strategy, sname)
             if r:
-                print(f"{name:>6} {r['name']:>18} {r['return']:>9.2f}% {r['sharpe']:>8.3f} "
-                      f"{r['drawdown']:>7.2f}% {r['trades']:>6d}")
+                print(
+                    f"{name:>6} {r['name']:>18} {r['return']:>9.2f}% {r['sharpe']:>8.3f} "
+                    f"{r['drawdown']:>7.2f}% {r['trades']:>6d}"
+                )
 
         print(f"{name:>6} {'买入持有':>18} {bh:>9.2f}%")
 

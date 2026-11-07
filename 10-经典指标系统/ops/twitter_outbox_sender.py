@@ -98,15 +98,19 @@ def _oauth1_signature_base(method: str, base_url: str, params: Dict[str, Any]) -
             items.append((_oauth1_pct_encode(k), _oauth1_pct_encode(v)))
     items.sort(key=lambda x: (x[0], x[1]))
     param_str = "&".join([f"{k}={v}" for k, v in items])
-    return "&".join([
-        _oauth1_pct_encode(str(method or "").upper()),
-        _oauth1_pct_encode(str(base_url or "")),
-        _oauth1_pct_encode(param_str),
-    ])
+    return "&".join(
+        [
+            _oauth1_pct_encode(str(method or "").upper()),
+            _oauth1_pct_encode(str(base_url or "")),
+            _oauth1_pct_encode(param_str),
+        ]
+    )
 
 
 def _oauth1_sign_hmac_sha1(base_str: str, consumer_secret: str, token_secret: str) -> str:
-    key = f"{_oauth1_pct_encode(consumer_secret)}&{_oauth1_pct_encode(token_secret)}".encode("utf-8")
+    key = f"{_oauth1_pct_encode(consumer_secret)}&{_oauth1_pct_encode(token_secret)}".encode(
+        "utf-8"
+    )
     msg = str(base_str or "").encode("utf-8")
     sig = hmac.new(key, msg, hashlib.sha1).digest()
     return base64.b64encode(sig).decode("utf-8")
@@ -127,11 +131,13 @@ def _oauth1_auth_header(params: Dict[str, Any]) -> str:
     for k in keys:
         if k not in params:
             continue
-        parts.append(f"{_oauth1_pct_encode(k)}=\"{_oauth1_pct_encode(params.get(k))}\"")
+        parts.append(f'{_oauth1_pct_encode(k)}="{_oauth1_pct_encode(params.get(k))}"')
     return "OAuth " + ", ".join(parts)
 
 
-def _http_post(url: str, *, headers: Dict[str, str], body: bytes, timeout: float) -> Tuple[int, Any]:
+def _http_post(
+    url: str, *, headers: Dict[str, str], body: bytes, timeout: float
+) -> Tuple[int, Any]:
     req = urllib.request.Request(url, data=body, headers=headers, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=float(timeout)) as resp:
@@ -159,7 +165,9 @@ def _http_post(url: str, *, headers: Dict[str, str], body: bytes, timeout: float
         return 0, {"error": str(e)}
 
 
-def _twitter_post_v2(text: str, bearer_token: str, *, timeout: float = 20.0) -> Tuple[bool, Dict[str, Any]]:
+def _twitter_post_v2(
+    text: str, bearer_token: str, *, timeout: float = 20.0
+) -> Tuple[bool, Dict[str, Any]]:
     txt = str(text or "").strip()
     if not txt:
         return False, {"error": "empty_text"}
@@ -171,7 +179,9 @@ def _twitter_post_v2(text: str, bearer_token: str, *, timeout: float = 20.0) -> 
     }
     payload = {"text": txt}
     body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-    code, obj = _http_post("https://api.twitter.com/2/tweets", headers=headers, body=body, timeout=float(timeout))
+    code, obj = _http_post(
+        "https://api.twitter.com/2/tweets", headers=headers, body=body, timeout=float(timeout)
+    )
     ok = 200 <= int(code) < 300
     out: Dict[str, Any] = {"status_code": int(code), "body": obj}
     if ok and isinstance(obj, dict):
@@ -183,7 +193,9 @@ def _twitter_post_v2(text: str, bearer_token: str, *, timeout: float = 20.0) -> 
     return bool(ok), out
 
 
-def _twitter_post_v2_oauth1(text: str, oauth1: Dict[str, str], *, timeout: float = 20.0) -> Tuple[bool, Dict[str, Any]]:
+def _twitter_post_v2_oauth1(
+    text: str, oauth1: Dict[str, str], *, timeout: float = 20.0
+) -> Tuple[bool, Dict[str, Any]]:
     txt = str(text or "").strip()
     if not txt:
         return False, {"error": "empty_text"}
@@ -208,7 +220,9 @@ def _twitter_post_v2_oauth1(text: str, oauth1: Dict[str, str], *, timeout: float
     sign_params = dict(oauth_params)
     sign_params["oauth_body_hash"] = body_hash
     base_str = _oauth1_signature_base("POST", url, sign_params)
-    sig = _oauth1_sign_hmac_sha1(base_str, oauth1.get("consumer_secret") or "", oauth1.get("access_token_secret") or "")
+    sig = _oauth1_sign_hmac_sha1(
+        base_str, oauth1.get("consumer_secret") or "", oauth1.get("access_token_secret") or ""
+    )
     oauth_params["oauth_signature"] = sig
     oauth_params["oauth_body_hash"] = body_hash
 
@@ -216,7 +230,9 @@ def _twitter_post_v2_oauth1(text: str, oauth1: Dict[str, str], *, timeout: float
         "Authorization": _oauth1_auth_header(oauth_params),
         "Content-Type": "application/json",
     }
-    code, obj = _http_post(url, headers=headers, body=body_str.encode("utf-8"), timeout=float(timeout))
+    code, obj = _http_post(
+        url, headers=headers, body=body_str.encode("utf-8"), timeout=float(timeout)
+    )
     ok = 200 <= int(code) < 300
     out: Dict[str, Any] = {"status_code": int(code), "body": obj}
     if ok and isinstance(obj, dict):
@@ -324,7 +340,7 @@ def _parse_dotenv_file(path: Path) -> Dict[str, str]:
         if not k:
             continue
         v = v.strip()
-        if (len(v) >= 2) and ((v[0] == v[-1]) and (v[0] in ("\"", "'"))):
+        if (len(v) >= 2) and ((v[0] == v[-1]) and (v[0] in ('"', "'"))):
             v = v[1:-1]
         out[k] = v
     return out
@@ -369,8 +385,21 @@ def _auth_status() -> Dict[str, Any]:
     if not has_bearer:
         missing.extend(["TWITTER_BEARER_TOKEN", "TWITTER_TOKEN"])
     if not has_oauth1:
-        missing.extend(["TWITTER_CONSUMER_KEY", "TWITTER_CONSUMER_SECRET", "TWITTER_ACCESS_TOKEN", "TWITTER_ACCESS_TOKEN_SECRET"])
-    return {"ok": True, "auth_mode": mode, "has_bearer": bool(has_bearer), "has_oauth1": bool(has_oauth1), "missing": missing}
+        missing.extend(
+            [
+                "TWITTER_CONSUMER_KEY",
+                "TWITTER_CONSUMER_SECRET",
+                "TWITTER_ACCESS_TOKEN",
+                "TWITTER_ACCESS_TOKEN_SECRET",
+            ]
+        )
+    return {
+        "ok": True,
+        "auth_mode": mode,
+        "has_bearer": bool(has_bearer),
+        "has_oauth1": bool(has_oauth1),
+        "missing": missing,
+    }
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -398,7 +427,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         sys.stdout.write(json.dumps(_auth_status(), ensure_ascii=False) + "\n")
         return 0
 
-    outbox_dir = _default_outbox_dir() if not args.outbox_dir else Path(str(args.outbox_dir)).expanduser()
+    outbox_dir = (
+        _default_outbox_dir() if not args.outbox_dir else Path(str(args.outbox_dir)).expanduser()
+    )
     outbox_path = outbox_dir / "twitter.jsonl"
     receipts_path = outbox_dir / "delivery_receipts.jsonl"
 
@@ -470,7 +501,13 @@ def main(argv: Optional[List[str]] = None) -> int:
             continue
 
         if bool(args.dry_run):
-            sys.stdout.write(json.dumps({"dry_run": True, "id": eid, "trace_id": trace_id, "len": len(msg)}, ensure_ascii=False) + "\n")
+            sys.stdout.write(
+                json.dumps(
+                    {"dry_run": True, "id": eid, "trace_id": trace_id, "len": len(msg)},
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
             sent += 1
             continue
 
@@ -481,7 +518,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         except Exception:
             tweet_id = None
         try:
-            status_code = (None if result.get("status_code") is None else int(result.get("status_code") or 0))
+            status_code = (
+                None if result.get("status_code") is None else int(result.get("status_code") or 0)
+            )
         except Exception:
             status_code = None
         err_obj = None
@@ -502,12 +541,36 @@ def main(argv: Optional[List[str]] = None) -> int:
         }
         _append_receipt(receipts_path, receipt)
         processed.add(eid)
-        sys.stdout.write(json.dumps({"ok": bool(ok), "id": eid, "trace_id": trace_id, "tweet_id": tweet_id, "status_code": status_code}, ensure_ascii=False) + "\n")
+        sys.stdout.write(
+            json.dumps(
+                {
+                    "ok": bool(ok),
+                    "id": eid,
+                    "trace_id": trace_id,
+                    "tweet_id": tweet_id,
+                    "status_code": status_code,
+                },
+                ensure_ascii=False,
+            )
+            + "\n"
+        )
         sent += 1
         if sleep_sec > 0:
             time.sleep(float(sleep_sec))
 
-    sys.stdout.write(json.dumps({"ok": True, "outbox": str(outbox_path), "receipts": str(receipts_path), "sent": int(sent), "skipped": int(skipped)}, ensure_ascii=False) + "\n")
+    sys.stdout.write(
+        json.dumps(
+            {
+                "ok": True,
+                "outbox": str(outbox_path),
+                "receipts": str(receipts_path),
+                "sent": int(sent),
+                "skipped": int(skipped),
+            },
+            ensure_ascii=False,
+        )
+        + "\n"
+    )
     return 0
 
 

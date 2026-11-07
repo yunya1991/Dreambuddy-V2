@@ -10,6 +10,7 @@ ExchangeClient 协议对象。
   - 但最终不改变实际下单，只写入 shadow 审计日志
   - 实际下单仍走原始 okx_client.place_order()
 """
+
 from __future__ import annotations
 
 import os
@@ -50,7 +51,7 @@ def build_yijing_engine(
         lark_bridge: 飞书告警桥接（None=FAIL-OPEN 默认）
     """
     _ensure_tee_on_path()
-    from tee_core.core.engine import TradeExecutionEngine
+    from tee_core.core.engine import TradeExecutionEngine  # noqa: I001
     from tee_core.adapters.okx_adapter import OkxAdapter
 
     base = Path(audit_dir) if audit_dir else _resolve_tee_root() / "audit"

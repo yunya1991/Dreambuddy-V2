@@ -25,17 +25,16 @@
 **launchd plist 模板**：脚本末尾 `if __name__ == "__main__"` 内嵌完整 8 条 StartCalendarInterval。
 Label = com.dreambuddy.cognitive-evolution
 """
+
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import random
-import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR) not in sys.path:
@@ -47,6 +46,7 @@ DEFAULT_BAYESIAN_PATH = _SCRIPT_DIR.parent / "2-交易记忆单元" / "bayesian_
 # =================================================================
 # 1. 路径工具
 # =================================================================
+
 
 def _sd(work_dir: Path, name: str) -> Path:
     """确保子目录存在并返回。"""
@@ -75,6 +75,7 @@ def _write_json_atomic(path: Path, obj: Any) -> None:
 # 2. Evolution（提案）—— no-llm 模式：按 bayesian 聚类产 N 个 PROPOSED
 # =================================================================
 
+
 def _load_bayesian(path: Path) -> List[Dict[str, Any]]:
     db = _read_json(path, {})
     mems = db.get("memories") if isinstance(db, dict) else []
@@ -91,15 +92,15 @@ def _cluster_by_domain_tags(memories: Iterable[Dict[str, Any]]) -> Dict[str, Lis
         clusters.setdefault(key, []).append(m)
     # 按组内 verify_count+confidence 排序降序；再按组大小排序
     for k in clusters:
-        clusters[k].sort(key=lambda x: (
-            int(x.get("verify_count") or 0), float(x.get("confidence") or 0.0)),
-            reverse=True)
+        clusters[k].sort(
+            key=lambda x: (int(x.get("verify_count") or 0), float(x.get("confidence") or 0.0)),
+            reverse=True,
+        )
     return dict(sorted(clusters.items(), key=lambda kv: len(kv[1]), reverse=True))
 
 
 CATEGORY_BY_HINT = [
-    (("trading", "backtest", "strategy", "execution", "okx", "pnl"),
-     "trading_process", "APP-TRD"),
+    (("trading", "backtest", "strategy", "execution", "okx", "pnl"), "trading_process", "APP-TRD"),
     (("debug", "fix", "bug"), "prompt", "APP-DEV"),
     (("research", "knowledge", "external"), "research", "APP-RAG"),
     (("cognitive", "memory", "verify", "record"), "cognitive", "APP-COG"),
@@ -125,9 +126,9 @@ SAMPLE_TOUCHED_POOL = [
 ]
 
 
-def _evolution_generate_proposals(work_dir: Path, bayesian_path: Path,
-                                  max_proposals: int, dry_run: bool,
-                                  no_llm: bool) -> List[Path]:
+def _evolution_generate_proposals(
+    work_dir: Path, bayesian_path: Path, max_proposals: int, dry_run: bool, no_llm: bool
+) -> List[Path]:
     """产生 max_proposals 条 PROPOSED JSON。返回写入的文件列表。"""
     proposed_dir = _sd(work_dir, "PROPOSED")
     memories = _load_bayesian(bayesian_path)
@@ -136,15 +137,25 @@ def _evolution_generate_proposals(work_dir: Path, bayesian_path: Path,
     # 若 bayesian 为空（测试）→ 造 N 条 mock 聚类
     if not clusters:
         fallback_tags_pool = [
-            ["debug", "fix"], ["backtest", "trading"],
-            ["research", "knowledge"], ["cognitive", "memory"],
+            ["debug", "fix"],
+            ["backtest", "trading"],
+            ["research", "knowledge"],
+            ["cognitive", "memory"],
         ]
         for i, tg in enumerate(fallback_tags_pool):
-            clusters.setdefault(f"fallback_{i}", [
-                {"memory_id": f"FAKE-MEM-{i}-{k}",
-                 "content": f"mock 记忆 {i}-{k}，tags={tg}",
-                 "tags": list(tg), "verify_count": 3, "confidence": 0.6 + k * 0.05}
-                for k in range(3)])
+            clusters.setdefault(
+                f"fallback_{i}",
+                [
+                    {
+                        "memory_id": f"FAKE-MEM-{i}-{k}",
+                        "content": f"mock 记忆 {i}-{k}，tags={tg}",
+                        "tags": list(tg),
+                        "verify_count": 3,
+                        "confidence": 0.6 + k * 0.05,
+                    }
+                    for k in range(3)
+                ],
+            )
 
     outputs: List[Path] = []
     rng = random.Random(0xC0FFEE)  # 可复现
@@ -161,19 +172,25 @@ def _evolution_generate_proposals(work_dir: Path, bayesian_path: Path,
         # touched_files：tags 相关的 1-2 个候选 + 随机一个 pool
         touched: List[str] = []
         for sample in SAMPLE_TOUCHED_POOL:
-            if any(any(tok in sample.lower() for tok in str(t).lower().split("-")[:1])
-                   for t in tags[:2]):
+            if any(
+                any(tok in sample.lower() for tok in str(t).lower().split("-")[:1])
+                for t in tags[:2]
+            ):
                 touched.append(sample)
                 break
         if not touched:
             touched.append(rng.choice(SAMPLE_TOUCHED_POOL))
         # 再随机加一个 SAMPLE 凑 2 个
-        extra = rng.choice([s for s in SAMPLE_TOUCHED_POOL if s not in touched] or SAMPLE_TOUCHED_POOL)
+        extra = rng.choice(
+            [s for s in SAMPLE_TOUCHED_POOL if s not in touched] or SAMPLE_TOUCHED_POOL
+        )
         if extra not in touched:
             touched.append(extra)
         proposed_changes = {
-            p: {"delta": f"+{rng.randint(2, 40)} -{rng.randint(0, 15)}",
-                "lines_modified": rng.randint(5, 80)}
+            p: {
+                "delta": f"+{rng.randint(2, 40)} -{rng.randint(0, 15)}",
+                "lines_modified": rng.randint(5, 80),
+            }
             for p in touched
         }
         payload = {
@@ -182,8 +199,7 @@ def _evolution_generate_proposals(work_dir: Path, bayesian_path: Path,
             "actor": "evolution",
             "category": category,
             "domain_key": ckey,
-            "base_memory_ids": [str(m.get("memory_id") or f"MID-{i}")
-                                for m in mems[:3]],
+            "base_memory_ids": [str(m.get("memory_id") or f"MID-{i}") for m in mems[:3]],
             "touched_files": list(touched),
             "proposed_changes_by_path": proposed_changes,
             "no_llm": bool(no_llm),
@@ -208,8 +224,9 @@ def _evolution_generate_proposals(work_dir: Path, bayesian_path: Path,
         idx = produced
         now = datetime.now(timezone.utc)
         proposal_id = f"PROP-EV-{int(now.timestamp() * 1000)}-GEN{idx}"
-        touched = list(SAMPLE_TOUCHED_POOL[idx % len(SAMPLE_TOUCHED_POOL):
-                                           idx % len(SAMPLE_TOUCHED_POOL) + 1]) or [SAMPLE_TOUCHED_POOL[0]]
+        touched = list(
+            SAMPLE_TOUCHED_POOL[idx % len(SAMPLE_TOUCHED_POOL) : idx % len(SAMPLE_TOUCHED_POOL) + 1]
+        ) or [SAMPLE_TOUCHED_POOL[0]]
         payload = {
             "id": proposal_id,
             "ts": now.isoformat(),
@@ -218,8 +235,9 @@ def _evolution_generate_proposals(work_dir: Path, bayesian_path: Path,
             "domain_key": f"GEN-{idx}",
             "base_memory_ids": [],
             "touched_files": touched,
-            "proposed_changes_by_path": {t: {"delta": "+3 -0", "lines_modified": 3}
-                                         for t in touched},
+            "proposed_changes_by_path": {
+                t: {"delta": "+3 -0", "lines_modified": 3} for t in touched
+            },
             "no_llm": bool(no_llm),
             "summary": f"（no-llm 通用）Evolution 通用建议 #{idx}",
         }
@@ -234,10 +252,12 @@ def _evolution_generate_proposals(work_dir: Path, bayesian_path: Path,
 # 3. Critic（怀疑批评 + 宪法先验）
 # =================================================================
 
+
 def _call_constitution_audit(prop: Dict[str, Any]) -> Dict[str, Any]:
     """封装 constitution.audit_proposal。若导入失败 → 返回 FAIL-OPEN passed=True+warning。"""
     try:
         from constitution import audit_proposal  # type: ignore
+
         # 把 prop 字段对齐成 audit 期望形态：touched_files/written_paths 都是 set/list
         p_for_audit: Dict[str, Any] = dict(prop)
         tf = prop.get("touched_files") or []
@@ -253,11 +273,19 @@ def _call_constitution_audit(prop: Dict[str, Any]) -> Dict[str, Any]:
             return dict(result.to_dict())
         if isinstance(result, dict):
             return result
-        return {"passed": True, "warning": "audit 返回非 dict/dataclass 形态（FAIL-OPEN）",
-                "rule_results": {}, "total_violations": 0}
+        return {
+            "passed": True,
+            "warning": "audit 返回非 dict/dataclass 形态（FAIL-OPEN）",
+            "rule_results": {},
+            "total_violations": 0,
+        }
     except Exception as e:
-        return {"passed": True, "warning": f"constitution 导入/调用失败（FAIL-OPEN）: {e}",
-                "rule_results": {}, "total_violations": 0}
+        return {
+            "passed": True,
+            "warning": f"constitution 导入/调用失败（FAIL-OPEN）: {e}",
+            "rule_results": {},
+            "total_violations": 0,
+        }
 
 
 def _critic_run(work_dir: Path, dry_run: bool, no_llm: bool) -> List[Path]:
@@ -305,6 +333,7 @@ def _critic_run(work_dir: Path, dry_run: bool, no_llm: bool) -> List[Path]:
 # 4. Verifier（保守验证）—— 扫描 CRITIQUED → VALIDATED
 # =================================================================
 
+
 def _verifier_run(work_dir: Path, dry_run: bool, no_llm: bool) -> List[Path]:
     crit_dir = work_dir / "CRITIQUED"
     val_dir = _sd(work_dir, "VALIDATED")
@@ -325,11 +354,10 @@ def _verifier_run(work_dir: Path, dry_run: bool, no_llm: bool) -> List[Path]:
         if no_llm:
             # 信号1：constitution 通过
             # 信号2：proposal 有 base_memory_ids 支撑 ≥2
-            prop_path = (work_dir / "PROPOSED" / c.name)
+            prop_path = work_dir / "PROPOSED" / c.name
             prop = _read_json(prop_path, {})
             base_count = len(prop.get("base_memory_ids") or []) if isinstance(prop, dict) else 0
-            signals = [int(audit_pass), int(crit_pass),
-                       int(base_count >= 2), int(base_count >= 1)]
+            signals = [int(audit_pass), int(crit_pass), int(base_count >= 2), int(base_count >= 1)]
             score = sum(signals) / max(len(signals), 1)
             validation_passed = score >= 0.5  # 至少过半
             note = (
@@ -362,6 +390,7 @@ def _verifier_run(work_dir: Path, dry_run: bool, no_llm: bool) -> List[Path]:
 # 5. Gardener（规则修剪）—— 只报告（dry-run）/ 标记
 # =================================================================
 
+
 def _gardener_scan(work_dir: Path) -> List[Dict[str, Any]]:
     """扫描 GARDENER_TRASH_MARKERS / bayesian 老记忆。返回拟修剪计划。"""
     plan: List[Dict[str, Any]] = []
@@ -371,27 +400,31 @@ def _gardener_scan(work_dir: Path) -> List[Dict[str, Any]]:
         for f in sorted(trash_dir.glob("*.json")):
             data = _read_json(f, {})
             if isinstance(data, dict) and data.get("should_delete"):
-                plan.append({
-                    "type": "marker",
-                    "path": str(f),
-                    "reason": f"age_days={data.get('age_days')} quality={data.get('quality_level')}",
-                    "action": "DELETE_OR_ARCHIVE",
-                })
+                plan.append(
+                    {
+                        "type": "marker",
+                        "path": str(f),
+                        "reason": f"age_days={data.get('age_days')} quality={data.get('quality_level')}",
+                        "action": "DELETE_OR_ARCHIVE",
+                    }
+                )
     # (b) bayesian 候选：C/D 级老于 90 天（仅建议，不实际删）
     bpath = DEFAULT_BAYESIAN_PATH
     if bpath.exists():
         mems = _load_bayesian(bpath)
-        cutoff = int(datetime.now(timezone.utc).timestamp()) - 90 * 86400
+        cutoff = int(datetime.now(timezone.utc).timestamp()) - 90 * 86400  # noqa: F841
         for m in mems:
             q = str(m.get("quality_level") or "C").upper()
             if q in ("C", "D") and int(m.get("verify_count") or 0) <= 1:
                 # 简化估算：无 created_at epoch 时，用占位；不做实际排序
-                plan.append({
-                    "type": "bayesian_candidate",
-                    "memory_id": str(m.get("memory_id") or "?"),
-                    "reason": f"quality={q} verify_count={m.get('verify_count')}",
-                    "action": "REVIEW_BEFORE_TRIM",
-                })
+                plan.append(
+                    {
+                        "type": "bayesian_candidate",
+                        "memory_id": str(m.get("memory_id") or "?"),
+                        "reason": f"quality={q} verify_count={m.get('verify_count')}",
+                        "action": "REVIEW_BEFORE_TRIM",
+                    }
+                )
                 if len(plan) >= 50:
                     break
     return plan
@@ -430,10 +463,11 @@ def _gardener_run(work_dir: Path, dry_run: bool, no_llm: bool) -> Dict[str, Any]
 # 6. Auto 路由：按当前时间决定该跑哪个角色（用于 launchd 统一入口）
 # =================================================================
 
+
 def _auto_route() -> str:
     now = datetime.now()
     wd = now.weekday()  # Mon=0
-    h, m = now.hour, now.minute
+    h, m = now.hour, now.minute  # noqa: F841
     # Gardener 周一 01~03 点
     if wd == 0 and 1 <= h <= 3:
         return "gardener"
@@ -451,28 +485,45 @@ def _auto_route() -> str:
 # 7. CLI
 # =================================================================
 
+
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="cognitive_evolution_scheduler",
         description="Phase1 Hermes 四角色进化 Cron：Evolution / Critic / Verifier / Gardener。"
-                    "支持 --dry-run 与 --no-llm 降级。",
+        "支持 --dry-run 与 --no-llm 降级。",
     )
-    p.add_argument("--role", default="auto",
-                   choices=["auto", "evolution", "critic", "verifier", "gardener", "all"],
-                   help="要执行的角色（auto=按当前时间路由, all=四角色依次跑）。")
-    p.add_argument("--dry-run", action="store_true",
-                   help="只写报告 / PROPOSED/CRITIQUED/VALIDATED 状态，不写 APPLIED，不删除任何东西。")
-    p.add_argument("--no-llm", action="store_true",
-                   help="禁用所有 LLM 调用，全部走规则基线（测试/CI 默认）。")
-    p.add_argument("--max-proposals", type=int, default=5,
-                   help="Evolution 阶段最多生成多少条提案（default=5）。")
-    p.add_argument("--work-dir", type=Path,
-                   default=_SCRIPT_DIR.parent / "artifacts" / "evolution_pipeline",
-                   help="pipeline 根目录（PROPOSED/CRITIQUED/VALIDATED/APPLIED/GARDENER_*）。")
-    p.add_argument("--report-json", type=Path, default=None,
-                   help="结束后写完整执行报告到此 JSON 文件。")
-    p.add_argument("--bayesian", type=Path, default=None,
-                   help="覆盖默认 bayesian_memories.json 路径。")
+    p.add_argument(
+        "--role",
+        default="auto",
+        choices=["auto", "evolution", "critic", "verifier", "gardener", "all"],
+        help="要执行的角色（auto=按当前时间路由, all=四角色依次跑）。",
+    )
+    p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="只写报告 / PROPOSED/CRITIQUED/VALIDATED 状态，不写 APPLIED，不删除任何东西。",
+    )
+    p.add_argument(
+        "--no-llm", action="store_true", help="禁用所有 LLM 调用，全部走规则基线（测试/CI 默认）。"
+    )
+    p.add_argument(
+        "--max-proposals",
+        type=int,
+        default=5,
+        help="Evolution 阶段最多生成多少条提案（default=5）。",
+    )
+    p.add_argument(
+        "--work-dir",
+        type=Path,
+        default=_SCRIPT_DIR.parent / "artifacts" / "evolution_pipeline",
+        help="pipeline 根目录（PROPOSED/CRITIQUED/VALIDATED/APPLIED/GARDENER_*）。",
+    )
+    p.add_argument(
+        "--report-json", type=Path, default=None, help="结束后写完整执行报告到此 JSON 文件。"
+    )
+    p.add_argument(
+        "--bayesian", type=Path, default=None, help="覆盖默认 bayesian_memories.json 路径。"
+    )
     return p
 
 
@@ -493,9 +544,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     def run_one(r: str) -> Tuple[bool, str, Any]:
         try:
             if r == "evolution":
-                paths = _evolution_generate_proposals(work_dir, bayesian,
-                                                       max(args.max_proposals, 0),
-                                                       args.dry_run, args.no_llm)
+                paths = _evolution_generate_proposals(
+                    work_dir, bayesian, max(args.max_proposals, 0), args.dry_run, args.no_llm
+                )
                 return True, f"generated={len(paths)}", [str(p) for p in paths]
             if r == "critic":
                 paths = _critic_run(work_dir, args.dry_run, args.no_llm)
@@ -540,8 +591,11 @@ def main(argv: Optional[List[str]] = None) -> int:
             _write_json_atomic(Path(args.report_json).resolve(), final_report)
         except Exception as e:
             print(f"[WARN] 写 report-json 失败：{e}", file=sys.stderr)
-    print(json.dumps({k: v for k, v in final_report.items() if k != "per_role"},
-                     ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {k: v for k, v in final_report.items() if k != "per_role"}, ensure_ascii=False, indent=2
+        )
+    )
     return 0
 
 
@@ -549,7 +603,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 # 8. 内嵌 launchd plist 模板（8 条 StartCalendarInterval）
 # =================================================================
 
-PLIST_TEMPLATE = r'''<?xml version="1.0" encoding="UTF-8"?>
+PLIST_TEMPLATE = r"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
@@ -609,7 +663,7 @@ PLIST_TEMPLATE = r'''<?xml version="1.0" encoding="UTF-8"?>
     <string>__PROJECT_ROOT__/4-MEMORY/9-工具与接口</string>
 </dict>
 </plist>
-'''
+"""
 
 # 把模板直接绑定到模块内，便于 t06 断言
 LAUNCHD_PLIST_TEMPLATE = PLIST_TEMPLATE
@@ -618,8 +672,11 @@ LAUNCHD_PLIST_TEMPLATE = PLIST_TEMPLATE
 if __name__ == "__main__":
     # === 快速导出 plist：--emit-plist PATH（运维用，非必须 CLI）===
     if len(sys.argv) >= 2 and sys.argv[1] == "--emit-plist":
-        out = Path(sys.argv[2]).resolve() if len(sys.argv) >= 3 else \
-            _SCRIPT_DIR.parent / "artifacts" / "com.dreambuddy.cognitive-evolution.plist"
+        out = (
+            Path(sys.argv[2]).resolve()
+            if len(sys.argv) >= 3
+            else _SCRIPT_DIR.parent / "artifacts" / "com.dreambuddy.cognitive-evolution.plist"
+        )
         content = PLIST_TEMPLATE.replace("__PROJECT_ROOT__", str(_PROJECT_ROOT))
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(content, encoding="utf-8")

@@ -2,6 +2,7 @@
 
 对齐 spec §3.2（SD-5：伪代码 run_scenario 改为现有 run() 接口扩展）
 """
+
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -10,8 +11,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.scenario_runner import ScenarioRunner
-from core.intent_sample_pipeline import IntentSample, IntentSamplePipeline
+from core.scenario_runner import ScenarioRunner  # noqa: I001
+from core.intent_sample_pipeline import IntentSamplePipeline
 
 
 @pytest.fixture
@@ -106,8 +107,15 @@ class TestScenarioRunnerIntentHook:
             },
             "steps": [{"name": "wait", "action": "wait", "seconds": 0}],
         }
-        with patch.object(runner_with_pipeline, "_call_dreamos_intent_route",
-                          return_value={"predicted_intent": "trend_following", "confidence": 0.8, "level": "rule"}):
+        with patch.object(
+            runner_with_pipeline,
+            "_call_dreamos_intent_route",
+            return_value={
+                "predicted_intent": "trend_following",
+                "confidence": 0.8,
+                "level": "rule",
+            },
+        ):
             with patch.object(runner_with_pipeline, "_extract_user_input", return_value="BTC 趋势"):
                 mock_page = MagicMock()
                 runner_with_pipeline.run(mock_page, scenario)
@@ -120,7 +128,11 @@ class TestScenarioRunnerIntentHook:
         """无 pipeline 时 run() 不触发 capture（向后兼容）"""
         scenario = {
             "name": "test",
-            "intent_training": {"gold_intent": "trend_following", "scenario_id": "TREND_UP", "split": "train"},
+            "intent_training": {
+                "gold_intent": "trend_following",
+                "scenario_id": "TREND_UP",
+                "split": "train",
+            },
             "steps": [{"name": "wait", "action": "wait", "seconds": 0}],
         }
         mock_page = MagicMock()

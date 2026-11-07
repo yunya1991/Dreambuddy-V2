@@ -4,7 +4,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from .backtest import BacktestResult, Backtester
+from .backtest import Backtester, BacktestResult
 from .drift import DriftMonitor, DriftReport
 from .overfitting import OverfitReport, OverfittingDetector
 from .paths import qmm_dir

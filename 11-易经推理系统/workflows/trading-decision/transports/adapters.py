@@ -4,12 +4,10 @@ import json
 import os
 import socket
 import ssl
-from typing import Any, Callable, Deque, Dict, Optional, Tuple
+from collections import defaultdict, deque
+from typing import Any, Callable, Deque, Dict, Optional
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
-
-from collections import defaultdict, deque
-
 
 SenderFn = Callable[[str, Dict[str, Any], int], Dict[str, Any]]
 
@@ -32,7 +30,9 @@ class HTTPTransport:
     def __init__(
         self,
         base_url: str,
-        sender: Optional[Callable[[str, Dict[str, Any], int, Optional[Dict[str, str]]], Dict[str, Any]]] = None,
+        sender: Optional[
+            Callable[[str, Dict[str, Any], int, Optional[Dict[str, str]]], Dict[str, Any]]
+        ] = None,
         timeout_ms: int = 30000,
         jwt_token: str = "",
     ) -> None:
@@ -42,19 +42,35 @@ class HTTPTransport:
         self.jwt_token = jwt_token
 
     def _default_sender(
-        self, url: str, payload: Dict[str, Any], timeout_ms: int, headers: Optional[Dict[str, str]] = None
+        self,
+        url: str,
+        payload: Dict[str, Any],
+        timeout_ms: int,
+        headers: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         req_headers = {"Content-Type": "application/json"}
         if headers:
             req_headers.update(headers)
-        req = Request(url, data=json.dumps(payload).encode("utf-8"), headers=req_headers, method="POST")
+        req = Request(
+            url, data=json.dumps(payload).encode("utf-8"), headers=req_headers, method="POST"
+        )
         try:
             with urlopen(req, timeout=max(1, int(timeout_ms) / 1000)) as resp:
                 body = resp.read().decode("utf-8", errors="replace")
-                return {"status": int(getattr(resp, "status", 200)), "url": url, "timeout_ms": timeout_ms, "body": body}
+                return {
+                    "status": int(getattr(resp, "status", 200)),
+                    "url": url,
+                    "timeout_ms": timeout_ms,
+                    "body": body,
+                }
         except HTTPError as exc:
             body = exc.read().decode("utf-8", errors="replace") if hasattr(exc, "read") else ""
-            return {"status": int(getattr(exc, "code", 500)), "url": url, "timeout_ms": timeout_ms, "body": body}
+            return {
+                "status": int(getattr(exc, "code", 500)),
+                "url": url,
+                "timeout_ms": timeout_ms,
+                "body": body,
+            }
         except URLError as exc:
             return {"status": 0, "url": url, "timeout_ms": timeout_ms, "error": str(exc)}
 
@@ -74,7 +90,9 @@ class HTTPTransport:
             headers["Authorization"] = f"Bearer {self.jwt_token}"
         return self._call_sender(url, dict(envelope), headers)
 
-    def _call_sender(self, url: str, payload: Dict[str, Any], headers: Optional[Dict[str, str]]) -> Dict[str, Any]:
+    def _call_sender(
+        self, url: str, payload: Dict[str, Any], headers: Optional[Dict[str, str]]
+    ) -> Dict[str, Any]:
         try:
             return self.sender(url, payload, self.timeout_ms, headers)
         except TypeError:
@@ -183,7 +201,9 @@ class RedisStreamsTransport:
         return {"status": "OK", "stream": stream, "response": resp}
 
     def _execute(self, *parts: str) -> Any:
-        sock = socket.create_connection((self._cfg.host, self._cfg.port), timeout=max(1, int(self.timeout_ms) / 1000))
+        sock = socket.create_connection(
+            (self._cfg.host, self._cfg.port), timeout=max(1, int(self.timeout_ms) / 1000)
+        )
         try:
             if self._cfg.use_tls:
                 ctx = ssl.create_default_context()

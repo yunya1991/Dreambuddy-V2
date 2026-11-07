@@ -2,6 +2,7 @@
 
 注册式架构：新增数据源 = 注册一个 collector，不动 dispatcher。
 """
+
 from __future__ import annotations
 
 from data_center.collectors._base import BaseCollector

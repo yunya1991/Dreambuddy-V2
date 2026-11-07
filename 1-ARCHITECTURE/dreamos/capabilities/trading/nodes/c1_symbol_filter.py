@@ -36,8 +36,7 @@ import math
 from typing import Any, Dict, List, Tuple
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
-
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 # ── 默认阈值（与 ml_trade_service.py CONFIG 保持一致） ──────
 _DEFAULT_FILTER_MIN_TURNOVER = 50000.0
@@ -113,12 +112,32 @@ class C1SymbolFilterNode(BaseNode):
         return {
             "min_turnover": _get_float("filter_min_turnover_7d", _DEFAULT_FILTER_MIN_TURNOVER),
             "max_gap": _get_float("filter_max_gap_rate", _DEFAULT_FILTER_MAX_GAP),
-            "min_age_shadow": _get_float("filter_min_age_days_shadow", _DEFAULT_FILTER_MIN_AGE_SHADOW),
+            "min_age_shadow": _get_float(
+                "filter_min_age_days_shadow", _DEFAULT_FILTER_MIN_AGE_SHADOW
+            ),
             "relax_enabled": _get_bool("universe_stage_a_relax_enabled", _DEFAULT_RELAX_ENABLED),
-            "relax_steps": max(0, min(10, _get_int("universe_stage_a_relax_max_steps", _DEFAULT_RELAX_MAX_STEPS))),
-            "min_age_floor": max(0.0, _get_float("universe_stage_a_relax_min_age_floor_days", _DEFAULT_RELAX_MIN_AGE_FLOOR)),
-            "turnover_floor": max(0.0, _get_float("universe_stage_a_relax_min_turnover_floor", _DEFAULT_RELAX_MIN_TURNOVER_FLOOR)),
-            "gap_ceiling": _clip(_get_float("universe_stage_a_relax_max_gap_ceiling", _DEFAULT_RELAX_MAX_GAP_CEILING), 0.001, 0.99),
+            "relax_steps": max(
+                0, min(10, _get_int("universe_stage_a_relax_max_steps", _DEFAULT_RELAX_MAX_STEPS))
+            ),
+            "min_age_floor": max(
+                0.0,
+                _get_float(
+                    "universe_stage_a_relax_min_age_floor_days", _DEFAULT_RELAX_MIN_AGE_FLOOR
+                ),
+            ),
+            "turnover_floor": max(
+                0.0,
+                _get_float(
+                    "universe_stage_a_relax_min_turnover_floor", _DEFAULT_RELAX_MIN_TURNOVER_FLOOR
+                ),
+            ),
+            "gap_ceiling": _clip(
+                _get_float(
+                    "universe_stage_a_relax_max_gap_ceiling", _DEFAULT_RELAX_MAX_GAP_CEILING
+                ),
+                0.001,
+                0.99,
+            ),
             "target_min": _get_int("universe_stage_a_target_min_candidates", _DEFAULT_TARGET_MIN),
         }
 
@@ -171,15 +190,17 @@ class C1SymbolFilterNode(BaseNode):
                 age = float(coin_stats.get("age_days", 0.0) or 0.0)
             except Exception:
                 age = 0.0
-            rows.append({
-                "coin": name,
-                "px": px,
-                "turnover": turnover,
-                "gap": gap,
-                "jump": jump,
-                "age": age,
-                "sz_decimals": coin_meta.get("szDecimals"),
-            })
+            rows.append(
+                {
+                    "coin": name,
+                    "px": px,
+                    "turnover": turnover,
+                    "gap": gap,
+                    "jump": jump,
+                    "age": age,
+                    "sz_decimals": coin_meta.get("szDecimals"),
+                }
+            )
 
         return rows, symbols_total, mids_total
 
@@ -295,33 +316,45 @@ class C1SymbolFilterNode(BaseNode):
 
         best_coins, best_rejected = self._apply(rows, min_turnover0, max_gap0, min_age_shadow0)
         step_counts: Dict[str, int] = {"0": len(best_coins)}
-        filter_log: List[Dict[str, Any]] = [{
-            "step": 0,
-            "min_turnover": float(min_turnover0),
-            "max_gap": float(max_gap0),
-            "min_age_shadow": float(min_age_shadow0),
-            "candidates": len(best_coins),
-        }]
-        rejected_accum: Dict[str, List[str]] = {r["coin"]: list(r["reasons"]) for r in best_rejected}
+        filter_log: List[Dict[str, Any]] = [
+            {
+                "step": 0,
+                "min_turnover": float(min_turnover0),
+                "max_gap": float(max_gap0),
+                "min_age_shadow": float(min_age_shadow0),
+                "candidates": len(best_coins),
+            }
+        ]
+        rejected_accum: Dict[str, List[str]] = {
+            r["coin"]: list(r["reasons"]) for r in best_rejected
+        }
 
         # 4. relax 阶梯
         target_min = cfg["target_min"]
         if cfg["relax_enabled"] and len(best_coins) < int(target_min):
             for step in range(1, int(cfg["relax_steps"]) + 1):
                 mult_turn = max(0.0, 0.5 ** float(step))
-                min_turn = max(float(cfg["turnover_floor"]), float(min_turnover0) * float(mult_turn))
-                max_gap = min(float(cfg["gap_ceiling"]), float(max_gap0) * float(2.0 ** float(step)))
-                min_age = max(float(cfg["min_age_floor"]), float(min_age_shadow0) * float(mult_turn))
+                min_turn = max(
+                    float(cfg["turnover_floor"]), float(min_turnover0) * float(mult_turn)
+                )
+                max_gap = min(
+                    float(cfg["gap_ceiling"]), float(max_gap0) * float(2.0 ** float(step))
+                )
+                min_age = max(
+                    float(cfg["min_age_floor"]), float(min_age_shadow0) * float(mult_turn)
+                )
 
                 coins_i, rejected_i = self._apply(rows, min_turn, max_gap, min_age)
                 step_counts[str(step)] = len(coins_i)
-                filter_log.append({
-                    "step": int(step),
-                    "min_turnover": float(min_turn),
-                    "max_gap": float(max_gap),
-                    "min_age_shadow": float(min_age),
-                    "candidates": len(coins_i),
-                })
+                filter_log.append(
+                    {
+                        "step": int(step),
+                        "min_turnover": float(min_turn),
+                        "max_gap": float(max_gap),
+                        "min_age_shadow": float(min_age),
+                        "candidates": len(coins_i),
+                    }
+                )
                 # 累积 rejected（更宽松步骤的拒绝原因覆盖严格步骤）
                 for r in rejected_i:
                     rejected_accum[r["coin"]] = list(r["reasons"])
@@ -340,8 +373,7 @@ class C1SymbolFilterNode(BaseNode):
 
         # 组装 rejected 列表
         rejected_list = [
-            {"coin": coin, "reasons": reasons}
-            for coin, reasons in rejected_accum.items()
+            {"coin": coin, "reasons": reasons} for coin, reasons in rejected_accum.items()
         ]
 
         # 计算 confidence（候选数 / target_min, [0, 1]）

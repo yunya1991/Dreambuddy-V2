@@ -5,13 +5,14 @@ V15 经典马丁策略信号模块（16层入场决策 + 16项技术指标）
 
 本模块独立于三屏系统，是 V15 经典马丁策略的核心信号引擎。
 """
+
 import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
 
-from market_data import fetch_candles
+from market_data import fetch_candles  # noqa: E402
 
 # ── 技术指标计算 ──────────────────────────────────────────────────────────
 
@@ -436,7 +437,7 @@ def calc_tema(prices, period=30):
     direction = "BULL" if tema > price else "BEAR"
 
     if len(prices) >= period + 2:
-        prev_price = prices[-2]
+        prev_price = prices[-2]  # noqa: F841
         prev_tema = tema
         for p in prices[:-1]:
             ema1 = p * alpha + ema1 * (1 - alpha)
@@ -496,7 +497,7 @@ def calc_golden_cross(prices, fast_period=50, slow_period=200):
     }
 
 
-def calc_ema_align(prices, periods=[20, 50, 200]):
+def calc_ema_align(prices, periods=[20, 50, 200]):  # noqa: B006
     max_period = max(periods)
     if len(prices) < max_period:
         return None
@@ -562,7 +563,7 @@ def calc_atr(highs, lows, closes, period=14):
     tr_list = []
     for i in range(1, n):
         h = float(highs[i])
-        l = float(lows[i])
+        l = float(lows[i])  # noqa: E741
         pc = float(closes[i - 1])
         tr = max(h - l, abs(h - pc), abs(l - pc))
         tr_list.append(tr)
@@ -593,7 +594,7 @@ def calc_donchian(highs, lows, period=20):
         return None
 
     upper = max(float(h) for h in highs[-period:])
-    lower = min(float(l) for l in lows[-period:])
+    lower = min(float(l) for l in lows[-period:])  # noqa: E741
     mid = (upper + lower) / 2.0
 
     return {

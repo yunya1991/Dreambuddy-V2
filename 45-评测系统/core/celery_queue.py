@@ -169,7 +169,7 @@ def build_celery_app(broker_url: str, result_backend: str | None = None) -> Any:
         ) from exc
     app = Celery("eval45", broker=broker_url, backend=result_backend)
     app.conf.update(
-        task_acks_late=True,                    # worker 崩溃后任务可被重取
+        task_acks_late=True,  # worker 崩溃后任务可被重取
         task_reject_on_worker_lost=True,
         task_default_queue=NORMAL_QUEUE,
         broker_connection_retry_on_startup=True,
@@ -199,7 +199,7 @@ def register_eval_task(
             raise
         except ExecutionError as exc:
             retries = self.request.retries
-            countdown = backoff_base * (2 ** retries)
+            countdown = backoff_base * (2**retries)
             logger.warning(
                 "瞬时执行失败 eval_id=%s retry=%d/%d: %s",
                 eval_id,
@@ -207,7 +207,7 @@ def register_eval_task(
                 max_retries,
                 exc,
             )
-            raise self.retry(exc=exc, countdown=countdown)
+            raise self.retry(exc=exc, countdown=countdown)  # noqa: B904
         return {"eval_id": eval_id, "ok": True}
 
     return run_eval

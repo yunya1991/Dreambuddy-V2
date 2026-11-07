@@ -15,11 +15,11 @@ G2 治理节点
 
 from __future__ import annotations
 
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 
 class G2GovernanceNode(BaseNode):
@@ -37,7 +37,7 @@ class G2GovernanceNode(BaseNode):
     estimated_latency_ms = 100
 
     def execute_core(self, state: State) -> NodeResult:
-        mkt = self._get_market_data(state)
+        mkt = self._get_market_data(state)  # noqa: F841
         position = self._get_position(state)
         intent = state.intent if isinstance(state.intent, dict) else {}
         rationale: List[str] = []
@@ -69,13 +69,19 @@ class G2GovernanceNode(BaseNode):
         position_direction = position.get("direction", "LONG")
 
         if strategy_direction and strategy_direction != position_direction:
-            scores.append(("HOLD", 0.20, f"策略方向与持仓方向不一致({strategy_direction} vs {position_direction})"))
+            scores.append(
+                (
+                    "HOLD",
+                    0.20,
+                    f"策略方向与持仓方向不一致({strategy_direction} vs {position_direction})",
+                )
+            )
 
         # ── 5. 系统状态检查 ──────────────────────────────
         system_status = intent.get("system_status", "healthy")
         if system_status != "healthy":
             compliance_issues.append(f"系统状态异常({system_status})")
-            scores.append(("HOLD", 0.25, f"系统状态异常，暂停交易"))
+            scores.append(("HOLD", 0.25, "系统状态异常，暂停交易"))
 
         # ── 6. 配置变更验证 ──────────────────────────────
         config_changed = intent.get("config_changed", False)
@@ -141,7 +147,11 @@ class G2GovernanceNode(BaseNode):
             "system_status": system_status,
             "approval_status": approval_status,
             "strategy_direction": strategy_direction,
-            "scores": {"long": round(long_score, 3), "short": round(short_score, 3), "hold": round(hold_score, 3)},
+            "scores": {
+                "long": round(long_score, 3),
+                "short": round(short_score, 3),
+                "hold": round(hold_score, 3),
+            },
             "rationale": rationale,
         }
 

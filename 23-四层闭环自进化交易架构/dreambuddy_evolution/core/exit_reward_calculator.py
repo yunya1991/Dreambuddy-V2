@@ -22,6 +22,7 @@
 
 FAIL-OPEN: 任何异常 → R_total=0.0，不阻塞反思回路
 """
+
 from __future__ import annotations
 
 import logging
@@ -38,6 +39,7 @@ def _get_sltp_floor_defaults() -> dict:
     """
     try:
         from memory_l4.bcrm2.sl_tp_config import SLTPParams
+
         p = SLTPParams()
         return {"sl_floor": p.sl_floor, "tp_floor": p.tp_floor}
     except Exception as e:
@@ -58,8 +60,8 @@ class ExitRewardCalculator:
     W_PNL = 0.3
 
     # R_trend 阈值
-    CS_HIGH_THRESHOLD = 0.7   # CS ≥ 0.7 → +1.0
-    CS_LOW_THRESHOLD = -0.2   # CS ≤ -0.2 → -1.0
+    CS_HIGH_THRESHOLD = 0.7  # CS ≥ 0.7 → +1.0
+    CS_LOW_THRESHOLD = -0.2  # CS ≤ -0.2 → -1.0
 
     # R_risk 奖惩值
     R_RISK_IN_RANGE = 0.5
@@ -90,8 +92,12 @@ class ExitRewardCalculator:
             cs = float(context.get("cs", 0.0) or 0.0)
             sl_in_range = bool(context.get("sl_in_range", True))
             pnl_pct = float(context.get("pnl_pct", 0.0) or 0.0)
-            tp_pct_target = float(context.get("tp_pct_target", defaults["tp_floor"]) or defaults["tp_floor"])
-            sl_pct_target = float(context.get("sl_pct_target", defaults["sl_floor"]) or defaults["sl_floor"])
+            tp_pct_target = float(
+                context.get("tp_pct_target", defaults["tp_floor"]) or defaults["tp_floor"]
+            )
+            sl_pct_target = float(
+                context.get("sl_pct_target", defaults["sl_floor"]) or defaults["sl_floor"]
+            )
 
             # ── R_trend: 方向正确性 ──
             r_trend = self._calc_r_trend(cs)
@@ -103,11 +109,7 @@ class ExitRewardCalculator:
             r_pnl = self._calc_r_pnl(pnl_pct, tp_pct_target, sl_pct_target)
 
             # ── R_total: 加权求和 ──
-            r_total = (
-                self.W_TREND * r_trend
-                + self.W_RISK * r_risk
-                + self.W_PNL * r_pnl
-            )
+            r_total = self.W_TREND * r_trend + self.W_RISK * r_risk + self.W_PNL * r_pnl
 
             return {
                 "R_total": round(r_total, 4),

@@ -27,6 +27,7 @@ class MarketRegimeControlModule:
     - 底部信号 ≥2 → 允许开仓4小时（信号增强则循环）
     - 顶部信号 ≥2 → 强制平仓 + 禁开时间递增（8→24→48→72小时）
     """
+
     def __init__(self):
         self.ban_until: Optional[datetime] = None
         self.allow_window_until: Optional[datetime] = None
@@ -46,50 +47,63 @@ class MarketRegimeControlModule:
     def update_regime(self, dp, current_time: datetime) -> Dict:
         btc_closed = self._get_closed_btc_daily(dp)
         if btc_closed.empty or len(btc_closed) < 60:
-            return {'can_enter': True, 'force_exit': False, 'reason': 'BTC日线数据不足'}
+            return {"can_enter": True, "force_exit": False, "reason": "BTC日线数据不足"}
 
         try:
             latest = btc_closed.iloc[-1]
             prev = btc_closed.iloc[-2]
 
             # 计算指标
-            btc_closed['ma5'] = ta.SMA(btc_closed, timeperiod=5)
-            btc_closed['ma5_slope'] = btc_closed['ma5'].diff(1)
-            btc_closed['ema5'] = ta.EMA(btc_closed, timeperiod=5)
-            btc_closed['bb_upper'], _, btc_closed['bb_lower'] = ta.BBANDS(btc_closed['close'], timeperiod=20)
-            btc_closed['rsi'] = ta.RSI(btc_closed, timeperiod=14)
-            btc_closed['price_ema5_dev_pct'] = (btc_closed['close'] - btc_closed['ema5']) / btc_closed['ema5'] * 100
+            btc_closed["ma5"] = ta.SMA(btc_closed, timeperiod=5)
+            btc_closed["ma5_slope"] = btc_closed["ma5"].diff(1)
+            btc_closed["ema5"] = ta.EMA(btc_closed, timeperiod=5)
+            btc_closed["bb_upper"], _, btc_closed["bb_lower"] = ta.BBANDS(
+                btc_closed["close"], timeperiod=20
+            )
+            btc_closed["rsi"] = ta.RSI(btc_closed, timeperiod=14)
+            btc_closed["price_ema5_dev_pct"] = (
+                (btc_closed["close"] - btc_closed["ema5"]) / btc_closed["ema5"] * 100
+            )
 
-            support = btc_closed['low'].rolling(50).min().iloc[-1]
-            resistance = btc_closed['high'].rolling(50).max().iloc[-1]
+            support = btc_closed["low"].rolling(50).min().iloc[-1]
+            resistance = btc_closed["high"].rolling(50).max().iloc[-1]
 
             recent = btc_closed[-60:]
-            wave_high = recent['high'].max()
-            wave_low = recent['low'].min()
+            wave_high = recent["high"].max()
+            wave_low = recent["low"].min()
             diff = wave_high - wave_low if wave_high > wave_low else 0.000001
             fib_bottom = [wave_high - diff * r for r in [0.236, 0.382, 0.5, 0.618, 0.786]]
             fib_top = [wave_high + diff * r for r in [0.272, 0.618, 1.0]]
 
             # 1. 空头趋势禁开
-            if pd.notna(latest['ma5_slope']) and pd.notna(prev['ma5_slope']) and latest['ma5_slope'] < 0 and prev['ma5_slope'] < 0:
+            if (
+                pd.notna(latest["ma5_slope"])
+                and pd.notna(prev["ma5_slope"])
+                and latest["ma5_slope"] < 0
+                and prev["ma5_slope"] < 0
+            ):
                 if self.ban_until is None or current_time > self.ban_until:
                     self.ban_until = current_time + timedelta(hours=48)
                     self.allow_window_until = None
                     self.top_conditions_count = 0
                     self.bottom_conditions_count = 0
-                return {'can_enter': False, 'force_exit': False, 'reason': 'BTC MA5连续2日下行，禁开48小时'}
+                return {
+                    "can_enter": False,
+                    "force_exit": False,
+                    "reason": "BTC MA5连续2日下行，禁开48小时",
+                }
 
             # 2. 顶部见顶信号
             top_conditions = 0
-            if latest['close'] >= latest['bb_upper'] * 0.99:
+            if latest["close"] >= latest["bb_upper"] * 0.99:
                 top_conditions += 1
-            if latest['rsi'] >= 70:
+            if latest["rsi"] >= 70:
                 top_conditions += 1
-            if latest['price_ema5_dev_pct'] >= 10.0:
+            if latest["price_ema5_dev_pct"] >= 10.0:
                 top_conditions += 1
-            if pd.notna(resistance) and latest['close'] >= resistance * 0.99:
+            if pd.notna(resistance) and latest["close"] >= resistance * 0.99:
                 top_conditions += 1
-            if any(abs(latest['close'] - fib) / fib <= 0.01 for fib in fib_top if pd.notna(fib)):
+            if any(abs(latest["close"] - fib) / fib <= 0.01 for fib in fib_top if pd.notna(fib)):
                 top_conditions += 1
 
             if top_conditions >= 2:
@@ -98,35 +112,46 @@ class MarketRegimeControlModule:
                     self.ban_until = current_time + timedelta(hours=ban_hours)
                     self.allow_window_until = None
                     self.top_conditions_count = top_conditions
-                return {'can_enter': False, 'force_exit': True, 'reason': f'顶部信号{top_conditions}个，强制平仓'}
+                return {
+                    "can_enter": False,
+                    "force_exit": True,
+                    "reason": f"顶部信号{top_conditions}个，强制平仓",
+                }
 
             # 3. 底部允许开仓
             bottom_conditions = 0
-            if latest['close'] <= latest['bb_lower'] * 1.01:
+            if latest["close"] <= latest["bb_lower"] * 1.01:
                 bottom_conditions += 1
-            if latest['rsi'] <= 30:
+            if latest["rsi"] <= 30:
                 bottom_conditions += 1
-            if latest['price_ema5_dev_pct'] <= -10.0:
+            if latest["price_ema5_dev_pct"] <= -10.0:
                 bottom_conditions += 1
-            if pd.notna(support) and latest['close'] <= support * 1.01:
+            if pd.notna(support) and latest["close"] <= support * 1.01:
                 bottom_conditions += 1
-            if any(abs(latest['close'] - fib) / fib <= 0.01 for fib in fib_bottom if pd.notna(fib)):
+            if any(abs(latest["close"] - fib) / fib <= 0.01 for fib in fib_bottom if pd.notna(fib)):
                 bottom_conditions += 1
 
             if bottom_conditions >= 2:
                 if self.allow_window_until and current_time < self.allow_window_until:
-                    return {'can_enter': True, 'force_exit': False, 'reason': '底部窗口内'}
+                    return {"can_enter": True, "force_exit": False, "reason": "底部窗口内"}
 
-                if (self.allow_window_until is None or current_time >= self.allow_window_until + timedelta(hours=8)):
+                if (
+                    self.allow_window_until is None
+                    or current_time >= self.allow_window_until + timedelta(hours=8)
+                ):
                     if bottom_conditions > self.bottom_conditions_count:
                         self.allow_window_until = current_time + timedelta(hours=4)
                         self.bottom_conditions_count = bottom_conditions
-                        return {'can_enter': True, 'force_exit': False, 'reason': '底部信号增强，新开4小时窗口'}
+                        return {
+                            "can_enter": True,
+                            "force_exit": False,
+                            "reason": "底部信号增强，新开4小时窗口",
+                        }
 
-            return {'can_enter': False, 'force_exit': False, 'reason': '无有效信号'}
+            return {"can_enter": False, "force_exit": False, "reason": "无有效信号"}
 
         except Exception:
-            return {'can_enter': True, 'force_exit': False, 'reason': '模块异常，安全模式允许开仓'}
+            return {"can_enter": True, "force_exit": False, "reason": "模块异常，安全模式允许开仓"}
 
 
 class Bot2Strategy(IStrategy):
@@ -135,6 +160,7 @@ class Bot2Strategy(IStrategy):
     Dual-mode strategy: Range (mean-reversion) + Trend following
     Based on BTC volatility regime + Market Regime Control
     """
+
     INTERFACE_VERSION = 3
 
     timeframe = "5m"
@@ -226,28 +252,26 @@ class Bot2Strategy(IStrategy):
                 btc_df = btc_df[["date", "btc_volatility_4h"]].copy()
 
                 dataframe = merge_informative_pair(
-                    dataframe,
-                    btc_df,
-                    self.timeframe,
-                    "4h",
-                    ffill=True
+                    dataframe, btc_df, self.timeframe, "4h", ffill=True
                 )
 
-                if 'btc_volatility_4h_4h' in dataframe.columns:
-                    dataframe.rename(columns={'btc_volatility_4h_4h': 'btc_volatility_4h'}, inplace=True)
-                elif 'btc_volatility_4h' not in dataframe.columns:
-                    dataframe['btc_volatility_4h'] = 0.0
+                if "btc_volatility_4h_4h" in dataframe.columns:
+                    dataframe.rename(
+                        columns={"btc_volatility_4h_4h": "btc_volatility_4h"}, inplace=True
+                    )
+                elif "btc_volatility_4h" not in dataframe.columns:
+                    dataframe["btc_volatility_4h"] = 0.0
             else:
-                dataframe['btc_volatility_4h'] = 0.0
+                dataframe["btc_volatility_4h"] = 0.0
         except Exception as e:
-            if hasattr(self, 'logger'):
+            if hasattr(self, "logger"):
                 self.logger.warning(f"BTC volatility calculation failed: {e}")
-            dataframe['btc_volatility_4h'] = 0.0
+            dataframe["btc_volatility_4h"] = 0.0
 
-        if 'btc_volatility_4h' not in dataframe.columns:
-            dataframe['btc_volatility_4h'] = 0.0
+        if "btc_volatility_4h" not in dataframe.columns:
+            dataframe["btc_volatility_4h"] = 0.0
 
-        dataframe['btc_volatility_4h'] = dataframe['btc_volatility_4h'].fillna(0.0)
+        dataframe["btc_volatility_4h"] = dataframe["btc_volatility_4h"].fillna(0.0)
 
         # Regime classification
         vol_threshold = self.buy_vol_threshold.value
@@ -256,11 +280,15 @@ class Bot2Strategy(IStrategy):
         # === 追涨过滤模块所需指标 ===
         dataframe["adx_slope"] = dataframe["adx"].diff(3)
 
-        dataframe["bb_percent"] = (dataframe["close"] - dataframe["bb_lower"]) / (dataframe["bb_upper"] - dataframe["bb_lower"])
+        dataframe["bb_percent"] = (dataframe["close"] - dataframe["bb_lower"]) / (
+            dataframe["bb_upper"] - dataframe["bb_lower"]
+        )
 
         lookback = self.anti_chase_lookback.value
         dataframe["max_high_lookback"] = dataframe["high"].rolling(lookback).max()
-        dataframe["recent_pump"] = (dataframe["close"] / dataframe["max_high_lookback"].shift(1)) - 1
+        dataframe["recent_pump"] = (
+            dataframe["close"] / dataframe["max_high_lookback"].shift(1)
+        ) - 1
 
         # 安全处理 NaN
         dataframe["adx_slope"] = dataframe["adx_slope"].fillna(0)
@@ -283,12 +311,16 @@ class Bot2Strategy(IStrategy):
         try:
             dataframe["regime_can_enter"] = int(bool(regime.get("can_enter", True)))
             dataframe["regime_force_exit"] = int(bool(regime.get("force_exit", False)))
-            dataframe["regime_top_conditions"] = float(getattr(self.regime_control, "top_conditions_count", 0) or 0)
-            dataframe["regime_bottom_conditions"] = float(getattr(self.regime_control, "bottom_conditions_count", 0) or 0)
+            dataframe["regime_top_conditions"] = float(
+                getattr(self.regime_control, "top_conditions_count", 0) or 0
+            )
+            dataframe["regime_bottom_conditions"] = float(
+                getattr(self.regime_control, "bottom_conditions_count", 0) or 0
+            )
         except Exception:
             pass
-        if not regime['can_enter']:
-            if hasattr(self, 'logger'):
+        if not regime["can_enter"]:
+            if hasattr(self, "logger"):
                 self.logger.info(f"禁止开仓: {regime['reason']}")
             return dataframe
 
@@ -300,16 +332,26 @@ class Bot2Strategy(IStrategy):
 
         # Trend following conditions
         trend_cond1 = (
-            (dataframe["close"] > dataframe["ema_fast"]) &
-            (dataframe["ema_fast"] > dataframe["ema_slow"]) &
-            (dataframe["ema_slow"] > dataframe["ema_trend"])
+            (dataframe["close"] > dataframe["ema_fast"])
+            & (dataframe["ema_fast"] > dataframe["ema_slow"])
+            & (dataframe["ema_slow"] > dataframe["ema_trend"])
         )
         trend_cond2 = dataframe["adx"] > self.buy_adx_trend.value
         trend_cond3 = dataframe["volume"] > dataframe["volume_mean"] * self.buy_volume_factor.value
-        dataframe["trend_score"] = trend_cond1.astype(int) + trend_cond2.astype(int) + trend_cond3.astype(int)
+        dataframe["trend_score"] = (
+            trend_cond1.astype(int) + trend_cond2.astype(int) + trend_cond3.astype(int)
+        )
 
-        range_entry = (dataframe["regime_trend"] == 0) & (dataframe["mr_score"] >= 2) & (dataframe["volume"] > 0)
-        trend_entry = (dataframe["regime_trend"] == 1) & (dataframe["trend_score"] >= 2) & (dataframe["volume"] > 0)
+        range_entry = (
+            (dataframe["regime_trend"] == 0)
+            & (dataframe["mr_score"] >= 2)
+            & (dataframe["volume"] > 0)
+        )
+        trend_entry = (
+            (dataframe["regime_trend"] == 1)
+            & (dataframe["trend_score"] >= 2)
+            & (dataframe["volume"] > 0)
+        )
 
         initial_entry = range_entry | trend_entry
 
@@ -325,7 +367,7 @@ class Bot2Strategy(IStrategy):
             chase_risk = pd.concat(anti_chase_conditions, axis=1).any(axis=1)
             chase_risk = chase_risk.fillna(False)
         except Exception as e:
-            if hasattr(self, 'logger'):
+            if hasattr(self, "logger"):
                 self.logger.warning(f"Anti-chase calculation error for {metadata['pair']}: {e}")
             chase_risk = pd.Series(False, index=dataframe.index)
 
@@ -335,6 +377,7 @@ class Bot2Strategy(IStrategy):
         dataframe.loc[entry_mask & trend_entry, "enter_tag"] = "trend_entry"
 
         try:
+
             def _normalize_signals_url(raw: str) -> str:
                 raw = str(raw or "").strip()
                 if not raw:
@@ -363,124 +406,137 @@ class Bot2Strategy(IStrategy):
                 row = dataframe.iloc[-1]
                 enter_now = int(row.get("enter_long", 0) or 0) == 1
                 if enter_now:
-                        pair = metadata.get("pair")
-                        if pair:
+                    pair = metadata.get("pair")
+                    if pair:
+                        ts_ms = None
+                        try:
+                            if "date" in row and row.get("date") is not None:
+                                dt = pd.to_datetime(row.get("date"), utc=True, errors="coerce")
+                                if dt is not None and (not pd.isna(dt)):
+                                    ts_ms = int(pd.Timestamp(dt).timestamp() * 1000)
+                        except Exception:
                             ts_ms = None
+                        if ts_ms is None:
                             try:
-                                if "date" in row and row.get("date") is not None:
-                                    dt = pd.to_datetime(row.get("date"), utc=True, errors="coerce")
-                                    if dt is not None and (not pd.isna(dt)):
-                                        ts_ms = int(pd.Timestamp(dt).timestamp() * 1000)
+                                if isinstance(row.name, pd.Timestamp):
+                                    ts_ms = int(pd.Timestamp(row.name).timestamp() * 1000)
                             except Exception:
                                 ts_ms = None
-                            if ts_ms is None:
+
+                        if ts_ms is not None:
+                            last_map = getattr(self, "_ml_export_last_ts_by_pair", None)
+                            if not isinstance(last_map, dict):
+                                last_map = {}
+                                self._ml_export_last_ts_by_pair = last_map
+                            last_ts = last_map.get(pair)
+                            if last_ts is None or int(ts_ms) > int(last_ts):
+                                tf = str(getattr(self, "timeframe", "5m") or "5m").lower().strip()
+                                tf_ms = 0
                                 try:
-                                    if isinstance(row.name, pd.Timestamp):
-                                        ts_ms = int(pd.Timestamp(row.name).timestamp() * 1000)
+                                    if tf.endswith("m"):
+                                        tf_ms = int(float(tf[:-1]) * 60_000)
+                                    elif tf.endswith("h"):
+                                        tf_ms = int(float(tf[:-1]) * 3_600_000)
+                                    elif tf.endswith("d"):
+                                        tf_ms = int(float(tf[:-1]) * 86_400_000)
                                 except Exception:
-                                    ts_ms = None
-
-                            if ts_ms is not None:
-                                last_map = getattr(self, "_ml_export_last_ts_by_pair", None)
-                                if not isinstance(last_map, dict):
-                                    last_map = {}
-                                    setattr(self, "_ml_export_last_ts_by_pair", last_map)
-                                last_ts = last_map.get(pair)
-                                if last_ts is None or int(ts_ms) > int(last_ts):
-                                    tf = str(getattr(self, "timeframe", "5m") or "5m").lower().strip()
                                     tf_ms = 0
-                                    try:
-                                        if tf.endswith("m"):
-                                            tf_ms = int(float(tf[:-1]) * 60_000)
-                                        elif tf.endswith("h"):
-                                            tf_ms = int(float(tf[:-1]) * 3_600_000)
-                                        elif tf.endswith("d"):
-                                            tf_ms = int(float(tf[:-1]) * 86_400_000)
-                                    except Exception:
-                                        tf_ms = 0
-                                    now_ms = int(pd.Timestamp.utcnow().timestamp() * 1000)
-                                    bar_closed = bool(tf_ms > 0 and now_ms >= int(ts_ms) + int(tf_ms) - 2_000)
-                                    if bar_closed:
-                                        tag = row.get("enter_tag")
-                                        if tag is None or (pd is not None and pd.isna(tag)):
-                                            tag = None
-                                        else:
-                                            tag = str(tag)
+                                now_ms = int(pd.Timestamp.utcnow().timestamp() * 1000)
+                                bar_closed = bool(
+                                    tf_ms > 0 and now_ms >= int(ts_ms) + int(tf_ms) - 2_000
+                                )
+                                if bar_closed:
+                                    tag = row.get("enter_tag")
+                                    if tag is None or (pd is not None and pd.isna(tag)):
+                                        tag = None
+                                    else:
+                                        tag = str(tag)
 
-                                        def _sf(v: object, default: float = 0.0) -> float:
-                                            try:
-                                                if v is None or pd.isna(v):
-                                                    return float(default)
-                                                f = float(v)
-                                                if not np.isfinite(f):
-                                                    return float(default)
-                                                return f
-                                            except Exception:
-                                                return float(default)
-
-                                        close_v = _sf(row.get("close", 0.0) or 0.0)
-                                        atr_v = _sf(row.get("atr", 0.0) or 0.0)
-                                        features: Dict[str, float] = {
-                                            "close": close_v,
-                                            "volume": _sf(row.get("volume", 0.0) or 0.0),
-                                            "rsi": _sf(row.get("rsi", 0.0) or 0.0),
-                                            "ema_fast": _sf(row.get("ema_fast", 0.0) or 0.0),
-                                            "ema_slow": _sf(row.get("ema_slow", 0.0) or 0.0),
-                                            "ema_trend": _sf(row.get("ema_trend", 0.0) or 0.0),
-                                            "adx": _sf(row.get("adx", 0.0) or 0.0),
-                                            "atr": atr_v,
-                                            "atr_pct": (atr_v / close_v) if close_v > 0.0 else 0.0,
-                                            "btc_volatility_4h": _sf(row.get("btc_volatility_4h", 0.0) or 0.0),
-                                            "regime_trend": _sf(row.get("regime_trend", 0.0) or 0.0),
-                                            "mr_score": _sf(row.get("mr_score", 0.0) or 0.0),
-                                            "trend_score": _sf(row.get("trend_score", 0.0) or 0.0),
-                                            "bb_percent": _sf(row.get("bb_percent", 0.0) or 0.0),
-                                            "adx_slope": _sf(row.get("adx_slope", 0.0) or 0.0),
-                                            "recent_pump": _sf(row.get("recent_pump", 0.0) or 0.0),
-                                        }
-
-                                        payload: Dict[str, Any] = {
-                                            "venue": "freqtrade",
-                                            "pair": str(pair),
-                                            "side": "long",
-                                            "action": "open",
-                                            "timeframe": tf,
-                                            "ts": int(ts_ms),
-                                            "bar_open_ms": int(ts_ms),
-                                            "bar_close_ms": int(ts_ms) + int(tf_ms),
-                                            "bar_closed": True,
-                                            "strategy_id": "Bot2Strategy",
-                                            "strategy_version": "1.0.0",
-                                            "group_id": "adaptive_5m_regime",
-                                            "feature_set_id": "adaptive_5m_v1",
-                                            "tag": tag,
-                                            "confidence": 1.0,
-                                            "features": features,
-                                        }
-
-                                        trigger_raw = str(os.environ.get("ML_EXPORT_TRIGGER_DECISION", "")).strip().lower()
-                                        if trigger_raw in ("1", "true", "yes", "y", "on"):
-                                            payload["trigger_decision"] = True
-                                        thr_raw = str(os.environ.get("ML_EXPORT_THRESHOLD", "")).strip()
-                                        if thr_raw:
-                                            try:
-                                                payload["threshold"] = float(thr_raw)
-                                            except Exception:
-                                                pass
-                                        size_raw = str(os.environ.get("ML_EXPORT_SIZE", "")).strip()
-                                        if size_raw:
-                                            try:
-                                                payload["size"] = float(size_raw)
-                                            except Exception:
-                                                pass
-
-                                        timeout_s = 0.5
+                                    def _sf(v: object, default: float = 0.0) -> float:
                                         try:
-                                            timeout_s = float(str(os.environ.get("ML_EXPORT_TIMEOUT", "0.5") or "0.5").strip() or 0.5)
+                                            if v is None or pd.isna(v):
+                                                return float(default)
+                                            f = float(v)
+                                            if not np.isfinite(f):
+                                                return float(default)
+                                            return f
                                         except Exception:
-                                            timeout_s = 0.5
-                                        requests.post(decision_url, json=payload, timeout=timeout_s)
-                                        last_map[pair] = int(ts_ms)
+                                            return float(default)
+
+                                    close_v = _sf(row.get("close", 0.0) or 0.0)
+                                    atr_v = _sf(row.get("atr", 0.0) or 0.0)
+                                    features: Dict[str, float] = {
+                                        "close": close_v,
+                                        "volume": _sf(row.get("volume", 0.0) or 0.0),
+                                        "rsi": _sf(row.get("rsi", 0.0) or 0.0),
+                                        "ema_fast": _sf(row.get("ema_fast", 0.0) or 0.0),
+                                        "ema_slow": _sf(row.get("ema_slow", 0.0) or 0.0),
+                                        "ema_trend": _sf(row.get("ema_trend", 0.0) or 0.0),
+                                        "adx": _sf(row.get("adx", 0.0) or 0.0),
+                                        "atr": atr_v,
+                                        "atr_pct": (atr_v / close_v) if close_v > 0.0 else 0.0,
+                                        "btc_volatility_4h": _sf(
+                                            row.get("btc_volatility_4h", 0.0) or 0.0
+                                        ),
+                                        "regime_trend": _sf(row.get("regime_trend", 0.0) or 0.0),
+                                        "mr_score": _sf(row.get("mr_score", 0.0) or 0.0),
+                                        "trend_score": _sf(row.get("trend_score", 0.0) or 0.0),
+                                        "bb_percent": _sf(row.get("bb_percent", 0.0) or 0.0),
+                                        "adx_slope": _sf(row.get("adx_slope", 0.0) or 0.0),
+                                        "recent_pump": _sf(row.get("recent_pump", 0.0) or 0.0),
+                                    }
+
+                                    payload: Dict[str, Any] = {
+                                        "venue": "freqtrade",
+                                        "pair": str(pair),
+                                        "side": "long",
+                                        "action": "open",
+                                        "timeframe": tf,
+                                        "ts": int(ts_ms),
+                                        "bar_open_ms": int(ts_ms),
+                                        "bar_close_ms": int(ts_ms) + int(tf_ms),
+                                        "bar_closed": True,
+                                        "strategy_id": "Bot2Strategy",
+                                        "strategy_version": "1.0.0",
+                                        "group_id": "adaptive_5m_regime",
+                                        "feature_set_id": "adaptive_5m_v1",
+                                        "tag": tag,
+                                        "confidence": 1.0,
+                                        "features": features,
+                                    }
+
+                                    trigger_raw = (
+                                        str(os.environ.get("ML_EXPORT_TRIGGER_DECISION", ""))
+                                        .strip()
+                                        .lower()
+                                    )
+                                    if trigger_raw in ("1", "true", "yes", "y", "on"):
+                                        payload["trigger_decision"] = True
+                                    thr_raw = str(os.environ.get("ML_EXPORT_THRESHOLD", "")).strip()
+                                    if thr_raw:
+                                        try:
+                                            payload["threshold"] = float(thr_raw)
+                                        except Exception:
+                                            pass
+                                    size_raw = str(os.environ.get("ML_EXPORT_SIZE", "")).strip()
+                                    if size_raw:
+                                        try:
+                                            payload["size"] = float(size_raw)
+                                        except Exception:
+                                            pass
+
+                                    timeout_s = 0.5
+                                    try:
+                                        timeout_s = float(
+                                            str(
+                                                os.environ.get("ML_EXPORT_TIMEOUT", "0.5") or "0.5"
+                                            ).strip()
+                                            or 0.5
+                                        )
+                                    except Exception:
+                                        timeout_s = 0.5
+                                    requests.post(decision_url, json=payload, timeout=timeout_s)
+                                    last_map[pair] = int(ts_ms)
         except Exception:
             pass
 
@@ -493,16 +549,32 @@ class Bot2Strategy(IStrategy):
         range_exit_cond1 = dataframe["rsi"] > self.sell_rsi_range.value
         range_exit_cond2 = dataframe["close"] > dataframe["bb_mid"]
         range_exit_cond3 = dataframe["close"] > dataframe["ema_fast"]
-        dataframe["range_exit_score"] = range_exit_cond1.astype(int) + range_exit_cond2.astype(int) + range_exit_cond3.astype(int)
+        dataframe["range_exit_score"] = (
+            range_exit_cond1.astype(int)
+            + range_exit_cond2.astype(int)
+            + range_exit_cond3.astype(int)
+        )
 
         # Trend exit
         trend_exit_cond1 = dataframe["rsi"] > self.sell_rsi_trend.value
         trend_exit_cond2 = dataframe["close"] < dataframe["ema_fast"]
         trend_exit_cond3 = dataframe["volume"] < dataframe["volume_mean"]
-        dataframe["trend_exit_score"] = trend_exit_cond1.astype(int) + trend_exit_cond2.astype(int) + trend_exit_cond3.astype(int)
+        dataframe["trend_exit_score"] = (
+            trend_exit_cond1.astype(int)
+            + trend_exit_cond2.astype(int)
+            + trend_exit_cond3.astype(int)
+        )
 
-        range_exit = (dataframe["regime_trend"] == 0) & (dataframe["range_exit_score"] >= 2) & (dataframe["volume"] > 0)
-        trend_exit = (dataframe["regime_trend"] == 1) & (dataframe["trend_exit_score"] >= 2) & (dataframe["volume"] > 0)
+        range_exit = (
+            (dataframe["regime_trend"] == 0)
+            & (dataframe["range_exit_score"] >= 2)
+            & (dataframe["volume"] > 0)
+        )
+        trend_exit = (
+            (dataframe["regime_trend"] == 1)
+            & (dataframe["trend_exit_score"] >= 2)
+            & (dataframe["volume"] > 0)
+        )
 
         dataframe.loc[range_exit | trend_exit, "exit_long"] = 1
 
@@ -553,14 +625,21 @@ class Bot2Strategy(IStrategy):
             return sl
 
         except Exception as e:
-            if hasattr(self, 'logger'):
+            if hasattr(self, "logger"):
                 self.logger.error(f"Custom stoploss error for {pair}: {str(e)}")
             return self.stoploss
 
-    def custom_exit(self, pair: str, trade: Trade, current_time: datetime, 
-                    current_rate: float, current_profit: float, **kwargs) -> Optional[str]:
+    def custom_exit(
+        self,
+        pair: str,
+        trade: Trade,
+        current_time: datetime,
+        current_rate: float,
+        current_profit: float,
+        **kwargs,
+    ) -> Optional[str]:
         regime = self.regime_control.update_regime(self.dp, current_time)
-        if regime['force_exit']:
+        if regime["force_exit"]:
             return "regime_force_exit"
 
         if current_profit > 0.15:
@@ -575,11 +654,23 @@ class Bot2Strategy(IStrategy):
             return "time_exit_profit" if current_profit > 0.03 else "time_exit_loss"
         return None
 
-    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
-                           proposed_stake: float, min_stake: float, max_stake: float,
-                           entry_tag: Optional[str], side: str, **kwargs) -> float:
+    def custom_stake_amount(
+        self,
+        pair: str,
+        current_time: datetime,
+        current_rate: float,
+        proposed_stake: float,
+        min_stake: float,
+        max_stake: float,
+        entry_tag: Optional[str],
+        side: str,
+        **kwargs,
+    ) -> float:
         try:
-            if getattr(self, 'dp', None) is not None and getattr(self.dp, 'runmode', None) == RunMode.BACKTEST:
+            if (
+                getattr(self, "dp", None) is not None
+                and getattr(self.dp, "runmode", None) == RunMode.BACKTEST
+            ):
                 return proposed_stake
         except Exception:
             pass
@@ -588,12 +679,12 @@ class Bot2Strategy(IStrategy):
             dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
             if dataframe is None or len(dataframe) < 1:
                 return proposed_stake
-                
-            atr_pct = dataframe['atr'].iloc[-1] / current_rate
-            
+
+            atr_pct = dataframe["atr"].iloc[-1] / current_rate
+
             total = self.wallets.get_total_stake_amount()
             base = total * 0.02
-            
+
             if atr_pct > 0.04:
                 size = base * 0.5
             elif atr_pct > 0.02:
@@ -602,34 +693,43 @@ class Bot2Strategy(IStrategy):
                 size = base * 1.5
             else:
                 size = base
-                
+
             return max(min(size, max_stake), min_stake)
-            
+
         except Exception:
             return proposed_stake
 
-    def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                            time_in_force: str, current_time: datetime, entry_tag: Optional[str],
-                            side: str, **kwargs) -> bool:
+    def confirm_trade_entry(
+        self,
+        pair: str,
+        order_type: str,
+        amount: float,
+        rate: float,
+        time_in_force: str,
+        current_time: datetime,
+        entry_tag: Optional[str],
+        side: str,
+        **kwargs,
+    ) -> bool:
         regime = self.regime_control.update_regime(self.dp, current_time)
-        if not regime['can_enter']:
-            if hasattr(self, 'logger'):
+        if not regime["can_enter"]:
+            if hasattr(self, "logger"):
                 self.logger.info(f"拒绝开仓 {pair}: {regime['reason']}")
             return False
 
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         if len(dataframe) < 1:
             return False
-            
+
         last = dataframe.iloc[-1]
-        
+
         checks = [
-            last.get('volume', 0) > 0,
-            last.get('atr', 0) > 0,
-            last.get('rsi', 100) < 75,
-            last.get('volume', 0) > last.get('volume_mean', 0) * 0.5,
+            last.get("volume", 0) > 0,
+            last.get("atr", 0) > 0,
+            last.get("rsi", 100) < 75,
+            last.get("volume", 0) > last.get("volume_mean", 0) * 0.5,
         ]
-        
+
         return all(checks)
 
     @property
@@ -648,11 +748,14 @@ class Bot2Strategy(IStrategy):
             "subplots": {
                 "RSI": {"rsi": {"color": "#ff7f0e"}},
                 "ADX": {"adx": {"color": "#9467bd"}},
-                "Volume": {"volume": {"color": "gray", "type": "bar"}, "volume_mean": {"color": "#1f77b4"}},
+                "Volume": {
+                    "volume": {"color": "gray", "type": "bar"},
+                    "volume_mean": {"color": "#1f77b4"},
+                },
                 "Regime": {"regime_trend": {"color": "#2ca02c", "type": "bar"}},
                 "Scores": {
                     "mr_score": {"color": "#2ca02c", "type": "bar"},
                     "trend_score": {"color": "#d62728", "type": "bar"},
                 },
-            }
+            },
         }

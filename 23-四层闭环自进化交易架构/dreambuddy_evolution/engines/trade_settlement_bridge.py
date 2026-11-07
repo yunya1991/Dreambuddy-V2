@@ -10,6 +10,7 @@ TradeSettlementBridge (P2-S4 紧耦合流平仓反思回路)
 
 FAIL-OPEN: 所有异常 try/except，不阻断交易，crash → 返回空 ESS delta
 """
+
 import json
 import logging
 from pathlib import Path
@@ -101,19 +102,24 @@ class TradeSettlementBridge:
                 "u_open": 0.1,
                 "action": direction,
                 "level0_dstar": direction,  # 降级：用建仓方向作为 d*
-                "ess_dir": "",               # 缺失 → cos(ess,real)=0
-                "cbr_top1_outcome": outcome, # 降级：从 pnl 推断
+                "ess_dir": "",  # 缺失 → cos(ess,real)=0
+                "cbr_top1_outcome": outcome,  # 降级：从 pnl 推断
                 "cluster_id": "",
                 "ess_id": "",
-                "cbr_sim": 0.5,              # 中性
+                "cbr_sim": 0.5,  # 中性
             }
         except Exception as e:
             logger.warning("[FO] _reconstruct_snapshot crash: %s", e)
             return {
-                "symbol": "", "u_open": 0.0, "action": "WAIT",
-                "level0_dstar": "WAIT", "ess_dir": "",
-                "cbr_top1_outcome": "", "cluster_id": "",
-                "ess_id": "", "cbr_sim": 0.5,
+                "symbol": "",
+                "u_open": 0.0,
+                "action": "WAIT",
+                "level0_dstar": "WAIT",
+                "ess_dir": "",
+                "cbr_top1_outcome": "",
+                "cluster_id": "",
+                "ess_id": "",
+                "cbr_sim": 0.5,
             }
 
     # ==================================================================
@@ -147,6 +153,7 @@ class TradeSettlementBridge:
             # 3. 调用 ReflectionEngine: calculate_cs → apply_reward
             from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
             from dreambuddy_evolution.engines.reverse_deriver import ReverseDeriver
+
             engine = ReflectionEngine()
             cs = engine.calculate_cs(snapshot, outcome)
 
@@ -205,6 +212,7 @@ class TradeSettlementBridge:
             pipe = self._pipeline
             if pipe is None:
                 from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
+
                 pipe = EvolutionPipeline._instance
             if pipe is None or not hasattr(pipe, "shadow_rl"):
                 return
@@ -215,19 +223,24 @@ class TradeSettlementBridge:
             if "持仓消失" in _exit_reason or "position_disappear" in _exit_reason:
                 logger.debug("[FixC] 跳过异常平仓(持仓消失): %s", _exit_reason)
                 return
-            if _pnl_raw == -100.0 and ("消失" in _exit_reason or "disappear" in _exit_reason
-                                        or not _exit_reason):
+            if _pnl_raw == -100.0 and (
+                "消失" in _exit_reason or "disappear" in _exit_reason or not _exit_reason
+            ):
                 logger.debug("[FixC] 跳过疑似异常平仓(pnl=-100): %s", _exit_reason)
                 return
 
             import math
+
             _pnl_pct = float(getattr(trade_rec, "pnl_pct", 0.0) or 0.0)
             # tanh 归一化: ±2% 波动 → ±0.96, ±0.5% → ±0.24
             _reward = math.tanh(_pnl_pct / 0.02)
 
             _symbol = self._extract_symbol(trade_rec)
-            _action = str(snapshot.get("action", "")).lower() or \
-                      str(getattr(trade_rec, "direction", "")).lower() or "wait"
+            _action = (
+                str(snapshot.get("action", "")).lower()
+                or str(getattr(trade_rec, "direction", "")).lower()
+                or "wait"
+            )
 
             pipe.shadow_rl.record(
                 symbol=_symbol,

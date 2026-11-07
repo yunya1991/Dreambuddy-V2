@@ -15,6 +15,7 @@ TrailingStopComponent 包入口
     )
 """
 
+from .component import TrailingStopComponent
 from .types import (
     TrailingAction,
     TrailingResult,
@@ -26,7 +27,6 @@ from .types import (
     calc_pnl_eff_pct,
     now_iso,
 )
-from .component import TrailingStopComponent
 
 __all__ = [
     "TrailingStopComponent",

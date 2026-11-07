@@ -6,11 +6,12 @@
 用于 C-Drive-Agent SUPPLEMENT 后的多 subagent 结果合并,
 供 synthesizer_agent 进一步 LLM 综合重写。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from subagent_types import SubagentOutput, Signal, ChartSpec
+from subagent_types import ChartSpec, Signal, SubagentOutput
 
 
 def aggregate_subagent_outputs(outputs: List[SubagentOutput]) -> Dict[str, Any]:
@@ -32,10 +33,14 @@ def aggregate_subagent_outputs(outputs: List[SubagentOutput]) -> Dict[str, Any]:
     """
     if not outputs:
         return {
-            "summaries": [], "all_signals": [], "all_charts": [],
-            "modules": [], "total_signals": 0,
+            "summaries": [],
+            "all_signals": [],
+            "all_charts": [],
+            "modules": [],
+            "total_signals": 0,
             "consensus_direction": "neutral",
-            "long_count": 0, "short_count": 0,
+            "long_count": 0,
+            "short_count": 0,
             "total_charts": 0,
             "avg_confidence": 0.0,
             "top_signals": [],
@@ -70,8 +75,7 @@ def aggregate_subagent_outputs(outputs: List[SubagentOutput]) -> Dict[str, Any]:
         avg_conf = 0.0
 
     # top 5 signals 按置信度降序 (生产扩展, 供 synthesizer 使用)
-    sorted_signals = sorted(
-        all_signals, key=lambda s: s.confidence, reverse=True)
+    sorted_signals = sorted(all_signals, key=lambda s: s.confidence, reverse=True)
     top_signals = [s.to_dict() for s in sorted_signals[:5]]
 
     return {

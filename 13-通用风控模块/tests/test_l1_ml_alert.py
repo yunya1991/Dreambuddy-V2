@@ -3,59 +3,59 @@
 L1 价值-风险评估 + ML模型 + 告警通知 — 单元测试
 """
 
-import sys
 import os
+import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-import unittest
-import json
-import tempfile
+import json  # noqa: E402
+import tempfile  # noqa: E402
+import unittest  # noqa: E402
 
-from core.context import (
-    PositionState,
-    MarketSnapshot,
-    RiskContext,
-    Direction,
-)
-from core.l1_assessor import (
-    L1ValueRiskAssessor,
-    ExitFeatureSet,
-    L1Mode,
-    L2HysteresisState,
-    TrendShape,
-)
-from core.ml_model import (
-    MLRiskModel,
-    CommitteeModel,
-    MLModelRegistry,
-    ModelPrediction,
-)
-from core.alert import (
-    RiskAlertNotifier,
+from core.alert import (  # noqa: E402
+    AlertCategory,
     AlertEvent,
     AlertLevel,
-    AlertCategory,
+    RiskAlertNotifier,
 )
-from core.engine import RiskEngine
+from core.context import (  # noqa: E402
+    Direction,
+    PositionState,
+    RiskContext,
+)
+from core.engine import RiskEngine  # noqa: E402
+from core.l1_assessor import (  # noqa: E402
+    ExitFeatureSet,
+    L1Mode,
+    L1ValueRiskAssessor,
+    L2HysteresisState,
+)
+from core.ml_model import (  # noqa: E402
+    CommitteeModel,
+    MLModelRegistry,
+    MLRiskModel,
+    ModelPrediction,
+)
 
 
 class TestL1Assessor(unittest.TestCase):
     """测试 L1 价值-风险评估"""
 
     def setUp(self):
-        self.assessor = L1ValueRiskAssessor({
-            "l2_close_threshold": 0.75,
-            "l2_reduce_threshold": 0.55,
-            "l2_deadband": 0.03,
-            "l2_confirm_n": 1,
-            "l2_reduce_base_frac": 0.30,
-            "l2_reduce_max_frac": 0.70,
-            "l2_reduce_risk_span": 0.20,
-            "l2_reduce_min_profit_pct": 0.0,
-        })
+        self.assessor = L1ValueRiskAssessor(
+            {
+                "l2_close_threshold": 0.75,
+                "l2_reduce_threshold": 0.55,
+                "l2_deadband": 0.03,
+                "l2_confirm_n": 1,
+                "l2_reduce_base_frac": 0.30,
+                "l2_reduce_max_frac": 0.70,
+                "l2_reduce_risk_span": 0.20,
+                "l2_reduce_min_profit_pct": 0.0,
+            }
+        )
 
         self.position = PositionState(
             coin="BTC",
@@ -108,11 +108,9 @@ class TestL1Assessor(unittest.TestCase):
 
     def test_mrd_mode_adjustment(self):
         """测试 MRD 模式调整"""
-        features = ExitFeatureSet.from_market_data(
-            rsi=50, macd_hist=0.0, adx=25, atr_pct=0.02
-        )
+        features = ExitFeatureSet.from_market_data(rsi=50, macd_hist=0.0, adx=25, atr_pct=0.02)
 
-        result_h = self.assessor.assess(self.position, features, L1Mode.HEURISTIC)
+        result_h = self.assessor.assess(self.position, features, L1Mode.HEURISTIC)  # noqa: F841
         result_m = self.assessor.assess(self.position, features, L1Mode.MRD)
 
         # MRD 模式应该产生 model_conf
@@ -121,13 +119,14 @@ class TestL1Assessor(unittest.TestCase):
     def test_ml_mode_adjustment(self):
         """测试 ML 模式调整"""
         features = ExitFeatureSet.from_market_data(
-            rsi=50, macd_hist=0.0, adx=25, atr_pct=0.02,
+            rsi=50,
+            macd_hist=0.0,
+            adx=25,
+            atr_pct=0.02,
             p_tail=0.8,  # 高尾部风险
         )
 
-        result = self.assessor.assess(
-            self.position, features, l1_mode=L1Mode.ML
-        )
+        result = self.assessor.assess(self.position, features, l1_mode=L1Mode.ML)
 
         self.assertIsNotNone(result.p_tail)
         self.assertGreater(result.model_conf, 0.0)
@@ -144,8 +143,14 @@ class TestL1Assessor(unittest.TestCase):
     def test_l2_action_close(self):
         """测试 L2 动作映射 — 极高风险平仓"""
         features = ExitFeatureSet.from_market_data(
-            rsi=75, macd_hist=-0.02, adx=10, atr_pct=0.035, dd=0.28, chop=65,
-            ema_short_dist=-0.02, mom_rsi_delta=-3.0,
+            rsi=75,
+            macd_hist=-0.02,
+            adx=10,
+            atr_pct=0.035,
+            dd=0.28,
+            chop=65,
+            ema_short_dist=-0.02,
+            mom_rsi_delta=-3.0,
         )
         l2_state = L2HysteresisState()
         result = self.assessor.assess(
@@ -157,9 +162,7 @@ class TestL1Assessor(unittest.TestCase):
 
     def test_risk_budget_penalty(self):
         """测试风险预算序列回撤惩罚"""
-        features = ExitFeatureSet.from_market_data(
-            rsi=50, dd=0.15
-        )
+        features = ExitFeatureSet.from_market_data(rsi=50, dd=0.15)
         # 构造持续上升的 dd 历史
         snapshots = [
             {"ts": 1, "dd": 0.05},
@@ -169,7 +172,9 @@ class TestL1Assessor(unittest.TestCase):
         ]
 
         result = self.assessor.assess(
-            self.position, features, L1Mode.HEURISTIC,
+            self.position,
+            features,
+            L1Mode.HEURISTIC,
             snapshot_history=snapshots,
         )
 
@@ -185,7 +190,7 @@ class TestL1Assessor(unittest.TestCase):
         )
 
         result_chop = self.assessor.assess(self.position, features_chop)
-        result_trend = self.assessor.assess(self.position, features_trend)
+        result_trend = self.assessor.assess(self.position, features_trend)  # noqa: F841
 
         self.assertGreater(result_chop.regime_shift, 0.0)
 
@@ -194,12 +199,15 @@ class TestL1Assessor(unittest.TestCase):
         l2_state = L2HysteresisState()
 
         features = ExitFeatureSet.from_market_data(
-            rsi=75, macd_hist=-0.02, adx=10, atr_pct=0.035, dd=0.28, chop=65,
+            rsi=75,
+            macd_hist=-0.02,
+            adx=10,
+            atr_pct=0.035,
+            dd=0.28,
+            chop=65,
         )
 
-        self.assessor.assess(
-            self.position, features, l2_state=l2_state, l1_mode=L1Mode.HEURISTIC
-        )
+        self.assessor.assess(self.position, features, l2_state=l2_state, l1_mode=L1Mode.HEURISTIC)
 
         self.assertGreater(l2_state.last_update_ts, 0)
 
@@ -248,15 +256,16 @@ class TestMLModel(unittest.TestCase):
 
     def test_meta_json_loading(self):
         """测试 meta JSON 加载"""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
-            json.dump({
-                "model_type": "sklearn_pickle",
-                "model_path": "/nonexistent/model.pkl",
-                "feature_names": ["feat1", "feat2"],
-                "latest_version": 1,
-            }, f)
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(
+                {
+                    "model_type": "sklearn_pickle",
+                    "model_path": "/nonexistent/model.pkl",
+                    "feature_names": ["feat1", "feat2"],
+                    "latest_version": 1,
+                },
+                f,
+            )
             meta_path = f.name
 
         try:
@@ -272,11 +281,13 @@ class TestAlertNotifier(unittest.TestCase):
     """测试告警通知"""
 
     def setUp(self):
-        self.notifier = RiskAlertNotifier({
-            "mode": "file",
-            "min_level": "info",
-            "rate_limit_sec": 0,
-        })
+        self.notifier = RiskAlertNotifier(
+            {
+                "mode": "file",
+                "min_level": "info",
+                "rate_limit_sec": 0,
+            }
+        )
 
     def test_alert_event_creation(self):
         """测试告警事件创建"""
@@ -324,13 +335,15 @@ class TestAlertNotifier(unittest.TestCase):
 
     def test_notifier_alert(self):
         """测试告警发送"""
-        result = self.notifier.alert(AlertEvent(
-            level=AlertLevel.WARNING,
-            category=AlertCategory.GATE_BLOCK,
-            title="门禁阻断",
-            message="日回撤熔断",
-            coin="BTC",
-        ))
+        result = self.notifier.alert(  # noqa: F841
+            AlertEvent(
+                level=AlertLevel.WARNING,
+                category=AlertCategory.GATE_BLOCK,
+                title="门禁阻断",
+                message="日回撤熔断",
+                coin="BTC",
+            )
+        )
 
         # file 模式不需要真正发送，只要记录历史
         history = self.notifier.get_history()
@@ -338,18 +351,22 @@ class TestAlertNotifier(unittest.TestCase):
 
     def test_notifier_level_filter(self):
         """测试告警级别过滤"""
-        notifier = RiskAlertNotifier({
-            "mode": "file",
-            "min_level": "critical",
-            "rate_limit_sec": 0,
-        })
+        notifier = RiskAlertNotifier(
+            {
+                "mode": "file",
+                "min_level": "critical",
+                "rate_limit_sec": 0,
+            }
+        )
 
-        notifier.alert(AlertEvent(
-            level=AlertLevel.INFO,
-            category=AlertCategory.SYSTEM,
-            title="信息",
-            message="普通信息",
-        ))
+        notifier.alert(
+            AlertEvent(
+                level=AlertLevel.INFO,
+                category=AlertCategory.SYSTEM,
+                title="信息",
+                message="普通信息",
+            )
+        )
 
         # INFO 级别不应被记录到历史
         self.assertEqual(len(notifier.get_history()), 1)
@@ -365,11 +382,13 @@ class TestAlertNotifier(unittest.TestCase):
 
     def test_rate_limit(self):
         """测试限频"""
-        notifier = RiskAlertNotifier({
-            "mode": "file",
-            "min_level": "info",
-            "rate_limit_sec": 60,
-        })
+        notifier = RiskAlertNotifier(
+            {
+                "mode": "file",
+                "min_level": "info",
+                "rate_limit_sec": 60,
+            }
+        )
 
         event = AlertEvent(
             level=AlertLevel.WARNING,
@@ -390,23 +409,25 @@ class TestEngineIntegration(unittest.TestCase):
     """测试引擎集成"""
 
     def setUp(self):
-        self.engine = RiskEngine({
-            "gate": {
-                "daily_drawdown_circuit_breaker": {"max_daily_drawdown_pct": 0.10},
-                "concurrent_position_limit": {"max_concurrent_positions": 5},
-            },
-            "position": {"risk_per_trade_pct": 0.02},
-            "exit": {"stop_loss_barrier": {"stop_loss_pct": 0.03}},
-            "l1": {
-                "l2_close_threshold": 0.75,
-                "l2_reduce_threshold": 0.55,
-            },
-            "alert": {
-                "mode": "file",
-                "min_level": "info",
-                "rate_limit_sec": 0,
-            },
-        })
+        self.engine = RiskEngine(
+            {
+                "gate": {
+                    "daily_drawdown_circuit_breaker": {"max_daily_drawdown_pct": 0.10},
+                    "concurrent_position_limit": {"max_concurrent_positions": 5},
+                },
+                "position": {"risk_per_trade_pct": 0.02},
+                "exit": {"stop_loss_barrier": {"stop_loss_pct": 0.03}},
+                "l1": {
+                    "l2_close_threshold": 0.75,
+                    "l2_reduce_threshold": 0.55,
+                },
+                "alert": {
+                    "mode": "file",
+                    "min_level": "info",
+                    "rate_limit_sec": 0,
+                },
+            }
+        )
         self.engine.register_default_rules()
 
     def test_l1_assessor_integration(self):
@@ -418,9 +439,7 @@ class TestEngineIntegration(unittest.TestCase):
             current_price=51000,
             unrealized_pnl_pct=0.02,
         )
-        features = ExitFeatureSet.from_market_data(
-            rsi=55, macd_hist=0.001, adx=25, atr_pct=0.02
-        )
+        features = ExitFeatureSet.from_market_data(rsi=55, macd_hist=0.001, adx=25, atr_pct=0.02)
 
         result = self.engine.assess_value_risk(position, features)
         self.assertGreaterEqual(result.hold_risk, 0.0)

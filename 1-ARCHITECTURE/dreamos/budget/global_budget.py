@@ -27,10 +27,9 @@ DreamOS Budget — 全局预算管理器
 from __future__ import annotations
 
 import time
-from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
-from datetime import datetime, date, timedelta
-
+from datetime import date
+from typing import Any, Dict, List, Optional
 
 # ============================================================
 # 预算档位
@@ -59,13 +58,15 @@ BUDGET_MODES = {
 # 预算状态
 # ============================================================
 
+
 class BudgetLevel(str):
     """预算健康度"""
-    HEALTHY = "healthy"        # 充足
-    WARNING = "warning"        # 预警
-    TIGHT = "tight"            # 紧张
-    CRITICAL = "critical"      # 严重不足
-    EXHAUSTED = "exhausted"    # 耗尽
+
+    HEALTHY = "healthy"  # 充足
+    WARNING = "warning"  # 预警
+    TIGHT = "tight"  # 紧张
+    CRITICAL = "critical"  # 严重不足
+    EXHAUSTED = "exhausted"  # 耗尽
 
 
 # ============================================================
@@ -73,11 +74,11 @@ class BudgetLevel(str):
 # ============================================================
 
 DEFAULT_LAYER_RATIOS = {
-    "sense": 0.10,       # S 层: 10%
-    "arrange": 0.05,      # A 层: 5%
-    "compute": 0.75,      # C 层: 75%
+    "sense": 0.10,  # S 层: 10%
+    "arrange": 0.05,  # A 层: 5%
+    "compute": 0.75,  # C 层: 75%
     "graph_store": 0.05,  # G 层: 5%
-    "evolution": 0.05,    # E 层: 5%
+    "evolution": 0.05,  # E 层: 5%
 }
 
 
@@ -85,14 +86,16 @@ DEFAULT_LAYER_RATIOS = {
 # 预算使用记录
 # ============================================================
 
+
 @dataclass
 class BudgetUsageRecord:
     """预算使用记录"""
+
     cycle_id: str
     tokens: int
     layer: str = "unknown"
     timestamp: float = field(default_factory=time.time)
-    status: str = "success"   # success / degraded / failed
+    status: str = "success"  # success / degraded / failed
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -107,6 +110,7 @@ class BudgetUsageRecord:
 # ============================================================
 # 全局预算管理器
 # ============================================================
+
 
 class GlobalBudgetManager:
     """全局预算管理器
@@ -134,13 +138,15 @@ class GlobalBudgetManager:
         # → {"level": "healthy", "per_cycle_used": 3500, ...}
     """
 
-    def __init__(self,
-                 mode: str = "standard",
-                 per_cycle: Optional[int] = None,
-                 per_day: Optional[int] = None,
-                 per_month: Optional[int] = None,
-                 total: Optional[int] = None,
-                 layer_ratios: Optional[Dict[str, float]] = None):
+    def __init__(
+        self,
+        mode: str = "standard",
+        per_cycle: Optional[int] = None,
+        per_day: Optional[int] = None,
+        per_month: Optional[int] = None,
+        total: Optional[int] = None,
+        layer_ratios: Optional[Dict[str, float]] = None,
+    ):
         self._mode = mode
         mode_conf = BUDGET_MODES.get(mode, BUDGET_MODES["standard"])
 
@@ -188,8 +194,7 @@ class GlobalBudgetManager:
         self._current_cycle_id = cycle_id or f"cycle_{int(time.time())}"
         return self._current_cycle_id
 
-    def end_cycle(self, tokens_total: Optional[int] = None,
-                  status: str = "success") -> int:
+    def end_cycle(self, tokens_total: Optional[int] = None, status: str = "success") -> int:
         """结束当前周期
 
         Args:
@@ -206,13 +211,15 @@ class GlobalBudgetManager:
             self._total_used += used
 
         # 记录历史
-        self._history.append(BudgetUsageRecord(
-            cycle_id=self._current_cycle_id,
-            tokens=used,
-            status=status,
-        ))
+        self._history.append(
+            BudgetUsageRecord(
+                cycle_id=self._current_cycle_id,
+                tokens=used,
+                status=status,
+            )
+        )
         if len(self._history) > self._max_history:
-            self._history = self._history[-self._max_history:]
+            self._history = self._history[-self._max_history :]
 
         self._current_cycle_id = ""
         self._cycle_used = 0
@@ -329,8 +336,13 @@ class GlobalBudgetManager:
         levels.append(self._ratio_to_level(month_ratio))
 
         # 返回最差的状态
-        order = [BudgetLevel.EXHAUSTED, BudgetLevel.CRITICAL,
-                 BudgetLevel.TIGHT, BudgetLevel.WARNING, BudgetLevel.HEALTHY]
+        order = [
+            BudgetLevel.EXHAUSTED,
+            BudgetLevel.CRITICAL,
+            BudgetLevel.TIGHT,
+            BudgetLevel.WARNING,
+            BudgetLevel.HEALTHY,
+        ]
         for lvl in order:
             if lvl in levels:
                 return lvl
@@ -431,6 +443,8 @@ class GlobalBudgetManager:
         return len(self._history)
 
     def __repr__(self) -> str:
-        return (f"<GlobalBudget mode={self._mode} "
-                f"cycle={self.used_per_cycle}/{self._per_cycle} "
-                f"level={self.level()}>")
+        return (
+            f"<GlobalBudget mode={self._mode} "
+            f"cycle={self.used_per_cycle}/{self._per_cycle} "
+            f"level={self.level()}>"
+        )

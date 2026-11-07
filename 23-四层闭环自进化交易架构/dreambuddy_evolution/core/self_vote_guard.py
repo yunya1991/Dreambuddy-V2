@@ -9,6 +9,7 @@
   bcrm / bdsm / strategic
 未知来源按外部处理（保守：不让未知来源被当成自票）。
 """
+
 from __future__ import annotations
 
 import json
@@ -104,13 +105,13 @@ def compute_self_vote_shadow(
     if primary_direction not in ("long", "short"):
         primary_direction = "neutral"
 
-    cap = _clamp(
-        cap_ratio if cap_ratio is not None else DEFAULT_CAP_RATIO, 0.0, 1.0
-    )
+    cap = _clamp(cap_ratio if cap_ratio is not None else DEFAULT_CAP_RATIO, 0.0, 1.0)
     min_external = _clamp(
-        min_external_confidence
-        if min_external_confidence is not None
-        else DEFAULT_MIN_EXTERNAL_CONFIDENCE,
+        (
+            min_external_confidence
+            if min_external_confidence is not None
+            else DEFAULT_MIN_EXTERNAL_CONFIDENCE
+        ),
         0.0,
         1.0,
     )
@@ -125,8 +126,7 @@ def compute_self_vote_shadow(
     independent_evidence = False
     if primary_direction in ("long", "short"):
         independent_evidence = any(
-            _direction(path) == primary_direction
-            and _confidence(path) >= min_external
+            _direction(path) == primary_direction and _confidence(path) >= min_external
             for path in external_paths
         )
 

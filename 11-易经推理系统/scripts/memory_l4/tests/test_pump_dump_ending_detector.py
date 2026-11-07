@@ -28,6 +28,7 @@ TDD 测试清单:
   T11 / test_empty_df_fail_open
   T12 / test_exception_fail_open
 """
+
 from __future__ import annotations
 
 import sys
@@ -35,7 +36,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pytest
 
 _THIS_DIR = Path(__file__).resolve().parent
 _BCRM2_SCRIPTS_ROOT = _THIS_DIR.parent.parent
@@ -46,13 +46,19 @@ for _p in (_BCRM2_SCRIPTS_ROOT, _ARCH_ROOT):
         sys.path.insert(0, str(_p))
 
 from dreamos.evolution.pump_dump_ending_detector import (  # noqa: E402
-    PumpDumpEndingSignal,
     PumpDumpEndingDetector,
+    PumpDumpEndingSignal,
 )
 
 
-def _make_df(n=30, rsi_overbought=False, volume_decline=False,
-             topping_upper=False, topping_close_below=False, seed=42):
+def _make_df(
+    n=30,
+    rsi_overbought=False,
+    volume_decline=False,
+    topping_upper=False,
+    topping_close_below=False,
+    seed=42,
+):
     rng = np.random.RandomState(seed)
     idx = pd.date_range("2026-01-01", periods=n, freq="1h")
     if rsi_overbought:
@@ -60,8 +66,8 @@ def _make_df(n=30, rsi_overbought=False, volume_decline=False,
     else:
         closes = [100.0 + rng.randn() * 0.5 for _ in range(n)]
     opens = [c + rng.randn() * 0.3 for c in closes]
-    highs = [max(o, c) + abs(rng.randn()) * 0.5 for o, c in zip(opens, closes)]
-    lows = [min(o, c) - abs(rng.randn()) * 0.5 for o, c in zip(opens, closes)]
+    highs = [max(o, c) + abs(rng.randn()) * 0.5 for o, c in zip(opens, closes)]  # noqa: B905
+    lows = [min(o, c) - abs(rng.randn()) * 0.5 for o, c in zip(opens, closes)]  # noqa: B905
     volumes = [1000.0 + rng.randn() * 50 for _ in range(n)]
     if volume_decline:
         peak = max(volumes[:-5])
@@ -74,14 +80,16 @@ def _make_df(n=30, rsi_overbought=False, volume_decline=False,
     if topping_close_below:
         closes[-1] = closes[-2] - 1.0
         opens[-1] = closes[-1] + 0.5
-    return pd.DataFrame({"open": opens, "high": highs, "low": lows,
-                         "close": closes, "volume": volumes}, index=idx)
+    return pd.DataFrame(
+        {"open": opens, "high": highs, "low": lows, "close": closes, "volume": volumes}, index=idx
+    )
 
 
 class TestSignalDataclass:
     def test_signal_dataclass_fields(self):
-        sig = PumpDumpEndingSignal(activated=True, confidence=0.8, reason="test",
-                                    timestamp="2026-01-01T00:00:00+00:00")
+        sig = PumpDumpEndingSignal(
+            activated=True, confidence=0.8, reason="test", timestamp="2026-01-01T00:00:00+00:00"
+        )
         assert sig.activated is True
         assert 0.0 <= sig.confidence <= 1.0
 

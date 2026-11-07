@@ -7,6 +7,7 @@ SPEC §2.4
 缓存：每 6h 刷新一次基因库，不每轮重载
 Phase 0 降级：min_sample=0 (允许样本不足的组合参与排序)
 """
+
 from __future__ import annotations
 
 import logging
@@ -21,8 +22,7 @@ _CACHE_TTL = 6 * 3600  # 6 小时
 class ESSDirectionProvider:
     """策略基因 ESS 方向提供器"""
 
-    def __init__(self, gene_data_root: str = "", min_sample: int = 0,
-                 gene_root: str = "") -> None:
+    def __init__(self, gene_data_root: str = "", min_sample: int = 0, gene_root: str = "") -> None:
         """
         Args:
             gene_data_root: gene_data 目录路径
@@ -64,6 +64,7 @@ class ESSDirectionProvider:
         """从基因库计算 ESS top1 方向"""
         try:
             import sys as _sys
+
             # 确保 dreambuddy_evolution 在 path 中
             _evo_root = None
             for p in _sys.path:
@@ -73,6 +74,7 @@ class ESSDirectionProvider:
 
             if _evo_root is None:
                 from pathlib import Path
+
                 _evo_root = str(Path(self._root).parent)
                 if _evo_root not in _sys.path:
                     _sys.path.insert(0, _evo_root)
@@ -86,9 +88,7 @@ class ESSDirectionProvider:
             # load_gene_library 返回 dict: {root, conditions, actions, combinations, counts, bad_genes_log}
             actions = library.get("actions", []) if isinstance(library, dict) else []
 
-            top_combos = top_combinations_by_ess(
-                library, min_sample=self._min_sample
-            )
+            top_combos = top_combinations_by_ess(library, min_sample=self._min_sample)
 
             if not top_combos:
                 logger.info("[FO] ESS: no combos above min_sample=%d", self._min_sample)
@@ -145,6 +145,7 @@ class ESSDirectionProvider:
         import json
         import time
         from pathlib import Path
+
         try:
             lib_path = Path(self._root) / "strategy_combinations" / "library.json"
             if not lib_path.exists():
@@ -170,12 +171,14 @@ class ESSDirectionProvider:
             combo[samples_key] = int(combo.get(samples_key, 0)) + 1
             combo["last_updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
             if symbol:
-                combo.setdefault("trade_history", []).append({
-                    "symbol": symbol,
-                    "ess_delta": round(ess_delta, 6),
-                    "ess_type": ess_type,
-                    "ts": combo["last_updated"],
-                })
+                combo.setdefault("trade_history", []).append(
+                    {
+                        "symbol": symbol,
+                        "ess_delta": round(ess_delta, 6),
+                        "ess_type": ess_type,
+                        "ts": combo["last_updated"],
+                    }
+                )
             lib_path.write_text(
                 json.dumps(data, ensure_ascii=False, indent=2),
                 encoding="utf-8",

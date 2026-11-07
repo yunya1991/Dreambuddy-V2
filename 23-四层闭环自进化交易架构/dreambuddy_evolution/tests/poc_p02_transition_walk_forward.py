@@ -17,6 +17,7 @@
 
 输出: dreambuddy_evolution/data/poc_p02_transition_walk_forward.json
 """
+
 from __future__ import annotations
 
 import json
@@ -31,9 +32,12 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
-from dreambuddy_evolution.core.garch_fallback import GARCHFallback
-from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
+from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector  # noqa: E402, I001
+from dreambuddy_evolution.core.garch_fallback import GARCHFallback  # noqa: E402
+from dreambuddy_evolution.core.neural_sde_model import (  # noqa: E402
+    NeuralSDEModel,
+    NeuralSDETrainer,
+)  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -60,8 +64,8 @@ def evaluate_on_windows(
     for ts in test_starts:
         if ts + horizon >= len(closes):
             continue
-        history = closes[:ts + 1]
-        actual = closes[ts + 1:ts + 1 + horizon]
+        history = closes[: ts + 1]
+        actual = closes[ts + 1 : ts + 1 + horizon]
         init_price = float(history[-1])
         returns = np.diff(np.log(history))
         init_vol = float(np.std(returns)) if len(returns) > 2 else 0.02
@@ -80,8 +84,11 @@ def evaluate_on_windows(
         if Q is not None and test_regime is not None and 0 <= test_regime < Q.shape[0]:
             transition = Q[test_regime]
         sde_paths = model.forecast(
-            history, horizon, n_paths,
-            regime=test_regime, transition=transition,
+            history,
+            horizon,
+            n_paths,
+            regime=test_regime,
+            transition=transition,
         )
         if sde_paths is None:
             sde_mae = float("inf")
@@ -89,14 +96,16 @@ def evaluate_on_windows(
             sde_pred = np.mean(sde_paths[:, 1:], axis=0)
             sde_mae = float(np.mean(np.abs(sde_pred - actual)))
 
-        results.append({
-            "test_start_idx": int(ts),
-            "test_price_start": round(float(closes[ts]), 2),
-            "test_regime": test_regime,
-            "sde_mae": round(sde_mae, 4),
-            "garch_mae": round(garch_mae, 4),
-            "ratio": round(sde_mae / garch_mae, 4) if garch_mae > 0 else float("inf"),
-        })
+        results.append(
+            {
+                "test_start_idx": int(ts),
+                "test_price_start": round(float(closes[ts]), 2),
+                "test_regime": test_regime,
+                "sde_mae": round(sde_mae, 4),
+                "garch_mae": round(garch_mae, 4),
+                "ratio": round(sde_mae / garch_mae, 4) if garch_mae > 0 else float("inf"),
+            }
+        )
     return results
 
 
@@ -112,6 +121,7 @@ def train_and_evaluate(
 ) -> dict:
     """训练一个模型并评估."""
     import torch
+
     torch.manual_seed(seed)
     np.random.seed(seed)
 
@@ -120,20 +130,29 @@ def train_and_evaluate(
         return {"status": "skipped", "reason": "torch not available"}
 
     trainer = NeuralSDETrainer(
-        model=model, lr=1e-4, seq_len=64, horizon=20,
-        batch_size=64, loss_type="mse",
+        model=model,
+        lr=1e-4,
+        seq_len=64,
+        horizon=20,
+        batch_size=64,
+        loss_type="mse",
     )
 
     t0 = time.time()
     report = trainer.train(
-        closes_train, epochs=epochs,
+        closes_train,
+        epochs=epochs,
         regime_labels=regime_labels_train,
         regime_balance="natural",
     )
     train_time = time.time() - t0
-    logger.info("[%s] 训练完成: n_windows=%d, final_loss=%.6f, 耗时=%.1fs",
-                "transition" if use_transition else "baseline",
-                report.get("n_windows", 0), report.get("final_loss", 0.0), train_time)
+    logger.info(
+        "[%s] 训练完成: n_windows=%d, final_loss=%.6f, 耗时=%.1fs",
+        "transition" if use_transition else "baseline",
+        report.get("n_windows", 0),
+        report.get("final_loss", 0.0),
+        train_time,
+    )
 
     if report.get("status") != "ok":
         return {"status": "train_failed", "report": report}
@@ -216,16 +235,26 @@ def main():
     logger.info("=" * 60)
     logger.info("Model A: baseline (use_transition=False)")
     result_a = train_and_evaluate(
-        closes_train, closes_full, regime_labels_train, regime_labels_full,
-        test_starts, use_transition=False, epochs=epochs,
+        closes_train,
+        closes_full,
+        regime_labels_train,
+        regime_labels_full,
+        test_starts,
+        use_transition=False,
+        epochs=epochs,
     )
 
     # Model B: transition-aware (use_transition=True)
     logger.info("=" * 60)
     logger.info("Model B: transition-aware (use_transition=True)")
     result_b = train_and_evaluate(
-        closes_train, closes_full, regime_labels_train, regime_labels_full,
-        test_starts, use_transition=True, epochs=epochs,
+        closes_train,
+        closes_full,
+        regime_labels_train,
+        regime_labels_full,
+        test_starts,
+        use_transition=True,
+        epochs=epochs,
     )
 
     # 对比汇总

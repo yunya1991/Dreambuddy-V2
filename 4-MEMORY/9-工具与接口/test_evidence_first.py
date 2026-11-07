@@ -2,6 +2,7 @@
 
 借鉴 33-REA 的 Evidence 结构（4层事实分级 + provenance + known_gaps）。
 """
+
 import json
 import os
 import sys
@@ -25,6 +26,7 @@ def temp_vm():
     yield vm
     vm.close()
     import shutil
+
     shutil.rmtree(tmpdir, ignore_errors=True)
 
 
@@ -79,8 +81,6 @@ def test_add_rejects_invalid_level(temp_vm):
         level="invalid_level",
     )
 
-    row = temp_vm.db.execute(
-        "SELECT level FROM memories WHERE id = ?", [mem_id]
-    ).fetchone()
+    row = temp_vm.db.execute("SELECT level FROM memories WHERE id = ?", [mem_id]).fetchone()
 
     assert row[0] == "observation"  # FAIL-OPEN 回退

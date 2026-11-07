@@ -10,11 +10,11 @@ V1-A: A 层 GraphPlanner IPC 契约测试
 """
 
 import json
+import subprocess
 import sys
+import threading
 import time
 import uuid
-import subprocess
-import threading
 from pathlib import Path
 
 BRIDGE_DIR = Path(__file__).resolve().parent.parent
@@ -109,12 +109,15 @@ def test_graph_planner_returns_plan():
     """graph_planner 方法应返回 ExecutionPlan JSON"""
     harness = IPCHarness().start()
     try:
-        resp = harness.call_method("graph_planner", {
-            "intent_type": "TREND_FOLLOWING",
-            "recommended_chain": "A",
-            "base_chain": ["A0", "A1", "A2"],
-            "confidence": 0.72,
-        })
+        resp = harness.call_method(
+            "graph_planner",
+            {
+                "intent_type": "TREND_FOLLOWING",
+                "recommended_chain": "A",
+                "base_chain": ["A0", "A1", "A2"],
+                "confidence": 0.72,
+            },
+        )
         result = resp.get("result", {})
         print(f"  response: {json.dumps(result, ensure_ascii=False)[:300]}")
 
@@ -146,7 +149,7 @@ def test_graph_planner_missing_params_fail_open():
 
 def test_graph_planner_method_registered():
     """graph_planner 方法应在 handle_request 路由中注册"""
-    import inspect
+
     server_src = SERVER_PATH.read_text(encoding="utf-8")
     assert "_handle_graph_planner" in server_src, "server.py 应包含 _handle_graph_planner"
     assert '"graph_planner"' in server_src, "handle_request 应路由 graph_planner"

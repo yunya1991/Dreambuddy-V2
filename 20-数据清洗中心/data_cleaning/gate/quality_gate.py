@@ -7,6 +7,7 @@
  3. enforce_hard_block=False → 旁路模式，只 report 不抛（T-G1 旁路等价用）
  4. FAIL 时异常 traceback_str 填完整当前栈，6 层向上也可追溯
 """
+
 from __future__ import annotations
 
 import traceback
@@ -75,16 +76,19 @@ class QualityGate:
         # trace 打点
         if trace is not None:
             from data_cleaning.contract import CleanAction
-            trace.append(CleanAction(
-                step="QualityGate",
-                input_rows=len(records),
-                output_rows=len(records),
-                blocked_count=0 if gate_pass else len(records),
-                note=(
-                    f"pass={gate_pass} issues={len(issues)} "
-                    f"codes={sorted({i.code.value for i in issues})}"
-                ),
-            ))
+
+            trace.append(
+                CleanAction(
+                    step="QualityGate",
+                    input_rows=len(records),
+                    output_rows=len(records),
+                    blocked_count=0 if gate_pass else len(records),
+                    note=(
+                        f"pass={gate_pass} issues={len(issues)} "
+                        f"codes={sorted({i.code.value for i in issues})}"
+                    ),
+                )
+            )
 
         if gate_pass:
             return True, issues

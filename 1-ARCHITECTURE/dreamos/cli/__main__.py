@@ -2,7 +2,7 @@
 Dreambuddy OS CLI — 主入口模块
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import sys
 

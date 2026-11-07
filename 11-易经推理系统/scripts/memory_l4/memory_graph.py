@@ -1,13 +1,13 @@
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import artifacts_memory_l4_dir
+from scripts.memory_l4.paths import artifacts_memory_l4_dir  # noqa: E402
 
 
 def _default_graph_path() -> Path:
@@ -85,9 +85,13 @@ def build_memory_graph(
         "edges": edges,
         "dropped_edges": dropped_edges,
     }
-    graph_path = (Path(output_dir) / "graph.json") if output_dir is not None else _default_graph_path()
+    graph_path = (
+        (Path(output_dir) / "graph.json") if output_dir is not None else _default_graph_path()
+    )
     graph_path.parent.mkdir(parents=True, exist_ok=True)
-    graph_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    graph_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     return {
         "graph_path": str(graph_path),
         "summary": {"nodes": len(nodes), "edges": len(edges), "dropped_edges": len(dropped_edges)},

@@ -5,7 +5,7 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, Any, Dict, List
+from typing import Any, Dict, List
 
 
 def _load_json(path: Path) -> Dict[str, Any]:
@@ -41,14 +41,22 @@ def main(argv: List[str] = None) -> int:
     if not release_version:
         raise ValueError("release-version must not be empty")
 
-    output_path = Path(args.output_json) if str(args.output_json).strip() else Path(args.output_dir) / f"{release_version}.json"
+    output_path = (
+        Path(args.output_json)
+        if str(args.output_json).strip()
+        else Path(args.output_dir) / f"{release_version}.json"
+    )
     snapshot = {
         "release_version": release_version,
         "generated_at": _now_iso(),
         "source_ref": str(source_path),
         "source_sha256": source_sha,
         "candidate_id": str(source_payload.get("candidate_id") or ""),
-        "from_version": str(source_payload.get("from_version") or source_payload.get("constraint_version_base") or ""),
+        "from_version": str(
+            source_payload.get("from_version")
+            or source_payload.get("constraint_version_base")
+            or ""
+        ),
         "to_version": str(source_payload.get("to_version") or release_version),
         "schema_version": "evolution-p2-constraint-release-snapshot-v0.1",
     }

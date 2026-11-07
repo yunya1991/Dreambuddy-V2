@@ -21,31 +21,29 @@
 # 运行: python3 stress_test.py
 # ============================================================================
 
+import argparse
 import json
-import os
 import random
 import sys
 import time
-import argparse
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Callable, Optional
-from statistics import mean, median, stdev
+from statistics import mean
+from typing import Optional
 
 # 将 engine.py 加入路径
 SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
-from engine import (
-    RecommendationEngine,
-    CandidateStrategy,
+from engine import (  # noqa: E402
     BacktestResult,
+    CandidateStrategy,
     EngineConfig,
     EngineStatus,
     EngineStep,
+    RecommendationEngine,
     TriggerType,
-    RECOMMENDATION_ARTIFACTS,
 )
 
 # ============================================================================
@@ -234,9 +232,11 @@ SCENARIO_CONFIGS = {
 # 测试辅助类
 # ============================================================================
 
+
 @dataclass
 class TestResult:
     """单个测试的结果"""
+
     scenario: str
     label: str
     round: int
@@ -317,28 +317,26 @@ class StressTestEngine(RecommendationEngine):
         for i in range(report_count):
             phase = random.choice(["A1", "A2", "A3"])
             direction = (
-                "BUY"
-                if random.random() < self.scenario_config["direction_bias"]
-                else "SHORT"
+                "BUY" if random.random() < self.scenario_config["direction_bias"] else "SHORT"
             )
             confidence = int(random.uniform(40, 90))
-            regime = random.choice(
-                ["ABOVE_ALL", "BELOW_ALL", "SIDEWAYS", "EXTREME"]
-            )
+            regime = random.choice(["ABOVE_ALL", "BELOW_ALL", "SIDEWAYS", "EXTREME"])
             report_date_shifted = report_date - timedelta(
                 hours=random.randint(0, 24 * report_count)
             )
 
-            reports.append({
-                "file": f"report_{phase}_{report_count}_{i}.json",
-                "title": f"测试研报 - {phase} - {direction} - #{i+1}",
-                "date": report_date_shifted.strftime("%Y-%m-%dT%H:%M:%S"),
-                "chain_phase": phase,
-                "regime": regime,
-                "confidence": confidence,
-                "direction": direction,
-                "tags": direction,
-            })
+            reports.append(
+                {
+                    "file": f"report_{phase}_{report_count}_{i}.json",
+                    "title": f"测试研报 - {phase} - {direction} - #{i+1}",
+                    "date": report_date_shifted.strftime("%Y-%m-%dT%H:%M:%S"),
+                    "chain_phase": phase,
+                    "regime": regime,
+                    "confidence": confidence,
+                    "direction": direction,
+                    "tags": direction,
+                }
+            )
 
         self.reports = reports
         self._log(f"生成 {len(reports)} 份模拟研报 (场景: {self.scenario})")
@@ -379,23 +377,21 @@ class StressTestEngine(RecommendationEngine):
         direction_bias = self.scenario_config["direction_bias"]
 
         for i in range(candidate_count):
-            direction = (
-                "BUY" if random.random() < direction_bias else "SHORT"
-            )
+            direction = "BUY" if random.random() < direction_bias else "SHORT"
             report = self.reports[i % len(self.reports)] if self.reports else None
             regime = report["regime"] if report else "UNKNOWN"
-            confidence = (
-                int(report["confidence"]) if report else random.randint(40, 80)
-            )
+            confidence = int(report["confidence"]) if report else random.randint(40, 80)
 
-            candidates.append(CandidateStrategy(
-                name=f"CANDIDATE-{self.scenario.upper()}-#{i+1}-{direction}",
-                description=f"场景{self.scenario} - 基于研报的候选策略 #{i+1}",
-                direction=direction,
-                regime=regime,
-                confidence=confidence,
-                symbol=self.config.symbol,
-            ))
+            candidates.append(
+                CandidateStrategy(
+                    name=f"CANDIDATE-{self.scenario.upper()}-#{i+1}-{direction}",
+                    description=f"场景{self.scenario} - 基于研报的候选策略 #{i+1}",
+                    direction=direction,
+                    regime=regime,
+                    confidence=confidence,
+                    symbol=self.config.symbol,
+                )
+            )
 
         self.candidates = candidates
         self._log(f"生成 {len(candidates)} 个候选策略")
@@ -413,7 +409,7 @@ class StressTestEngine(RecommendationEngine):
         fail_prob = self.scenario_config["fail_prob"]
         vol_factor = self.scenario_config["volatility_factor"]
 
-        for i, candidate in enumerate(self.candidates):
+        for i, candidate in enumerate(self.candidates):  # noqa: B007
             # 模拟失败
             if random.random() < fail_prob:
                 self._log(f"  {candidate.name}: 回测失败 (模拟)", "WARN")
@@ -460,23 +456,13 @@ class StressTestEngine(RecommendationEngine):
         if will_pass:
             # 优于基线
             sharpe_ratio = round(base_sharpe + random.uniform(0.0, 0.4), 3)
-            max_drawdown = round(
-                max(1.0, base_dd * random.uniform(0.7, 1.0) * vol_factor), 2
-            )
-            total_return = round(
-                base_return * random.uniform(1.1, 1.8) * vol_factor, 2
-            )
+            max_drawdown = round(max(1.0, base_dd * random.uniform(0.7, 1.0) * vol_factor), 2)
+            total_return = round(base_return * random.uniform(1.1, 1.8) * vol_factor, 2)
         else:
             # 劣于基线
-            sharpe_ratio = round(
-                base_sharpe * random.uniform(0.3, 0.95) * vol_factor, 3
-            )
-            max_drawdown = round(
-                base_dd * random.uniform(1.0, 1.8) * vol_factor, 2
-            )
-            total_return = round(
-                base_return * random.uniform(0.3, 0.9) * vol_factor, 2
-            )
+            sharpe_ratio = round(base_sharpe * random.uniform(0.3, 0.95) * vol_factor, 3)
+            max_drawdown = round(base_dd * random.uniform(1.0, 1.8) * vol_factor, 2)
+            total_return = round(base_return * random.uniform(0.3, 0.9) * vol_factor, 2)
 
         win_rate = round(random.uniform(35, 65), 1)
         profit_factor = round(random.uniform(1.0, 3.0), 2)
@@ -544,9 +530,7 @@ class StressTestEngine(RecommendationEngine):
         self._log("开始决策...")
         self.round_counter += 1
 
-        passed_count = sum(
-            1 for r in self.backtest_results if r.is_better_than_baseline
-        )
+        passed_count = sum(1 for r in self.backtest_results if r.is_better_than_baseline)
         has_better = passed_count > 0
 
         # ====== 逻辑1：检查连续5日推荐同一策略 - 强制刷新 ======
@@ -613,8 +597,7 @@ class StressTestEngine(RecommendationEngine):
         )
 
         # 如果策略名与上次相同，增加连续天数计数
-        if (self.last_recommended_strategy and
-                self.last_recommended_strategy == best_candidate.name):
+        if self.last_recommended_strategy and self.last_recommended_strategy == best_candidate.name:
             self.current_recommended_days += 1
         else:
             self.current_recommended_days = 1
@@ -630,13 +613,15 @@ class StressTestEngine(RecommendationEngine):
         self._log(self.decision_reason)
 
         # 记录决策追踪
-        self.decision_trace.append({
-            "round": self.round_counter,
-            "strategy": best_candidate.name,
-            "sharpe": best.sharpe_ratio,
-            "consecutive_days": self.current_recommended_days,
-            "below_baseline_count": self.consecutive_below_baseline,
-        })
+        self.decision_trace.append(
+            {
+                "round": self.round_counter,
+                "strategy": best_candidate.name,
+                "sharpe": best.sharpe_ratio,
+                "consecutive_days": self.current_recommended_days,
+                "below_baseline_count": self.consecutive_below_baseline,
+            }
+        )
 
         return best_candidate
 
@@ -652,11 +637,7 @@ class StressTestEngine(RecommendationEngine):
             return None
 
         # 模拟写入成功
-        strategy_name = (
-            self.recommended_strategy.name
-            if self.recommended_strategy
-            else "BASELINE"
-        )
+        strategy_name = self.recommended_strategy.name if self.recommended_strategy else "BASELINE"
         self._log(f"✅ 策略「{strategy_name}」已写入 Prisma")
         return "simulated-strategy-id"
 
@@ -666,9 +647,7 @@ class StressTestEngine(RecommendationEngine):
     def run(self, trigger_type: TriggerType = TriggerType.SCHEDULED) -> "StressTestEngine":
         self.status = EngineStatus.RUNNING
         start_time = datetime.now()
-        self._log(
-            f"=== 压力测试启动 (场景: {self.scenario_config['label']}) ==="
-        )
+        self._log(f"=== 压力测试启动 (场景: {self.scenario_config['label']}) ===")
 
         try:
             self.step_fetch_reports()
@@ -685,9 +664,7 @@ class StressTestEngine(RecommendationEngine):
             self.error_message = str(e)
             self._log(f"引擎异常: {e}", "ERROR")
 
-        duration_ms = int(
-            (datetime.now() - start_time).total_seconds() * 1000
-        )
+        duration_ms = int((datetime.now() - start_time).total_seconds() * 1000)
         self._log(f"=== 测试完成 ({duration_ms}ms, status={self.status.value}) ===")
         self._duration_ms = duration_ms
         return self
@@ -704,20 +681,16 @@ class StressTestEngine(RecommendationEngine):
         """生成测试结果"""
         # 计算统计
         valid_results = [
-            r for r in self.backtest_results
-            if r.sharpe_ratio > 0 and r.total_return > -900
+            r for r in self.backtest_results if r.sharpe_ratio > 0 and r.total_return > -900
         ]
         avg_sharpe = (
-            round(mean([r.sharpe_ratio for r in valid_results]), 3)
-            if valid_results else None
+            round(mean([r.sharpe_ratio for r in valid_results]), 3) if valid_results else None
         )
         max_sharpe = (
-            round(max([r.sharpe_ratio for r in valid_results]), 3)
-            if valid_results else None
+            round(max([r.sharpe_ratio for r in valid_results]), 3) if valid_results else None
         )
         avg_maxdd = (
-            round(mean([r.max_drawdown for r in valid_results]), 2)
-            if valid_results else None
+            round(mean([r.max_drawdown for r in valid_results]), 2) if valid_results else None
         )
 
         return TestResult(
@@ -729,17 +702,14 @@ class StressTestEngine(RecommendationEngine):
             reports_used=len(self.reports),
             candidates_generated=len(self.candidates),
             strategies_backtested=len(self.backtest_results),
-            strategies_passed=sum(
-                1 for r in self.backtest_results if r.is_better_than_baseline
-            ),
+            strategies_passed=sum(1 for r in self.backtest_results if r.is_better_than_baseline),
             recommended_strategy=(
-                self.recommended_strategy.name
-                if self.recommended_strategy
-                else None
+                self.recommended_strategy.name if self.recommended_strategy else None
             ),
             is_better_than_baseline=(
                 any(r.is_better_than_baseline for r in self.backtest_results)
-                if self.backtest_results else False
+                if self.backtest_results
+                else False
             ),
             error_message=self.error_message,
             avg_sharpe=avg_sharpe,
@@ -757,6 +727,7 @@ class StressTestEngine(RecommendationEngine):
 # ============================================================================
 # 测试运行器
 # ============================================================================
+
 
 class StressTestRunner:
     """多场景多轮测试运行器"""
@@ -784,9 +755,7 @@ class StressTestRunner:
                 config=self.config,
                 scenario=scenario,
                 scenario_config=config,
-                simulate_api_failure=(
-                    config.get("api_fail_prob", 0) > 0
-                ),
+                simulate_api_failure=(config.get("api_fail_prob", 0) > 0),
                 api_fail_prob=config.get("api_fail_prob", 0),
                 initial_state=state if is_multi_day else None,
             )
@@ -804,7 +773,7 @@ class StressTestRunner:
             if result.recommended_strategy:
                 status_info += f"推荐={result.recommended_strategy[:30]}, "
             else:
-                status_info += f"推荐=BASELINE, "
+                status_info += "推荐=BASELINE, "
             status_info += f"通过={result.strategies_passed}/{result.strategies_backtested}, "
             if is_multi_day or result.force_refresh_triggered or result.rollback_triggered:
                 status_info += (
@@ -812,9 +781,9 @@ class StressTestRunner:
                     f"劣于基线次数={result.below_baseline_count}"
                 )
                 if result.force_refresh_triggered:
-                    status_info += f" 🔄 强制刷新!"
+                    status_info += " 🔄 强制刷新!"
                 if result.rollback_triggered:
-                    status_info += f" 🔙 回退基线!"
+                    status_info += " 🔙 回退基线!"
             print(status_info)
             time.sleep(0.02)  # 轻微延迟防止输出混乱
 
@@ -833,9 +802,7 @@ class StressTestRunner:
                 continue
 
             print(f"\n进度: {i+1}/{len(scenarios_to_run)}")
-            self.results[scenario] = self.run_single_scenario(
-                scenario, SCENARIO_CONFIGS[scenario]
-            )
+            self.results[scenario] = self.run_single_scenario(scenario, SCENARIO_CONFIGS[scenario])
 
         total_ms = int((time.time() - total_start) * 1000)
         print(f"\n\n总耗时: {total_ms}ms ({total_ms/1000:.1f}s)")
@@ -852,20 +819,17 @@ class StressTestRunner:
         lines.append("推荐策略引擎 - 多场景压力测试报告")
         lines.append(f"生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         lines.append(
-            f"测试配置: {self.rounds_per_scenario} 轮/场景, "
-            f"{len(self.results)} 个场景"
+            f"测试配置: {self.rounds_per_scenario} 轮/场景, " f"{len(self.results)} 个场景"
         )
         lines.append("=" * 70)
 
         # 汇总统计
         total_rounds = sum(len(r) for r in self.results.values())
         successful = sum(
-            1 for results in self.results.values()
-            for r in results if r.status == "success"
+            1 for results in self.results.values() for r in results if r.status == "success"
         )
         failed = sum(
-            1 for results in self.results.values()
-            for r in results if r.status == "failed"
+            1 for results in self.results.values() for r in results if r.status == "failed"
         )
 
         lines.append("")
@@ -883,12 +847,12 @@ class StressTestRunner:
         for scenario, results in self.results.items():
             config = SCENARIO_CONFIGS[scenario]
             successes = sum(1 for r in results if r.status == "success")
-            recommended_any = sum(
-                1 for r in results if r.recommended_strategy
+            recommended_any = sum(1 for r in results if r.recommended_strategy)
+            avg_sharpe = (
+                mean(r.avg_sharpe for r in results if r.avg_sharpe is not None)
+                if [r for r in results if r.avg_sharpe is not None]
+                else 0
             )
-            avg_sharpe = mean(
-                r.avg_sharpe for r in results if r.avg_sharpe is not None
-            ) if [r for r in results if r.avg_sharpe is not None] else 0
             avg_duration = mean(r.duration_ms for r in results)
 
             lines.append("-" * 70)
@@ -903,9 +867,7 @@ class StressTestRunner:
 
             # 每轮详情
             for i, r in enumerate(results):
-                indicator = {
-                    "success": "✅", "failed": "❌", "partial": "⚠️"
-                }.get(r.status, "❓")
+                indicator = {"success": "✅", "failed": "❌", "partial": "⚠️"}.get(r.status, "❓")
 
                 lines.append(
                     f"    {indicator} 第{i+1}轮: {r.status} | "
@@ -931,8 +893,7 @@ class StressTestRunner:
             nr = self.results["no_reports"]
             recommended = sum(1 for r in nr if r.recommended_strategy)
             lines.append(
-                f"  • 研报缺失场景: {recommended}/{len(nr)} 轮生成推荐 "
-                f"(默认策略生成机制验证)"
+                f"  • 研报缺失场景: {recommended}/{len(nr)} 轮生成推荐 " f"(默认策略生成机制验证)"
             )
 
         # 2. 极端市场
@@ -940,25 +901,19 @@ class StressTestRunner:
             ex = self.results["extreme"]
             avg = mean(r.strategies_passed for r in ex)
             lines.append(
-                f"  • 极端市场: 平均每轮 {avg:.1f} 个策略优于基线 "
-                f"(高波动下策略筛选有效性验证)"
+                f"  • 极端市场: 平均每轮 {avg:.1f} 个策略优于基线 " f"(高波动下策略筛选有效性验证)"
             )
 
         # 3. 超时场景
         if "timeout_heavy" in self.results:
             th = self.results["timeout_heavy"]
             avg = mean(r.strategies_passed for r in th)
-            lines.append(
-                f"  • 重度超时: 平均 {avg:.1f} 个策略通过 "
-                f"(超时保护和降级机制验证)"
-            )
+            lines.append(f"  • 重度超时: 平均 {avg:.1f} 个策略通过 " f"(超时保护和降级机制验证)")
 
         # 4. API故障
         if "api_failure" in self.results:
             af = self.results["api_failure"]
-            failed_writes = sum(
-                1 for r in af if r.error_message and "API" in r.error_message
-            )
+            failed_writes = sum(1 for r in af if r.error_message and "API" in r.error_message)
             lines.append(
                 f"  • API故障模拟: {failed_writes}/{len(af)} 轮写入失败 "
                 f"(错误已记录，不中断引擎流程)"
@@ -998,8 +953,7 @@ class StressTestRunner:
         if "multi_day_simulation" in self.results:
             md = self.results["multi_day_simulation"]
             strategy_switches = sum(
-                1 for i, r in enumerate(md)
-                if i > 0 and r.last_strategy != md[i-1].last_strategy
+                1 for i, r in enumerate(md) if i > 0 and r.last_strategy != md[i - 1].last_strategy
             )
             max_consec = max(r.consecutive_days for r in md) if md else 0
             lines.append(
@@ -1036,8 +990,7 @@ class StressTestRunner:
             "timestamp": datetime.now().isoformat(),
             "config": {"rounds_per_scenario": self.rounds_per_scenario},
             "scenarios": {
-                scenario: [asdict(r) for r in results]
-                for scenario, results in self.results.items()
+                scenario: [asdict(r) for r in results] for scenario, results in self.results.items()
             },
         }
         json_file.write_text(json.dumps(json_data, ensure_ascii=False, indent=2))
@@ -1048,6 +1001,7 @@ class StressTestRunner:
 # ============================================================================
 # 主程序
 # ============================================================================
+
 
 def main():
     parser = argparse.ArgumentParser(description="推荐策略引擎压力测试")

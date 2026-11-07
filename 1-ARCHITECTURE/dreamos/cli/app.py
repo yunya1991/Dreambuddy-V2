@@ -5,23 +5,22 @@ CLI 主应用 — 管理命令注册、REPL 会话、子命令分发
 from __future__ import annotations
 
 import argparse
-import sys
 from typing import List, Optional
 
-from .base import Command, CommandContext, list_commands, get_command
+from .base import CommandContext, list_commands
 
 try:
-    from . import scheduler_commands
+    from . import scheduler_commands  # noqa: F401
 except Exception:
     pass
 
 try:
-    from . import auto_commands
+    from . import auto_commands  # noqa: F401
 except Exception:
     pass
 
 try:
-    from . import orchestration_commands
+    from . import orchestration_commands  # noqa: F401
 except Exception:
     pass
 
@@ -50,11 +49,13 @@ class CLIApp:
             prog=self.name,
             description=self.description,
         )
-        parser.add_argument("--budget", default="standard",
-                            choices=["lean", "standard", "full"],
-                            help="预算模式 (默认: standard)")
-        parser.add_argument("-v", "--verbose", action="store_true",
-                            help="详细输出")
+        parser.add_argument(
+            "--budget",
+            default="standard",
+            choices=["lean", "standard", "full"],
+            help="预算模式 (默认: standard)",
+        )
+        parser.add_argument("-v", "--verbose", action="store_true", help="详细输出")
 
         subparsers = parser.add_subparsers(dest="command", help="子命令")
 
@@ -62,8 +63,7 @@ class CLIApp:
         for cmd in list_commands():
             if cmd.hidden:
                 continue
-            sub = subparsers.add_parser(cmd.name, help=cmd.description,
-                                        aliases=cmd.aliases)
+            sub = subparsers.add_parser(cmd.name, help=cmd.description, aliases=cmd.aliases)
             cmd.add_arguments(sub)
             sub.set_defaults(_command=cmd)
 
@@ -108,12 +108,14 @@ class CLIApp:
             self._context.error(f"命令执行失败: {e}")
             if self._context.verbose:
                 import traceback
+
                 traceback.print_exc()
             return 1
 
     def _run_repl(self) -> int:
         """运行 REPL 交互模式"""
         from .repl import REPLSession
+
         session = REPLSession(app=self)
         return session.run()
 

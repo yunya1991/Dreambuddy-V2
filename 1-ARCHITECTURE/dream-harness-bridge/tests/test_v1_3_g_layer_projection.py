@@ -18,12 +18,11 @@ V1-3: G 层 session log consumer 投影验证
 """
 
 import json
-import os
+import subprocess
 import sys
+import threading
 import time
 import uuid
-import subprocess
-import threading
 from pathlib import Path
 
 BRIDGE_DIR = Path(__file__).resolve().parent.parent
@@ -201,16 +200,17 @@ def test_v1_3_projection():
         entries = [json.loads(line) for line in lines[-4:]]  # 最后 4 行
 
         expected_types = ["node_execution", "node_result", "graph_node", "intent_gate"]
-        for i, (entry, expected_type) in enumerate(zip(entries, expected_types)):
-            assert entry["event_type"] == expected_type, \
-                f"事件 {i}: 期望 event_type={expected_type}, got {entry['event_type']}"
-            assert entry["session_id"] == session_id, \
-                f"事件 {i}: session_id 不匹配"
+        for i, (entry, expected_type) in enumerate(zip(entries, expected_types)):  # noqa: B905
+            assert (
+                entry["event_type"] == expected_type
+            ), f"事件 {i}: 期望 event_type={expected_type}, got {entry['event_type']}"
+            assert entry["session_id"] == session_id, f"事件 {i}: session_id 不匹配"
             assert "timestamp" in entry, f"事件 {i}: 缺少 timestamp"
             assert "event_data" in entry, f"事件 {i}: 缺少 event_data"
-            assert entry["event_data"]["seq"] == i + 1, \
-                f"事件 {i}: seq 不匹配"
-            print(f"  ✓ 投影 {expected_type}: seq={entry['event_data']['seq']}, session={entry['session_id']}")
+            assert entry["event_data"]["seq"] == i + 1, f"事件 {i}: seq 不匹配"
+            print(
+                f"  ✓ 投影 {expected_type}: seq={entry['event_data']['seq']}, session={entry['session_id']}"
+            )
 
         # 验证事件顺序保持
         seqs = [e["event_data"]["seq"] for e in entries]

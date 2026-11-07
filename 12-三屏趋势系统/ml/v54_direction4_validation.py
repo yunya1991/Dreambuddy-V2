@@ -12,20 +12,21 @@
 6. V5.4e：交互特征 ma200_distance × fed_rate_action（降息+低位抄底）
 """
 
+import json
 import os
 import sys
-import json
 import time
+
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
 from sklearn.metrics import roc_auc_score
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.feature_engineer import TrendFeatureEngineer
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
+from ml.feature_engineer import TrendFeatureEngineer  # noqa: E402
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
 
 
 def load_btc_data() -> pd.DataFrame:
@@ -96,13 +97,16 @@ def compute_fed_features(fe: PhilosophyFeatureEngineer, prices: pd.DataFrame) ->
         rate_change_6m[i] = rate_level - rate_6m_ago
         rate_change_12m[i] = rate_level - rate_12m_ago
 
-    return pd.DataFrame({
-        "fed_rate_action": fed_action,
-        "fed_months_in_cycle": fed_months,
-        "fed_rate_level": fed_level,
-        "rate_change_6m": rate_change_6m,
-        "rate_change_12m": rate_change_12m,
-    }, index=prices.index)
+    return pd.DataFrame(
+        {
+            "fed_rate_action": fed_action,
+            "fed_months_in_cycle": fed_months,
+            "fed_rate_level": fed_level,
+            "rate_change_6m": rate_change_6m,
+            "rate_change_12m": rate_change_12m,
+        },
+        index=prices.index,
+    )
 
 
 def generate_labels(closes, lookahead, threshold, mode="drop"):
@@ -120,8 +124,13 @@ def generate_labels(closes, lookahead, threshold, mode="drop"):
 
 
 def walk_forward_validation(
-    features, labels, feature_names,
-    n_splits=12, train_days=730, test_days=180, step_days=180,
+    features,
+    labels,
+    feature_names,
+    n_splits=12,
+    train_days=730,
+    test_days=180,
+    step_days=180,
 ):
     n = len(features)
     feature_importances = []
@@ -149,10 +158,15 @@ def walk_forward_validation(
             continue
 
         model = lgb.LGBMClassifier(
-            n_estimators=200, max_depth=6, learning_rate=0.05,
-            num_leaves=31, min_child_samples=20,
-            subsample=0.8, colsample_bytree=0.8,
-            random_state=42, verbose=-1,
+            n_estimators=200,
+            max_depth=6,
+            learning_rate=0.05,
+            num_leaves=31,
+            min_child_samples=20,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42,
+            verbose=-1,
         )
         model.fit(X_train, y_train)
 
@@ -168,7 +182,11 @@ def walk_forward_validation(
     avg_test = float(np.mean(test_aucs)) if test_aucs else 0.0
     avg_train = float(np.mean(train_aucs)) if train_aucs else 0.0
     decay = 1.0 - (avg_test / avg_train) if avg_train > 0 else 0.0
-    avg_imp = np.mean(feature_importances, axis=0) if feature_importances else np.zeros(len(feature_names))
+    avg_imp = (
+        np.mean(feature_importances, axis=0)
+        if feature_importances
+        else np.zeros(len(feature_names))
+    )
 
     return avg_test, avg_train, float(decay), avg_imp
 
@@ -206,11 +224,17 @@ def main():
 
     # 3. V4基线（不含V5.3+美联储）
     v4_phil = phil_features.drop(columns=["drawdown_vs_hist_avg", "cycle_path_similarity"])
-    v4_base = pd.concat([trend_features, v4_phil], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    v4_base = (
+        pd.concat([trend_features, v4_phil], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    )
     v4_names = list(v4_base.columns)
 
     # V5.3基线（当前最优：+2个周期相似性特征）
-    v53_base = pd.concat([trend_features, phil_features], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    v53_base = (
+        pd.concat([trend_features, phil_features], axis=1)
+        .fillna(0.0)
+        .replace([np.inf, -np.inf], 0.0)
+    )
     v53_names = list(v53_base.columns)
 
     print("\n  V4基线: {}维".format(len(v4_names)))
@@ -220,8 +244,11 @@ def main():
     print("\n  美联储特征数值:")
     for col in fed_features.columns:
         v = fed_features[col]
-        print("    {:<20s} min={:>7.2f}  max={:>7.2f}  mean={:>7.2f}".format(
-            col, v.min(), v.max(), v.mean()))
+        print(
+            "    {:<20s} min={:>7.2f}  max={:>7.2f}  mean={:>7.2f}".format(
+                col, v.min(), v.max(), v.mean()
+            )
+        )
 
     # 5. 标签
     top_exit_labels = generate_labels(closes, 20, 0.20, "drop")
@@ -235,34 +262,56 @@ def main():
         ("+ rate_change_6m", ["rate_change_6m"]),
         ("+ rate_change_12m", ["rate_change_12m"]),
         ("+ fed_rate_level + rate_change_6m", ["fed_rate_level", "rate_change_6m"]),
-        ("+ fed_level + rate_6m + rate_12m", ["fed_rate_level", "rate_change_6m", "rate_change_12m"]),
+        (
+            "+ fed_level + rate_6m + rate_12m",
+            ["fed_rate_level", "rate_change_6m", "rate_change_12m"],
+        ),
         ("+ fed_level + action + rate_6m", ["fed_rate_level", "fed_rate_action", "rate_change_6m"]),
     ]
 
     # 添加交互特征组合
     interaction_combos = [
-        ("+ fed_level × dd_vs_hist (交互)", {
-            "fed_lvl_x_dd_hist": lambda pf, ff: ff["fed_rate_level"] * pf["drawdown_vs_hist_avg"],
-        }),
-        ("+ ma200_dist × fed_action (交互)", {
-            "ma200_x_fed_act": lambda pf, ff: pf["weekly_ma200_distance"] * ff["fed_rate_action"],
-        }),
-        ("+ ath_dd × fed_level (交互)", {
-            "ath_dd_x_fed_lvl": lambda pf, ff: pf["ath_drawdown_pct"] * ff["fed_rate_level"],
-        }),
-        ("+ fed_level + 2交互", {
-            "fed_lvl_x_dd_hist": lambda pf, ff: ff["fed_rate_level"] * pf["drawdown_vs_hist_avg"],
-            "ma200_x_fed_act": lambda pf, ff: pf["weekly_ma200_distance"] * ff["fed_rate_action"],
-            "fed_rate_level": lambda pf, ff: ff["fed_rate_level"],
-        }),
+        (
+            "+ fed_level × dd_vs_hist (交互)",
+            {
+                "fed_lvl_x_dd_hist": lambda pf, ff: ff["fed_rate_level"]
+                * pf["drawdown_vs_hist_avg"],
+            },
+        ),
+        (
+            "+ ma200_dist × fed_action (交互)",
+            {
+                "ma200_x_fed_act": lambda pf, ff: pf["weekly_ma200_distance"]
+                * ff["fed_rate_action"],
+            },
+        ),
+        (
+            "+ ath_dd × fed_level (交互)",
+            {
+                "ath_dd_x_fed_lvl": lambda pf, ff: pf["ath_drawdown_pct"] * ff["fed_rate_level"],
+            },
+        ),
+        (
+            "+ fed_level + 2交互",
+            {
+                "fed_lvl_x_dd_hist": lambda pf, ff: ff["fed_rate_level"]
+                * pf["drawdown_vs_hist_avg"],
+                "ma200_x_fed_act": lambda pf, ff: pf["weekly_ma200_distance"]
+                * ff["fed_rate_action"],
+                "fed_rate_level": lambda pf, ff: ff["fed_rate_level"],
+            },
+        ),
     ]
 
     # 7. 运行基础组合测试
     print("\n" + "=" * 80)
     print("  【基础组合测试】")
     print("=" * 80)
-    print("  {:<40s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}  {:>6s}".format(
-        "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP", "综合"))
+    print(
+        "  {:<40s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}  {:>6s}".format(
+            "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP", "综合"
+        )
+    )
     print("  " + "-" * 90)
 
     results = []
@@ -278,29 +327,36 @@ def main():
             exp_names = list(exp_feats.columns)
 
         top_auc, top_tr, top_decay, top_imp = walk_forward_validation(
-            exp_feats, top_exit_labels, exp_names)
+            exp_feats, top_exit_labels, exp_names
+        )
         dip_auc, dip_tr, dip_decay, dip_imp = walk_forward_validation(
-            exp_feats, dip_buy_labels, exp_names)
+            exp_feats, dip_buy_labels, exp_names
+        )
 
-        results.append({
-            "name": name,
-            "n_features": len(exp_names),
-            "top_auc": top_auc,
-            "top_train": top_tr,
-            "top_decay": top_decay,
-            "dip_auc": dip_auc,
-            "dip_train": dip_tr,
-            "dip_decay": dip_decay,
-            "top_imp": top_imp,
-            "dip_imp": dip_imp,
-        })
+        results.append(
+            {
+                "name": name,
+                "n_features": len(exp_names),
+                "top_auc": top_auc,
+                "top_train": top_tr,
+                "top_decay": top_decay,
+                "dip_auc": dip_auc,
+                "dip_train": dip_tr,
+                "dip_decay": dip_decay,
+                "top_imp": top_imp,
+                "dip_imp": dip_imp,
+            }
+        )
 
     # 交互特征组合
     print("\n" + "=" * 80)
     print("  【交互特征组合测试】")
     print("=" * 80)
-    print("  {:<40s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}  {:>6s}".format(
-        "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP", "综合"))
+    print(
+        "  {:<40s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}  {:>6s}".format(
+            "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP", "综合"
+        )
+    )
     print("  " + "-" * 90)
 
     for name, interaction_dict in interaction_combos:
@@ -316,28 +372,34 @@ def main():
         exp_names = list(exp_feats.columns)
 
         top_auc, top_tr, top_decay, top_imp = walk_forward_validation(
-            exp_feats, top_exit_labels, exp_names)
+            exp_feats, top_exit_labels, exp_names
+        )
         dip_auc, dip_tr, dip_decay, dip_imp = walk_forward_validation(
-            exp_feats, dip_buy_labels, exp_names)
+            exp_feats, dip_buy_labels, exp_names
+        )
 
-        results.append({
-            "name": name,
-            "n_features": len(exp_names),
-            "top_auc": top_auc,
-            "top_train": top_tr,
-            "top_decay": top_decay,
-            "dip_auc": dip_auc,
-            "dip_train": dip_tr,
-            "dip_decay": dip_decay,
-            "top_imp": top_imp,
-            "dip_imp": dip_imp,
-        })
+        results.append(
+            {
+                "name": name,
+                "n_features": len(exp_names),
+                "top_auc": top_auc,
+                "top_train": top_tr,
+                "top_decay": top_decay,
+                "dip_auc": dip_auc,
+                "dip_train": dip_tr,
+                "dip_decay": dip_decay,
+                "top_imp": top_imp,
+                "dip_imp": dip_imp,
+            }
+        )
 
     # V4基线对比
     v4_top_auc, v4_top_tr, v4_top_decay, _ = walk_forward_validation(
-        v4_base, top_exit_labels, v4_names)
+        v4_base, top_exit_labels, v4_names
+    )
     v4_dip_auc, v4_dip_tr, v4_dip_decay, _ = walk_forward_validation(
-        v4_base, dip_buy_labels, v4_names)
+        v4_base, dip_buy_labels, v4_names
+    )
 
     # 8. 输出结果
     v53_top_auc = results[0]["top_auc"]
@@ -356,22 +418,61 @@ def main():
         else:
             verdict = "❌❌"
 
-        all_results_for_print.append((r["name"], r["n_features"], r["top_auc"], delta_top,
-                                       r["dip_auc"], delta_dip, composite, verdict, r))
+        all_results_for_print.append(
+            (
+                r["name"],
+                r["n_features"],
+                r["top_auc"],
+                delta_top,
+                r["dip_auc"],
+                delta_dip,
+                composite,
+                verdict,
+                r,
+            )
+        )
 
     # 全部打印
-    for name, n_feat, top_auc, d_top, dip_auc, d_dip, comp, verdict, _ in all_results_for_print:
-        print("  {:<40s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
-            name, top_auc, d_top, dip_auc, d_dip, verdict))
+    for (
+        name,
+        n_feat,  # noqa: B007
+        top_auc,
+        d_top,
+        dip_auc,
+        d_dip,
+        comp,  # noqa: B007
+        verdict,
+        _,
+    ) in all_results_for_print:  # noqa: B007
+        print(
+            "  {:<40s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
+                name, top_auc, d_top, dip_auc, d_dip, verdict
+            )
+        )
 
     # 9. 排名
     sorted_results = sorted(all_results_for_print, key=lambda x: x[6], reverse=True)
     print("\n" + "=" * 80)
     print("  【综合排名（Top 5）】")
     print("=" * 80)
-    for i, (name, n_feat, top_auc, d_top, dip_auc, d_dip, comp, verdict, r) in enumerate(sorted_results[:5], 1):
-        print("  #{} {} ({}) → 综合={:+.4f} (TOP {:+.4f}, DIP {:+.4f}) decay: TOP={:.1%} DIP={:.1%}".format(
-            i, name, verdict, comp, d_top, d_dip, r["top_decay"], r["dip_decay"]))
+    for i, (
+        name,
+        n_feat,  # noqa: B007
+        top_auc,  # noqa: B007
+        d_top,
+        dip_auc,  # noqa: B007
+        d_dip,
+        comp,
+        verdict,
+        r,
+    ) in enumerate(  # noqa: B007
+        sorted_results[:5], 1
+    ):
+        print(
+            "  #{} {} ({}) → 综合={:+.4f} (TOP {:+.4f}, DIP {:+.4f}) decay: TOP={:.1%} DIP={:.1%}".format(
+                i, name, verdict, comp, d_top, d_dip, r["top_decay"], r["dip_decay"]
+            )
+        )
 
     # 10. V4 vs V5.3 vs 最佳
     best = sorted_results[0]
@@ -379,7 +480,8 @@ def main():
     print("  【三级对比：V4 → V5.3 → 最佳组合】")
     print("=" * 80)
 
-    print("""
+    print(
+        """
 ┌──────────┬────────────┬────────────┬────────────┬────────────┐
 │          │   V4基线   │   V5.3     │  最佳:{} │
 │          │   ({}维)   │   ({}维)   │    ({}维)   │
@@ -393,22 +495,38 @@ def main():
 │  decay   │   {:.1%}   │   {:.1%}   │   {:.1%}   │
 └──────────┴────────────┴────────────┴────────────┴────────────┘
 """.format(
-    best[0][:8], len(v4_names), len(v53_names), best[1],
-    v4_top_auc, v53_top_auc, best[2],
-    v53_top_auc - v4_top_auc, best[2] - v4_top_auc,
-    v4_top_decay, results[0]["top_decay"], best[8]["top_decay"],
-    v4_dip_auc, v53_dip_auc, best[4],
-    v53_dip_auc - v4_dip_auc, best[4] - v4_dip_auc,
-    v4_dip_decay, results[0]["dip_decay"], best[8]["dip_decay"],
-))
+            best[0][:8],
+            len(v4_names),
+            len(v53_names),
+            best[1],
+            v4_top_auc,
+            v53_top_auc,
+            best[2],
+            v53_top_auc - v4_top_auc,
+            best[2] - v4_top_auc,
+            v4_top_decay,
+            results[0]["top_decay"],
+            best[8]["top_decay"],
+            v4_dip_auc,
+            v53_dip_auc,
+            best[4],
+            v53_dip_auc - v4_dip_auc,
+            best[4] - v4_dip_auc,
+            v4_dip_decay,
+            results[0]["dip_decay"],
+            best[8]["dip_decay"],
+        )
+    )
 
     # 11. 最佳组合的新增特征重要性排名
     best_name = best[0]
-    best_result = best[8]
+    best_result = best[8]  # noqa: F841
     print("  最佳组合: {}".format(best_name))
     print("  新增特征重要性排名(TOP_EXIT):")
-    fi_top = sorted(zip(best[8]["top_imp"], range(len(best[8]["top_imp"]))), reverse=True)
-    all_feat_names = list(range(len(best[8]["top_imp"])))
+    fi_top = sorted(  # noqa: F841
+        zip(best[8]["top_imp"], range(len(best[8]["top_imp"]))), reverse=True  # noqa: B905
+    )  # noqa: B905, F841
+    all_feat_names = list(range(len(best[8]["top_imp"])))  # noqa: F841
     # 需要特征名列表，从v53 + 新增特征推导
     # 简化：打印新增特征在总排名中的位置
 
@@ -444,7 +562,7 @@ def main():
     }
 
     output_path = os.path.join(BASE_DIR, "ml/backtest_results/v54_direction4_result.json")
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(output, f, indent=2, ensure_ascii=False)
     print("  结果已保存: {}".format(output_path))
 

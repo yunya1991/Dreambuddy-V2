@@ -5,6 +5,7 @@
 
 硬约束: HC-DS4-08（纯只读验证，不修改实盘行为）.
 """
+
 from __future__ import annotations
 
 from conftest import calc_sharpe
@@ -18,7 +19,9 @@ class TestSharpeRegression:
         # 计算每 bar 收益率
         returns = []
         for i in range(1, len(trending_market)):
-            ret = (trending_market[i]["close"] - trending_market[i - 1]["close"]) / trending_market[i - 1]["close"]
+            ret = (trending_market[i]["close"] - trending_market[i - 1]["close"]) / trending_market[
+                i - 1
+            ]["close"]
             returns.append(ret)
 
         sharpe = calc_sharpe(returns, periods_per_year=365 * 24 * 6)  # 假设 10min bars
@@ -28,7 +31,9 @@ class TestSharpeRegression:
         """下跌趋势中，做多策略的 Sharpe 应为负"""
         returns = []
         for i in range(1, len(declining_market)):
-            ret = (declining_market[i]["close"] - declining_market[i - 1]["close"]) / declining_market[i - 1]["close"]
+            ret = (
+                declining_market[i]["close"] - declining_market[i - 1]["close"]
+            ) / declining_market[i - 1]["close"]
             returns.append(ret)
 
         sharpe = calc_sharpe(returns, periods_per_year=365 * 24 * 6)
@@ -44,7 +49,9 @@ class TestSharpeRegression:
         """相同输入 Sharpe 计算结果一致"""
         returns = []
         for i in range(1, len(trending_market)):
-            ret = (trending_market[i]["close"] - trending_market[i - 1]["close"]) / trending_market[i - 1]["close"]
+            ret = (trending_market[i]["close"] - trending_market[i - 1]["close"]) / trending_market[
+                i - 1
+            ]["close"]
             returns.append(ret)
 
         s1 = calc_sharpe(returns)
@@ -56,7 +63,10 @@ class TestSharpeRegression:
         returns = []
         for i in range(1, len(declining_market)):
             # 做空收益 = -(收盘价变化率)
-            ret = -(declining_market[i]["close"] - declining_market[i - 1]["close"]) / declining_market[i - 1]["close"]
+            ret = (
+                -(declining_market[i]["close"] - declining_market[i - 1]["close"])
+                / declining_market[i - 1]["close"]
+            )
             returns.append(ret)
 
         sharpe = calc_sharpe(returns, periods_per_year=365 * 24 * 6)
@@ -65,9 +75,12 @@ class TestSharpeRegression:
     def test_risk_adjusted_return(self, trending_market):
         """风险调整后收益: 趋势策略的单位风险收益应为正"""
         import statistics
+
         returns = []
         for i in range(1, len(trending_market)):
-            ret = (trending_market[i]["close"] - trending_market[i - 1]["close"]) / trending_market[i - 1]["close"]
+            ret = (trending_market[i]["close"] - trending_market[i - 1]["close"]) / trending_market[
+                i - 1
+            ]["close"]
             returns.append(ret)
 
         mean_r = statistics.mean(returns)

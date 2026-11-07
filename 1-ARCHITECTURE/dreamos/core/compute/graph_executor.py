@@ -36,18 +36,19 @@ C 层主入口，职责:
 from __future__ import annotations
 
 import logging
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 
-from dreamos.shared.state import State, NodeResult, NodeStatus
-from dreamos.shared.interfaces import Node, Graph
-from dreamos.shared.utils import Timer, safe_get
+from dreamos.shared.interfaces import Graph
+from dreamos.shared.state import State
+from dreamos.shared.utils import Timer
 
-from .types import (
-    ReflectAction, ReflectDecision, ExecutionReport, NodeExecutionRecord,
-)
+from .aggregator import Aggregator
 from .node_runner import NodeRunner
 from .reflector import Reflector
-from .aggregator import Aggregator
+from .types import (
+    ExecutionReport,
+    ReflectAction,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -73,15 +74,17 @@ class GraphExecutor:
         report = executor.execute(graph, state, plan=plan)
     """
 
-    def __init__(self,
-                 max_retries: int = 2,
-                 enable_reflect: bool = True,
-                 enable_early_terminate: bool = True,
-                 max_steps: int = 20,
-                 timeout_ms: int = 30000,
-                 enable_checkpoint: bool = True,
-                 graph_store: Optional[Any] = None,
-                 registry: Optional[Any] = None):
+    def __init__(
+        self,
+        max_retries: int = 2,
+        enable_reflect: bool = True,
+        enable_early_terminate: bool = True,
+        max_steps: int = 20,
+        timeout_ms: int = 30000,
+        enable_checkpoint: bool = True,
+        graph_store: Optional[Any] = None,
+        registry: Optional[Any] = None,
+    ):
         self._runner = NodeRunner(
             max_retries=max_retries,
             timeout_ms=timeout_ms,
@@ -97,13 +100,15 @@ class GraphExecutor:
         self._graph_store = graph_store
         self._registry = registry
 
-    def execute(self,
-                graph: Graph,
-                state: State,
-                plan: Optional[Any] = None,
-                budget: Optional[Dict[str, int]] = None,
-                total_budget: int = 0,
-                graph_store: Optional[Any] = None) -> ExecutionReport:
+    def execute(
+        self,
+        graph: Graph,
+        state: State,
+        plan: Optional[Any] = None,
+        budget: Optional[Dict[str, int]] = None,
+        total_budget: int = 0,
+        graph_store: Optional[Any] = None,
+    ) -> ExecutionReport:
         """执行图
 
         Args:
@@ -153,14 +158,17 @@ class GraphExecutor:
 
             # ── 检查点：门禁节点前（额外强制保存）─────────
             if is_gate and self._enable_checkpoint and store:
-                store.checkpoint(state, node_id=node_id,
-                                 metadata={"phase": "pre_gate", "step": step,
-                                           "is_gate": True})
+                store.checkpoint(
+                    state,
+                    node_id=node_id,
+                    metadata={"phase": "pre_gate", "step": step, "is_gate": True},
+                )
 
             # ── 检查点：反射前（节点执行前）─────────
             if self._enable_checkpoint and store:
-                store.checkpoint(state, node_id=node_id,
-                                 metadata={"phase": "pre_reflect", "step": step})
+                store.checkpoint(
+                    state, node_id=node_id, metadata={"phase": "pre_reflect", "step": step}
+                )
 
             # ── 执行节点 ──────────────────────────
             allocated = budget.get(node_id, 0)
@@ -187,9 +195,16 @@ class GraphExecutor:
                 store.checkpoint(
                     state,
                     node_id=node_id,
-                    metadata={"phase": "post_gate", "step": step,
-                              "is_gate": True, "status": record.status.value
-                              if hasattr(record.status, "value") else str(record.status)},
+                    metadata={
+                        "phase": "post_gate",
+                        "step": step,
+                        "is_gate": True,
+                        "status": (
+                            record.status.value
+                            if hasattr(record.status, "value")
+                            else str(record.status)
+                        ),
+                    },
                 )
 
             # ── 反射决策 ──────────────────────────
@@ -211,10 +226,12 @@ class GraphExecutor:
                     used_budget=used_budget,
                 )
 
-                report.reflect_history.append({
-                    "node_id": node_id,
-                    **decision.to_dict(),
-                })
+                report.reflect_history.append(
+                    {
+                        "node_id": node_id,
+                        **decision.to_dict(),
+                    }
+                )
 
                 action = decision.action
                 if action == ReflectAction.EARLY_TERMINATE:
@@ -222,7 +239,9 @@ class GraphExecutor:
                     report.termination_reason = decision.reason
                     break
                 elif action == ReflectAction.JUMP_TO:
-                    jump_node = graph.get_node(decision.jump_to) if hasattr(graph, "get_node") else None
+                    jump_node = (
+                        graph.get_node(decision.jump_to) if hasattr(graph, "get_node") else None
+                    )
                     if jump_node:
                         current = jump_node
                         continue

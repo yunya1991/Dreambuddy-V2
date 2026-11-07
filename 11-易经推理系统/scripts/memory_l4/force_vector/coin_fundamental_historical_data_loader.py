@@ -21,11 +21,11 @@
 
 FAIL-OPEN：任何异常或数据不足 → 返回空 list，调用方回退合成数据。
 """
+
 from __future__ import annotations
 
 import json
 import os
-import sqlite3
 import sys
 from typing import Any, Dict, List, Optional
 
@@ -33,7 +33,7 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
 
-from force_vector._store_port import fetch_latest_record
+from force_vector._store_port import fetch_latest_record  # noqa: E402
 
 # data_center.db 默认路径
 _REPO = os.path.normpath(os.path.join(_THIS_DIR, "..", "..", "..", ".."))
@@ -46,6 +46,7 @@ _MIN_SERIES_LEN = 7
 # ===========================================================================
 # 辅助：安全 JSON 解析（兼容双重编码，与 F2 一致）
 # ===========================================================================
+
 
 def _safe_json_loads(s: Any, default: Any) -> Any:
     """安全解析 JSON 字符串，兼容双重编码。"""
@@ -67,6 +68,7 @@ def _safe_json_loads(s: Any, default: Any) -> Any:
 # 查询函数 1: DeFiLlama 历史 fees
 # ===========================================================================
 
+
 def query_historical_fees(coin: str, db_path: Optional[str] = None) -> List[Dict[str, Any]]:
     """从 data_center.db 查询指定币种的 DeFiLlama 历史 fees 时间序列。
 
@@ -80,6 +82,7 @@ def query_historical_fees(coin: str, db_path: Optional[str] = None) -> List[Dict
     try:
         # 延迟导入避免循环依赖
         from force_vector.coin_fundamental_ranker import get_protocol_mapping
+
         protocol = get_protocol_mapping(coin)
         if not protocol:
             return []
@@ -90,9 +93,13 @@ def query_historical_fees(coin: str, db_path: Optional[str] = None) -> List[Dict
             return []
 
         row = fetch_latest_record(
-            db_path, "defillama", "chain",
-            f"fees_{protocol}", switch="HISTLOADER",
-            columns="timeseries", order_by="timestamp DESC",
+            db_path,
+            "defillama",
+            "chain",
+            f"fees_{protocol}",
+            switch="HISTLOADER",
+            columns="timeseries",
+            order_by="timestamp DESC",
         )
         if not row or not row.get("timeseries"):
             return []
@@ -104,10 +111,12 @@ def query_historical_fees(coin: str, db_path: Optional[str] = None) -> List[Dict
         result: List[Dict[str, Any]] = []
         for item in ts:
             if isinstance(item, dict) and "fees_usd" in item:
-                result.append({
-                    "date": str(item.get("date", "")),
-                    "fees_usd": float(item.get("fees_usd", 0) or 0),
-                })
+                result.append(
+                    {
+                        "date": str(item.get("date", "")),
+                        "fees_usd": float(item.get("fees_usd", 0) or 0),
+                    }
+                )
         return result
     except Exception:
         return []
@@ -116,6 +125,7 @@ def query_historical_fees(coin: str, db_path: Optional[str] = None) -> List[Dict
 # ===========================================================================
 # 查询函数 2: CoinGecko 历史 market_cap
 # ===========================================================================
+
 
 def query_historical_mcap(coin: str, db_path: Optional[str] = None) -> List[Dict[str, Any]]:
     """从 data_center.db 查询指定币种的 CoinGecko 历史 market_cap 时间序列。
@@ -130,6 +140,7 @@ def query_historical_mcap(coin: str, db_path: Optional[str] = None) -> List[Dict
     """
     try:
         from force_vector.coin_fundamental_ranker import get_coingecko_id
+
         coin_id = get_coingecko_id(coin)
         if not coin_id:
             return []
@@ -140,9 +151,13 @@ def query_historical_mcap(coin: str, db_path: Optional[str] = None) -> List[Dict
             return []
 
         row = fetch_latest_record(
-            db_path, "coingecko", "coin",
-            f"chart_{coin_id}", switch="HISTLOADER",
-            columns="timeseries", order_by="timestamp DESC",
+            db_path,
+            "coingecko",
+            "coin",
+            f"chart_{coin_id}",
+            switch="HISTLOADER",
+            columns="timeseries",
+            order_by="timestamp DESC",
         )
         if not row or not row.get("timeseries"):
             return []
@@ -163,11 +178,13 @@ def query_historical_mcap(coin: str, db_path: Optional[str] = None) -> List[Dict
             # 过滤 market_cap=0 的点
             if mc <= 0:
                 continue
-            result.append({
-                "date": str(item.get("date", "")),
-                "market_cap": mc,
-                "price": float(item.get("price", 0) or 0),
-            })
+            result.append(
+                {
+                    "date": str(item.get("date", "")),
+                    "market_cap": mc,
+                    "price": float(item.get("price", 0) or 0),
+                }
+            )
         return result
     except Exception:
         return []
@@ -176,6 +193,7 @@ def query_historical_mcap(coin: str, db_path: Optional[str] = None) -> List[Dict
 # ===========================================================================
 # 查询函数 3: yfinance 历史价格
 # ===========================================================================
+
 
 def query_historical_price(symbol: str, db_path: Optional[str] = None) -> List[Dict[str, Any]]:
     """从 data_center.db 查询 yfinance 历史价格时间序列。
@@ -196,9 +214,13 @@ def query_historical_price(symbol: str, db_path: Optional[str] = None) -> List[D
             return []
 
         row = fetch_latest_record(
-            db_path, "yfinance", None,
-            symbol, switch="HISTLOADER",
-            columns="timeseries", order_by="timestamp DESC",
+            db_path,
+            "yfinance",
+            None,
+            symbol,
+            switch="HISTLOADER",
+            columns="timeseries",
+            order_by="timestamp DESC",
         )
         if not row or not row.get("timeseries"):
             return []
@@ -217,10 +239,12 @@ def query_historical_price(symbol: str, db_path: Optional[str] = None) -> List[D
             except (TypeError, ValueError):
                 close = 0.0
             if close > 0:
-                result.append({
-                    "date": str(item.get("date", "")),
-                    "close": close,
-                })
+                result.append(
+                    {
+                        "date": str(item.get("date", "")),
+                        "close": close,
+                    }
+                )
         return result
     except Exception:
         return []
@@ -230,7 +254,10 @@ def query_historical_price(symbol: str, db_path: Optional[str] = None) -> List[D
 # 信号计算（从历史数据推导 E5/E6/valuation_percentile）
 # ===========================================================================
 
-def _compute_percentile_at(series: List[float], current: float, min_len: int = _MIN_SERIES_LEN) -> float:
+
+def _compute_percentile_at(
+    series: List[float], current: float, min_len: int = _MIN_SERIES_LEN
+) -> float:
     """计算 current 在 series[0:index+1] 中的百分位 [0, 100]。
 
     与 F1 的 _compute_percentile 类似，但 min_len 可配置。
@@ -263,6 +290,7 @@ def _compute_e5_proxy(fees: float, mcap: float) -> float:
         if mcap <= 0:
             return 0.0
         import math
+
         ratio = fees / mcap
         # tanh 归一化，中性点 0.0001
         return max(-1.0, min(1.0, math.tanh((ratio - 0.0001) / 0.0005)))
@@ -283,6 +311,7 @@ def _compute_e6_proxy(fees_growth: float, mcap_growth: float) -> float:
     try:
         diff = float(fees_growth) - float(mcap_growth)
         import math
+
         return max(-1.0, min(1.0, math.tanh(diff / 0.1)))
     except Exception:
         return 0.0
@@ -306,6 +335,7 @@ def _calc_growth_rate(series: List[float]) -> float:
 # ===========================================================================
 # 构造真实 PhaseSnapshot 序列
 # ===========================================================================
+
 
 def build_real_snapshots(coin: str, db_path: Optional[str] = None) -> List[Any]:
     """从真实历史数据构造 PhaseSnapshot 序列。
@@ -372,7 +402,7 @@ def build_real_snapshots(coin: str, db_path: Optional[str] = None) -> List[Any]:
         for i, d in enumerate(sorted_dates):
             mc = mcap_map[d]
             # valuation_percentile: 当前 mcap 在 mcap[0:i+1] 中的百分位
-            sub_series = mcap_values[:i + 1]
+            sub_series = mcap_values[: i + 1]
             val_pct = _compute_percentile_at(sub_series, mc, min_len=1)
 
             # e5: fees/mcap 比率代理
@@ -380,19 +410,21 @@ def build_real_snapshots(coin: str, db_path: Optional[str] = None) -> List[Any]:
             e5 = _compute_e5_proxy(fee, mc)
 
             # e6: fees 增长率 vs mcap 增长率（使用到当前点的序列）
-            fees_sub = sorted_fees[:i + 1]
-            mcap_sub = mcap_values[:i + 1]
+            fees_sub = sorted_fees[: i + 1]
+            mcap_sub = mcap_values[: i + 1]
             fees_growth = _calc_growth_rate(fees_sub)
             mcap_growth = _calc_growth_rate(mcap_sub)
             e6 = _compute_e6_proxy(fees_growth, mcap_growth)
 
-            snapshots.append(PhaseSnapshot(
-                ts=d,
-                e5=round(e5, 4),
-                e6=round(e6, 4),
-                valuation_percentile=round(val_pct, 2),
-                events=[],  # 历史回放无事件时间线（由 F2 实时查询补充）
-            ))
+            snapshots.append(
+                PhaseSnapshot(
+                    ts=d,
+                    e5=round(e5, 4),
+                    e6=round(e6, 4),
+                    valuation_percentile=round(val_pct, 2),
+                    events=[],  # 历史回放无事件时间线（由 F2 实时查询补充）
+                )
+            )
 
         return snapshots
     except Exception:

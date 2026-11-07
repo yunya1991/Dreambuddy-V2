@@ -21,16 +21,16 @@
   - source = "skill"
   - layer_tags = ["DSH"] (执行模板层)
 """
+
 import json
 import os
-import sys
 from typing import List, Optional
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
 _PROJECT_ROOT = os.path.dirname(_34_DIR)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 # 默认 registry 路径
 _DEFAULT_REGISTRY_PATH = os.path.join(
@@ -55,9 +55,7 @@ class SkillSystemCollector(TrainingDataProvider):
     def get_quality_threshold(self) -> str:
         return self._quality_threshold
 
-    def fetch_cases(
-        self, limit: int = 100, since: Optional[str] = None
-    ) -> List[TrainingCase]:
+    def fetch_cases(self, limit: int = 100, since: Optional[str] = None) -> List[TrainingCase]:
         """从 registry.json 批量获取 active SKILL。
 
         Args:

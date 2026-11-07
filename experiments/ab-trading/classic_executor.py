@@ -6,10 +6,15 @@
 - AI 指令集成：接收方向约束和币种池
 - 双模式运行：AI主导模式（接收指令）/ 经典接管模式（自主决策）
 """
-import json, os, subprocess, math, time
-from datetime import datetime, timezone, timedelta
+
+import json
+import math
+import os
+import subprocess
+import time
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 BASE_DIR = Path(__file__).parent
 STATE_FILE = BASE_DIR / "data" / "classic_executor_state.json"
@@ -34,11 +39,21 @@ def _run_okx(args):
     try:
         r = subprocess.run(
             ["okx", "--profile", OKX_PROFILE] + args,
-            capture_output=True, text=True, timeout=15,
-            env={**os.environ, "NO_UPDATE_CHECK": "1"}
+            capture_output=True,
+            text=True,
+            timeout=15,
+            env={**os.environ, "NO_UPDATE_CHECK": "1"},
         )
-        stdout = "\n".join(l for l in r.stdout.split("\n") if "Update available" not in l and "Run: npm" not in l).strip()
-        stderr = "\n".join(l for l in r.stderr.split("\n") if "Update available" not in l and "Run: npm" not in l).strip()
+        stdout = "\n".join(
+            l
+            for l in r.stdout.split("\n")  # noqa: E741
+            if "Update available" not in l and "Run: npm" not in l  # noqa: E741
+        ).strip()
+        stderr = "\n".join(
+            l
+            for l in r.stderr.split("\n")  # noqa: E741
+            if "Update available" not in l and "Run: npm" not in l  # noqa: E741
+        ).strip()
         if r.returncode != 0 and stderr:
             return {"ok": False, "err": stderr[:300]}
         if stdout.startswith("[") or stdout.startswith("{"):
@@ -83,10 +98,12 @@ def _save_state(state: Dict):
 
 # ── AI 指令读取 ──────────────────────────────────────────────────────────
 
+
 def get_ai_directive() -> Dict:
     """从 mode_manager 读取 AI 指令"""
     try:
         from mode_manager import get_ai_directive
+
         return get_ai_directive()
     except Exception:
         pass
@@ -109,12 +126,14 @@ def get_current_mode() -> str:
     """获取当前模式"""
     try:
         from mode_manager import get_current_state
+
         return get_current_state().get("mode", "ai_directed")
     except Exception:
         return "ai_directed"
 
 
 # ── 技术指标计算 ─────────────────────────────────────────────────────────
+
 
 def _fetch_candles(symbol: str, bar: str = "1H", limit: int = 60) -> List:
     inst = f"{symbol}-USDT-SWAP"
@@ -124,11 +143,16 @@ def _fetch_candles(symbol: str, bar: str = "1H", limit: int = 60) -> List:
     raw = r["data"]
     candles = []
     for c in raw:
-        candles.append({
-            "ts": int(c[0]),
-            "o": float(c[1]), "h": float(c[2]), "l": float(c[3]),
-            "c": float(c[4]), "vol": float(c[5]),
-        })
+        candles.append(
+            {
+                "ts": int(c[0]),
+                "o": float(c[1]),
+                "h": float(c[2]),
+                "l": float(c[3]),
+                "c": float(c[4]),
+                "vol": float(c[5]),
+            }
+        )
     return list(reversed(candles))
 
 
@@ -139,8 +163,8 @@ def _calc_atr(candles: List, period: int = 14) -> float:
     tr_list = []
     for i in range(1, len(candles)):
         h = candles[i]["h"]
-        l = candles[i]["l"]
-        prev_c = candles[i-1]["c"]
+        l = candles[i]["l"]  # noqa: E741
+        prev_c = candles[i - 1]["c"]
         tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
         tr_list.append(tr)
     if len(tr_list) < period:
@@ -155,7 +179,7 @@ def _calc_rsi(candles: List, period: int = 14) -> float:
         return 50.0
     changes = []
     for i in range(1, len(candles)):
-        changes.append(candles[i]["c"] - candles[i-1]["c"])
+        changes.append(candles[i]["c"] - candles[i - 1]["c"])
     gains = [c if c > 0 else 0 for c in changes]
     losses = [-c if c < 0 else 0 for c in changes]
     avg_gain = sum(gains[-period:]) / period
@@ -221,6 +245,7 @@ def _calc_bollinger(candles: List, period: int = 20, std: int = 2) -> Dict:
 
 # ── 信号生成 ────────────────────────────────────────────────────────────
 
+
 def generate_signals(symbol: str) -> Dict:
     """
     生成第三屏技术信号
@@ -250,114 +275,140 @@ def generate_signals(symbol: str) -> Dict:
 
     price = candles_1h[-1]["c"]
     prev_candle = candles_1h[-2] if len(candles_1h) >= 2 else None
-    prev_4h = candles_4h[-2] if len(candles_4h) >= 2 else None
+    prev_4h = candles_4h[-2] if len(candles_4h) >= 2 else None  # noqa: F841
 
     signals = []
 
     # 1. RSI 超买超卖信号
     if rsi_1h < 30 and rsi_4h < 40:
-        signals.append({
-            "type": "enter_long",
-            "strength": min(1.0, (30 - rsi_1h) / 15),
-            "confidence": 0.65,
-            "reason": f"RSI双周期超卖 (1H:{rsi_1h:.1f}, 4H:{rsi_4h:.1f})",
-            "indicator": "RSI",
-        })
+        signals.append(
+            {
+                "type": "enter_long",
+                "strength": min(1.0, (30 - rsi_1h) / 15),
+                "confidence": 0.65,
+                "reason": f"RSI双周期超卖 (1H:{rsi_1h:.1f}, 4H:{rsi_4h:.1f})",
+                "indicator": "RSI",
+            }
+        )
     elif rsi_1h > 70 and rsi_4h > 60:
-        signals.append({
-            "type": "enter_short",
-            "strength": min(1.0, (rsi_1h - 70) / 15),
-            "confidence": 0.65,
-            "reason": f"RSI双周期超买 (1H:{rsi_1h:.1f}, 4H:{rsi_4h:.1f})",
-            "indicator": "RSI",
-        })
+        signals.append(
+            {
+                "type": "enter_short",
+                "strength": min(1.0, (rsi_1h - 70) / 15),
+                "confidence": 0.65,
+                "reason": f"RSI双周期超买 (1H:{rsi_1h:.1f}, 4H:{rsi_4h:.1f})",
+                "indicator": "RSI",
+            }
+        )
 
     # 2. MACD 交叉信号
     if macd_1h["macd"] > macd_1h["signal"] and macd_1h["hist_prev"] <= 0 and macd_1h["hist"] > 0:
-        signals.append({
-            "type": "enter_long",
-            "strength": min(1.0, macd_1h["hist"] / (atr_1h * 0.5) if atr_1h else 0.5),
-            "confidence": 0.7,
-            "reason": "MACD金叉，柱线翻红",
-            "indicator": "MACD",
-        })
+        signals.append(
+            {
+                "type": "enter_long",
+                "strength": min(1.0, macd_1h["hist"] / (atr_1h * 0.5) if atr_1h else 0.5),
+                "confidence": 0.7,
+                "reason": "MACD金叉，柱线翻红",
+                "indicator": "MACD",
+            }
+        )
     elif macd_1h["macd"] < macd_1h["signal"] and macd_1h["hist_prev"] >= 0 and macd_1h["hist"] < 0:
-        signals.append({
-            "type": "enter_short",
-            "strength": min(1.0, abs(macd_1h["hist"]) / (atr_1h * 0.5) if atr_1h else 0.5),
-            "confidence": 0.7,
-            "reason": "MACD死叉，柱线翻绿",
-            "indicator": "MACD",
-        })
+        signals.append(
+            {
+                "type": "enter_short",
+                "strength": min(1.0, abs(macd_1h["hist"]) / (atr_1h * 0.5) if atr_1h else 0.5),
+                "confidence": 0.7,
+                "reason": "MACD死叉，柱线翻绿",
+                "indicator": "MACD",
+            }
+        )
 
     # 3. MACD 4H 趋势确认
     if macd_4h["hist"] > 0 and macd_4h["hist"] > macd_4h["hist_prev"]:
-        signals.append({
-            "type": "trend_long",
-            "strength": min(1.0, macd_4h["hist"] / (atr_4h * 0.5) if atr_4h else 0.5),
-            "confidence": 0.75,
-            "reason": "4H MACD多头趋势增强",
-            "indicator": "MACD_4H",
-        })
+        signals.append(
+            {
+                "type": "trend_long",
+                "strength": min(1.0, macd_4h["hist"] / (atr_4h * 0.5) if atr_4h else 0.5),
+                "confidence": 0.75,
+                "reason": "4H MACD多头趋势增强",
+                "indicator": "MACD_4H",
+            }
+        )
     elif macd_4h["hist"] < 0 and macd_4h["hist"] < macd_4h["hist_prev"]:
-        signals.append({
-            "type": "trend_short",
-            "strength": min(1.0, abs(macd_4h["hist"]) / (atr_4h * 0.5) if atr_4h else 0.5),
-            "confidence": 0.75,
-            "reason": "4H MACD空头趋势增强",
-            "indicator": "MACD_4H",
-        })
+        signals.append(
+            {
+                "type": "trend_short",
+                "strength": min(1.0, abs(macd_4h["hist"]) / (atr_4h * 0.5) if atr_4h else 0.5),
+                "confidence": 0.75,
+                "reason": "4H MACD空头趋势增强",
+                "indicator": "MACD_4H",
+            }
+        )
 
     # 4. 布林带突破信号
     if boll_1h["pct"] > 90:
-        signals.append({
-            "type": "enter_short",
-            "strength": min(1.0, (boll_1h["pct"] - 90) / 10),
-            "confidence": 0.6,
-            "reason": f"布林带上轨突破 ({boll_1h['pct']:.1f}%)",
-            "indicator": "Bollinger",
-        })
+        signals.append(
+            {
+                "type": "enter_short",
+                "strength": min(1.0, (boll_1h["pct"] - 90) / 10),
+                "confidence": 0.6,
+                "reason": f"布林带上轨突破 ({boll_1h['pct']:.1f}%)",
+                "indicator": "Bollinger",
+            }
+        )
     elif boll_1h["pct"] < 10:
-        signals.append({
-            "type": "enter_long",
-            "strength": min(1.0, (10 - boll_1h["pct"]) / 10),
-            "confidence": 0.6,
-            "reason": f"布林带下轨突破 ({boll_1h['pct']:.1f}%)",
-            "indicator": "Bollinger",
-        })
+        signals.append(
+            {
+                "type": "enter_long",
+                "strength": min(1.0, (10 - boll_1h["pct"]) / 10),
+                "confidence": 0.6,
+                "reason": f"布林带下轨突破 ({boll_1h['pct']:.1f}%)",
+                "indicator": "Bollinger",
+            }
+        )
 
     # 5. 价格突破信号（1H）
     if prev_candle:
         if price > prev_candle["h"]:
-            signals.append({
-                "type": "breakout_long",
-                "strength": min(1.0, (price - prev_candle["h"]) / atr_1h if atr_1h else 0.3),
-                "confidence": 0.55,
-                "reason": f"突破前高 ({prev_candle['h']:.2f})",
-                "indicator": "Breakout",
-            })
+            signals.append(
+                {
+                    "type": "breakout_long",
+                    "strength": min(1.0, (price - prev_candle["h"]) / atr_1h if atr_1h else 0.3),
+                    "confidence": 0.55,
+                    "reason": f"突破前高 ({prev_candle['h']:.2f})",
+                    "indicator": "Breakout",
+                }
+            )
         elif price < prev_candle["l"]:
-            signals.append({
-                "type": "breakout_short",
-                "strength": min(1.0, (prev_candle["l"] - price) / atr_1h if atr_1h else 0.3),
-                "confidence": 0.55,
-                "reason": f"跌破前低 ({prev_candle['l']:.2f})",
-                "indicator": "Breakout",
-            })
+            signals.append(
+                {
+                    "type": "breakout_short",
+                    "strength": min(1.0, (prev_candle["l"] - price) / atr_1h if atr_1h else 0.3),
+                    "confidence": 0.55,
+                    "reason": f"跌破前低 ({prev_candle['l']:.2f})",
+                    "indicator": "Breakout",
+                }
+            )
 
     # 6. ATR 波动信号（波动放大可能是趋势启动）
     if atr_1h > atr_4h * 1.5:
-        signals.append({
-            "type": "volatility_surge",
-            "strength": min(1.0, (atr_1h - atr_4h) / atr_4h),
-            "confidence": 0.5,
-            "reason": f"波动率放大 (1H ATR:{atr_1h:.2f} > 4H ATR:{atr_4h:.2f})",
-            "indicator": "ATR",
-        })
+        signals.append(
+            {
+                "type": "volatility_surge",
+                "strength": min(1.0, (atr_1h - atr_4h) / atr_4h),
+                "confidence": 0.5,
+                "reason": f"波动率放大 (1H ATR:{atr_1h:.2f} > 4H ATR:{atr_4h:.2f})",
+                "indicator": "ATR",
+            }
+        )
 
     # 综合推荐
-    long_signals = [s for s in signals if s["type"].startswith("enter_long") or s["type"] == "trend_long"]
-    short_signals = [s for s in signals if s["type"].startswith("enter_short") or s["type"] == "trend_short"]
+    long_signals = [
+        s for s in signals if s["type"].startswith("enter_long") or s["type"] == "trend_long"
+    ]
+    short_signals = [
+        s for s in signals if s["type"].startswith("enter_short") or s["type"] == "trend_short"
+    ]
 
     recommended_action = "hold"
     entry_price = price
@@ -387,7 +438,9 @@ def generate_signals(symbol: str) -> Dict:
             "rsi_4h": round(rsi_4h, 1),
             "macd_1h": {k: round(v, 4) for k, v in macd_1h.items()},
             "macd_4h": {k: round(v, 4) for k, v in macd_4h.items()},
-            "bollinger_1h": {k: round(v, 2) if isinstance(v, float) else v for k, v in boll_1h.items()},
+            "bollinger_1h": {
+                k: round(v, 2) if isinstance(v, float) else v for k, v in boll_1h.items()
+            },
         },
         "recommended_action": recommended_action,
         "entry_price": round(entry_price, 2),
@@ -400,6 +453,7 @@ def generate_signals(symbol: str) -> Dict:
 
 
 # ── 持仓监控 & 止损检查 ──────────────────────────────────────────────────
+
 
 def get_open_positions(symbol: str = None) -> List:
     """获取当前持仓"""
@@ -422,17 +476,19 @@ def get_open_positions(symbol: str = None) -> List:
         unrealized_pnl = float(p.get("upl", "0"))
         pnl_pct = float(p.get("uplRatio", "0")) * 100
 
-        positions.append({
-            "inst_id": p.get("instId"),
-            "symbol": p.get("instId").replace("-USDT-SWAP", "") if p.get("instId") else "",
-            "pos_side": pos_side,
-            "pos": round(pos, 4),
-            "avg_price": round(avg_price, 2),
-            "mark_price": round(mark_price, 2),
-            "unrealized_pnl": round(unrealized_pnl, 2),
-            "pnl_pct": round(pnl_pct, 2),
-            "leverage": int(p.get("lever", "10")),
-        })
+        positions.append(
+            {
+                "inst_id": p.get("instId"),
+                "symbol": p.get("instId").replace("-USDT-SWAP", "") if p.get("instId") else "",
+                "pos_side": pos_side,
+                "pos": round(pos, 4),
+                "avg_price": round(avg_price, 2),
+                "mark_price": round(mark_price, 2),
+                "unrealized_pnl": round(unrealized_pnl, 2),
+                "pnl_pct": round(pnl_pct, 2),
+                "leverage": int(p.get("lever", "10")),
+            }
+        )
     return positions
 
 
@@ -457,7 +513,7 @@ def check_stop_loss(position: Dict, signals: Dict) -> Dict:
     else:
         stop_loss_price = avg_price + atr_1h * ATR_STOP_MULT
         take_profit_price = avg_price - avg_price * TAKE_PROFIT_PCT
-        trailing_stop = mark_price + mark_price * TRAILING_STOP_PCT
+        trailing_stop = mark_price + mark_price * TRAILING_STOP_PCT  # noqa: F841
 
     # ATR 止损
     if pos_side == "long" and mark_price <= stop_loss_price:
@@ -531,6 +587,7 @@ def check_stop_loss(position: Dict, signals: Dict) -> Dict:
 
 # ── OKX 交易所深度适配 ──────────────────────────────────────────────────
 
+
 def execute_market_order(symbol: str, direction: str, size: float = None) -> Dict:
     """市价单开仓"""
     inst = f"{symbol}-USDT-SWAP"
@@ -548,12 +605,21 @@ def execute_market_order(symbol: str, direction: str, size: float = None) -> Dic
                 break
         candles = _fetch_candles(symbol, "1H", 5)
         price = candles[-1]["c"] if candles else 1
-        size = balance * BASE_POSITION_PCT / price
+        size = balance * BASE_POSITION_PCT / price  # noqa: F821
         size = round(size, 4)
 
-    r = _run_okx(["trade", "order", inst, side, "market", str(size), "--posSide", pos_side, "--json"])
+    r = _run_okx(
+        ["trade", "order", inst, side, "market", str(size), "--posSide", pos_side, "--json"]
+    )
     if r["ok"]:
-        return {"ok": True, "order_type": "market", "symbol": symbol, "direction": direction, "size": size, "message": "市价单开仓成功"}
+        return {
+            "ok": True,
+            "order_type": "market",
+            "symbol": symbol,
+            "direction": direction,
+            "size": size,
+            "message": "市价单开仓成功",
+        }
     return {"ok": False, "error": r.get("err", "市价单开仓失败")}
 
 
@@ -572,16 +638,39 @@ def execute_limit_order(symbol: str, direction: str, price: float, size: float =
             if b.get("ccy") == "USDT":
                 balance = float(b.get("eq", "0"))
                 break
-        size = balance * BASE_POSITION_PCT / price
+        size = balance * BASE_POSITION_PCT / price  # noqa: F821
         size = round(size, 4)
 
-    r = _run_okx(["trade", "order", inst, side, "limit", str(price), str(size), "--posSide", pos_side, "--json"])
+    r = _run_okx(
+        [
+            "trade",
+            "order",
+            inst,
+            side,
+            "limit",
+            str(price),
+            str(size),
+            "--posSide",
+            pos_side,
+            "--json",
+        ]
+    )
     if r["ok"]:
-        return {"ok": True, "order_type": "limit", "symbol": symbol, "direction": direction, "price": price, "size": size, "message": "限价单已提交"}
+        return {
+            "ok": True,
+            "order_type": "limit",
+            "symbol": symbol,
+            "direction": direction,
+            "price": price,
+            "size": size,
+            "message": "限价单已提交",
+        }
     return {"ok": False, "error": r.get("err", "限价单提交失败")}
 
 
-def execute_conditional_order(symbol: str, direction: str, trigger_price: float, order_price: float = None, size: float = None) -> Dict:
+def execute_conditional_order(
+    symbol: str, direction: str, trigger_price: float, order_price: float = None, size: float = None
+) -> Dict:
     """条件单（止盈/止损）"""
     inst = f"{symbol}-USDT-SWAP"
     side = "buy" if direction == "long" else "sell"
@@ -599,9 +688,32 @@ def execute_conditional_order(symbol: str, direction: str, trigger_price: float,
     if size is None:
         return {"ok": False, "error": "无法确定下单数量"}
 
-    r = _run_okx(["trade", "order", inst, side, "conditional", str(trigger_price), str(order_price), str(size), "--posSide", pos_side, "--json"])
+    r = _run_okx(
+        [
+            "trade",
+            "order",
+            inst,
+            side,
+            "conditional",
+            str(trigger_price),
+            str(order_price),
+            str(size),
+            "--posSide",
+            pos_side,
+            "--json",
+        ]
+    )
     if r["ok"]:
-        return {"ok": True, "order_type": "conditional", "symbol": symbol, "direction": direction, "trigger_price": trigger_price, "order_price": order_price, "size": size, "message": "条件单已提交"}
+        return {
+            "ok": True,
+            "order_type": "conditional",
+            "symbol": symbol,
+            "direction": direction,
+            "trigger_price": trigger_price,
+            "order_price": order_price,
+            "size": size,
+            "message": "条件单已提交",
+        }
     return {"ok": False, "error": r.get("err", "条件单提交失败")}
 
 
@@ -611,7 +723,9 @@ def execute_take_profit(symbol: str, pos_side: str, take_profit_price: float) ->
     for p in positions:
         if p["pos_side"] == pos_side:
             direction = "short" if pos_side == "long" else "long"
-            return execute_conditional_order(symbol, direction, take_profit_price, take_profit_price, p["pos"])
+            return execute_conditional_order(
+                symbol, direction, take_profit_price, take_profit_price, p["pos"]
+            )
     return {"ok": False, "error": "未找到对应持仓"}
 
 
@@ -621,7 +735,9 @@ def execute_stop_loss(symbol: str, pos_side: str, stop_loss_price: float) -> Dic
     for p in positions:
         if p["pos_side"] == pos_side:
             direction = "short" if pos_side == "long" else "long"
-            return execute_conditional_order(symbol, direction, stop_loss_price, stop_loss_price, p["pos"])
+            return execute_conditional_order(
+                symbol, direction, stop_loss_price, stop_loss_price, p["pos"]
+            )
     return {"ok": False, "error": "未找到对应持仓"}
 
 
@@ -634,14 +750,30 @@ def close_position(symbol: str, pos_side: str = None) -> Dict:
             continue
         r = _run_okx(["trade", "close-position", inst, "--posSide", p["pos_side"], "--json"])
         if r["ok"]:
-            return {"ok": True, "action": "close", "symbol": symbol, "pos_side": p["pos_side"], "pos": p["pos"], "message": "平仓成功"}
+            return {
+                "ok": True,
+                "action": "close",
+                "symbol": symbol,
+                "pos_side": p["pos_side"],
+                "pos": p["pos"],
+                "message": "平仓成功",
+            }
         return {"ok": False, "error": r.get("err", "平仓失败")}
     return {"ok": False, "error": "未找到对应持仓"}
 
 
 # ── 执行决策 ────────────────────────────────────────────────────────────
 
-def execute_trade(symbol: str, action: str, pos_side: str = None, size: float = None, price: float = None, stop_loss: float = None, take_profit: float = None) -> Dict:
+
+def execute_trade(
+    symbol: str,
+    action: str,
+    pos_side: str = None,
+    size: float = None,
+    price: float = None,
+    stop_loss: float = None,
+    take_profit: float = None,
+) -> Dict:
     """
     执行交易（支持多种下单类型）
     参数:
@@ -670,13 +802,15 @@ def execute_trade(symbol: str, action: str, pos_side: str = None, size: float = 
             result = close_position(symbol, pos_side)
             if result["ok"]:
                 state["exec_count"] = state.get("exec_count", 0) + 1
-                state["position_history"].append({
-                    "action": "close",
-                    "symbol": symbol,
-                    "pos_side": result.get("pos_side"),
-                    "pos": result.get("pos"),
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                })
+                state["position_history"].append(
+                    {
+                        "action": "close",
+                        "symbol": symbol,
+                        "pos_side": result.get("pos_side"),
+                        "pos": result.get("pos"),
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
                 _save_state(state)
             return result
 
@@ -685,14 +819,16 @@ def execute_trade(symbol: str, action: str, pos_side: str = None, size: float = 
             result = execute_market_order(symbol, direction, size)
             if result["ok"]:
                 state["exec_count"] = state.get("exec_count", 0) + 1
-                state["position_history"].append({
-                    "action": action,
-                    "symbol": symbol,
-                    "pos_side": direction,
-                    "order_type": "market",
-                    "size": result.get("size"),
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                })
+                state["position_history"].append(
+                    {
+                        "action": action,
+                        "symbol": symbol,
+                        "pos_side": direction,
+                        "order_type": "market",
+                        "size": result.get("size"),
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
                 _save_state(state)
 
                 if stop_loss:
@@ -713,15 +849,17 @@ def execute_trade(symbol: str, action: str, pos_side: str = None, size: float = 
             result = execute_limit_order(symbol, direction, price, size)
             if result["ok"]:
                 state["exec_count"] = state.get("exec_count", 0) + 1
-                state["position_history"].append({
-                    "action": action,
-                    "symbol": symbol,
-                    "pos_side": direction,
-                    "order_type": "limit",
-                    "price": price,
-                    "size": result.get("size"),
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                })
+                state["position_history"].append(
+                    {
+                        "action": action,
+                        "symbol": symbol,
+                        "pos_side": direction,
+                        "order_type": "limit",
+                        "price": price,
+                        "size": result.get("size"),
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
                 _save_state(state)
             return result
 
@@ -734,6 +872,7 @@ def execute_trade(symbol: str, action: str, pos_side: str = None, size: float = 
 
 
 # ── 主执行循环 ──────────────────────────────────────────────────────────
+
 
 def run(symbol: str = "BTC") -> Dict:
     """
@@ -754,9 +893,17 @@ def run(symbol: str = "BTC") -> Dict:
         ai_direction = directive.get("direction")
         if ai_direction:
             if ai_direction == "long":
-                signals["recommended_action"] = signals["recommended_action"] if signals["recommended_action"] in ("enter_long", "hold") else "hold"
+                signals["recommended_action"] = (
+                    signals["recommended_action"]
+                    if signals["recommended_action"] in ("enter_long", "hold")
+                    else "hold"
+                )
             elif ai_direction == "short":
-                signals["recommended_action"] = signals["recommended_action"] if signals["recommended_action"] in ("enter_short", "hold") else "hold"
+                signals["recommended_action"] = (
+                    signals["recommended_action"]
+                    if signals["recommended_action"] in ("enter_short", "hold")
+                    else "hold"
+                )
 
     result = {
         "mode": mode,
@@ -772,24 +919,28 @@ def run(symbol: str = "BTC") -> Dict:
         sl_result = check_stop_loss(pos, signals)
         if sl_result["action"] != "hold":
             exec_result = execute_trade(symbol, "close", pos["pos_side"])
-            result["executions"].append({
-                "type": "stop_loss",
-                "pos_side": pos["pos_side"],
-                "reason": sl_result["reason"],
-                "pnl_pct": sl_result["pnl_pct"],
-                "execution": exec_result,
-            })
+            result["executions"].append(
+                {
+                    "type": "stop_loss",
+                    "pos_side": pos["pos_side"],
+                    "reason": sl_result["reason"],
+                    "pnl_pct": sl_result["pnl_pct"],
+                    "execution": exec_result,
+                }
+            )
 
     # 检查入场信号
     if not positions and signals["recommended_action"] != "hold":
         action = signals["recommended_action"]
         exec_result = execute_trade(symbol, action)
-        result["executions"].append({
-            "type": "entry",
-            "action": action,
-            "reason": f"技术指标触发入场 ({', '.join(s['indicator'] for s in signals['signals'][:3])})",
-            "execution": exec_result,
-        })
+        result["executions"].append(
+            {
+                "type": "entry",
+                "action": action,
+                "reason": f"技术指标触发入场 ({', '.join(s['indicator'] for s in signals['signals'][:3])})",
+                "execution": exec_result,
+            }
+        )
 
     state["last_signal_ts"] = time.time()
     state["active_signals"] = [s["type"] for s in signals["signals"][:5]]
@@ -842,6 +993,7 @@ def get_executor_state() -> Dict:
 
 if __name__ == "__main__":
     import sys
+
     symbol = sys.argv[1] if len(sys.argv) > 1 else "BTC"
     result = run(symbol)
     print(json.dumps(result, ensure_ascii=False, indent=2, default=str))

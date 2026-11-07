@@ -46,12 +46,12 @@ from __future__ import annotations
 
 import json
 import logging
-import time
 import threading
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -60,11 +60,13 @@ logger = logging.getLogger(__name__)
 # 事件模型
 # ============================================================
 
+
 @dataclass
 class DistillEvent:
     """蒸馏事件"""
+
     event_id: str = ""
-    event_type: str = ""       # confidence_changed / quality_upgraded / a8_verified / manual
+    event_type: str = ""  # confidence_changed / quality_upgraded / a8_verified / manual
     memory_id: str = ""
     source_app_memory: str = ""  # AM-TRD-001 等
     content: str = ""
@@ -72,7 +74,7 @@ class DistillEvent:
     new_confidence: float = 0.0
     old_quality: str = "C"
     new_quality: str = "C"
-    verify_count: int = 0       # L1 来源记忆的验证次数，蒸馏时携带到 L2
+    verify_count: int = 0  # L1 来源记忆的验证次数，蒸馏时携带到 L2
     tags: List[str] = field(default_factory=list)
     timestamp: float = 0.0
     distilled: bool = False
@@ -98,6 +100,7 @@ class DistillEvent:
 @dataclass
 class DistillResult:
     """蒸馏结果"""
+
     event_id: str
     success: bool
     target_unit: str = ""
@@ -119,6 +122,7 @@ class DistillResult:
 # ============================================================
 # 核心引擎
 # ============================================================
+
 
 class DynamicDistillEngine:
     """
@@ -213,11 +217,12 @@ class DynamicDistillEngine:
 
     def _load_stats(self) -> Dict[str, int]:
         """从 SQLite 加载累计统计；无 db 时返回零值。"""
-        default = {k: 0 for k in self._DEFAULT_STATS}
+        default = dict.fromkeys(self._DEFAULT_STATS, 0)
         if not self._stats_db_path:
             return default
         try:
             import sqlite3
+
             conn = sqlite3.connect(self._stats_db_path)
             conn.execute(
                 "CREATE TABLE IF NOT EXISTS distill_stats ("
@@ -226,9 +231,7 @@ class DynamicDistillEngine:
                 ")"
             )
             for key in self._DEFAULT_STATS:
-                row = conn.execute(
-                    "SELECT value FROM distill_stats WHERE key=?", [key]
-                ).fetchone()
+                row = conn.execute("SELECT value FROM distill_stats WHERE key=?", [key]).fetchone()
                 if row:
                     default[key] = row[0]
             conn.close()
@@ -242,6 +245,7 @@ class DynamicDistillEngine:
             return
         try:
             import sqlite3
+
             conn = sqlite3.connect(self._stats_db_path)
             conn.execute(
                 "CREATE TABLE IF NOT EXISTS distill_stats ("
@@ -437,7 +441,9 @@ class DynamicDistillEngine:
 
         if current_order < min_order:
             self._incr_stat("distill_skipped_quality")
-            logger.debug(f"跳过蒸馏: {event.memory_id} 质量等级 {event.new_quality} < {self.min_distill_quality}")
+            logger.debug(
+                f"跳过蒸馏: {event.memory_id} 质量等级 {event.new_quality} < {self.min_distill_quality}"
+            )
             return False
 
         # 4. 质量升级判断（事件类型为 confidence_changed 时）—— 提前判断，质量升级可突破冷却
@@ -448,7 +454,9 @@ class DynamicDistillEngine:
 
             # 降级不触发蒸馏（S→A, A→B, B→C 等）
             if new_order < old_order:
-                logger.debug(f"跳过蒸馏: {event.memory_id} 质量降级 {event.old_quality}→{event.new_quality}")
+                logger.debug(
+                    f"跳过蒸馏: {event.memory_id} 质量降级 {event.old_quality}→{event.new_quality}"
+                )
                 return False
 
             # 质量升级（C→B, B→A, A→S 等）标记为可突破冷却
@@ -498,7 +506,7 @@ class DynamicDistillEngine:
             target_unit = self._infer_target_unit(event)
 
         # 生成目标记忆ID（基于 L1 memory_id 的确定性哈希，保证同一 L1 记忆多次蒸馏更新同一条 L2）
-        unit_suffix = target_unit.split('-')[1] if '-' in target_unit else 'UNK'
+        unit_suffix = target_unit.split("-")[1] if "-" in target_unit else "UNK"
         source_hash = hashlib.md5(event.memory_id.encode()).hexdigest()[:8]
         target_memory_id = f"GM-{unit_suffix}-{source_hash}"
 
@@ -510,6 +518,7 @@ class DynamicDistillEngine:
             unit_dir = self._resolve_unit_dir(target_unit)
             if unit_dir and unit_dir.exists():
                 from bayesian_memory_updater import BayesianMemoryUpdater
+
                 updater = BayesianMemoryUpdater(str(unit_dir))
                 # 检查 L2 是否已有该记忆（基于 L1 memory_id 的确定性 ID）
                 existing = updater.get_memory(target_memory_id)
@@ -517,9 +526,7 @@ class DynamicDistillEngine:
                     # 已存在：更新置信度和验证次数（取较大值，反映 L1 最新状态）
                     new_conf = max(existing.confidence, event.new_confidence)
                     new_vc = max(existing.verify_count, event.verify_count)
-                    updater.update_confidence_simple(
-                        target_memory_id, new_conf, new_vc
-                    )
+                    updater.update_confidence_simple(target_memory_id, new_conf, new_vc)
                     reason = f"已更新 {target_unit} (conf={new_conf:.2f}, vc={new_vc})"
                 else:
                     updater.add_memory(
@@ -583,7 +590,10 @@ class DynamicDistillEngine:
         tags_str = " ".join(event.tags).lower()
         content_str = event.content.lower()
 
-        if any(kw in tags_str or kw in content_str for kw in ["btc", "eth", "交易", "趋势", "持仓", "trading"]):
+        if any(
+            kw in tags_str or kw in content_str
+            for kw in ["btc", "eth", "交易", "趋势", "持仓", "trading"]
+        ):
             return "MU-TRD"
         elif any(kw in tags_str or kw in content_str for kw in ["风控", "止损", "仓位", "risk"]):
             return "MU-TRD"
@@ -605,7 +615,9 @@ class DynamicDistillEngine:
             return self.memory_root / dir_name
         return None
 
-    def _record_distill_log(self, event: DistillEvent, target_unit: str, target_memory_id: str) -> None:
+    def _record_distill_log(
+        self, event: DistillEvent, target_unit: str, target_memory_id: str
+    ) -> None:
         """降级记录：当总记忆目录不存在时，记录到蒸馏日志"""
         log_dir = self.memory_root / "9-工具与接口" / "distill_logs"
         log_dir.mkdir(parents=True, exist_ok=True)
@@ -706,7 +718,9 @@ if __name__ == "__main__":
         tags=["BTC", "趋势", "突破"],
     )
     if result:
-        print(f"  蒸馏结果: success={result.success}, target={result.target_unit}, reason={result.reason}")
+        print(
+            f"  蒸馏结果: success={result.success}, target={result.target_unit}, reason={result.reason}"
+        )
     else:
         print("  未触发蒸馏")
 
@@ -736,7 +750,9 @@ if __name__ == "__main__":
         tags=["风控", "仓位", "止损"],
     )
     if result:
-        print(f"  蒸馏结果: success={result.success}, target={result.target_unit}, reason={result.reason}")
+        print(
+            f"  蒸馏结果: success={result.success}, target={result.target_unit}, reason={result.reason}"
+        )
 
     # 场景4: 冷却期抑制
     print("\n--- 场景4: 冷却期抑制 ---")
@@ -786,10 +802,12 @@ if __name__ == "__main__":
     # 最近事件
     print("\n--- 最近事件 ---")
     for event in engine.get_recent_events(5):
-        print(f"  {event['event_type']}: {event['memory_id']} {event['old_quality']}→{event['new_quality']}")
+        print(
+            f"  {event['event_type']}: {event['memory_id']} {event['old_quality']}→{event['new_quality']}"
+        )
 
     # 健康检查
-    print(f"\n--- 健康检查 ---")
+    print("\n--- 健康检查 ---")
     health = engine.healthcheck()
     print(f"  状态: {health['status']}")
 

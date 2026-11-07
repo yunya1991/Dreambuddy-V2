@@ -206,7 +206,9 @@ class TestPostCloseCooldown(unittest.TestCase):
     def test_tracker_risk_reset_clears_pair_coin_cooldowns(self) -> None:
         svc.TRACKER_STATE["cooldowns"] = {"BTC-PERP|long": 1700000000000}
         svc.TRACKER_STATE["coin_cooldowns"] = {"BTC|long": 1700000000000}
-        svc.TRACKER_STATE["entry_pending_side"] = {"BTC-PERP": {"ts": 1700000000000, "side": "long"}}
+        svc.TRACKER_STATE["entry_pending_side"] = {
+            "BTC-PERP": {"ts": 1700000000000, "side": "long"}
+        }
 
         client = svc.app.test_client()
         res = client.post(
@@ -240,13 +242,22 @@ class TestPostCloseCooldown(unittest.TestCase):
                 "candidates": ["ZEC"],
                 "snap": {"ok": True, "beta": 1.0, "btc_px": 30000.0},
             }
-            svc._quant_pairs_btcalt_latest_beta = lambda *args, **kwargs: {"ok": True, "beta": 1.0, "btc_px": 30000.0}
-            svc._quant_pairs_macro_trend_veto = lambda *args, **kwargs: {"ok": True, "blocked": False}
+            svc._quant_pairs_btcalt_latest_beta = lambda *args, **kwargs: {
+                "ok": True,
+                "beta": 1.0,
+                "btc_px": 30000.0,
+            }
+            svc._quant_pairs_macro_trend_veto = lambda *args, **kwargs: {
+                "ok": True,
+                "blocked": False,
+            }
 
             calls = []
 
             def _open_leg_stub(*, coin: str, ignore_post_close_freeze: bool = False, **kwargs):
-                calls.append({"coin": str(coin), "ignore_post_close_freeze": bool(ignore_post_close_freeze)})
+                calls.append(
+                    {"coin": str(coin), "ignore_post_close_freeze": bool(ignore_post_close_freeze)}
+                )
                 return {"ok": True, "order": {"size": 1.0}}, 200
 
             svc._pairs_quant_open_leg = _open_leg_stub
@@ -289,11 +300,26 @@ class TestPostCloseCooldown(unittest.TestCase):
                 "candidates": ["ZEC"],
                 "snap": {"ok": True, "beta": 1.0, "btc_px": 30000.0},
             }
-            svc._quant_pairs_btcalt_latest_beta = lambda *args, **kwargs: {"ok": True, "beta": 1.0, "btc_px": 30000.0}
-            svc._quant_pairs_macro_trend_veto = lambda *args, **kwargs: {"ok": True, "blocked": False}
+            svc._quant_pairs_btcalt_latest_beta = lambda *args, **kwargs: {
+                "ok": True,
+                "beta": 1.0,
+                "btc_px": 30000.0,
+            }
+            svc._quant_pairs_macro_trend_veto = lambda *args, **kwargs: {
+                "ok": True,
+                "blocked": False,
+            }
             svc._order_gate_open = lambda **_kw: ({"ok": True}, 200)
-            svc._quant_pairs_btcalt_sub_pool_snapshot = lambda *args, **kwargs: {"cap_usdc": 10_000_000.0, "used_usdc": 0.0}
-            svc._aster_preflight_notional = lambda *args, **kwargs: {"ok": True, "required_notional_usdc": float(args[1] if len(args) >= 2 else kwargs.get("notional_usdc") or 0.0)}
+            svc._quant_pairs_btcalt_sub_pool_snapshot = lambda *args, **kwargs: {
+                "cap_usdc": 10_000_000.0,
+                "used_usdc": 0.0,
+            }
+            svc._aster_preflight_notional = lambda *args, **kwargs: {
+                "ok": True,
+                "required_notional_usdc": float(
+                    args[1] if len(args) >= 2 else kwargs.get("notional_usdc") or 0.0
+                ),
+            }
 
             calls = []
 
@@ -348,11 +374,26 @@ class TestPostCloseCooldown(unittest.TestCase):
                 "candidates": ["ZEC"],
                 "snap": {"ok": True, "beta": 1.0, "btc_px": 30000.0},
             }
-            svc._quant_pairs_btcalt_latest_beta = lambda *args, **kwargs: {"ok": True, "beta": 1.0, "btc_px": 30000.0}
-            svc._quant_pairs_macro_trend_veto = lambda *args, **kwargs: {"ok": True, "blocked": False}
+            svc._quant_pairs_btcalt_latest_beta = lambda *args, **kwargs: {
+                "ok": True,
+                "beta": 1.0,
+                "btc_px": 30000.0,
+            }
+            svc._quant_pairs_macro_trend_veto = lambda *args, **kwargs: {
+                "ok": True,
+                "blocked": False,
+            }
             svc._order_gate_open = lambda **_kw: ({"ok": True}, 200)
-            svc._quant_pairs_btcalt_sub_pool_snapshot = lambda *args, **kwargs: {"cap_usdc": 10_000_000.0, "used_usdc": 0.0}
-            svc._aster_preflight_notional = lambda *args, **kwargs: {"ok": True, "required_notional_usdc": float(args[1] if len(args) >= 2 else kwargs.get("notional_usdc") or 0.0)}
+            svc._quant_pairs_btcalt_sub_pool_snapshot = lambda *args, **kwargs: {
+                "cap_usdc": 10_000_000.0,
+                "used_usdc": 0.0,
+            }
+            svc._aster_preflight_notional = lambda *args, **kwargs: {
+                "ok": True,
+                "required_notional_usdc": float(
+                    args[1] if len(args) >= 2 else kwargs.get("notional_usdc") or 0.0
+                ),
+            }
 
             def _open_leg_stub(*, coin: str, **kwargs):
                 if str(coin).strip().upper() == "BTC":
@@ -493,13 +534,22 @@ class TestPostCloseCooldown(unittest.TestCase):
         orig_open_leg = svc._pairs_quant_open_leg
         orig_macro_veto = svc._quant_pairs_macro_trend_veto
         try:
-            svc._quant_pairs_btceth_latest_beta = lambda *args, **kwargs: {"ok": True, "beta": 1.0, "btc_px": 30000.0}
-            svc._quant_pairs_macro_trend_veto = lambda *args, **kwargs: {"ok": True, "blocked": False}
+            svc._quant_pairs_btceth_latest_beta = lambda *args, **kwargs: {
+                "ok": True,
+                "beta": 1.0,
+                "btc_px": 30000.0,
+            }
+            svc._quant_pairs_macro_trend_veto = lambda *args, **kwargs: {
+                "ok": True,
+                "blocked": False,
+            }
 
             calls = []
 
             def _open_leg_stub(*, coin: str, ignore_post_close_freeze: bool = False, **kwargs):
-                calls.append({"coin": str(coin), "ignore_post_close_freeze": bool(ignore_post_close_freeze)})
+                calls.append(
+                    {"coin": str(coin), "ignore_post_close_freeze": bool(ignore_post_close_freeze)}
+                )
                 return {"ok": True, "order": {"size": 1.0}}, 200
 
             svc._pairs_quant_open_leg = _open_leg_stub
@@ -556,8 +606,15 @@ class TestPostCloseCooldown(unittest.TestCase):
             svc.TRACKER_STATE["three_screen_open_positions"] = {}
 
             svc._order_gate_open = lambda **_kw: ({"ok": True}, 200)
-            svc._quant_pairs_btceth_latest_beta = lambda *args, **kwargs: {"ok": True, "beta": 1.0, "btc_px": 30000.0}
-            svc._quant_pairs_macro_trend_veto = lambda *args, **kwargs: {"ok": True, "blocked": False}
+            svc._quant_pairs_btceth_latest_beta = lambda *args, **kwargs: {
+                "ok": True,
+                "beta": 1.0,
+                "btc_px": 30000.0,
+            }
+            svc._quant_pairs_macro_trend_veto = lambda *args, **kwargs: {
+                "ok": True,
+                "blocked": False,
+            }
 
             def _stub_aster_market_open_internal(**kwargs):
                 calls["aster"].append(dict(kwargs))
@@ -575,11 +632,23 @@ class TestPostCloseCooldown(unittest.TestCase):
                     "exchange": "aster",
                     "ab_owner": ab_owner,
                     "book_id": ab_owner,
-                    "system_id": ("quant" if ab_owner == "quant" else ("carry" if ab_owner == "carry" else ("three_screen" if ab_owner == "three_screen" else "strategy"))),
+                    "system_id": (
+                        "quant"
+                        if ab_owner == "quant"
+                        else (
+                            "carry"
+                            if ab_owner == "carry"
+                            else ("three_screen" if ab_owner == "three_screen" else "strategy")
+                        )
+                    ),
                     "mode": "dry-run",
                     "simulated": True,
                     "tag": str(kwargs.get("tag") or ""),
-                    "strategy_id": (None if kwargs.get("strategy_id") is None else str(kwargs.get("strategy_id"))),
+                    "strategy_id": (
+                        None
+                        if kwargs.get("strategy_id") is None
+                        else str(kwargs.get("strategy_id"))
+                    ),
                 }
                 svc.ORDERS[oid] = order
                 if order["system_id"] == "quant":
@@ -608,11 +677,23 @@ class TestPostCloseCooldown(unittest.TestCase):
                     "exchange": "hyperliquid",
                     "ab_owner": ab_owner,
                     "book_id": ab_owner,
-                    "system_id": ("quant" if ab_owner == "quant" else ("carry" if ab_owner == "carry" else ("three_screen" if ab_owner == "three_screen" else "strategy"))),
+                    "system_id": (
+                        "quant"
+                        if ab_owner == "quant"
+                        else (
+                            "carry"
+                            if ab_owner == "carry"
+                            else ("three_screen" if ab_owner == "three_screen" else "strategy")
+                        )
+                    ),
                     "mode": "dry-run",
                     "simulated": True,
                     "tag": str(kwargs.get("tag") or ""),
-                    "strategy_id": (None if kwargs.get("strategy_id") is None else str(kwargs.get("strategy_id"))),
+                    "strategy_id": (
+                        None
+                        if kwargs.get("strategy_id") is None
+                        else str(kwargs.get("strategy_id"))
+                    ),
                 }
                 svc.ORDERS[oid] = order
                 if order["system_id"] == "carry":
@@ -654,34 +735,40 @@ class TestPostCloseCooldown(unittest.TestCase):
             svc.hyperliquid_market_open_internal = _stub_hl_market_open_internal
             svc._pairs_quant_open_leg = _stub_pairs_quant_open_leg
 
-            r1 = client.post("/webhook/freqtrade", json={
-                "strategy": "Strategy005",
-                "pair": "BTC-PERP",
-                "type": "entry",
-                "side": "long",
-                "venue": "aster",
-                "execute": False,
-                "ignore_post_close_freeze": True,
-                "ignore_cooldown": True,
-                "skip_gate": True,
-            })
+            r1 = client.post(
+                "/webhook/freqtrade",
+                json={
+                    "strategy": "Strategy005",
+                    "pair": "BTC-PERP",
+                    "type": "entry",
+                    "side": "long",
+                    "venue": "aster",
+                    "execute": False,
+                    "ignore_post_close_freeze": True,
+                    "ignore_cooldown": True,
+                    "skip_gate": True,
+                },
+            )
             self.assertEqual(int(r1.status_code), 200)
             out1 = r1.get_json() or {}
             self.assertTrue(bool(out1.get("ok")))
             self.assertTrue(bool(calls["aster"]))
             self.assertTrue(all(bool(x.get("skip_gate")) for x in calls["aster"]))
 
-            r2 = client.post("/webhook/freqtrade", json={
-                "strategy": "carry_trade",
-                "pair": "BTC-PERP",
-                "type": "entry",
-                "side": "short",
-                "notional_usdc": 300,
-                "execute": False,
-                "ignore_post_close_freeze": True,
-                "ignore_cooldown": True,
-                "skip_gate": True,
-            })
+            r2 = client.post(
+                "/webhook/freqtrade",
+                json={
+                    "strategy": "carry_trade",
+                    "pair": "BTC-PERP",
+                    "type": "entry",
+                    "side": "short",
+                    "notional_usdc": 300,
+                    "execute": False,
+                    "ignore_post_close_freeze": True,
+                    "ignore_cooldown": True,
+                    "skip_gate": True,
+                },
+            )
             self.assertEqual(int(r2.status_code), 200)
             out2 = r2.get_json() or {}
             self.assertTrue(bool(out2.get("ok")))
@@ -690,11 +777,14 @@ class TestPostCloseCooldown(unittest.TestCase):
             self.assertTrue(all(bool(x.get("ignore_cooldown")) for x in calls["hl"]))
             self.assertTrue(all(bool(x.get("skip_gate")) for x in calls["hl"]))
 
-            r3 = client.post("/execution/pairs/btceth/market_open", json={
-                "direction": "long_btc_short_eth",
-                "execute": False,
-                "notional_usdc": 100.0,
-            })
+            r3 = client.post(
+                "/execution/pairs/btceth/market_open",
+                json={
+                    "direction": "long_btc_short_eth",
+                    "execute": False,
+                    "notional_usdc": 100.0,
+                },
+            )
             self.assertEqual(int(r3.status_code), 200)
             out3 = r3.get_json() or {}
             self.assertTrue(bool(out3.get("ok")))
@@ -708,17 +798,43 @@ class TestPostCloseCooldown(unittest.TestCase):
             self.assertIn("BTC-PERP", qps)
             self.assertIn("ETH-PERP", qps)
 
-            rs = client.get("/orders/recent", query_string={"limit": 50, "include_shadow": 1, "sort": "ingest", "ab_owner": "strategy"})
+            rs = client.get(
+                "/orders/recent",
+                query_string={
+                    "limit": 50,
+                    "include_shadow": 1,
+                    "sort": "ingest",
+                    "ab_owner": "strategy",
+                },
+            )
             self.assertEqual(int(rs.status_code), 200)
             xs = rs.get_json() or []
-            self.assertTrue(any(isinstance(o, dict) and o.get("ab_owner") == "strategy" for o in xs))
+            self.assertTrue(
+                any(isinstance(o, dict) and o.get("ab_owner") == "strategy" for o in xs)
+            )
 
-            rc = client.get("/orders/recent", query_string={"limit": 50, "include_shadow": 1, "sort": "ingest", "ab_owner": "carry"})
+            rc = client.get(
+                "/orders/recent",
+                query_string={
+                    "limit": 50,
+                    "include_shadow": 1,
+                    "sort": "ingest",
+                    "ab_owner": "carry",
+                },
+            )
             self.assertEqual(int(rc.status_code), 200)
             xc = rc.get_json() or []
             self.assertTrue(any(isinstance(o, dict) and o.get("ab_owner") == "carry" for o in xc))
 
-            rq = client.get("/orders/recent", query_string={"limit": 50, "include_shadow": 1, "sort": "ingest", "ab_owner": "quant"})
+            rq = client.get(
+                "/orders/recent",
+                query_string={
+                    "limit": 50,
+                    "include_shadow": 1,
+                    "sort": "ingest",
+                    "ab_owner": "quant",
+                },
+            )
             self.assertEqual(int(rq.status_code), 200)
             xq = rq.get_json() or []
             self.assertTrue(any(isinstance(o, dict) and o.get("ab_owner") == "quant" for o in xq))

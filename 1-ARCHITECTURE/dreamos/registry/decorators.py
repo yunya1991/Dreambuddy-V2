@@ -23,16 +23,19 @@ Dreambuddy OS — 节点注册装饰器
 
 from __future__ import annotations
 
-from typing import Any, Type, Optional, List
+from typing import List, Optional, Type
 
 from .base import BaseNode
 from .node_registry import get_default_registry
 
 
-def register_node(cls: Optional[Type[BaseNode]] = None, *,
-                  chain: Optional[str] = None,
-                  tags: Optional[List[str]] = None,
-                  registry=None):
+def register_node(
+    cls: Optional[Type[BaseNode]] = None,
+    *,
+    chain: Optional[str] = None,
+    tags: Optional[List[str]] = None,
+    registry=None,
+):
     """类装饰器 — 自动注册节点
 
     Args:
@@ -48,6 +51,7 @@ def register_node(cls: Optional[Type[BaseNode]] = None, *,
         @register_node(chain="A", tags=["research"])
         class A0Node(BaseNode): ...
     """
+
     def _decorate(klass: Type[BaseNode]) -> Type[BaseNode]:
         # 覆盖元信息
         if chain is not None:
@@ -67,10 +71,14 @@ def register_node(cls: Optional[Type[BaseNode]] = None, *,
     return _decorate
 
 
-def node_metadata(node_id: str = "", name: str = "",
-                  description: str = "", chain: str = "",
-                  tags: Optional[List[str]] = None,
-                  estimated_tokens: int = 0):
+def node_metadata(
+    node_id: str = "",
+    name: str = "",
+    description: str = "",
+    chain: str = "",
+    tags: Optional[List[str]] = None,
+    estimated_tokens: int = 0,
+):
     """类装饰器 — 设置节点元信息（不自动注册）
 
     Args:
@@ -87,6 +95,7 @@ def node_metadata(node_id: str = "", name: str = "",
             def execute_core(self, state):
                 ...
     """
+
     def decorator(cls: Type[BaseNode]) -> Type[BaseNode]:
         if node_id:
             cls.node_id = node_id
@@ -101,4 +110,5 @@ def node_metadata(node_id: str = "", name: str = "",
         if estimated_tokens:
             cls.estimated_tokens = estimated_tokens
         return cls
+
     return decorator

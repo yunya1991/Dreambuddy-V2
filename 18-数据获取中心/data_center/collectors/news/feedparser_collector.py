@@ -3,6 +3,7 @@
 feedparser 薄封装，parse(url) -> entries -> DataRecord(category=news)。
 每条 entry 产出一条 DataRecord，metrics 存扁平字段（title/link/author），events 存 summary。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone

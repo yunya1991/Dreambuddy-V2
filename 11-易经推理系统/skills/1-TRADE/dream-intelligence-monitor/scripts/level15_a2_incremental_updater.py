@@ -16,14 +16,14 @@ Level 1.5 A2增量更新脚本 v1.0
     - A2矛盾图谱未随市场变化更新
 """
 
+import argparse
+import glob
+import json
 import os
 import sys
-import json
-import glob
-import argparse
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Dict, Optional
 
 # 配置路径
 WORKSPACE = Path("/Users/zhangjiangtao/WorkBuddy/20260415144304")
@@ -75,11 +75,11 @@ def load_latest_a2():
             "bull_pct": 50,
             "bear_pct": 50,
             "primary_contradiction": "N/A",
-            "contradictions": []
+            "contradictions": [],
         }
 
     try:
-        with open(a2_file, 'r') as f:
+        with open(a2_file, "r") as f:
             data = json.load(f)
         print(f"📄 已加载A2矛盾图谱: {os.path.basename(a2_file)}")
         return data
@@ -89,7 +89,7 @@ def load_latest_a2():
             "bull_pct": 50,
             "bear_pct": 50,
             "primary_contradiction": "N/A",
-            "contradictions": []
+            "contradictions": [],
         }
 
 
@@ -99,12 +99,12 @@ def get_last_a2_update_time() -> Optional[datetime]:
 
     if incremental:
         try:
-            with open(incremental, 'r') as f:
+            with open(incremental, "r") as f:
                 data = json.load(f)
             timestamp = data.get("timestamp")
             if timestamp:
                 return datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-        except:
+        except:  # noqa: E722
             pass
 
     # 如果没有增量文件，查找原始A2文件
@@ -115,8 +115,9 @@ def get_last_a2_update_time() -> Optional[datetime]:
     return None
 
 
-def calculate_updated_assessment(a2_data: Dict, trigger: str, si_delta: float,
-                                edge_delta: float, funding_flip: str = None) -> Dict:
+def calculate_updated_assessment(
+    a2_data: Dict, trigger: str, si_delta: float, edge_delta: float, funding_flip: str = None
+) -> Dict:
     """计算更新后的矛盾评估"""
 
     # 基础概率
@@ -177,7 +178,11 @@ def calculate_updated_assessment(a2_data: Dict, trigger: str, si_delta: float,
         bear_pct *= factor
 
     # 确定主导方向
-    direction = "bull_dominant" if bull_pct > bear_pct else "bear_dominant" if bear_pct > bull_pct else "neutral"
+    direction = (
+        "bull_dominant"
+        if bull_pct > bear_pct
+        else "bear_dominant" if bear_pct > bull_pct else "neutral"
+    )
 
     return {
         "bull_pct": round(bull_pct, 1),
@@ -186,12 +191,17 @@ def calculate_updated_assessment(a2_data: Dict, trigger: str, si_delta: float,
         "adjustments": adjustments,
         "trigger": trigger,
         "si_delta": si_delta,
-        "edge_delta": edge_delta
+        "edge_delta": edge_delta,
     }
 
 
-def generate_a2_incremental(trigger: str, si_delta: float = 0, edge_delta: float = 0,
-                            funding_flip: str = None, reason: str = None) -> str:
+def generate_a2_incremental(
+    trigger: str,
+    si_delta: float = 0,
+    edge_delta: float = 0,
+    funding_flip: str = None,
+    reason: str = None,
+) -> str:
     """生成A2增量更新文件"""
 
     timestamp = datetime.now()
@@ -210,32 +220,33 @@ def generate_a2_incremental(trigger: str, si_delta: float = 0, edge_delta: float
         "trigger": "Level_1.5_SIGNIFICANT_SHIFT",
         "timestamp": timestamp.isoformat() + "Z",
         "trigger_condition": trigger,
-        "delta_values": {
-            "si_index": si_delta,
-            "edge": edge_delta
-        },
+        "delta_values": {"si_index": si_delta, "edge": edge_delta},
         "previous_assessment": {
             "bull_pct": a2_data.get("bull_pct", 50),
             "bear_pct": a2_data.get("bear_pct", 50),
             "primary_contradiction": a2_data.get("primary_contradiction", "N/A"),
-            "source_report": os.path.basename(find_latest_a2_contradiction()) if find_latest_a2_contradiction() else "N/A"
+            "source_report": (
+                os.path.basename(find_latest_a2_contradiction())
+                if find_latest_a2_contradiction()
+                else "N/A"
+            ),
         },
         "updated_assessment": {
             "bull_pct": updated["bull_pct"],
             "bear_pct": updated["bear_pct"],
             "primary_contradiction": a2_data.get("primary_contradiction", "N/A"),
-            "direction": updated["direction"]
+            "direction": updated["direction"],
         },
         "change_reason": reason or f"{trigger}触发: SI={si_delta:+.0f}, Edge={edge_delta:+.0f}",
         "trigger_conditions_met": [trigger],
         "adjustments_applied": updated["adjustments"],
         "evidence_refs": [],
-        "ledger_entry": f"A6-EP (Level_1.5_{timestamp_str})"
+        "ledger_entry": f"A6-EP (Level_1.5_{timestamp_str})",
     }
 
     # 保存增量文件
     output_path = REPORTS_DIR / filename
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(incremental_data, f, indent=2, ensure_ascii=False)
 
     print(f"✅ A2增量文件已生成: {filename}")
@@ -244,22 +255,27 @@ def generate_a2_incremental(trigger: str, si_delta: float = 0, edge_delta: float
     trading_dir = REPORTS_DIR / "trading"
     trading_dir.mkdir(exist_ok=True)
     trading_path = trading_dir / filename
-    with open(trading_path, 'w', encoding='utf-8') as f:
+    with open(trading_path, "w", encoding="utf-8") as f:
         json.dump(incremental_data, f, indent=2, ensure_ascii=False)
 
     print(f"✅ 已同步到trading目录: {filename}")
 
     # 保存到monitoring/a0目录
     a0_path = A0_DIR / f"{timestamp.strftime('%Y%m%d_%H%M')}.json"
-    with open(a0_path, 'w', encoding='utf-8') as f:
-        json.dump({
-            "type": "A0_CALL_RECORD",
-            "skill": "dream-intelligence-monitor",
-            "action": "Level_1.5_A2_INCREMENTAL_UPDATE",
-            "timestamp": timestamp.isoformat() + "Z",
-            "trigger": trigger,
-            "source": "a6_phase2_significant_shift_check"
-        }, f, indent=2, ensure_ascii=False)
+    with open(a0_path, "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "type": "A0_CALL_RECORD",
+                "skill": "dream-intelligence-monitor",
+                "action": "Level_1.5_A2_INCREMENTAL_UPDATE",
+                "timestamp": timestamp.isoformat() + "Z",
+                "trigger": trigger,
+                "source": "a6_phase2_significant_shift_check",
+            },
+            f,
+            indent=2,
+            ensure_ascii=False,
+        )
 
     print(f"✅ A0调用记录已保存: {a0_path.name}")
 
@@ -271,10 +287,7 @@ def check_anti_shake() -> Dict:
     last_update = get_last_a2_update_time()
 
     if not last_update:
-        return {
-            "can_trigger": True,
-            "reason": "首次A2更新，无历史记录"
-        }
+        return {"can_trigger": True, "reason": "首次A2更新，无历史记录"}
 
     hours_since = (datetime.now() - last_update).total_seconds() / 3600
 
@@ -282,25 +295,31 @@ def check_anti_shake() -> Dict:
         return {
             "can_trigger": True,
             "hours_since": round(hours_since, 1),
-            "reason": f"距上次A2更新{hours_since:.1f}小时 > 2小时阈值"
+            "reason": f"距上次A2更新{hours_since:.1f}小时 > 2小时阈值",
         }
     else:
         return {
             "can_trigger": False,
             "hours_since": round(hours_since, 1),
-            "reason": f"距上次A2更新仅{hours_since:.1f}小时 < 2小时，需等待"
+            "reason": f"距上次A2更新仅{hours_since:.1f}小时 < 2小时，需等待",
         }
 
 
 def main():
     parser = argparse.ArgumentParser(description="Level 1.5 A2增量更新脚本")
-    parser.add_argument("--trigger", required=True,
-                        choices=["T1", "T2", "T3", "T4"],
-                        help="触发条件: T1=Edge剧变, T2=SI骤降, T3=1H/日线背离, T4=费率翻转")
+    parser.add_argument(
+        "--trigger",
+        required=True,
+        choices=["T1", "T2", "T3", "T4"],
+        help="触发条件: T1=Edge剧变, T2=SI骤降, T3=1H/日线背离, T4=费率翻转",
+    )
     parser.add_argument("--si", type=float, default=0, help="SI变化量 (如: -20)")
     parser.add_argument("--edge", type=float, default=0, help="Edge变化量 (如: -35)")
-    parser.add_argument("--funding_flip", choices=["negative_to_positive", "positive_to_negative"],
-                        help="费率翻转方向(T4专用)")
+    parser.add_argument(
+        "--funding_flip",
+        choices=["negative_to_positive", "positive_to_negative"],
+        help="费率翻转方向(T4专用)",
+    )
     parser.add_argument("--reason", type=str, help="变化原因描述")
     parser.add_argument("--force", action="store_true", help="强制执行(忽略防抖检查)")
 
@@ -316,7 +335,7 @@ def main():
     # 防抖检查
     if not args.force:
         anti_shake = check_anti_shake()
-        print(f"\n🔍 防抖检查:")
+        print("\n🔍 防抖检查:")
         print(f"   {anti_shake['reason']}")
 
         if not anti_shake["can_trigger"]:
@@ -332,10 +351,10 @@ def main():
         si_delta=args.si,
         edge_delta=args.edge,
         funding_flip=args.funding_flip,
-        reason=args.reason
+        reason=args.reason,
     )
 
-    print(f"\n✅ Level 1.5 A2增量更新完成!")
+    print("\n✅ Level 1.5 A2增量更新完成!")
     print(f"   文件: {filename}")
     print(f"   时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 

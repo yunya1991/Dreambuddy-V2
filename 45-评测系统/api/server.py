@@ -10,7 +10,9 @@ server.py — 45-评测系统 生产启动入口
 用法：
     EVAL_PG_DSN=postgresql://... uvicorn api.server:app --host 127.0.0.1 --port 8790
 """
+
 from __future__ import annotations
+
 import logging
 import os
 import sys

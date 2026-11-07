@@ -3,6 +3,7 @@
 老 data_collector.fetch_tavily_news 返回 List[Dict] 含 title/content/url/source/published_at。
 compat 版用 TavilyCollector 替换，返回格式不变。
 """
+
 from data_center.compat.data_compat import fetch_tavily_news
 
 TV_MOD = "data_center.compat.data_compat.TavilyCollector"
@@ -19,11 +20,14 @@ def test_fetch_tavily_news_basic(mocker):
 
     mock_collector.fetch.return_value = [
         DataRecord(
-            source="tavily", category="news", sub_category="BTC",
+            source="tavily",
+            category="news",
+            sub_category="BTC",
             timestamp="2026-08-24T12:00:00+08:00",
             metrics={"title": "BTC surges", "url": "http://x/1", "source": "CoinDesk"},
             events=[{"content": "Bitcoin rose 5%"}],
-            timeseries=[], raw={"published_date": "2024-01-01"},
+            timeseries=[],
+            raw={"published_date": "2024-01-01"},
         )
     ]
 

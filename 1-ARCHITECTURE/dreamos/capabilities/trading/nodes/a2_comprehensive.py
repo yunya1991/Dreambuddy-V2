@@ -20,10 +20,10 @@ A0 矛盾论内嵌关系:
 
 from __future__ import annotations
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 
 class A2ComprehensiveNode(BaseNode):
@@ -42,11 +42,11 @@ class A2ComprehensiveNode(BaseNode):
 
     # 维度权重（含子系统维度）
     DIMENSION_WEIGHTS = {
-        "technical": 0.30,   # 技术面（C1/C2/C3 主链聚合）
-        "subsystem": 0.25,   # 子系统信号（三屏趋势/马丁/易经）
-        "fundamental": 0.20, # 基本面
-        "research": 0.15,    # 研究面（A0/A1）
-        "sentiment": 0.10,   # 情绪面
+        "technical": 0.30,  # 技术面（C1/C2/C3 主链聚合）
+        "subsystem": 0.25,  # 子系统信号（三屏趋势/马丁/易经）
+        "fundamental": 0.20,  # 基本面
+        "research": 0.15,  # 研究面（A0/A1）
+        "sentiment": 0.10,  # 情绪面
     }
 
     # 子系统节点 ID 集合
@@ -85,8 +85,12 @@ class A2ComprehensiveNode(BaseNode):
             total_weight += weight
 
         if total_weight == 0:
-            return NodeResult(node_id="A2", confidence=0.3, direction="HOLD",
-                              outputs={"rationale": ["[A2综合分析] 无可用信号"]})
+            return NodeResult(
+                node_id="A2",
+                confidence=0.3,
+                direction="HOLD",
+                outputs={"rationale": ["[A2综合分析] 无可用信号"]},
+            )
 
         # 归一化
         long_norm = long_score / total_weight
@@ -106,16 +110,16 @@ class A2ComprehensiveNode(BaseNode):
 
         # 一致性指标
         active_dims = sum(
-            1 for d in dimension_scores.values()
-            if d["direction"] in ("LONG", "SHORT")
+            1 for d in dimension_scores.values() if d["direction"] in ("LONG", "SHORT")
         )
         if active_dims >= 2:
             dirs = [
-                d["direction"] for d in dimension_scores.values()
+                d["direction"]
+                for d in dimension_scores.values()
                 if d["direction"] in ("LONG", "SHORT")
             ]
             same_ratio = sum(1 for d in dirs if d == direction) / len(dirs)
-            confidence *= (0.6 + same_ratio * 0.4)  # 一致性加成
+            confidence *= 0.6 + same_ratio * 0.4  # 一致性加成
 
         # P0-5 修复: 纯代码节点的最低置信度设为 0.3, 避免触发 Reflector 无意义的 REDO
         # (代码节点重试结果相同, REDO 只会浪费计算资源)
@@ -125,7 +129,9 @@ class A2ComprehensiveNode(BaseNode):
         for dim, sig in dimension_scores.items():
             w = self.DIMENSION_WEIGHTS.get(dim, 0)
             sources = sig.get("sources", [sig.get("source", "none")])
-            rationale.append(f"  {dim}: {sig['direction']} (conf={sig['confidence']:.0%}, 权重{w:.0%}, 来源={sources})")
+            rationale.append(
+                f"  {dim}: {sig['direction']} (conf={sig['confidence']:.0%}, 权重{w:.0%}, 来源={sources})"
+            )
         rationale.append(f"  综合: {direction} | 置信度 {confidence:.1%} | 多空差 {diff:.1%}")
         rationale.append(f"  有效维度: {active_dims}/5")
 
@@ -173,9 +179,17 @@ class A2ComprehensiveNode(BaseNode):
         if abs(long_score - short_score) / total < 0.15:
             return {"direction": "HOLD", "confidence": 0.4, "sources": sources}
         elif long_score > short_score:
-            return {"direction": "LONG", "confidence": round(long_score / total, 3), "sources": sources}
+            return {
+                "direction": "LONG",
+                "confidence": round(long_score / total, 3),
+                "sources": sources,
+            }
         else:
-            return {"direction": "SHORT", "confidence": round(short_score / total, 3), "sources": sources}
+            return {
+                "direction": "SHORT",
+                "confidence": round(short_score / total, 3),
+                "sources": sources,
+            }
 
     def _extract_technical_signal(self, results: Dict) -> Dict[str, Any]:
         """提取技术面信号（聚合 C1/C2/C3 主链，排除子系统节点）"""
@@ -208,7 +222,16 @@ class A2ComprehensiveNode(BaseNode):
         best_dir = "HOLD"
         best_src = "none"
         for node_id, result in results.items():
-            if node_id.startswith("A") and node_id not in ("A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9"):
+            if node_id.startswith("A") and node_id not in (
+                "A2",
+                "A3",
+                "A4",
+                "A5",
+                "A6",
+                "A7",
+                "A8",
+                "A9",
+            ):
                 if node_id in self.SUBSYSTEM_NODE_IDS:
                     continue
                 conf = getattr(result, "confidence", 0)

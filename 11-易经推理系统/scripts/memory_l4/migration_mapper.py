@@ -1,14 +1,14 @@
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
-import sys
 from typing import Any, Dict, List, Optional, Tuple
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import artifacts_memory_l4_dir
+from scripts.memory_l4.paths import artifacts_memory_l4_dir  # noqa: E402
 
 
 def _clamp(x: float, low: float, high: float) -> float:
@@ -20,7 +20,9 @@ def _extract_pnl_reason(ep: Dict[str, Any]) -> Tuple[Optional[float], str]:
     for key in ("realized_pnl_pct", "unrealized_pnl_pct", "pnl_pct"):
         value = out.get(key)
         if value is not None:
-            reason = str(out.get("exit_reason") or out.get("stop_reason") or out.get("reason") or "unknown")
+            reason = str(
+                out.get("exit_reason") or out.get("stop_reason") or out.get("reason") or "unknown"
+            )
             return float(value), reason
     return None, str(out.get("exit_reason") or out.get("reason") or "unknown")
 
@@ -33,7 +35,11 @@ def _inst_to_market(inst_id: str) -> str:
 
 
 def _default_output_dir(snapshot_ts: str) -> Path:
-    day = snapshot_ts[:10] if len(snapshot_ts) >= 10 else datetime.now().astimezone().strftime("%Y-%m-%d")
+    day = (
+        snapshot_ts[:10]
+        if len(snapshot_ts) >= 10
+        else datetime.now().astimezone().strftime("%Y-%m-%d")
+    )
     return artifacts_memory_l4_dir() / "cross_market_migration" / day
 
 
@@ -42,12 +48,14 @@ def _compute_confidence(rows: List[Dict[str, Any]]) -> float:
     sample_support = _clamp(float(support_count) / 5.0, 0.0, 1.0)
     pnl_vals = [float(r.get("pnl_pct") or 0.0) for r in rows]
     neg_count = len([x for x in pnl_vals if x < 0.0])
-    consistency = _clamp(float(neg_count) / float(support_count), 0.0, 1.0) if support_count > 0 else 0.0
+    consistency = (
+        _clamp(float(neg_count) / float(support_count), 0.0, 1.0) if support_count > 0 else 0.0
+    )
 
     mean_abs = sum(abs(x) for x in pnl_vals) / len(pnl_vals) if pnl_vals else 0.0
     if pnl_vals:
         variance = sum((abs(x) - mean_abs) ** 2 for x in pnl_vals) / len(pnl_vals)
-        std = variance ** 0.5
+        std = variance**0.5
         stability = _clamp(1.0 - (std / max(mean_abs, 1e-6)), 0.0, 1.0)
     else:
         stability = 0.0
@@ -130,7 +138,9 @@ def build_cross_market_migration(
         "target_market": target_market_norm,
         "mappings": mappings,
     }
-    mapping_table_path.write_text(json.dumps(mapping_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    mapping_table_path.write_text(
+        json.dumps(mapping_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
     with artifact_path.open("w", encoding="utf-8") as f:
         for m in mappings:
@@ -162,7 +172,9 @@ def build_cross_market_migration(
             "avg": round(sum(confidences) / len(confidences), 4) if confidences else None,
         },
     }
-    summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    summary_path.write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
     return {
         "mapping_table_path": str(mapping_table_path),

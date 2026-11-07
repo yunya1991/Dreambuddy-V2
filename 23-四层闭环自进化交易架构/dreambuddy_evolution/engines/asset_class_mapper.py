@@ -14,6 +14,7 @@
 
 FAIL-OPEN: 未知币种返回 None，调用方回退到默认值。
 """
+
 from __future__ import annotations
 
 import logging
@@ -35,38 +36,108 @@ PRECIOUS_METAL = "precious_metal"
 # ============================================================================
 # 硬编码映射表（frozenset，O(1) 查找）
 # ============================================================================
-_CRYPTO_MAJOR_COINS = frozenset({
-    "BTC", "ETH",
-})
+_CRYPTO_MAJOR_COINS = frozenset(
+    {
+        "BTC",
+        "ETH",
+    }
+)
 
-_CRYPTO_LAYER1_COINS = frozenset({
-    "SOL", "AVAX", "NEAR", "ADA", "DOT", "ATOM", "APT", "OP", "INJ",
-    "TON", "SUI", "SEI", "TIA", "EGLD", "XTZ", "ALGO", "HBAR", "ICP",
-    "XLM", "EOS", "MATIC", "TRX", "FTM", "ETC", "ARB", "OKB",
-})
+_CRYPTO_LAYER1_COINS = frozenset(
+    {
+        "SOL",
+        "AVAX",
+        "NEAR",
+        "ADA",
+        "DOT",
+        "ATOM",
+        "APT",
+        "OP",
+        "INJ",
+        "TON",
+        "SUI",
+        "SEI",
+        "TIA",
+        "EGLD",
+        "XTZ",
+        "ALGO",
+        "HBAR",
+        "ICP",
+        "XLM",
+        "EOS",
+        "MATIC",
+        "TRX",
+        "FTM",
+        "ETC",
+        "ARB",
+        "OKB",
+    }
+)
 
-_CRYPTO_DEFI_COINS = frozenset({
-    "UNI", "AAVE", "LINK", "COMP", "MKR", "SNX", "DYDX", "GMX",
-    "RDNT", "QNT", "GRT", "CRO",
-})
+_CRYPTO_DEFI_COINS = frozenset(
+    {
+        "UNI",
+        "AAVE",
+        "LINK",
+        "COMP",
+        "MKR",
+        "SNX",
+        "DYDX",
+        "GMX",
+        "RDNT",
+        "QNT",
+        "GRT",
+        "CRO",
+    }
+)
 
-_CRYPTO_MEME_COINS = frozenset({
-    "DOGE", "PEPE", "WIF", "SHIB",
-})
+_CRYPTO_MEME_COINS = frozenset(
+    {
+        "DOGE",
+        "PEPE",
+        "WIF",
+        "SHIB",
+    }
+)
 
-_CRYPTO_ALT_COINS = frozenset({
-    "PUMP", "HYPE", "ZEC", "BNB", "LTC", "IMX", "JUP", "RUNE",
-    "VET", "FIL", "CRCL", "XRP",
-})
+_CRYPTO_ALT_COINS = frozenset(
+    {
+        "PUMP",
+        "HYPE",
+        "ZEC",
+        "BNB",
+        "LTC",
+        "IMX",
+        "JUP",
+        "RUNE",
+        "VET",
+        "FIL",
+        "CRCL",
+        "XRP",
+    }
+)
 
-_US_STOCK_COINS = frozenset({
-    "MU", "SKHYNIX", "GOOGL", "NVDA", "AMZN", "SNDK", "SPCX",
-    "COIN", "BMNR", "MSTR",
-})
+_US_STOCK_COINS = frozenset(
+    {
+        "MU",
+        "SKHYNIX",
+        "GOOGL",
+        "NVDA",
+        "AMZN",
+        "SNDK",
+        "SPCX",
+        "COIN",
+        "BMNR",
+        "MSTR",
+    }
+)
 
-_PRECIOUS_METAL_COINS = frozenset({
-    "XAU", "XAG",
-})
+_PRECIOUS_METAL_COINS = frozenset(
+    {
+        "XAU",
+        "XAG",
+    }
+)
 
 # 全量映射（用于反向查找）
 _ALL_MAPPINGS = [

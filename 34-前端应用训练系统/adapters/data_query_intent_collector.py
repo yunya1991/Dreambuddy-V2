@@ -8,6 +8,7 @@ S 层应识别为 data_query 意图并路由到 18-数据获取中心直接取�
   - 样本生成: 实际数据源目录 + 问法模板 → (message, intent_type='data_query')
   - FAIL-OPEN: 数据库不可用/表缺失时返回空列表，不阻塞训练
 """
+
 import os
 import sys
 from typing import List, Optional
@@ -16,11 +17,11 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
 _PROJECT_ROOT = os.path.dirname(_34_DIR)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 # 18 中心已迁移 PostgreSQL，复用 39 模块统一 PG 辅助模块（FAIL-OPEN）
 sys.path.insert(0, os.path.join(_PROJECT_ROOT, "39-金融语义蒸馏系统", "scripts"))
-import dc_pg
+import dc_pg  # noqa: E402
 
 # 数据源 → 中文描述映射（问法模板中使用）
 _SOURCE_DESC = {
@@ -78,23 +79,25 @@ class DataQueryIntentCollector(TrainingDataProvider):
             for t in range(2):
                 tpl = _QUERY_TEMPLATES[(i * 2 + t) % len(_QUERY_TEMPLATES)]
                 message = tpl.format(desc=desc, src=src)
-                cases.append(TrainingCase(
-                    intent="data_query",
-                    actions=[f"query:{src}", f"category:{category or 'default'}"],
-                    outcome_text=message,
-                    learned=[f"数据查询意图: {desc} → 18中心 {src} 数据源"],
-                    layer_tags=["S"],
-                    quality="B",
-                    confidence=0.6,
-                    source="data_query_intent",
-                    metadata={
-                        "data_source": src,
-                        "category": category,
-                        "sub_category": sub_cat,
-                        "record_count": cnt,
-                        "route_hint": "18-数据获取中心",
-                    },
-                ))
+                cases.append(
+                    TrainingCase(
+                        intent="data_query",
+                        actions=[f"query:{src}", f"category:{category or 'default'}"],
+                        outcome_text=message,
+                        learned=[f"数据查询意图: {desc} → 18中心 {src} 数据源"],
+                        layer_tags=["S"],
+                        quality="B",
+                        confidence=0.6,
+                        source="data_query_intent",
+                        metadata={
+                            "data_source": src,
+                            "category": category,
+                            "sub_category": sub_cat,
+                            "record_count": cnt,
+                            "route_hint": "18-数据获取中心",
+                        },
+                    )
+                )
                 if len(cases) >= limit:
                     return cases
         return cases

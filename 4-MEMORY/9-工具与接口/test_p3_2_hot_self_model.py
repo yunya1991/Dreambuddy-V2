@@ -14,12 +14,11 @@ RED 契约:
 
 参考: SPEC-CognitiveSystem-Evolution.md §2.5.2 + §4.3 P3-2
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
-
-import pytest
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR) not in sys.path:
@@ -252,8 +251,11 @@ class TestSelfModelMonitor:
 
         sm = SelfModel()
         content = WorkspaceContent(
-            intent={}, memory_recall=[], skill_match=[],
-            knowledge_retrieval=[], confidence=0.5,
+            intent={},
+            memory_recall=[],
+            skill_match=[],
+            knowledge_retrieval=[],
+            confidence=0.5,
         )
         result = sm.monitor(content)
         assert "action" in result

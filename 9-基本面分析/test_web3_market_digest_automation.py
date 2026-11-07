@@ -1,1 +1,1 @@
-from tests.test_web3_market_digest_automation import *
+from tests.test_web3_market_digest_automation import *  # noqa: F403

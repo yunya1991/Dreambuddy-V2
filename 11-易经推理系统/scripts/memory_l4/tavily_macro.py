@@ -3,13 +3,13 @@
 Tavily 宏观数据集成 - 为易经推理模型提供真实宏观数据
 通过 Tavily Search API 获取最新宏观经济、市场新闻等数据
 """
+
 import json
 import os
 import time
-from typing import Dict, List, Optional
 from datetime import datetime, timezone
 from pathlib import Path
-
+from typing import Dict, List
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "tavily"
 CONFIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -55,7 +55,7 @@ def configure(api_key: str = None) -> Dict:
     if api_key is not None:
         cfg["api_key"] = api_key
     _save_config(cfg)
-    safe_cfg = {k: v for k, v in cfg.items()}
+    safe_cfg = {k: v for k, v in cfg.items()}  # noqa: C416
     if safe_cfg.get("api_key"):
         safe_cfg["api_key"] = safe_cfg["api_key"][:8] + "..."
     return safe_cfg
@@ -76,9 +76,9 @@ def _save_cache(cache: Dict) -> None:
         json.dump(cache, f, ensure_ascii=False, indent=2)
 
 
-def tavily_search(query: str, max_results: int = None,
-                  search_depth: str = "basic",
-                  topic: str = "general") -> Dict:
+def tavily_search(
+    query: str, max_results: int = None, search_depth: str = "basic", topic: str = "general"
+) -> Dict:
     """
     调用 Tavily Search API
 
@@ -91,8 +91,8 @@ def tavily_search(query: str, max_results: int = None,
     Returns:
         搜索结果
     """
-    import urllib.request
     import urllib.error
+    import urllib.request
 
     cfg = _load_config()
     api_key = cfg["api_key"]
@@ -110,21 +110,23 @@ def tavily_search(query: str, max_results: int = None,
         if now - cached.get("ts", 0) < cfg["cache_ttl_seconds"]:
             return {"ok": True, "cached": True, "results": cached.get("results", [])}
 
-    body = json.dumps({
-        "api_key": api_key,
-        "query": query,
-        "max_results": max_results,
-        "search_depth": search_depth,
-        "topic": topic,
-        "include_answer": True,
-        "include_raw_content": False,
-    }).encode("utf-8")
+    body = json.dumps(
+        {
+            "api_key": api_key,
+            "query": query,
+            "max_results": max_results,
+            "search_depth": search_depth,
+            "topic": topic,
+            "include_answer": True,
+            "include_raw_content": False,
+        }
+    ).encode("utf-8")
 
     req = urllib.request.Request(
         cfg["base_url"] + "/search",
         data=body,
         headers={"Content-Type": "application/json"},
-        method="POST"
+        method="POST",
     )
 
     try:
@@ -184,7 +186,11 @@ def fetch_macro_data(topics: List[str] = None) -> Dict:
         "total_results": len(all_results),
         "answers": answers,
         "results": all_results[:20],
-        "sources": list(set(r.get("url", "").split("/")[2] for r in all_results if r.get("url")))[:10],
+        "sources": list(
+            set(r.get("url", "").split("/")[2] for r in all_results if r.get("url"))  # noqa: C401
+        )[  # noqa: C401
+            :10
+        ],
     }
 
 
@@ -212,15 +218,17 @@ def get_macro_summary() -> Dict:
     is_fresh = age < cfg["cache_ttl_seconds"]
 
     results = []
-    for key, val in cache.items():
+    for key, val in cache.items():  # noqa: B007
         for r in val.get("results", []):
-            results.append({
-                "title": r.get("title", ""),
-                "url": r.get("url", ""),
-                "content": r.get("content", "")[:300],
-                "published_date": r.get("published_date", ""),
-                "score": r.get("score", 0),
-            })
+            results.append(
+                {
+                    "title": r.get("title", ""),
+                    "url": r.get("url", ""),
+                    "content": r.get("content", "")[:300],
+                    "published_date": r.get("published_date", ""),
+                    "score": r.get("score", 0),
+                }
+            )
 
     return {
         "ok": True,
@@ -235,8 +243,8 @@ def publish_macro_to_bus() -> Dict:
     """
     获取宏观数据并发布到 shared_memory_bus
     """
-    from scripts.memory_l4.shared_memory_bus import publish_shared_memory_event
     from scripts.memory_l4.ab_bridge import ACL_CONFIG
+    from scripts.memory_l4.shared_memory_bus import publish_shared_memory_event
 
     macro_data = fetch_macro_data()
     if not macro_data.get("ok"):
@@ -279,6 +287,7 @@ def publish_macro_to_bus() -> Dict:
 
 def cli():
     import sys
+
     if len(sys.argv) < 2:
         print("Usage: python -m scripts.memory_l4.tavily_macro <command> [args]")
         print("Commands:")
@@ -296,7 +305,8 @@ def cli():
         i = 2
         while i < len(sys.argv):
             if sys.argv[i] == "--key" and i + 1 < len(sys.argv):
-                kwargs["api_key"] = sys.argv[i + 1]; i += 2
+                kwargs["api_key"] = sys.argv[i + 1]
+                i += 2
             else:
                 i += 1
         result = configure(**kwargs)
@@ -313,7 +323,7 @@ def cli():
         r = fetch_macro_data()
         summary = {k: v for k, v in r.items() if k != "results" and k != "answers"}
         print(json.dumps(summary, indent=2, ensure_ascii=False))
-        print(f"\n前5个结果标题:")
+        print("\n前5个结果标题:")
         for i, res in enumerate(r.get("results", [])[:5]):
             print(f"  {i+1}. {res.get('title', 'N/A')}")
         return

@@ -10,6 +10,7 @@
   2. Scrapy Selector 解析 <table> 行列
   3. 汇总总净流入 + per-issuer 数据
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -48,6 +49,7 @@ class EtfFlowCollector(BaseCollector):
         # farside.co.uk 有 Cloudflare 防护，必须用 stealthy mode
         try:
             from data_center.crawler.scrapling_engine import ScraplingEngine
+
             engine = ScraplingEngine()
             html = engine.fetch_html(url, mode="stealthy")
             if html and len(html) > 1000:
@@ -61,8 +63,8 @@ class EtfFlowCollector(BaseCollector):
         # 最终回退到 requests（大概率被 Cloudflare 拦截，但保留兜底）
         try:
             import requests
-            resp = requests.get(url, timeout=20,
-                                headers={"User-Agent": "Mozilla/5.0"})
+
+            resp = requests.get(url, timeout=20, headers={"User-Agent": "Mozilla/5.0"})
             resp.raise_for_status()
             return resp.text
         except Exception:
@@ -127,17 +129,23 @@ class EtfFlowCollector(BaseCollector):
 
         # 最新一天数据作为 metrics
         latest = recent[-1]
-        total_flow = sum(v for k, v in latest.items() if k != "date" and isinstance(v, (int, float)))
+        total_flow = sum(
+            v for k, v in latest.items() if k != "date" and isinstance(v, (int, float))
+        )
 
         # 构建 timeseries
         ts_list = []
         for item in recent:
-            daily_total = sum(v for k, v in item.items() if k != "date" and isinstance(v, (int, float)))
-            ts_list.append({
-                "date": item["date"],
-                "total_flow": daily_total,
-                **{k: v for k, v in item.items() if k != "date"},
-            })
+            daily_total = sum(
+                v for k, v in item.items() if k != "date" and isinstance(v, (int, float))
+            )
+            ts_list.append(
+                {
+                    "date": item["date"],
+                    "total_flow": daily_total,
+                    **{k: v for k, v in item.items() if k != "date"},
+                }
+            )
 
         rec = DataRecord(
             source="etf_flow",

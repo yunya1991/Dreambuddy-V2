@@ -12,6 +12,7 @@ P3-1 全量备份 + SHA256 校验 + AES256 加密
   2. SHA256 校验和写 .sha256 sidecar
   3. AES256-GCM 加密（passphrase 非 None 时；否则明文 .db）
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -26,6 +27,7 @@ def _aes256_encrypt(plaintext: bytes, passphrase: str) -> bytes:
     """AES256-GCM 加密；返回 nonce + ciphertext + tag。"""
 
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
     # 派生 32 字节密钥（SHA256）
     key = hashlib.sha256(passphrase.encode("utf-8")).digest()
     aesgcm = AESGCM(key)
@@ -38,6 +40,7 @@ def _aes256_encrypt(plaintext: bytes, passphrase: str) -> bytes:
 def _aes256_decrypt(ciphertext: bytes, passphrase: str) -> bytes:
     """AES256-GCM 解密。"""
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
     key = hashlib.sha256(passphrase.encode("utf-8")).digest()
     aesgcm = AESGCM(key)
     nonce = ciphertext[:12]

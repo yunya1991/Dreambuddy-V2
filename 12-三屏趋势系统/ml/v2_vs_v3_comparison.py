@@ -4,18 +4,17 @@
 重点关注DIP_BUY和TOP_EXIT两类目的的改进效果。
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import json
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import pandas as pd
-import numpy as np
+import pandas as pd  # noqa: I001
 
 from backtest.strategy import EnhancedMA200Strategy
 from ml.enhanced_ma200_v3_strategy import EnhancedMA200V3Strategy
 from ml.scenario_backtest_engine import ScenarioBacktestEngine
-from ml.closed_loop_manager import ClosedLoopManager
 
 
 def load_local_data(symbol):
@@ -43,8 +42,11 @@ def run_comparison():
     print("⏳ 运行 v2 基线策略...")
     v2_strategy = EnhancedMA200Strategy(is_btc=True)
     v2_result = engine.run_scenario_backtest(
-        prices, v2_strategy, "EnhancedMA200_v2",
-        symbol="BTC", experiment_name="v2_baseline_compare",
+        prices,
+        v2_strategy,
+        "EnhancedMA200_v2",
+        symbol="BTC",
+        experiment_name="v2_baseline_compare",
     )
     print("✅ v2 完成")
     print()
@@ -53,8 +55,11 @@ def run_comparison():
     print("⏳ 运行 v3 增强版策略...")
     v3_strategy = EnhancedMA200V3Strategy(is_btc=True)
     v3_result = engine.run_scenario_backtest(
-        prices, v3_strategy, "EnhancedMA200_v3",
-        symbol="BTC", experiment_name="v3_enhanced_compare",
+        prices,
+        v3_strategy,
+        "EnhancedMA200_v3",
+        symbol="BTC",
+        experiment_name="v3_enhanced_compare",
     )
     print("✅ v3 完成")
     print()
@@ -185,8 +190,12 @@ def run_comparison():
     composite_delta = v3_result.composite_score - v2_result.composite_score
     sharpe_delta = v3_result.overall_sharpe - v2_result.overall_sharpe
 
-    print(f"综合评分变化: {v2_result.composite_score:.3f} → {v3_result.composite_score:.3f} ({composite_delta:+.3f})")
-    print(f"夏普比率变化: {v2_result.overall_sharpe:.3f} → {v3_result.overall_sharpe:.3f} ({sharpe_delta:+.3f})")
+    print(
+        f"综合评分变化: {v2_result.composite_score:.3f} → {v3_result.composite_score:.3f} ({composite_delta:+.3f})"
+    )
+    print(
+        f"夏普比率变化: {v2_result.overall_sharpe:.3f} → {v3_result.overall_sharpe:.3f} ({sharpe_delta:+.3f})"
+    )
     print()
 
     if v3_result.composite_score > 1.0:
@@ -200,16 +209,24 @@ def run_comparison():
     v2_dip = v2_result.objective_metrics.get("dip_buy")
     v3_dip = v3_result.objective_metrics.get("dip_buy")
     if v2_dip and v3_dip:
-        print(f"  胜率: {v2_dip.win_rate:.2%} → {v3_dip.win_rate:.2%} ({v3_dip.win_rate - v2_dip.win_rate:+.2%})")
-        print(f"  平均收益: {v2_dip.avg_return:.2%} → {v3_dip.avg_return:.2%} ({v3_dip.avg_return - v2_dip.avg_return:+.2%})")
+        print(
+            f"  胜率: {v2_dip.win_rate:.2%} → {v3_dip.win_rate:.2%} ({v3_dip.win_rate - v2_dip.win_rate:+.2%})"
+        )
+        print(
+            f"  平均收益: {v2_dip.avg_return:.2%} → {v3_dip.avg_return:.2%} ({v3_dip.avg_return - v2_dip.avg_return:+.2%})"
+        )
 
     print()
     print("💡 TOP_EXIT 重点观察：")
     v2_top = v2_result.objective_metrics.get("top_exit")
     v3_top = v3_result.objective_metrics.get("top_exit")
     if v2_top and v3_top:
-        print(f"  胜率: {v2_top.win_rate:.2%} → {v3_top.win_rate:.2%} ({v3_top.win_rate - v2_top.win_rate:+.2%})")
-        print(f"  平均收益: {v2_top.avg_return:.2%} → {v3_top.avg_return:.2%} ({v3_top.avg_return - v2_top.avg_return:+.2%})")
+        print(
+            f"  胜率: {v2_top.win_rate:.2%} → {v3_top.win_rate:.2%} ({v3_top.win_rate - v2_top.win_rate:+.2%})"
+        )
+        print(
+            f"  平均收益: {v2_top.avg_return:.2%} → {v3_top.avg_return:.2%} ({v3_top.avg_return - v2_top.avg_return:+.2%})"
+        )
 
     print()
     return v2_result, v3_result

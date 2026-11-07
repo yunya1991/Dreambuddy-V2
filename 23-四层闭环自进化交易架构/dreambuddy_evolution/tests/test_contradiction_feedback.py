@@ -5,9 +5,8 @@ SPEC-主要矛盾识别与最小阻力路径设计.md §4.6
 矛盾论 §矛盾转化: 验证失败 → 降低矛盾权重, 验证成功 → 升级
 HC-AGI-22: weight_factor ∈ [0.3, 1.5], 下限 0.3 防止矛盾权重归零
 """
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations  # noqa: I001
 
 
 class TestContradictionFeedback:
@@ -18,6 +17,7 @@ class TestContradictionFeedback:
         from dreambuddy_evolution.core.contradiction_feedback import (
             ContradictionFeedback,
         )
+
         assert ContradictionFeedback is not None
 
     def test_feedback_success_increases_weight(self):
@@ -25,6 +25,7 @@ class TestContradictionFeedback:
         from dreambuddy_evolution.core.contradiction_feedback import (
             ContradictionFeedback,
         )
+
         fb = ContradictionFeedback()
         primary = {"direction": "long", "strength": 0.5, "dimension": "C3"}
         outcome = {"success": True, "pnl": 0.1, "n_trials": 5}
@@ -36,6 +37,7 @@ class TestContradictionFeedback:
         from dreambuddy_evolution.core.contradiction_feedback import (
             ContradictionFeedback,
         )
+
         fb = ContradictionFeedback()
         primary = {"direction": "long", "strength": 0.5, "dimension": "C3"}
         outcome = {"success": False, "pnl": -0.05, "fail_streak": 2}
@@ -47,6 +49,7 @@ class TestContradictionFeedback:
         from dreambuddy_evolution.core.contradiction_feedback import (
             ContradictionFeedback,
         )
+
         fb = ContradictionFeedback()
         primary = {"direction": "long", "strength": 0.5}
         # 连续失败 10 次 → weight_factor 应被截断到 0.3
@@ -59,6 +62,7 @@ class TestContradictionFeedback:
         from dreambuddy_evolution.core.contradiction_feedback import (
             ContradictionFeedback,
         )
+
         fb = ContradictionFeedback()
         primary = {"direction": "long", "strength": 0.5}
         outcome = {"success": True, "n_trials": 100}  # 大量验证
@@ -70,10 +74,14 @@ class TestContradictionFeedback:
         from dreambuddy_evolution.core.contradiction_feedback import (
             ContradictionFeedback,
         )
+
         fb = ContradictionFeedback()
         primary = {
-            "direction": "long", "strength": 0.5, "dimension": "C3",
-            "cause_score": 0.6, "continuation_score": 0.7,
+            "direction": "long",
+            "strength": 0.5,
+            "dimension": "C3",
+            "cause_score": 0.6,
+            "continuation_score": 0.7,
         }
         outcome = {"success": True, "n_trials": 3}
         result = fb.adjust_weight(primary, outcome)
@@ -86,6 +94,7 @@ class TestContradictionFeedback:
         from dreambuddy_evolution.core.contradiction_feedback import (
             ContradictionFeedback,
         )
+
         fb = ContradictionFeedback()
         primary = {"direction": "long", "strength": 0.5}
         # 传入畸形 outcome

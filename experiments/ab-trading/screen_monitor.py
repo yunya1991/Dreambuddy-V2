@@ -12,10 +12,16 @@
   python3 screen_monitor.py --check-only    # 仅检查状态
   python3 screen_monitor.py --evolve-only   # 仅执行自进化和PR评论
 """
-import os, sys, json, subprocess, time, argparse, warnings, math
-from datetime import datetime, timezone, timedelta
+
+import os  # noqa: I001
+import sys
+import json
+import subprocess
+import argparse
+import warnings
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List
 
 warnings.filterwarnings("ignore")
 
@@ -28,7 +34,8 @@ ORCH_STATE_FILE = BASE_DIR / "data" / "screen_orchestrator_state.json"
 EVOLUTION_FILE = BASE_DIR / "data" / "screen_evolution_state.json"
 LOG_FILE = BASE_DIR / "logs" / "screen_monitor.log"
 
-MAX_IDLE_MINUTES = 240   # 超过4小时认为未正常运行
+MAX_IDLE_MINUTES = 240  # 超过4小时认为未正常运行
+
 
 def _load_env():
     env_file = BASE_DIR / "config" / ".env"
@@ -40,14 +47,24 @@ def _load_env():
                     key, value = line.split("=", 1)
                     os.environ.setdefault(key.strip(), value.strip())
 
+
 GH_TOKEN_FROM_GH_CLI = ""
 try:
-    import subprocess
+    import subprocess  # noqa: I001
     import shutil
+
     gh_path = shutil.which("gh")
     print(f"DEBUG: gh path: {gh_path}")
-    result = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, timeout=5, env={**os.environ, "GH_TOKEN": ""})
-    print(f"DEBUG: gh rc={result.returncode}, stdout='{result.stdout.strip()}', stderr={result.stderr}")
+    result = subprocess.run(
+        ["gh", "auth", "token"],
+        capture_output=True,
+        text=True,
+        timeout=5,
+        env={**os.environ, "GH_TOKEN": ""},
+    )
+    print(
+        f"DEBUG: gh rc={result.returncode}, stdout='{result.stdout.strip()}', stderr={result.stderr}"
+    )
     if result.returncode == 0:
         GH_TOKEN_FROM_GH_CLI = result.stdout.strip()
         print(f"DEBUG: GH_TOKEN_FROM_GH_CLI='{GH_TOKEN_FROM_GH_CLI}'")
@@ -72,11 +89,14 @@ MAX_VOL_MULT = 2.0
 
 # ── 工具函数 ────────────────────────────────────────────────────────────────
 
+
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
+
 def _fmt_ts(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%d %H:%M:%S UTC")
+
 
 def _log(msg: str):
     ts = _fmt_ts(_now())
@@ -86,7 +106,9 @@ def _log(msg: str):
     with open(LOG_FILE, "a") as f:
         f.write(line + "\n")
 
+
 _log(f"GH_TOKEN loaded: len={len(GH_TOKEN)}, starts_with={GH_TOKEN[:10] if GH_TOKEN else 'empty'}")
+
 
 def load_json(path: Path, default: dict = None) -> dict:
     if not path.exists():
@@ -97,15 +119,19 @@ def load_json(path: Path, default: dict = None) -> dict:
     except Exception:
         return default or {}
 
+
 def save_json(path: Path, data: dict):
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
+
 def ts_to_dt(ts: float) -> datetime:
     return datetime.fromtimestamp(ts, tz=timezone.utc)
 
+
 # ── 监控 ────────────────────────────────────────────────────────────────────
+
 
 def check_screen_health() -> tuple[bool, str, dict]:
     """
@@ -139,9 +165,15 @@ def check_screen_health() -> tuple[bool, str, dict]:
     if max_idle > MAX_IDLE_MINUTES:
         return False, f"已空闲 {max_idle:.0f} 分钟（阈值 {MAX_IDLE_MINUTES} 分钟）", detail
 
-    return True, f"最近检查 {_fmt_ts(ts_to_dt(state.get('last_check_ts', 0)))}，空闲 {check_idle:.0f} 分钟", detail
+    return (
+        True,
+        f"最近检查 {_fmt_ts(ts_to_dt(state.get('last_check_ts', 0)))}，空闲 {check_idle:.0f} 分钟",
+        detail,
+    )
+
 
 # ── 恢复执行 ────────────────────────────────────────────────────────────────
+
 
 def run_screen_orchestrator():
     """触发三屏马丁编排器执行"""
@@ -156,13 +188,14 @@ def run_screen_orchestrator():
 
     try:
         result = subprocess.run(
-            ["python3", str(script)],
-            cwd=str(BASE_DIR),
-            capture_output=True, text=True, timeout=180
+            ["python3", str(script)], cwd=str(BASE_DIR), capture_output=True, text=True, timeout=180
         )
-        key_lines = [l for l in result.stdout.split("\n")
-                     if any(kw in l for kw in ["触发", "执行", "决策", "持仓", "错误", "完成"])
-                     and "Warning" not in l]
+        key_lines = [
+            l
+            for l in result.stdout.split("\n")  # noqa: E741
+            if any(kw in l for kw in ["触发", "执行", "决策", "持仓", "错误", "完成"])
+            and "Warning" not in l
+        ]
         for line in key_lines[-15:]:
             _log(f"  {line.strip()}")
         if result.returncode != 0:
@@ -177,7 +210,9 @@ def run_screen_orchestrator():
         _log(f"编排器执行异常: {e}")
         return False
 
+
 # ── 自进化学习 ──────────────────────────────────────────────────────────────
+
 
 def calculate_pnl(entry_price: float, exit_price: float, direction: str, size: float) -> float:
     """计算单笔盈亏（USDT）"""
@@ -185,6 +220,7 @@ def calculate_pnl(entry_price: float, exit_price: float, direction: str, size: f
         return (entry_price - exit_price) * size
     else:
         return (exit_price - entry_price) * size
+
 
 def analyze_trade_history(trades: List[dict]) -> dict:
     """分析交易历史，提取关键指标"""
@@ -210,12 +246,7 @@ def analyze_trade_history(trades: List[dict]) -> dict:
     loss_count = 0
     for o, c in paired:
         direction = o.get("side", o.get("direction", "BULL"))
-        pnl = calculate_pnl(
-            o.get("price", 0),
-            c.get("price", 0),
-            direction,
-            o.get("size", 0)
-        )
+        pnl = calculate_pnl(o.get("price", 0), c.get("price", 0), direction, o.get("size", 0))
         pnls.append(pnl)
         if pnl > 0:
             win_count += 1
@@ -238,8 +269,13 @@ def analyze_trade_history(trades: List[dict]) -> dict:
         "total_pnl": total_pnl,
         "max_win": max_win,
         "max_loss": max_loss,
-        "profit_factor": abs(sum(p for p in pnls if p > 0) / sum(p for p in pnls if p < 0)) if any(p < 0 for p in pnls) else float('inf'),
+        "profit_factor": (
+            abs(sum(p for p in pnls if p > 0) / sum(p for p in pnls if p < 0))
+            if any(p < 0 for p in pnls)
+            else float("inf")
+        ),
     }
+
 
 def evolve_parameters(state: dict, stats: dict) -> dict:
     """
@@ -264,7 +300,9 @@ def evolve_parameters(state: dict, stats: dict) -> dict:
     profit_factor = stats.get("profit_factor", 0)
     total_pnl = stats.get("total_pnl", 0)
 
-    _log(f"自进化分析: 胜率={win_rate:.1%}, 盈亏比={profit_factor:.2f}, 总盈亏={total_pnl:.2f} USDT")
+    _log(
+        f"自进化分析: 胜率={win_rate:.1%}, 盈亏比={profit_factor:.2f}, 总盈亏={total_pnl:.2f} USDT"
+    )
 
     new_addon = current["addon_pct"]
     new_tp = current["tp_pct"]
@@ -282,7 +320,7 @@ def evolve_parameters(state: dict, stats: dict) -> dict:
         adjustments.append("胜率偏高: 收紧加仓间隔+放宽止盈")
 
     # 根据盈亏比调整
-    if profit_factor < 1.0 and profit_factor != float('inf'):
+    if profit_factor < 1.0 and profit_factor != float("inf"):
         new_tp = min(new_tp + 0.5, MAX_TP_PCT)
         adjustments.append("盈亏比<1: 提高止盈比例")
     elif profit_factor > 2.0:
@@ -297,9 +335,11 @@ def evolve_parameters(state: dict, stats: dict) -> dict:
         new_vol = min(new_vol * 1.05, MAX_VOL_MULT)
         adjustments.append("总盈利>100U: 轻微提高波动倍数")
 
-    _log(f"参数调整: addon_pct {current['addon_pct']:.2f} -> {new_addon:.2f}, "
-         f"tp_pct {current['tp_pct']:.2f} -> {new_tp:.2f}, "
-         f"vol_mult {current['vol_mult']:.2f} -> {new_vol:.2f}")
+    _log(
+        f"参数调整: addon_pct {current['addon_pct']:.2f} -> {new_addon:.2f}, "
+        f"tp_pct {current['tp_pct']:.2f} -> {new_tp:.2f}, "
+        f"vol_mult {current['vol_mult']:.2f} -> {new_vol:.2f}"
+    )
     if adjustments:
         _log(f"调整原因: {'; '.join(adjustments)}")
 
@@ -312,6 +352,7 @@ def evolve_parameters(state: dict, stats: dict) -> dict:
         "profit_factor": profit_factor,
         "total_pnl": total_pnl,
     }
+
 
 def run_evolution():
     """执行自进化学习"""
@@ -327,30 +368,37 @@ def run_evolution():
     # 分析历史
     stats = analyze_trade_history(trades)
     if stats:
-        _log(f"配对交易: {stats['total_trades']} 笔 | 胜率 {stats['win_rate']:.1%} | "
-             f"总盈亏 {stats['total_pnl']:.2f} USDT")
+        _log(
+            f"配对交易: {stats['total_trades']} 笔 | 胜率 {stats['win_rate']:.1%} | "
+            f"总盈亏 {stats['total_pnl']:.2f} USDT"
+        )
 
     # 进化参数
     evolved = evolve_parameters(state, stats)
 
     # 保存进化状态
-    evolution = load_json(EVOLUTION_FILE, {
-        "evolution_count": 0,
-        "parameter_history": [],
-        "lessons": [],
-    })
+    evolution = load_json(
+        EVOLUTION_FILE,
+        {
+            "evolution_count": 0,
+            "parameter_history": [],
+            "lessons": [],
+        },
+    )
 
     evolution["evolution_count"] = evolution.get("evolution_count", 0) + 1
-    evolution["parameter_history"].append({
-        "ts": _fmt_ts(_now()),
-        "addon_pct": evolved["addon_pct"],
-        "tp_pct": evolved["tp_pct"],
-        "vol_mult": evolved["vol_mult"],
-        "win_rate": evolved.get("win_rate", 0),
-        "profit_factor": evolved.get("profit_factor", 0),
-        "total_pnl": evolved.get("total_pnl", 0),
-        "adjustments": evolved.get("adjustments", []),
-    })
+    evolution["parameter_history"].append(
+        {
+            "ts": _fmt_ts(_now()),
+            "addon_pct": evolved["addon_pct"],
+            "tp_pct": evolved["tp_pct"],
+            "vol_mult": evolved["vol_mult"],
+            "win_rate": evolved.get("win_rate", 0),
+            "profit_factor": evolved.get("profit_factor", 0),
+            "total_pnl": evolved.get("total_pnl", 0),
+            "adjustments": evolved.get("adjustments", []),
+        }
+    )
     # 保留最近20条历史
     evolution["parameter_history"] = evolution["parameter_history"][-20:]
 
@@ -383,7 +431,9 @@ def run_evolution():
 
     return evolution, stats
 
+
 # ── PR 评论 ─────────────────────────────────────────────────────────────────
+
 
 def post_pr_comment(detail: dict, evolution: dict, stats: dict):
     """在远端 PR 下创建三屏马丁专属评论"""
@@ -395,7 +445,7 @@ def post_pr_comment(detail: dict, evolution: dict, stats: dict):
         _log("GH_TOKEN 未配置，跳过 PR 评论")
         return False
 
-    cycle = _now().strftime('%Y%m%d_%H%M%S')
+    cycle = _now().strftime("%Y%m%d_%H%M%S")
     state = detail.get("state", {})
 
     # 构建报告
@@ -464,15 +514,13 @@ def post_pr_comment(detail: dict, evolution: dict, stats: dict):
 - 执行器空闲: {detail.get('check_idle_min', 0)} 分钟
 - 编排器空闲: {detail.get('orch_idle_min', 0)} 分钟
 - 本报告由 screen_monitor.py 自动生成
-"""
+"""  # noqa: E741
 
     url = f"https://api.github.com/repos/{REPO}/issues/{PR_NUMBER}/comments"
-    headers = {
-        "Authorization": f"token {GH_TOKEN}",
-        "Accept": "application/vnd.github.v3+json"
-    }
+    headers = {"Authorization": f"token {GH_TOKEN}", "Accept": "application/vnd.github.v3+json"}
     try:
         import requests
+
         r = requests.post(url, headers=headers, json={"body": body}, timeout=15)
         if r.status_code in (200, 201):
             _log("PR 评论创建成功")
@@ -484,7 +532,9 @@ def post_pr_comment(detail: dict, evolution: dict, stats: dict):
         _log(f"PR 评论异常: {e}")
         return False
 
+
 # ── 主流程 ──────────────────────────────────────────────────────────────────
+
 
 def main():
     parser = argparse.ArgumentParser(description="三屏马丁自动化监控")
@@ -516,6 +566,7 @@ def main():
     _log("\n" + "=" * 60)
     _log(f"三屏马丁监控完成 | {_fmt_ts(_now())}")
     _log("=" * 60)
+
 
 if __name__ == "__main__":
     main()

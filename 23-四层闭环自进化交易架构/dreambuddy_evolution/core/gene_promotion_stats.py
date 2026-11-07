@@ -13,6 +13,7 @@ P0-2: 准入门槛 N≥30（替代 shadow_backtest.py 中的 SHADOW_MIN_SAMPLES=
 FAIL-OPEN: scipy/binomtest 不可用时降级为正态近似 + numpy，不 crash。
 参考: dream-science-hypothesis-verification / dream-science-statistics-check SKILL。
 """
+
 from __future__ import annotations
 
 import logging
@@ -26,6 +27,7 @@ logger = logging.getLogger(__name__)
 # 尝试导入 scipy.stats.binomtest（可选，FAIL-OPEN）
 try:
     from scipy.stats import binomtest  # type: ignore
+
     _SCIPY_AVAILABLE = True
 except Exception:  # noqa: BLE001
     _SCIPY_AVAILABLE = False
@@ -85,6 +87,7 @@ def binomial_test_pvalue(wins: int, n: int, p_h0: float = 0.5) -> float:
     # 单边 p = 1 - Φ(z)
     try:
         from math import erf, sqrt
+
         p_norm = 0.5 * (1.0 + erf(z / sqrt(2.0)))
         return float(max(0.0, min(1.0, 1.0 - p_norm)))
     except Exception:  # noqa: BLE001
@@ -213,29 +216,40 @@ def check_promotion_with_stats(samples: list[dict[str, Any]]) -> dict[str, Any]:
 
     # 门槛 2: 淘汰 — 全负或胜率<30%
     if win_rate < 0.30:
-        return {**base, "promote": False, "retire": True,
-                "reason": f"win_rate={win_rate:.0%} < 30% (retire)"}
+        return {
+            **base,
+            "promote": False,
+            "retire": True,
+            "reason": f"win_rate={win_rate:.0%} < 30% (retire)",
+        }
 
     # 门槛 3: 统计显著性 p<0.05
     if p_value >= P_VALUE_SIG:
-        return {**base, "promote": False,
-                "reason": f"p_value={p_value:.4f} >= {P_VALUE_SIG} (not significant)"}
+        return {
+            **base,
+            "promote": False,
+            "reason": f"p_value={p_value:.4f} >= {P_VALUE_SIG} (not significant)",
+        }
 
     # 门槛 4: avg_pnl > 0
     if avg_pnl <= 0:
-        return {**base, "promote": False,
-                "reason": f"avg_pnl={avg_pnl:.6f} <= 0"}
+        return {**base, "promote": False, "reason": f"avg_pnl={avg_pnl:.6f} <= 0"}
 
     # 门槛 5: 胜率 ≥ 50%
     if win_rate < MIN_WIN_RATE:
-        return {**base, "promote": False,
-                "reason": f"win_rate={win_rate:.0%} < {MIN_WIN_RATE:.0%}"}
+        return {**base, "promote": False, "reason": f"win_rate={win_rate:.0%} < {MIN_WIN_RATE:.0%}"}
 
     # 门槛 6: Cohen's d ≥ 0.5（中等效应量）
     if d < MIN_COHENS_D:
-        return {**base, "promote": False,
-                "reason": f"effect_size={d:.3f} < {MIN_COHENS_D} (small effect)"}
+        return {
+            **base,
+            "promote": False,
+            "reason": f"effect_size={d:.3f} < {MIN_COHENS_D} (small effect)",
+        }
 
     # 全部通过 → promote
-    return {**base, "promote": True,
-            "reason": f"pass all gates (N={n}, p={p_value:.4f}, d={d:.3f}, CI=[{ci_low:.2f},{ci_high:.2f}])"}
+    return {
+        **base,
+        "promote": True,
+        "reason": f"pass all gates (N={n}, p={p_value:.4f}, d={d:.3f}, CI=[{ci_low:.2f},{ci_high:.2f}])",
+    }

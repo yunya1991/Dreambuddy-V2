@@ -16,7 +16,7 @@
 - 先 Canary，再二次审批后扩面
 """
 
-import os
+import os  # noqa: I001
 from typing import Dict, Any, List
 
 
@@ -41,27 +41,51 @@ class RiskDirectionChecker:
 
         # 风险扩张关键词
         self.expansion_keywords = [
-            'increase_leverage', 'add_trading_pair', 'increase_frequency',
-            'relax_threshold', 'relax_risk_control', 'expand_position',
-            '放宽', '加仓', '扩大', '增加杠杆', '增加频率',
-            'leverage', 'margin', 'expand'
+            "increase_leverage",
+            "add_trading_pair",
+            "increase_frequency",
+            "relax_threshold",
+            "relax_risk_control",
+            "expand_position",
+            "放宽",
+            "加仓",
+            "扩大",
+            "增加杠杆",
+            "增加频率",
+            "leverage",
+            "margin",
+            "expand",
         ]
 
         # 收紧型关键词
         self.tighten_keywords = [
-            'reduce_leverage', 'reduce_position', 'tighten_threshold',
-            'add_risk_control', 'fix_bug', 'heal', 'repair',
-            '收紧', '降低', '修复', '止血', 'reduce', 'fix'
+            "reduce_leverage",
+            "reduce_position",
+            "tighten_threshold",
+            "add_risk_control",
+            "fix_bug",
+            "heal",
+            "repair",
+            "收紧",
+            "降低",
+            "修复",
+            "止血",
+            "reduce",
+            "fix",
         ]
 
         # 需要审批的风险扩张类型
         self.requires_approval = [
-            'increase_leverage', 'add_trading_pair', 'relax_threshold',
-            '新增外联', 'external_publish', 'expand_position'
+            "increase_leverage",
+            "add_trading_pair",
+            "relax_threshold",
+            "新增外联",
+            "external_publish",
+            "expand_position",
         ]
 
         # 环境关键词
-        self.prod_keywords = ['prod', 'production', 'main', 'master', '实盘', '生产']
+        self.prod_keywords = ["prod", "production", "main", "master", "实盘", "生产"]
 
     def evaluate(self, change_bundle: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -98,11 +122,9 @@ class RiskDirectionChecker:
                 is_expansion = True
 
         if expansion_detected:
-            details.append({
-                "check": "变更意图",
-                "result": "风险扩张",
-                "keywords": expansion_detected
-            })
+            details.append(
+                {"check": "变更意图", "result": "风险扩张", "keywords": expansion_detected}
+            )
             print(f"    ⚠ 检测到风险扩张关键词: {expansion_detected}")
         else:
             # 检查收紧型关键词
@@ -112,11 +134,9 @@ class RiskDirectionChecker:
                     tighten_detected.append(keyword)
 
             if tighten_detected:
-                details.append({
-                    "check": "变更意图",
-                    "result": "收紧型",
-                    "keywords": tighten_detected
-                })
+                details.append(
+                    {"check": "变更意图", "result": "收紧型", "keywords": tighten_detected}
+                )
                 print(f"    ✓ 检测到收紧型关键词: {tighten_detected}")
 
         # 检测 2: artifacts 是否包含风险扩张
@@ -125,11 +145,13 @@ class RiskDirectionChecker:
             artifact_analysis = self._analyze_artifacts(artifacts)
             if artifact_analysis["is_expansion"]:
                 is_expansion = True
-                details.append({
-                    "check": "artifacts 分析",
-                    "result": "风险扩张",
-                    "reason": artifact_analysis["reason"]
-                })
+                details.append(
+                    {
+                        "check": "artifacts 分析",
+                        "result": "风险扩张",
+                        "reason": artifact_analysis["reason"],
+                    }
+                )
                 print(f"    ⚠ artifacts 分析显示风险扩张: {artifact_analysis['reason']}")
 
         # 检测 3: rollout_plan 是否是 canary/full
@@ -139,66 +161,60 @@ class RiskDirectionChecker:
             if mode == "full":
                 is_expansion = True
                 canary_required = True
-                details.append({
-                    "check": "发布计划",
-                    "result": "风险扩张",
-                    "reason": "full 发布模式 (建议改为 canary)"
-                })
-                print(f"    ⚠ 检测到 full 发布模式 (风险扩张，建议 canary)")
+                details.append(
+                    {
+                        "check": "发布计划",
+                        "result": "风险扩张",
+                        "reason": "full 发布模式 (建议改为 canary)",
+                    }
+                )
+                print("    ⚠ 检测到 full 发布模式 (风险扩张，建议 canary)")
             elif mode == "canary":
-                details.append({
-                    "check": "发布计划",
-                    "result": "可控发布",
-                    "reason": "canary 发布模式"
-                })
-                print(f"    ✓ 检测到 canary 发布模式 (可控)")
+                details.append(
+                    {"check": "发布计划", "result": "可控发布", "reason": "canary 发布模式"}
+                )
+                print("    ✓ 检测到 canary 发布模式 (可控)")
 
         # 检测 4: external_publish 是否存在
         external_publish = change_bundle.get("external_publish")
         if external_publish:
             is_expansion = True
             canary_required = True
-            details.append({
-                "check": "外联发布",
-                "result": "风险扩张",
-                "reason": "包含外联发布"
-            })
-            print(f"    ⚠ 检测到外联发布 (风险扩张)")
+            details.append({"check": "外联发布", "result": "风险扩张", "reason": "包含外联发布"})
+            print("    ⚠ 检测到外联发布 (风险扩张)")
 
         # 检测 5: 环境检测
         environment = self._detect_environment(change_bundle)
         if environment == "Prod":
             secondary_approval_required = True
-            details.append({
-                "check": "环境检测",
-                "result": "生产环境",
-                "reason": "Prod 环境需要二次审批"
-            })
-            print(f"    ⚠ 检测到 Prod 环境 (需要二次审批)")
+            details.append(
+                {"check": "环境检测", "result": "生产环境", "reason": "Prod 环境需要二次审批"}
+            )
+            print("    ⚠ 检测到 Prod 环境 (需要二次审批)")
 
         # 检测 6: 是否有审批
         if is_expansion:
             # 检查 doc_refs 是否包含审批记录
             doc_refs = change_bundle.get("doc_refs", [])
-            approval_found = any("approval" in ref.lower() or
-                                "审批" in ref for ref in doc_refs)
+            approval_found = any("approval" in ref.lower() or "审批" in ref for ref in doc_refs)
             has_approval = approval_found
 
             if has_approval:
-                details.append({
-                    "check": "审批状态",
-                    "result": "已审批",
-                    "doc_refs": [ref for ref in doc_refs
-                                if "approval" in ref.lower() or "审批" in ref]
-                })
-                print(f"    ✓ 检测到审批记录")
+                details.append(
+                    {
+                        "check": "审批状态",
+                        "result": "已审批",
+                        "doc_refs": [
+                            ref for ref in doc_refs if "approval" in ref.lower() or "审批" in ref
+                        ],
+                    }
+                )
+                print("    ✓ 检测到审批记录")
             else:
-                details.append({
-                    "check": "审批状态",
-                    "result": "缺少审批",
-                    "reason": "风险扩张变更需要审批"
-                })
-                print(f"    ✗ 风险扩张变更缺少审批")
+                details.append(
+                    {"check": "审批状态", "result": "缺少审批", "reason": "风险扩张变更需要审批"}
+                )
+                print("    ✗ 风险扩张变更缺少审批")
 
             # 确定需要的审批角色
             approval_roles = self._determine_approval_roles(change_bundle)
@@ -208,9 +224,9 @@ class RiskDirectionChecker:
 
         print(f"  风险方向评估结果: {summary}")
         if canary_required:
-            print(f"    → 要求: Canary 发布")
+            print("    → 要求: Canary 发布")
         if secondary_approval_required:
-            print(f"    → 要求: 二次审批")
+            print("    → 要求: 二次审批")
 
         return {
             "summary": summary,
@@ -218,7 +234,7 @@ class RiskDirectionChecker:
             "has_approval": has_approval,
             "approval_roles": approval_roles,
             "canary_required": canary_required,
-            "secondary_approval_required": secondary_approval_required
+            "secondary_approval_required": secondary_approval_required,
         }
 
     def _analyze_artifacts(self, artifacts: Dict[str, Any]) -> Dict[str, Any]:
@@ -308,7 +324,7 @@ class RiskDirectionChecker:
         # 如果是 Prod 环境，需要 ops 审批
         if self._detect_environment(bundle) == "Prod":
             roles.append("ops")
-            print(f"    ✓ 检测到 Prod 环境，添加 ops 审批角色")
+            print("    ✓ 检测到 Prod 环境，添加 ops 审批角色")
 
         return roles
 
@@ -322,10 +338,10 @@ def test_risk_direction_checker():
         "intent": {
             "what": "修复杠杆计算 bug",
             "why": "收紧风险控制",
-            "impact_scope": ["parameter"]
+            "impact_scope": ["parameter"],
         },
         "change_type": "R2",
-        "risk_level": "P1"
+        "risk_level": "P1",
     }
 
     print("测试 1: 收紧型变更 (期望: TIGHTEN_ONLY)")
@@ -337,17 +353,12 @@ def test_risk_direction_checker():
         "intent": {
             "what": "放宽杠杆阈值并增加交易对",
             "why": "扩大收益",
-            "impact_scope": ["parameter", "strategy"]
+            "impact_scope": ["parameter", "strategy"],
         },
         "change_type": "R3",
         "risk_level": "P0",
-        "rollout_plan": {
-            "mode": "canary"
-        },
-        "external_publish": {
-            "channel": "twitter",
-            "approval_status": "pending"
-        }
+        "rollout_plan": {"mode": "canary"},
+        "external_publish": {"channel": "twitter", "approval_status": "pending"},
     }
 
     print("测试 2: 风险扩张型变更 (期望: RISK_EXPANSION)")

@@ -9,11 +9,12 @@
     - 实盘：Hermes驱动大模型调用SKILL
     - 回测/测试：使用mock数据
 """
+
 from __future__ import annotations
 
-from typing import Any, Dict, List
-from pathlib import Path
 import os
+from pathlib import Path
+from typing import Any, Dict, List
 
 
 class CoinSelector:
@@ -75,7 +76,9 @@ class CoinSelector:
         try:
             if not self.POOL_FILE.exists():
                 return None
-            age_days = (datetime.now(timezone.utc).timestamp() - self.POOL_FILE.stat().st_mtime) / 86400
+            age_days = (
+                datetime.now(timezone.utc).timestamp() - self.POOL_FILE.stat().st_mtime
+            ) / 86400
             if age_days > self.POOL_MAX_AGE_DAYS:
                 return None
             data = json.loads(self.POOL_FILE.read_text(encoding="utf-8"))
@@ -122,6 +125,7 @@ class CoinSelector:
         fused = self._fuse_results(asset_research, attention_radar)
 
         from datetime import datetime, timezone
+
         return {
             "long_pool": fused["long_pool"],
             "short_pool": fused["short_pool"],
@@ -185,17 +189,21 @@ class CoinSelector:
         short_top = []
         for i, sym in enumerate(symbols):
             if i % 2 == 0:
-                long_top.append({
-                    "symbol": sym,
-                    "score": 0.85 - i * 0.05,
-                    "reason": "attention high",
-                })
+                long_top.append(
+                    {
+                        "symbol": sym,
+                        "score": 0.85 - i * 0.05,
+                        "reason": "attention high",
+                    }
+                )
             else:
-                short_top.append({
-                    "symbol": sym,
-                    "score": 0.65 - i * 0.05,
-                    "reason": "attention low",
-                })
+                short_top.append(
+                    {
+                        "symbol": sym,
+                        "score": 0.65 - i * 0.05,
+                        "reason": "attention low",
+                    }
+                )
 
         return {
             "long_top": long_top,
@@ -236,8 +244,7 @@ class CoinSelector:
 
         # 构建 asset_research 查找索引
         asset_map: Dict[str, Dict[str, Any]] = {
-            item["symbol"]: item
-            for item in asset_research.get("priority_assets", [])
+            item["symbol"]: item for item in asset_research.get("priority_assets", [])
         }
 
         long_pool: List[Dict[str, Any]] = []
@@ -255,11 +262,13 @@ class CoinSelector:
             # crypto_priority: priority=1.0 保持原分，priority=0.5 降权
             crypto_priority = asset_map.get(sym, {}).get("priority", 1.0)
             score = base_score * crypto_priority
-            long_pool.append({
-                "symbol": sym,
-                "score": round(score, 4),
-                "reasons": reasons,
-            })
+            long_pool.append(
+                {
+                    "symbol": sym,
+                    "score": round(score, 4),
+                    "reasons": reasons,
+                }
+            )
 
         # 处理 short_top
         for item in attention_radar.get("short_top", []):
@@ -272,22 +281,26 @@ class CoinSelector:
                 base_score = item.get("score", 0.5) * 0.8
             crypto_priority = asset_map.get(sym, {}).get("priority", 1.0)
             score = base_score * crypto_priority
-            short_pool.append({
-                "symbol": sym,
-                "score": round(score, 4),
-                "reasons": reasons,
-            })
+            short_pool.append(
+                {
+                    "symbol": sym,
+                    "score": round(score, 4),
+                    "reasons": reasons,
+                }
+            )
 
         # 补充仅出现在 asset_research 但不在 attention_radar 中的代币
         for item in asset_research.get("priority_assets", []):
             sym = item["symbol"]
             if sym not in long_map and sym not in short_map:
                 crypto_priority = item.get("priority", 1.0)
-                long_pool.append({
-                    "symbol": sym,
-                    "score": round(item.get("score", 0.5) * 0.7 * crypto_priority, 4),
-                    "reasons": [item.get("reason", "asset research only")],
-                })
+                long_pool.append(
+                    {
+                        "symbol": sym,
+                        "score": round(item.get("score", 0.5) * 0.7 * crypto_priority, 4),
+                        "reasons": [item.get("reason", "asset research only")],
+                    }
+                )
 
         return {
             "long_pool": long_pool,
@@ -325,10 +338,9 @@ class CoinSelector:
 # 编排选币按合并分排序: merged = 0.7×weekly_score + 0.3×dyn_score
 
 DYNAMIC_SCORES_FILE = (
-    Path(__file__).parent.parent.parent
-    / "cli" / "scheduler_data" / "pool_dynamic_scores.json"
+    Path(__file__).parent.parent.parent / "cli" / "scheduler_data" / "pool_dynamic_scores.json"
 )
-DYN_COLD_START = 0.5   # 冷启动中性分(退化回周报排名)
+DYN_COLD_START = 0.5  # 冷启动中性分(退化回周报排名)
 WEEKLY_WEIGHT = 0.7
 DYN_WEIGHT = 0.3
 
@@ -415,8 +427,8 @@ def merge_dynamic_scores(
 
 # ---- Task 4: CoinSelectorNode ----
 
-from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.registry.base import BaseNode  # noqa: E402
+from dreamos.shared.state import NodeResult, NodeStatus, State  # noqa: E402
 
 
 class CoinSelectorNode(BaseNode):

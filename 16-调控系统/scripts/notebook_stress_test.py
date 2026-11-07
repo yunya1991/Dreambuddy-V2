@@ -1,16 +1,12 @@
 #!/usr/bin/env python3
 """笔记本系统压力测试器 v1.0 — 模拟6个压力场景"""
 
-import json
 import os
 import random
-import shutil
 import string
 import sys
 import time
-from datetime import datetime
 from pathlib import Path
-from collections import Counter
 
 BASE = Path.home() / "archives" / "Dreambuddy-V2-main"
 NOTEBOOK = BASE / "0-NOTEBOOK"
@@ -18,28 +14,34 @@ HOOK = BASE / "scripts" / "notebook_hook.py"
 
 os.chdir(str(BASE))
 
+
 def run_hook(*args):
     import subprocess
+
     result = subprocess.run(
-        [sys.executable, str(HOOK)] + list(args),
-        capture_output=True, text=True, timeout=30
+        [sys.executable, str(HOOK)] + list(args), capture_output=True, text=True, timeout=30
     )
     return result.returncode, result.stdout.strip(), result.stderr.strip()
 
+
 def count_files(dir_name):
     d = NOTEBOOK / dir_name
-    return len([f for f in d.iterdir() if f.suffix == '.md' and f.name != 'README.md'])
+    return len([f for f in d.iterdir() if f.suffix == ".md" and f.name != "README.md"])
+
 
 def file_size(dir_name, name):
     f = NOTEBOOK / dir_name / name
     return f.stat().st_size if f.exists() else 0
 
+
 def gen_title(n=20):
     """生成随机标题"""
-    return ''.join(random.choices(string.ascii_letters, k=n))
+    return "".join(random.choices(string.ascii_letters, k=n))
+
 
 def now_ms():
     return time.time() * 1000
+
 
 results = {}
 
@@ -65,9 +67,11 @@ results["场景1_高频写入"] = {
     "成功": 50 - len(errors),
     "失败": len(errors),
     "目录文件数": done_count_after,
-    "错误": errors[:5] if errors else "无"
+    "错误": errors[:5] if errors else "无",
 }
-print(f"  ✅ 50项写入耗时: {results['场景1_高频写入']['耗时_ms']}ms (平均{results['场景1_高频写入']['平均每项_ms']}ms/项)")
+print(
+    f"  ✅ 50项写入耗时: {results['场景1_高频写入']['耗时_ms']}ms (平均{results['场景1_高频写入']['平均每项_ms']}ms/项)"
+)
 print(f"  📂 2-DONE目录: {done_count_after} 个文件")
 if errors:
     print(f"  ⚠️ 错误: {len(errors)}个")
@@ -115,7 +119,7 @@ results["场景2_三链全流程"] = {
     "步骤数": len(phases),
     "活跃链残存": max(0, active_count),
     "错误": chain_errors if chain_errors else "无",
-    "结论": "✅ 完整" if not chain_errors and active_count == 0 else "⚠️ 有残留"
+    "结论": "✅ 完整" if not chain_errors and active_count == 0 else "⚠️ 有残留",
 }
 print(f"  ✅ 11步切换耗时: {results['场景2_三链全流程']['耗时_ms']}ms")
 print(f"  📂 1-ACTIVE残存: {max(0, active_count)} 文件 (应为0)")
@@ -130,13 +134,15 @@ print("🔄 场景3: 混合操作 (30次交错done/todo/active/sync)")
 print("=" * 60)
 
 ops = [
-    ("done", f"混合测试{i:03d}", f"混合操作第{i}项", f"output/{i}")
-    if i % 4 == 0
-    else ("todo", f"待办混合{i:03d}", f"待办第{i}项", "-p", "P1" if i % 2 == 0 else "P2")
-    if i % 4 == 1
-    else ("active", f"T{i}", f"测试链{i}")
-    if i % 4 == 2
-    else ("sync",)
+    (
+        ("done", f"混合测试{i:03d}", f"混合操作第{i}项", f"output/{i}")
+        if i % 4 == 0
+        else (
+            ("todo", f"待办混合{i:03d}", f"待办第{i}项", "-p", "P1" if i % 2 == 0 else "P2")
+            if i % 4 == 1
+            else ("active", f"T{i}", f"测试链{i}") if i % 4 == 2 else ("sync",)
+        )
+    )
     for i in range(30)
 ]
 
@@ -155,7 +161,7 @@ results["场景3_混合操作"] = {
     "耗时_ms": round(t1 - t0, 1),
     "操作数": len(ops),
     "失败": len(mix_errors),
-    "错误": mix_errors[:5] if mix_errors else "无"
+    "错误": mix_errors[:5] if mix_errors else "无",
 }
 print(f"  ✅ {len(ops)}次操作耗时: {results['场景3_混合操作']['耗时_ms']}ms")
 if mix_errors:
@@ -194,14 +200,14 @@ results["场景4_边界值"] = {
     "耗时_ms": round(t1 - t0, 1),
     "测试数": len(boundary_tests),
     "失败": len(boundary_errors),
-    "失败详情": boundary_errors[:5] if boundary_errors else "无"
+    "失败详情": boundary_errors[:5] if boundary_errors else "无",
 }
 print(f"  ✅ 边界值测试完成: {len(boundary_tests)}项")
 if boundary_errors:
     for err in boundary_errors:
         print(f"  ⚠️  {err}")
 else:
-    print(f"  ✅ 全部通过")
+    print("  ✅ 全部通过")
 
 # ════════════════════════════════════════════
 # 场景5: NOTEBOOK.md 一致性测试
@@ -211,17 +217,13 @@ print("📋 场景5: NOTEBOOK.md 同步一致性 (连续sync 10次)")
 print("=" * 60)
 
 contents = []
-for i in range(10):
+for i in range(10):  # noqa: B007
     rc, _, _ = run_hook("sync")
     content = NOTEBOOK.joinpath("NOTEBOOK.md").read_text()
     contents.append(content)
 
 is_consistent = all(c == contents[0] for c in contents)
-results["场景5_一致性"] = {
-    "sync次数": 10,
-    "内容一致": is_consistent,
-    "内容长度": len(contents[0])
-}
+results["场景5_一致性"] = {"sync次数": 10, "内容一致": is_consistent, "内容长度": len(contents[0])}
 print(f"  ✅ 10次sync后内容{'一致' if is_consistent else '不一致⚠️'}")
 
 # ════════════════════════════════════════════
@@ -234,8 +236,7 @@ print("=" * 60)
 # 模拟session重启: 读取NOTEBOOK.md能获得什么信息
 notebook = NOTEBOOK.joinpath("NOTEBOOK.md").read_text()
 done_files = sorted(
-    (NOTEBOOK / "2-DONE").glob("*.md"),
-    key=lambda p: p.stat().st_mtime, reverse=True
+    (NOTEBOOK / "2-DONE").glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True
 )
 todo_files = list((NOTEBOOK / "0-TODO").glob("*.md"))
 active_files = list((NOTEBOOK / "1-ACTIVE").glob("*.md"))
@@ -245,7 +246,7 @@ active_files = [f for f in active_files if f.name != "README.md"]
 dir_stats = {}
 for d in ["0-TODO", "1-ACTIVE", "2-DONE", "3-ARCHIVE"]:
     dir_path = NOTEBOOK / d
-    files = [f for f in dir_path.iterdir() if f.suffix == '.md' and f.name != 'README.md']
+    files = [f for f in dir_path.iterdir() if f.suffix == ".md" and f.name != "README.md"]
     dir_stats[d] = len(files)
 
 results["场景6_上下文恢复"] = {
@@ -290,5 +291,5 @@ print(f"总写入项: {dir_stats.get('2-DONE', '?')} 个完成文件")
 print("\n📋 测试后目录状态:")
 for d in ["0-TODO", "1-ACTIVE", "2-DONE", "3-ARCHIVE"]:
     dir_path = NOTEBOOK / d
-    files = [f for f in dir_path.iterdir() if f.suffix == '.md' and f.name != 'README.md']
+    files = [f for f in dir_path.iterdir() if f.suffix == ".md" and f.name != "README.md"]
     print(f"  {d}: {len(files)} 个文件 ({sum(f.stat().st_size for f in files)} 字节)")

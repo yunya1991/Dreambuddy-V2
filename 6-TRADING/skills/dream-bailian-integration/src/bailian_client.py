@@ -1,14 +1,15 @@
 """
 Dream-MultiSkill 百炼API客户端
 """
-import os
+
 import json
-import time
 import logging
+import os
+import time
 from datetime import datetime
-from urllib.request import Request, urlopen
+from typing import Any, Dict, List, Optional
 from urllib.error import HTTPError, URLError
-from typing import List, Dict, Any, Optional
+from urllib.request import Request, urlopen
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ class BailianClient:
         timeout: int = 30,
         max_retries: int = 3,
         default_model: str = "qwen3.6-35b-a3b",
-        trace_header: str = "X-Trace-Id"
+        trace_header: str = "X-Trace-Id",
     ):
         """
         初始化百炼客户端
@@ -55,7 +56,7 @@ class BailianClient:
         endpoint: str,
         data: Dict[str, Any],
         method: str = "POST",
-        trace_id: Optional[str] = None
+        trace_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         通用API调用
@@ -75,15 +76,10 @@ class BailianClient:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            self.trace_header: trace_id
+            self.trace_header: trace_id,
         }
 
-        req = Request(
-            url,
-            data=json.dumps(data).encode(),
-            headers=headers,
-            method=method
-        )
+        req = Request(url, data=json.dumps(data).encode(), headers=headers, method=method)
 
         # 重试逻辑
         for attempt in range(self.max_retries):
@@ -100,21 +96,21 @@ class BailianClient:
                 # 根据错误码决定是否重试
                 if e.code in [429, 500, 503]:
                     if attempt < self.max_retries - 1:
-                        wait_time = (2 ** attempt) * 1  # 指数退避
-                        logger.warning(f"请求失败，{wait_time}s后重试 (尝试 {attempt+1}/{self.max_retries})")
+                        wait_time = (2**attempt) * 1  # 指数退避
+                        logger.warning(
+                            f"请求失败，{wait_time}s后重试 (尝试 {attempt+1}/{self.max_retries})"
+                        )
                         time.sleep(wait_time)
                         continue
 
-                raise BailianAPIError(
-                    code=e.code,
-                    message=error_body,
-                    trace_id=trace_id
-                )
+                raise BailianAPIError(  # noqa: B904
+                    code=e.code, message=error_body, trace_id=trace_id
+                )  # noqa: B904
 
             except URLError as e:
                 self._log_call(trace_id, endpoint, "error", "url_error", str(e))
                 if attempt < self.max_retries - 1:
-                    wait_time = (2 ** attempt) * 1
+                    wait_time = (2**attempt) * 1
                     logger.warning(f"网络错误，{wait_time}s后重试")
                     time.sleep(wait_time)
                     continue
@@ -123,12 +119,7 @@ class BailianClient:
         raise BailianAPIError(code=0, message="重试次数耗尽", trace_id=trace_id)
 
     def _log_call(
-        self,
-        trace_id: str,
-        endpoint: str,
-        status: str,
-        status_code: Any = None,
-        detail: str = None
+        self, trace_id: str, endpoint: str, status: str, status_code: Any = None, detail: str = None
     ):
         """记录API调用日志"""
         log_entry = {
@@ -138,7 +129,7 @@ class BailianClient:
             "action": f"bailian_call:{endpoint}",
             "status": status,
             "status_code": status_code,
-            "detail": detail
+            "detail": detail,
         }
         logger.info(json.dumps(log_entry))
 
@@ -150,7 +141,7 @@ class BailianClient:
         max_tokens: Optional[int] = None,
         temperature: float = 0.7,
         top_p: float = 0.9,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         聊天补全
@@ -166,11 +157,7 @@ class BailianClient:
         Returns:
             API响应
         """
-        data = {
-            "model": model or self.default_model,
-            "messages": messages,
-            "stream": stream
-        }
+        data = {"model": model or self.default_model, "messages": messages, "stream": stream}
 
         if max_tokens:
             data["max_tokens"] = max_tokens
@@ -186,11 +173,7 @@ class BailianClient:
 
         return self._call_api("/chat/completions", data)
 
-    def embed(
-        self,
-        texts: List[str],
-        model: str = "text-embedding-v3"
-    ) -> Dict[str, Any]:
+    def embed(self, texts: List[str], model: str = "text-embedding-v3") -> Dict[str, Any]:
         """
         文本向量化
 
@@ -201,19 +184,12 @@ class BailianClient:
         Returns:
             包含 embeddings 的响应
         """
-        data = {
-            "model": model,
-            "input": texts
-        }
+        data = {"model": model, "input": texts}
 
         return self._call_api("/embeddings", data)
 
     def image_generate(
-        self,
-        prompt: str,
-        model: str = "wanx-plus",
-        n: int = 1,
-        size: str = "1024*1024"
+        self, prompt: str, model: str = "wanx-plus", n: int = 1, size: str = "1024*1024"
     ) -> Dict[str, Any]:
         """
         图像生成
@@ -227,12 +203,7 @@ class BailianClient:
         Returns:
             包含图像URL的响应
         """
-        data = {
-            "model": model,
-            "prompt": prompt,
-            "n": n,
-            "size": size
-        }
+        data = {"model": model, "prompt": prompt, "n": n, "size": size}
 
         return self._call_api("/images/generations", data)
 
@@ -241,7 +212,7 @@ class BailianClient:
         try:
             self.chat([{"role": "user", "content": "hi"}], max_tokens=10)
             return True
-        except:
+        except:  # noqa: E722
             return False
 
 
@@ -256,13 +227,7 @@ class BailianAPIError(Exception):
 
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
-        return {
-            "error": {
-                "code": self.code,
-                "message": self.message,
-                "trace_id": self.trace_id
-            }
-        }
+        return {"error": {"code": self.code, "message": self.message, "trace_id": self.trace_id}}
 
 
 # 便捷函数

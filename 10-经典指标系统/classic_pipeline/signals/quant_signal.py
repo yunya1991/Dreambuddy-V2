@@ -7,19 +7,19 @@
 
 所有函数为纯函数，不依赖全局状态。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-import numpy as np
 import pandas as pd
 
 from classic_pipeline.core.utils import _clip, _sf0
 
-
 # ---------------------------------------------------------------------------
 # 置信度计算
 # ---------------------------------------------------------------------------
+
 
 def signal_confidence(
     strategy_id: str,
@@ -69,6 +69,7 @@ def signal_confidence(
 # ---------------------------------------------------------------------------
 # 策略权重
 # ---------------------------------------------------------------------------
+
 
 def strategy_weight(
     current: float,
@@ -120,6 +121,7 @@ def strategy_weight(
 # 策略绩效计算
 # ---------------------------------------------------------------------------
 
+
 def strategy_perf(rets: List[float], config: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
     """从收益率序列计算策略绩效。
 
@@ -142,7 +144,7 @@ def strategy_perf(rets: List[float], config: Optional[Dict[str, Any]] = None) ->
             gp += rr
         else:
             gl += -rr
-        eq *= (1.0 + rr)
+        eq *= 1.0 + rr
         if eq > peak:
             peak = eq
         dd = (peak - eq) / peak if peak > 0.0 else 0.0
@@ -157,6 +159,7 @@ def strategy_perf(rets: List[float], config: Optional[Dict[str, Any]] = None) ->
 # 多策略投票
 # ---------------------------------------------------------------------------
 
+
 def vote(
     strategy_signals: List[Dict[str, Any]],
     config: Optional[Dict[str, Any]] = None,
@@ -170,7 +173,7 @@ def vote(
     Returns:
         {dominant_direction, confidence, votes}
     """
-    cfg = config or {}
+    cfg = config or {}  # noqa: F841
     if not strategy_signals:
         return {"dominant_direction": "neutral", "confidence": 0.0, "votes": {}}
 
@@ -211,6 +214,7 @@ def vote(
 # ---------------------------------------------------------------------------
 # 风险门控
 # ---------------------------------------------------------------------------
+
 
 def risk_gate(
     signal: Dict[str, Any],
@@ -269,6 +273,7 @@ def risk_gate(
 # 最终信号计算
 # ---------------------------------------------------------------------------
 
+
 def compute(
     df: Optional[pd.DataFrame],
     config: Optional[Dict[str, Any]] = None,
@@ -289,10 +294,10 @@ def compute(
         return {"signals": [], "dominant_direction": "neutral", "confidence": 0.0, "details": {}}
 
     try:
-        from classic_pipeline.indicators.trend import ema, macd
         from classic_pipeline.indicators.momentum import rsi
+        from classic_pipeline.indicators.trend import ema, macd
 
-        close = df["close"]
+        close = df["close"]  # noqa: F841
         ema_fast = ema(df, period=int(cfg.get("ema_fast", 12)))
         ema_slow = ema(df, period=int(cfg.get("ema_slow", 26)))
         rsi_val = rsi(df, period=14)
@@ -308,12 +313,14 @@ def compute(
             elif ema_fast.iloc[-1] < ema_slow.iloc[-1]:
                 ema_dir = "short"
         if ema_dir != "neutral":
-            signals.append({
-                "strategy_id": "ema_cross",
-                "direction": ema_dir,
-                "confidence": 0.6,
-                "weight": 1.0,
-            })
+            signals.append(
+                {
+                    "strategy_id": "ema_cross",
+                    "direction": ema_dir,
+                    "confidence": 0.6,
+                    "weight": 1.0,
+                }
+            )
 
         # 策略2: RSI 超买超卖
         rsi_dir = "neutral"
@@ -324,12 +331,14 @@ def compute(
             elif r > 70:
                 rsi_dir = "short"
         if rsi_dir != "neutral":
-            signals.append({
-                "strategy_id": "rsi_reversal",
-                "direction": rsi_dir,
-                "confidence": 0.5,
-                "weight": 0.8,
-            })
+            signals.append(
+                {
+                    "strategy_id": "rsi_reversal",
+                    "direction": rsi_dir,
+                    "confidence": 0.5,
+                    "weight": 0.8,
+                }
+            )
 
         # 策略3: MACD 柱状
         macd_dir = "neutral"
@@ -340,12 +349,14 @@ def compute(
             elif hist < 0:
                 macd_dir = "short"
         if macd_dir != "neutral":
-            signals.append({
-                "strategy_id": "macd_hist",
-                "direction": macd_dir,
-                "confidence": 0.55,
-                "weight": 0.9,
-            })
+            signals.append(
+                {
+                    "strategy_id": "macd_hist",
+                    "direction": macd_dir,
+                    "confidence": 0.55,
+                    "weight": 0.9,
+                }
+            )
 
         # 多策略投票
         vote_result = vote(signals, cfg)

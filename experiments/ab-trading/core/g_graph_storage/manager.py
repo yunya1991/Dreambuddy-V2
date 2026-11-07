@@ -25,24 +25,22 @@ G层 = Graph Storage Layer（图存储/压缩层）
 import json
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
 
+from .compressor import GraphCompressor
+from .expander import GraphExpander
 from .types import (
-    BlueprintGraph,
     ArchitectureGraph,
+    BlueprintGraph,
     ChronicleGraph,
     CompressionResult,
     CompressionStrategy,
-    _gen_id,
 )
-from .compressor import GraphCompressor
-from .expander import GraphExpander
-
 
 # ============================================================
 # 图存储管理器
 # ============================================================
+
 
 class GraphStorageManager:
     """G层图存储管理器
@@ -236,9 +234,7 @@ class GraphStorageManager:
         if not chron:
             return None
 
-        result = self.compressor.compress_chronicle(
-            chron, target_ratio, strategy
-        )
+        result = self.compressor.compress_chronicle(chron, target_ratio, strategy)
 
         if result.success and result.compressed_chronicle:
             # 保存压缩后的版本
@@ -264,16 +260,16 @@ class GraphStorageManager:
         if not arch or not bp:
             return None
 
-        result, compressed_bp = self.compressor.compress_to_blueprint(
-            chron, arch, bp
-        )
+        result, compressed_bp = self.compressor.compress_to_blueprint(chron, arch, bp)
 
         if result.success:
             # 保存压缩后的版本
             if result.compressed_chronicle:
                 self._chronicles[result.compressed_chronicle.id] = result.compressed_chronicle
             if result.compressed_architecture:
-                self._architectures[result.compressed_architecture.id] = result.compressed_architecture
+                self._architectures[result.compressed_architecture.id] = (
+                    result.compressed_architecture
+                )
             if result.compressed_blueprint:
                 self._blueprints[result.compressed_blueprint.id] = result.compressed_blueprint
             self._save_if_persistent()
@@ -332,24 +328,15 @@ class GraphStorageManager:
             return
 
         data = {
-            "blueprints": {
-                bid: bp.to_dict()
-                for bid, bp in self._blueprints.items()
-            },
-            "architectures": {
-                aid: arch.to_dict()
-                for aid, arch in self._architectures.items()
-            },
-            "chronicles": {
-                cid: chron.to_dict()
-                for cid, chron in self._chronicles.items()
-            },
+            "blueprints": {bid: bp.to_dict() for bid, bp in self._blueprints.items()},
+            "architectures": {aid: arch.to_dict() for aid, arch in self._architectures.items()},
+            "chronicles": {cid: chron.to_dict() for cid, chron in self._chronicles.items()},
             "version_chains": self._version_chains,
             "saved_at": time.time(),
         }
 
         save_file = self.storage_path / "graph_storage.json"
-        with open(save_file, 'w', encoding='utf-8') as f:
+        with open(save_file, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
     def load_from_disk(self) -> bool:
@@ -362,7 +349,7 @@ class GraphStorageManager:
             return False
 
         try:
-            with open(save_file, 'r', encoding='utf-8') as f:
+            with open(save_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
             # 注意：这里只做简单的加载演示
@@ -379,10 +366,7 @@ class GraphStorageManager:
     def get_stats(self) -> Dict[str, Any]:
         """获取统计信息"""
         total_chronicles = len(self._chronicles)
-        compressed_count = sum(
-            1 for c in self._chronicles.values()
-            if c.compression_level > 0
-        )
+        compressed_count = sum(1 for c in self._chronicles.values() if c.compression_level > 0)
 
         return {
             "blueprints_count": len(self._blueprints),

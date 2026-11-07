@@ -2,7 +2,8 @@
 """Agent A 记忆系统 — 跨 session 持久化记忆
 包含：Lessons 管理、交易记录、大师切换、连胜连败追踪
 """
-import json
+
+import json  # noqa: I001
 import sys
 from pathlib import Path
 from datetime import datetime, timezone
@@ -13,8 +14,9 @@ try:
     _L4_ROOT = Path(__file__).resolve().parents[3] / "11-易经推理系统"
     if str(_L4_ROOT) not in sys.path:
         sys.path.insert(0, str(_L4_ROOT))
-    from scripts.memory_l4.trade_event import TradeEvent
+    from scripts.memory_l4.trade_event import TradeEvent  # noqa: I001
     from scripts.memory_l4.case_registry import UnifiedCaseRegistry
+
     _L4_ENABLED = True
 except Exception as _e:
     _L4_ENABLED = False
@@ -102,6 +104,7 @@ def save_memory(memory: Dict):
 
 # ── Lessons 管理 ─────────────────────────────────────────────────────────
 
+
 def add_lesson(
     memory: Dict,
     content: str,
@@ -137,7 +140,7 @@ def add_lesson(
     lessons.sort(key=lambda x: x["score"], reverse=True)
 
     # 淘汰低分的
-    lessons = [l for l in lessons if l["score"] >= 10]
+    lessons = [l for l in lessons if l["score"] >= 10]  # noqa: E741
 
     # 保留最多 MAX_LESSONS 条
     if len(lessons) > MAX_LESSONS:
@@ -154,6 +157,7 @@ def get_top_lessons(memory: Dict, n: int = 10) -> List[Dict]:
 
 
 # ── 连败保护超时管理 ─────────────────────────────────────────────────────
+
 
 def check_loss_protection_timeout(memory: Dict) -> Dict:
     """
@@ -187,7 +191,9 @@ def check_loss_protection_timeout(memory: Dict) -> Dict:
             elapsed_hours = (now - start_time).total_seconds() / 3600
 
             if elapsed_hours >= LOSS_PROTECTION_MAX_HOURS:
-                print(f"[风控] 连败保护已持续{elapsed_hours:.1f}小时（≥{LOSS_PROTECTION_MAX_HOURS}h），自动重置 loss_streak")
+                print(
+                    f"[风控] 连败保护已持续{elapsed_hours:.1f}小时（≥{LOSS_PROTECTION_MAX_HOURS}h），自动重置 loss_streak"
+                )
                 memory["loss_streak"] = 0
                 memory["loss_protection_start_ts"] = None
                 memory["win_streak"] = 0
@@ -243,6 +249,7 @@ def get_loss_protection_countdown(memory: Dict) -> Optional[Dict]:
 
 
 # ── 交易记录 ─────────────────────────────────────────────────────────────
+
 
 def record_trade(
     memory: Dict,
@@ -320,7 +327,9 @@ def record_closed_trade(
     pnl = closed_info.get("pnl_pct", 0)
     if pnl != 0:
         memory["total_trades"] = memory.get("total_trades", 0) + 1
-        memory["total_pnl_usdt"] = memory.get("total_pnl_usdt", 0) + pnl * closed_info.get("position_size_usdt", 0)
+        memory["total_pnl_usdt"] = memory.get("total_pnl_usdt", 0) + pnl * closed_info.get(
+            "position_size_usdt", 0
+        )
         if pnl > 0:
             memory["win_streak"] = memory.get("win_streak", 0) + 1
             memory["loss_streak"] = 0
@@ -329,7 +338,9 @@ def record_closed_trade(
             memory["loss_streak"] = memory.get("loss_streak", 0) + 1
             memory["win_streak"] = 0
             # 连败≥阈值 → 记录保护启动时间
-            if memory["loss_streak"] >= LOSS_PROTECTION_TRIGGER and not memory.get("loss_protection_start_ts"):
+            if memory["loss_streak"] >= LOSS_PROTECTION_TRIGGER and not memory.get(
+                "loss_protection_start_ts"
+            ):
                 memory["loss_protection_start_ts"] = _now_iso()
 
     # 注册到 L4
@@ -395,6 +406,7 @@ def update_hold_streak(memory: Dict, action: str) -> Dict:
 
 # ── 大师风格切换 ─────────────────────────────────────────────────────────
 
+
 def maybe_switch_master(memory: Dict, market_regime: str = "RANGE") -> Dict:
     """
     根据交易表现和市场环境，评估是否切换大师风格
@@ -436,14 +448,16 @@ def maybe_switch_master(memory: Dict, market_regime: str = "RANGE") -> Dict:
 
     # 记录切换历史
     history = memory.get("master_switch_history", [])
-    history.append({
-        "timestamp": _now_iso(),
-        "old_master": current,
-        "new_master": new_master,
-        "reason": switch_reason,
-        "loss_streak": loss_streak,
-        "max_drawdown_pct": max_dd,
-    })
+    history.append(
+        {
+            "timestamp": _now_iso(),
+            "old_master": current,
+            "new_master": new_master,
+            "reason": switch_reason,
+            "loss_streak": loss_streak,
+            "max_drawdown_pct": max_dd,
+        }
+    )
     memory["master_switch_history"] = history[-10:]
     memory["current_master"] = new_master
 
@@ -460,19 +474,22 @@ def maybe_switch_master(memory: Dict, market_regime: str = "RANGE") -> Dict:
 
 # ── 待验证策略（向外学习）─────────────────────────────────────────────────
 
+
 def add_pending_strategy(memory: Dict, strategy: str, source: str = "external") -> Dict:
     """添加一个待验证策略到待验证池"""
     pending = memory.get("pending_strategies", [])
     if len(pending) >= MAX_PENDING_STRATEGIES:
         pending = pending[1:]  # 去掉最旧的
 
-    pending.append({
-        "strategy": strategy,
-        "source": source,
-        "added_at": _now_iso(),
-        "verify_count": 0,
-        "correct_count": 0,
-    })
+    pending.append(
+        {
+            "strategy": strategy,
+            "source": source,
+            "added_at": _now_iso(),
+            "verify_count": 0,
+            "correct_count": 0,
+        }
+    )
     memory["pending_strategies"] = pending
     return memory
 
@@ -503,6 +520,7 @@ def verify_strategy(memory: Dict, strategy_idx: int, correct: bool) -> Dict:
 
 
 # ── 进化系统记忆 ──────────────────────────────────────────────────────────
+
 
 def get_evolution_params(memory: Dict) -> Dict:
     """获取已采纳的进化参数"""

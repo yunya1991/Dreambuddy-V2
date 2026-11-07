@@ -14,15 +14,15 @@ C层 - LLM结果分析器
 """
 
 import json
-from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
+from typing import Dict, List, Optional
 
 from .types import NodeExecutionResult
-
 
 # ============================================================
 # 分析结果数据结构
 # ============================================================
+
 
 @dataclass
 class ResultAnalysis:
@@ -30,13 +30,14 @@ class ResultAnalysis:
 
     LLM对节点执行结果的结构化分析
     """
+
     node_id: str
 
     # 质量评估
     quality_score: float = 0.0  # 0-1，结果质量
-    completeness: float = 0.0   # 完整性
-    consistency: float = 0.0    # 一致性
-    relevance: float = 0.0      # 相关性
+    completeness: float = 0.0  # 完整性
+    consistency: float = 0.0  # 一致性
+    relevance: float = 0.0  # 相关性
 
     # 问题识别
     issues: List[str] = field(default_factory=list)
@@ -76,6 +77,7 @@ class ResultAnalysis:
 # ============================================================
 # LLM结果分析器
 # ============================================================
+
 
 class LLMResultAnalyzer:
     """LLM结果分析器
@@ -248,7 +250,7 @@ class LLMResultAnalyzer:
             start = llm_output.find("{")
             end = llm_output.rfind("}")
             if start >= 0 and end >= 0:
-                json_str = llm_output[start:end + 1]
+                json_str = llm_output[start : end + 1]
 
             data = json.loads(json_str)
 
@@ -287,7 +289,7 @@ class LLMResultAnalyzer:
 
         # 默认值
         analysis.consistency = 0.8  # 默认一致性较好
-        analysis.relevance = 0.7    # 默认相关性中等
+        analysis.relevance = 0.7  # 默认相关性中等
 
         # 基础检查
         if not node_result.outputs:
@@ -319,17 +321,13 @@ class LLMResultAnalyzer:
             if "confidence" in node_result.outputs:
                 conf = node_result.outputs["confidence"]
                 if isinstance(conf, (int, float)):
-                    analysis.confidence_appropriate = (
-                        abs(conf - node_result.confidence) < 0.3
-                    )
+                    analysis.confidence_appropriate = abs(conf - node_result.confidence) < 0.3
                     if not analysis.confidence_appropriate:
                         analysis.issues.append("内外置信度差异大")
 
         # 计算综合质量分
         analysis.quality_score = (
-            analysis.completeness * 0.4
-            + analysis.consistency * 0.3
-            + analysis.relevance * 0.3
+            analysis.completeness * 0.4 + analysis.consistency * 0.3 + analysis.relevance * 0.3
         )
 
         if not analysis.issues:

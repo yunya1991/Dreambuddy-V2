@@ -4,7 +4,7 @@ import json
 import sys
 from collections import Counter
 from pathlib import Path
-from typing import Optional, Any, Dict, List
+from typing import Any, Dict, List
 
 
 def _load_json(path: Path) -> Dict[str, Any]:
@@ -73,8 +73,12 @@ def main(argv: List[str] = None) -> int:
             "rollback_pointer_count": len(rollback_pointer_files),
             "approval_reject_count": approval_reject_count,
         },
-        "top_reason_codes": [{"code": code, "count": count} for code, count in reason_counter.most_common(10)],
-        "version_pairs": [{"pair": pair, "count": count} for pair, count in version_counter.most_common()],
+        "top_reason_codes": [
+            {"code": code, "count": count} for code, count in reason_counter.most_common(10)
+        ],
+        "version_pairs": [
+            {"pair": pair, "count": count} for pair, count in version_counter.most_common()
+        ],
         "schema_version": "evolution-p2-version-compare-dashboard-v0.1",
     }
     _write_json(Path(args.output_json), dashboard)

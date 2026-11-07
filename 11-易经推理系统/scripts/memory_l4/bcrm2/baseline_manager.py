@@ -8,14 +8,15 @@
 通过 → "live"（可实盘）
 不通过 → "exploratory"（探索方向）
 """
+
 from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -25,24 +26,26 @@ logger = logging.getLogger(__name__)
 @dataclass
 class MetricComparison:
     """单个指标对比结果"""
+
     metric: str
     baseline_value: float
     new_value: float
-    change_pct: float          # 变化百分比（正=提升，负=劣化）
-    p_value: float             # bootstrap p-value
-    is_significant: bool       # p < 0.05 且提升
-    is_degraded: bool          # 劣化超过容差
-    tolerance: float           # 容差
+    change_pct: float  # 变化百分比（正=提升，负=劣化）
+    p_value: float  # bootstrap p-value
+    is_significant: bool  # p < 0.05 且提升
+    is_degraded: bool  # 劣化超过容差
+    tolerance: float  # 容差
 
 
 @dataclass
 class ComparisonReport:
     """完整对比报告"""
+
     version: str
     baseline_version: str
     created_at: str
     passed: bool
-    recommendation: str        # "live" | "exploratory"
+    recommendation: str  # "live" | "exploratory"
     reason: str
     metric_comparisons: List[Dict[str, Any]] = field(default_factory=list)
     significant_improvements: List[str] = field(default_factory=list)
@@ -82,7 +85,7 @@ class BaselineManager:
         "sharpe_ratio": 0.05,
         "win_rate": 0.05,
         "profit_factor": 0.05,
-        "max_drawdown_pct": 0.10,     # 回撤不恶化 10%
+        "max_drawdown_pct": 0.10,  # 回撤不恶化 10%
         "total_return_pct": 0.05,
     }
 
@@ -212,16 +215,18 @@ class BaselineManager:
 
             is_significant = is_improvement and p_value < self.SIGNIFICANCE_ALPHA
 
-            comparisons.append(MetricComparison(
-                metric=metric,
-                baseline_value=base_val,
-                new_value=new_val,
-                change_pct=round(change_pct, 4),
-                p_value=round(p_value, 4),
-                is_significant=is_significant,
-                is_degraded=is_degraded,
-                tolerance=tolerance,
-            ))
+            comparisons.append(
+                MetricComparison(
+                    metric=metric,
+                    baseline_value=base_val,
+                    new_value=new_val,
+                    change_pct=round(change_pct, 4),
+                    p_value=round(p_value, 4),
+                    is_significant=is_significant,
+                    is_degraded=is_degraded,
+                    tolerance=tolerance,
+                )
+            )
 
             if is_significant:
                 significant_improvements.append(metric)
@@ -399,7 +404,7 @@ class BaselineManager:
                     "bootstrap": True,
                 }
             else:
-                logger.info(f"[双基线] 静态基线未通过，reject")
+                logger.info("[双基线] 静态基线未通过，reject")
                 return {
                     "static_report": static_report.to_dict(),
                     "dynamic_report": None,

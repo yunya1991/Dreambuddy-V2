@@ -11,6 +11,7 @@ Usage:
   python 49-交易框架协议/scripts/rollback_drill.py
   python 49-交易框架协议/scripts/rollback_drill.py --skip-pipeline
 """
+
 from __future__ import annotations
 
 import argparse
@@ -28,9 +29,7 @@ for path in (SCRIPTS_DIR, EVOLUTION_ROOT):
         sys.path.insert(0, str(path))
 
 DEFAULT_REPORT = CONTRACT_ROOT / "runtime" / "rollback_drill_report.json"
-EXECUTION_RIGHTS_SAMPLE = (
-    CONTRACT_ROOT / "contracts" / "examples" / "execution_rights.sample.json"
-)
+EXECUTION_RIGHTS_SAMPLE = CONTRACT_ROOT / "contracts" / "examples" / "execution_rights.sample.json"
 
 # M0-04: 开关清单唯一事实源（docs/switch_registry.v1.json）
 SWITCH_REGISTRY_PATH = CONTRACT_ROOT / "docs" / "switch_registry.v1.json"
@@ -39,14 +38,10 @@ SWITCH_REGISTRY_PATH = CONTRACT_ROOT / "docs" / "switch_registry.v1.json"
 def _load_switches() -> tuple[list[str], list[str]]:
     registry = json.loads(SWITCH_REGISTRY_PATH.read_text(encoding="utf-8"))
     shadow = [
-        entry["name"]
-        for entry in registry.get("switches", [])
-        if entry.get("kind") == "shadow"
+        entry["name"] for entry in registry.get("switches", []) if entry.get("kind") == "shadow"
     ]
     promotion = [
-        entry["name"]
-        for entry in registry.get("switches", [])
-        if entry.get("kind") == "promotion"
+        entry["name"] for entry in registry.get("switches", []) if entry.get("kind") == "promotion"
     ]
     return shadow, promotion
 
@@ -80,14 +75,15 @@ def check_switch_rollback() -> dict:
         set_switch(name, False)
         switched_off = get_switch(name, False)
         results.append(
-            {"switch": name, "on": switched_on, "off": switched_off,
-             "passed": switched_on and not switched_off}
+            {
+                "switch": name,
+                "on": switched_on,
+                "off": switched_off,
+                "passed": switched_on and not switched_off,
+            }
         )
     reset_switches()
-    defaults = {
-        name: get_switch(name, False)
-        for name in SHADOW_ONLY_SWITCHES + PROMOTION_SWITCHES
-    }
+    defaults = {name: get_switch(name, False) for name in SHADOW_ONLY_SWITCHES + PROMOTION_SWITCHES}
     passed = all(item["passed"] for item in results) and not any(defaults.values())
     return _check("switch_rollback", passed, switches=results, defaults=defaults)
 
@@ -124,10 +120,7 @@ def check_execution_rights() -> dict:
         passed = (
             defaults.get("outcome") == "paper"
             and defaults.get("conflict_policy") == "reject_mcp"
-            and all(
-                entry.get("outcome") in valid_outcomes
-                for entry in symbols.values()
-            )
+            and all(entry.get("outcome") in valid_outcomes for entry in symbols.values())
         )
         return _check(
             "execution_rights_default_paper",
@@ -168,9 +161,7 @@ def main() -> int:
 
     report = run_drill(skip_pipeline=args.skip_pipeline)
     args.json_out.parent.mkdir(parents=True, exist_ok=True)
-    args.json_out.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    args.json_out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     for check in report["checks"]:
         print(f"{'OK' if check['passed'] else 'FAIL'}: {check['id']}")
     print(f"overall={report['overall']} report={args.json_out}")

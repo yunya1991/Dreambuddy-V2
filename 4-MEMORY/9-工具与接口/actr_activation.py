@@ -30,6 +30,7 @@ ACT-R 激活公式:
   - ACT-R (Anderson, 1996): declarative chunks + activation-based retrieval
   - 认知科学记忆 VM-1791716947623: 记忆强度(非年龄)是预测误差驱动更新的边界条件
 """
+
 from __future__ import annotations
 
 import math
@@ -37,14 +38,13 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-
 # ============================================================
 # 默认参数
 # ============================================================
 
-DEFAULT_DECAY = 0.5          # ACT-R 标准衰减率 d
-DEFAULT_W = 0.3             # 每个关键词命中权重
-MAX_ACTIVATION = 10.0       # 激活值上限（防止 ln 爆炸）
+DEFAULT_DECAY = 0.5  # ACT-R 标准衰减率 d
+DEFAULT_W = 0.3  # 每个关键词命中权重
+MAX_ACTIVATION = 10.0  # 激活值上限（防止 ln 爆炸）
 
 
 class ACTRActivation:
@@ -236,15 +236,24 @@ if __name__ == "__main__":
 
     # 排序测试
     from datetime import timedelta
+
     memories = [
-        {"id": "VM-001", "content": "BTC策略", "score": 0.9,
-         "verify_count": 0,
-         "updated_at": (datetime.now(timezone.utc) - timedelta(days=200)).isoformat(),
-         "confidence": 0.3},
-        {"id": "VM-002", "content": "BTC趋势", "score": 0.6,
-         "verify_count": 5,
-         "updated_at": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat(),
-         "confidence": 0.7},
+        {
+            "id": "VM-001",
+            "content": "BTC策略",
+            "score": 0.9,
+            "verify_count": 0,
+            "updated_at": (datetime.now(timezone.utc) - timedelta(days=200)).isoformat(),
+            "confidence": 0.3,
+        },
+        {
+            "id": "VM-002",
+            "content": "BTC趋势",
+            "score": 0.6,
+            "verify_count": 5,
+            "updated_at": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat(),
+            "confidence": 0.7,
+        },
     ]
     ranked = model.rank_by_activation(memories, context="BTC趋势")
     for m in ranked:

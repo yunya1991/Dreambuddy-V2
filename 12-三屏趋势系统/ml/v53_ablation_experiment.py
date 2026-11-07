@@ -7,30 +7,26 @@
 4. 逐个添加测试 → 定位"害群之马"
 """
 
+import json
 import os
 import sys
-import json
-import time
-import copy
+
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
-from sklearn.metrics import roc_auc_score
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.feature_engineer import TrendFeatureEngineer
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
-from ml.v53_direction_d_validation import (
-    load_btc_data,
-    compute_v5_raw_features,
-    build_direction_d_features,
-    generate_labels,
-    walk_forward_validation,
+from ml.feature_engineer import TrendFeatureEngineer  # noqa: E402
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
+from ml.v53_direction_d_validation import (  # noqa: E402
     DIRECTION_D_FEATURES,
-    SELECTED_INDEPENDENT,
     INTERACTION_FEATURES,
+    build_direction_d_features,
+    compute_v5_raw_features,
+    generate_labels,
+    load_btc_data,
+    walk_forward_validation,
 )
 
 
@@ -57,7 +53,11 @@ def main():
     direction_d = build_direction_d_features(phil_features, v5_raw)
 
     # V4基线
-    v4_features = pd.concat([trend_features, phil_features], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    v4_features = (
+        pd.concat([trend_features, phil_features], axis=1)
+        .fillna(0.0)
+        .replace([np.inf, -np.inf], 0.0)
+    )
     v4_feature_names = list(v4_features.columns)
 
     # 标签
@@ -78,13 +78,20 @@ def main():
     print("\n" + "=" * 80)
     print("  【实验1：逐个单独添加每个方向D特征】")
     print("=" * 80)
-    print("  {:<28s}  {:>10s}  {:>10s}  {:>10s}  {:>10s}".format(
-        "添加特征", "TOP_EXIT", "Δ TOP", "DIP_BUY", "Δ DIP"))
+    print(
+        "  {:<28s}  {:>10s}  {:>10s}  {:>10s}  {:>10s}".format(
+            "添加特征", "TOP_EXIT", "Δ TOP", "DIP_BUY", "Δ DIP"
+        )
+    )
     print("  " + "-" * 72)
 
     single_results = {}
     for feat in DIRECTION_D_FEATURES:
-        exp_features = pd.concat([v4_features, direction_d[[feat]]], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+        exp_features = (
+            pd.concat([v4_features, direction_d[[feat]]], axis=1)
+            .fillna(0.0)
+            .replace([np.inf, -np.inf], 0.0)
+        )
         exp_names = list(exp_features.columns)
 
         top_result = walk_forward_validation(exp_features, top_exit_labels, exp_names)
@@ -102,9 +109,17 @@ def main():
 
         flag_top = "✅" if delta_top > 0 else "❌"
         flag_dip = "✅" if delta_dip > 0 else "❌"
-        print("  {:<28s}  {:>10.4f}  {:>+10.4f}{} {:>10.4f}  {:>+10.4f}{}".format(
-            feat, top_result["avg_test_auc"], delta_top, flag_top,
-            dip_result["avg_test_auc"], delta_dip, flag_dip))
+        print(
+            "  {:<28s}  {:>10.4f}  {:>+10.4f}{} {:>10.4f}  {:>+10.4f}{}".format(
+                feat,
+                top_result["avg_test_auc"],
+                delta_top,
+                flag_top,
+                dip_result["avg_test_auc"],
+                delta_dip,
+                flag_dip,
+            )
+        )
 
     # 4. 实验2：组合测试
     print("\n" + "=" * 80)
@@ -118,14 +133,20 @@ def main():
         ("vol_regime + fed_rate_level", ["vol_regime_ratio", "fed_rate_level"]),
         ("vol_regime + drawdown_vs_hist", ["vol_regime_ratio", "drawdown_vs_hist_avg"]),
         ("fed_rate_level + drawdown_vs_hist", ["fed_rate_level", "drawdown_vs_hist_avg"]),
-        ("3个精选独立(无fed_months)", ["vol_regime_ratio", "fed_rate_level", "drawdown_vs_hist_avg"]),
+        (
+            "3个精选独立(无fed_months)",
+            ["vol_regime_ratio", "fed_rate_level", "drawdown_vs_hist_avg"],
+        ),
         ("仅交互特征(3个)", INTERACTION_FEATURES),
         ("vol_regime + 3交互", ["vol_regime_ratio"] + INTERACTION_FEATURES),
         ("fed_months + vol_regime(2个)", ["fed_months_in_cycle", "vol_regime_ratio"]),
     ]
 
-    print("  {:<35s}  {:>10s}  {:>10s}  {:>10s}  {:>10s}".format(
-        "组合", "TOP_EXIT", "Δ TOP", "DIP_BUY", "Δ DIP"))
+    print(
+        "  {:<35s}  {:>10s}  {:>10s}  {:>10s}  {:>10s}".format(
+            "组合", "TOP_EXIT", "Δ TOP", "DIP_BUY", "Δ DIP"
+        )
+    )
     print("  " + "-" * 80)
 
     combo_results = {}
@@ -134,7 +155,11 @@ def main():
         if not available:
             continue
 
-        exp_features = pd.concat([v4_features, direction_d[available]], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+        exp_features = (
+            pd.concat([v4_features, direction_d[available]], axis=1)
+            .fillna(0.0)
+            .replace([np.inf, -np.inf], 0.0)
+        )
         exp_names = list(exp_features.columns)
 
         top_result = walk_forward_validation(exp_features, top_exit_labels, exp_names)
@@ -153,9 +178,17 @@ def main():
 
         flag_top = "✅" if delta_top > 0 else "❌"
         flag_dip = "✅" if delta_dip > 0 else "❌"
-        print("  {:<35s}  {:>10.4f}  {:>+10.4f}{} {:>10.4f}  {:>+10.4f}{}".format(
-            name, top_result["avg_test_auc"], delta_top, flag_top,
-            dip_result["avg_test_auc"], delta_dip, flag_dip))
+        print(
+            "  {:<35s}  {:>10.4f}  {:>+10.4f}{} {:>10.4f}  {:>+10.4f}{}".format(
+                name,
+                top_result["avg_test_auc"],
+                delta_top,
+                flag_top,
+                dip_result["avg_test_auc"],
+                delta_dip,
+                flag_dip,
+            )
+        )
 
     # 5. 实验3：反向消融 - 全部8个特征中逐个移除
     print("\n" + "=" * 80)
@@ -163,7 +196,11 @@ def main():
     print("=" * 80)
 
     # 先建全部8个的基线
-    all_d = pd.concat([v4_features, direction_d[DIRECTION_D_FEATURES]], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    all_d = (
+        pd.concat([v4_features, direction_d[DIRECTION_D_FEATURES]], axis=1)
+        .fillna(0.0)
+        .replace([np.inf, -np.inf], 0.0)
+    )
     all_d_names = list(all_d.columns)
     all_top = walk_forward_validation(all_d, top_exit_labels, all_d_names)
     all_dip = walk_forward_validation(all_d, dip_buy_labels, all_d_names)
@@ -172,13 +209,20 @@ def main():
 
     print("  8个全量: TOP={:.4f}, DIP={:.4f}".format(all_top_auc, all_dip_auc))
 
-    print("\n  {:<28s}  {:>10s}  {:>10s}  {:>10s}  {:>10s}".format(
-        "移除特征", "TOP_EXIT", "Δ TOP", "DIP_BUY", "Δ DIP"))
+    print(
+        "\n  {:<28s}  {:>10s}  {:>10s}  {:>10s}  {:>10s}".format(
+            "移除特征", "TOP_EXIT", "Δ TOP", "DIP_BUY", "Δ DIP"
+        )
+    )
     print("  " + "-" * 72)
 
     for feat in DIRECTION_D_FEATURES:
         remaining = [f for f in DIRECTION_D_FEATURES if f != feat]
-        exp_features = pd.concat([v4_features, direction_d[remaining]], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+        exp_features = (
+            pd.concat([v4_features, direction_d[remaining]], axis=1)
+            .fillna(0.0)
+            .replace([np.inf, -np.inf], 0.0)
+        )
         exp_names = list(exp_features.columns)
 
         top_result = walk_forward_validation(exp_features, top_exit_labels, exp_names)
@@ -189,9 +233,17 @@ def main():
 
         flag_top = "✅提升" if delta_top > 0 else "❌下降"
         flag_dip = "✅提升" if delta_dip > 0 else "❌下降"
-        print("  移除 {:<22s}  {:>10.4f}  {:>+10.4f}{} {:>10.4f}  {:>+10.4f}{}".format(
-            feat, top_result["avg_test_auc"], delta_top, flag_top,
-            dip_result["avg_test_auc"], delta_dip, flag_dip))
+        print(
+            "  移除 {:<22s}  {:>10.4f}  {:>+10.4f}{} {:>10.4f}  {:>+10.4f}{}".format(
+                feat,
+                top_result["avg_test_auc"],
+                delta_top,
+                flag_top,
+                dip_result["avg_test_auc"],
+                delta_dip,
+                flag_dip,
+            )
+        )
 
     # 6. 总结
     print("\n" + "=" * 80)
@@ -204,10 +256,26 @@ def main():
     best_combo_top = max(combo_results.items(), key=lambda x: x[1]["delta_top"])
     best_combo_dip = max(combo_results.items(), key=lambda x: x[1]["delta_dip"])
 
-    print("\n  单特征最佳(TOP_EXIT): {} → Δ={:+.4f}".format(best_single_top[0], best_single_top[1]["delta_top"]))
-    print("  单特征最佳(DIP_BUY):  {} → Δ={:+.4f}".format(best_single_dip[0], best_single_dip[1]["delta_dip"]))
-    print("  组合最佳(TOP_EXIT):   {} → Δ={:+.4f}".format(best_combo_top[0], best_combo_top[1]["delta_top"]))
-    print("  组合最佳(DIP_BUY):    {} → Δ={:+.4f}".format(best_combo_dip[0], best_combo_dip[1]["delta_dip"]))
+    print(
+        "\n  单特征最佳(TOP_EXIT): {} → Δ={:+.4f}".format(
+            best_single_top[0], best_single_top[1]["delta_top"]
+        )
+    )
+    print(
+        "  单特征最佳(DIP_BUY):  {} → Δ={:+.4f}".format(
+            best_single_dip[0], best_single_dip[1]["delta_dip"]
+        )
+    )
+    print(
+        "  组合最佳(TOP_EXIT):   {} → Δ={:+.4f}".format(
+            best_combo_top[0], best_combo_top[1]["delta_top"]
+        )
+    )
+    print(
+        "  组合最佳(DIP_BUY):    {} → Δ={:+.4f}".format(
+            best_combo_dip[0], best_combo_dip[1]["delta_dip"]
+        )
+    )
 
     # 保存
     result = {
@@ -222,7 +290,7 @@ def main():
     }
 
     output_path = os.path.join(BASE_DIR, "ml/backtest_results/v53_ablation_result.json")
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(result, f, indent=2, ensure_ascii=False, default=str)
     print("\n  结果已保存: {}".format(output_path))
 

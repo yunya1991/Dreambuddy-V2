@@ -19,7 +19,9 @@ Dream OS — 能力域根包
 
 from __future__ import annotations
 
+
 # 延迟导入，避免循环依赖
 def _get_trading_capability():
     from .trading import TradingCapability
+
     return TradingCapability()

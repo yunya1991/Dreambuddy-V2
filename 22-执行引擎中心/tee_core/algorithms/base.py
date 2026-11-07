@@ -5,6 +5,7 @@ implements :meth:`run`, and returns an :class:`AlgoRunResult`. The base
 class itself only holds pure helpers (nothing exchange-specific) so it
 can be unit-tested without any strategy-package imports (NFR-4).
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -16,6 +17,7 @@ from typing import Any, Callable, Dict, List, Optional, Protocol, runtime_checka
 @dataclass
 class AlgoRunResult:
     """Uniform result shape for every algorithm's ``run`` method."""
+
     child_orders: List[Dict[str, Any]] = field(default_factory=list)
     final_vwap: Optional[float] = None
     final_slippage_bps: Optional[float] = None
@@ -26,16 +28,14 @@ class AlgoRunResult:
 # ── protocol-typing of the two callbacks so IDEs see signatures ───────
 @runtime_checkable
 class KillSwitchCb(Protocol):
-    def __call__(self, running_slippage_bps: float,
-                 extra: Optional[Dict[str, Any]] = None) -> tuple[bool, Optional[str]]:
-        ...
+    def __call__(
+        self, running_slippage_bps: float, extra: Optional[Dict[str, Any]] = None
+    ) -> tuple[bool, Optional[str]]: ...
 
 
 @runtime_checkable
 class AuditCb(Protocol):
-    def __call__(self, stage: str,
-                 payload: Optional[Dict[str, Any]] = None) -> None:
-        ...
+    def __call__(self, stage: str, payload: Optional[Dict[str, Any]] = None) -> None: ...
 
 
 # ── base class ─────────────────────────────────────────────────────────
@@ -111,9 +111,13 @@ class ExecutionAlgorithm(ABC):
                 pass
         # Ticker fallback returns strings sometimes; coerce once.
         if isinstance(bid, (int, float, str)):
-            try: bid = float(bid)  # type: ignore[arg-type]
-            except (TypeError, ValueError): bid = None
+            try:
+                bid = float(bid)  # type: ignore[arg-type]
+            except (TypeError, ValueError):
+                bid = None
         if isinstance(ask, (int, float, str)):
-            try: ask = float(ask)  # type: ignore[arg-type]
-            except (TypeError, ValueError): ask = None
+            try:
+                ask = float(ask)  # type: ignore[arg-type]
+            except (TypeError, ValueError):
+                ask = None
         return bid, ask

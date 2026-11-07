@@ -19,9 +19,9 @@ G-3 通过标准：read_consistency_rate >= 0.9999（即 ≥ 99.99%）
   - category='dual_write'   → 写审计（result=APPLIED/SKIPPED/FAILED）
   - category='shadow_read'  → 读审计（result=MATCH/DIFF）
 """
+
 from __future__ import annotations
 
-import json
 import tempfile
 from pathlib import Path
 
@@ -69,6 +69,7 @@ def test_empty_db_returns_safe_defaults(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.audit_summary import (
         compute_audit_summary,
     )
+
     s = compute_audit_summary(db_path, window_hours=72)
     assert s.write_total == 0
     assert s.write_fail == 0
@@ -86,10 +87,10 @@ def test_g1_zero_write_fail_passes(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.audit_summary import (
         compute_audit_summary,
     )
+
     with get_sqlite_connection(db_path) as conn:
         for i in range(100):
-            _insert_audit(conn, category="dual_write",
-                          entity_key=f"trade_{i}", result="APPLIED")
+            _insert_audit(conn, category="dual_write", entity_key=f"trade_{i}", result="APPLIED")
     s = compute_audit_summary(db_path, window_hours=72)
     assert s.write_total == 100
     assert s.write_fail == 0
@@ -103,12 +104,13 @@ def test_g1_one_fail_out_of_hundred(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.audit_summary import (
         compute_audit_summary,
     )
+
     with get_sqlite_connection(db_path) as conn:
         for i in range(99):
-            _insert_audit(conn, category="dual_write",
-                          entity_key=f"trade_{i}", result="APPLIED")
-        _insert_audit(conn, category="dual_write",
-                      entity_key="trade_bad", result="FAILED", severity=2)
+            _insert_audit(conn, category="dual_write", entity_key=f"trade_{i}", result="APPLIED")
+        _insert_audit(
+            conn, category="dual_write", entity_key="trade_bad", result="FAILED", severity=2
+        )
     s = compute_audit_summary(db_path, window_hours=72)
     assert s.write_total == 100
     assert s.write_fail == 1
@@ -122,10 +124,10 @@ def test_g3_all_match_passes(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.audit_summary import (
         compute_audit_summary,
     )
+
     with get_sqlite_connection(db_path) as conn:
         for i in range(100):
-            _insert_audit(conn, category="shadow_read",
-                          entity_key=f"read_{i}", result="MATCH")
+            _insert_audit(conn, category="shadow_read", entity_key=f"read_{i}", result="MATCH")
     s = compute_audit_summary(db_path, window_hours=72)
     assert s.shadow_read_total == 100
     assert s.shadow_read_match == 100
@@ -140,12 +142,13 @@ def test_g3_one_diff_fails_gate(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.audit_summary import (
         compute_audit_summary,
     )
+
     with get_sqlite_connection(db_path) as conn:
         for i in range(99):
-            _insert_audit(conn, category="shadow_read",
-                          entity_key=f"read_{i}", result="MATCH")
-        _insert_audit(conn, category="shadow_read",
-                      entity_key="read_bad", result="DIFF", severity=1)
+            _insert_audit(conn, category="shadow_read", entity_key=f"read_{i}", result="MATCH")
+        _insert_audit(
+            conn, category="shadow_read", entity_key="read_bad", result="DIFF", severity=1
+        )
     s = compute_audit_summary(db_path, window_hours=72)
     assert s.shadow_read_total == 100
     assert s.shadow_read_match == 99
@@ -160,13 +163,17 @@ def test_window_filter_excludes_old_rows(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.audit_summary import (
         compute_audit_summary,
     )
+
     with get_sqlite_connection(db_path) as conn:
         _insert_audit_with_time(
-            conn, category="dual_write", entity_key="old_fail",
-            result="FAILED", run_at="2020-01-01T00:00:00+00:00", severity=2,
+            conn,
+            category="dual_write",
+            entity_key="old_fail",
+            result="FAILED",
+            run_at="2020-01-01T00:00:00+00:00",
+            severity=2,
         )
-        _insert_audit(conn, category="dual_write",
-                      entity_key="recent_ok", result="APPLIED")
+        _insert_audit(conn, category="dual_write", entity_key="recent_ok", result="APPLIED")
     s = compute_audit_summary(db_path, window_hours=72)
     assert s.write_total == 1
     assert s.write_fail == 0

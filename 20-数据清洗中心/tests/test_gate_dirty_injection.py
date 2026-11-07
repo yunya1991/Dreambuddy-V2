@@ -8,6 +8,7 @@
 
 断言：总拦截率 gate_passed=False 比例 ≥ 99.5%（96条中漏拦截 ≤ 0）
 """
+
 from __future__ import annotations
 
 import sys
@@ -56,7 +57,9 @@ def _make_valid_record(source: str, asset: str, category: str, sub_category: str
         close = 50000 * np.exp(np.cumsum(rng.normal(0, 0.01, n)))
         ts_list = [
             {
-                "timestamp": (datetime.utcnow() - timedelta(hours=n - i)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "timestamp": (datetime.utcnow() - timedelta(hours=n - i)).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                ),
                 "open": float(close[i] * 0.999),
                 "high": float(close[i] * 1.005),
                 "low": float(close[i] * 0.995),
@@ -66,28 +69,47 @@ def _make_valid_record(source: str, asset: str, category: str, sub_category: str
             for i in range(n)
         ]
         return DataRecord(
-            source=source, category=category, sub_category=sub_category,
-            timestamp=ts, metrics={"asset": asset},
-            events=[], timeseries=ts_list, raw={},
+            source=source,
+            category=category,
+            sub_category=sub_category,
+            timestamp=ts,
+            metrics={"asset": asset},
+            events=[],
+            timeseries=ts_list,
+            raw={},
         )
     elif category == "news":
         return DataRecord(
-            source=source, category=category, sub_category=sub_category,
-            timestamp=ts, metrics={"asset": asset},
+            source=source,
+            category=category,
+            sub_category=sub_category,
+            timestamp=ts,
+            metrics={"asset": asset},
             events=[{"timestamp": ts, "title": f"{asset} news", "importance": "medium"}],
-            timeseries=[], raw={},
+            timeseries=[],
+            raw={},
         )
     elif category == "macro":
         return DataRecord(
-            source=source, category=category, sub_category=sub_category,
-            timestamp=ts, metrics={"asset": asset, "value": 150.0, "unit": "USD"},
-            events=[], timeseries=[], raw={},
+            source=source,
+            category=category,
+            sub_category=sub_category,
+            timestamp=ts,
+            metrics={"asset": asset, "value": 150.0, "unit": "USD"},
+            events=[],
+            timeseries=[],
+            raw={},
         )
     else:
         return DataRecord(
-            source=source, category=category, sub_category=sub_category,
-            timestamp=ts, metrics={"asset": asset, "tvl": 1e9},
-            events=[], timeseries=[], raw={},
+            source=source,
+            category=category,
+            sub_category=sub_category,
+            timestamp=ts,
+            metrics={"asset": asset, "tvl": 1e9},
+            events=[],
+            timeseries=[],
+            raw={},
         )
 
 
@@ -98,11 +120,18 @@ def _make_dirty_records(source: str, asset: str, category: str, sub_category: st
     elif dirty_type == "CONTRACT":
         # timestamp 非法格式
         rec = _make_valid_record(source, asset, category, sub_category)
-        return [DataRecord(
-            source=source, category=category, sub_category=sub_category,
-            timestamp="INVALID_TIMESTAMP",
-            metrics=rec.metrics, events=rec.events, timeseries=rec.timeseries, raw={},
-        )]
+        return [
+            DataRecord(
+                source=source,
+                category=category,
+                sub_category=sub_category,
+                timestamp="INVALID_TIMESTAMP",
+                metrics=rec.metrics,
+                events=rec.events,
+                timeseries=rec.timeseries,
+                raw={},
+            )
+        ]
     elif dirty_type == "DUPLICATE":
         # 两条完全相同的 record
         rec = _make_valid_record(source, asset, category, sub_category)
@@ -111,11 +140,18 @@ def _make_dirty_records(source: str, asset: str, category: str, sub_category: st
         # 5年前的 timestamp
         stale_ts = "2020-01-01T00:00:00Z"
         rec = _make_valid_record(source, asset, category, sub_category)
-        return [DataRecord(
-            source=source, category=category, sub_category=sub_category,
-            timestamp=stale_ts,
-            metrics=rec.metrics, events=rec.events, timeseries=rec.timeseries, raw={},
-        )]
+        return [
+            DataRecord(
+                source=source,
+                category=category,
+                sub_category=sub_category,
+                timestamp=stale_ts,
+                metrics=rec.metrics,
+                events=rec.events,
+                timeseries=rec.timeseries,
+                raw={},
+            )
+        ]
     return []
 
 
@@ -125,19 +161,23 @@ def gate_stats():
     return {"total": 0, "blocked": 0, "leaked": []}
 
 
-@pytest.mark.parametrize("source,asset,category,sub_category,dirty_type", COMBOS, ids=[
-    f"{s}-{a}-{d}" for s, a, _, _, d in COMBOS
-])
+@pytest.mark.parametrize(
+    "source,asset,category,sub_category,dirty_type",
+    COMBOS,
+    ids=[f"{s}-{a}-{d}" for s, a, _, _, d in COMBOS],
+)
 def test_t22_dirty_injection_blocked(source, asset, category, sub_category, dirty_type, gate_stats):
     """T22: 每条脏 DataRecord → CleaningPipeline → gate_passed 应为 False"""
     from data_cleaning.pipeline import DataCleaningPipeline, PipelineConfig
 
     dirty_records = _make_dirty_records(source, asset, category, sub_category, dirty_type)
-    pipe = DataCleaningPipeline(PipelineConfig(
-        enforce_hard_block=False,
-        fail_open=True,
-        freshness_threshold=timedelta(hours=48),
-    ))
+    pipe = DataCleaningPipeline(
+        PipelineConfig(
+            enforce_hard_block=False,
+            fail_open=True,
+            freshness_threshold=timedelta(hours=48),
+        )
+    )
     silver = pipe.clean(dirty_records, source=source, category=category)
 
     gate_stats["total"] += 1
@@ -156,6 +196,5 @@ def test_t22_g4_overall_block_rate(gate_stats):
     block_rate = blocked / total
     leaked = gate_stats["leaked"]
     assert block_rate >= 0.995, (
-        f"T-G4 拦截率 {block_rate:.4f} < 0.995: "
-        f"blocked={blocked}/{total}, leaked={leaked}"
+        f"T-G4 拦截率 {block_rate:.4f} < 0.995: " f"blocked={blocked}/{total}, leaked={leaked}"
     )

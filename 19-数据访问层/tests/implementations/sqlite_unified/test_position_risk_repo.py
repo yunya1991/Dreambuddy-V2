@@ -9,6 +9,7 @@ TDD 红-绿-重构：SqlitePositionRepository + SqliteRiskRepository
 
 覆盖用例：共 10 个（不重跑 schema_init 已断言过的触发器）
 """
+
 from __future__ import annotations
 
 import tempfile
@@ -47,6 +48,7 @@ def pos_repo(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.position_impl import (
         SqlitePositionRepository,
     )
+
     return SqlitePositionRepository(db_path)
 
 
@@ -55,14 +57,18 @@ def risk_repo(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.risk_impl import (
         SqliteRiskRepository,
     )
+
     return SqliteRiskRepository(db_path)
 
 
 # ---------------------------------------------------------------------------
 # 测试数据工厂
 # ---------------------------------------------------------------------------
-def _sample_pos(symbol: str = "BTC-USDT-SWAP", sub: str = "YIJING",
-                direction: TradeDirection = TradeDirection.LONG) -> PositionState:
+def _sample_pos(
+    symbol: str = "BTC-USDT-SWAP",
+    sub: str = "YIJING",
+    direction: TradeDirection = TradeDirection.LONG,
+) -> PositionState:
     return PositionState(
         symbol=symbol,
         sub_system=sub,
@@ -128,8 +134,9 @@ def test_upsert_position_then_get_position_roundtrip_decimal(pos_repo):
     assert row[3] == "0.5"
 
     # get_position 精确查
-    got = pos_repo.get_position(symbol="BTC-USDT-SWAP", sub_system="YIJING",
-                                direction=TradeDirection.LONG)
+    got = pos_repo.get_position(
+        symbol="BTC-USDT-SWAP", sub_system="YIJING", direction=TradeDirection.LONG
+    )
     assert got is not None
     assert got.position_id == ps.position_id
     assert got.avg_entry_price == Decimal("65000.12345678"), "Decimal 往返精度丢失！"
@@ -209,12 +216,20 @@ def test_update_state_version_mismatch_returns_false_concurrency_guard(risk_repo
 
     # 模拟并发：用"旧 version - 1"去更新 → 必然失败
     bad = risk_repo.update_state(
-        RiskState(id=1, total_equity_usd=Decimal("999"), gross_exposure_usd=Decimal("1"),
-                  net_exposure_usd=Decimal("0"), gross_leverage=Decimal("0"),
-                  max_position_pct_usd=Decimal("0"), win_rate_7d=Decimal("0"),
-                  max_drawdown_active=Decimal("0"), equity_curve_avg=Decimal("0"),
-                  equity_curve_std=Decimal("0"), active_symbols_count=0,
-                  overall_risk=RiskLevel.HIGH),
+        RiskState(
+            id=1,
+            total_equity_usd=Decimal("999"),
+            gross_exposure_usd=Decimal("1"),
+            net_exposure_usd=Decimal("0"),
+            gross_leverage=Decimal("0"),
+            max_position_pct_usd=Decimal("0"),
+            win_rate_7d=Decimal("0"),
+            max_drawdown_active=Decimal("0"),
+            equity_curve_avg=Decimal("0"),
+            equity_curve_std=Decimal("0"),
+            active_symbols_count=0,
+            overall_risk=RiskLevel.HIGH,
+        ),
         expected_version=max(0, v_now - 1),  # ← 过期版本
     )
     assert bad is False, "version 不匹配必须返回 False，让上层重试（乐观锁不变量）"
@@ -237,11 +252,17 @@ def test_update_state_version_match_returns_true_and_bumps_version(risk_repo):
 
     ok = risk_repo.update_state(
         RiskState(
-            id=1, total_equity_usd=Decimal("200000"), gross_exposure_usd=Decimal("0"),
-            net_exposure_usd=Decimal("0"), gross_leverage=Decimal("0"),
-            max_position_pct_usd=Decimal("0"), win_rate_7d=Decimal("0"),
-            max_drawdown_active=Decimal("0"), equity_curve_avg=Decimal("0"),
-            equity_curve_std=Decimal("0"), active_symbols_count=0,
+            id=1,
+            total_equity_usd=Decimal("200000"),
+            gross_exposure_usd=Decimal("0"),
+            net_exposure_usd=Decimal("0"),
+            gross_leverage=Decimal("0"),
+            max_position_pct_usd=Decimal("0"),
+            win_rate_7d=Decimal("0"),
+            max_drawdown_active=Decimal("0"),
+            equity_curve_avg=Decimal("0"),
+            equity_curve_std=Decimal("0"),
+            active_symbols_count=0,
             overall_risk=RiskLevel.MEDIUM,
         ),
         expected_version=v_old,
@@ -249,7 +270,9 @@ def test_update_state_version_match_returns_true_and_bumps_version(risk_repo):
     assert ok is True
     got = risk_repo.get_state()
     assert got is not None
-    assert got.version == v_old + 1, f"成功 update 必须 version+1，期望 {v_old+1} 实际 {got.version}"
+    assert (
+        got.version == v_old + 1
+    ), f"成功 update 必须 version+1，期望 {v_old+1} 实际 {got.version}"
     assert got.total_equity_usd == Decimal("200000")
     assert got.overall_risk == RiskLevel.MEDIUM
 

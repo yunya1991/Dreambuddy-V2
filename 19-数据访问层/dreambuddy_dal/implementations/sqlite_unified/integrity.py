@@ -11,6 +11,7 @@ P3-2 PRAGMA integrity_check + ma_integrity_log 审计
   2. PRAGMA foreign_key_check → FK 违规列表
   3. 结果写入 ma_integrity_log 表
 """
+
 from __future__ import annotations
 
 import json
@@ -49,6 +50,7 @@ def run_integrity_check(db_path: str) -> IntegrityResult:
 
         # 写 ma_integrity_log（适配 schema: run_at, integrity_result, db_size_bytes, wal_size_bytes, schema_version, checkpoint_result）
         import os
+
         db_size = os.path.getsize(db_path) if os.path.exists(db_path) else 0
         wal_path = db_path + "-wal"
         wal_size = os.path.getsize(wal_path) if os.path.exists(wal_path) else 0
@@ -56,10 +58,14 @@ def run_integrity_check(db_path: str) -> IntegrityResult:
             "SELECT schema_semver FROM ma_schema_version WHERE id=1"
         ).fetchone()
         schema_ver = schema_ver_row[0] if schema_ver_row else "unknown"
-        checkpoint_str = json.dumps({
-            "errors": errors[:20],
-            "fk_violations": fk_violations[:20],
-        }, default=str, ensure_ascii=False)
+        checkpoint_str = json.dumps(
+            {
+                "errors": errors[:20],
+                "fk_violations": fk_violations[:20],
+            },
+            default=str,
+            ensure_ascii=False,
+        )
         conn.execute(
             """
             INSERT INTO ma_integrity_log

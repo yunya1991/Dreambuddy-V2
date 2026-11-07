@@ -10,6 +10,7 @@ Usage (CLI):
     python slip_compare_report.py --audit-dir logs/tee_audit \\
         [--shadow-suffix _shadow]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -17,8 +18,7 @@ import json
 import math
 import sys
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
-
+from typing import Any, Dict, List, Optional
 
 # Import helper (sibling script shadow_compare) to re-use iter helper.
 _THIS_DIR = Path(__file__).resolve().parent
@@ -81,9 +81,7 @@ def generate_report(
         if fail:
             fail_open_total += 1
             inst_id = str(((rec.get("parent") or {}).get("inst_id") or "UNKNOWN"))
-            per_coin_fail_open[inst_id] = (
-                per_coin_fail_open.get(inst_id, 0) + 1
-            )
+            per_coin_fail_open[inst_id] = per_coin_fail_open.get(inst_id, 0) + 1
         # Kill switch
         ks = (rec.get("kill_switch") or {}).get("runtime_triggered")
         if ks:
@@ -93,7 +91,7 @@ def generate_report(
         tee_val = exec_block.get("slippage_bps_vs_decision")
         try:
             if dm_bps is not None and tee_val is not None:
-                impr_sum += (float(dm_bps) - float(tee_val))
+                impr_sum += float(dm_bps) - float(tee_val)
                 impr_valid += 1
         except (TypeError, ValueError):
             pass
@@ -107,9 +105,7 @@ def generate_report(
         "kill_switch_total": int(kill_switch_total),
         "algo_histogram": dict(algo_histogram),
         "per_coin_fail_open": dict(per_coin_fail_open),
-        "avg_improvement_bps": (
-            round(impr_sum / impr_valid, 4) if impr_valid else 0.0
-        ),
+        "avg_improvement_bps": (round(impr_sum / impr_valid, 4) if impr_valid else 0.0),
     }
 
 

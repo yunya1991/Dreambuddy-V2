@@ -37,12 +37,14 @@ sys.path.insert(0, str(_PROJECT_ROOT))
 @pytest.fixture
 def obs_enabled():
     from scripts.memory_l4.bcrm_continuity_observer import BCRMContinuityObserver
+
     return BCRMContinuityObserver(enable=True)
 
 
 @pytest.fixture
 def obs_disabled():
     from scripts.memory_l4.bcrm_continuity_observer import BCRMContinuityObserver
+
     return BCRMContinuityObserver(enable=False)
 
 
@@ -134,9 +136,21 @@ def test_t4_06_two_of_five_neutral(obs_enabled, base_ts):
     pass
 
     # 明确构造 2/5
-    directions2 = ["LONG", "LONG", "SHORT", "SHORT", "SHORT"]  # latest=SHORT: 3 SHORT!
+    directions2 = [  # noqa: F841
+        "LONG",
+        "LONG",
+        "SHORT",
+        "SHORT",
+        "SHORT",
+    ]  # latest=SHORT: 3 SHORT!  # noqa: F841
     # 再试：latest=LONG 只有 2 笔 LONG
-    directions3 = ["LONG", "SHORT", "LONG", "SHORT", "SHORT"]  # latest=SHORT: 3 SHORT!
+    directions3 = [  # noqa: F841
+        "LONG",
+        "SHORT",
+        "LONG",
+        "SHORT",
+        "SHORT",
+    ]  # latest=SHORT: 3 SHORT!  # noqa: F841
     # OK，换一种：latest=LONG, 2 LONG
     directions4 = ["SHORT", "LONG", "SHORT", "SHORT", "LONG"]  # latest=LONG, LONG count=2
     grade = score = None
@@ -173,12 +187,10 @@ def test_t4_08_zero_of_five_strong_opposite_severe(obs_enabled, base_ts):
     directions = ["SHORT", "SHORT", "SHORT", "SHORT", "SHORT"]
     confidences = [0.70, 0.95, 0.70, 0.70, 0.70]
     grade = score = None
-    for i, (d, c) in enumerate(zip(directions, confidences)):
+    for i, (d, c) in enumerate(zip(directions, confidences)):  # noqa: B905
         # 第 5 笔，我们用 latest_dir=LONG 来检测 0 LONG + 强反信 SHORT
         # 不行，append_and_grade 的 latest_dir 是 entry.direction，所以直接用 current_grade
-        obs_enabled.append_and_grade(
-            "MSTR", d, base_ts + timedelta(minutes=i), c, ""
-        )
+        obs_enabled.append_and_grade("MSTR", d, base_ts + timedelta(minutes=i), c, "")
     # 用 reference_direction=LONG 查询，此时 LONG count=0，且有 SHORT conf=0.95 ≥0.85 强反信
     grade, score = obs_enabled.current_grade("MSTR", "LONG")
     assert grade == "DIVERGE_SEVERE"
@@ -229,9 +241,7 @@ def test_t4_10_single_diverge_score_b_not_overestimated(obs_enabled, base_ts):
     """
     # 先 4 笔 SHORT
     for i in range(4):
-        obs_enabled.append_and_grade(
-            "BTC", "SHORT", base_ts + timedelta(minutes=i), 0.70, ""
-        )
+        obs_enabled.append_and_grade("BTC", "SHORT", base_ts + timedelta(minutes=i), 0.70, "")
     # 第 5 笔 LONG（BTC 方向反转的第 1 笔信号，conf=0.7955 实盘默认）
     grade, cont_score = obs_enabled.append_and_grade(
         "BTC", "LONG", base_ts + timedelta(minutes=4), 0.7955, "ShuiTianXu"
@@ -241,6 +251,7 @@ def test_t4_10_single_diverge_score_b_not_overestimated(obs_enabled, base_ts):
     assert abs(cont_score - 0.45) < 1e-9
 
     from scripts.memory_l4.bcrm_continuity_observer import BCRMContinuityObserver
+
     sb = BCRMContinuityObserver.compose_score_b(cont_score, 0.7955)
     # 精确计算：
     # pure_conf = 0.40 + 0.60*0.7955 = 0.40+0.4773 = 0.8773
@@ -261,15 +272,14 @@ def test_t4_11_cont_4_5_high_conf_score_b_strong(obs_enabled, base_ts):
     """
     directions = ["LONG", "SHORT", "LONG", "LONG", "LONG"]  # 4 LONG / 5
     confidences = [0.90, 0.70, 0.92, 0.93, 0.90]
-    grade = score = None
-    for i, (d, c) in enumerate(zip(directions, confidences)):
-        grade, cont = obs_enabled.append_and_grade(
-            "BTC", d, base_ts + timedelta(minutes=i), c, ""
-        )
+    grade = score = None  # noqa: F841
+    for i, (d, c) in enumerate(zip(directions, confidences)):  # noqa: B905
+        grade, cont = obs_enabled.append_and_grade("BTC", d, base_ts + timedelta(minutes=i), c, "")
     assert grade == "ALIGN_FULL"
     assert abs(cont - 1.00) < 1e-9
 
     from scripts.memory_l4.bcrm_continuity_observer import BCRMContinuityObserver
+
     # 用最后一笔 conf=0.90
     sb = BCRMContinuityObserver.compose_score_b(cont, 0.90)
     # pure_conf = 0.40 + 0.60×0.90 = 0.40+0.54 = 0.94
@@ -293,7 +303,7 @@ def test_t4_12_s_cont_sample_threshold(obs_enabled):
 
     # 4 笔，2 胜 2 负 <5 → 0.50（小数定律防护）
     hist4 = [("LONG", True), ("LONG", False), ("SHORT", True), ("SHORT", False)]
-    result = obs_enabled.get_s_cont("BTC", hist4)
+    result = obs_enabled.get_s_cont("BTC", hist4)  # noqa: F841
     # 当前实现：wins/len(hist)=2/4=0.50，刚好也是 0.50，但不依赖这个判断样本门槛
     # 关键是样本<5时不会出现极端值（如 1.00）
     # 3 笔全胜 → 当前实现=1.0，但按 T4.12 spec 样本<5 应退化为 0.50
@@ -319,9 +329,7 @@ def test_t4_13_ring_buffer_only_last_five(obs_enabled, base_ts):
     """append 8 笔，最后 5 笔全部 LONG → ALIGN_FULL 1.0"""
     # 先 3 笔 SHORT（应被溢出丢弃）
     for i in range(3):
-        obs_enabled.append_and_grade(
-            "ETH", "SHORT", base_ts + timedelta(minutes=i), 0.70, ""
-        )
+        obs_enabled.append_and_grade("ETH", "SHORT", base_ts + timedelta(minutes=i), 0.70, "")
     # 后 5 笔 LONG（覆盖前 3 笔，再 2 笔 SHORT 进窗口但被后续顶走的逻辑）
     # 实际：deque maxlen=5，追加的第 6,7,8 笔会顶掉第 1,2,3 笔
     # 所以 8 笔之后窗口是 [4(L),5(L),6(L),7(L),8(L)] = 全 LONG

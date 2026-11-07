@@ -19,35 +19,37 @@ review_filter.py — 多级审查过滤管道 (Three-Stage Filter Pipeline)
   python3 review_filter.py --input review_raw.json --stats
 """
 
-import json
+import json  # noqa: I001
 import sys
-import os
 import re
 from pathlib import Path
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from typing import Optional
 
-
 # ─── 数据模型 ──────────────────────────────────────────────────────────
+
 
 @dataclass
 class Finding:
     """单条审查发现"""
+
     id: str = ""
-    severity: str = "MEDIUM"       # CRITICAL / HIGH / MEDIUM / LOW / SUGGESTION
-    category: str = ""             # security / bug / perf / quality / style / test
+    severity: str = "MEDIUM"  # CRITICAL / HIGH / MEDIUM / LOW / SUGGESTION
+    category: str = ""  # security / bug / perf / quality / style / test
     title: str = ""
     description: str = ""
-    file_path: str = ""            # 引用文件路径
+    file_path: str = ""  # 引用文件路径
     line_start: Optional[int] = None
     line_end: Optional[int] = None
-    evidence: str = ""             # 证据片段
-    confidence: float = 0.0        # 0.0 - 1.0
-    source_agent: str = ""         # E2 / A3-Review / manual
+    evidence: str = ""  # 证据片段
+    confidence: float = 0.0  # 0.0 - 1.0
+    source_agent: str = ""  # E2 / A3-Review / manual
+
 
 @dataclass
 class FilterReport:
     """过滤管道输出"""
+
     original_count: int = 0
     after_confidence: int = 0
     after_dedupe: int = 0
@@ -61,10 +63,10 @@ class FilterReport:
 # ─── 置信度阈值配置 ──────────────────────────────────────────────────
 
 CONFIDENCE_THRESHOLDS = {
-    "CRITICAL":  0.50,   # 致命问题: 置信度 > 50% 即保留
-    "HIGH":      0.65,   # 严重问题: 置信度 > 65% 保留
-    "MEDIUM":    0.75,   # 中等问题: 置信度 > 75% 保留
-    "LOW":       0.85,   # 轻微问题: 置信度 > 85% 保留
+    "CRITICAL": 0.50,  # 致命问题: 置信度 > 50% 即保留
+    "HIGH": 0.65,  # 严重问题: 置信度 > 65% 保留
+    "MEDIUM": 0.75,  # 中等问题: 置信度 > 75% 保留
+    "LOW": 0.85,  # 轻微问题: 置信度 > 85% 保留
     "SUGGESTION": 0.90,  # 建议: 置信度 > 90% 保留
 }
 
@@ -73,8 +75,10 @@ DEFAULT_CONFIDENCE = 0.80  # 未标注严重等级时的默认阈值
 
 # ─── Stage 1: 置信度过滤 ──────────────────────────────────────────────
 
-def filter_by_confidence(findings: list[Finding],
-                         thresholds: dict[str, float] = None) -> tuple[list[Finding], list[Finding]]:
+
+def filter_by_confidence(
+    findings: list[Finding], thresholds: dict[str, float] = None
+) -> tuple[list[Finding], list[Finding]]:
     """按置信度阈值过滤"""
     if thresholds is None:
         thresholds = CONFIDENCE_THRESHOLDS
@@ -94,6 +98,7 @@ def filter_by_confidence(findings: list[Finding],
 
 # ─── Stage 2: 去重合并 ────────────────────────────────────────────────
 
+
 def dedupe_findings(findings: list[Finding]) -> tuple[list[Finding], list[Finding]]:
     """合并重复发现（同一文件 + 同类问题）"""
     seen = {}  # key: (file_path, category) → Finding
@@ -107,7 +112,9 @@ def dedupe_findings(findings: list[Finding]) -> tuple[list[Finding], list[Findin
             # 合并: 保留更高严重度、更高置信度
             severity_rank = {"CRITICAL": 5, "HIGH": 4, "MEDIUM": 3, "LOW": 2, "SUGGESTION": 1}
 
-            if severity_rank.get(f.severity.upper(), 0) > severity_rank.get(existing.severity.upper(), 0):
+            if severity_rank.get(f.severity.upper(), 0) > severity_rank.get(
+                existing.severity.upper(), 0
+            ):
                 existing.severity = f.severity
 
             if f.confidence > existing.confidence:
@@ -124,8 +131,10 @@ def dedupe_findings(findings: list[Finding]) -> tuple[list[Finding], list[Findin
 
 # ─── Stage 3: 幻觉检测 ────────────────────────────────────────────────
 
-def validate_hallucination(findings: list[Finding],
-                           project_root: str = ".") -> tuple[list[Finding], list[Finding]]:
+
+def validate_hallucination(
+    findings: list[Finding], project_root: str = "."
+) -> tuple[list[Finding], list[Finding]]:
     """交叉验证引用的文件/行号是否存在"""
     passed = []
     removed = []
@@ -150,11 +159,13 @@ def validate_hallucination(findings: list[Finding],
         # 如果引用了行号，检查行号是否在文件范围内
         if f.line_start and f.line_start > 0:
             try:
-                with open(ref_path, 'r') as fh:
+                with open(ref_path, "r") as fh:
                     total_lines = sum(1 for _ in fh)
                 if f.line_start > total_lines:
                     # 行号超出范围 — 可能是幻觉
-                    f.description += f"\n  [注意] 引用的行号 {f.line_start} 超出文件范围（共 {total_lines} 行）"
+                    f.description += (
+                        f"\n  [注意] 引用的行号 {f.line_start} 超出文件范围（共 {total_lines} 行）"
+                    )
                     f.confidence = max(0.3, f.confidence - 0.2)  # 降低置信度
             except (IOError, OSError):
                 pass  # 读不了文件就放行
@@ -166,9 +177,10 @@ def validate_hallucination(findings: list[Finding],
 
 # ─── 主管道 ────────────────────────────────────────────────────────────
 
-def run_pipeline(findings: list[Finding],
-                 project_root: str = ".",
-                 thresholds: dict = None) -> FilterReport:
+
+def run_pipeline(
+    findings: list[Finding], project_root: str = ".", thresholds: dict = None
+) -> FilterReport:
     """运行完整的三级过滤管道"""
     report = FilterReport(original_count=len(findings))
     current = findings[:]
@@ -194,12 +206,13 @@ def run_pipeline(findings: list[Finding],
 
 # ─── Markdown 解析（回退方案） ───────────────────────────────────────
 
+
 def parse_markdown_findings(md_text: str) -> list[Finding]:
     """从 Markdown 审查报告中提取发现"""
     findings = []
 
     # 按章节提取
-    sections = re.split(r'^###?\s+', md_text, flags=re.MULTILINE)
+    sections = re.split(r"^###?\s+", md_text, flags=re.MULTILINE)
 
     for section in sections:
         if not section.strip():
@@ -220,17 +233,17 @@ def parse_markdown_findings(md_text: str) -> list[Finding]:
                 break
 
         # 提取文件路径
-        file_matches = re.findall(r'`([^`]+\.[a-z]+)`', section)
+        file_matches = re.findall(r"`([^`]+\.[a-z]+)`", section)
         if file_matches:
             finding.file_path = file_matches[0]
 
         # 提取行号
-        line_match = re.search(r':(\d+)', section)
+        line_match = re.search(r":(\d+)", section)
         if line_match:
             finding.line_start = int(line_match.group(1))
 
         # 标题 = 章节第一行
-        lines = section.strip().split('\n')
+        lines = section.strip().split("\n")
         if lines:
             finding.title = lines[0][:100]
 
@@ -244,9 +257,14 @@ def parse_markdown_findings(md_text: str) -> list[Finding]:
 
 # ─── 统计输出 ──────────────────────────────────────────────────────────
 
+
 def format_stats(report: FilterReport) -> str:
     """格式化过滤统计"""
-    total_removed = len(report.removed_confidence) + len(report.removed_dedupe) + len(report.removed_hallucination)
+    total_removed = (
+        len(report.removed_confidence)
+        + len(report.removed_dedupe)
+        + len(report.removed_hallucination)
+    )
 
     lines = [
         "╔══════════════════════════════════════════════╗",
@@ -266,8 +284,10 @@ def format_stats(report: FilterReport) -> str:
 
 # ─── CLI 入口 ──────────────────────────────────────────────────────────
 
+
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="多级审查过滤管道")
     parser.add_argument("--input", "-i", required=True, help="输入文件 (.json 或 .md)")
     parser.add_argument("--output", "-o", help="输出文件（可选）")
@@ -345,9 +365,11 @@ def main():
                     "confidence": f.confidence,
                 }
                 for f in report.findings
-            ]
+            ],
         }
-        Path(args.output).write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")
+        Path(args.output).write_text(
+            json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         print(f"✅ 过滤后写入: {args.output} ({len(report.findings)} 条)")
     else:
         print(format_stats(report))

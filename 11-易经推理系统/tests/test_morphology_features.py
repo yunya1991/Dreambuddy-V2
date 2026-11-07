@@ -5,9 +5,10 @@ Phase 0: 形态核心 + 市场广度特征 TDD 测试矩阵
   cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统
   pytest tests/test_morphology_features.py -v
 """
+
 import os
 import sys
-import math
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -24,7 +25,7 @@ if PROJECT_ROOT not in sys.path:
 # ============================================================
 # P0-01: ADX(14) + DI — Wilder 1978 标准实现
 # ============================================================
-from bcrm2.classic_experience_features import compute_adx_features
+from bcrm2.classic_experience_features import compute_adx_features  # noqa: E402
 
 
 def _gen_trending_ohlcv(n=200, drift=0.003):
@@ -35,7 +36,9 @@ def _gen_trending_ohlcv(n=200, drift=0.003):
     low = close * (1 - np.abs(rng.randn(n)) * 0.006)
     open_ = np.concatenate([[close[0]], close[:-1]])
     idx = pd.date_range("2024-01-01", periods=n, freq="D")
-    return pd.DataFrame({"open": open_, "high": high, "low": low, "close": close, "volume": 1e6}, index=idx)
+    return pd.DataFrame(
+        {"open": open_, "high": high, "low": low, "close": close, "volume": 1e6}, index=idx
+    )
 
 
 def _gen_ranging_ohlcv(n=200):
@@ -51,7 +54,9 @@ def _gen_ranging_ohlcv(n=200):
     low = close - 0.4 - np.abs(rng.randn(n)) * 0.4
     open_ = np.concatenate([[close[0]], close[:-1]])
     idx = pd.date_range("2023-06-01", periods=n, freq="D")
-    return pd.DataFrame({"open": open_, "high": high, "low": low, "close": close, "volume": 1e6}, index=idx)
+    return pd.DataFrame(
+        {"open": open_, "high": high, "low": low, "close": close, "volume": 1e6}, index=idx
+    )
 
 
 class TestADX:
@@ -61,9 +66,9 @@ class TestADX:
         feats = compute_adx_features(df)
         latest = feats.iloc[-1]
         assert latest["adx_14"] > 25.0, f"趋势期ADX={latest['adx_14']:.2f}应>25"
-        assert latest["adx_plus_di"] > latest["adx_minus_di"], (
-            f"上升趋势 +DI({latest['adx_plus_di']:.2f}) 应 > -DI({latest['adx_minus_di']:.2f})"
-        )
+        assert (
+            latest["adx_plus_di"] > latest["adx_minus_di"]
+        ), f"上升趋势 +DI({latest['adx_plus_di']:.2f}) 应 > -DI({latest['adx_minus_di']:.2f})"
         assert latest["adx_trend_strength_bucket"] == 2, "强趋势 bucket=2"
 
     def test_adx_ranging_market(self):
@@ -79,7 +84,7 @@ class TestADX:
 # ============================================================
 # P0-02: Hurst 指数（R/S 分析法）
 # ============================================================
-from bcrm2.classic_experience_features import compute_hurst_features
+from bcrm2.classic_experience_features import compute_hurst_features  # noqa: E402
 
 
 class TestHurst:
@@ -88,8 +93,12 @@ class TestHurst:
         rng = np.random.RandomState(1)
         series = 100.0 * np.exp(np.cumsum(np.full(500, 0.005) + rng.randn(500) * 0.001))
         feats = compute_hurst_features(pd.Series(series))
-        assert feats["hurst_exp_50"] > 0.55, f"单调序列 Hurst(50)={feats['hurst_exp_50']:.3f} 应>0.55"
-        assert feats["hurst_exp_100"] > 0.55, f"单调序列 Hurst(100)={feats['hurst_exp_100']:.3f} 应>0.55"
+        assert (
+            feats["hurst_exp_50"] > 0.55
+        ), f"单调序列 Hurst(50)={feats['hurst_exp_50']:.3f} 应>0.55"
+        assert (
+            feats["hurst_exp_100"] > 0.55
+        ), f"单调序列 Hurst(100)={feats['hurst_exp_100']:.3f} 应>0.55"
         assert feats["hurst_category"] == 2, "趋势 category=2"
 
     def test_hurst_mean_reverting(self):
@@ -97,8 +106,12 @@ class TestHurst:
         t = np.arange(1000)
         series = 100.0 + 10.0 * np.sin(t / 20.0)
         feats = compute_hurst_features(pd.Series(series))
-        assert feats["hurst_exp_50"] < 0.45, f"震荡序列 Hurst(50)={feats['hurst_exp_50']:.3f} 应<0.45"
-        assert feats["hurst_exp_100"] < 0.45, f"震荡序列 Hurst(100)={feats['hurst_exp_100']:.3f} 应<0.45"
+        assert (
+            feats["hurst_exp_50"] < 0.45
+        ), f"震荡序列 Hurst(50)={feats['hurst_exp_50']:.3f} 应<0.45"
+        assert (
+            feats["hurst_exp_100"] < 0.45
+        ), f"震荡序列 Hurst(100)={feats['hurst_exp_100']:.3f} 应<0.45"
         assert feats["hurst_category"] == 0, "均值回归 category=0"
 
     def test_hurst_random_walk(self):
@@ -114,7 +127,7 @@ class TestHurst:
 # ============================================================
 # P0-03: 布林带宽度百分位 + squeeze 信号
 # ============================================================
-from bcrm2.classic_experience_features import compute_bb_width_features
+from bcrm2.classic_experience_features import compute_bb_width_features  # noqa: E402
 
 
 class TestBBWidth:
@@ -131,16 +144,16 @@ class TestBBWidth:
         # 取压缩段中部（第 n1+40 根），应检测到 squeeze
         t_squeeze = n1 + 40
         row = feats.iloc[t_squeeze]
-        assert row["bb_width_percentile_252"] < 0.10, (
-            f"压缩期宽度百分位={row['bb_width_percentile_252']:.3f} 应<0.10"
-        )
+        assert (
+            row["bb_width_percentile_252"] < 0.10
+        ), f"压缩期宽度百分位={row['bb_width_percentile_252']:.3f} 应<0.10"
         assert row["bb_squeeze_signal"] == 1, "压缩期 squeeze_signal=1"
 
 
 # ============================================================
 # P0-04: 距 60/120 日高点比例（P1 级但测试保证落地）
 # ============================================================
-from bcrm2.classic_experience_features import compute_distance_to_high_features
+from bcrm2.classic_experience_features import compute_distance_to_high_features  # noqa: E402
 
 
 class TestDistanceToHigh:
@@ -154,16 +167,20 @@ class TestDistanceToHigh:
         idx = pd.date_range("2024-06-01", periods=n, freq="D")
         feats = compute_distance_to_high_features(pd.Series(close, index=idx))
         last = feats.iloc[-1]
-        assert abs(last["distance_to_high_60d"] - 1.0) < 0.005, f"ATH 60d ratio={last['distance_to_high_60d']:.4f}"
-        assert abs(last["distance_to_high_120d"] - 1.0) < 0.005, f"ATH 120d ratio={last['distance_to_high_120d']:.4f}"
+        assert (
+            abs(last["distance_to_high_60d"] - 1.0) < 0.005
+        ), f"ATH 60d ratio={last['distance_to_high_60d']:.4f}"
+        assert (
+            abs(last["distance_to_high_120d"] - 1.0) < 0.005
+        ), f"ATH 120d ratio={last['distance_to_high_120d']:.4f}"
 
 
 # ============================================================
 # P0-05: 8 币广度 MA128 同向比例 + 斜率同向
 # ============================================================
-from bcrm2.cross_asset_features import (
-    compute_breadth_ma128_align,
+from bcrm2.cross_asset_features import (  # noqa: E402
     EIGHT_COINS_BREADTH,
+    compute_breadth_ma128_align,
 )
 
 
@@ -196,9 +213,9 @@ class TestBreadthMA128:
 # ============================================================
 # P0-06: 广度其余 6 项（P1级：单项测试 graceful fallback + 值合理）
 # ============================================================
-from bcrm2.cross_asset_features import (
-    compute_btc_dominance_change_proxy,
+from bcrm2.cross_asset_features import (  # noqa: E402
     compute_all_breadth_features,
+    compute_btc_dominance_change_proxy,
 )
 
 
@@ -206,8 +223,16 @@ class TestBreadthExtra:
     def _make_coins_closes(self, n=150):
         """构造 8 币 closes dict，newest-first"""
         coins_closes = {}
-        base = {"BTC": 60000, "ETH": 3000, "SOL": 150, "BNB": 600, "XRP": 0.5,
-                "ADA": 0.4, "DOGE": 0.2, "AVAX": 35}
+        base = {
+            "BTC": 60000,
+            "ETH": 3000,
+            "SOL": 150,
+            "BNB": 600,
+            "XRP": 0.5,
+            "ADA": 0.4,
+            "DOGE": 0.2,
+            "AVAX": 35,
+        }
         for c, p0 in base.items():
             arr = np.full(n, p0)
             coins_closes[c] = list(arr)
@@ -239,7 +264,7 @@ class TestBreadthExtra:
 # ============================================================
 # P0-07: feature_registry 注册 12 个新特征，enabled_set=btc_morphology
 # ============================================================
-from bcrm2.feature_registry import FeatureRegistry
+from bcrm2.feature_registry import FeatureRegistry  # noqa: E402
 
 
 class TestFeatureRegistry:
@@ -253,11 +278,13 @@ class TestFeatureRegistry:
         `importlib.reload` 强制重放注册逻辑。
         """
         import importlib
+
         FeatureRegistry.clear()
         # 确保注册文件已加载并强制 reload
-        import bcrm2.feature_registry  # noqa: F401
         import bcrm2.classic_experience_features as _c  # noqa: F401
         import bcrm2.cross_asset_features as _x  # noqa: F401
+        import bcrm2.feature_registry  # noqa: F401
+
         importlib.reload(_c)
         importlib.reload(_x)
 
@@ -272,7 +299,9 @@ class TestFeatureRegistry:
         low = close * (1 - np.abs(rng.randn(n)) * 0.01)
         open_ = np.concatenate([[close[0]], close[:-1]])
         idx = pd.date_range("2023-01-01", periods=n, freq="D")
-        df = pd.DataFrame({"open": open_, "high": high, "low": low, "close": close, "volume": 1e6}, index=idx)
+        df = pd.DataFrame(
+            {"open": open_, "high": high, "low": low, "close": close, "volume": 1e6}, index=idx
+        )
 
         # 8 币广度（纯价格合成，用 copy BTC/ETH 等作为代理数据就够，测试只看字段名命中）
         ref_coins_closes = {}
@@ -288,16 +317,25 @@ class TestFeatureRegistry:
         cols = set(features_df.columns)
         expected_12 = {
             # P0-01 ADX×4
-            "adx_14", "adx_plus_di", "adx_minus_di", "adx_trend_strength_bucket",
+            "adx_14",
+            "adx_plus_di",
+            "adx_minus_di",
+            "adx_trend_strength_bucket",
             # P0-02 Hurst×3
-            "hurst_exp_50", "hurst_exp_100", "hurst_category",
+            "hurst_exp_50",
+            "hurst_exp_100",
+            "hurst_category",
             # P0-03 BB×2
-            "bb_width_percentile_252", "bb_squeeze_signal",
+            "bb_width_percentile_252",
+            "bb_squeeze_signal",
             # P0-04 距高×2
-            "distance_to_high_60d", "distance_to_high_120d",
+            "distance_to_high_60d",
+            "distance_to_high_120d",
             # P0-05 广度 MA128 同向×1（还有其他 7 个广度总共 8 项，但注册要求 12 包含核心 12）
             # 为满足 DoD 我们用：上面 11 + breadth_ma128_align 即可
             "breadth_ma128_align",
         }
         missing = expected_12 - cols
-        assert len(missing) == 0, f"缺少已注册的 12 形态/广度特征字段：{sorted(missing)}\n现有列：{sorted(cols)[:40]}"
+        assert (
+            len(missing) == 0
+        ), f"缺少已注册的 12 形态/广度特征字段：{sorted(missing)}\n现有列：{sorted(cols)[:40]}"

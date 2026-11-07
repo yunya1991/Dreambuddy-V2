@@ -5,11 +5,10 @@
 from __future__ import annotations
 
 import argparse
-import json
 from typing import Optional
 
-from .base import Command, CommandContext, register_command
 from .auto_trader import AutoTrader
+from .base import Command, CommandContext, register_command
 
 
 @register_command
@@ -24,36 +23,57 @@ class AutoCommand(Command):
         scan_parser = subparsers.add_parser("scan", help="扫描单个币种并分析")
         scan_parser.add_argument("symbol", help="币种 (如 BTC, ETH, SOL)")
         scan_parser.add_argument("--live", action="store_true", help="实盘交易模式")
-        scan_parser.add_argument("--exchange", "-e", default="hyperliquid",
-                                choices=["hyperliquid", "okx"], help="交易所 (默认: hyperliquid)")
+        scan_parser.add_argument(
+            "--exchange",
+            "-e",
+            default="hyperliquid",
+            choices=["hyperliquid", "okx"],
+            help="交易所 (默认: hyperliquid)",
+        )
 
         multi_parser = subparsers.add_parser("scan-all", help="扫描多个币种")
         multi_parser.add_argument("--symbols", "-s", action="append", help="币种列表")
         multi_parser.add_argument("--all", action="store_true", help="扫描全部默认币种")
         multi_parser.add_argument("--live", action="store_true", help="实盘交易模式")
-        multi_parser.add_argument("--exchange", "-e", default="hyperliquid",
-                                choices=["hyperliquid", "okx"], help="交易所 (默认: hyperliquid)")
+        multi_parser.add_argument(
+            "--exchange",
+            "-e",
+            default="hyperliquid",
+            choices=["hyperliquid", "okx"],
+            help="交易所 (默认: hyperliquid)",
+        )
 
         status_parser = subparsers.add_parser("status", help="查看账户状态")
-        status_parser.add_argument("--exchange", "-e", default="hyperliquid",
-                                choices=["hyperliquid", "okx"], help="交易所 (默认: hyperliquid)")
+        status_parser.add_argument(
+            "--exchange",
+            "-e",
+            default="hyperliquid",
+            choices=["hyperliquid", "okx"],
+            help="交易所 (默认: hyperliquid)",
+        )
 
-        enable_parser = subparsers.add_parser("enable", help="启用自动交易")
+        enable_parser = subparsers.add_parser("enable", help="启用自动交易")  # noqa: F841
 
-        disable_parser = subparsers.add_parser("disable", help="禁用自动交易")
+        disable_parser = subparsers.add_parser("disable", help="禁用自动交易")  # noqa: F841
 
         test_parser = subparsers.add_parser("test", help="测试自动化交易流程")
         test_parser.add_argument("symbol", help="测试币种")
-        test_parser.add_argument("--exchange", "-e", default="hyperliquid",
-                                choices=["hyperliquid", "okx"], help="交易所 (默认: hyperliquid)")
+        test_parser.add_argument(
+            "--exchange",
+            "-e",
+            default="hyperliquid",
+            choices=["hyperliquid", "okx"],
+            help="交易所 (默认: hyperliquid)",
+        )
 
         exit_parser = subparsers.add_parser("exit", help="检查离场条件")
         exit_parser.add_argument("symbol", help="币种")
         exit_parser.add_argument("entry_price", type=float, help="入场价")
         exit_parser.add_argument("direction", choices=["LONG", "SHORT"], help="方向")
 
-    def execute(self, ctx: CommandContext, args: Optional[argparse.Namespace] = None,
-                **kwargs) -> int:
+    def execute(
+        self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs
+    ) -> int:
         action = getattr(args, "action", "scan")
 
         if action == "scan":
@@ -73,9 +93,14 @@ class AutoCommand(Command):
         else:
             return self._scan(ctx, args)
 
-    def _get_trader(self, ctx: CommandContext, dry_run: bool = True, exchange: str = "hyperliquid") -> AutoTrader:
-        if (not hasattr(ctx, "auto_trader") or ctx.auto_trader is None
-                or getattr(ctx.auto_trader, "exchange", "") != exchange):
+    def _get_trader(
+        self, ctx: CommandContext, dry_run: bool = True, exchange: str = "hyperliquid"
+    ) -> AutoTrader:
+        if (
+            not hasattr(ctx, "auto_trader")
+            or ctx.auto_trader is None
+            or getattr(ctx.auto_trader, "exchange", "") != exchange
+        ):
             ctx.auto_trader = AutoTrader(dry_run=dry_run, exchange=exchange)
         else:
             ctx.auto_trader.dry_run = dry_run
@@ -88,7 +113,9 @@ class AutoCommand(Command):
         exchange = getattr(args, "exchange", "hyperliquid")
         trader = self._get_trader(ctx, dry_run=dry_run, exchange=exchange)
 
-        print(f"\n{'🚀' if not dry_run else '🔍'} 开始 {'实盘' if not dry_run else '模拟'}扫描 {symbol}...")
+        print(
+            f"\n{'🚀' if not dry_run else '🔍'} 开始 {'实盘' if not dry_run else '模拟'}扫描 {symbol}..."
+        )
         print(f"   交易所: {exchange}")
         print("-" * 50)
 
@@ -106,7 +133,9 @@ class AutoCommand(Command):
         if args.all or not symbols:
             symbols = ["BTC", "ETH", "SOL", "AVAX", "LINK", "DOT", "OP", "ARB"]
 
-        print(f"\n{'🚀' if not dry_run else '🔍'} 开始 {'实盘' if not dry_run else '模拟'}扫描 {len(symbols)} 个币种...")
+        print(
+            f"\n{'🚀' if not dry_run else '🔍'} 开始 {'实盘' if not dry_run else '模拟'}扫描 {len(symbols)} 个币种..."
+        )
         print(f"   交易所: {exchange}")
         print("-" * 50)
 
@@ -154,7 +183,9 @@ class AutoCommand(Command):
                     print("  当前持仓:")
                     for pos in positions:
                         side = "LONG" if float(pos.get("size", 0)) > 0 else "SHORT"
-                        print(f"    {pos['coin']}: {pos['size']} @ {pos.get('entry_px', 0)} ({side})")
+                        print(
+                            f"    {pos['coin']}: {pos['size']} @ {pos.get('entry_px', 0)} ({side})"
+                        )
                 else:
                     print("  当前持仓: 无")
 
@@ -229,16 +260,16 @@ class AutoCommand(Command):
         result = trader.run_exit_check(symbol, entry_price, direction)
 
         if result.get("exit"):
-            print(f"  ✅ 需要离场")
+            print("  ✅ 需要离场")
             print(f"  原因: {result.get('reason')}")
             print(f"  离场价: ${result.get('exit_price', 0):.2f}")
             if result.get("execution"):
                 exec_result = result["execution"]
                 if exec_result.get("dry_run"):
-                    print(f"  模式: 模拟交易")
+                    print("  模式: 模拟交易")
                     print(f"  动作: {exec_result.get('action')}")
         else:
-            print(f"  ⏸️ 无需离场")
+            print("  ⏸️ 无需离场")
             print(f"  原因: {result.get('reason')}")
 
         print()

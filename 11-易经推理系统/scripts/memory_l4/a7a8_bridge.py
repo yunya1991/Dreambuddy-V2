@@ -7,9 +7,9 @@ v0.2 新增模块 — Phase 2 (P1)
 """
 
 import json
-from pathlib import Path
 import sys
-from typing import Any, Dict, List, Optional
+from pathlib import Path
+from typing import Any, Dict, List
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
@@ -38,12 +38,8 @@ def parse_a7_report(report_path: Path) -> Dict[str, Any]:
         "practice_audit_result": str(
             raw.get("audit_result") or raw.get("result") or raw.get("summary", "")
         ),
-        "practice_theory_gap": str(
-            raw.get("practice_theory_gap") or raw.get("gap") or ""
-        ),
-        "audit_refs": [
-            {"type": "repo_file", "ref": str(report_path)}
-        ],
+        "practice_theory_gap": str(raw.get("practice_theory_gap") or raw.get("gap") or ""),
+        "audit_refs": [{"type": "repo_file", "ref": str(report_path)}],
         "lessons": raw.get("lessons") or raw.get("takeaways") or [],
         "raw": raw,
     }
@@ -67,15 +63,17 @@ def parse_a8_report(report_path: Path) -> Dict[str, Any]:
     consistency = raw.get("consistency") or raw.get("consistency_score") or raw.get("credibility")
     if consistency is not None:
         try:
-            consistency_score = float(consistency) / 100.0 if float(consistency) > 1 else float(consistency)
+            consistency_score = (
+                float(consistency) / 100.0 if float(consistency) > 1 else float(consistency)
+            )
         except (ValueError, TypeError):
             consistency_score = 0.5
     else:
         consistency_str = str(raw.get("status") or raw.get("verification_status") or "")
         consistency_score = (
-            0.9 if "pass" in consistency_str.lower()
-            else 0.1 if "fail" in consistency_str.lower()
-            else 0.5
+            0.9
+            if "pass" in consistency_str.lower()
+            else 0.1 if "fail" in consistency_str.lower() else 0.5
         )
 
     confirmed: List[Dict[str, Any]] = []
@@ -83,15 +81,19 @@ def parse_a8_report(report_path: Path) -> Dict[str, Any]:
 
     # 尝试提取理论列表
     for item in raw.get("confirmed_theories") or raw.get("validated") or []:
-        confirmed.append({
-            "theory_name": str(item.get("name") or item.get("theory", "")),
-            "confidence": float(item.get("confidence", 0.7)),
-        })
+        confirmed.append(
+            {
+                "theory_name": str(item.get("name") or item.get("theory", "")),
+                "confidence": float(item.get("confidence", 0.7)),
+            }
+        )
     for item in raw.get("contradicted_theories") or raw.get("falsified") or []:
-        contradicted.append({
-            "theory_name": str(item.get("name") or item.get("theory", "")),
-            "confidence": float(item.get("confidence", 0.7)),
-        })
+        contradicted.append(
+            {
+                "theory_name": str(item.get("name") or item.get("theory", "")),
+                "confidence": float(item.get("confidence", 0.7)),
+            }
+        )
 
     return {
         "verification_result": str(
@@ -129,22 +131,26 @@ def merge_into_review(
         out["a7_report_ref"] = "merged"
         gap = a7_parsed.get("practice_theory_gap", "")
         if gap:
-            out["mistakes"].append({
-                "what": "实践与理论存在差距",
-                "why": gap,
-                "severity": None,
-                "stage_ref": "A7",
-                "theory_gap": gap,
-            })
+            out["mistakes"].append(
+                {
+                    "what": "实践与理论存在差距",
+                    "why": gap,
+                    "severity": None,
+                    "stage_ref": "A7",
+                    "theory_gap": gap,
+                }
+            )
         for lesson in a7_parsed.get("lessons", []):
-            out["successes"].append({
-                "what": str(lesson),
-                "why": "A7 实践经验",
-                "severity": None,
-                "stage_ref": "A7",
-                "theory_gap": None,
-                "reproducible": None,
-            })
+            out["successes"].append(
+                {
+                    "what": str(lesson),
+                    "why": "A7 实践经验",
+                    "severity": None,
+                    "stage_ref": "A7",
+                    "theory_gap": None,
+                    "reproducible": None,
+                }
+            )
 
     # 合并 A8 到 theory_practice_analysis
     if a8_parsed:

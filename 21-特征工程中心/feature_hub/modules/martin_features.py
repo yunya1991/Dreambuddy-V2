@@ -7,11 +7,11 @@
   atr_ratio        — ATR/价格 比率（波动率归一化）
   volatility_regime — 波动率分位（低/中/高 0/0.5/1）
 """
+
 from __future__ import annotations
 
 from typing import Optional
 
-import numpy as np
 import pandas as pd
 
 
@@ -45,11 +45,14 @@ def compute(
     result["grid_profit"] = daily_range.rolling(20, min_periods=1).sum() / 2
 
     # atr_ratio：ATR/价格 比率
-    tr = pd.concat([
-        high - low,
-        (high - close.shift(1)).abs(),
-        (low - close.shift(1)).abs(),
-    ], axis=1).max(axis=1)
+    tr = pd.concat(
+        [
+            high - low,
+            (high - close.shift(1)).abs(),
+            (low - close.shift(1)).abs(),
+        ],
+        axis=1,
+    ).max(axis=1)
     atr = tr.rolling(14, min_periods=1).mean()
     result["atr_ratio"] = atr / (close + 1e-10)
 

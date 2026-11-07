@@ -23,13 +23,12 @@ RED 契约：
   3. check_trust_validity(memory_id, current_git_hash, current_dependency_fp, current_scope) 方法
   4. 6 个失效条件各自有对应测试
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 import time
 from pathlib import Path
-
-import pytest
 
 _SCRIPT_DIR = Path(__file__).parent
 if str(_SCRIPT_DIR) not in sys.path:
@@ -38,9 +37,11 @@ if str(_SCRIPT_DIR) not in sys.path:
 
 # ─────────────────────────────── trust_state 表 + 方法存在性 ───────────────────────────────
 
+
 def test_trust_state_table_exists(tmp_path):
     """RED: 应有 trust_state 表。"""
     from evidence_ledger import EvidenceLedger
+
     ledger = EvidenceLedger(db_path=tmp_path / "test_p1_3.db")
     cursor = ledger._conn.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='trust_state'"
@@ -51,25 +52,33 @@ def test_trust_state_table_exists(tmp_path):
 def test_record_trust_state_method_exists(tmp_path):
     """RED: EvidenceLedger 应有 record_trust_state 方法。"""
     from evidence_ledger import EvidenceLedger
+
     ledger = EvidenceLedger(db_path=tmp_path / "test_p1_3.db")
-    assert hasattr(ledger, "record_trust_state"), \
-        "EvidenceLedger 应提供 record_trust_state(memory_id, git_commit_hash, dependency_fp, scope)"
+    assert hasattr(
+        ledger, "record_trust_state"
+    ), "EvidenceLedger 应提供 record_trust_state(memory_id, git_commit_hash, dependency_fp, scope)"
 
 
 def test_check_trust_validity_method_exists(tmp_path):
     """RED: EvidenceLedger 应有 check_trust_validity 方法。"""
     from evidence_ledger import EvidenceLedger
+
     ledger = EvidenceLedger(db_path=tmp_path / "test_p1_3.db")
-    assert hasattr(ledger, "check_trust_validity"), \
-        "EvidenceLedger 应提供 check_trust_validity(memory_id, current_git_hash, current_dependency_fp, current_scope)"
+    assert hasattr(
+        ledger, "check_trust_validity"
+    ), "EvidenceLedger 应提供 check_trust_validity(memory_id, current_git_hash, current_dependency_fp, current_scope)"
 
 
 def test_check_trust_validity_no_state_returns_false(tmp_path):
     """RED: 无 trust_state 记录时，check_trust_validity 返回 (False, 'no_trust_state')。"""
     from evidence_ledger import EvidenceLedger
+
     ledger = EvidenceLedger(db_path=tmp_path / "test_p1_3.db")
     is_valid, reason = ledger.check_trust_validity(
-        "VM-no-state", "hash1", "dep_fp1", "scope1",
+        "VM-no-state",
+        "hash1",
+        "dep_fp1",
+        "scope1",
     )
     assert is_valid is False
     assert reason == "no_trust_state"
@@ -78,6 +87,7 @@ def test_check_trust_validity_no_state_returns_false(tmp_path):
 def test_check_trust_validity_all_match_returns_true(tmp_path):
     """RED: 所有条件匹配时，check_trust_validity 返回 (True, 'valid')。"""
     from evidence_ledger import EvidenceLedger
+
     ledger = EvidenceLedger(db_path=tmp_path / "test_p1_3.db")
     ledger.record_trust_state(
         memory_id="VM-valid-test",
@@ -86,7 +96,10 @@ def test_check_trust_validity_all_match_returns_true(tmp_path):
         scope="code_merge",
     )
     is_valid, reason = ledger.check_trust_validity(
-        "VM-valid-test", "abc123", "dep_fp_abc", "code_merge",
+        "VM-valid-test",
+        "abc123",
+        "dep_fp_abc",
+        "code_merge",
     )
     assert is_valid is True
     assert reason == "valid"
@@ -94,9 +107,11 @@ def test_check_trust_validity_all_match_returns_true(tmp_path):
 
 # ─────────────────────────────── 失效条件 1: 代码变更 ───────────────────────────────
 
+
 def test_failure_condition_1_code_change(tmp_path):
     """RED: 失效条件 1 — git_commit_hash 变化 → 信任失效。"""
     from evidence_ledger import EvidenceLedger
+
     ledger = EvidenceLedger(db_path=tmp_path / "test_p1_3.db")
     ledger.record_trust_state(
         memory_id="VM-code-change",
@@ -105,7 +120,10 @@ def test_failure_condition_1_code_change(tmp_path):
         scope="scope1",
     )
     is_valid, reason = ledger.check_trust_validity(
-        "VM-code-change", "different_hash", "dep_fp", "scope1",
+        "VM-code-change",
+        "different_hash",
+        "dep_fp",
+        "scope1",
     )
     assert is_valid is False
     assert reason == "code_change"
@@ -113,9 +131,11 @@ def test_failure_condition_1_code_change(tmp_path):
 
 # ─────────────────────────────── 失效条件 2: verify 失败 ───────────────────────────────
 
+
 def test_failure_condition_2_verify_failed(tmp_path):
     """RED: 失效条件 2 — verify_failures > 0 → 信任失效。"""
     from evidence_ledger import EvidenceLedger
+
     ledger = EvidenceLedger(db_path=tmp_path / "test_p1_3.db")
     ledger.record_trust_state(
         memory_id="VM-verify-failed",
@@ -126,7 +146,10 @@ def test_failure_condition_2_verify_failed(tmp_path):
     # 标记 verify 失败
     ledger.mark_verify_failure("VM-verify-failed")
     is_valid, reason = ledger.check_trust_validity(
-        "VM-verify-failed", "abc123", "dep_fp", "scope1",
+        "VM-verify-failed",
+        "abc123",
+        "dep_fp",
+        "scope1",
     )
     assert is_valid is False
     assert reason == "verify_failed"
@@ -134,9 +157,11 @@ def test_failure_condition_2_verify_failed(tmp_path):
 
 # ─────────────────────────────── 失效条件 3: 超时 ───────────────────────────────
 
+
 def test_failure_condition_3_timeout_code(tmp_path):
     """RED: 失效条件 3 — 代码类产出超时（> 1 天）→ 信任失效。"""
     from evidence_ledger import EvidenceLedger
+
     ledger = EvidenceLedger(db_path=tmp_path / "test_p1_3.db")
     ledger.record_trust_state(
         memory_id="VM-timeout-code",
@@ -152,7 +177,10 @@ def test_failure_condition_3_timeout_code(tmp_path):
     )
     ledger._conn.commit()
     is_valid, reason = ledger.check_trust_validity(
-        "VM-timeout-code", "abc123", "dep_fp", "code_merge",
+        "VM-timeout-code",
+        "abc123",
+        "dep_fp",
+        "code_merge",
     )
     assert is_valid is False
     assert reason == "timeout"
@@ -161,6 +189,7 @@ def test_failure_condition_3_timeout_code(tmp_path):
 def test_failure_condition_3_timeout_doc(tmp_path):
     """RED: 失效条件 3 — 文档类产出超时阈值 30 天（比代码 1 天宽松）。"""
     from evidence_ledger import EvidenceLedger
+
     ledger = EvidenceLedger(db_path=tmp_path / "test_p1_3.db")
     ledger.record_trust_state(
         memory_id="VM-timeout-doc",
@@ -176,7 +205,10 @@ def test_failure_condition_3_timeout_doc(tmp_path):
     )
     ledger._conn.commit()
     is_valid, reason = ledger.check_trust_validity(
-        "VM-timeout-doc", "abc123", "dep_fp", "doc_review",
+        "VM-timeout-doc",
+        "abc123",
+        "dep_fp",
+        "doc_review",
     )
     # 文档 5 天不超时（30 天阈值）
     assert is_valid is True
@@ -185,9 +217,11 @@ def test_failure_condition_3_timeout_doc(tmp_path):
 
 # ─────────────────────────────── 失效条件 4: 依赖指纹变化 ───────────────────────────────
 
+
 def test_failure_condition_4_dependency_changed(tmp_path):
     """RED: 失效条件 4 — 依赖指纹变化 → 信任失效。"""
     from evidence_ledger import EvidenceLedger
+
     ledger = EvidenceLedger(db_path=tmp_path / "test_p1_3.db")
     ledger.record_trust_state(
         memory_id="VM-dep-change",
@@ -196,7 +230,10 @@ def test_failure_condition_4_dependency_changed(tmp_path):
         scope="scope1",
     )
     is_valid, reason = ledger.check_trust_validity(
-        "VM-dep-change", "abc123", "changed_dep_fp", "scope1",
+        "VM-dep-change",
+        "abc123",
+        "changed_dep_fp",
+        "scope1",
     )
     assert is_valid is False
     assert reason == "dependency_changed"
@@ -204,9 +241,11 @@ def test_failure_condition_4_dependency_changed(tmp_path):
 
 # ─────────────────────────────── 失效条件 5: scope 漂移 ───────────────────────────────
 
+
 def test_failure_condition_5_scope_drift(tmp_path):
     """RED: 失效条件 5 — scope 漂移 → 信任失效。"""
     from evidence_ledger import EvidenceLedger
+
     ledger = EvidenceLedger(db_path=tmp_path / "test_p1_3.db")
     ledger.record_trust_state(
         memory_id="VM-scope-drift",
@@ -215,7 +254,10 @@ def test_failure_condition_5_scope_drift(tmp_path):
         scope="purpose_A",
     )
     is_valid, reason = ledger.check_trust_validity(
-        "VM-scope-drift", "abc123", "dep_fp", "purpose_B",
+        "VM-scope-drift",
+        "abc123",
+        "dep_fp",
+        "purpose_B",
     )
     assert is_valid is False
     assert reason == "scope_drift"
@@ -223,9 +265,11 @@ def test_failure_condition_5_scope_drift(tmp_path):
 
 # ─────────────────────────────── 失效条件 6: 抽样重验失败 ───────────────────────────────
 
+
 def test_failure_condition_6_sample_reverify_failed(tmp_path):
     """RED: 失效条件 6 — 抽样重验失败 → 信任失效。"""
     from evidence_ledger import EvidenceLedger
+
     ledger = EvidenceLedger(db_path=tmp_path / "test_p1_3.db")
     ledger.record_trust_state(
         memory_id="VM-sample-failed",
@@ -236,7 +280,10 @@ def test_failure_condition_6_sample_reverify_failed(tmp_path):
     # 标记抽样重验失败
     ledger.mark_sample_reverify_failure("VM-sample-failed")
     is_valid, reason = ledger.check_trust_validity(
-        "VM-sample-failed", "abc123", "dep_fp", "scope1",
+        "VM-sample-failed",
+        "abc123",
+        "dep_fp",
+        "scope1",
     )
     assert is_valid is False
     assert reason == "sample_reverify_failed"
@@ -244,9 +291,11 @@ def test_failure_condition_6_sample_reverify_failed(tmp_path):
 
 # ─────────────────────────────── FAIL-OPEN ───────────────────────────────
 
+
 def test_check_trust_validity_fail_open_on_exception(tmp_path):
     """RED: check_trust_validity 异常时 FAIL-OPEN 返回 (True, 'fail_open')。"""
     from evidence_ledger import EvidenceLedger
+
     ledger = EvidenceLedger(db_path=tmp_path / "test_p1_3.db")
     # 传入 None 触发异常
     is_valid, reason = ledger.check_trust_validity(None, None, None, None)

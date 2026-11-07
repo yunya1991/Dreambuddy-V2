@@ -17,14 +17,15 @@ DreamBuddy Master Daemon - 统一调度守护进程
 - 崩溃自动重启
 - 统一日志
 """
-import os
-import sys
-import time
+
 import json
+import os
 import subprocess
+import sys
 import threading
-from pathlib import Path
+import time
 from datetime import datetime, timezone
+from pathlib import Path
 
 ROOT_DIR = Path(__file__).parent.parent.resolve()
 AB_DIR = ROOT_DIR / "experiments" / "ab-trading"
@@ -95,12 +96,19 @@ TASKS = [
         "interval": 3600,
         "work_dir": str(YIJING_DIR),
         "cmd": [
-            PYTHON, "-m", "scripts.memory_l4.polling_trader",
-            "--interval", "3600",
-            "--coins", "BTC,ETH,SOL,BNB,XRP,DOGE",
-            "--confidence", "0.35",
-            "--max-positions", "5",
-            "--position-pct", "0.10",
+            PYTHON,
+            "-m",
+            "scripts.memory_l4.polling_trader",
+            "--interval",
+            "3600",
+            "--coins",
+            "BTC,ETH,SOL,BNB,XRP,DOGE",
+            "--confidence",
+            "0.35",
+            "--max-positions",
+            "5",
+            "--position-pct",
+            "0.10",
         ],
         "log_file": str(YIJING_DIR / "logs" / "trading_master.log"),
     },
@@ -122,7 +130,7 @@ def log(msg):
     try:
         with open(LOG_FILE, "a", encoding="utf-8") as f:
             f.write(line + "\n")
-    except:
+    except:  # noqa: E722
         pass
 
 
@@ -132,7 +140,7 @@ def is_running(pid_file):
             pid = int(pid_file.read_text().strip())
             os.kill(pid, 0)
             return pid
-        except:
+        except:  # noqa: E722
             pid_file.unlink(missing_ok=True)
     return None
 
@@ -141,7 +149,7 @@ def load_state():
     if STATE_FILE.exists():
         try:
             return json.loads(STATE_FILE.read_text())
-        except:
+        except:  # noqa: E722
             pass
     return {}
 
@@ -161,7 +169,7 @@ def run_task(task, state):
 
     log(f"[TASK] 执行: {label}")
 
-    last_run = state.get(name, {}).get("last_run", 0)
+    last_run = state.get(name, {}).get("last_run", 0)  # noqa: F841
     run_count = state.get(name, {}).get("run_count", 0)
 
     state[name] = {
@@ -271,7 +279,7 @@ def watchdog_loop():
                 worker_loop()
                 sys.exit(0)
             else:
-                worker_pid = pid
+                worker_pid = pid  # noqa: F841
                 MAIN_PID_FILE.parent.mkdir(parents=True, exist_ok=True)
                 MAIN_PID_FILE.write_text(str(pid))
                 log(f"[WATCHDOG] ✅ 工作进程已启动 (PID {pid})")
@@ -311,7 +319,7 @@ def cmd_stop():
         try:
             os.kill(main_pid, 15)
             log(f"  已停止工作进程 (PID {main_pid})")
-        except:
+        except:  # noqa: E722
             pass
         MAIN_PID_FILE.unlink(missing_ok=True)
 
@@ -320,7 +328,7 @@ def cmd_stop():
         try:
             os.kill(watch_pid, 15)
             log(f"  已停止监控进程 (PID {watch_pid})")
-        except:
+        except:  # noqa: E722
             pass
         WATCH_PID_FILE.unlink(missing_ok=True)
 

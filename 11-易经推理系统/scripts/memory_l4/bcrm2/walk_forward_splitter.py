@@ -6,6 +6,7 @@
 - 每折的训练集可保持相等尺寸（固定窗口），也可扩张（expanding）
 - train_ratio / test_ratio 控制每折占比，适用于「5 年日线 → 每折 ~1 年 测试」
 """
+
 from __future__ import annotations
 
 from typing import Generator, List, Tuple

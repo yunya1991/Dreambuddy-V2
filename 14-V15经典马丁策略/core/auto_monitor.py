@@ -14,6 +14,7 @@
   python3 auto_monitor.py --distill-only    # 仅执行复盘和PR评论
   python3 auto_monitor.py --check-only      # 仅检查状态不触发执行
 """
+
 import argparse
 import json
 import os
@@ -130,7 +131,7 @@ def run_agent_a():
         )
         key_lines = [
             l
-            for l in result.stdout.split("\n")
+            for l in result.stdout.split("\n")  # noqa: E741
             if any(
                 kw in l
                 for kw in ["信号触发", "开仓", "加仓", "止盈", "止损", "胜率", "权益", "错误"]
@@ -173,7 +174,7 @@ def run_agent_b():
         )
         key_lines = [
             l
-            for l in result.stdout.split("\n")
+            for l in result.stdout.split("\n")  # noqa: E741
             if any(
                 kw in l
                 for kw in ["信号触发", "开仓", "加仓", "止盈", "止损", "胜率", "权益", "错误"]

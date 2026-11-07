@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 @dataclass
 class CleanedEvent:
     """清洗后的事件。"""
+
     event_id: str
     ts: str
     regime: str
@@ -23,6 +24,7 @@ class CleanedEvent:
 @dataclass
 class ScreenResult:
     """单屏趋势结果。"""
+
     timeframe: str  # "long" / "mid" / "short"
     direction: str  # "UP" / "DOWN" / "FLAT"
     confidence: float  # 0-1
@@ -35,6 +37,7 @@ class ScreenResult:
 @dataclass
 class MDRResult:
     """阻力最小方向结果。"""
+
     direction: str  # "UP" / "DOWN" / "NEUTRAL"
     resistance_up: float  # 0-100
     resistance_down: float  # 0-100
@@ -45,6 +48,7 @@ class MDRResult:
 @dataclass
 class QMMOutput:
     """QMM 输出契约。"""
+
     version: str = "qmm-v1.0"
     snapshot_ts: str = ""
 

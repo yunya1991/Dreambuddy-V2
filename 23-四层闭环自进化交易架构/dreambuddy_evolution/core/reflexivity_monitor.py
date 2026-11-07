@@ -14,6 +14,7 @@ Soros 反身性理论: 认知影响现实，现实反过来改变认知.
   S_adjusted = S_exogenous + λ × S_self
   λ = f(market_share, position_size, holding_period)
 """
+
 from __future__ import annotations
 
 import logging
@@ -26,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 try:
     from dreambuddy_evolution.core.granger_causality_checker import GrangerCausalityChecker
+
     _HAS_GRANGER = True
 except ImportError:
     _HAS_GRANGER = False
@@ -55,7 +57,9 @@ class ReflexivityMonitor:
         self._market_share_history: deque = deque(maxlen=lookback)
 
         # Granger 检验器
-        self._granger = GrangerCausalityChecker(max_lag=5, significance=significance) if _HAS_GRANGER else None
+        self._granger = (
+            GrangerCausalityChecker(max_lag=5, significance=significance) if _HAS_GRANGER else None
+        )
 
         # 自影响系数缓存
         self._self_influence: float = 0.0
@@ -64,12 +68,18 @@ class ReflexivityMonitor:
         # §19 认知函数（索罗斯认知函数 C=认知→行为）
         try:
             from dreambuddy_evolution.core.cognitive_function import CognitiveFunction
+
             self._cognitive_fn = CognitiveFunction(prior_strength=0.5, learning_rate=0.1)
         except ImportError:
             self._cognitive_fn = None
 
-    def record(self, position_delta: float, etf_flow: float | None,
-               price: float, market_volume: float | None = None):
+    def record(
+        self,
+        position_delta: float,
+        etf_flow: float | None,
+        price: float,
+        market_volume: float | None = None,
+    ):
         """记录一个时点的数据."""
         self._position_history.append(position_delta)
         self._etf_flow_history.append(etf_flow if etf_flow is not None else 0.0)

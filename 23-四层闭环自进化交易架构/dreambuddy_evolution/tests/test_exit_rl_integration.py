@@ -2,8 +2,10 @@
 离场 RL 闭环集成测试.
 验证 ExitRewardCalculator 接入 + ShadowRL train_policy 调用.
 """
+
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, patch
 
 
 class TestExitRewardCalculator:
@@ -12,14 +14,17 @@ class TestExitRewardCalculator:
     def test_three_components(self):
         """calculate() 返回 R_total/R_trend/R_risk/R_pnl"""
         from dreambuddy_evolution.core.exit_reward_calculator import ExitRewardCalculator
+
         calc = ExitRewardCalculator()
-        result = calc.calculate({
-            "cs": 0.8,
-            "sl_in_range": True,
-            "pnl_pct": 0.05,
-            "tp_pct_target": 0.06,
-            "sl_pct_target": 0.03,
-        })
+        result = calc.calculate(
+            {
+                "cs": 0.8,
+                "sl_in_range": True,
+                "pnl_pct": 0.05,
+                "tp_pct_target": 0.06,
+                "sl_pct_target": 0.03,
+            }
+        )
         assert "R_total" in result
         assert "R_trend" in result
         assert "R_risk" in result
@@ -36,6 +41,7 @@ class TestExitRewardCalculator:
     def test_fail_open_on_exception(self):
         """异常输入 → 全 0 返回"""
         from dreambuddy_evolution.core.exit_reward_calculator import ExitRewardCalculator
+
         calc = ExitRewardCalculator()
         # 传入无法转换的类型
         result = calc.calculate({"cs": "not_a_number"})
@@ -47,6 +53,7 @@ class TestExitRewardCalculator:
     def test_weight_constraints(self):
         """权重硬约束: w_trend=0.4, w_risk=0.3, w_pnl=0.3"""
         from dreambuddy_evolution.core.exit_reward_calculator import ExitRewardCalculator
+
         calc = ExitRewardCalculator()
         result = calc.calculate({"cs": 0.5, "pnl_pct": 0.0})
         assert result["w_trend"] == 0.4
@@ -56,6 +63,7 @@ class TestExitRewardCalculator:
     def test_negative_cs_low_reward(self):
         """cs ≤ -0.2 → R_trend=-1.0"""
         from dreambuddy_evolution.core.exit_reward_calculator import ExitRewardCalculator
+
         calc = ExitRewardCalculator()
         result = calc.calculate({"cs": -0.3, "pnl_pct": -0.02})
         assert result["R_trend"] == -1.0
@@ -63,6 +71,7 @@ class TestExitRewardCalculator:
     def test_sl_out_of_range_penalty(self):
         """sl_in_range=False → R_risk=-0.5"""
         from dreambuddy_evolution.core.exit_reward_calculator import ExitRewardCalculator
+
         calc = ExitRewardCalculator()
         result = calc.calculate({"cs": 0.5, "sl_in_range": False, "pnl_pct": 0.01})
         assert result["R_risk"] == -0.5
@@ -73,8 +82,9 @@ class TestExitShadowRLTrainPolicy:
 
     def test_train_policy_called_after_activation(self):
         """离场 ShadowRL 样本≥阈值 → train_policy 被调用"""
-        from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
         from dreambuddy_evolution.agi_config import set_switch
+        from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
+
         set_switch("enable_shadow_rl_phase3", True)
         try:
             tracker = ShadowRLTracker(max_samples=10000)
@@ -91,8 +101,9 @@ class TestExitShadowRLTrainPolicy:
 
     def test_train_policy_crash_fail_open(self):
         """train_policy 崩溃 → FAIL-OPEN，不阻塞"""
-        from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
         from dreambuddy_evolution.agi_config import set_switch
+        from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
+
         set_switch("enable_shadow_rl_phase3", True)
         try:
             tracker = ShadowRLTracker(max_samples=10000)
@@ -109,8 +120,9 @@ class TestExitShadowRLTrainPolicy:
 
     def test_train_policy_switch_off_skips(self):
         """关闭 enable_shadow_rl_phase3 → train_policy 不被调用"""
-        from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
         from dreambuddy_evolution.agi_config import set_switch
+        from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
+
         set_switch("enable_shadow_rl_phase3", False)
         try:
             tracker = ShadowRLTracker(max_samples=10000)
@@ -126,15 +138,18 @@ class TestExitShadowRLTrainPolicy:
     def test_exit_reward_replaces_hardcoded(self):
         """验证 reward 来自 ExitRewardCalculator 而非 upl_ratio*5.0"""
         from dreambuddy_evolution.core.exit_reward_calculator import ExitRewardCalculator
+
         calc = ExitRewardCalculator()
         # 模拟离场场景：cs=0.8, pnl=5%, action=force_close
-        result = calc.calculate({
-            "cs": 0.8,
-            "sl_in_range": True,
-            "pnl_pct": 0.05,
-            "tp_pct_target": 0.06,
-            "sl_pct_target": 0.03,
-        })
+        result = calc.calculate(
+            {
+                "cs": 0.8,
+                "sl_in_range": True,
+                "pnl_pct": 0.05,
+                "tp_pct_target": 0.06,
+                "sl_pct_target": 0.03,
+            }
+        )
         # 三组件 reward 应该不等于 upl_ratio * 5.0 = 0.25
         assert result["R_total"] != pytest.approx(0.05 * 5.0, abs=1e-4)
         # 三组件 reward = 0.8

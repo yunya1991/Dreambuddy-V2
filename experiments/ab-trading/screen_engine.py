@@ -4,7 +4,11 @@
 数据来源：OKX API (优先) / OKX CLI (回退)
 置信度计算：基于回测筛选的经典指标（周线组 + 日线组）
 """
-import json, os, subprocess, math, sys
+
+import json
+import os
+import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -43,13 +47,13 @@ MIN_VOL_MULT = 0.3
 MAX_VOL_MULT = 4.0
 
 DIMENSIONS = [
-    {"key": "technical",    "name": "技术指标", "weight": 40, "type": "anchor"},
-    {"key": "onchain",      "name": "链上数据", "weight": 15, "type": "anchor"},
-    {"key": "cycle",        "name": "减半周期", "weight": 10, "type": "booster"},
-    {"key": "miner",        "name": "矿工经济", "weight": 10, "type": "booster"},
-    {"key": "macro",        "name": "宏观环境", "weight": 10, "type": "background"},
+    {"key": "technical", "name": "技术指标", "weight": 40, "type": "anchor"},
+    {"key": "onchain", "name": "链上数据", "weight": 15, "type": "anchor"},
+    {"key": "cycle", "name": "减半周期", "weight": 10, "type": "booster"},
+    {"key": "miner", "name": "矿工经济", "weight": 10, "type": "booster"},
+    {"key": "macro", "name": "宏观环境", "weight": 10, "type": "background"},
     {"key": "cross_market", "name": "跨市场联动", "weight": 10, "type": "background"},
-    {"key": "sentiment",    "name": "情绪指标", "weight": 5,  "type": "reference"},
+    {"key": "sentiment", "name": "情绪指标", "weight": 5, "type": "reference"},
 ]
 
 
@@ -60,6 +64,7 @@ def _get_okx_client():
     sys.path.insert(0, str(yijing_path))
     try:
         from okx_simulated import OKXSimulatedClient
+
         client = OKXSimulatedClient()
         return client
     except Exception:
@@ -70,11 +75,21 @@ def _run_okx(args):
     try:
         r = subprocess.run(
             ["okx", "--profile", OKX_PROFILE] + args,
-            capture_output=True, text=True, timeout=15,
-            env={**os.environ, "NO_UPDATE_CHECK": "1"}
+            capture_output=True,
+            text=True,
+            timeout=15,
+            env={**os.environ, "NO_UPDATE_CHECK": "1"},
         )
-        stdout = "\n".join(l for l in r.stdout.split("\n") if "Update available" not in l and "Run: npm" not in l).strip()
-        stderr = "\n".join(l for l in r.stderr.split("\n") if "Update available" not in l and "Run: npm" not in l).strip()
+        stdout = "\n".join(
+            l
+            for l in r.stdout.split("\n")  # noqa: E741
+            if "Update available" not in l and "Run: npm" not in l  # noqa: E741
+        ).strip()
+        stderr = "\n".join(
+            l
+            for l in r.stderr.split("\n")  # noqa: E741
+            if "Update available" not in l and "Run: npm" not in l  # noqa: E741
+        ).strip()
         if r.returncode != 0 and stderr:
             return {"ok": False, "err": stderr[:200]}
         if stdout.startswith("[") or stdout.startswith("{"):
@@ -127,14 +142,16 @@ def _fetch_candles(inst_id, bar, limit):
             if r.get("ok"):
                 candles = []
                 for c in r.get("candles", []):
-                    candles.append({
-                        "ts": int(c["ts"]),
-                        "o": float(c["o"]),
-                        "h": float(c["h"]),
-                        "l": float(c["l"]),
-                        "c": float(c["c"]),
-                        "vol": float(c.get("vol", 0)),
-                    })
+                    candles.append(
+                        {
+                            "ts": int(c["ts"]),
+                            "o": float(c["o"]),
+                            "h": float(c["h"]),
+                            "l": float(c["l"]),
+                            "c": float(c["c"]),
+                            "vol": float(c.get("vol", 0)),
+                        }
+                    )
                 return list(reversed(candles))
         except Exception:
             pass
@@ -144,14 +161,16 @@ def _fetch_candles(inst_id, bar, limit):
     raw = r["data"]
     candles = []
     for c in raw:
-        candles.append({
-            "ts": int(c[0]),
-            "o": float(c[1]),
-            "h": float(c[2]),
-            "l": float(c[3]),
-            "c": float(c[4]),
-            "vol": float(c[5]),
-        })
+        candles.append(
+            {
+                "ts": int(c[0]),
+                "o": float(c[1]),
+                "h": float(c[2]),
+                "l": float(c[3]),
+                "c": float(c[4]),
+                "vol": float(c[5]),
+            }
+        )
     return list(reversed(candles))
 
 
@@ -170,7 +189,9 @@ def _screen1_technical(daily_closes, weekly_closes):
     ema12 = _ema(daily_closes, 12)
     ema26 = _ema(daily_closes, 26)
     macd = ema12 - ema26 if ema12 and ema26 else None
-    signal = _ema([daily_closes[i] * 0 + macd for i in range(len(daily_closes))], 9) if macd else None
+    signal = (
+        _ema([daily_closes[i] * 0 + macd for i in range(len(daily_closes))], 9) if macd else None
+    )
 
     direction = "NEUTRAL"
     score = 0
@@ -185,7 +206,9 @@ def _screen1_technical(daily_closes, weekly_closes):
 
     if ma200_weekly:
         above_weekly = price > ma200_weekly
-        reasons.append(f"周线MA200(200W SMA): ${ma200_weekly:.0f}，价格{'高于' if above_weekly else '低于'} — 大级别牛熊分界")
+        reasons.append(
+            f"周线MA200(200W SMA): ${ma200_weekly:.0f}，价格{'高于' if above_weekly else '低于'} — 大级别牛熊分界"
+        )
     else:
         reasons.append("周线MA200数据不足")
         above_weekly = None
@@ -230,8 +253,14 @@ def _screen1_technical(daily_closes, weekly_closes):
         "anchor": direction,
         "ma200_daily": round(ma200_daily, 2) if ma200_daily else None,
         "ma200_weekly": round(ma200_weekly, 2) if ma200_weekly else None,
-        "price_vs_ma200_daily": "ABOVE" if (ma200_daily and price > ma200_daily) else "BELOW" if ma200_daily else None,
-        "price_vs_ma200_weekly": "ABOVE" if (ma200_weekly and price > ma200_weekly) else "BELOW" if ma200_weekly else None,
+        "price_vs_ma200_daily": (
+            "ABOVE" if (ma200_daily and price > ma200_daily) else "BELOW" if ma200_daily else None
+        ),
+        "price_vs_ma200_weekly": (
+            "ABOVE"
+            if (ma200_weekly and price > ma200_weekly)
+            else "BELOW" if ma200_weekly else None
+        ),
         "indicators": {
             "rsi_daily": round(rsi, 1) if rsi else None,
             "macd": round(macd, 2) if macd else None,
@@ -300,12 +329,16 @@ def _assess_trend_consistency(trend_metrics):
     """评估周线和日线的趋势一致性——入场前置条件"""
     w_dir = trend_metrics["weekly"]["direction"]
     d_dir = trend_metrics["daily"]["direction"]
-    consistent = (w_dir == d_dir and w_dir in ("BULL", "BEAR"))
+    consistent = w_dir == d_dir and w_dir in ("BULL", "BEAR")
     return {
         "consistent": consistent,
         "weekly_direction": w_dir,
         "daily_direction": d_dir,
-        "reason": f"周线{w_dir} vs 日线{d_dir}" if w_dir != "UNKNOWN" and d_dir != "UNKNOWN" else "数据不足",
+        "reason": (
+            f"周线{w_dir} vs 日线{d_dir}"
+            if w_dir != "UNKNOWN" and d_dir != "UNKNOWN"
+            else "数据不足"
+        ),
     }
 
 
@@ -567,13 +600,9 @@ def _screen1_sentiment():
 # 权重: 周线 60% / 日线 40%
 # ============================================================================
 
-SCREEN1_INDICATORS = [
-    "RSI_50", "SuperTrend", "StochRSI_Cross", "OBV_Trend", "Keltner_Channel"
-]
+SCREEN1_INDICATORS = ["RSI_50", "SuperTrend", "StochRSI_Cross", "OBV_Trend", "Keltner_Channel"]
 
-SCREEN2_INDICATORS = [
-    "GoldenCross_50_200", "MACD_Cross", "Vortex", "TEMA", "EMA_Align_20_50_200"
-]
+SCREEN2_INDICATORS = ["GoldenCross_50_200", "MACD_Cross", "Vortex", "TEMA", "EMA_Align_20_50_200"]
 
 # 权重
 WEEKLY_WEIGHT = 0.6
@@ -600,7 +629,9 @@ def _calc_indicator_dynamics(df, indicator_name: str) -> dict:
             result["direction"] = "BULL" if macd_line.iloc[-1] > signal_line.iloc[-1] else "BEAR"
             # 速度：MACD 距零轴的距离（归一化）
             price_mean = close.mean()
-            result["speed"] = min(100, abs(macd_line.iloc[-1] - signal_line.iloc[-1]) / price_mean * 1000)
+            result["speed"] = min(
+                100, abs(macd_line.iloc[-1] - signal_line.iloc[-1]) / price_mean * 1000
+            )
             # 加速度：柱状图斜率（最近2期变化）
             if len(hist) >= 3:
                 slope = (hist.iloc[-1] - hist.iloc[-3]) / 2
@@ -650,7 +681,9 @@ def _calc_indicator_dynamics(df, indicator_name: str) -> dict:
             result["speed"] = min(100, abs(dist) * 10)
             # 加速度：云层厚度变化
             if len(cloud_top) >= 3:
-                thickness_change = (cloud_top.iloc[-1] - cloud_bottom.iloc[-1]) - (cloud_top.iloc[-3] - cloud_bottom.iloc[-3])
+                thickness_change = (cloud_top.iloc[-1] - cloud_bottom.iloc[-1]) - (
+                    cloud_top.iloc[-3] - cloud_bottom.iloc[-3]
+                )
                 result["acceleration"] = min(100, abs(thickness_change) / close.mean() * 1000)
 
         elif indicator_name == "Vortex":
@@ -797,7 +830,11 @@ def _calc_indicator_dynamics(df, indicator_name: str) -> dict:
             # 加速度：排列变化率
             if len(ema20) >= 3:
                 prev_ma_values = [ema20.iloc[-3], ema50.iloc[-3], ema200.iloc[-3]]
-                prev_alignment = 1 - (np.std(prev_ma_values) / np.mean(prev_ma_values)) if np.mean(prev_ma_values) > 0 else 0
+                prev_alignment = (
+                    1 - (np.std(prev_ma_values) / np.mean(prev_ma_values))
+                    if np.mean(prev_ma_values) > 0
+                    else 0
+                )
                 result["acceleration"] = min(100, abs(alignment_score - prev_alignment) * 100)
 
         elif indicator_name == "Elder_ray":
@@ -812,18 +849,22 @@ def _calc_indicator_dynamics(df, indicator_name: str) -> dict:
             else:
                 result["direction"] = "NEUTRAL"
             # 速度：力量强度（绝对值归一化）
-            power_range = max(bull_power.max() - bull_power.min(), bear_power.max() - bear_power.min(), 1e-9)
+            power_range = max(
+                bull_power.max() - bull_power.min(), bear_power.max() - bear_power.min(), 1e-9
+            )
             power_abs = max(abs(bull_power.iloc[-1]), abs(bear_power.iloc[-1]))
             result["speed"] = min(100, power_abs / power_range * 100)
             # 加速度：力量变化率（衰竭/增强）
             if len(bull_power) >= 3:
                 bull_change = bull_power.iloc[-1] - bull_power.iloc[-3]
                 bear_change = bear_power.iloc[-1] - bear_power.iloc[-3]
-                result["acceleration"] = min(100, abs(bull_change - bear_change) / power_range * 100)
+                result["acceleration"] = min(
+                    100, abs(bull_change - bear_change) / power_range * 100
+                )
 
         return result
 
-    except Exception as e:
+    except Exception as e:  # noqa: F841
         return {"direction": "NEUTRAL", "speed": 0.0, "acceleration": 0.0}
 
 
@@ -843,6 +884,7 @@ def _calc_classic_indicator_confidence(weekly_df, daily_df) -> dict:
       - Screen2(日线)置信度 = 50 + bull_count_daily × 10 + speed_accel_bonus
       - 综合置信度 = Screen1×0.6 + Screen2×0.4
     """
+
     def _calc_group(indicators, df):
         bull_count = 0
         bear_count = 0
@@ -860,7 +902,7 @@ def _calc_classic_indicator_confidence(weekly_df, daily_df) -> dict:
                 neutral_count += 1
             dynamics_list.append(dyn)
 
-        total = len(indicators)
+        total = len(indicators)  # noqa: F841
         # 主导方向
         if bull_count > bear_count:
             direction = "BULL"
@@ -904,7 +946,9 @@ def _calc_classic_indicator_confidence(weekly_df, daily_df) -> dict:
 
     if trend_consistent:
         overall_direction = s1["direction"]
-        overall_confidence = round(s1["confidence"] * WEEKLY_WEIGHT + s2["confidence"] * DAILY_WEIGHT, 1)
+        overall_confidence = round(
+            s1["confidence"] * WEEKLY_WEIGHT + s2["confidence"] * DAILY_WEIGHT, 1
+        )
     else:
         overall_direction = "NEUTRAL"
         overall_confidence = round(min(s1["confidence"], s2["confidence"]) * 0.5, 1)
@@ -925,6 +969,7 @@ def _calc_classic_indicator_confidence(weekly_df, daily_df) -> dict:
 #   - 每日轮询日线静态信号 + 三维动态信号
 #   - 静态信号显示熊市，但三维动态显示趋势逆转 → 最终方向可能不一致
 # ============================================================================
+
 
 def _calc_trend_direction_static(df, indicators: list) -> str:
     """计算静态指标的方向（投票法）"""
@@ -951,20 +996,22 @@ def _calc_trend_direction_dynamic(df, indicators: list) -> dict:
     reversal_signals = []
     bull_count = 0
     bear_count = 0
-    
+
     for ind in indicators:
         dyn = _calc_indicator_dynamics(df, ind)
-        signals.append({
-            "indicator": ind,
-            "direction": dyn["direction"],
-            "speed": dyn["speed"],
-            "acceleration": dyn["acceleration"],
-        })
+        signals.append(
+            {
+                "indicator": ind,
+                "direction": dyn["direction"],
+                "speed": dyn["speed"],
+                "acceleration": dyn["acceleration"],
+            }
+        )
         if dyn["direction"] == "BULL":
             bull_count += 1
         elif dyn["direction"] == "BEAR":
             bear_count += 1
-        
+
         # 检测逆转信号：速度下降但加速度反向
         if dyn["direction"] == "BULL":
             if dyn["speed"] < 30 and dyn["acceleration"] > 20:
@@ -972,10 +1019,10 @@ def _calc_trend_direction_dynamic(df, indicators: list) -> dict:
         else:
             if dyn["speed"] < 30 and dyn["acceleration"] > 20:
                 reversal_signals.append({"indicator": ind, "type": "potential_reversal_bull"})
-    
+
     # 计算逆转分数
     reversal_score = min(100, len(reversal_signals) / len(indicators) * 100)
-    
+
     # 综合方向判定
     if bull_count > bear_count:
         base_direction = "BULL"
@@ -986,7 +1033,7 @@ def _calc_trend_direction_dynamic(df, indicators: list) -> dict:
     else:
         base_direction = "NEUTRAL"
         count = max(bull_count, bear_count)
-    
+
     # 如果有明显逆转信号，调整方向
     if reversal_score > 50:
         if base_direction == "BULL":
@@ -997,12 +1044,12 @@ def _calc_trend_direction_dynamic(df, indicators: list) -> dict:
             final_direction = base_direction
     else:
         final_direction = base_direction
-    
+
     # 计算动态置信度
     avg_speed = sum(s["speed"] for s in signals) / len(signals) if signals else 0
     avg_accel = sum(s["acceleration"] for s in signals) / len(signals) if signals else 0
     confidence = min(100, 50 + count * 10 + (avg_speed + avg_accel) / 200 * 20)
-    
+
     return {
         "direction": final_direction,
         "confidence": round(confidence, 1),
@@ -1029,10 +1076,10 @@ def _calc_trend_consistency_with_dynamics(weekly_df, daily_df) -> dict:
     """
     # 周线静态方向
     weekly_static = _calc_trend_direction_static(weekly_df, SCREEN1_INDICATORS)
-    
+
     # 周线动态方向（含逆转检测）
     weekly_dynamic = _calc_trend_direction_dynamic(weekly_df, SCREEN1_INDICATORS)
-    
+
     # 周线最终方向：动态优先，静态确认
     if weekly_dynamic["reversal_score"] > 60:
         weekly_final = weekly_dynamic["direction"]
@@ -1040,41 +1087,42 @@ def _calc_trend_consistency_with_dynamics(weekly_df, daily_df) -> dict:
         weekly_final = weekly_static
     else:
         weekly_final = weekly_dynamic["direction"]
-    
+
     # 日线同理
     daily_static = _calc_trend_direction_static(daily_df, SCREEN2_INDICATORS)
     daily_dynamic = _calc_trend_direction_dynamic(daily_df, SCREEN2_INDICATORS)
-    
+
     if daily_dynamic["reversal_score"] > 60:
         daily_final = daily_dynamic["direction"]
     elif daily_dynamic["direction"] == "NEUTRAL":
         daily_final = daily_static
     else:
         daily_final = daily_dynamic["direction"]
-    
+
     # 提取核心方向（去除REVERSAL前缀）
     def _core_dir(d):
         if d.startswith("REVERSAL_"):
             return "BULL" if d == "REVERSAL_BULL" else "BEAR"
         return d
-    
+
     weekly_core = _core_dir(weekly_final)
     daily_core = _core_dir(daily_final)
-    
+
     # 判断一致性
     consistent = weekly_core == daily_core and weekly_core != "NEUTRAL"
-    
+
     # 计算一致性置信度
     if consistent:
         consistency_confidence = round(
-            weekly_dynamic["confidence"] * WEEKLY_WEIGHT + 
-            daily_dynamic["confidence"] * DAILY_WEIGHT, 1
+            weekly_dynamic["confidence"] * WEEKLY_WEIGHT
+            + daily_dynamic["confidence"] * DAILY_WEIGHT,
+            1,
         )
     else:
         consistency_confidence = round(
             min(weekly_dynamic["confidence"], daily_dynamic["confidence"]) * 0.5, 1
         )
-    
+
     return {
         "weekly": {
             "static_direction": weekly_static,
@@ -1115,6 +1163,7 @@ def _calc_trend_consistency_with_dynamics(weekly_df, daily_df) -> dict:
 #   - 基于基线回测，通过贝叶斯参数寻找最优组合
 # ============================================================================
 
+
 def _calc_indicator_performance(df, indicator_name: str, baseline_return: float = 0.0) -> dict:
     """
     计算单个指标的历史表现（用于权重排名）
@@ -1124,7 +1173,7 @@ def _calc_indicator_performance(df, indicator_name: str, baseline_return: float 
         signals = []
         close = df["close"].values
         for i in range(1, len(close)):
-            df_slice = df.iloc[:i+1]
+            df_slice = df.iloc[: i + 1]
             dyn = _calc_indicator_dynamics(df_slice, indicator_name)
             if dyn["direction"] == "BULL":
                 signals.append(1)
@@ -1132,28 +1181,28 @@ def _calc_indicator_performance(df, indicator_name: str, baseline_return: float 
                 signals.append(-1)
             else:
                 signals.append(0)
-        
+
         if not signals or sum(abs(s) for s in signals) == 0:
             return {"sharpe": 0.0, "win_rate": 0.5, "total_return": 0.0, "weight_score": 0.0}
-        
+
         returns = []
         for i, sig in enumerate(signals[:-1]):
             if sig != 0:
-                ret = (close[i+1] - close[i]) / close[i] * sig
+                ret = (close[i + 1] - close[i]) / close[i] * sig
                 returns.append(ret)
-        
+
         if not returns:
             return {"sharpe": 0.0, "win_rate": 0.5, "total_return": 0.0, "weight_score": 0.0}
-        
+
         total_return = sum(returns)
         win_rate = sum(1 for r in returns if r > 0) / len(returns)
         sharpe = total_return / (np.std(returns) + 1e-9) if len(returns) > 1 else 0.0
-        
+
         # 权重分数 = 夏普排名分 + 胜率排名分 + 动态因子分
         # 高于基线加分，低于基线扣分
         excess_return = total_return - baseline_return
         weight_score = sharpe + (win_rate - 0.5) * 10 + excess_return * 100
-        
+
         return {
             "sharpe": round(sharpe, 3),
             "win_rate": round(win_rate, 3),
@@ -1175,22 +1224,32 @@ def _calc_dynamic_weights(df, indicators: list) -> dict:
     baseline_signals = np.where(df["close"] > sma200, 1, -1)
     baseline_returns = []
     for i in range(1, len(df)):
-        baseline_returns.append((df["close"].iloc[i] - df["close"].iloc[i-1]) / df["close"].iloc[i-1] * baseline_signals[i-1])
+        baseline_returns.append(
+            (df["close"].iloc[i] - df["close"].iloc[i - 1])
+            / df["close"].iloc[i - 1]
+            * baseline_signals[i - 1]
+        )
     baseline_return = sum(baseline_returns) / len(baseline_returns) if baseline_returns else 0.0
-    
+
     # 计算每个指标的表现
     performances = {}
     for ind in indicators:
         performances[ind] = _calc_indicator_performance(df, ind, baseline_return)
-    
+
     # 按权重分数排序
-    sorted_indicators = sorted(performances.keys(), key=lambda x: performances[x]["weight_score"], reverse=True)
-    
+    sorted_indicators = sorted(
+        performances.keys(), key=lambda x: performances[x]["weight_score"], reverse=True
+    )
+
     # 计算动态权重（排名越高权重越大）
-    total_score = sum(performances[ind]["weight_score"] for ind in sorted_indicators if performances[ind]["weight_score"] > 0)
+    total_score = sum(
+        performances[ind]["weight_score"]
+        for ind in sorted_indicators
+        if performances[ind]["weight_score"] > 0
+    )
     if total_score <= 0:
         equal_weight = 1.0 / len(indicators)
-        weights = {ind: equal_weight for ind in indicators}
+        weights = dict.fromkeys(indicators, equal_weight)
     else:
         weights = {}
         for ind in indicators:
@@ -1205,8 +1264,8 @@ def _calc_dynamic_weights(df, indicators: list) -> dict:
             weights = {ind: w / weight_sum for ind, w in weights.items()}
         else:
             equal_weight = 1.0 / len(indicators)
-            weights = {ind: equal_weight for ind in indicators}
-    
+            weights = dict.fromkeys(indicators, equal_weight)
+
     return {
         "weights": weights,
         "performances": performances,
@@ -1228,51 +1287,51 @@ def _calc_bayesian_confidence(weekly_df, daily_df) -> dict:
     weekly_weights = _calc_dynamic_weights(weekly_df, SCREEN1_INDICATORS)
     # 计算日线动态权重
     daily_weights = _calc_dynamic_weights(daily_df, SCREEN2_INDICATORS)
-    
+
     # 计算周线信号
     weekly_bull_prob = 0.0
     weekly_bear_prob = 0.0
     weekly_total_weight = 0.0
-    
+
     for ind in SCREEN1_INDICATORS:
         weight = weekly_weights["weights"].get(ind, 0.0)
         dyn = _calc_indicator_dynamics(weekly_df, ind)
         weekly_total_weight += weight
-        
+
         # 似然概率：指标方向正确的概率 = 权重 × 动态因子
         if dyn["direction"] == "BULL":
             weekly_bull_prob += weight * (0.5 + dyn["speed"] / 200 + dyn["acceleration"] / 200)
         elif dyn["direction"] == "BEAR":
             weekly_bear_prob += weight * (0.5 + dyn["speed"] / 200 + dyn["acceleration"] / 200)
-    
+
     # 归一化
     if weekly_total_weight > 0:
         weekly_bull_prob /= weekly_total_weight
         weekly_bear_prob /= weekly_total_weight
-    
+
     # 日线同理
     daily_bull_prob = 0.0
     daily_bear_prob = 0.0
     daily_total_weight = 0.0
-    
+
     for ind in SCREEN2_INDICATORS:
         weight = daily_weights["weights"].get(ind, 0.0)
         dyn = _calc_indicator_dynamics(daily_df, ind)
         daily_total_weight += weight
-        
+
         if dyn["direction"] == "BULL":
             daily_bull_prob += weight * (0.5 + dyn["speed"] / 200 + dyn["acceleration"] / 200)
         elif dyn["direction"] == "BEAR":
             daily_bear_prob += weight * (0.5 + dyn["speed"] / 200 + dyn["acceleration"] / 200)
-    
+
     if daily_total_weight > 0:
         daily_bull_prob /= daily_total_weight
         daily_bear_prob /= daily_total_weight
-    
+
     # 综合贝叶斯概率
     bull_prob = weekly_bull_prob * WEEKLY_WEIGHT + daily_bull_prob * DAILY_WEIGHT
     bear_prob = weekly_bear_prob * WEEKLY_WEIGHT + daily_bear_prob * DAILY_WEIGHT
-    
+
     # 方向判定和置信度
     if bull_prob > bear_prob:
         direction = "BULL"
@@ -1283,7 +1342,7 @@ def _calc_bayesian_confidence(weekly_df, daily_df) -> dict:
     else:
         direction = "NEUTRAL"
         confidence = round(min(bull_prob, bear_prob) * 50, 1)
-    
+
     return {
         "direction": direction,
         "confidence": confidence,
@@ -1302,19 +1361,20 @@ def _calc_bayesian_confidence(weekly_df, daily_df) -> dict:
 #   - 矛盾存在时: 趋势方向保持一致，置信度在幅度内调整
 # ============================================================================
 
+
 def _fetch_fundamental_data(symbol: str = "BTC") -> dict:
     """
     获取基本面数据（研报 + A1日报）
     返回: {"direction", "confidence", "reports": [...]}
     """
     import requests
-    
+
     reports = []
     direction = "NEUTRAL"
     confidence = 0
-    
+
     try:
-        resp = requests.get(f"http://localhost:8092/fundamental/overview/latest", timeout=3)
+        resp = requests.get("http://localhost:8092/fundamental/overview/latest", timeout=3)
         if resp.status_code == 200:
             data = resp.json()
             sentiment = data.get("sentiment", "NEUTRAL").upper()
@@ -1322,13 +1382,20 @@ def _fetch_fundamental_data(symbol: str = "BTC") -> dict:
             if sentiment in ("BULL", "BEAR", "NEUTRAL"):
                 direction = sentiment
                 confidence = conf
-                reports.append({"type": "基本面API", "title": "", "direction": direction, "confidence": confidence})
+                reports.append(
+                    {
+                        "type": "基本面API",
+                        "title": "",
+                        "direction": direction,
+                        "confidence": confidence,
+                    }
+                )
     except Exception:
         pass
-    
+
     if not reports:
         reports.append({"type": "无研报", "title": "", "direction": "NEUTRAL", "confidence": 0})
-    
+
     return {
         "direction": direction,
         "confidence": confidence,
@@ -1343,25 +1410,25 @@ def _resample_candles(candles: list, target_tf: str) -> list:
     """
     跨周期数据对齐：将低时间周期K线聚合成高时间周期K线
     参考 Backtrader 的 resampling 机制
-    
+
     聚合规则:
     - Open: 周期内第一根K线的开盘价
     - High: 周期内最高价
     - Low: 周期内最低价
     - Close: 周期内最后一根K线的收盘价
     - Volume: 周期内成交量之和
-    
+
     支持的聚合:
     - 5m -> 1h: 12根5mK线聚合为1根1hK线
     - 1h -> 4h: 4根1hK线聚合为1根4hK线
     - 1h -> 1D: 24根1hK线聚合为1根日线K线
     - 4h -> 1D: 6根4hK线聚合为1根日线K线
-    
+
     返回: 聚合后的K线列表
     """
     if not candles:
         return []
-    
+
     tf_mapping = {
         ("5m", "1h"): 12,
         ("1h", "4h"): 4,
@@ -1373,30 +1440,32 @@ def _resample_candles(candles: list, target_tf: str) -> list:
         ("30m", "4h"): 8,
         ("30m", "1D"): 48,
     }
-    
+
     source_tf = _infer_timeframe(candles)
     key = (source_tf, target_tf)
-    
+
     if key not in tf_mapping:
         return candles
-    
+
     num_bars = tf_mapping[key]
     resampled = []
-    
+
     for i in range(0, len(candles), num_bars):
-        chunk = candles[i:i+num_bars]
+        chunk = candles[i : i + num_bars]
         if len(chunk) < num_bars:
             continue
-        
-        resampled.append({
-            "o": chunk[0]["o"],
-            "h": max(c["h"] for c in chunk),
-            "l": min(c["l"] for c in chunk),
-            "c": chunk[-1]["c"],
-            "vol": sum(c["vol"] for c in chunk),
-            "t": chunk[0]["t"],
-        })
-    
+
+        resampled.append(
+            {
+                "o": chunk[0]["o"],
+                "h": max(c["h"] for c in chunk),
+                "l": min(c["l"] for c in chunk),
+                "c": chunk[-1]["c"],
+                "vol": sum(c["vol"] for c in chunk),
+                "t": chunk[0]["t"],
+            }
+        )
+
     return resampled
 
 
@@ -1406,11 +1475,11 @@ def _infer_timeframe(candles: list) -> str:
     """
     if len(candles) < 2:
         return "1h"
-    
+
     t0 = candles[0].get("t", 0)
     t1 = candles[1].get("t", 0)
     interval = t1 - t0
-    
+
     if interval <= 300:
         return "5m"
     elif interval <= 900:
@@ -1464,6 +1533,7 @@ def _fetch_freqtrade_signals(symbol: str, timeframes: list = None) -> dict:
 
     try:
         import sys
+
         ml_path = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统"
         if ml_path not in sys.path:
             sys.path.insert(0, ml_path)
@@ -1475,7 +1545,9 @@ def _fetch_freqtrade_signals(symbol: str, timeframes: list = None) -> dict:
             votes = {"BUY": 0, "SELL": 0, "HOLD": 0}
             for mod, cls, weight in STRATEGIES_4H:
                 try:
-                    res = ml_trade_service._run_freqtrade_strategy_signal_hyperliquid(mod, cls, coin)
+                    res = ml_trade_service._run_freqtrade_strategy_signal_hyperliquid(
+                        mod, cls, coin
+                    )
                     if res.get("ok") and res.get("side"):
                         side = res.get("side")
                         sig = "BUY" if side == "long" else ("SELL" if side == "short" else "HOLD")
@@ -1484,16 +1556,26 @@ def _fetch_freqtrade_signals(symbol: str, timeframes: list = None) -> dict:
                     pass
 
             if votes["BUY"] > votes["SELL"] and votes["BUY"] > votes["HOLD"]:
-                result["4h"] = {"signal": "BUY", "confidence": int(votes["BUY"] * 100), "strategy": "Freqtrade_4h_Vote"}
+                result["4h"] = {
+                    "signal": "BUY",
+                    "confidence": int(votes["BUY"] * 100),
+                    "strategy": "Freqtrade_4h_Vote",
+                }
             elif votes["SELL"] > votes["BUY"] and votes["SELL"] > votes["HOLD"]:
-                result["4h"] = {"signal": "SELL", "confidence": int(votes["SELL"] * 100), "strategy": "Freqtrade_4h_Vote"}
+                result["4h"] = {
+                    "signal": "SELL",
+                    "confidence": int(votes["SELL"] * 100),
+                    "strategy": "Freqtrade_4h_Vote",
+                }
 
         # 1h 策略投票
         if "1h" in timeframes:
             votes = {"BUY": 0, "SELL": 0, "HOLD": 0}
             for mod, cls, weight in STRATEGIES_1H:
                 try:
-                    res = ml_trade_service._run_freqtrade_strategy_signal_hyperliquid(mod, cls, coin)
+                    res = ml_trade_service._run_freqtrade_strategy_signal_hyperliquid(
+                        mod, cls, coin
+                    )
                     if res.get("ok") and res.get("side"):
                         side = res.get("side")
                         sig = "BUY" if side == "long" else ("SELL" if side == "short" else "HOLD")
@@ -1502,9 +1584,17 @@ def _fetch_freqtrade_signals(symbol: str, timeframes: list = None) -> dict:
                     pass
 
             if votes["BUY"] > votes["SELL"] and votes["BUY"] > votes["HOLD"]:
-                result["1h"] = {"signal": "BUY", "confidence": int(votes["BUY"] * 100), "strategy": "Freqtrade_1h_Vote"}
+                result["1h"] = {
+                    "signal": "BUY",
+                    "confidence": int(votes["BUY"] * 100),
+                    "strategy": "Freqtrade_1h_Vote",
+                }
             elif votes["SELL"] > votes["BUY"] and votes["SELL"] > votes["HOLD"]:
-                result["1h"] = {"signal": "SELL", "confidence": int(votes["SELL"] * 100), "strategy": "Freqtrade_1h_Vote"}
+                result["1h"] = {
+                    "signal": "SELL",
+                    "confidence": int(votes["SELL"] * 100),
+                    "strategy": "Freqtrade_1h_Vote",
+                }
 
     except Exception:
         pass
@@ -1522,30 +1612,28 @@ def _fuse_technical_fundamental(technical_result: dict, fundamental_result: dict
     tech_conf = technical_result.get("confidence", 0)
     fund_dir = fundamental_result.get("direction", "NEUTRAL")
     fund_conf = fundamental_result.get("confidence", 0)
-    
+
     # 技术面权重高于基本面（技术面60% + 基本面40%）
     TECH_WEIGHT = 0.6
     FUND_WEIGHT = 0.4
-    
+
     # 判断第二重一致性
     tech_core = tech_dir.replace("REVERSAL_", "") if tech_dir else "NEUTRAL"
     fund_core = fund_dir
-    
+
     consistent = tech_core == fund_core and tech_core != "NEUTRAL"
-    
+
     # 融合方向：技术面为主
     final_direction = tech_dir if tech_dir != "NEUTRAL" else fund_dir
-    
+
     conflict_level = 0.0
-    
+
     # 融合置信度：
     # - 一致时：加权平均
     # - 不一致时：取较低值，并按矛盾程度扣减
     # - 基本面NEUTRAL时：不扣减，直接使用技术面置信度
     if consistent:
-        final_confidence = round(
-            tech_conf * TECH_WEIGHT + fund_conf * FUND_WEIGHT, 1
-        )
+        final_confidence = round(tech_conf * TECH_WEIGHT + fund_conf * FUND_WEIGHT, 1)
     elif fund_core == "NEUTRAL":
         final_confidence = tech_conf
     else:
@@ -1553,7 +1641,7 @@ def _fuse_technical_fundamental(technical_result: dict, fundamental_result: dict
         conflict_level = (tech_conf / 100) * (fund_conf / 100)
         deduction = conflict_level * 30
         final_confidence = round(max(0, base_conf - deduction), 1)
-    
+
     return {
         "technical": {
             "direction": tech_dir,
@@ -1575,6 +1663,7 @@ def _fuse_technical_fundamental(technical_result: dict, fundamental_result: dict
 # 主入口: 完整三屏交易算法驱动
 # ============================================================================
 
+
 def compute_full_trading_signal(spot_inst: str = INST_SPOT, is_btc: bool = True) -> dict:
     """
     完整三屏交易信号计算
@@ -1589,84 +1678,118 @@ def compute_full_trading_signal(spot_inst: str = INST_SPOT, is_btc: bool = True)
     daily = _fetch_candles(spot_inst, "1D", 250)
     weekly = _fetch_candles(spot_inst, "1W", 210)
     hourly = _fetch_candles(spot_inst, "1H", 168)
-    
+
     if not daily:
         return {"error": f"无法获取{spot_inst} K线数据"}
-    
+
     daily_closes = [c["c"] for c in daily]
     weekly_closes = [c["c"] for c in weekly] if weekly else []
     hourly_closes = [c["c"] for c in hourly] if hourly else []
     price = daily_closes[-1]
     symbol = spot_inst.split("-")[0]
-    
+
     # 跨周期数据对齐：将1h K线聚合成4h K线
     four_hourly = _resample_candles(hourly, "4h")
     four_hourly_closes = [c["c"] for c in four_hourly] if four_hourly else []
-    
+
     # 创建 DataFrame
     import pandas as pd
-    daily_df = pd.DataFrame({
-        "open": [c["o"] for c in daily],
-        "high": [c["h"] for c in daily],
-        "low": [c["l"] for c in daily],
-        "close": daily_closes,
-        "volume": [c["vol"] for c in daily],
-    }) if daily else pd.DataFrame()
-    weekly_df = pd.DataFrame({
-        "open": [c["o"] for c in weekly],
-        "high": [c["h"] for c in weekly],
-        "low": [c["l"] for c in weekly],
-        "close": weekly_closes,
-        "volume": [c["vol"] for c in weekly],
-    }) if weekly else pd.DataFrame()
-    hourly_df = pd.DataFrame({
-        "open": [c["o"] for c in hourly],
-        "high": [c["h"] for c in hourly],
-        "low": [c["l"] for c in hourly],
-        "close": hourly_closes,
-        "volume": [c["vol"] for c in hourly],
-    }) if hourly else pd.DataFrame()
-    four_hourly_df = pd.DataFrame({
-        "open": [c["o"] for c in four_hourly],
-        "high": [c["h"] for c in four_hourly],
-        "low": [c["l"] for c in four_hourly],
-        "close": four_hourly_closes,
-        "volume": [c["vol"] for c in four_hourly],
-    }) if four_hourly else pd.DataFrame()
-    
+
+    daily_df = (
+        pd.DataFrame(
+            {
+                "open": [c["o"] for c in daily],
+                "high": [c["h"] for c in daily],
+                "low": [c["l"] for c in daily],
+                "close": daily_closes,
+                "volume": [c["vol"] for c in daily],
+            }
+        )
+        if daily
+        else pd.DataFrame()
+    )
+    weekly_df = (
+        pd.DataFrame(
+            {
+                "open": [c["o"] for c in weekly],
+                "high": [c["h"] for c in weekly],
+                "low": [c["l"] for c in weekly],
+                "close": weekly_closes,
+                "volume": [c["vol"] for c in weekly],
+            }
+        )
+        if weekly
+        else pd.DataFrame()
+    )
+    hourly_df = (
+        pd.DataFrame(
+            {
+                "open": [c["o"] for c in hourly],
+                "high": [c["h"] for c in hourly],
+                "low": [c["l"] for c in hourly],
+                "close": hourly_closes,
+                "volume": [c["vol"] for c in hourly],
+            }
+        )
+        if hourly
+        else pd.DataFrame()
+    )
+    four_hourly_df = (
+        pd.DataFrame(
+            {
+                "open": [c["o"] for c in four_hourly],
+                "high": [c["h"] for c in four_hourly],
+                "low": [c["l"] for c in four_hourly],
+                "close": four_hourly_closes,
+                "volume": [c["vol"] for c in four_hourly],
+            }
+        )
+        if four_hourly
+        else pd.DataFrame()
+    )
+
     # 1. 趋势一致性计算（静态+三维动态融合）
     trend_consistency = _calc_trend_consistency_with_dynamics(weekly_df, daily_df)
-    
+
     # 2. 贝叶斯置信度计算（动态权重）
     bayesian_confidence = _calc_bayesian_confidence(weekly_df, daily_df)
-    
+
     # 3. 基本面数据获取
     fundamental_data = _fetch_fundamental_data(symbol)
-    
+
     # 4. Freqtrade 策略信号获取（1h/4h）
     freqtrade_signals = _fetch_freqtrade_signals(symbol)
-    
+
     # 5. 技术面+基本面撮合
     fusion_result = _fuse_technical_fundamental(
-        {"direction": bayesian_confidence["direction"], "confidence": bayesian_confidence["confidence"]},
-        fundamental_data
+        {
+            "direction": bayesian_confidence["direction"],
+            "confidence": bayesian_confidence["confidence"],
+        },
+        fundamental_data,
     )
-    
+
     # 6. 整合 Freqtrade 信号
     final_direction = fusion_result["final_direction"]
     final_confidence = fusion_result["final_confidence"]
-    
+
     ft_1h_signal = freqtrade_signals.get("1h", {}).get("signal", "HOLD")
     ft_4h_signal = freqtrade_signals.get("4h", {}).get("signal", "HOLD")
     ft_1h_conf = freqtrade_signals.get("1h", {}).get("confidence", 0)
     ft_4h_conf = freqtrade_signals.get("4h", {}).get("confidence", 0)
-    
+
     ft_consistent = False
     if final_direction in ("BULL", "BEAR"):
-        ft_dir_map = {"BUY": "BULL", "SELL": "BEAR", "LONG": "BULL", "SHORT": "BEAR", "HOLD": "NEUTRAL"}
+        ft_dir_map = {
+            "BUY": "BULL",
+            "SELL": "BEAR",
+            "LONG": "BULL",
+            "SHORT": "BEAR",
+            "HOLD": "NEUTRAL",
+        }
         ft_1h_dir = ft_dir_map.get(ft_1h_signal, "NEUTRAL")
         ft_4h_dir = ft_dir_map.get(ft_4h_signal, "NEUTRAL")
-        
+
         if ft_1h_dir == final_direction or ft_4h_dir == final_direction:
             ft_consistent = True
             if ft_1h_dir == final_direction and ft_1h_conf > 0:
@@ -1675,7 +1798,7 @@ def compute_full_trading_signal(spot_inst: str = INST_SPOT, is_btc: bool = True)
                 final_confidence = min(100, final_confidence + ft_4h_conf * 0.15)
         elif ft_1h_dir != "NEUTRAL" or ft_4h_dir != "NEUTRAL":
             final_confidence = max(0, final_confidence - 10)
-    
+
     # 最终信号
     final_signal = {
         "direction": final_direction,
@@ -1684,7 +1807,7 @@ def compute_full_trading_signal(spot_inst: str = INST_SPOT, is_btc: bool = True)
         "fusion_consistent": fusion_result["consistent"],
         "freqtrade_consistent": ft_consistent,
     }
-    
+
     return {
         "symbol": symbol,
         "spot_inst": spot_inst,
@@ -1741,14 +1864,32 @@ def compute_screen1(spot_inst: str = INST_SPOT, is_btc: bool = True):
         dims["technical"]["weight"] = 65
         dims["macro"]["weight"] = 20
         dims["cross_market"]["weight"] = 15
-        dims["onchain"] = {"dimension": "onchain_valuation", "weight": 0, "score": 0, "reasoning": "非BTC币种，链上数据不适用", "not_applicable": True}
-        dims["cycle"] = {"dimension": "halving_cycle", "weight": 0, "score": 0, "reasoning": "非BTC币种，减半周期不适用", "not_applicable": True}
-        dims["miner"] = {"dimension": "miner_economics", "weight": 0, "score": 0, "reasoning": "非BTC币种，矿工经济不适用", "not_applicable": True}
+        dims["onchain"] = {
+            "dimension": "onchain_valuation",
+            "weight": 0,
+            "score": 0,
+            "reasoning": "非BTC币种，链上数据不适用",
+            "not_applicable": True,
+        }
+        dims["cycle"] = {
+            "dimension": "halving_cycle",
+            "weight": 0,
+            "score": 0,
+            "reasoning": "非BTC币种，减半周期不适用",
+            "not_applicable": True,
+        }
+        dims["miner"] = {
+            "dimension": "miner_economics",
+            "weight": 0,
+            "score": 0,
+            "reasoning": "非BTC币种，矿工经济不适用",
+            "not_applicable": True,
+        }
 
     total_score = sum(d["score"] for d in dims.values() if not d.get("not_applicable"))
     max_score = sum(d["weight"] for d in dims.values() if not d.get("not_applicable"))
 
-    tech_anchor = dims["technical"]["anchor"]
+    tech_anchor = dims["technical"]["anchor"]  # noqa: F841
     score_pct = total_score / max_score * 100 if max_score > 0 else 50
 
     if score_pct >= 70:
@@ -1774,20 +1915,33 @@ def compute_screen1(spot_inst: str = INST_SPOT, is_btc: bool = True):
 
     # 经典指标置信度计算（周线组 + 日线组）
     import pandas as pd
-    daily_df = pd.DataFrame({
-        "open": [c["o"] for c in daily],
-        "high": [c["h"] for c in daily],
-        "low": [c["l"] for c in daily],
-        "close": daily_closes,
-        "volume": [c["vol"] for c in daily],
-    }) if daily else pd.DataFrame()
-    weekly_df = pd.DataFrame({
-        "open": [c["o"] for c in weekly],
-        "high": [c["h"] for c in weekly],
-        "low": [c["l"] for c in weekly],
-        "close": weekly_closes,
-        "volume": [c["vol"] for c in weekly],
-    }) if weekly else pd.DataFrame()
+
+    daily_df = (
+        pd.DataFrame(
+            {
+                "open": [c["o"] for c in daily],
+                "high": [c["h"] for c in daily],
+                "low": [c["l"] for c in daily],
+                "close": daily_closes,
+                "volume": [c["vol"] for c in daily],
+            }
+        )
+        if daily
+        else pd.DataFrame()
+    )
+    weekly_df = (
+        pd.DataFrame(
+            {
+                "open": [c["o"] for c in weekly],
+                "high": [c["h"] for c in weekly],
+                "low": [c["l"] for c in weekly],
+                "close": weekly_closes,
+                "volume": [c["vol"] for c in weekly],
+            }
+        )
+        if weekly
+        else pd.DataFrame()
+    )
     classic_confidence = _calc_classic_indicator_confidence(weekly_df, daily_df)
 
     return {
@@ -1854,24 +2008,28 @@ def compute_screen2(s1_direction, current_price, inst_id=None, vol_mult=None):
             lvl_price = base_price * (1 - addon_pct * n)
             spacing = f"-{addon_pct*n*100:.1f}%" if n > 0 else "—"
             status = "未到达" if n > 0 else ("待触发" if current_price > lvl_price else "已触发")
-            entry_levels.append({
-                "level": f"入场" if n == 0 else f"加仓{n}",
-                "price": round(lvl_price, 2),
-                "spacing": spacing,
-                "status": status,
-            })
+            entry_levels.append(
+                {
+                    "level": "入场" if n == 0 else f"加仓{n}",
+                    "price": round(lvl_price, 2),
+                    "spacing": spacing,
+                    "status": status,
+                }
+            )
         tp_price = base_price * (1 + tp_pct)
     else:
         for n in range(MAX_ADDONS + 1):
             lvl_price = base_price * (1 + addon_pct * n)
             spacing = f"+{addon_pct*n*100:.1f}%" if n > 0 else "—"
             status = "未到达" if n > 0 else ("待触发" if current_price < lvl_price else "已触发")
-            entry_levels.append({
-                "level": f"入场" if n == 0 else f"加仓{n}",
-                "price": round(lvl_price, 2),
-                "spacing": spacing,
-                "status": status,
-            })
+            entry_levels.append(
+                {
+                    "level": "入场" if n == 0 else f"加仓{n}",
+                    "price": round(lvl_price, 2),
+                    "spacing": spacing,
+                    "status": status,
+                }
+            )
         tp_price = base_price * (1 - tp_pct)
 
     coin = (inst_id or INST_SPOT).split("-")[0]
@@ -1916,26 +2074,36 @@ def compute_screen3(s2):
                 pos = float(p.get("pos", 0))
                 if pos != 0:
                     pos_side = p.get("posSide", "net")
-                    side = "LONG" if pos_side == "long" else "SHORT" if pos_side == "short" else ("LONG" if pos > 0 else "SHORT")
-                    
+                    side = (
+                        "LONG"
+                        if pos_side == "long"
+                        else "SHORT" if pos_side == "short" else ("LONG" if pos > 0 else "SHORT")
+                    )
+
                     coin_symbol = p.get("instId", "").replace("-USDT-SWAP", "")
-                    
+
                     s1_pos = compute_screen1(coin["spot"], is_btc=coin["is_btc"])
                     vm_pos = calc_vol_mult(coin["spot"])
-                    
+
                     avg_px = float(p.get("avgPx", 0))
                     pos_direction = "BULL" if side == "LONG" else "BEAR"
-                    s2_pos_avg = compute_screen2(pos_direction, avg_px, inst_id=swap_inst, vol_mult=vm_pos)
-                    
+                    s2_pos_avg = compute_screen2(
+                        pos_direction, avg_px, inst_id=swap_inst, vol_mult=vm_pos
+                    )
+
                     entry_levels = s2_pos_avg["entry_levels"]
-                    entry_prices = [l["price"] for l in entry_levels]
+                    entry_prices = [l["price"] for l in entry_levels]  # noqa: E741
                     current_price = s1_pos["price"]
-                    
-                    martingale_level = sum(1 for ep in entry_prices if (
-                        (s2_pos_avg["direction"] == "BULL" and current_price <= ep) or
-                        (s2_pos_avg["direction"] == "BEAR" and current_price >= ep)
-                    ))
-                    
+
+                    martingale_level = sum(
+                        1
+                        for ep in entry_prices
+                        if (
+                            (s2_pos_avg["direction"] == "BULL" and current_price <= ep)
+                            or (s2_pos_avg["direction"] == "BEAR" and current_price >= ep)
+                        )
+                    )
+
                     for lvl in entry_levels:
                         n = entry_levels.index(lvl)
                         if s2_pos_avg["direction"] == "BULL":
@@ -1952,38 +2120,56 @@ def compute_screen3(s2):
                                 lvl["status"] = "已入场"
                             else:
                                 lvl["status"] = "未到达"
-                    
+
                     next_entry_pct = None
                     next_entry_price = None
                     if martingale_level < len(entry_levels):
                         next_entry_price = entry_levels[martingale_level]["price"]
-                        next_entry_pct = round(abs(next_entry_price - current_price) / current_price * 100, 2)
-                    
-                    pnl_pct = round((current_price - avg_px) / avg_px * 100 * (1 if side == "LONG" else -1), 2)
-                    tp_price = avg_px * (1 + s2_pos_avg["tp_pct"] / 100) if s2_pos_avg["direction"] == "BULL" else avg_px * (1 - s2_pos_avg["tp_pct"] / 100)
+                        next_entry_pct = round(
+                            abs(next_entry_price - current_price) / current_price * 100, 2
+                        )
+
+                    pnl_pct = round(
+                        (current_price - avg_px) / avg_px * 100 * (1 if side == "LONG" else -1), 2
+                    )
+                    tp_price = (
+                        avg_px * (1 + s2_pos_avg["tp_pct"] / 100)
+                        if s2_pos_avg["direction"] == "BULL"
+                        else avg_px * (1 - s2_pos_avg["tp_pct"] / 100)
+                    )
                     distance_to_tp = round(abs(current_price - tp_price) / avg_px * 100, 2)
-                    
-                    positions.append({
-                        "coin": coin_symbol,
-                        "size": abs(pos),
-                        "side": side,
-                        "entry_px": avg_px,
-                        "current_price": current_price,
-                        "upnl": float(p.get("upl", 0)),
-                        "pnl_pct": pnl_pct,
-                        "leverage": float(p.get("lever", 1)),
-                        "direction": s2_pos_avg["direction"],
-                        "vol_mult": vm_pos,
-                        "martingale_level": martingale_level,
-                        "max_levels": MAX_ADDONS + 1,
-                        "next_entry_price": next_entry_price,
-                        "next_entry_pct": next_entry_pct,
-                        "tp_price": tp_price,
-                        "tp_pct": s2_pos_avg["tp_pct"],
-                        "addon_pct": s2_pos_avg["addon_pct"],
-                        "distance_to_tp": distance_to_tp,
-                        "entry_levels": [{"level": l["level"], "price": l["price"], "spacing": l["spacing"], "status": l["status"]} for l in entry_levels],
-                    })
+
+                    positions.append(
+                        {
+                            "coin": coin_symbol,
+                            "size": abs(pos),
+                            "side": side,
+                            "entry_px": avg_px,
+                            "current_price": current_price,
+                            "upnl": float(p.get("upl", 0)),
+                            "pnl_pct": pnl_pct,
+                            "leverage": float(p.get("lever", 1)),
+                            "direction": s2_pos_avg["direction"],
+                            "vol_mult": vm_pos,
+                            "martingale_level": martingale_level,
+                            "max_levels": MAX_ADDONS + 1,
+                            "next_entry_price": next_entry_price,
+                            "next_entry_pct": next_entry_pct,
+                            "tp_price": tp_price,
+                            "tp_pct": s2_pos_avg["tp_pct"],
+                            "addon_pct": s2_pos_avg["addon_pct"],
+                            "distance_to_tp": distance_to_tp,
+                            "entry_levels": [
+                                {
+                                    "level": l["level"],
+                                    "price": l["price"],
+                                    "spacing": l["spacing"],
+                                    "status": l["status"],
+                                }
+                                for l in entry_levels  # noqa: E741
+                            ],
+                        }
+                    )
 
     return {
         "equity": round(equity, 2),
@@ -2008,19 +2194,21 @@ def scan_candidates():
                 continue
             vm = calc_vol_mult(coin["spot"])
             s2 = compute_screen2(s1["direction"], s1["price"], inst_id=coin["swap"], vol_mult=vm)
-            results.append({
-                "symbol": coin["symbol"],
-                "spot": coin["spot"],
-                "swap": coin["swap"],
-                "is_btc": coin["is_btc"],
-                "screen1": s1,
-                "screen2": s2,
-                "vol_mult": round(vm, 3),
-                "score_pct": s1["score_pct"],
-                "direction": s1["direction"],
-                "confidence": s1["confidence"],
-            })
-        except Exception as e:
+            results.append(
+                {
+                    "symbol": coin["symbol"],
+                    "spot": coin["spot"],
+                    "swap": coin["swap"],
+                    "is_btc": coin["is_btc"],
+                    "screen1": s1,
+                    "screen2": s2,
+                    "vol_mult": round(vm, 3),
+                    "score_pct": s1["score_pct"],
+                    "direction": s1["direction"],
+                    "confidence": s1["confidence"],
+                }
+            )
+        except Exception as e:  # noqa: F841
             continue
 
     def sort_key(r):
@@ -2081,6 +2269,7 @@ def get_all(symbol: str = None):
 
     try:
         from report_loader import get_all_reports
+
         reports = get_all_reports()
     except Exception as e:
         reports = {"error": str(e)}
@@ -2100,8 +2289,8 @@ def get_all(symbol: str = None):
 # 特征集成双保险三层防护（L1 审计 / L2 同向抑制 / L3 反向熔断）
 # 与 scripts.memory_l4.bcrm2.screen_engine 同步保持一致。
 # ============================================================================
-import copy as _copy_guard
-import pandas as _pd_guard
+import copy as _copy_guard  # noqa: E402, I001
+import pandas as _pd_guard  # noqa: E402
 
 FEATURE_INTEGRATION_GUARD = {
     "enable_l1_audit_tag": True,
@@ -2130,7 +2319,8 @@ def attach_l1_audit(trade_dict, war_state, overlap_pct):
 
 
 def compute_source_overlap_pct(lstar_sources, strategic_sources):
-    L = set(lstar_sources); S = set(strategic_sources)
+    L = set(lstar_sources)
+    S = set(strategic_sources)
     if not L or not S:
         return 0.0
     return len(L & S) / min(len(L), len(S))
@@ -2148,13 +2338,19 @@ def apply_l2_if_needed(position_pct, war_state, overlap_pct, guard_cfg, trade_id
     cap_before = float(cfg.get("l2_position_cap_before", 0.50))
     cap_after = float(cfg.get("l2_position_cap_after", 0.40))
     overlap_thr = float(cfg.get("l2_overlap_pct_threshold", 0.40))
-    if not (_war_state_ge_g(war_state, threshold_ws)
-            and float(position_pct) > cap_before
-            and float(overlap_pct) > overlap_thr):
+    if not (
+        _war_state_ge_g(war_state, threshold_ws)
+        and float(position_pct) > cap_before
+        and float(overlap_pct) > overlap_thr
+    ):
         return float(position_pct), ""
     new_pos = min(float(position_pct), cap_after)
     tid = f"trade={trade_id} " if trade_id else ""
-    pp_str = f"{position_pct:.2f}" if abs(position_pct - round(position_pct, 2)) < 1e-9 else f"{position_pct}"
+    pp_str = (
+        f"{position_pct:.2f}"
+        if abs(position_pct - round(position_pct, 2)) < 1e-9
+        else f"{position_pct}"
+    )
     np_str = f"{new_pos:.2f}" if abs(new_pos - round(new_pos, 2)) < 1e-9 else f"{new_pos}"
     log_line = (
         f"[L2-SUPPRESS] {tid}war={war_state} overlap={overlap_pct:.3f} "

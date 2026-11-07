@@ -23,6 +23,7 @@ CASE_TYPES = ("spec_enhance", "optimal_path")
 
 def _now_iso() -> str:
     import datetime
+
     return datetime.datetime.now().isoformat(timespec="seconds")
 
 
@@ -147,21 +148,25 @@ class HistoricalCaseConverter:
             except OSError:
                 continue
             passed = "收尾完成" in text
-            cases.append(TrainingCaseRecord(
-                case_type="spec_enhance",
-                intent=f"acceptance:{bundle}",
-                payload={
-                    "spec_draft": bundle,
-                    "enhanced_spec": text[:2000],
-                    "okr_acceptance_results": {"passed": passed, "bundle": bundle},
-                },
-                label="positive" if passed else "negative",
-                poe_score=0.8 if passed else 0.4,
-                evidence_refs=[{
-                    "type": "acceptance_bundle",
-                    "path": f"acceptance_bundles/{bundle}/wrapup_report.md",
-                }],
-            ))
+            cases.append(
+                TrainingCaseRecord(
+                    case_type="spec_enhance",
+                    intent=f"acceptance:{bundle}",
+                    payload={
+                        "spec_draft": bundle,
+                        "enhanced_spec": text[:2000],
+                        "okr_acceptance_results": {"passed": passed, "bundle": bundle},
+                    },
+                    label="positive" if passed else "negative",
+                    poe_score=0.8 if passed else 0.4,
+                    evidence_refs=[
+                        {
+                            "type": "acceptance_bundle",
+                            "path": f"acceptance_bundles/{bundle}/wrapup_report.md",
+                        }
+                    ],
+                )
+            )
         return cases
 
     def from_replay_pool(self, pool: ReplayPool) -> List[TrainingCaseRecord]:
@@ -169,34 +174,37 @@ class HistoricalCaseConverter:
         cases: List[TrainingCaseRecord] = []
         for tree in pool.list_trees():
             path_actions = [n.action.get("analyzer", "") for n in tree.nodes]
-            avg_poe = (
-                sum(n.poe_score for n in tree.nodes) / len(tree.nodes)
-                if tree.nodes else 0.0
-            )
-            cases.append(TrainingCaseRecord(
-                case_type="optimal_path",
-                intent=str(tree.task.get("target") or tree.tree_id),
-                payload={
-                    "node_context": {"tree_id": tree.tree_id, "task": tree.task},
-                    "candidate_strategies": [{
-                        "analyzer_sequence": path_actions,
-                        "source": tree.provenance,
-                    }],
-                    "chosen_decision": {"analyzer_sequence": path_actions},
-                    "execution_outcome": {
-                        "as_expected": avg_poe >= 0.5,
-                        "poe_score": avg_poe,
+            avg_poe = sum(n.poe_score for n in tree.nodes) / len(tree.nodes) if tree.nodes else 0.0
+            cases.append(
+                TrainingCaseRecord(
+                    case_type="optimal_path",
+                    intent=str(tree.task.get("target") or tree.tree_id),
+                    payload={
+                        "node_context": {"tree_id": tree.tree_id, "task": tree.task},
+                        "candidate_strategies": [
+                            {
+                                "analyzer_sequence": path_actions,
+                                "source": tree.provenance,
+                            }
+                        ],
+                        "chosen_decision": {"analyzer_sequence": path_actions},
+                        "execution_outcome": {
+                            "as_expected": avg_poe >= 0.5,
+                            "poe_score": avg_poe,
+                        },
+                        "v_value": avg_poe,
                     },
-                    "v_value": avg_poe,
-                },
-                label="positive" if avg_poe >= 0.5 else "negative",
-                poe_score=avg_poe,
-                evidence_refs=[{
-                    "type": "replay_pool_tree",
-                    "tree_id": tree.tree_id,
-                    "provenance": tree.provenance,
-                }],
-            ))
+                    label="positive" if avg_poe >= 0.5 else "negative",
+                    poe_score=avg_poe,
+                    evidence_refs=[
+                        {
+                            "type": "replay_pool_tree",
+                            "tree_id": tree.tree_id,
+                            "provenance": tree.provenance,
+                        }
+                    ],
+                )
+            )
         return cases
 
     def from_l1_store(self, l1_path: str) -> List[TrainingCaseRecord]:
@@ -216,29 +224,35 @@ class HistoricalCaseConverter:
                         continue
                     data = rec.get("data") or {}
                     has_answer = bool(rec.get("answer"))
-                    cases.append(TrainingCaseRecord(
-                        case_type="optimal_path",
-                        intent=str(rec.get("intent") or "data_query"),
-                        payload={
-                            "node_context": {"message": rec.get("message", "")},
-                            "candidate_strategies": [{
-                                "source": str(data.get("source") or "unknown"),
-                            }],
-                            "chosen_decision": {"source": data.get("source")},
-                            "execution_outcome": {
-                                "as_expected": has_answer,
-                                "answer": str(rec.get("answer", ""))[:500],
+                    cases.append(
+                        TrainingCaseRecord(
+                            case_type="optimal_path",
+                            intent=str(rec.get("intent") or "data_query"),
+                            payload={
+                                "node_context": {"message": rec.get("message", "")},
+                                "candidate_strategies": [
+                                    {
+                                        "source": str(data.get("source") or "unknown"),
+                                    }
+                                ],
+                                "chosen_decision": {"source": data.get("source")},
+                                "execution_outcome": {
+                                    "as_expected": has_answer,
+                                    "answer": str(rec.get("answer", ""))[:500],
+                                },
+                                "v_value": 0.6 if has_answer else 0.2,
                             },
-                            "v_value": 0.6 if has_answer else 0.2,
-                        },
-                        label="positive" if has_answer else "negative",
-                        poe_score=0.6 if has_answer else 0.2,
-                        evidence_refs=[{
-                            "type": "l1_case",
-                            "ts": rec.get("ts", ""),
-                            "source": data.get("source"),
-                        }],
-                    ))
+                            label="positive" if has_answer else "negative",
+                            poe_score=0.6 if has_answer else 0.2,
+                            evidence_refs=[
+                                {
+                                    "type": "l1_case",
+                                    "ts": rec.get("ts", ""),
+                                    "source": data.get("source"),
+                                }
+                            ],
+                        )
+                    )
         except OSError:
             pass
         return cases

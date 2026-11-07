@@ -25,17 +25,16 @@ from __future__ import annotations
 
 import json
 import os
+import statistics
 import sys
 import time
-import statistics
 from typing import Any
 
 SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
 if SERVER_DIR not in sys.path:
     sys.path.insert(0, SERVER_DIR)
 
-import laya_judge
-
+import laya_judge  # noqa: E402
 
 # ============================================================
 # 测试用例集（含 ground truth）
@@ -48,7 +47,11 @@ NOUL_CASES = [
     ({"task": "实现用户登录", "output": "partial: 只写了页面"}, "这个任务是否已经完成？", 0),
     ({"task": "写一个排序算法", "output": "完成了快排，有测试覆盖"}, "这个任务是否已经完成？", 1),
     ({"task": "写一个排序算法", "output": "刚写了个函数签名"}, "这个任务是否已经完成？", 0),
-    ({"task": "重构数据库连接池", "output": "已重构完成，所有测试通过"}, "这个任务是否已经完成？", 1),
+    (
+        {"task": "重构数据库连接池", "output": "已重构完成，所有测试通过"},
+        "这个任务是否已经完成？",
+        1,
+    ),
     ({"task": "重构数据库连接池", "output": "还在改配置文件"}, "这个任务是否已经完成？", 0),
     # --- 步骤质量 ---
     ({"step": 3, "output": "函数正确返回预期结果"}, "这个步骤的产出是否合格？", 1),
@@ -66,52 +69,149 @@ NOUL_CASES = [
 
 # choice 用例: (state, instructions, criteria_dict, ground_truth_key)
 CHOICE_CASES = [
-    ({"user_input": "我想做交易，开仓做多比特币"}, "用户意图？",
-     {"market_query": "行情", "trend_analysis": "趋势", "trading_decision": "交易", "risk_analysis": "风险", "other": "其他"},
-     "trading_decision"),
-    ({"user_input": "比特币现在价格多少"}, "用户意图？",
-     {"market_query": "行情", "trend_analysis": "趋势", "trading_decision": "交易", "risk_analysis": "风险", "other": "其他"},
-     "market_query"),
-    ({"user_input": "当前仓位风险如何"}, "用户意图？",
-     {"market_query": "行情", "trend_analysis": "趋势", "trading_decision": "交易", "risk_analysis": "风险", "other": "其他"},
-     "risk_analysis"),
-    ({"user_input": "分析一下比特币的趋势"}, "用户意图？",
-     {"market_query": "行情", "trend_analysis": "趋势", "trading_decision": "交易", "risk_analysis": "风险", "other": "其他"},
-     "trend_analysis"),
-    ({"user_input": "帮我写一个交易策略"}, "用户意图？",
-     {"market_query": "行情", "trend_analysis": "趋势", "trading_decision": "交易", "risk_analysis": "风险", "other": "其他"},
-     "other"),
-    ({"user_input": "以太坊的支撑位是多少"}, "用户意图？",
-     {"market_query": "行情", "trend_analysis": "趋势", "trading_decision": "交易", "risk_analysis": "风险", "other": "其他"},
-     "market_query"),
-    ({"user_input": "我要做空 BTC"}, "用户意图？",
-     {"market_query": "行情", "trend_analysis": "趋势", "trading_decision": "交易", "risk_analysis": "风险", "other": "其他"},
-     "trading_decision"),
-    ({"user_input": "帮我评估一下这个仓位的风险"}, "用户意图？",
-     {"market_query": "行情", "trend_analysis": "趋势", "trading_decision": "交易", "risk_analysis": "风险", "other": "其他"},
-     "risk_analysis"),
+    (
+        {"user_input": "我想做交易，开仓做多比特币"},
+        "用户意图？",
+        {
+            "market_query": "行情",
+            "trend_analysis": "趋势",
+            "trading_decision": "交易",
+            "risk_analysis": "风险",
+            "other": "其他",
+        },
+        "trading_decision",
+    ),
+    (
+        {"user_input": "比特币现在价格多少"},
+        "用户意图？",
+        {
+            "market_query": "行情",
+            "trend_analysis": "趋势",
+            "trading_decision": "交易",
+            "risk_analysis": "风险",
+            "other": "其他",
+        },
+        "market_query",
+    ),
+    (
+        {"user_input": "当前仓位风险如何"},
+        "用户意图？",
+        {
+            "market_query": "行情",
+            "trend_analysis": "趋势",
+            "trading_decision": "交易",
+            "risk_analysis": "风险",
+            "other": "其他",
+        },
+        "risk_analysis",
+    ),
+    (
+        {"user_input": "分析一下比特币的趋势"},
+        "用户意图？",
+        {
+            "market_query": "行情",
+            "trend_analysis": "趋势",
+            "trading_decision": "交易",
+            "risk_analysis": "风险",
+            "other": "其他",
+        },
+        "trend_analysis",
+    ),
+    (
+        {"user_input": "帮我写一个交易策略"},
+        "用户意图？",
+        {
+            "market_query": "行情",
+            "trend_analysis": "趋势",
+            "trading_decision": "交易",
+            "risk_analysis": "风险",
+            "other": "其他",
+        },
+        "other",
+    ),
+    (
+        {"user_input": "以太坊的支撑位是多少"},
+        "用户意图？",
+        {
+            "market_query": "行情",
+            "trend_analysis": "趋势",
+            "trading_decision": "交易",
+            "risk_analysis": "风险",
+            "other": "其他",
+        },
+        "market_query",
+    ),
+    (
+        {"user_input": "我要做空 BTC"},
+        "用户意图？",
+        {
+            "market_query": "行情",
+            "trend_analysis": "趋势",
+            "trading_decision": "交易",
+            "risk_analysis": "风险",
+            "other": "其他",
+        },
+        "trading_decision",
+    ),
+    (
+        {"user_input": "帮我评估一下这个仓位的风险"},
+        "用户意图？",
+        {
+            "market_query": "行情",
+            "trend_analysis": "趋势",
+            "trading_decision": "交易",
+            "risk_analysis": "风险",
+            "other": "其他",
+        },
+        "risk_analysis",
+    ),
 ]
 
 # score 用例: (state, instructions, criteria_list, ground_truth_score_index)
 SCORE_CASES = [
-    ({"task": "实现登录", "output": "完成了所有功能，有完整测试"}, "完成质量如何？",
-     ["未完成", "部分完成", "基本完成", "高质量完成"], 3),
-    ({"task": "实现登录", "output": "只完成了页面，没有API"}, "完成质量如何？",
-     ["未完成", "部分完成", "基本完成", "高质量完成"], 1),
-    ({"task": "实现登录", "output": "完成了页面和API，但没有测试"}, "完成质量如何？",
-     ["未完成", "部分完成", "基本完成", "高质量完成"], 2),
-    ({"task": "实现登录", "output": "什么都没做"}, "完成质量如何？",
-     ["未完成", "部分完成", "基本完成", "高质量完成"], 0),
-    ({"task": "写排序算法", "output": "快排实现，边界条件都处理了，有测试"}, "完成质量如何？",
-     ["未完成", "部分完成", "基本完成", "高质量完成"], 3),
-    ({"task": "写排序算法", "output": "写了冒泡排序，能跑但没测试"}, "完成质量如何？",
-     ["未完成", "部分完成", "基本完成", "高质量完成"], 2),
+    (
+        {"task": "实现登录", "output": "完成了所有功能，有完整测试"},
+        "完成质量如何？",
+        ["未完成", "部分完成", "基本完成", "高质量完成"],
+        3,
+    ),
+    (
+        {"task": "实现登录", "output": "只完成了页面，没有API"},
+        "完成质量如何？",
+        ["未完成", "部分完成", "基本完成", "高质量完成"],
+        1,
+    ),
+    (
+        {"task": "实现登录", "output": "完成了页面和API，但没有测试"},
+        "完成质量如何？",
+        ["未完成", "部分完成", "基本完成", "高质量完成"],
+        2,
+    ),
+    (
+        {"task": "实现登录", "output": "什么都没做"},
+        "完成质量如何？",
+        ["未完成", "部分完成", "基本完成", "高质量完成"],
+        0,
+    ),
+    (
+        {"task": "写排序算法", "output": "快排实现，边界条件都处理了，有测试"},
+        "完成质量如何？",
+        ["未完成", "部分完成", "基本完成", "高质量完成"],
+        3,
+    ),
+    (
+        {"task": "写排序算法", "output": "写了冒泡排序，能跑但没测试"},
+        "完成质量如何？",
+        ["未完成", "部分完成", "基本完成", "高质量完成"],
+        2,
+    ),
 ]
 
 
 # ============================================================
 # Jev Mock（模拟 Jev 官方宣称的高性能特征）
 # ============================================================
+
 
 def jev_mock_predict(state: Any, questions: dict) -> dict:
     """模拟 Jev 的输出（高准确率、高校准）
@@ -129,11 +229,26 @@ def jev_mock_predict(state: Any, questions: dict) -> dict:
         if qtype == "noul":
             # 模拟 Jev 的高准确率判断
             if "完成" in instr:
-                gt = 1 if ("完成" in state_str and "partial" not in state_str.lower()
-                           and "只" not in state_str and "没" not in state_str) else 0
+                gt = (
+                    1
+                    if (
+                        "完成" in state_str
+                        and "partial" not in state_str.lower()
+                        and "只" not in state_str
+                        and "没" not in state_str
+                    )
+                    else 0
+                )
             elif "合格" in instr or "通过" in instr:
-                gt = 1 if ("error" not in state_str.lower() and "失败" not in state_str
-                           and "错误" not in state_str) else 0
+                gt = (
+                    1
+                    if (
+                        "error" not in state_str.lower()
+                        and "失败" not in state_str
+                        and "错误" not in state_str
+                    )
+                    else 0
+                )
             elif "交易" in instr:
                 gt = 1 if ("做多" in state_str or "做空" in state_str or "开仓" in state_str) else 0
             else:
@@ -151,7 +266,7 @@ def jev_mock_predict(state: Any, questions: dict) -> dict:
                     choice = key
                     break
             # 模拟 Jev 的高校准
-            probs = {k: 0.03 for k in criteria}
+            probs = dict.fromkeys(criteria, 0.03)
             probs[choice] = 0.88
             answers[name] = {
                 "type": "choice",
@@ -181,12 +296,17 @@ def jev_mock_predict(state: Any, questions: dict) -> dict:
                 "confidence": 0.82,
             }
 
-    return {"model": "jev-mock", "answers": answers, "usage": {"input_tokens": 200, "output_tokens": 0}}
+    return {
+        "model": "jev-mock",
+        "answers": answers,
+        "usage": {"input_tokens": 200, "output_tokens": 0},
+    }
 
 
 # ============================================================
 # 指标计算
 # ============================================================
+
 
 def compute_ece(confidences: list[float], corrects: list[int], n_bins: int = 10) -> float:
     """计算 Expected Calibration Error (ECE)
@@ -212,7 +332,7 @@ def compute_ece(confidences: list[float], corrects: list[int], n_bins: int = 10)
         lo, hi = bin_boundaries[i], bin_boundaries[i + 1]
         bin_confs = []
         bin_corrects = []
-        for conf, corr in zip(confidences, corrects):
+        for conf, corr in zip(confidences, corrects):  # noqa: B905
             if lo <= conf < hi or (i == n_bins - 1 and conf == 1.0):
                 bin_confs.append(conf)
                 bin_corrects.append(corr)
@@ -240,24 +360,35 @@ def confidence_distribution(confidences: list[float]) -> dict:
         else:
             bins["0.9-1.0"] += 1
     total = len(confidences)
-    return {k: {"count": v, "pct": f"{v / total * 100:.1f}%"} for k, v in bins.items()} if total else bins
+    return (
+        {k: {"count": v, "pct": f"{v / total * 100:.1f}%"} for k, v in bins.items()}
+        if total
+        else bins
+    )
 
 
 # ============================================================
 # A/B 测试执行
 # ============================================================
 
+
 def run_ab_test() -> dict:
     """运行 A/B 测试，返回对比结果"""
     laya_judge.ENABLE_LAYA_JUDGE = True
 
     results = {
-        "noul": {"laya": {"acc": 0, "ece": 0, "confs": [], "corrects": [], "latencies": []},
-                 "jev": {"acc": 0, "ece": 0, "confs": [], "corrects": [], "latencies": []}},
-        "choice": {"laya": {"acc": 0, "ece": 0, "confs": [], "corrects": [], "latencies": []},
-                   "jev": {"acc": 0, "ece": 0, "confs": [], "corrects": [], "latencies": []}},
-        "score": {"laya": {"acc": 0, "ece": 0, "confs": [], "corrects": [], "latencies": []},
-                  "jev": {"acc": 0, "ece": 0, "confs": [], "corrects": [], "latencies": []}},
+        "noul": {
+            "laya": {"acc": 0, "ece": 0, "confs": [], "corrects": [], "latencies": []},
+            "jev": {"acc": 0, "ece": 0, "confs": [], "corrects": [], "latencies": []},
+        },
+        "choice": {
+            "laya": {"acc": 0, "ece": 0, "confs": [], "corrects": [], "latencies": []},
+            "jev": {"acc": 0, "ece": 0, "confs": [], "corrects": [], "latencies": []},
+        },
+        "score": {
+            "laya": {"acc": 0, "ece": 0, "confs": [], "corrects": [], "latencies": []},
+            "jev": {"acc": 0, "ece": 0, "confs": [], "corrects": [], "latencies": []},
+        },
     }
 
     # --- noul 测试 ---
@@ -297,7 +428,9 @@ def run_ab_test() -> dict:
         dt = time.time() - t0
         if not r["degraded"]:
             choice = r["answers"]["q"]["choice"]
-            conf = r["answers"]["q"].get("confidence", r["answers"]["q"].get("answer_confidence", 0))
+            conf = r["answers"]["q"].get(
+                "confidence", r["answers"]["q"].get("answer_confidence", 0)
+            )
             results["choice"]["laya"]["confs"].append(conf)
             results["choice"]["laya"]["corrects"].append(1 if choice == gt else 0)
             results["choice"]["laya"]["latencies"].append(dt)
@@ -324,7 +457,9 @@ def run_ab_test() -> dict:
         if not r["degraded"]:
             score = r["answers"]["q"]["score"]
             pred_idx = round(score)
-            conf = r["answers"]["q"].get("confidence", r["answers"]["q"].get("answer_confidence", 0))
+            conf = r["answers"]["q"].get(
+                "confidence", r["answers"]["q"].get("answer_confidence", 0)
+            )
             results["score"]["laya"]["confs"].append(conf)
             results["score"]["laya"]["corrects"].append(1 if pred_idx == gt else 0)
             results["score"]["laya"]["latencies"].append(dt)
@@ -363,6 +498,7 @@ def run_ab_test() -> dict:
 # 报告输出
 # ============================================================
 
+
 def print_report(summary: dict):
     """打印 A/B 对比报告"""
     print("\n" + "=" * 80)
@@ -375,11 +511,17 @@ def print_report(summary: dict):
         print(f"{'─' * 80}")
         print(f"  {'指标':<20} {'Laya':<20} {'Jev(mock)':<20}")
         print(f"  {'-'*20} {'-'*20} {'-'*20}")
-        print(f"  {'准确率':<20} {summary[qtype]['laya']['accuracy']:<20} {summary[qtype]['jev']['accuracy']:<20}")
-        print(f"  {'ECE(校准误差)':<20} {summary[qtype]['laya']['ece']:<20} {summary[qtype]['jev']['ece']:<20}")
-        print(f"  {'平均延迟(ms)':<20} {summary[qtype]['laya']['avg_latency_ms']:<20} {summary[qtype]['jev']['avg_latency_ms']:<20}")
+        print(
+            f"  {'准确率':<20} {summary[qtype]['laya']['accuracy']:<20} {summary[qtype]['jev']['accuracy']:<20}"
+        )
+        print(
+            f"  {'ECE(校准误差)':<20} {summary[qtype]['laya']['ece']:<20} {summary[qtype]['jev']['ece']:<20}"
+        )
+        print(
+            f"  {'平均延迟(ms)':<20} {summary[qtype]['laya']['avg_latency_ms']:<20} {summary[qtype]['jev']['avg_latency_ms']:<20}"
+        )
 
-        print(f"\n  置信度分布:")
+        print("\n  置信度分布:")
         laya_dist = summary[qtype]["laya"]["confidence_dist"]
         jev_dist = summary[qtype]["jev"]["confidence_dist"]
         for bin_key in laya_dist:
@@ -412,7 +554,9 @@ def print_report(summary: dict):
 
 if __name__ == "__main__":
     print("Laya vs Jev A/B 对比测试")
-    print(f"模型: {laya_judge.LAYA_MODEL_ID} (subfolder={laya_judge.LAYA_SUBFOLDER}, device={laya_judge.LAYA_DEVICE})")
+    print(
+        f"模型: {laya_judge.LAYA_MODEL_ID} (subfolder={laya_judge.LAYA_SUBFOLDER}, device={laya_judge.LAYA_DEVICE})"
+    )
     print("=" * 80)
 
     summary = run_ab_test()

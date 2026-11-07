@@ -7,9 +7,10 @@ Persona 为辩论赋予人格深度：性格特质、话术风格、背景故事
 位置：C-Drive 内部 (dream-harness-bridge/packages/python-server/persona.py)
 被 DebateEngine (debate_engine.py) 使用，也可被 32-bot 通过 IPC 间接调用。
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 
@@ -26,8 +27,9 @@ class Persona:
         expertise: 专业领域列表
         forbidden: 禁止行为（安全约束）
     """
+
     name: str
-    side: str                          # 'bull' | 'bear' | 'judge'
+    side: str  # 'bull' | 'bear' | 'judge'
     traits: list[str]
     speech_style: str
     backstory: str
@@ -62,7 +64,11 @@ class Persona:
                 f"你是{self.name}，中立裁判。你的职责：客观评判辩论质量，给出总结和洞察。",
                 f"你的性格特点：{', '.join(self.traits)}。" if self.traits else "",
                 f"说话风格：{self.speech_style}" if self.speech_style else "",
-                f"背景：{self.backstory}，你的专业领域：{', '.join(self.expertise)}。" if self.backstory or self.expertise else "",
+                (
+                    f"背景：{self.backstory}，你的专业领域：{', '.join(self.expertise)}。"
+                    if self.backstory or self.expertise
+                    else ""
+                ),
                 f"绝对禁止：{', '.join(self.forbidden)}。" if self.forbidden else "",
             ]
             parts = [p for p in parts if p]  # 去空行
@@ -123,13 +129,15 @@ class Persona:
         if strategy_weights:
             sorted_sw = sorted(
                 strategy_weights.items(),
-                key=lambda x: x[1], reverse=True,
-            )[:2]  # Top-2
+                key=lambda x: x[1],
+                reverse=True,
+            )[
+                :2
+            ]  # Top-2
             label = "[低置信度，仅供参考]" if cold_start else ""
             rec_lines = ["## 推荐策略（基于历史胜率）"]
             for strat, prob in sorted_sw:
-                rec_lines.append(
-                    f"- {strat} (胜率 {prob:.0%}) {label}")
+                rec_lines.append(f"- {strat} (胜率 {prob:.0%}) {label}")
             parts.append("\n".join(rec_lines))
 
         parts.append(
@@ -219,10 +227,16 @@ DEFAULT_JUDGE = PRESET_PERSONAS["中立裁判"]
 # 话题关键词 → Persona 映射
 _KEYWORD_MAP: list[tuple[list[str], str, str]] = [
     # (关键词列表, bull_persona名, bear_persona名)
-    (["BTC", "Crypto", "加密", "比特币", "以太坊", "ETH", "区块链", "数字货币"],
-     "加密老兵", "传统金融人"),
-    (["AI", "人工智能", "大模型", "LLM", "AGI", "机器学习", "深度学习", "GPT"],
-     "技术乐观派", "伦理审慎派"),
+    (
+        ["BTC", "Crypto", "加密", "比特币", "以太坊", "ETH", "区块链", "数字货币"],
+        "加密老兵",
+        "传统金融人",
+    ),
+    (
+        ["AI", "人工智能", "大模型", "LLM", "AGI", "机器学习", "深度学习", "GPT"],
+        "技术乐观派",
+        "伦理审慎派",
+    ),
 ]
 
 

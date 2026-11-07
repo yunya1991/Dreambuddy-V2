@@ -1,4 +1,5 @@
 """RED 测试：DependencyAudit — 依赖版本审计。"""
+
 import os
 import sys
 import tempfile
@@ -8,8 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.dependency_audit import audit_dependencies
 
-
-PYPROJECT_SAMPLE = '''
+PYPROJECT_SAMPLE = """
 [project]
 name = "test-project"
 version = "0.1.0"
@@ -18,14 +18,14 @@ dependencies = [
     "numpy>=1.21.0",
     "pandas>=1.4.0",
 ]
-'''
+"""
 
-REQUIREMENTS_SAMPLE = '''requests>=2.28.0
+REQUIREMENTS_SAMPLE = """requests>=2.28.0
 numpy>=1.21.0
 flask==2.0.0
-'''
+"""
 
-PACKAGE_JSON_SAMPLE = '''
+PACKAGE_JSON_SAMPLE = """
 {
   "name": "test-project",
   "dependencies": {
@@ -33,7 +33,7 @@ PACKAGE_JSON_SAMPLE = '''
     "lodash": "^4.17.0"
   }
 }
-'''
+"""
 
 
 def test_audit_dependencies_pyproject_toml():

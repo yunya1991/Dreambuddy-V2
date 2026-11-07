@@ -2,6 +2,7 @@
 P0-4 TDD RED：connection.py + 异常分类 + PRAGMA 断言 + auto_retry_locked
 对齐 SCHEMA_DESIGN.md §0.2 PRAGMA 配置表（8 条） + TECHNICAL_DESIGN §4.2 异常分类矩阵
 """
+
 from __future__ import annotations
 
 import os
@@ -16,12 +17,14 @@ class TestSqliteErrorClassification:
     def test_5_categories_exist(self):
         """TECHNICAL_DESIGN §4.2 要求 5 类：BUSY / CONSTRAINT / CORRUPT / IO / OTHER"""
         from dreambuddy_dal.connection import SQLiteErrorCategory
+
         expected = {"BUSY", "CONSTRAINT", "CORRUPT", "IO_ERROR", "OTHER"}
         assert {e.value for e in SQLiteErrorCategory} == expected
 
     def test_classify_exception_has_mapping(self):
         """classify_sqlite_exception(exception) -> SQLiteErrorCategory"""
         from dreambuddy_dal.connection import SQLiteErrorCategory, classify_sqlite_exception
+
         # OperationalError("database is locked") → BUSY
         e1 = sqlite3.OperationalError("database is locked")
         assert classify_sqlite_exception(e1) == SQLiteErrorCategory.BUSY
@@ -39,9 +42,11 @@ class TestPragmaConfigApplied:
     get_sqlite_connection(db_path) 必须在连接后立刻应用 8 条 PRAGMA，
     并对 critical 4 条做断言校验（ASSERTION 校验）。
     """
+
     @pytest.fixture
     def temp_db(self):
         from dreambuddy_dal.connection import get_sqlite_connection
+
         with tempfile.TemporaryDirectory() as td:
             db_path = os.path.join(td, "pragmatest.db")
             with get_sqlite_connection(db_path) as conn:
@@ -86,6 +91,7 @@ class TestAutoRetryLocked:
     def test_retry_on_locked_succeeds_third_attempt(self):
         """前 2 次抛 OperationalError(locale 含 locked)，第 3 次成功 → 计数==3"""
         from dreambuddy_dal.connection import auto_retry_locked
+
         calls = []
 
         @auto_retry_locked

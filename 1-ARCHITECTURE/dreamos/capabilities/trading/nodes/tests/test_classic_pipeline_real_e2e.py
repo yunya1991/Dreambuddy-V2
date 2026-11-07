@@ -21,7 +21,7 @@ from dreamos.capabilities.trading.nodes.c5_param_optimize import C5ParamOptimize
 from dreamos.capabilities.trading.nodes.c6_plan_generate import C6PlanGenerateNode
 from dreamos.capabilities.trading.nodes.c7_exec_monitor import C7ExecMonitorNode
 from dreamos.capabilities.trading.nodes.c8_perf_attribution import C8PerfAttributionNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.shared.state import NodeStatus, State
 
 
 def _make_market() -> Dict[str, Any]:
@@ -66,10 +66,22 @@ def _make_config() -> Dict[str, Any]:
     return {
         # C8 已平仓交易（模拟 C7 执行后的结果）
         "closed_trades": [
-            {"symbol": "BTC", "direction": "LONG", "entry_price": 60000.0,
-             "exit_price": 65000.0, "size": 0.5, "pnl": 2500.0},
-            {"symbol": "ETH", "direction": "LONG", "entry_price": 3000.0,
-             "exit_price": 3300.0, "size": 3.0, "pnl": 900.0},
+            {
+                "symbol": "BTC",
+                "direction": "LONG",
+                "entry_price": 60000.0,
+                "exit_price": 65000.0,
+                "size": 0.5,
+                "pnl": 2500.0,
+            },
+            {
+                "symbol": "ETH",
+                "direction": "LONG",
+                "entry_price": 3000.0,
+                "exit_price": 3300.0,
+                "size": 3.0,
+                "pnl": 900.0,
+            },
         ],
     }
 
@@ -77,9 +89,15 @@ def _make_config() -> Dict[str, Any]:
 def _run_pipeline(state: State) -> list:
     """串行执行 C0→C8"""
     nodes = [
-        C0EnvScanNode(), C1SymbolFilterNode(), C2SignalDetectNode(),
-        C3BacktestVerifyNode(), C4RiskAssessNode(), C5ParamOptimizeNode(),
-        C6PlanGenerateNode(), C7ExecMonitorNode(), C8PerfAttributionNode(),
+        C0EnvScanNode(),
+        C1SymbolFilterNode(),
+        C2SignalDetectNode(),
+        C3BacktestVerifyNode(),
+        C4RiskAssessNode(),
+        C5ParamOptimizeNode(),
+        C6PlanGenerateNode(),
+        C7ExecMonitorNode(),
+        C8PerfAttributionNode(),
     ]
     results = []
     for node in nodes:
@@ -178,7 +196,7 @@ class TestClassicPipelineRealE2E:
 
     def test_c6_trade_plan_entries_have_full_fields(self):
         c6 = self.state.get_result("C6").outputs
-        for sym, plan in c6["trade_plan"].items():
+        for sym, plan in c6["trade_plan"].items():  # noqa: B007
             assert "direction" in plan
             assert "size" in plan
             assert "stop_loss" in plan

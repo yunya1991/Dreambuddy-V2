@@ -4,6 +4,7 @@
 包含策略注册表的增删改查、SQLite/JSON 双后端、事件流、生命周期管理。
 数据路径独立于 10-经典指标系统，存储在 26-/data/registry/。
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -15,7 +16,6 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
-
 
 # 26 模块数据根目录 (26-策略管理模块/data/registry/)
 _REGISTRY_DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "registry"
@@ -64,6 +64,7 @@ def _config_get() -> Dict[str, Any]:
 # 路径与后端
 # ---------------------------------------------------------------------------
 
+
 def _strategy_registry_path() -> Path:
     return _user_data_dir() / "strategy_registry.json"
 
@@ -100,12 +101,12 @@ def _strategy_bundles_dir() -> Path:
 # 数据库初始化
 # ---------------------------------------------------------------------------
 
+
 def _strategy_registry_db_init() -> None:
     with contextlib.closing(_strategy_registry_db_conn()) as conn:
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA synchronous=NORMAL")
-        conn.execute(
-            """
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS registry_entries (
                 k TEXT PRIMARY KEY,
                 strategy_id TEXT,
@@ -120,16 +121,20 @@ def _strategy_registry_db_init() -> None:
                 tier_reason TEXT,
                 entry_json TEXT
             )
-            """
-        )
+            """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_registry_family ON registry_entries(family)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_registry_tier ON registry_entries(tier)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_registry_updated ON registry_entries(updated_at)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_registry_bundle ON registry_entries(bundle_id)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_registry_cost ON registry_entries(cost_profile_id)")
-
         conn.execute(
-            """
+            "CREATE INDEX IF NOT EXISTS idx_registry_updated ON registry_entries(updated_at)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_registry_bundle ON registry_entries(bundle_id)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_registry_cost ON registry_entries(cost_profile_id)"
+        )
+
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS registry_events (
                 id TEXT PRIMARY KEY,
                 ts INTEGER,
@@ -140,13 +145,13 @@ def _strategy_registry_db_init() -> None:
                 source_zip TEXT,
                 event_json TEXT
             )
-            """
+            """)
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_events_key_ts ON registry_events(strategy_id, source_zip, ts)"
         )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_events_key_ts ON registry_events(strategy_id, source_zip, ts)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_events_ts ON registry_events(ts)")
 
-        conn.execute(
-            """
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS eval_policies (
                 ref TEXT,
                 policy_hash TEXT,
@@ -154,12 +159,10 @@ def _strategy_registry_db_init() -> None:
                 created_at TEXT,
                 PRIMARY KEY (ref, policy_hash)
             )
-            """
-        )
+            """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_eval_policies_ref ON eval_policies(ref)")
 
-        conn.execute(
-            """
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS approvals (
                 id TEXT PRIMARY KEY,
                 ts INTEGER,
@@ -174,10 +177,11 @@ def _strategy_registry_db_init() -> None:
                 note TEXT,
                 record_json TEXT
             )
-            """
-        )
+            """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_approvals_bundle ON approvals(bundle_id)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_approvals_key_ts ON approvals(strategy_id, source_zip, ts)")
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_approvals_key_ts ON approvals(strategy_id, source_zip, ts)"
+        )
 
     _strategy_registry_db_migrate_from_json()
 
@@ -201,7 +205,7 @@ def _strategy_registry_db_migrate_from_json() -> None:
                 conn.execute("BEGIN")
             except Exception:
                 pass
-            for k, e in entries.items():
+            for k, e in entries.items():  # noqa: B007
                 if not isinstance(e, dict):
                     continue
                 try:
@@ -245,7 +249,11 @@ def _strategy_registry_db_migrate_from_json() -> None:
                             (None if obj.get("trace_id") is None else str(obj.get("trace_id"))),
                             (None if obj.get("actor") is None else str(obj.get("actor"))),
                             (None if obj.get("kind") is None else str(obj.get("kind"))),
-                            (None if obj.get("strategy_id") is None else str(obj.get("strategy_id"))),
+                            (
+                                None
+                                if obj.get("strategy_id") is None
+                                else str(obj.get("strategy_id"))
+                            ),
                             (None if obj.get("source_zip") is None else str(obj.get("source_zip"))),
                             json.dumps(obj, ensure_ascii=False, separators=(",", ":")),
                         ),
@@ -259,6 +267,7 @@ def _strategy_registry_db_migrate_from_json() -> None:
 # ---------------------------------------------------------------------------
 # JSON 后端
 # ---------------------------------------------------------------------------
+
 
 def _strategy_registry_load_json_only() -> Dict[str, Any]:
     p = _strategy_registry_path()
@@ -276,6 +285,7 @@ def _strategy_registry_load_json_only() -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # 增删改查
 # ---------------------------------------------------------------------------
+
 
 def _strategy_registry_db_upsert_entry(conn: sqlite3.Connection, entry: Dict[str, Any]) -> None:
     e = dict(entry)
@@ -313,7 +323,20 @@ def _strategy_registry_db_upsert_entry(conn: sqlite3.Connection, entry: Dict[str
             tier_reason=excluded.tier_reason,
             entry_json=excluded.entry_json
         """,
-        (k, sid, z, fam, stage, tier, updated_at, bundle_id, cost_profile_id, tags_text, tier_reason, entry_json),
+        (
+            k,
+            sid,
+            z,
+            fam,
+            stage,
+            tier,
+            updated_at,
+            bundle_id,
+            cost_profile_id,
+            tags_text,
+            tier_reason,
+            entry_json,
+        ),
     )
 
 
@@ -388,6 +411,7 @@ def _strategy_cost_profile_id_from_entry(entry: Dict[str, Any]) -> Optional[str]
 # 事件流
 # ---------------------------------------------------------------------------
 
+
 def _strategy_registry_events_path() -> Path:
     return _user_data_dir() / "strategy_registry_events.jsonl"
 
@@ -445,6 +469,7 @@ def _strategy_registry_events_tail(
 # 加载与保存
 # ---------------------------------------------------------------------------
 
+
 def _strategy_registry_load() -> Dict[str, Any]:
     if _strategy_registry_sqlite_enabled():
         try:
@@ -498,6 +523,7 @@ def _strategy_registry_save(reg: Dict[str, Any]) -> bool:
 # 键与归一化
 # ---------------------------------------------------------------------------
 
+
 def _strategy_registry_key(strategy_id: str, source_zip: str) -> str:
     sid = str(strategy_id or "").strip()
     z = str(source_zip or "").strip()
@@ -530,13 +556,21 @@ def _strategy_registry_normalize(reg: Dict[str, Any]) -> Dict[str, Any]:
             e["strategy_id"] = sid
             e["source_zip"] = z
 
-            fam_n = _strategy_family_normalize(e.get("family")) if e.get("family") is not None else None
+            fam_n = (
+                _strategy_family_normalize(e.get("family")) if e.get("family") is not None else None
+            )
             if fam_n is not None:
                 e["family"] = fam_n
-            stage_n = _strategy_stage_normalize(e.get("stage")) if e.get("stage") is not None else None
+            stage_n = (
+                _strategy_stage_normalize(e.get("stage")) if e.get("stage") is not None else None
+            )
             if stage_n is not None:
                 e["stage"] = stage_n
-            rb_n = _strategy_robustness_normalize(e.get("robustness")) if e.get("robustness") is not None else None
+            rb_n = (
+                _strategy_robustness_normalize(e.get("robustness"))
+                if e.get("robustness") is not None
+                else None
+            )
             if rb_n is not None:
                 e["robustness"] = rb_n
 
@@ -572,7 +606,9 @@ def _strategy_registry_normalize(reg: Dict[str, Any]) -> Dict[str, Any]:
     return {"schema_version": 2, "entries": out_entries}
 
 
-def _strategy_registry_pick(entries: Dict[str, Any], strategy_id: str, source_zip: str) -> Dict[str, Any]:
+def _strategy_registry_pick(
+    entries: Dict[str, Any], strategy_id: str, source_zip: str
+) -> Dict[str, Any]:
     sid = str(strategy_id or "").strip()
     z = str(source_zip or "").strip()
     if not sid:
@@ -587,7 +623,7 @@ def _strategy_registry_pick(entries: Dict[str, Any], strategy_id: str, source_zi
         return it2
     best: Optional[Dict[str, Any]] = None
     best_ts = ""
-    for k, v in entries.items():
+    for k, v in entries.items():  # noqa: B007
         if not isinstance(v, dict):
             continue
         if str(v.get("strategy_id") or "").strip() != sid:
@@ -602,12 +638,15 @@ def _strategy_registry_pick(entries: Dict[str, Any], strategy_id: str, source_zi
 def _strategy_registry_get_entry(strategy_id: str, source_zip: str) -> Dict[str, Any]:
     reg = _strategy_registry_load()
     entries = reg.get("entries") if isinstance(reg.get("entries"), dict) else {}
-    return _strategy_registry_pick(entries, str(strategy_id or "").strip(), str(source_zip or "").strip())
+    return _strategy_registry_pick(
+        entries, str(strategy_id or "").strip(), str(source_zip or "").strip()
+    )
 
 
 # ---------------------------------------------------------------------------
 # 辅助归一化函数
 # ---------------------------------------------------------------------------
+
 
 def _strategy_family_normalize(v: Any) -> Optional[str]:
     s = str(v or "").strip().lower()
@@ -695,6 +734,7 @@ def _strategy_lifecycle_transition_ok(from_state: Any, to_state: Any) -> bool:
 # S3 后端 + 本地对象存储（默认启用本地，S3 可选）
 # ---------------------------------------------------------------------------
 
+
 def _local_object_store_dir() -> Path:
     """本地对象存储根目录（默认 bundle 仓库，无需配置）。"""
     d = _REGISTRY_DATA_DIR / "object_store"
@@ -719,7 +759,9 @@ def _local_registry_json_path() -> Path:
 def _strategy_registry_s3_config() -> Dict[str, Any]:
     """读取 S3 配置。未配置时返回空 dict（S3 禁用，自动降级到本地对象存储）。"""
     cfg = _config_get() or {}
-    s3_cfg = cfg.get("strategy_registry_s3") if isinstance(cfg.get("strategy_registry_s3"), dict) else {}
+    s3_cfg = (
+        cfg.get("strategy_registry_s3") if isinstance(cfg.get("strategy_registry_s3"), dict) else {}
+    )
     bucket = str(s3_cfg.get("bucket") or "").strip()
     if not bucket:
         return {}
@@ -745,6 +787,7 @@ def _s3_client():
         return None
     try:
         import boto3
+
         kwargs: Dict[str, Any] = {}
         if cfg.get("region"):
             kwargs["region_name"] = cfg["region"]
@@ -787,6 +830,7 @@ def _strategy_bundle_upload_to_s3(strategy_id: str, source_zip: str, local_path:
     # S3 未配置 → 本地对象存储（默认）
     try:
         import shutil
+
         dest = _local_bundle_path(strategy_id, source_zip)
         shutil.copy2(str(local_path), str(dest))
         return True
@@ -801,7 +845,9 @@ def _strategy_bundle_download_from_s3(strategy_id: str, source_zip: str) -> Opti
     """
     bundles_dir = _strategy_bundles_dir()
     bundles_dir.mkdir(parents=True, exist_ok=True)
-    local_path = bundles_dir / f"{str(strategy_id).replace('/', '_')}_{str(source_zip).replace('/', '_')}"
+    local_path = (
+        bundles_dir / f"{str(strategy_id).replace('/', '_')}_{str(source_zip).replace('/', '_')}"
+    )
     # S3 已配置 → 走 S3
     if _strategy_registry_s3_config():
         s3 = _s3_client()
@@ -816,6 +862,7 @@ def _strategy_bundle_download_from_s3(strategy_id: str, source_zip: str) -> Opti
     # S3 未配置 → 本地对象存储
     try:
         import shutil
+
         src = _local_bundle_path(strategy_id, source_zip)
         if not src.exists():
             return None
@@ -834,7 +881,12 @@ def _strategy_registry_sync_to_s3() -> Dict[str, Any]:
         {"ok": bool, "synced_entries": int, "synced_bundles": int, "errors": [...]}
     """
     if not _strategy_registry_s3_enabled():
-        return {"ok": False, "error": "object_store_unavailable", "synced_entries": 0, "synced_bundles": 0}
+        return {
+            "ok": False,
+            "error": "object_store_unavailable",
+            "synced_entries": 0,
+            "synced_bundles": 0,
+        }
 
     reg = _strategy_registry_load()
     entries = reg.get("entries") if isinstance(reg.get("entries"), dict) else {}
@@ -847,10 +899,16 @@ def _strategy_registry_sync_to_s3() -> Dict[str, Any]:
     if s3_configured:
         s3 = _s3_client()
         if s3 is None:
-            return {"ok": False, "error": "s3_client_unavailable", "synced_entries": 0, "synced_bundles": 0}
+            return {
+                "ok": False,
+                "error": "s3_client_unavailable",
+                "synced_entries": 0,
+                "synced_bundles": 0,
+            }
         cfg = _strategy_registry_s3_config()
         try:
             import io
+
             buf = io.BytesIO(json.dumps(reg, ensure_ascii=False).encode("utf-8"))
             s3.upload_fileobj(buf, cfg["bucket"], f"{cfg['prefix']}registry.json")
             synced_entries = len(entries)
@@ -907,6 +965,7 @@ def _strategy_registry_sync_from_s3() -> Dict[str, Any]:
         cfg = _strategy_registry_s3_config()
         try:
             import io
+
             buf = io.BytesIO()
             s3.download_fileobj(cfg["bucket"], f"{cfg['prefix']}registry.json", buf)
             remote_reg = json.loads(buf.getvalue().decode("utf-8"))
@@ -924,7 +983,9 @@ def _strategy_registry_sync_from_s3() -> Dict[str, Any]:
 
     local_reg = _strategy_registry_load()
     local_entries = local_reg.get("entries") if isinstance(local_reg.get("entries"), dict) else {}
-    remote_entries = remote_reg.get("entries") if isinstance(remote_reg.get("entries"), dict) else {}
+    remote_entries = (
+        remote_reg.get("entries") if isinstance(remote_reg.get("entries"), dict) else {}
+    )
 
     merged = 0
     for k, v in remote_entries.items():

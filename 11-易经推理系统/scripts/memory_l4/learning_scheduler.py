@@ -2,12 +2,12 @@
 """
 学习调度器：定期重训 LiangyiEngine + QMM
 """
+
 import json
-import time
 import threading
+import time
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Callable
-from pathlib import Path
+from typing import Callable, Dict, List
 
 from scripts.memory_l4 import paths
 from scripts.memory_l4.bcrm.engine import BCRMEngine
@@ -26,12 +26,14 @@ class LearningScheduler:
     - 导入 AB Trading 进化参数作为外部参考
     """
 
-    def __init__(self,
-                 bcrm_engine: BCRMEngine,
-                 retrain_interval_cases: int = 10,
-                 retrain_interval_hours: int = 4,
-                 on_retrain_complete: Callable = None,
-                 shared_dir=None):
+    def __init__(
+        self,
+        bcrm_engine: BCRMEngine,
+        retrain_interval_cases: int = 10,
+        retrain_interval_hours: int = 4,
+        on_retrain_complete: Callable = None,
+        shared_dir=None,
+    ):
         self.bcrm_engine = bcrm_engine
         self.retrain_interval_cases = retrain_interval_cases
         self.retrain_interval_hours = retrain_interval_hours
@@ -69,9 +71,11 @@ class LearningScheduler:
                 "last_retrain_time": self.last_retrain_time,
                 "last_case_count": self.last_case_count,
                 "retrain_count": self.retrain_count,
-                "last_retrain_time_str": datetime.fromtimestamp(
-                    self.last_retrain_time, tz=timezone.utc
-                ).isoformat() if self.last_retrain_time else "",
+                "last_retrain_time_str": (
+                    datetime.fromtimestamp(self.last_retrain_time, tz=timezone.utc).isoformat()
+                    if self.last_retrain_time
+                    else ""
+                ),
             }
             with open(self.state_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
@@ -116,7 +120,9 @@ class LearningScheduler:
 
         if hasattr(liangyi, "WEIGHT_LEARN_RATE") and risk_aversion > 0.8:
             liangyi.WEIGHT_LEARN_RATE = min(0.2, liangyi.WEIGHT_LEARN_RATE * 0.7)
-            print(f"[LearningScheduler] 外部风险厌恶高，降低权重学习率至 {liangyi.WEIGHT_LEARN_RATE:.4f}")
+            print(
+                f"[LearningScheduler] 外部风险厌恶高，降低权重学习率至 {liangyi.WEIGHT_LEARN_RATE:.4f}"
+            )
 
     def _count_cases(self) -> int:
         """统计当前案例总数"""
@@ -188,14 +194,21 @@ class LearningScheduler:
         with self._lock:
             check = self.should_retrain()
             if not force and not check["should"]:
-                return {"ok": True, "retrained": False, "reason": check["reason"],
-                        "case_count": check["case_count"]}
+                return {
+                    "ok": True,
+                    "retrained": False,
+                    "reason": check["reason"],
+                    "case_count": check["case_count"],
+                }
 
             cases = self._load_all_cases()
             if len(cases) < 5:
-                return {"ok": False, "retrained": False,
-                        "reason": f"案例不足 {len(cases)} < 5",
-                        "case_count": len(cases)}
+                return {
+                    "ok": False,
+                    "retrained": False,
+                    "reason": f"案例不足 {len(cases)} < 5",
+                    "case_count": len(cases),
+                }
 
             self._load_external_params()
             self._apply_external_params_to_learning()
@@ -225,12 +238,14 @@ class LearningScheduler:
 
             if self.on_retrain_complete:
                 try:
-                    self.on_retrain_complete({
-                        "case_count": len(cases),
-                        "liangyi_updated": liangyi_updated,
-                        "qmm_updated": qmm_updated,
-                        "retrain_count": self.retrain_count,
-                    })
+                    self.on_retrain_complete(
+                        {
+                            "case_count": len(cases),
+                            "liangyi_updated": liangyi_updated,
+                            "qmm_updated": qmm_updated,
+                            "retrain_count": self.retrain_count,
+                        }
+                    )
                 except Exception:
                     pass
 
@@ -263,11 +278,11 @@ class LearningScheduler:
             return False
 
         updated = False
-        if hasattr(liangyi, 'learn_from_cases'):
+        if hasattr(liangyi, "learn_from_cases"):
             result = liangyi.learn_from_cases(learnable_cases)
             updated = result.get("updated", False) if isinstance(result, dict) else False
 
-        if hasattr(liangyi, 'save_state'):
+        if hasattr(liangyi, "save_state"):
             save_path = paths.memory_l4_dir() / "liangyi_state.json"
             try:
                 liangyi.save_state(str(save_path))
@@ -294,21 +309,24 @@ class LearningScheduler:
         updated = False
 
         try:
-            from scripts.memory_l4.qmm.engine import run_qmm
             from scripts.memory_l4.distill_engine import load_all_distills
+            from scripts.memory_l4.qmm.engine import run_qmm
 
             distills = load_all_distills()
             output = run_qmm(real_cases, distills)
 
-            print(f"[LearningScheduler] QMM 快照生成成功: trend={output.trend_state}, "
-                  f"uncertainty={output.uncertainty:.4f}, "
-                  f"systems={list(output.system_source_stats.keys())}")
+            print(
+                f"[LearningScheduler] QMM 快照生成成功: trend={output.trend_state}, "
+                f"uncertainty={output.uncertainty:.4f}, "
+                f"systems={list(output.system_source_stats.keys())}"
+            )
             updated = True
         except Exception as e:
             print(f"[LearningScheduler] QMM 引擎运行异常: {e}")
 
         try:
             from scripts.memory_l4.qmm.xgb_predictor import QMMPredictor
+
             predictor = QMMPredictor()
             train_result = predictor.train(real_cases)
             if train_result.get("ok"):
@@ -316,9 +334,9 @@ class LearningScheduler:
                 model_path.mkdir(parents=True, exist_ok=True)
                 model_file = str(model_path / "qmm_xgb_model.json")
                 try:
-                    if hasattr(predictor, 'save'):
+                    if hasattr(predictor, "save"):
                         predictor.save(model_file)
-                    elif hasattr(predictor, 'save_model'):
+                    elif hasattr(predictor, "save_model"):
                         predictor.save_model(model_file)
                 except Exception:
                     pass
@@ -345,13 +363,13 @@ class LearningScheduler:
         if total == 0:
             return
 
-        wins = sum(1 for c in cases
-                   if c.get("decision_outcome", {}).get("pnl_pct", 0) > 0)
+        wins = sum(1 for c in cases if c.get("decision_outcome", {}).get("pnl_pct", 0) > 0)
         win_rate = wins / total
 
         # hold 比例（近似 hold_streak）
-        hold_count = sum(1 for c in cases
-                         if "hold" in str(c.get("execution", {}).get("result", "")).lower())
+        hold_count = sum(
+            1 for c in cases if "hold" in str(c.get("execution", {}).get("result", "")).lower()
+        )
         hold_rate = hold_count / total
         hold_streak = int(hold_rate * 10)
 
@@ -385,9 +403,13 @@ class LearningScheduler:
         return {
             "retrain_count": self.retrain_count,
             "last_retrain_time": self.last_retrain_time,
-            "last_retrain_time_str": datetime.fromtimestamp(
-                self.last_retrain_time, tz=timezone.utc
-            ).strftime("%Y-%m-%d %H:%M:%S") if self.last_retrain_time else "从未",
+            "last_retrain_time_str": (
+                datetime.fromtimestamp(self.last_retrain_time, tz=timezone.utc).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+                if self.last_retrain_time
+                else "从未"
+            ),
             "last_case_count": self.last_case_count,
             "current_case_count": check["case_count"],
             "new_cases_since": check["new_cases"],

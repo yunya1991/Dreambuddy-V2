@@ -15,9 +15,9 @@ import os
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Callable, Tuple
 from enum import Enum
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -31,15 +31,16 @@ class ReplayStatus(str, Enum):
 
 
 class ReplayComparison(str, Enum):
-    MATCH = "match"           # 事件序列完全匹配
-    PARTIAL = "partial"       # 部分匹配（节点数一致但某些字段不同）
-    MISMATCH = "mismatch"     # 不匹配（节点数不同或关键字段差异）
+    MATCH = "match"  # 事件序列完全匹配
+    PARTIAL = "partial"  # 部分匹配（节点数一致但某些字段不同）
+    MISMATCH = "mismatch"  # 不匹配（节点数不同或关键字段差异）
     NO_ORIGINAL = "no_original"  # 无原始事件可比
 
 
 @dataclass
 class ReplayEvent:
     """重放过程中的单个事件"""
+
     original: Optional[Dict[str, Any]] = None
     replayed: Optional[Dict[str, Any]] = None
     match: bool = False
@@ -49,6 +50,7 @@ class ReplayEvent:
 @dataclass
 class ReplayResult:
     """重放结果"""
+
     trace_id: str
     status: ReplayStatus
     comparison: ReplayComparison
@@ -200,12 +202,14 @@ class TraceReplayEngine:
                     replayed_events.append(replayed)
                 except Exception as e:
                     logger.warning(f"重放事件失败: {e}")
-                    replayed_events.append({
-                        "trace_id": trace_id,
-                        "status": "fail",
-                        "error": str(e),
-                        "ts": datetime.utcnow().isoformat() + "Z",
-                    })
+                    replayed_events.append(
+                        {
+                            "trace_id": trace_id,
+                            "status": "fail",
+                            "error": str(e),
+                            "ts": datetime.utcnow().isoformat() + "Z",
+                        }
+                    )
 
             result.replayed_event_count = len(replayed_events)
 
@@ -253,21 +257,25 @@ class TraceReplayEngine:
             repl = replayed[i] if i < len(replayed) else None
 
             if orig is None or repl is None:
-                events.append(ReplayEvent(
-                    original=orig,
-                    replayed=repl,
-                    match=False,
-                    diff_fields=["missing"],
-                ))
+                events.append(
+                    ReplayEvent(
+                        original=orig,
+                        replayed=repl,
+                        match=False,
+                        diff_fields=["missing"],
+                    )
+                )
                 continue
 
             match, diff_fields = self._compare_single_event(orig, repl)
-            events.append(ReplayEvent(
-                original=orig,
-                replayed=repl,
-                match=match,
-                diff_fields=diff_fields,
-            ))
+            events.append(
+                ReplayEvent(
+                    original=orig,
+                    replayed=repl,
+                    match=match,
+                    diff_fields=diff_fields,
+                )
+            )
 
         # 整体对比判定
         total = len(events)

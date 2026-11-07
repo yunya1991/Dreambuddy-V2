@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 import sys
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -34,9 +34,11 @@ if str(_PROJECT_ROOT) not in sys.path:
 # 数据类型
 # ============================================================
 
+
 @dataclass
 class ScenarioComparison:
     """单个场景的基线 vs 增强对比"""
+
     scenario_id: str
     # 基线（无子系统）
     baseline_trades: int = 0
@@ -47,11 +49,11 @@ class ScenarioComparison:
     enhanced_win_rate: float = 0.0
     enhanced_avg_return: float = 0.0
     # 增量
-    win_rate_delta: float = 0.0       # 胜率变化 (pp)
-    return_delta: float = 0.0         # 收益变化 (pp)
+    win_rate_delta: float = 0.0  # 胜率变化 (pp)
+    return_delta: float = 0.0  # 收益变化 (pp)
     # 评估
     subsystem_effective: bool = False  # 子系统是否有正向贡献
-    effectiveness_score: float = 0.0   # 有效性评分 (0-1)
+    effectiveness_score: float = 0.0  # 有效性评分 (0-1)
 
     def to_dict(self) -> dict:
         return {
@@ -78,6 +80,7 @@ class ScenarioComparison:
 # ============================================================
 # 回测精调器
 # ============================================================
+
 
 class BacktestFineTuner:
     """回测精调器 — Level 2
@@ -167,9 +170,17 @@ class BacktestFineTuner:
             effective = False
             if b_count > 0 or e_count > 0:
                 # 胜率贡献：正向加分，负向减分
-                win_score = max(0, min(win_delta / 10.0, 1.0)) if win_delta > 0 else max(-0.5, win_delta / 20.0)
+                win_score = (
+                    max(0, min(win_delta / 10.0, 1.0))
+                    if win_delta > 0
+                    else max(-0.5, win_delta / 20.0)
+                )
                 # 收益贡献
-                ret_score = max(0, min(ret_delta / 5.0, 1.0)) if ret_delta > 0 else max(-0.5, ret_delta / 10.0)
+                ret_score = (
+                    max(0, min(ret_delta / 5.0, 1.0))
+                    if ret_delta > 0
+                    else max(-0.5, ret_delta / 10.0)
+                )
                 score = max(0.0, 0.5 + (win_score + ret_score) / 2.0)  # 基础 0.5
                 effective = win_delta > 0 or ret_delta > 0
 
@@ -221,10 +232,10 @@ class BacktestFineTuner:
         if comp.subsystem_effective:
             # 有效：按 effectiveness_score 加权
             base_weight = comp.effectiveness_score
-            return {n: base_weight for n in self.SUBSYSTEM_NODES}
+            return dict.fromkeys(self.SUBSYSTEM_NODES, base_weight)
         else:
             # 无效：降低权重
-            return {n: 0.2 for n in self.SUBSYSTEM_NODES}
+            return dict.fromkeys(self.SUBSYSTEM_NODES, 0.2)
 
     def summary(self) -> str:
         """生成精调摘要"""
@@ -232,7 +243,9 @@ class BacktestFineTuner:
             return "回测精调未运行，请先调用 fine_tune()"
 
         lines = ["回测精调摘要（Level 2）", "=" * 60]
-        lines.append(f"{'场景':<35} {'基线胜率':>8} {'增强胜率':>8} {'Δ胜率':>8} {'Δ收益':>8} {'有效':>6}")
+        lines.append(
+            f"{'场景':<35} {'基线胜率':>8} {'增强胜率':>8} {'Δ胜率':>8} {'Δ收益':>8} {'有效':>6}"
+        )
         lines.append("-" * 90)
 
         effective_count = 0

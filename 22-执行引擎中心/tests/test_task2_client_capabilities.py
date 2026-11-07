@@ -15,6 +15,7 @@ Test Requirements (tasks.md TR-2.1 .. TR-2.4):
          (byte-equal fields and ordering) to pre-Task-2 semantics
   TR-2.4 cancel_order / get_order → correct path & params match OKX spec
 """
+
 from __future__ import annotations
 
 import json
@@ -22,7 +23,7 @@ import sys
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -43,22 +44,32 @@ class TestOkxClientNewMethods:
     @pytest.fixture
     def client(self, monkeypatch):
         # Force no creds (use empty env) and standard cfg
-        env = {k: "" for k in (
-            "OKX_API_KEY", "OKX_SECRET_KEY", "OKX_PASSPHRASE",
-            "OKX_BASE_URL", "OKX_SIMULATED", "OKX_DRY_RUN",
-            "OKX_DEFAULT_INST_ID", "DEFAULT_LEVERAGE",
-        )}
+        env = dict.fromkeys(
+            (
+                "OKX_API_KEY",
+                "OKX_SECRET_KEY",
+                "OKX_PASSPHRASE",
+                "OKX_BASE_URL",
+                "OKX_SIMULATED",
+                "OKX_DRY_RUN",
+                "OKX_DEFAULT_INST_ID",
+                "DEFAULT_LEVERAGE",
+            ),
+            "",
+        )
         for k, v in env.items():
             monkeypatch.setenv(k, v)
 
-        import okx_client as okx_mod
         # Reload to pick up monkeypatched env
         import importlib
+
+        import okx_client as okx_mod
+
         importlib.reload(okx_mod)
         # Real class name in okx_client.py is OKXSimulatedClient.
-        assert hasattr(okx_mod, "OKXSimulatedClient"), (
-            "okx_client module must expose OKXSimulatedClient class."
-        )
+        assert hasattr(
+            okx_mod, "OKXSimulatedClient"
+        ), "okx_client module must expose OKXSimulatedClient class."
         c = okx_mod.OKXSimulatedClient(config=None)
         c.dry_run = False  # disable dry_run shortcut so place_order reaches _post
         c.cfg["dry_run"] = False
@@ -71,16 +82,18 @@ class TestOkxClientNewMethods:
         fake_resp = {
             "code": "0",
             "msg": "",
-            "data": [{
-                "asks": [
-                    ["67000.1", "0.5", "1", "2"],
-                    ["67001.0", "1.0", "3", "4"],
-                ],
-                "bids": [
-                    ["66999.9", "0.4", "1", "1"],
-                ],
-                "ts": "1700000000000",
-            }],
+            "data": [
+                {
+                    "asks": [
+                        ["67000.1", "0.5", "1", "2"],
+                        ["67001.0", "1.0", "3", "4"],
+                    ],
+                    "bids": [
+                        ["66999.9", "0.4", "1", "1"],
+                    ],
+                    "ts": "1700000000000",
+                }
+            ],
         }
         with patch.object(client, "_get", return_value=fake_resp) as mock_get:
             result = client.get_orderbook("BTC-USDT-SWAP", sz=10)
@@ -102,11 +115,18 @@ class TestOkxClientNewMethods:
         book from get_ticker so estimator still has data to work with."""
         client.dry_run = True
         client.cfg["dry_run"] = True
-        with patch.object(client, "get_ticker", return_value={
-            "ok": True, "last": "67000",
-            "bid": "66999", "ask": "67001",
-            "bidSz": "2.0", "askSz": "1.5",
-        }) as mock_ticker:
+        with patch.object(
+            client,
+            "get_ticker",
+            return_value={
+                "ok": True,
+                "last": "67000",
+                "bid": "66999",
+                "ask": "67001",
+                "bidSz": "2.0",
+                "askSz": "1.5",
+            },
+        ) as mock_ticker:
             r = client.get_orderbook("BTC-USDT-SWAP", sz=10)
             assert mock_ticker.called
             assert r["ok"] is True
@@ -124,14 +144,30 @@ class TestOkxClientNewMethods:
             # ok response shape
             return {"code": "0", "data": [{"ordId": "FAKE123"}]}
 
-        with patch.object(client, "get_ticker", return_value={
-            "ok": True, "last": "67000", "bid": "66999", "ask": "67001",
-            "bidSz": "2", "askSz": "1",
-        }), patch.object(client, "_post", side_effect=fake_post), \
-             patch.object(client, "set_leverage", return_value={"code": "0"}):
-            kwargs = dict(inst_id="BTC-USDT-SWAP", side=side,
-                          ord_type="market", sz=sz, td_mode="isolated",
-                          pos_side="long")
+        with (
+            patch.object(
+                client,
+                "get_ticker",
+                return_value={
+                    "ok": True,
+                    "last": "67000",
+                    "bid": "66999",
+                    "ask": "67001",
+                    "bidSz": "2",
+                    "askSz": "1",
+                },
+            ),
+            patch.object(client, "_post", side_effect=fake_post),
+            patch.object(client, "set_leverage", return_value={"code": "0"}),
+        ):
+            kwargs = dict(  # noqa: C408
+                inst_id="BTC-USDT-SWAP",
+                side=side,
+                ord_type="market",
+                sz=sz,
+                td_mode="isolated",
+                pos_side="long",
+            )
             if max_bps is not None:
                 kwargs["max_slippage_bps"] = max_bps
             result = client.place_order(**kwargs)
@@ -139,14 +175,13 @@ class TestOkxClientNewMethods:
 
     def test_place_market_with_slippage_buy_becomes_limit(self, client):
         """Contract market BUY with bps=30 → LIMIT ask × 1.0030."""
-        captured, result = self._capture_post_body(
-            client, side="buy", sz=1, max_bps=30)
+        captured, result = self._capture_post_body(client, side="buy", sz=1, max_bps=30)
         assert captured["path"] == "/api/v5/trade/order"
         body = captured["body"]
         # Converted from market → limit
-        assert body["ordType"] == "limit", (
-            "market order with max_slippage_bps must be rewritten to limit"
-        )
+        assert (
+            body["ordType"] == "limit"
+        ), "market order with max_slippage_bps must be rewritten to limit"
         # px = best_ask (67001) * 1.0030 = 67202.003
         expected_px = 67001 * 1.0030
         assert float(body["px"]) == pytest.approx(expected_px, rel=1e-8)
@@ -156,8 +191,7 @@ class TestOkxClientNewMethods:
 
     def test_place_market_with_slippage_sell_becomes_limit(self, client):
         """Contract market SELL with bps=30 → LIMIT bid × 0.9970."""
-        captured, _ = self._capture_post_body(
-            client, side="sell", sz=2, max_bps=30)
+        captured, _ = self._capture_post_body(client, side="sell", sz=2, max_bps=30)
         body = captured["body"]
         assert body["ordType"] == "limit"
         expected_px = 66999 * (1 - 30 / 10000.0)  # =66999*0.997=66798.003
@@ -174,17 +208,25 @@ class TestOkxClientNewMethods:
             captured["body"] = deepcopy(body)
             return {"code": "0", "data": [{"ordId": "FAKE"}]}
 
-        with patch.object(client, "get_ticker", return_value={"ok": True, "last": "67000"}), \
-             patch.object(client, "_post", side_effect=fake_post), \
-             patch.object(client, "set_leverage", return_value={"code": "0"}):
-            r = client.place_order(inst_id="X", side="buy", ord_type="market",
-                                   sz=1, max_slippage_bps=30,
-                                   td_mode="isolated", pos_side="long")
+        with (
+            patch.object(client, "get_ticker", return_value={"ok": True, "last": "67000"}),
+            patch.object(client, "_post", side_effect=fake_post),
+            patch.object(client, "set_leverage", return_value={"code": "0"}),
+        ):
+            r = client.place_order(
+                inst_id="X",
+                side="buy",
+                ord_type="market",
+                sz=1,
+                max_slippage_bps=30,
+                td_mode="isolated",
+                pos_side="long",
+            )
         assert r["ok"] is True
         # Fallback: no px in body (pure market)
-        assert captured["body"].get("ordType") == "market", (
-            "when ticker lacks bid/ask the order must fall back to pure market"
-        )
+        assert (
+            captured["body"].get("ordType") == "market"
+        ), "when ticker lacks bid/ask the order must fall back to pure market"
         assert "px" not in captured["body"]
 
     # ── TR-2.3  no max_slippage_bps → byte identical to legacy ──────
@@ -193,12 +235,10 @@ class TestOkxClientNewMethods:
         order must match the pre-Task-2 exact field set (no extra keys)."""
         # Capture with current code (we just wrote bps support; it should
         # omit "px" if ord_type=market and omit max_slippage_bps entirely).
-        captured_now, result = self._capture_post_body(
-            client, side="buy", sz=1, max_bps=None)
+        captured_now, result = self._capture_post_body(client, side="buy", sz=1, max_bps=None)
         body = captured_now["body"]
         # Legacy (known) keys — NO "px", NO "slippagePct", NO extra bps field
-        expected_key_set = {"instId", "tdMode", "side", "ordType",
-                            "posSide", "tag", "sz"}
+        expected_key_set = {"instId", "tdMode", "side", "ordType", "posSide", "tag", "sz"}
         assert set(body.keys()) == expected_key_set, (
             f"default place_order(market) should not add any new keys to "
             f"request body. Expected {sorted(expected_key_set)}, "
@@ -219,11 +259,19 @@ class TestOkxClientNewMethods:
             captured["body"] = deepcopy(body)
             return {"code": "0", "data": [{"ordId": "LMT"}]}
 
-        with patch.object(client, "_post", side_effect=fake_post), \
-             patch.object(client, "set_leverage", return_value={"code": "0"}):
-            client.place_order(inst_id="BTC", side="sell", ord_type="limit",
-                               sz=2, px=68000.5, td_mode="isolated",
-                               pos_side="short")
+        with (
+            patch.object(client, "_post", side_effect=fake_post),
+            patch.object(client, "set_leverage", return_value={"code": "0"}),
+        ):
+            client.place_order(
+                inst_id="BTC",
+                side="sell",
+                ord_type="limit",
+                sz=2,
+                px=68000.5,
+                td_mode="isolated",
+                pos_side="short",
+            )
         body = captured["body"]
         assert body["ordType"] == "limit"
         assert float(body["px"]) == pytest.approx(68000.5)
@@ -251,17 +299,19 @@ class TestOkxClientNewMethods:
         with patch.object(client, "_get") as mock_get:
             mock_get.return_value = {
                 "code": "0",
-                "data": [{
-                    "instId": "BTC",
-                    "ordId": "O1",
-                    "state": "filled",
-                    "fillSz": "1",
-                    "avgPx": "67000",
-                    "side": "buy",
-                    "posSide": "long",
-                    "fee": "0",
-                    "pnl": "0",
-                }],
+                "data": [
+                    {
+                        "instId": "BTC",
+                        "ordId": "O1",
+                        "state": "filled",
+                        "fillSz": "1",
+                        "avgPx": "67000",
+                        "side": "buy",
+                        "posSide": "long",
+                        "fee": "0",
+                        "pnl": "0",
+                    }
+                ],
             }
             r = client.get_order("BTC-USDT-SWAP", ord_id="O1")
             args, kwargs = mock_get.call_args
@@ -287,8 +337,10 @@ class TestPaperClientSignatureParity:
 
     @pytest.fixture
     def paper(self, tmp_path):
-        import v15_paper_client
         import importlib
+
+        import v15_paper_client
+
         importlib.reload(v15_paper_client)
         # V15PaperClient signature: __init__(self, ledger_path=None).
         # Use tmp_path for an isolated ledger so tests don't cross-contaminate.
@@ -313,9 +365,14 @@ class TestPaperClientSignatureParity:
         # even if it only impacts behavior marginally; at minimum NO TypeError.
         try:
             r = paper.place_order(
-                inst_id="BTC-USDT-SWAP", side="buy", ord_type="market",
-                sz=1, td_mode="isolated", pos_side="long",
-                leverage=5, max_slippage_bps=30,
+                inst_id="BTC-USDT-SWAP",
+                side="buy",
+                ord_type="market",
+                sz=1,
+                td_mode="isolated",
+                pos_side="long",
+                leverage=5,
+                max_slippage_bps=30,
             )
         except TypeError as exc:  # pragma: no cover
             pytest.fail(
@@ -324,9 +381,14 @@ class TestPaperClientSignatureParity:
             )
         assert r["ok"] is True
         # And the legacy no-leverage/no-bps call must still succeed
-        r2 = paper.place_order(inst_id="ETH-USDT-SWAP", side="sell",
-                               ord_type="market", sz=2,
-                               td_mode="isolated", pos_side="short")
+        r2 = paper.place_order(
+            inst_id="ETH-USDT-SWAP",
+            side="sell",
+            ord_type="market",
+            sz=2,
+            td_mode="isolated",
+            pos_side="short",
+        )
         assert r2["ok"] is True
 
     def test_has_cancel_order_and_get_order(self, paper):
@@ -341,9 +403,15 @@ class TestPaperClientSignatureParity:
     def test_paper_cancel_order_state_flow(self, paper):
         """Behavioral: live limit order exists → cancel → state canceled."""
         # Create a live limit order first
-        placed = paper.place_order(inst_id="BTC-USDT-SWAP", side="buy",
-                                   ord_type="limit", sz=1, px=50000,
-                                   td_mode="isolated", pos_side="long")
+        placed = paper.place_order(
+            inst_id="BTC-USDT-SWAP",
+            side="buy",
+            ord_type="limit",
+            sz=1,
+            px=50000,
+            td_mode="isolated",
+            pos_side="long",
+        )
         oid = placed["ord_id"]
         # Before cancel: get_order returns state "live"
         pre = paper.get_order("BTC-USDT-SWAP", oid)

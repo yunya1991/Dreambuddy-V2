@@ -4,9 +4,9 @@
 对外暴露检测器、归档器与工作流编排的主要函数。
 """
 
-from .detector import detect_research
 from .archiver import archive_research
-from .workflow import check_and_prompt, archive_from_conversation, batch_detect
+from .detector import detect_research
+from .workflow import archive_from_conversation, batch_detect, check_and_prompt
 
 __all__ = [
     "detect_research",

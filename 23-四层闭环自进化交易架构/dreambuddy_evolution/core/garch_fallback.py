@@ -7,10 +7,10 @@ GARCH(1,1): σ²_t = ω + α·ε²_{t-1} + β·σ²_{t-1}
 
 FAIL-OPEN: 样本 < 50 时返回 None，触发 GBM 最后兜底。
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import numpy as np
 
@@ -52,7 +52,7 @@ class GARCHFallback:
 
         try:
             # 矩估计法
-            r2 = returns ** 2
+            r2 = returns**2
             var0 = float(np.mean(r2))
             if var0 <= 0:
                 self._fitted = False
@@ -91,7 +91,10 @@ class GARCHFallback:
             self._fitted = True
             logger.debug(
                 "[GARCH] 估计完成: ω=%.6f α=%.4f β=%.4f (α+β=%.4f)",
-                omega, alpha, beta, alpha + beta,
+                omega,
+                alpha,
+                beta,
+                alpha + beta,
             )
             return True
         except Exception as e:  # noqa: BLE001
@@ -125,7 +128,7 @@ class GARCHFallback:
         paths[:, 0] = init_price
 
         # 初始条件方差
-        sigma2 = np.full(n_paths, init_vol ** 2)
+        sigma2 = np.full(n_paths, init_vol**2)
         eps = np.zeros(n_paths)
 
         for t in range(horizon):
@@ -138,7 +141,7 @@ class GARCHFallback:
             paths[:, t + 1] = paths[:, t] * np.exp(log_ret)
 
             # GARCH 方差递推
-            sigma2 = self._omega + self._alpha * eps ** 2 + self._beta * sigma2
+            sigma2 = self._omega + self._alpha * eps**2 + self._beta * sigma2
             sigma2 = np.maximum(sigma2, 1e-10)
 
         return paths

@@ -8,6 +8,7 @@ ExchangeClient 协议对象。
 支持 importlib.util.spec_from_file_location(...) 直接从绝对路径加载
 （无 parent package 的情况也可工作），通过 sys.path 插入实现解析。
 """
+
 from __future__ import annotations
 
 import os
@@ -40,7 +41,7 @@ def build_v15_engine(
 ) -> Tuple[Any, Dict[str, Any]]:
     """构建 V15 专用 TEE 引擎实例（懒解析内部 import 以兼容非包加载）。"""
     _ensure_tee_on_path()
-    from tee_core.core.engine import TradeExecutionEngine
+    from tee_core.core.engine import TradeExecutionEngine  # noqa: I001
     from tee_core.adapters.okx_adapter import OkxAdapter
 
     base = Path(audit_dir) if audit_dir else _resolve_tee_root() / "audit"
@@ -67,4 +68,3 @@ def build_v15_engine(
         "shadow_mode": bool(shadow_mode),
     }
     return engine, info
-

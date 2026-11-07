@@ -17,9 +17,9 @@
   - 周线成交量累积趋势
 """
 
-import numpy as np
+import numpy as np  # noqa: I001
 import pandas as pd
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 # 复用经典经验特征里的重采样工具
 from .classic_experience_features import (
@@ -28,10 +28,10 @@ from .classic_experience_features import (
     _align_to_hourly,
 )
 
-
 # ============================================================
 # 第一屏: 周线 — 量变积累层 (核心)
 # ============================================================
+
 
 def _streak_count(series: pd.Series, condition_fn) -> pd.Series:
     """计算连续满足条件的次数（streak长度）"""
@@ -77,8 +77,8 @@ def weekly_accumulation_features(df: pd.DataFrame) -> pd.DataFrame:
         return feats
 
     close_w = weekly["close"]
-    high_w = weekly["high"]
-    low_w = weekly["low"]
+    high_w = weekly["high"]  # noqa: F841
+    low_w = weekly["low"]  # noqa: F841
     vol_w = weekly["volume"]
 
     # ---- 1. 累计收益率 (动量累积的核心) ----
@@ -90,7 +90,7 @@ def weekly_accumulation_features(df: pd.DataFrame) -> pd.DataFrame:
             # 计算n周内每周收益的符号一致比例
             signs = np.sign(close_w.pct_change(1))
             consistency = signs.rolling(n).apply(
-                lambda x: abs(np.mean(x)) if len(x) == n else 0, raw=False
+                lambda x: abs(np.mean(x)) if len(x) == n else 0, raw=False  # noqa: B023
             )
             feats[f"wa_ret_{n}w_consistency"] = _align_to_hourly(consistency, df.index)
 
@@ -154,15 +154,15 @@ def weekly_accumulation_features(df: pd.DataFrame) -> pd.DataFrame:
     # ---- 5. 量变积累度综合评分 (0-1) ----
     # 综合: 累计收益幅度 + RSI持续性 + EMA持续性 + 成交量配合
     # 用4周累计收益的绝对值 (量变幅度)
-    accum_magnitude = (feats["wa_ret_4w"].abs() if "wa_ret_4w" in feats else 0)
+    accum_magnitude = feats["wa_ret_4w"].abs() if "wa_ret_4w" in feats else 0
     # 持续性: RSI连续周数归一化
     persist_score = (
         feats["wa_rsi_streak_above50"] / 26.0 - feats["wa_rsi_streak_below50"] / 26.0
     ).clip(-1, 1)
     # EMA持续性
-    ema_persist = (
-        feats["wa_ema_streak_up"] / 26.0 - feats["wa_ema_streak_down"] / 26.0
-    ).clip(-1, 1)
+    ema_persist = (feats["wa_ema_streak_up"] / 26.0 - feats["wa_ema_streak_down"] / 26.0).clip(
+        -1, 1
+    )
     # 量变积累度 = 幅度(归一化) * 持续性方向
     accum_score = np.tanh(accum_magnitude * 5) * (0.4 * persist_score + 0.6 * ema_persist)
     feats["wa_accumulation_score"] = accum_score.clip(-1, 1)
@@ -174,13 +174,27 @@ def weekly_accumulation_features(df: pd.DataFrame) -> pd.DataFrame:
 
 def _weekly_accumulation_names() -> List[str]:
     return [
-        "wa_ret_1w", "wa_ret_2w", "wa_ret_4w", "wa_ret_8w", "wa_ret_12w",
-        "wa_ret_2w_consistency", "wa_ret_4w_consistency", "wa_ret_8w_consistency",
+        "wa_ret_1w",
+        "wa_ret_2w",
+        "wa_ret_4w",
+        "wa_ret_8w",
+        "wa_ret_12w",
+        "wa_ret_2w_consistency",
+        "wa_ret_4w_consistency",
+        "wa_ret_8w_consistency",
         "wa_ret_12w_consistency",
-        "wa_rsi_14w", "wa_rsi_streak_above50", "wa_rsi_streak_below50",
-        "wa_rsi_streak_overbought", "wa_rsi_streak_oversold",
-        "wa_vol_slope", "wa_vol_accum_4w", "wa_vol_accum_8w", "wa_price_vol_align",
-        "wa_ema20_slope", "wa_ema_streak_up", "wa_ema_streak_down",
+        "wa_rsi_14w",
+        "wa_rsi_streak_above50",
+        "wa_rsi_streak_below50",
+        "wa_rsi_streak_overbought",
+        "wa_rsi_streak_oversold",
+        "wa_vol_slope",
+        "wa_vol_accum_4w",
+        "wa_vol_accum_8w",
+        "wa_price_vol_align",
+        "wa_ema20_slope",
+        "wa_ema_streak_up",
+        "wa_ema_streak_down",
         "wa_accumulation_score",
     ]
 
@@ -188,6 +202,7 @@ def _weekly_accumulation_names() -> List[str]:
 # ============================================================
 # 第二屏: 日线 — 质变确认层
 # ============================================================
+
 
 def daily_confirmation_features(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -254,9 +269,7 @@ def daily_confirmation_features(df: pd.DataFrame) -> pd.DataFrame:
         align = (weekly_dir * daily_dir).fillna(0)
         feats["dc_daily_weekly_align"] = _align_to_hourly(align, df.index)
         # 质变确认: 周线+日线同向
-        feats["dc_qualitative_confirm"] = _align_to_hourly(
-            (align > 0).astype(float), df.index
-        )
+        feats["dc_qualitative_confirm"] = _align_to_hourly((align > 0).astype(float), df.index)
 
     feats = feats.ffill().fillna(0)
     feats = feats.replace([np.inf, -np.inf], 0)
@@ -265,16 +278,22 @@ def daily_confirmation_features(df: pd.DataFrame) -> pd.DataFrame:
 
 def _daily_confirmation_names() -> List[str]:
     return [
-        "dc_ema20_slope", "dc_trend_up", "dc_trend_down",
-        "dc_macd_hist", "dc_macd_up",
-        "dc_deviation_from_weekly", "dc_above_weekly_ema",
-        "dc_daily_weekly_align", "dc_qualitative_confirm",
+        "dc_ema20_slope",
+        "dc_trend_up",
+        "dc_trend_down",
+        "dc_macd_hist",
+        "dc_macd_up",
+        "dc_deviation_from_weekly",
+        "dc_above_weekly_ema",
+        "dc_daily_weekly_align",
+        "dc_qualitative_confirm",
     ]
 
 
 # ============================================================
 # 第三屏: 小时线 — 入场时机层
 # ============================================================
+
 
 def hourly_timing_features(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -322,14 +341,18 @@ def hourly_timing_features(df: pd.DataFrame) -> pd.DataFrame:
 
 def _hourly_timing_names() -> List[str]:
     return [
-        "ht_break_daily_high", "ht_break_daily_low",
-        "ht_ema5_13_spread", "ht_short_momentum", "ht_rsi_6",
+        "ht_break_daily_high",
+        "ht_break_daily_low",
+        "ht_ema5_13_spread",
+        "ht_short_momentum",
+        "ht_rsi_6",
     ]
 
 
 # ============================================================
 # 质变触发信号 + 三级共振 (量变→质变合成)
 # ============================================================
+
 
 def qualitative_trigger_features(
     df: pd.DataFrame,
@@ -349,12 +372,14 @@ def qualitative_trigger_features(
 
     accum_score = weekly_feats.get("wa_accumulation_score", pd.Series(0, index=df.index))
     rsi_w = weekly_feats.get("wa_rsi_14w", pd.Series(50, index=df.index))
-    rsi_streak_overbought = weekly_feats.get("wa_rsi_streak_overbought", pd.Series(0, index=df.index))
+    rsi_streak_overbought = weekly_feats.get(
+        "wa_rsi_streak_overbought", pd.Series(0, index=df.index)
+    )
     rsi_streak_oversold = weekly_feats.get("wa_rsi_streak_oversold", pd.Series(0, index=df.index))
     ema_streak_up = weekly_feats.get("wa_ema_streak_up", pd.Series(0, index=df.index))
     ema_streak_down = weekly_feats.get("wa_ema_streak_down", pd.Series(0, index=df.index))
 
-    dc_align = daily_feats.get("dc_daily_weekly_align", pd.Series(0, index=df.index))
+    dc_align = daily_feats.get("dc_daily_weekly_align", pd.Series(0, index=df.index))  # noqa: F841
     dc_confirm = daily_feats.get("dc_qualitative_confirm", pd.Series(0, index=df.index))
 
     ht_break_high = hourly_feats.get("ht_break_daily_high", pd.Series(0, index=df.index))
@@ -364,35 +389,25 @@ def qualitative_trigger_features(
     # ---- 1. 质变触发: 顶部质变 (超买后回落) ----
     # 周线RSI连续超买 + 日线与周线背离 + 小时线向下跌破
     top_trigger = (
-        (rsi_streak_overbought >= 2) &
-        (rsi_w < 70) &  # RSI从超买区回落
-        (ht_break_low > 0)
+        (rsi_streak_overbought >= 2) & (rsi_w < 70) & (ht_break_low > 0)  # RSI从超买区回落
     ).astype(float)
     feats["qt_top_trigger"] = top_trigger
 
     # ---- 2. 质变触发: 底部质变 (超卖后反弹) ----
     bottom_trigger = (
-        (rsi_streak_oversold >= 2) &
-        (rsi_w > 30) &  # RSI从超卖区回升
-        (ht_break_high > 0)
+        (rsi_streak_oversold >= 2) & (rsi_w > 30) & (ht_break_high > 0)  # RSI从超卖区回升
     ).astype(float)
     feats["qt_bottom_trigger"] = bottom_trigger
 
     # ---- 3. 趋势延续 (量变未到质变) ----
     # 量变积累度高 + 方向未反转 + 日线确认 = 趋势延续
     trend_continue_up = (
-        (ema_streak_up >= 3) &
-        (accum_score > 0.2) &
-        (dc_confirm > 0) &
-        (ht_momentum > 0)
+        (ema_streak_up >= 3) & (accum_score > 0.2) & (dc_confirm > 0) & (ht_momentum > 0)
     ).astype(float)
     feats["qt_trend_continue_up"] = trend_continue_up
 
     trend_continue_down = (
-        (ema_streak_down >= 3) &
-        (accum_score < -0.2) &
-        (dc_confirm > 0) &
-        (ht_momentum < 0)
+        (ema_streak_down >= 3) & (accum_score < -0.2) & (dc_confirm > 0) & (ht_momentum < 0)
     ).astype(float)
     feats["qt_trend_continue_down"] = trend_continue_down
 
@@ -428,16 +443,22 @@ def qualitative_trigger_features(
 
 def _qualitative_trigger_names() -> List[str]:
     return [
-        "qt_top_trigger", "qt_bottom_trigger",
-        "qt_trend_continue_up", "qt_trend_continue_down",
-        "qt_resonance_score", "qt_strong_resonance_up", "qt_strong_resonance_down",
-        "qt_strong_reversal_up", "qt_strong_reversal_down",
+        "qt_top_trigger",
+        "qt_bottom_trigger",
+        "qt_trend_continue_up",
+        "qt_trend_continue_down",
+        "qt_resonance_score",
+        "qt_strong_resonance_up",
+        "qt_strong_resonance_down",
+        "qt_strong_reversal_up",
+        "qt_strong_reversal_down",
     ]
 
 
 # ============================================================
 # 主入口: 周/日/时 + 量变质变特征引擎
 # ============================================================
+
 
 class WDHFeatures:
     """
@@ -508,7 +529,10 @@ class WDHFeatures:
 
 
 # ===== FeatureRegistry 注册 =====
-from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry, _wdh_sub_key_splitter
+from scripts.memory_l4.bcrm2.feature_registry import (  # noqa: E402
+    FeatureRegistry,
+    _wdh_sub_key_splitter,
+)  # noqa: E402, I001
 
 FeatureRegistry.register(
     name="wdh",

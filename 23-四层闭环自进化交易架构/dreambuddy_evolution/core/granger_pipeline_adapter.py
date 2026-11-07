@@ -6,10 +6,10 @@
 
 输出: G_dim ∈ {technical, fundamental, macro, None}, G_confidence ∈ [0,1]
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import numpy as np
 
@@ -51,6 +51,7 @@ class GrangerPipelineAdapter:
         # enable_granger_causality 开关：关闭时跳过因果检验（G_dim=None）
         try:
             from dreambuddy_evolution.agi_config import get_switch as _gs_gc
+
             if not _gs_gc("enable_granger_causality", True):
                 return {"G_dim": None, "G_confidence": 0.0, "p_values": {}}
         except Exception as e:

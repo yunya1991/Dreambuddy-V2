@@ -11,6 +11,7 @@ D. MurphyDecayVoter_D  — 时间衰减式（Murphy）
 
 FAIL-OPEN：任何异常 → 返回 None（不投票）
 """
+
 from __future__ import annotations
 
 import logging
@@ -27,6 +28,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # 方案A: 结构化止损（Minervini VCP）
 # ============================================================================
+
 
 class VCPVoter_A(TimeoutVoter):
     """方案A: 结构化止损
@@ -50,7 +52,7 @@ class VCPVoter_A(TimeoutVoter):
             current_price = float(ctx.get("current_price", 0.0) or 0.0)
             recent_swing_low = ctx.get("recent_swing_low")
             atr_pct = float(ctx.get("atr_pct", 0.0) or 0.0)
-            pos_side = str(ctx.get("pos_side", "long")).lower()
+            pos_side = str(ctx.get("pos_side", "long")).lower()  # noqa: F841
             entry_price = float(ctx.get("entry_price", 0.0) or 0.0)
 
             # 字段缺失 → FAIL-OPEN
@@ -104,6 +106,7 @@ class VCPVoter_A(TimeoutVoter):
 # 方案B: ATR 标准化
 # ============================================================================
 
+
 class ATRStandardVoter_B(TimeoutVoter):
     """方案B: ATR 标准化
 
@@ -131,6 +134,7 @@ class ATRStandardVoter_B(TimeoutVoter):
                 if not atr_pct:
                     return None
                 import math
+
                 atr_daily = float(atr_pct) * math.sqrt(6)
             else:
                 atr_daily = float(atr_daily)
@@ -167,6 +171,7 @@ class ATRStandardVoter_B(TimeoutVoter):
 # ============================================================================
 # 方案C: 支撑位保护（Wyckoff）
 # ============================================================================
+
 
 class WyckoffSupportVoter_C(TimeoutVoter):
     """方案C: 支撑位保护
@@ -230,6 +235,7 @@ class WyckoffSupportVoter_C(TimeoutVoter):
 # 方案D: 时间衰减式（Murphy）
 # ============================================================================
 
+
 class MurphyDecayVoter_D(TimeoutVoter):
     """方案D: 时间衰减式
 
@@ -246,8 +252,8 @@ class MurphyDecayVoter_D(TimeoutVoter):
 
     # 时间衰减阈值表
     DECAY_THRESHOLDS = [
-        (12 * 3600, 0.015),   # 0-12h: 1.5%
-        (24 * 3600, 0.010),   # 12-24h: 1.0%
+        (12 * 3600, 0.015),  # 0-12h: 1.5%
+        (24 * 3600, 0.010),  # 12-24h: 1.0%
         (float("inf"), 0.005),  # 24h+: 0.5%
     ]
 

@@ -1,11 +1,8 @@
-import logging
-import math
+import freqtrade.vendor.qtpylib.indicators as qtpylib
+import numpy as np
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
-import numpy as np
-import freqtrade.vendor.qtpylib.indicators as qtpylib
-
 
 
 class FOttStrategy(IStrategy):
@@ -54,16 +51,12 @@ class FOttStrategy(IStrategy):
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
-            (
-                dataframe["adx"]>60
-            ),
+            (dataframe["adx"] > 60),
             "exit_long",
         ] = 1
 
         dataframe.loc[
-            (
-                dataframe["adx"]>60
-            ),
+            (dataframe["adx"] > 60),
             "exit_short",
         ] = 1
 
@@ -117,12 +110,12 @@ class FOttStrategy(IStrategy):
                 return df["longstop"]
 
             def minshortstop():
-                df.loc[
-                    (df["newshortstop"] < df["shortstop"].shift(1)), "shortstop"
-                ] = df["newshortstop"]
-                df.loc[
-                    (df["shortstop"].shift(1) < df["newshortstop"]), "shortstop"
-                ] = df["shortstop"].shift(1)
+                df.loc[(df["newshortstop"] < df["shortstop"].shift(1)), "shortstop"] = df[
+                    "newshortstop"
+                ]
+                df.loc[(df["shortstop"].shift(1) < df["newshortstop"]), "shortstop"] = df[
+                    "shortstop"
+                ].shift(1)
 
                 return df["shortstop"]
 

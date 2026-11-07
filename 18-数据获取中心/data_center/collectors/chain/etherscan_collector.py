@@ -2,6 +2,7 @@
 
 etherscan-python 薄封装，覆盖 gas/balance/whales 三种 kind + 巨鲸地址表 + 无 Key 降级。
 """
+
 from __future__ import annotations
 
 import os
@@ -39,10 +40,7 @@ class EtherscanCollector(BaseCollector):
 
     def __init__(self, config: dict | None = None):
         super().__init__(config)
-        self._api_key: str = (
-            self.config.get("api_key")
-            or os.environ.get("ETHERSCAN_API_KEY", "")
-        )
+        self._api_key: str = self.config.get("api_key") or os.environ.get("ETHERSCAN_API_KEY", "")
 
     def is_available(self) -> bool:
         return bool(self._api_key)

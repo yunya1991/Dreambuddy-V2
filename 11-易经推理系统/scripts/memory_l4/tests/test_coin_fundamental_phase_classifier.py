@@ -5,8 +5,8 @@
 - 混合规则：事件驱动 + 信号阈值 + 估值分位三因子组合
 - FAIL-OPEN：异常/无信号 → 默认 P2（中性）
 """
-import pytest
-import sys
+
+import sys  # noqa: I001
 from pathlib import Path
 
 # 将 force_vector 加入 sys.path
@@ -14,18 +14,18 @@ _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.coin_fundamental_phase_classifier import (
-    PhaseClassification,
-    classify_phase,
+from force_vector.coin_fundamental_phase_classifier import (  # noqa: E402
     P1_EXPECTATION,
     P2_REVENUE_EXPANSION,
     P3_VALUATION_RECOVERY,
+    PhaseClassification,
+    classify_phase,
 )
-
 
 # ---------------------------------------------------------------------------
 # P1 预期驱动
 # ---------------------------------------------------------------------------
+
 
 class TestClassifyP1:
     """P1 预期驱动阶段：预期事件 pending + E6 质变强 + 估值低。"""
@@ -57,6 +57,7 @@ class TestClassifyP1:
 # P2 盈收扩张
 # ---------------------------------------------------------------------------
 
+
 class TestClassifyP2:
     """P2 盈收扩张阶段：E5 收缩强 + E6 正 + 估值中位。"""
 
@@ -76,6 +77,7 @@ class TestClassifyP2:
 # P3 估值修复
 # ---------------------------------------------------------------------------
 
+
 class TestClassifyP3:
     """P3 估值修复阶段：估值高位 + E5 仍正。"""
 
@@ -94,6 +96,7 @@ class TestClassifyP3:
 # ---------------------------------------------------------------------------
 # 阶段切换
 # ---------------------------------------------------------------------------
+
 
 class TestPhaseSwitch:
     """阶段切换：事件落地触发 P1→P2。"""
@@ -126,6 +129,7 @@ class TestPhaseSwitch:
 # ---------------------------------------------------------------------------
 # 边界与 FAIL-OPEN
 # ---------------------------------------------------------------------------
+
 
 class TestEdgeCases:
     """边界场景与 FAIL-OPEN。"""

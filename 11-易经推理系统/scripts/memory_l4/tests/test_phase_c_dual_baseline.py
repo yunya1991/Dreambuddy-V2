@@ -13,11 +13,11 @@
   • 静态不通过 → reject
   • 返回结构包含 both_passed 和 recommendation
 """
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -25,7 +25,7 @@ import pytest
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2.baseline_manager import BaselineManager, ComparisonReport
+from bcrm2.baseline_manager import BaselineManager, ComparisonReport  # noqa: E402
 
 
 @pytest.fixture
@@ -74,6 +74,7 @@ def _make_report(passed=True, recommendation="live"):
 # T_C5: baseline_manager 双基线扩展
 # ================================================================
 
+
 class TestDualBaseline:
     """验证 compare_dual_baseline 方法。"""
 
@@ -85,9 +86,14 @@ class TestDualBaseline:
     def test_bootstrap_when_no_dynamic_baseline(self, mgr):
         """T_C5.2: 静态基线通过 + 无动态基线 → bootstrap 晋升。"""
         # 新版本比静态基线好
-        new_result = _make_result(version="v2-alpha-blend", sharpe=2.0, win_rate=0.6, pf=1.5, ret=0.2)
+        new_result = _make_result(
+            version="v2-alpha-blend", sharpe=2.0, win_rate=0.6, pf=1.5, ret=0.2
+        )
         # 静态基线
-        mgr.snapshot(_make_result(version="v15", sharpe=1.0, win_rate=0.5, pf=1.0, ret=0.1), version="v15_strategy")
+        mgr.snapshot(
+            _make_result(version="v15", sharpe=1.0, win_rate=0.5, pf=1.0, ret=0.1),
+            version="v15_strategy",
+        )
         # 动态基线不存在
 
         result = mgr.compare_dual_baseline(
@@ -137,7 +143,9 @@ class TestDualBaseline:
         """T_C5.5: 静态不通过 → reject。"""
         # 新版本比静态基线差
         new_result = _make_result(version="v2", sharpe=0.5, win_rate=0.3, pf=0.8)
-        mgr.snapshot(_make_result(version="v15", sharpe=1.5, win_rate=0.6, pf=1.5), version="v15_strategy")
+        mgr.snapshot(
+            _make_result(version="v15", sharpe=1.5, win_rate=0.6, pf=1.5), version="v15_strategy"
+        )
 
         result = mgr.compare_dual_baseline(
             new_result,

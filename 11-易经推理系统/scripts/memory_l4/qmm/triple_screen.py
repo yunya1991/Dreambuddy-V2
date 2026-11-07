@@ -8,9 +8,9 @@ from .types import CleanedEvent, ScreenResult
 
 @dataclass
 class ScreenConfig:
-    long_window: int = 20   # 类比周线
-    mid_window: int = 10    # 类比日线
-    short_window: int = 5   # 类比 1h
+    long_window: int = 20  # 类比周线
+    mid_window: int = 10  # 类比日线
+    short_window: int = 5  # 类比 1h
 
 
 def compute_triple_screen(
@@ -26,9 +26,9 @@ def compute_triple_screen(
         "trend_state": str,
     }
     """
-    long_screen = _compute_screen(events[-config.long_window:], "long")
-    mid_screen = _compute_screen(events[-config.mid_window:], "mid")
-    short_screen = _compute_screen(events[-config.short_window:], "short")
+    long_screen = _compute_screen(events[-config.long_window :], "long")
+    mid_screen = _compute_screen(events[-config.mid_window :], "mid")
+    short_screen = _compute_screen(events[-config.short_window :], "short")
 
     dirs = [long_screen.direction, mid_screen.direction, short_screen.direction]
 
@@ -61,8 +61,13 @@ def _compute_screen(window: List[CleanedEvent], timeframe: str) -> ScreenResult:
     """计算单屏趋势。"""
     if not window:
         return ScreenResult(
-            timeframe=timeframe, direction="FLAT", confidence=0,
-            x_mean=0, y_mean=0, profit_rate=0, case_count=0,
+            timeframe=timeframe,
+            direction="FLAT",
+            confidence=0,
+            x_mean=0,
+            y_mean=0,
+            profit_rate=0,
+            case_count=0,
         )
 
     x_mean = sum(e.quadrant_x for e in window) / len(window)
@@ -79,10 +84,9 @@ def _compute_screen(window: List[CleanedEvent], timeframe: str) -> ScreenResult:
         direction = "FLAT"
 
     # 置信度 = y_mean * 覆盖率 * 盈利方向一致性
-    profit_alignment = 1.0 if (
-        (x_mean > 0 and profit_rate > 0.5) or
-        (x_mean < 0 and profit_rate < 0.5)
-    ) else 0.5
+    profit_alignment = (
+        1.0 if ((x_mean > 0 and profit_rate > 0.5) or (x_mean < 0 and profit_rate < 0.5)) else 0.5
+    )
     confidence = y_mean * min(1.0, len(window) / 20) * profit_alignment
 
     return ScreenResult(

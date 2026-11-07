@@ -12,12 +12,12 @@ M3: 百炼与 DSH Subagent 接入路径 (v0.3 增量)
 - register_subagents_with_bailian() 便捷函数: 从 dreamos QwenLLMClient 注入
 - HC-1 FAIL-OPEN: 无 LLM key/调用失败 → 走规则降级, 不破坏现有测试
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Optional
 
 from subagent_types import SubagentOutput
-
 
 # LLM 函数类型: (prompt: str) -> str
 LLMFn = Callable[[str], str]
@@ -124,6 +124,7 @@ def get_subagent_config(module: str) -> Optional[Dict[str, Any]]:
 # D5.2: SubagentNode 适配器 (Node 接口 → subagent.execute)
 # ============================================================
 
+
 class SubagentNode:
     """Subagent → Node 接口适配器
 
@@ -152,18 +153,23 @@ class SubagentNode:
         if self._capabilities is None:
             try:
                 from dreamos.shared.capability import (
-                    CapabilitySpec, ProviderType, CapabilityStatus,
+                    CapabilitySpec,
+                    CapabilityStatus,
+                    ProviderType,
                 )
-                self._capabilities = [CapabilitySpec(
-                    capability_id=self.capability_id,
-                    category="analysis",
-                    name=self.name,
-                    description=self.description,
-                    provider_id=self.node_id,
-                    provider_type=ProviderType.SUBAGENT,
-                    status=CapabilityStatus.AVAILABLE,
-                    tags=list(self.tags),
-                )]
+
+                self._capabilities = [
+                    CapabilitySpec(
+                        capability_id=self.capability_id,
+                        category="analysis",
+                        name=self.name,
+                        description=self.description,
+                        provider_id=self.node_id,
+                        provider_type=ProviderType.SUBAGENT,
+                        status=CapabilityStatus.AVAILABLE,
+                        tags=list(self.tags),
+                    )
+                ]
             except Exception:  # noqa: BLE001 FAIL-OPEN: 导入失败返回空列表
                 self._capabilities = []
         return self._capabilities
@@ -178,17 +184,27 @@ class SubagentNode:
         """
         result = self._subagent.execute(node_output)
         # DSH trace: EN_DSH_TRACE=true 时输出 reasoning_chain 到 stderr（供 P2 采集器消费）
-        import os as _os, sys as _sys, json as _json, time as _time
+        import json as _json
+        import os as _os
+        import sys as _sys
+        import time as _time
+
         if _os.environ.get("EN_DSH_TRACE", "false").lower() in {"1", "true", "on", "yes"}:
-            _line = _json.dumps({
-                "event": "dsh_subagent_trace",
-                "subagent_type": self.module,
-                "node_id": self.node_id,
-                "reasoning_chain": result.reasoning_chain,
-                "outcome": "success",
-                "confidence": getattr(result, "confidence", 0.0),
-                "timestamp": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
-            }, ensure_ascii=False) + "\n"
+            _line = (
+                _json.dumps(
+                    {
+                        "event": "dsh_subagent_trace",
+                        "subagent_type": self.module,
+                        "node_id": self.node_id,
+                        "reasoning_chain": result.reasoning_chain,
+                        "outcome": "success",
+                        "confidence": getattr(result, "confidence", 0.0),
+                        "timestamp": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
             _sys.stderr.write(_line)
             _sys.stderr.flush()
         return result
@@ -247,7 +263,11 @@ def make_bailian_llm_fn() -> Optional[LLMFn]:
     包装为 (prompt: str) -> str 接口, 异常时返回空串 (FAIL-OPEN).
     """
     try:
-        from dreamos.shared.llm_client import get_default_client, make_messages, LLMResponse  # type: ignore
+        from dreamos.shared.llm_client import (  # type: ignore
+            LLMResponse,
+            get_default_client,
+            make_messages,
+        )
     except Exception:  # noqa: BLE001
         return None
 
@@ -328,8 +348,7 @@ def _agent_class_name(module: str) -> str:
     return f"{module.capitalize()}Agent"
 
 
-def register_subagents(registry: Optional[Any] = None,
-                       llm_fn: Optional[LLMFn] = None) -> int:
+def register_subagents(registry: Optional[Any] = None, llm_fn: Optional[LLMFn] = None) -> int:
     """将 8 个 subagent 注册到 NodeRegistry
 
     Args:
@@ -342,6 +361,7 @@ def register_subagents(registry: Optional[Any] = None,
     if registry is None:
         try:
             from dreamos.registry.node_registry import get_default_registry
+
             registry = get_default_registry()
         except Exception:  # noqa: BLE001
             return 0
@@ -374,13 +394,16 @@ def list_registered_subagents(registry: Optional[Any] = None) -> List[Dict[str, 
     if registry is None:
         try:
             from dreamos.registry.node_registry import get_default_registry
+
             registry = get_default_registry()
         except Exception:  # noqa: BLE001
             return []
 
     try:
         nodes = registry.list_nodes(tag="dsh")
-        return [n.to_dict() if hasattr(n, "to_dict") else {"node_id": getattr(n, "node_id", "?")}
-                for n in nodes]
+        return [
+            n.to_dict() if hasattr(n, "to_dict") else {"node_id": getattr(n, "node_id", "?")}
+            for n in nodes
+        ]
     except Exception:  # noqa: BLE001
         return []

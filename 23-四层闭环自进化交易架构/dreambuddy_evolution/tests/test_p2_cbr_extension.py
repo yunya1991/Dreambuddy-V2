@@ -13,6 +13,7 @@ TDD 测试: P2 CBR 系统扩展 — 形态案例接入
   T6. FAIL-OPEN: 空库检索返回空列表
   T7. to_feature_dict 包含 pattern 字段
 """
+
 from __future__ import annotations
 
 import sys
@@ -33,8 +34,9 @@ if str(_YJ) in sys.path:
 sys.path.insert(0, str(_YJ))
 
 # 确保 11-易经推理系统 在最前，让 `scripts.memory_l4` 解析到正确包
-import importlib
-import importlib.util
+import importlib  # noqa: E402
+import importlib.util  # noqa: E402
+
 
 def _load_cbr_module():
     """直接按文件路径加载 CBR 模块，避免包名冲突"""
@@ -43,6 +45,7 @@ def _load_cbr_module():
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
+
 
 _cbr = _load_cbr_module()
 CBRCase = _cbr.CBRCase
@@ -114,23 +117,27 @@ def test_cbr_engine_retrieve_pattern_cases():
     """T4: CBREngine 能检索形态案例（按 pattern 过滤）"""
     cb = CaseBase()
     # 添加 3 个形态案例 + 1 个普通交易案例
-    for i, (pattern, pnl) in enumerate([
-        ("head_shoulders_top", -2.5),
-        ("head_shoulders_top", -3.0),
-        ("neckline_break", -1.8),
-        ("donchian_breakout", 0.5),  # 普通交易案例
-    ]):
-        cb.cases.append(CBRCase(
-            case_id=f"case-{i}",
-            inst_id="BTC-USDT-SWAP",
-            regime="TOP_DROP" if pattern != "donchian_breakout" else "TREND",
-            decision="short" if pattern != "donchian_breakout" else "long",
-            confidence=0.7 + i * 0.02,
-            pattern=pattern,
-            case_type="pattern" if pattern != "donchian_breakout" else "trade",
-            pnl_pct=pnl,
-            is_profit=pnl > 0,
-        ))
+    for i, (pattern, pnl) in enumerate(
+        [
+            ("head_shoulders_top", -2.5),
+            ("head_shoulders_top", -3.0),
+            ("neckline_break", -1.8),
+            ("donchian_breakout", 0.5),  # 普通交易案例
+        ]
+    ):
+        cb.cases.append(
+            CBRCase(
+                case_id=f"case-{i}",
+                inst_id="BTC-USDT-SWAP",
+                regime="TOP_DROP" if pattern != "donchian_breakout" else "TREND",
+                decision="short" if pattern != "donchian_breakout" else "long",
+                confidence=0.7 + i * 0.02,
+                pattern=pattern,
+                case_type="pattern" if pattern != "donchian_breakout" else "trade",
+                pnl_pct=pnl,
+                is_profit=pnl > 0,
+            )
+        )
 
     engine = CBREngine(case_base=cb, top_k=5, similarity_threshold=0.0)
     query = CBRQuery(

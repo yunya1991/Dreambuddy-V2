@@ -19,33 +19,53 @@
                    与 A0 流动性矛盾维度交叉验证
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Tuple, Optional
 import math
 import random
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple
 
 from ._constants import (
-    DIR_UP, DIR_DOWN, DIR_FLAT, DIR_TRANSITIONING, DIR_UNKNOWN,
-    SIXIANG_TIME, SIXIANG_SPACE, SIXIANG_SURFACE, SIXIANG_CORE, SIXIANG_LIQUIDITY,
-    FORCE_WEIGHT_CORE, FORCE_WEIGHT_SURFACE,
-    FORCE_WEIGHT_TIME, FORCE_WEIGHT_SPACE, FORCE_WEIGHT_LIQUIDITY,
-    TIME_HORIZON_SHORT, TIME_HORIZON_MID, TIME_HORIZON_LONG,
-    SPACE_EQUILIBRIUM, SPACE_SPRING_K,
-    MARKET_MASS_BASE, MARKET_MASS_VOLATILITY_FACTOR,
-    VELOCITY_DECAY, ACCELERATION_DT,
-    REVERSAL_WARNING_THRESHOLD,
-    FORCE_MAGNITUDE_NORM_FACTOR, VELOCITY_NORM_FACTOR,
-    CONFIDENCE_WEIGHT_FORCE, CONFIDENCE_WEIGHT_AGREEMENT,
+    ACCELERATION_DT,
+    CONFIDENCE_WEIGHT_AGREEMENT,
+    CONFIDENCE_WEIGHT_FORCE,
     CONFIDENCE_WEIGHT_VELOCITY,
-    VELOCITY_ZERO_THRESHOLD, REVERSAL_STRENGTH_THRESHOLD,
-    LANGEVIN_ENABLED, LANGEVIN_TEMPERATURE_SCALE,
-    LANGEVIN_NOISE_FLOOR, LANGEVIN_NOISE_CAP, LANGEVIN_DECAY_EPS,
+    DIR_DOWN,
+    DIR_FLAT,
+    DIR_TRANSITIONING,
+    DIR_UNKNOWN,
+    DIR_UP,
+    FORCE_MAGNITUDE_NORM_FACTOR,
+    FORCE_WEIGHT_CORE,
+    FORCE_WEIGHT_LIQUIDITY,
+    FORCE_WEIGHT_SPACE,
+    FORCE_WEIGHT_SURFACE,
+    FORCE_WEIGHT_TIME,
+    LANGEVIN_DECAY_EPS,
+    LANGEVIN_ENABLED,
+    LANGEVIN_NOISE_CAP,
+    LANGEVIN_NOISE_FLOOR,
+    LANGEVIN_TEMPERATURE_SCALE,
+    MARKET_MASS_BASE,
+    MARKET_MASS_VOLATILITY_FACTOR,
+    REVERSAL_WARNING_THRESHOLD,
+    SIXIANG_CORE,
+    SIXIANG_LIQUIDITY,
+    SIXIANG_SPACE,
+    SIXIANG_SURFACE,
+    SIXIANG_TIME,
+    SPACE_EQUILIBRIUM,
+    SPACE_SPRING_K,
+    TIME_HORIZON_LONG,
+    TIME_HORIZON_MID,
+    TIME_HORIZON_SHORT,
+    VELOCITY_NORM_FACTOR,
+    VELOCITY_ZERO_THRESHOLD,
 )
-
 
 # ============================================================
 # 数据结构
 # ============================================================
+
 
 @dataclass
 class Force3D:
@@ -56,6 +76,7 @@ class Force3D:
     time_horizon: 时间轴  0.3=短期, 0.6=中期, 1.0=长期
     certainty:    确定性轴 0-1
     """
+
     direction: float = 0.0
     time_horizon: float = 0.6
     certainty: float = 0.5
@@ -81,11 +102,12 @@ class Force3D:
 @dataclass
 class MarketForces:
     """五象力场集合（时空表里流）。"""
-    time_force: Force3D = field(default_factory=Force3D)      # 时：周期力
-    space_force: Force3D = field(default_factory=Force3D)     # 空：空间力
-    surface_force: Force3D = field(default_factory=Force3D)   # 表：技术力
-    core_force: Force3D = field(default_factory=Force3D)      # 里：内驱力
-    liquidity_force: Force3D = field(default_factory=Force3D) # 流：流动性力
+
+    time_force: Force3D = field(default_factory=Force3D)  # 时：周期力
+    space_force: Force3D = field(default_factory=Force3D)  # 空：空间力
+    surface_force: Force3D = field(default_factory=Force3D)  # 表：技术力
+    core_force: Force3D = field(default_factory=Force3D)  # 里：内驱力
+    liquidity_force: Force3D = field(default_factory=Force3D)  # 流：流动性力
 
     def all_forces(self) -> List[Tuple[str, Force3D, float]]:
         """返回 (名称, 力, 权重) 列表。"""
@@ -115,18 +137,19 @@ class ForceResult:
     这是 BCRM 的第一性原理输出，决定趋势方向和强度。
     易经引擎接收此结果进行符号翻译。
     """
+
     # 合力
     net_force: Force3D = field(default_factory=Force3D)
 
     # 运动学
-    acceleration: float = 0.0     # 加速度 a = F/m
-    velocity: float = 0.0         # 当前速度（含历史惯性）
-    prev_velocity: float = 0.0    # 前一步速度
+    acceleration: float = 0.0  # 加速度 a = F/m
+    velocity: float = 0.0  # 当前速度（含历史惯性）
+    prev_velocity: float = 0.0  # 前一步速度
 
     # 趋势判定
     direction: str = DIR_UNKNOWN  # 趋势方向 = sign(v)
-    trend_strength: float = 0.0   # 趋势强度 = |v|
-    confidence: float = 0.0       # 置信度
+    trend_strength: float = 0.0  # 趋势强度 = |v|
+    confidence: float = 0.0  # 置信度
 
     # 转折预警
     reversal_warning: bool = False  # a 与 v 反向 = 减速
@@ -162,6 +185,7 @@ class ForceResult:
 # 力学引擎
 # ============================================================
 
+
 class ForceEngine:
     """
     力学引擎 — 基于第一性原理的趋势推理。
@@ -176,8 +200,8 @@ class ForceEngine:
     """
 
     def __init__(self, seed: Optional[int] = None, enable_kalman: bool = False):
-        self.prev_velocity = 0.0        # 维护速度的历史状态
-        self.prev_acceleration = 0.0    # 维护加速度的历史状态（Verlet 需要）
+        self.prev_velocity = 0.0  # 维护速度的历史状态
+        self.prev_acceleration = 0.0  # 维护加速度的历史状态（Verlet 需要）
         if seed is not None:
             random.seed(seed)
 
@@ -186,13 +210,16 @@ class ForceEngine:
         self._kalman = None
         if enable_kalman:
             from .kalman_filter import VelocityKalmanFilter
+
             self._kalman = VelocityKalmanFilter()
 
-    def infer(self,
-              market_snapshot: Dict[str, Any],
-              prev_velocity: float = None,
-              prev_acceleration: float = None,
-              scale_params=None) -> ForceResult:
+    def infer(
+        self,
+        market_snapshot: Dict[str, Any],
+        prev_velocity: float = None,
+        prev_acceleration: float = None,
+        scale_params=None,
+    ) -> ForceResult:
         """
         运行力学推理。
 
@@ -213,6 +240,7 @@ class ForceEngine:
         # 体量参数（如果未提供，使用默认）
         if scale_params is None:
             from .scale_engine import scale_to_params
+
             scale_params = scale_to_params(0.5)
 
         # Step 1: 提取五象力场
@@ -230,8 +258,11 @@ class ForceEngine:
 
         # Step 5: 速度更新 — Velocity-Verlet 积分 + Langevin 随机项
         velocity = self._velocity_verlet_langevin(
-            prev_velocity, prev_acceleration, acceleration,
-            scale_params.velocity_decay, volatility,
+            prev_velocity,
+            prev_acceleration,
+            acceleration,
+            scale_params.velocity_decay,
+            volatility,
         )
 
         # Step 6: 趋势判定
@@ -240,13 +271,13 @@ class ForceEngine:
 
         # Step 7: 转折预警（体量调整阈值）
         raw_reversal_warning, raw_reversal_strength = self._check_reversal(
-            velocity, acceleration, prev_velocity, scale_params)
+            velocity, acceleration, prev_velocity, scale_params
+        )
         reversal_warning = raw_reversal_warning
         reversal_strength = raw_reversal_strength
 
         # Step 8: 置信度
-        confidence = self._compute_confidence(
-            net_force, forces, trend_strength, reversal_warning)
+        confidence = self._compute_confidence(net_force, forces, trend_strength, reversal_warning)
 
         # Step 9: 可选卡尔曼后处理滤波（过滤市场高频噪声）
         kalman_applied = False
@@ -283,7 +314,8 @@ class ForceEngine:
             reversal_strength = max(raw_reversal_strength, kalman_reversal_strength)
 
             confidence = self._compute_confidence(
-                net_force, forces, trend_strength, reversal_warning)
+                net_force, forces, trend_strength, reversal_warning
+            )
             kalman_applied = True
 
         # 更新内部状态
@@ -357,8 +389,7 @@ class ForceEngine:
             # 噪声幅度 = √(2γT·dt)
             noise_amp = math.sqrt(2.0 * gamma * temperature * dt)
             # 上下限保护
-            noise_amp = max(LANGEVIN_NOISE_FLOOR,
-                            min(LANGEVIN_NOISE_CAP, noise_amp))
+            noise_amp = max(LANGEVIN_NOISE_FLOOR, min(LANGEVIN_NOISE_CAP, noise_amp))
             # 加随机扰动
             v_new += noise_amp * random.gauss(0.0, 1.0)
 
@@ -367,8 +398,7 @@ class ForceEngine:
     # ============================================================
     # Step 1: 五象力场提取
     # ============================================================
-    def _extract_forces(self, snapshot: Dict[str, Any],
-                        scale_params=None) -> MarketForces:
+    def _extract_forces(self, snapshot: Dict[str, Any], scale_params=None) -> MarketForces:
         """从市场快照提取五象力场（时空表里流）。"""
 
         # --- 时（周期力）---
@@ -405,17 +435,15 @@ class ForceEngine:
         long_dir = (long_cycle - 0.5) * 2  # -1 ~ +1
 
         # 中周期：0.6 时间轴
-        mid_cycle = snapshot.get("mid_cycle_position",
-                                  snapshot.get("price_position", 0.5))
+        mid_cycle = snapshot.get("mid_cycle_position", snapshot.get("price_position", 0.5))
         mid_dir = (mid_cycle - 0.5) * 2
 
         # 短周期：0.3 时间轴
-        short_cycle = snapshot.get("short_cycle_position",
-                                    snapshot.get("trend_strength", 0.5))
+        short_cycle = snapshot.get("short_cycle_position", snapshot.get("trend_strength", 0.5))
         short_dir = (short_cycle - 0.5) * 2 if short_cycle > 0 else 0
 
         # 加权合成（长期权重最大）
-        combined_dir = (long_dir * 0.5 + mid_dir * 0.3 + short_dir * 0.2)
+        combined_dir = long_dir * 0.5 + mid_dir * 0.3 + short_dir * 0.2
 
         # 时间轴：取主导周期
         if abs(long_dir) > abs(mid_dir) and abs(long_dir) > abs(short_dir):
@@ -428,8 +456,9 @@ class ForceEngine:
         # 确定性：周期越一致，确定性越高
         directions = [long_dir, mid_dir, short_dir]
         signs = [1 if d > 0 else -1 if d < 0 else 0 for d in directions]
-        agreement = sum(1 for i in range(len(signs) - 1)
-                        if signs[i] == signs[i + 1]) / (len(signs) - 1)
+        agreement = sum(1 for i in range(len(signs) - 1) if signs[i] == signs[i + 1]) / (
+            len(signs) - 1
+        )
 
         return Force3D(
             direction=max(-1.0, min(1.0, combined_dir)),
@@ -437,8 +466,7 @@ class ForceEngine:
             certainty=0.3 + 0.7 * agreement,
         )
 
-    def _extract_space_force(self, snapshot: Dict,
-                              scale_params=None) -> Force3D:
+    def _extract_space_force(self, snapshot: Dict, scale_params=None) -> Force3D:
         """
         空（空间力）：价格位置的反重力。
 
@@ -486,17 +514,16 @@ class ForceEngine:
 
         # 合成方向
         tech_dir = (tech_score - 0.5) * 2  # -1 ~ +1
-        combined = (tech_dir * 0.4 + ma_direction * 0.25 +
-                    macd_signal * 0.2 + rsi_dir * 0.15)
+        combined = tech_dir * 0.4 + ma_direction * 0.25 + macd_signal * 0.2 + rsi_dir * 0.15
 
         # 确定性：技术指标一致性
         signals = [tech_dir, ma_direction, macd_signal, rsi_dir]
-        signs = [1 if s > 0.05 else -1 if s < -0.05 else 0
-                 for s in signals]
+        signs = [1 if s > 0.05 else -1 if s < -0.05 else 0 for s in signals]
         non_zero = [s for s in signs if s != 0]
         if len(non_zero) > 1:
-            agreement = sum(1 for i in range(len(non_zero) - 1)
-                            if non_zero[i] == non_zero[i + 1]) / (len(non_zero) - 1)
+            agreement = sum(
+                1 for i in range(len(non_zero) - 1) if non_zero[i] == non_zero[i + 1]
+            ) / (len(non_zero) - 1)
         else:
             agreement = 0.5
 
@@ -529,8 +556,9 @@ class ForceEngine:
         signs = [1 if d > 0.05 else -1 if d < -0.05 else 0 for d in dirs]
         non_zero = [s for s in signs if s != 0]
         if len(non_zero) > 1:
-            agreement = sum(1 for i in range(len(non_zero) - 1)
-                            if non_zero[i] == non_zero[i + 1]) / (len(non_zero) - 1)
+            agreement = sum(
+                1 for i in range(len(non_zero) - 1) if non_zero[i] == non_zero[i + 1]
+            ) / (len(non_zero) - 1)
         else:
             agreement = 0.5
 
@@ -575,8 +603,7 @@ class ForceEngine:
         if volume_ratio > 1.0 and abs(price_direction) > 0.05:
             # 放量且价格有方向 → 量价同向加成（助推趋势）
             vol_factor = min(volume_ratio, 2.0) / 2.0  # 归一化到 0-1
-            liquidity_dir = (liquidity_dir * 0.6
-                             + price_direction * 0.4 * vol_factor)
+            liquidity_dir = liquidity_dir * 0.6 + price_direction * 0.4 * vol_factor
         elif volume_ratio < 1.0:
             # 缩量 → 流动性力衰减（趋势难延续）
             liquidity_dir *= max(0.0, volume_ratio)
@@ -598,8 +625,7 @@ class ForceEngine:
     # ============================================================
     # Step 2: 合力计算
     # ============================================================
-    def _compute_net_force(self, forces: MarketForces,
-                            scale_params=None) -> Force3D:
+    def _compute_net_force(self, forces: MarketForces, scale_params=None) -> Force3D:
         """
         五象力场加权合成。
 
@@ -615,8 +641,11 @@ class ForceEngine:
                 (SIXIANG_SPACE, forces.space_force, scale_params.weight_space),
                 (SIXIANG_SURFACE, forces.surface_force, scale_params.weight_surface),
                 (SIXIANG_CORE, forces.core_force, scale_params.weight_core),
-                (SIXIANG_LIQUIDITY, forces.liquidity_force,
-                 getattr(scale_params, "weight_liquidity", FORCE_WEIGHT_LIQUIDITY)),
+                (
+                    SIXIANG_LIQUIDITY,
+                    forces.liquidity_force,
+                    getattr(scale_params, "weight_liquidity", FORCE_WEIGHT_LIQUIDITY),
+                ),
             ]
         else:
             weighted_list = forces.all_forces()
@@ -627,7 +656,7 @@ class ForceEngine:
         weighted_certainty = 0.0
         sum_weights = sum(w for _, _, w in weighted_list)
 
-        for name, force, weight in weighted_list:
+        for name, force, weight in weighted_list:  # noqa: B007
             signed = force.signed_magnitude()  # direction × certainty
             total_dir += signed * weight
             total_weight += weight * force.certainty
@@ -653,8 +682,7 @@ class ForceEngine:
     # ============================================================
     # Step 3: 市场质量
     # ============================================================
-    def _compute_market_mass(self, volatility: float,
-                              scale_params=None) -> float:
+    def _compute_market_mass(self, volatility: float, scale_params=None) -> float:
         """
         市场质量（惯性）。
 
@@ -687,9 +715,9 @@ class ForceEngine:
     # ============================================================
     # Step 7: 转折预警
     # ============================================================
-    def _check_reversal(self, velocity: float, acceleration: float,
-                         prev_velocity: float,
-                         scale_params=None) -> Tuple[bool, float]:
+    def _check_reversal(
+        self, velocity: float, acceleration: float, prev_velocity: float, scale_params=None
+    ) -> Tuple[bool, float]:
         """
         转折预警：加速度与速度反向 = 减速。
 
@@ -725,10 +753,13 @@ class ForceEngine:
     # ============================================================
     # Step 8: 置信度
     # ============================================================
-    def _compute_confidence(self, net_force: Force3D,
-                              forces: MarketForces,
-                              trend_strength: float,
-                              reversal_warning: bool) -> float:
+    def _compute_confidence(
+        self,
+        net_force: Force3D,
+        forces: MarketForces,
+        trend_strength: float,
+        reversal_warning: bool,
+    ) -> float:
         """
         置信度计算。
 
@@ -743,23 +774,26 @@ class ForceEngine:
 
         # 2. 五象一致性
         force_dirs = [f.direction for _, f, _ in forces.all_forces()]
-        signs = [1 if d > 0.05 else -1 if d < -0.05 else 0
-                 for d in force_dirs]
+        signs = [1 if d > 0.05 else -1 if d < -0.05 else 0 for d in force_dirs]
         non_zero = [s for s in signs if s != 0]
         if len(non_zero) > 1:
-            agreement = sum(1 for i in range(len(non_zero) - 1)
-                            if non_zero[i] == non_zero[i + 1]) / (len(non_zero) - 1)
+            agreement = sum(
+                1 for i in range(len(non_zero) - 1) if non_zero[i] == non_zero[i + 1]
+            ) / (len(non_zero) - 1)
         else:
             agreement = 0.5
 
         # 3. 综合置信度（P1修复：用 tanh 替代线性截断，小信号更敏感）
         import math
+
         force_mag_norm = math.tanh(force_mag * FORCE_MAGNITUDE_NORM_FACTOR)
         # tanh(velocity * k): 当 velocity=0.02, k=8 → 0.158; k=3 → 0.06（原设计过低）
         velocity_norm = math.tanh(trend_strength * VELOCITY_NORM_FACTOR)
-        confidence = (force_mag_norm * CONFIDENCE_WEIGHT_FORCE +
-                      agreement * CONFIDENCE_WEIGHT_AGREEMENT +
-                      velocity_norm * CONFIDENCE_WEIGHT_VELOCITY)
+        confidence = (
+            force_mag_norm * CONFIDENCE_WEIGHT_FORCE
+            + agreement * CONFIDENCE_WEIGHT_AGREEMENT
+            + velocity_norm * CONFIDENCE_WEIGHT_VELOCITY
+        )
 
         # 4. 转折预警惩罚
         if reversal_warning:

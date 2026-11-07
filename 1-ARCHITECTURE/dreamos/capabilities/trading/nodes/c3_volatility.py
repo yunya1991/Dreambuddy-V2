@@ -14,10 +14,10 @@ C3 波动率分析节点
 
 from __future__ import annotations
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 
 class C3VolatilityNode(BaseNode):
@@ -89,8 +89,9 @@ class C3VolatilityNode(BaseNode):
 
         # ── 4. 成交量波动率 ────────────────────────────
         if vol_ratio > 2.0:
-            scores.append(("LONG" if change_24h > 0 else "SHORT", 0.15,
-                          f"放量({vol_ratio:.1f}x)，趋势加速"))
+            scores.append(
+                ("LONG" if change_24h > 0 else "SHORT", 0.15, f"放量({vol_ratio:.1f}x)，趋势加速")
+            )
         elif vol_ratio < 0.5:
             scores.append(("HOLD", 0.10, f"缩量({vol_ratio:.1f}x)，观望"))
 
@@ -125,7 +126,9 @@ class C3VolatilityNode(BaseNode):
             confidence = min(0.95, confidence + 0.2)
 
         rationale = [r for _, _, r in scores[:6]]
-        rationale.insert(0, f"[C3波动率] 级别={volatility_level} | ATR={atr_pct:.1%} | 带宽={bb_width:.1%}")
+        rationale.insert(
+            0, f"[C3波动率] 级别={volatility_level} | ATR={atr_pct:.1%} | 带宽={bb_width:.1%}"
+        )
         rationale.append(f"  方向: {direction} | 置信度: {confidence:.1%}")
 
         outputs = {
@@ -141,7 +144,11 @@ class C3VolatilityNode(BaseNode):
                 "width": bb_width,
             },
             "volume_ratio": vol_ratio,
-            "scores": {"long": round(long_score, 3), "short": round(short_score, 3), "hold": round(hold_score, 3)},
+            "scores": {
+                "long": round(long_score, 3),
+                "short": round(short_score, 3),
+                "hold": round(hold_score, 3),
+            },
             "rationale": rationale,
         }
 

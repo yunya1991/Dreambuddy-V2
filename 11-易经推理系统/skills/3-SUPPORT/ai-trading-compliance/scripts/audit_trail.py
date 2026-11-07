@@ -9,7 +9,7 @@
 3. 管理审计日志的存储和归档
 """
 
-import json
+import json  # noqa: I001
 import os
 from datetime import datetime
 from pathlib import Path
@@ -44,7 +44,7 @@ class AuditTrailManager:
         # 审计日志文件 (按日期)
         self.current_log_file = self._get_log_file_path()
 
-        print(f"  审计轨迹管理器初始化完成")
+        print("  审计轨迹管理器初始化完成")
         print(f"    存储目录: {self.audit_dir}")
         print(f"    当前日志: {self.current_log_file.name}")
 
@@ -59,8 +59,8 @@ class AuditTrailManager:
         audit_record = self._build_audit_record(receipt)
 
         # 写入日志文件 (append)
-        with open(self.current_log_file, 'a', encoding='utf-8') as f:
-            f.write(json.dumps(audit_record, ensure_ascii=False) + '\n')
+        with open(self.current_log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(audit_record, ensure_ascii=False) + "\n")
 
         print(f"    ✓ 审计记录已写入: {audit_record['audit_id']}")
 
@@ -69,7 +69,7 @@ class AuditTrailManager:
         trace_id: Optional[str] = None,
         decision: Optional[str] = None,
         start_time: Optional[str] = None,
-        end_time: Optional[str] = None
+        end_time: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         查询审计记录
@@ -87,7 +87,7 @@ class AuditTrailManager:
 
         # 遍历所有日志文件
         for log_file in sorted(self.audit_dir.glob("audit_*.jsonl")):
-            with open(log_file, 'r', encoding='utf-8') as f:
+            with open(log_file, "r", encoding="utf-8") as f:
                 for line in f:
                     if not line.strip():
                         continue
@@ -126,14 +126,14 @@ class AuditTrailManager:
             "by_decision": {"pass": 0, "warn": 0, "fail": 0},
             "by_change_type": {},
             "by_risk_level": {},
-            "log_files": 0
+            "log_files": 0,
         }
 
         # 遍历所有日志文件
         for log_file in self.audit_dir.glob("audit_*.jsonl"):
             stats["log_files"] += 1
 
-            with open(log_file, 'r', encoding='utf-8') as f:
+            with open(log_file, "r", encoding="utf-8") as f:
                 for line in f:
                     if not line.strip():
                         continue
@@ -150,12 +150,20 @@ class AuditTrailManager:
                     stats["by_decision"][decision] = stats["by_decision"].get(decision, 0) + 1
 
                     # 按变更类型统计
-                    change_type = record.get("change_classification", {}).get("change_type", "unknown")
-                    stats["by_change_type"][change_type] = stats["by_change_type"].get(change_type, 0) + 1
+                    change_type = record.get("change_classification", {}).get(
+                        "change_type", "unknown"
+                    )
+                    stats["by_change_type"][change_type] = (
+                        stats["by_change_type"].get(change_type, 0) + 1
+                    )
 
                     # 按风险等级统计
-                    risk_level = record.get("change_classification", {}).get("risk_level", "unknown")
-                    stats["by_risk_level"][risk_level] = stats["by_risk_level"].get(risk_level, 0) + 1
+                    risk_level = record.get("change_classification", {}).get(
+                        "risk_level", "unknown"
+                    )
+                    stats["by_risk_level"][risk_level] = (
+                        stats["by_risk_level"].get(risk_level, 0) + 1
+                    )
 
         return stats
 
@@ -170,7 +178,7 @@ class AuditTrailManager:
             int: 归档的文件数量
         """
         # TODO: Phase 2 - 实现日志归档逻辑
-        print(f"  ⚠️ 日志归档功能尚未实现 (Phase 2)")
+        print("  ⚠️ 日志归档功能尚未实现 (Phase 2)")
         return 0
 
     def _build_audit_record(self, receipt: Dict[str, Any]) -> Dict[str, Any]:
@@ -189,7 +197,7 @@ class AuditTrailManager:
             "warnings": receipt.get("warnings", []),
             "required_actions": receipt.get("required_actions", []),
             "rollout_requirements": receipt.get("rollout_requirements"),
-            "audit_fields": receipt.get("audit_fields", {})
+            "audit_fields": receipt.get("audit_fields", {}),
         }
 
         return record
@@ -208,25 +216,18 @@ def test_audit_trail():
     # 测试记录
     test_receipt_pass = {
         "decision": "pass",
-        "change_classification": {
-            "change_type": "R2",
-            "risk_level": "P1"
-        },
-        "hard_constraints_checked": {
-            "prod_write_prohibited_without_approval": True
-        },
+        "change_classification": {"change_type": "R2", "risk_level": "P1"},
+        "hard_constraints_checked": {"prod_write_prohibited_without_approval": True},
         "blockers": [],
         "warnings": [],
         "required_actions": [],
-        "rollout_requirements": {
-            "mode": "canary"
-        },
+        "rollout_requirements": {"mode": "canary"},
         "audit_fields": {
             "doc_refs": ["doc1_v1.0"],
             "trace_id": "trace_001",
             "artifacts": [],
-            "approver_roles": ["risk_owner"]
-        }
+            "approver_roles": ["risk_owner"],
+        },
     }
 
     print("\n测试 1: 记录合规回执 (pass)")
@@ -234,35 +235,20 @@ def test_audit_trail():
 
     test_receipt_fail = {
         "decision": "fail",
-        "change_classification": {
-            "change_type": "R3",
-            "risk_level": "P0"
-        },
+        "change_classification": {"change_type": "R3", "risk_level": "P0"},
         "hard_constraints_checked": {},
-        "blockers": [
-            {
-                "id": "H001",
-                "title": "SSoT 引用缺失",
-                "evidence": ""
-            }
-        ],
+        "blockers": [{"id": "H001", "title": "SSoT 引用缺失", "evidence": ""}],
         "warnings": [],
         "required_actions": [
-            {
-                "id": "ACTION_H001",
-                "title": "修复 SSoT 引用",
-                "how": "添加 doc_refs"
-            }
+            {"id": "ACTION_H001", "title": "修复 SSoT 引用", "how": "添加 doc_refs"}
         ],
-        "rollout_requirements": {
-            "mode": "disabled"
-        },
+        "rollout_requirements": {"mode": "disabled"},
         "audit_fields": {
             "doc_refs": [],
             "trace_id": "trace_002",
             "artifacts": [],
-            "approver_roles": []
-        }
+            "approver_roles": [],
+        },
     }
 
     print("\n测试 2: 记录合规回执 (fail)")

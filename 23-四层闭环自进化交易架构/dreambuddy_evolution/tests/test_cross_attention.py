@@ -8,6 +8,7 @@ C2 RED: Cross-Attention 外生注入组件测试
 
 RED 阶段：cross_attention 模块尚不存在 → ModuleNotFoundError
 """
+
 from __future__ import annotations
 
 import pytest
@@ -56,7 +57,7 @@ class TestMultiHeadCrossAttention:
         B, N, d_model = 4, 5, 32
         attn = MultiHeadCrossAttention(d_model=d_model, n_heads=4)
         query = torch.randn(B, 1, d_model)  # price as query
-        key = torch.randn(B, N, d_model)    # factors as key
+        key = torch.randn(B, N, d_model)  # factors as key
         value = torch.randn(B, N, d_model)  # factors as value
         out = attn(query, key, value)
         assert out.shape == (B, d_model)
@@ -83,7 +84,7 @@ class TestMultiHeadCrossAttention:
         k = k.view(B, N, n_heads, head_dim).transpose(1, 2)
         v = v.view(B, N, n_heads, head_dim).transpose(1, 2)
 
-        scores = torch.matmul(q, k.transpose(-2, -1)) / (head_dim ** 0.5)
+        scores = torch.matmul(q, k.transpose(-2, -1)) / (head_dim**0.5)
         weights = torch.softmax(scores, dim=-1)
         # 每行权重和应为 1
         assert torch.allclose(weights.sum(dim=-1), torch.ones_like(weights.sum(dim=-1)), atol=1e-5)
@@ -149,7 +150,6 @@ class TestCrossAttentionIntegration:
     def test_none_factors_fail_open(self):
         """FAIL-OPEN: factors=None 时 context 应为零向量。"""
         from dreambuddy_evolution.core.cross_attention import (
-            FactorEncoder,
             MultiHeadCrossAttention,
         )
 
@@ -193,9 +193,13 @@ class TestFactorHeadMask:
         weights = attn.last_attn_weights  # (B, n_heads, 1, N)
         assert weights is not None
         # head 0: 因子 3-5 权重应为 0
-        assert torch.allclose(weights[:, 0, 0, 3:], torch.zeros_like(weights[:, 0, 0, 3:]), atol=1e-6)
+        assert torch.allclose(
+            weights[:, 0, 0, 3:], torch.zeros_like(weights[:, 0, 0, 3:]), atol=1e-6
+        )
         # head 1: 因子 0-2 权重应为 0
-        assert torch.allclose(weights[:, 1, 0, :3], torch.zeros_like(weights[:, 1, 0, :3]), atol=1e-6)
+        assert torch.allclose(
+            weights[:, 1, 0, :3], torch.zeros_like(weights[:, 1, 0, :3]), atol=1e-6
+        )
         # 未屏蔽因子权重和应为 1
         assert torch.allclose(weights[:, 0, 0, :3].sum(dim=-1), torch.ones(B), atol=1e-5)
         assert torch.allclose(weights[:, 1, 0, 3:].sum(dim=-1), torch.ones(B), atol=1e-5)

@@ -20,20 +20,16 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from .multi_intent import MultiIntentDetector
+from .slots import extract_slots_from_text
 from .taxonomy import (
-    INTENT_TAXONOMY,
+    get_default_capability_route,
     get_primary_intent,
     get_risk_level,
-    get_default_capability_route,
-    is_valid_secondary,
 )
-from .slots import extract_slots_from_text, normalize_stock
-from .multi_intent import MultiIntentDetector
-
 
 # ============================================================
 # 规则匹配关键词库
@@ -84,22 +80,40 @@ SECONDARY_KEYWORDS: Dict[str, List[str]] = {
 # 数值越大，在关键词匹配数相同时越优先
 SECONDARY_WEIGHTS: Dict[str, float] = {
     # trade 类最高权重（高风险意图优先识别）
-    "buy": 3.0, "add_position": 3.0, "sell": 3.0,
-    "close_position": 3.0, "conditional_order": 3.0, "order_manage": 3.0,
+    "buy": 3.0,
+    "add_position": 3.0,
+    "sell": 3.0,
+    "close_position": 3.0,
+    "conditional_order": 3.0,
+    "order_manage": 3.0,
     # analysis 类次高（分析优先于简单查询）
-    "technical_analysis": 2.5, "holding_analysis": 2.5,
-    "deep_analysis": 2.5, "three_screen_analysis": 2.5, "sector_analysis": 2.5,
+    "technical_analysis": 2.5,
+    "holding_analysis": 2.5,
+    "deep_analysis": 2.5,
+    "three_screen_analysis": 2.5,
+    "sector_analysis": 2.5,
     # strategy/risk 类中等
-    "stock_recommendation": 2.0, "factor_screen": 2.0,
-    "strategy_design": 2.0, "strategy_optimization": 2.0,
-    "risk_assessment": 2.0, "risk_advice": 2.0,
-    "alert_setup": 2.0, "portfolio_risk": 2.0,
+    "stock_recommendation": 2.0,
+    "factor_screen": 2.0,
+    "strategy_design": 2.0,
+    "strategy_optimization": 2.0,
+    "risk_assessment": 2.0,
+    "risk_advice": 2.0,
+    "alert_setup": 2.0,
+    "portfolio_risk": 2.0,
     # query 类较低
-    "market_query": 1.0, "holding_query": 1.0,
-    "order_query": 1.0, "account_query": 1.0, "market_overview": 1.0,
+    "market_query": 1.0,
+    "holding_query": 1.0,
+    "order_query": 1.0,
+    "account_query": 1.0,
+    "market_overview": 1.0,
     # dialog 类最低
-    "confirm": 0.5, "cancel": 0.5, "modify": 0.5,
-    "repeat": 0.5, "clarify": 0.5, "chitchat": 0.5,
+    "confirm": 0.5,
+    "cancel": 0.5,
+    "modify": 0.5,
+    "repeat": 0.5,
+    "clarify": 0.5,
+    "chitchat": 0.5,
 }
 
 
@@ -108,20 +122,20 @@ SECONDARY_WEIGHTS: Dict[str, float] = {
 # 按优先级排序：更具体的组合排在前面
 COMPOSITE_RULES: List[tuple] = [
     # ── 交易类边界 ──
-    ({"止损", "平仓"}, "close_position"),       # 止损平仓 → 平仓动作（非普通卖出）
-    ({"止损单"}, "conditional_order"),            # 止损单 → 条件单（非止损动作本身）
-    ({"止盈单"}, "conditional_order"),            # 止盈单 → 条件单
-    ({"条件单"}, "conditional_order"),            # 条件单 → 条件单
-    ({"撤销", "订单"}, "order_manage"),           # 撤销订单 → 订单管理（非订单查询）
-    ({"修改", "订单"}, "order_manage"),           # 修改订单 → 订单管理
-    ({"改单"}, "order_manage"),                   # 改单 → 订单管理
+    ({"止损", "平仓"}, "close_position"),  # 止损平仓 → 平仓动作（非普通卖出）
+    ({"止损单"}, "conditional_order"),  # 止损单 → 条件单（非止损动作本身）
+    ({"止盈单"}, "conditional_order"),  # 止盈单 → 条件单
+    ({"条件单"}, "conditional_order"),  # 条件单 → 条件单
+    ({"撤销", "订单"}, "order_manage"),  # 撤销订单 → 订单管理（非订单查询）
+    ({"修改", "订单"}, "order_manage"),  # 修改订单 → 订单管理
+    ({"改单"}, "order_manage"),  # 改单 → 订单管理
     # ── 风险类边界 ──
-    ({"控制", "风险"}, "risk_advice"),            # 控制风险 → 风控建议（非风险评估）
-    ({"风控"}, "risk_advice"),                    # 风控 → 风控建议
-    ({"止损位"}, "risk_advice"),                  # 止损位 → 风控建议
-    ({"组合", "风险"}, "portfolio_risk"),         # 组合风险 → 组合风险（非评估）
-    ({"仓位", "风险"}, "portfolio_risk"),         # 仓位风险 → 组合风险
-    ({"集中度"}, "portfolio_risk"),               # 集中度 → 组合风险
+    ({"控制", "风险"}, "risk_advice"),  # 控制风险 → 风控建议（非风险评估）
+    ({"风控"}, "risk_advice"),  # 风控 → 风控建议
+    ({"止损位"}, "risk_advice"),  # 止损位 → 风控建议
+    ({"组合", "风险"}, "portfolio_risk"),  # 组合风险 → 组合风险（非评估）
+    ({"仓位", "风险"}, "portfolio_risk"),  # 仓位风险 → 组合风险
+    ({"集中度"}, "portfolio_risk"),  # 集中度 → 组合风险
 ]
 
 
@@ -163,9 +177,11 @@ def _is_in_scope(secondary: str) -> bool:
 # 分类结果
 # ============================================================
 
+
 @dataclass
 class DialogueIntentResult:
     """对话意图识别结果"""
+
     intent_primary: str = "query"
     intent_secondary: str = "market_query"
     slots: Dict[str, Any] = field(default_factory=dict)
@@ -195,6 +211,7 @@ class DialogueIntentResult:
 # ============================================================
 # 主分类器
 # ============================================================
+
 
 class DialogueIntentClassifier:
     """对话意图分类器
@@ -276,7 +293,9 @@ class DialogueIntentClassifier:
             rationale="规则未匹配，默认查询",
         )
 
-    def _llm_classify(self, text: str, context: Optional[Dict[str, Any]] = None) -> DialogueIntentResult:
+    def _llm_classify(
+        self, text: str, context: Optional[Dict[str, Any]] = None
+    ) -> DialogueIntentResult:
         """LLM 分类（需要外部实现具体的 prompt 调用）"""
         # 这里提供框架，具体 LLM 调用由上层注入
         # 参考 intent-recognition-spec/system_prompt.md 的 prompt

@@ -14,10 +14,12 @@ test_assertion: assert backtest_waterline_exit(80)['avg_return_30d'] < 0
 铁律（SPEC §0.2）：
   R4 FAIL-OPEN：数据不足不触发信号
 """
-import pytest
+
 import sys
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 
 # 将 force_vector 加入 sys.path
 _L4_DIR = Path(__file__).resolve().parent.parent
@@ -28,9 +30,10 @@ if str(_L4_DIR) not in sys.path:
 def _import_backtest():
     """辅助：延迟导入 backtest_sector_valuation 模块。"""
     from force_vector.backtest_sector_valuation import (
-        compute_backtest_stats,
         backtest_waterline_exit,
+        compute_backtest_stats,
     )
+
     return compute_backtest_stats, backtest_waterline_exit
 
 
@@ -38,14 +41,16 @@ def _import_backtest():
 # 纯函数测试：compute_backtest_stats
 # ---------------------------------------------------------------------------
 
+
 class TestBacktestImport:
     """RED: 模块与符号必须可导入。"""
 
     def test_module_importable(self):
         from force_vector.backtest_sector_valuation import (
-            compute_backtest_stats,
             backtest_waterline_exit,
+            compute_backtest_stats,
         )
+
         assert callable(compute_backtest_stats)
         assert callable(backtest_waterline_exit)
 
@@ -95,6 +100,7 @@ class TestComputeBacktestStats:
 # ---------------------------------------------------------------------------
 # 主函数测试：backtest_waterline_exit（集成，mock 历史数据）
 # ---------------------------------------------------------------------------
+
 
 class TestBacktestWaterlineExit:
     """主函数：遍历历史 waterline，计算触发后 30d 收益率。"""
@@ -182,12 +188,14 @@ class TestBacktestWaterlineExit:
 # SPEC §10 TDD-SVC-005 / §5.3 三重确认 AND
 # ---------------------------------------------------------------------------
 
+
 def _import_overheat_short():
     """辅助：延迟导入 backtest_overheat_short + 纯函数。"""
     from force_vector.backtest_sector_valuation import (
         backtest_overheat_short,
         compute_overheat_backtest_stats,
     )
+
     return backtest_overheat_short, compute_overheat_backtest_stats
 
 
@@ -196,10 +204,12 @@ class TestOverheatShortImport:
 
     def test_overheat_short_importable(self):
         from force_vector.backtest_sector_valuation import backtest_overheat_short
+
         assert callable(backtest_overheat_short)
 
     def test_overheat_pure_fn_importable(self):
         from force_vector.backtest_sector_valuation import compute_overheat_backtest_stats
+
         assert callable(compute_overheat_backtest_stats)
 
 
@@ -250,14 +260,34 @@ class TestBacktestOverheatShort:
         """
         backtest_fn, _ = _import_overheat_short()
         historical_data = [
-            {"date": "2026-01-01", "waterline": 90.0, "leader_momentum": -0.15,
-             "overvalued_ratio": 0.7, "return_14d": -0.10},
-            {"date": "2026-01-15", "waterline": 88.0, "leader_momentum": -0.12,
-             "overvalued_ratio": 0.65, "return_14d": -0.08},
-            {"date": "2026-02-01", "waterline": 70.0, "leader_momentum": -0.15,
-             "overvalued_ratio": 0.7, "return_14d": 0.05},
-            {"date": "2026-02-15", "waterline": 90.0, "leader_momentum": 0.15,
-             "overvalued_ratio": 0.7, "return_14d": 0.02},
+            {
+                "date": "2026-01-01",
+                "waterline": 90.0,
+                "leader_momentum": -0.15,
+                "overvalued_ratio": 0.7,
+                "return_14d": -0.10,
+            },
+            {
+                "date": "2026-01-15",
+                "waterline": 88.0,
+                "leader_momentum": -0.12,
+                "overvalued_ratio": 0.65,
+                "return_14d": -0.08,
+            },
+            {
+                "date": "2026-02-01",
+                "waterline": 70.0,
+                "leader_momentum": -0.15,
+                "overvalued_ratio": 0.7,
+                "return_14d": 0.05,
+            },
+            {
+                "date": "2026-02-15",
+                "waterline": 90.0,
+                "leader_momentum": 0.15,
+                "overvalued_ratio": 0.7,
+                "return_14d": 0.02,
+            },
         ]
         with patch(
             "force_vector.backtest_sector_valuation._fetch_historical_overheat_with_returns",
@@ -272,10 +302,20 @@ class TestBacktestOverheatShort:
         """所有条件均不满足 → avg_return_14d=0.0。"""
         backtest_fn, _ = _import_overheat_short()
         historical_data = [
-            {"date": "2026-01-01", "waterline": 70.0, "leader_momentum": 0.15,
-             "overvalued_ratio": 0.3, "return_14d": 0.05},
-            {"date": "2026-02-01", "waterline": 75.0, "leader_momentum": 0.10,
-             "overvalued_ratio": 0.4, "return_14d": -0.02},
+            {
+                "date": "2026-01-01",
+                "waterline": 70.0,
+                "leader_momentum": 0.15,
+                "overvalued_ratio": 0.3,
+                "return_14d": 0.05,
+            },
+            {
+                "date": "2026-02-01",
+                "waterline": 75.0,
+                "leader_momentum": 0.10,
+                "overvalued_ratio": 0.4,
+                "return_14d": -0.02,
+            },
         ]
         with patch(
             "force_vector.backtest_sector_valuation._fetch_historical_overheat_with_returns",
@@ -289,8 +329,13 @@ class TestBacktestOverheatShort:
         """仅 2 条件满足（waterline + ratio）但 lm=0.0 未严格<-0.1 → 不触发。"""
         backtest_fn, _ = _import_overheat_short()
         historical_data = [
-            {"date": "2026-01-01", "waterline": 90.0, "leader_momentum": 0.0,
-             "overvalued_ratio": 0.7, "return_14d": -0.20},
+            {
+                "date": "2026-01-01",
+                "waterline": 90.0,
+                "leader_momentum": 0.0,
+                "overvalued_ratio": 0.7,
+                "return_14d": -0.20,
+            },
         ]
         with patch(
             "force_vector.backtest_sector_valuation._fetch_historical_overheat_with_returns",
@@ -304,8 +349,13 @@ class TestBacktestOverheatShort:
         """SPEC §5.3 严格 < -0.1：lm=-0.1 不触发（边界测试，复用编排层记忆）。"""
         backtest_fn, _ = _import_overheat_short()
         historical_data = [
-            {"date": "2026-01-01", "waterline": 90.0, "leader_momentum": -0.1,
-             "overvalued_ratio": 0.7, "return_14d": -0.20},
+            {
+                "date": "2026-01-01",
+                "waterline": 90.0,
+                "leader_momentum": -0.1,
+                "overvalued_ratio": 0.7,
+                "return_14d": -0.20,
+            },
         ]
         with patch(
             "force_vector.backtest_sector_valuation._fetch_historical_overheat_with_returns",
@@ -319,8 +369,13 @@ class TestBacktestOverheatShort:
         """overvalued_ratio=0.6 满足 >=0.6 触发（边界含等号）。"""
         backtest_fn, _ = _import_overheat_short()
         historical_data = [
-            {"date": "2026-01-01", "waterline": 90.0, "leader_momentum": -0.15,
-             "overvalued_ratio": 0.6, "return_14d": -0.10},
+            {
+                "date": "2026-01-01",
+                "waterline": 90.0,
+                "leader_momentum": -0.15,
+                "overvalued_ratio": 0.6,
+                "return_14d": -0.10,
+            },
         ]
         with patch(
             "force_vector.backtest_sector_valuation._fetch_historical_overheat_with_returns",
@@ -333,8 +388,13 @@ class TestBacktestOverheatShort:
         """waterline=85 满足 >=85 触发（边界含等号）。"""
         backtest_fn, _ = _import_overheat_short()
         historical_data = [
-            {"date": "2026-01-01", "waterline": 85.0, "leader_momentum": -0.15,
-             "overvalued_ratio": 0.7, "return_14d": -0.10},
+            {
+                "date": "2026-01-01",
+                "waterline": 85.0,
+                "leader_momentum": -0.15,
+                "overvalued_ratio": 0.7,
+                "return_14d": -0.10,
+            },
         ]
         with patch(
             "force_vector.backtest_sector_valuation._fetch_historical_overheat_with_returns",
@@ -367,8 +427,15 @@ class TestBacktestOverheatShort:
         backtest_fn, _ = _import_overheat_short()
         with patch(
             "force_vector.backtest_sector_valuation._fetch_historical_overheat_with_returns",
-            return_value=[{"date": "2026-01-01", "waterline": 90.0, "leader_momentum": -0.15,
-                           "overvalued_ratio": 0.7, "return_14d": -0.10}],
+            return_value=[
+                {
+                    "date": "2026-01-01",
+                    "waterline": 90.0,
+                    "leader_momentum": -0.15,
+                    "overvalued_ratio": 0.7,
+                    "return_14d": -0.10,
+                }
+            ],
         ):
             result = backtest_fn(db_path="/fake/db.db")
         required_keys = {"avg_return_14d", "win_rate", "sample_count", "threshold"}
@@ -379,10 +446,20 @@ class TestBacktestOverheatShort:
         """waterline_threshold=90 比 85 触发点更少。"""
         backtest_fn, _ = _import_overheat_short()
         historical_data = [
-            {"date": "2026-01-01", "waterline": 88.0, "leader_momentum": -0.15,
-             "overvalued_ratio": 0.7, "return_14d": -0.10},
-            {"date": "2026-02-01", "waterline": 92.0, "leader_momentum": -0.15,
-             "overvalued_ratio": 0.7, "return_14d": -0.15},
+            {
+                "date": "2026-01-01",
+                "waterline": 88.0,
+                "leader_momentum": -0.15,
+                "overvalued_ratio": 0.7,
+                "return_14d": -0.10,
+            },
+            {
+                "date": "2026-02-01",
+                "waterline": 92.0,
+                "leader_momentum": -0.15,
+                "overvalued_ratio": 0.7,
+                "return_14d": -0.15,
+            },
         ]
         with patch(
             "force_vector.backtest_sector_valuation._fetch_historical_overheat_with_returns",

@@ -1,7 +1,6 @@
 import argparse
 import json
 import os
-import sys
 import time
 import urllib.error
 import urllib.parse
@@ -37,7 +36,11 @@ def _http_json(
             return int(resp.status), _json_loads(body), body.decode("utf-8", errors="replace")
     except urllib.error.HTTPError as e:
         body = e.read() if hasattr(e, "read") else b""
-        return int(getattr(e, "code", 0) or 0), _json_loads(body), body.decode("utf-8", errors="replace")
+        return (
+            int(getattr(e, "code", 0) or 0),
+            _json_loads(body),
+            body.decode("utf-8", errors="replace"),
+        )
     except Exception as e:
         return 0, None, str(e)
 
@@ -56,8 +59,12 @@ def _bool(v: Any) -> bool:
 
 
 def _get_env_token() -> Optional[str]:
-    tok = os.getenv("WEBHOOK_EXECUTE_TOKEN") or os.getenv("X_EXECUTE_TOKEN") or os.getenv("EXECUTE_TOKEN")
-    tok = (str(tok).strip() if tok is not None else "")
+    tok = (
+        os.getenv("WEBHOOK_EXECUTE_TOKEN")
+        or os.getenv("X_EXECUTE_TOKEN")
+        or os.getenv("EXECUTE_TOKEN")
+    )
+    tok = str(tok).strip() if tok is not None else ""
     return tok or None
 
 
@@ -103,17 +110,35 @@ def _acct_has_symbol(acct: Any, symbol: str) -> bool:
 
 def main() -> None:
     p = argparse.ArgumentParser(prog="live_btcalts_smoke", add_help=True)
-    p.add_argument("--base-url", default="http://127.0.0.1:8092", help="backend base url (default: http://127.0.0.1:8092)")
+    p.add_argument(
+        "--base-url",
+        default="http://127.0.0.1:8092",
+        help="backend base url (default: http://127.0.0.1:8092)",
+    )
     p.add_argument("--alt", default="ETH", help="ALT coin symbol (default: ETH)")
-    p.add_argument("--direction", default="short_alt_long_btc", choices=["short_alt_long_btc", "long_alt_short_btc"])
+    p.add_argument(
+        "--direction",
+        default="short_alt_long_btc",
+        choices=["short_alt_long_btc", "long_alt_short_btc"],
+    )
     p.add_argument("--strategy-mode", default="B", choices=["A", "B", "C"])
     p.add_argument("--timeframe", default="1h")
     p.add_argument("--notional-usdc", type=float, default=30.0)
     p.add_argument("--btc-hedge-frac", type=float, default=1.0)
     p.add_argument("--tag", default="", help="custom tag prefix (optional)")
     p.add_argument("--execute", action="store_true", help="place real orders (default: false)")
-    p.add_argument("--force-close", dest="force_close", action="store_true", help="force reduceOnly close legs after open")
-    p.add_argument("--no-force-close", dest="force_close", action="store_false", help="do not auto close legs (dangerous)")
+    p.add_argument(
+        "--force-close",
+        dest="force_close",
+        action="store_true",
+        help="force reduceOnly close legs after open",
+    )
+    p.add_argument(
+        "--no-force-close",
+        dest="force_close",
+        action="store_false",
+        help="do not auto close legs (dangerous)",
+    )
     p.set_defaults(force_close=True)
     p.add_argument("--timeout-sec", type=float, default=60.0)
     args = p.parse_args()
@@ -137,7 +162,9 @@ def main() -> None:
         tag = f"live_btcalts_smoke_{tag_ts}"
 
     ping_url = f"{base}/execution/aster/ping"
-    st, ping, raw = _http_json("GET", ping_url, None, headers=headers, timeout_sec=float(args.timeout_sec))
+    st, ping, raw = _http_json(
+        "GET", ping_url, None, headers=headers, timeout_sec=float(args.timeout_sec)
+    )
     if st <= 0:
         _fail(f"aster ping failed: {raw}")
     if not isinstance(ping, dict) or not _bool(ping.get("ok")):
@@ -159,15 +186,23 @@ def main() -> None:
 
     try:
         acct_url0 = f"{base}/execution/aster/account_summary"
-        st_a0, acct0, raw_a0 = _http_json("GET", acct_url0, None, headers=headers, timeout_sec=float(args.timeout_sec))
+        st_a0, acct0, raw_a0 = _http_json(
+            "GET", acct_url0, None, headers=headers, timeout_sec=float(args.timeout_sec)
+        )
         if st_a0 <= 0 or not isinstance(acct0, dict) or not _bool(acct0.get("ok")):
             _fail(f"account_summary failed: status={st_a0} body={raw_a0[:2000]}")
 
         stats_url0 = f"{base}/tracker/stats?sync=1&force=1&view=ui"
-        st_s0, st_json0, raw_s0 = _http_json("GET", stats_url0, None, headers=headers, timeout_sec=float(args.timeout_sec))
+        st_s0, st_json0, raw_s0 = _http_json(
+            "GET", stats_url0, None, headers=headers, timeout_sec=float(args.timeout_sec)
+        )
         if st_s0 <= 0 or not isinstance(st_json0, dict):
             _fail(f"tracker/stats failed: status={st_s0} body={raw_s0[:2000]}")
-        qop0 = st_json0.get("quant_open_positions") if isinstance(st_json0.get("quant_open_positions"), dict) else {}
+        qop0 = (
+            st_json0.get("quant_open_positions")
+            if isinstance(st_json0.get("quant_open_positions"), dict)
+            else {}
+        )
         want_pairs0 = ["BTC-PERP", f"{alt}-PERP"]
         stale_pairs = []
         for pair in want_pairs0:
@@ -178,7 +213,13 @@ def main() -> None:
                 stale_pairs.append(pair)
         if stale_pairs:
             clr_url = f"{base}/tracker/quant_open_positions/clear"
-            st_c0, clr, raw_c0 = _http_json("POST", clr_url, {"pairs": stale_pairs}, headers=headers, timeout_sec=float(args.timeout_sec))
+            st_c0, clr, raw_c0 = _http_json(
+                "POST",
+                clr_url,
+                {"pairs": stale_pairs},
+                headers=headers,
+                timeout_sec=float(args.timeout_sec),
+            )
             if st_c0 <= 0 or not isinstance(clr, dict) or not _bool(clr.get("ok")):
                 _fail(f"auto clear stale tracker failed: status={st_c0} body={raw_c0[:2000]}")
 
@@ -197,7 +238,9 @@ def main() -> None:
             "btc_hedge_frac": float(args.btc_hedge_frac),
             "idempotency_key": f"{tag}|open",
         }
-        st_open, open_resp, raw_open = _http_json("POST", open_url, open_payload, headers=headers, timeout_sec=float(args.timeout_sec))
+        st_open, open_resp, raw_open = _http_json(
+            "POST", open_url, open_payload, headers=headers, timeout_sec=float(args.timeout_sec)
+        )
         if st_open <= 0:
             _fail(f"market_open request failed: {raw_open}")
         if not isinstance(open_resp, dict):
@@ -206,9 +249,28 @@ def main() -> None:
             _fail(f"market_open not ok: status={st_open} body={raw_open[:2000]}")
 
         group_id = str(open_resp.get("group_id") or "").strip()
-        btc_ok = _bool((open_resp.get("btc") or {}).get("ok")) if isinstance(open_resp.get("btc"), dict) else None
-        alt_ok = _bool((open_resp.get("alt_leg") or {}).get("ok")) if isinstance(open_resp.get("alt_leg"), dict) else None
-        print(json.dumps({"ok": True, "tag": tag, "group_id": group_id or None, "btc_ok": btc_ok, "alt_ok": alt_ok}, ensure_ascii=False))
+        btc_ok = (
+            _bool((open_resp.get("btc") or {}).get("ok"))
+            if isinstance(open_resp.get("btc"), dict)
+            else None
+        )
+        alt_ok = (
+            _bool((open_resp.get("alt_leg") or {}).get("ok"))
+            if isinstance(open_resp.get("alt_leg"), dict)
+            else None
+        )
+        print(
+            json.dumps(
+                {
+                    "ok": True,
+                    "tag": tag,
+                    "group_id": group_id or None,
+                    "btc_ok": btc_ok,
+                    "alt_ok": alt_ok,
+                },
+                ensure_ascii=False,
+            )
+        )
 
         time.sleep(2.0 if args.execute else 0.2)
 
@@ -225,20 +287,24 @@ def main() -> None:
                     "system_id": "quant",
                     "ignore_post_close_freeze": True,
                 }
-                st_c, c_resp, raw_c = _http_json("POST", close_url, payload, headers=headers, timeout_sec=float(args.timeout_sec))
+                st_c, c_resp, raw_c = _http_json(
+                    "POST", close_url, payload, headers=headers, timeout_sec=float(args.timeout_sec)
+                )
                 if st_c <= 0 or not isinstance(c_resp, dict) or not _bool(c_resp.get("ok")):
                     _fail(f"force close failed: coin={coin} status={st_c} body={raw_c[:2000]}")
                 time.sleep(0.8)
 
         recent_url = f"{base}/orders/recent?limit=200&include_shadow=1&sort=ingest&ab_owner=quant"
-        st_r, recent, raw_r = _http_json("GET", recent_url, None, headers=headers, timeout_sec=float(args.timeout_sec))
+        st_r, recent, raw_r = _http_json(
+            "GET", recent_url, None, headers=headers, timeout_sec=float(args.timeout_sec)
+        )
         if st_r <= 0 or not isinstance(recent, list):
             _fail(f"orders/recent failed: status={st_r} body={raw_r[:2000]}")
         tagged = _orders_filter_by_tag(recent, tag)
         pairs = _orders_pairs_status(tagged)
 
         want_open_pairs = {"BTC-PERP", f"{alt}-PERP"}
-        missing = [p for p in sorted(list(want_open_pairs)) if p not in pairs]
+        missing = [p for p in sorted(list(want_open_pairs)) if p not in pairs]  # noqa: C414
         if args.execute and missing:
             _fail(f"missing legs in recent orders: {missing} (tag={tag})")
         if args.execute:
@@ -248,18 +314,31 @@ def main() -> None:
                     _fail(f"unexpected order status: pair={p1} status={st1} (tag={tag})")
 
         acct_url = f"{base}/execution/aster/account_summary"
-        st_a, acct, raw_a = _http_json("GET", acct_url, None, headers=headers, timeout_sec=float(args.timeout_sec))
+        st_a, acct, raw_a = _http_json(
+            "GET", acct_url, None, headers=headers, timeout_sec=float(args.timeout_sec)
+        )
         if st_a <= 0 or not isinstance(acct, dict) or not _bool(acct.get("ok")):
             _fail(f"account_summary failed: status={st_a} body={raw_a[:2000]}")
         blob = json.dumps(acct, ensure_ascii=False)
         if args.execute and (("BTCUSDT" in blob) or (f"{alt}USDT" in blob)):
             _fail(f"position still present in account_summary (tag={tag})")
 
-        print(json.dumps({"ok": True, "tag": tag, "group_id": (group_id or None), "orders_n": len(tagged)}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {"ok": True, "tag": tag, "group_id": (group_id or None), "orders_n": len(tagged)},
+                ensure_ascii=False,
+            )
+        )
     finally:
         if args.execute:
             disable_url = f"{base}/config/live/disable"
-            _http_json("POST", disable_url, {"confirm_live": True, "confirm_execute": True}, headers=headers, timeout_sec=float(args.timeout_sec))
+            _http_json(
+                "POST",
+                disable_url,
+                {"confirm_live": True, "confirm_execute": True},
+                headers=headers,
+                timeout_sec=float(args.timeout_sec),
+            )
 
 
 if __name__ == "__main__":

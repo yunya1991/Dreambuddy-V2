@@ -13,11 +13,11 @@ V1-C2: C 层 Reflector Phase 2 — 真实 Reflector.decide() 集成测试
 """
 
 import json
+import subprocess
 import sys
+import threading
 import time
 import uuid
-import subprocess
-import threading
 from pathlib import Path
 
 BRIDGE_DIR = Path(__file__).resolve().parent.parent
@@ -117,20 +117,23 @@ def test_decide_high_confidence_continue():
     """高置信度 + 预算充足 → CONTINUE"""
     harness = IPCHarness().start()
     try:
-        resp = harness.call_method("reflection", {
-            "mode": "decide",
-            "current_node_id": "C1",
-            "confidence": 0.85,
-            "direction": "LONG",
-            "status": "SUCCESS",
-            "executed_count": 1,
-            "max_nodes": 5,
-            "budget_remaining_ratio": 0.8,
-            "prev_results": [],
-        })
+        resp = harness.call_method(
+            "reflection",
+            {
+                "mode": "decide",
+                "current_node_id": "C1",
+                "confidence": 0.85,
+                "direction": "LONG",
+                "status": "SUCCESS",
+                "executed_count": 1,
+                "max_nodes": 5,
+                "budget_remaining_ratio": 0.8,
+                "prev_results": [],
+            },
+        )
         decision = _get_decision(resp)
         assert decision == "CONTINUE", f"期望 CONTINUE, got {decision}"
-        print(f"  PASS: 高置信度(0.85)+预算足(0.8) → CONTINUE")
+        print("  PASS: 高置信度(0.85)+预算足(0.8) → CONTINUE")
     finally:
         harness.stop()
 
@@ -139,21 +142,24 @@ def test_decide_low_confidence_redo():
     """低置信度 (<0.3) → REDO"""
     harness = IPCHarness().start()
     try:
-        resp = harness.call_method("reflection", {
-            "mode": "decide",
-            "current_node_id": "C1",
-            "confidence": 0.2,
-            "direction": "LONG",
-            "status": "SUCCESS",
-            "executed_count": 1,
-            "max_nodes": 5,
-            "budget_remaining_ratio": 0.8,
-            "prev_results": [],
-            "retries": 0,
-        })
+        resp = harness.call_method(
+            "reflection",
+            {
+                "mode": "decide",
+                "current_node_id": "C1",
+                "confidence": 0.2,
+                "direction": "LONG",
+                "status": "SUCCESS",
+                "executed_count": 1,
+                "max_nodes": 5,
+                "budget_remaining_ratio": 0.8,
+                "prev_results": [],
+                "retries": 0,
+            },
+        )
         decision = _get_decision(resp)
         assert decision == "REDO", f"期望 REDO, got {decision}"
-        print(f"  PASS: 低置信度(0.2) → REDO")
+        print("  PASS: 低置信度(0.2) → REDO")
     finally:
         harness.stop()
 
@@ -162,20 +168,23 @@ def test_decide_budget_critical_jump():
     """预算不足 (<0.2) → JUMP_TO"""
     harness = IPCHarness().start()
     try:
-        resp = harness.call_method("reflection", {
-            "mode": "decide",
-            "current_node_id": "C1",
-            "confidence": 0.8,
-            "direction": "LONG",
-            "status": "SUCCESS",
-            "executed_count": 3,
-            "max_nodes": 5,
-            "budget_remaining_ratio": 0.1,
-            "prev_results": [],
-        })
+        resp = harness.call_method(
+            "reflection",
+            {
+                "mode": "decide",
+                "current_node_id": "C1",
+                "confidence": 0.8,
+                "direction": "LONG",
+                "status": "SUCCESS",
+                "executed_count": 3,
+                "max_nodes": 5,
+                "budget_remaining_ratio": 0.1,
+                "prev_results": [],
+            },
+        )
         decision = _get_decision(resp)
         assert decision == "JUMP_TO", f"期望 JUMP_TO, got {decision}"
-        print(f"  PASS: 预算不足(0.1) → JUMP_TO")
+        print("  PASS: 预算不足(0.1) → JUMP_TO")
     finally:
         harness.stop()
 
@@ -184,22 +193,25 @@ def test_decide_conflict_insert_before():
     """与前序节点方向矛盾 + 前序高置信度 → INSERT_BEFORE"""
     harness = IPCHarness().start()
     try:
-        resp = harness.call_method("reflection", {
-            "mode": "decide",
-            "current_node_id": "A2",
-            "confidence": 0.8,
-            "direction": "SHORT",
-            "status": "SUCCESS",
-            "executed_count": 2,
-            "max_nodes": 5,
-            "budget_remaining_ratio": 0.8,
-            "prev_results": [
-                {"node_id": "C1", "direction": "LONG", "confidence": 0.9},
-            ],
-        })
+        resp = harness.call_method(
+            "reflection",
+            {
+                "mode": "decide",
+                "current_node_id": "A2",
+                "confidence": 0.8,
+                "direction": "SHORT",
+                "status": "SUCCESS",
+                "executed_count": 2,
+                "max_nodes": 5,
+                "budget_remaining_ratio": 0.8,
+                "prev_results": [
+                    {"node_id": "C1", "direction": "LONG", "confidence": 0.9},
+                ],
+            },
+        )
         decision = _get_decision(resp)
         assert decision == "INSERT_BEFORE", f"期望 INSERT_BEFORE, got {decision}"
-        print(f"  PASS: 方向矛盾(LONG vs SHORT) → INSERT_BEFORE")
+        print("  PASS: 方向矛盾(LONG vs SHORT) → INSERT_BEFORE")
     finally:
         harness.stop()
 
@@ -208,22 +220,25 @@ def test_decide_failed_redo():
     """节点失败 → REDO (重试未耗尽)"""
     harness = IPCHarness().start()
     try:
-        resp = harness.call_method("reflection", {
-            "mode": "decide",
-            "current_node_id": "C1",
-            "confidence": 0.0,
-            "direction": None,
-            "status": "FAILED",
-            "error": "data fetch failed",
-            "executed_count": 1,
-            "max_nodes": 5,
-            "budget_remaining_ratio": 0.8,
-            "prev_results": [],
-            "retries": 0,
-        })
+        resp = harness.call_method(
+            "reflection",
+            {
+                "mode": "decide",
+                "current_node_id": "C1",
+                "confidence": 0.0,
+                "direction": None,
+                "status": "FAILED",
+                "error": "data fetch failed",
+                "executed_count": 1,
+                "max_nodes": 5,
+                "budget_remaining_ratio": 0.8,
+                "prev_results": [],
+                "retries": 0,
+            },
+        )
         decision = _get_decision(resp)
         assert decision == "REDO", f"期望 REDO, got {decision}"
-        print(f"  PASS: 节点失败 → REDO")
+        print("  PASS: 节点失败 → REDO")
     finally:
         harness.stop()
 
