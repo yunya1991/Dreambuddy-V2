@@ -602,3 +602,12 @@ subsystems:
 | 20 | 衔接补充 | 21.3/21.4 | 道维自建（过渡期11系统供给）；影子期信号标记 shadow 不参与裁决权重 |
 
 > v1.0 冻结数值不变；v1.1/v1.1.1/v1.1.2/v1.1.3 章节正文不变；本节为 v1.2 增补，效力高于被修订的表述。
+
+---
+
+## 附：v1.3 增补草案（NN 闭环链下游）
+
+- 自 SPEC-49 v0.14 起，42 作为 NN 闭环链的 **input-only 总线**，下游由 `50-NN主矛盾评估器` 消费；42 不做策略决策/下单。
+- P1-01～P1-07 已完成：8 源、signal_id 合并/TTL、`DREAMBUDDY_ROOT`、11 子池状态文件、canonical source、ParamGovernor、可观测性、`run_bus`。
+- 8 源：`11-bcrm` / `11-bdsm` / `11-washout` / `11-event-arbitrage` / `29-event` / `40-cycle` / `43-strategic-extension` / `23-contradiction`。
+- 集成细节见 `docs/INTEGRATION-50-v0.1.md`（草案，待评审）；本节不修改 v1.2 冻结正文。
